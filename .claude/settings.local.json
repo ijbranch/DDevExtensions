@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Embarcadero\\\\Studio\\\\20.0\\\\bin\\\\rsvars.bat\")",
+      "Bash(msbuild:*)",
+      "Bash(cmd /c \"cd /d D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions && dir *.dproj 2>&1\")",
+      "Bash(dir /B \"D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\D_D*\")"
+    ]
+  }
+}

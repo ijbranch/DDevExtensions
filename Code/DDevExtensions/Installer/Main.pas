@@ -107,7 +107,6 @@ var
 implementation
 
 {$R *.dfm}
-{$R ..\Version.res}
 
 {$IF CompilerVersion >= 24.0}
 uses

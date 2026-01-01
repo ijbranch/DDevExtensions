@@ -38,6 +38,7 @@ type
     FTotalBuildTime: Int64;
     FBuildSucceeded: Boolean;
     FLock: TCriticalSection;
+    procedure DoEndCurrentUnit; // Internal - must be called while holding FLock
   public
     constructor Create;
     destructor Destroy; override;
@@ -173,101 +174,129 @@ end;
 
 constructor TBuildStatistics.Create;
 begin
+
   inherited Create;
   FLock := TCriticalSection.Create;
+
 end;
 
 destructor TBuildStatistics.Destroy;
 begin
+
   FLock.Free;
   inherited Destroy;
+
 end;
 
 procedure TBuildStatistics.Clear;
 begin
+
   FLock.Enter;
+
   try
-    SetLength(FUnits, 0);
-    FUnitCount := 0;
-    FCurrentUnit := '';
+    SetLength( FUnits, 0 );
+    FUnitCount        := 0;
+    FCurrentUnit      := '';
     FCurrentStartTime := 0;
-    FTotalBuildTime := 0;
-    FBuildSucceeded := False;
+    FTotalBuildTime   := 0;
+    FBuildSucceeded   := False;
   finally
     FLock.Leave;
   end;
+
 end;
 
-procedure TBuildStatistics.StartUnit(const UnitName, FileName: string);
-begin
-  FLock.Enter;
-  try
-    // End the previous unit if one was being tracked
-    if FCurrentUnit <> '' then
-      EndCurrentUnit;
-
-    FCurrentUnit := UnitName;
-    FCurrentStartTime := Now;
-
-    // Expand array if needed
-    if FUnitCount >= Length(FUnits) then
-      SetLength(FUnits, FUnitCount + 64);
-
-    FUnits[FUnitCount].UnitName := UnitName;
-    FUnits[FUnitCount].FileName := FileName;
-    FUnits[FUnitCount].StartTime := FCurrentStartTime;
-    FUnits[FUnitCount].EndTime := 0;
-    FUnits[FUnitCount].DurationMs := 0;
-    Inc(FUnitCount);
-  finally
-    FLock.Leave;
-  end;
-end;
-
-procedure TBuildStatistics.EndCurrentUnit;
+procedure TBuildStatistics.DoEndCurrentUnit;
+// Internal method - must be called while holding FLock
 var
   EndTime: TDateTime;
   DurationMs: Int64;
 begin
+
+  if ( FCurrentUnit <> '' ) and ( FUnitCount > 0 ) then
+  begin
+    EndTime    := Now;
+    DurationMs := Round( ( EndTime - FCurrentStartTime ) * MSecsPerDay );
+    FUnits[ FUnitCount - 1 ].EndTime    := EndTime;
+    FUnits[ FUnitCount - 1 ].DurationMs := DurationMs;
+    FTotalBuildTime := FTotalBuildTime + DurationMs;
+    FCurrentUnit    := '';
+  end;
+
+end;
+
+procedure TBuildStatistics.StartUnit( const UnitName, FileName: string );
+begin
+
   FLock.Enter;
+
   try
-    if (FCurrentUnit <> '') and (FUnitCount > 0) then
-    begin
-      EndTime := Now;
-      DurationMs := Round((EndTime - FCurrentStartTime) * MSecsPerDay);
-      FUnits[FUnitCount - 1].EndTime := EndTime;
-      FUnits[FUnitCount - 1].DurationMs := DurationMs;
-      FTotalBuildTime := FTotalBuildTime + DurationMs;
-      FCurrentUnit := '';
-    end;
+    // End the previous unit if one was being tracked
+    if FCurrentUnit <> '' then
+      DoEndCurrentUnit;
+
+    FCurrentUnit      := UnitName;
+    FCurrentStartTime := Now;
+
+    // Expand array if needed
+    if FUnitCount >= Length( FUnits ) then
+      SetLength( FUnits, FUnitCount + 64 );
+
+    FUnits[ FUnitCount ].UnitName   := UnitName;
+    FUnits[ FUnitCount ].FileName   := FileName;
+    FUnits[ FUnitCount ].StartTime  := FCurrentStartTime;
+    FUnits[ FUnitCount ].EndTime    := 0;
+    FUnits[ FUnitCount ].DurationMs := 0;
+    Inc( FUnitCount );
   finally
     FLock.Leave;
   end;
+
 end;
 
-procedure TBuildStatistics.FinalizeBuild(Succeeded: Boolean);
+procedure TBuildStatistics.EndCurrentUnit;
 begin
+
   FLock.Enter;
+
+  try
+    DoEndCurrentUnit;
+  finally
+    FLock.Leave;
+  end;
+
+end;
+
+procedure TBuildStatistics.FinalizeBuild( Succeeded: Boolean );
+begin
+
+  FLock.Enter;
+
   try
     // End the last unit if still being tracked
     if FCurrentUnit <> '' then
-      EndCurrentUnit;
+      DoEndCurrentUnit;
+
     FBuildSucceeded := Succeeded;
     // Trim the array to actual size
-    SetLength(FUnits, FUnitCount);
+    SetLength( FUnits, FUnitCount );
   finally
     FLock.Leave;
   end;
+
 end;
 
 function TBuildStatistics.GetUnits: TArray<TBuildUnitInfo>;
 begin
+
   FLock.Enter;
+
   try
-    Result := Copy(FUnits, 0, FUnitCount);
+    Result := Copy( FUnits, 0, FUnitCount );
   finally
     FLock.Leave;
   end;
+
 end;
 
 var
@@ -642,27 +671,32 @@ begin
 
   FCompileInterceptorId := GetCompileInterceptorServices.RegisterInterceptor(Self);
 
-  // Add Build Statistics menu item under View menu
-  MenuItem := FindMenuItem('ViewMenu');
+  // Add Build Statistics menu item under Tools menu
+  MenuItem := FindMenuItem( 'ToolsMenu' );
+
   if MenuItem <> nil then
   begin
-    FBuildStatsMenuItem := TMenuItem.Create(MenuItem);
+    FBuildStatsMenuItem         := TMenuItem.Create( MenuItem );
     FBuildStatsMenuItem.Caption := 'Build &Statistics...';
     FBuildStatsMenuItem.OnClick := BuildStatsMenuItemClick;
-    MenuItem.Add(FBuildStatsMenuItem);
+    FBuildStatsMenuItem.Visible := FEnableBuildStatistics;
+    MenuItem.Add( FBuildStatsMenuItem );
   end;
+
 end;
 
 destructor TCompileProgress.Destroy;
 begin
-  FBuildStatsMenuItem.Free;
-  GetCompileInterceptorServices.UnregisterInterceptor(FCompileInterceptorId);
+
+  FreeAndNil( FBuildStatsMenuItem );
+  GetCompileInterceptorServices.UnregisterInterceptor( FCompileInterceptorId );
   FIDENotifier.Free;
   FormNativeProgress.Free;
   FBuildStatistics.Free;
   FPasFilesLock.Free;
   FPasFiles.Free;
   inherited Destroy;
+
 end;
 
 procedure TCompileProgress.Init;
@@ -684,21 +718,25 @@ begin
   SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
 end;
 
-procedure TCompileProgress.AfterCompile(const Project: IOTAProject; Succeeded, IsCodeInsight: Boolean);
+procedure TCompileProgress.AfterCompile( const Project: IOTAProject; Succeeded, IsCodeInsight: Boolean );
 begin
-  if not IsCodeInsight then
-  begin
-    if Succeeded and AutoSaveAfterSuccessfulCompile and (Project <> nil) then
-      (BorlandIDEServices as IOTAModuleServices).SaveAll;
 
-    // Finalize build statistics
+  if ( not IsCodeInsight ) then
+  begin
+
+    if Succeeded and AutoSaveAfterSuccessfulCompile and ( Project <> nil ) then
+      ( BorlandIDEServices as IOTAModuleServices ).SaveAll;
+
+    // Finalise build statistics
     if FEnableBuildStatistics then
     begin
-      FBuildStatistics.FinalizeBuild(Succeeded);
-      if FShowBuildStatisticsAfterCompile and (FBuildStatistics.UnitCount > 0) then
+      FBuildStatistics.FinalizeBuild( Succeeded );
+
+      if FShowBuildStatisticsAfterCompile and ( FBuildStatistics.UnitCount > 0 ) then
         ShowBuildStatisticsDialog;
     end;
   end;
+
 end;
 
 procedure TCompileProgress.BeforeCompile(const Project: IOTAProject;
@@ -766,21 +804,28 @@ begin
   SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
 end;
 
-procedure TCompileProgress.SetEnableBuildStatistics(const Value: Boolean);
+procedure TCompileProgress.SetEnableBuildStatistics( const Value: Boolean );
 begin
+
   FEnableBuildStatistics := Value;
+
   if FBuildStatsMenuItem <> nil then
     FBuildStatsMenuItem.Visible := Value;
+
 end;
 
 procedure TCompileProgress.ShowBuildStatisticsDialog;
 begin
-  TFormBuildStatistics.Execute(FBuildStatistics);
+
+  TFormBuildStatistics.Execute( FBuildStatistics );
+
 end;
 
-procedure TCompileProgress.BuildStatsMenuItemClick(Sender: TObject);
+procedure TCompileProgress.BuildStatsMenuItemClick( Sender: TObject );
 begin
+
   ShowBuildStatisticsDialog;
+
 end;
 
 {$IF CompilerVersion < 22.0} // XE has its own option

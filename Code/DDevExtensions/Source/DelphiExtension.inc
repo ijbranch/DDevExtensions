@@ -53,6 +53,7 @@
 {$DEFINE INCLUDE_COMPONENTSELECTOR}
 {$DEFINE INCLUDE_OLDPALETTE}
 {$DEFINE INCLUDE_DEPENDENCYVIEWER}
+{$DEFINE INCLUDE_UNUSEDUNITDETECTOR}
 
 {------------------------------------------------------------------------------}
 // dependencies

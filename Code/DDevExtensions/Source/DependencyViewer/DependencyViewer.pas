@@ -23,6 +23,7 @@ type
     IsInterface: Boolean; // True if in interface uses, False if in implementation uses
   end;
 
+  {$WARN HIDING_MEMBER OFF}
   TUnitInfo = class
   private
     FUnitName: string;
@@ -30,13 +31,14 @@ type
     FDependencies: TList<TUnitDependency>;
     FParsed: Boolean;
   public
-    constructor Create(const AUnitName, AFileName: string);
+    constructor Create( const AUnitName, AFileName: string );
     destructor Destroy; override;
     property UnitName: string read FUnitName;
     property FileName: string read FFileName;
     property Dependencies: TList<TUnitDependency> read FDependencies;
     property Parsed: Boolean read FParsed write FParsed;
   end;
+  {$WARN HIDING_MEMBER ON}
 
   TCircularReference = record
     Path: TArray<string>;
@@ -49,30 +51,30 @@ type
     FCircularRefs: TList<TCircularReference>;
     FOnProgress: TNotifyEvent;
     FProgressUnit: string;
-    procedure ParseUsesClause(const Content: string; UnitInfo: TUnitInfo);
-    procedure ScanUnit(const UnitName, FileName: string);
+    procedure ParseUsesClause( const Content: string; UnitInfo: TUnitInfo );
+    procedure ScanUnit( const UnitName, FileName: string );
     procedure DetectCircularReferences;
-    function CheckCircular(const UnitName: string; const Path: TList<string>;
-      var Visited: TDictionary<string, Boolean>): Boolean;
+    function CheckCircular( const UnitName: string; const Path: TList<string>;
+      var Visited: TDictionary<string, Boolean> ): Boolean;
   public
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
-    procedure AddSearchPath(const Path: string);
-    procedure ScanProject(const Project: IOTAProject);
-    procedure ScanFile(const FileName: string);
-    function GetUnitInfo(const UnitName: string): TUnitInfo;
+    procedure AddSearchPath( const Path: string );
+    procedure ScanProject( const Project: IOTAProject );
+    procedure ScanFile( const FileName: string );
+    function GetUnitInfo( const UnitName: string ): TUnitInfo;
     function GetAllUnits: TArray<TUnitInfo>;
     property CircularReferences: TList<TCircularReference> read FCircularRefs;
     property OnProgress: TNotifyEvent read FOnProgress write FOnProgress;
     property ProgressUnit: string read FProgressUnit;
   end;
 
-  TDependencyViewerPlugin = class(TPluginConfig)
+  TDependencyViewerPlugin = class( TPluginConfig )
   private
     FEnabled: Boolean;
     FMenuItem: TMenuItem;
-    procedure MenuItemClick(Sender: TObject);
+    procedure MenuItemClick( Sender: TObject );
   protected
     function GetOptionPages: TTreePage; override;
     procedure Init; override;
@@ -84,7 +86,7 @@ type
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 var
   DependencyViewerPlugin: TDependencyViewerPlugin;
@@ -97,58 +99,71 @@ uses
 
 { TUnitInfo }
 
-constructor TUnitInfo.Create(const AUnitName, AFileName: string);
+constructor TUnitInfo.Create( const AUnitName, AFileName: string );
 begin
+
   inherited Create;
-  FUnitName := AUnitName;
-  FFileName := AFileName;
+  FUnitName     := AUnitName;
+  FFileName     := AFileName;
   FDependencies := TList<TUnitDependency>.Create;
-  FParsed := False;
+  FParsed       := False;
+
 end;
 
 destructor TUnitInfo.Destroy;
 begin
+
   FDependencies.Free;
   inherited Destroy;
+
 end;
 
 { TDependencyScanner }
 
 constructor TDependencyScanner.Create;
 begin
+
   inherited Create;
-  FUnits := TObjectDictionary<string, TUnitInfo>.Create([doOwnsValues]);
-  FSearchPaths := TStringList.Create;
+  FUnits                    := TObjectDictionary<string, TUnitInfo>.Create( [ doOwnsValues ] );
+  FSearchPaths              := TStringList.Create;
   FSearchPaths.CaseSensitive := False;
-  FSearchPaths.Duplicates := dupIgnore;
-  FCircularRefs := TList<TCircularReference>.Create;
+  FSearchPaths.Duplicates   := dupIgnore;
+  FCircularRefs             := TList<TCircularReference>.Create;
+
 end;
 
 destructor TDependencyScanner.Destroy;
 begin
+
   FCircularRefs.Free;
   FSearchPaths.Free;
   FUnits.Free;
   inherited Destroy;
+
 end;
 
 procedure TDependencyScanner.Clear;
 begin
+
   FUnits.Clear;
   FSearchPaths.Clear;
   FCircularRefs.Clear;
+
 end;
 
-procedure TDependencyScanner.AddSearchPath(const Path: string);
+procedure TDependencyScanner.AddSearchPath( const Path: string );
 var
   ExpandedPath: string;
 begin
-  ExpandedPath := ExcludeTrailingPathDelimiter(Path);
-  if (ExpandedPath <> '') and DirectoryExists(ExpandedPath) then
-    FSearchPaths.Add(ExpandedPath);
+
+  ExpandedPath := ExcludeTrailingPathDelimiter( Path );
+
+  if ( ExpandedPath <> '' ) and DirectoryExists( ExpandedPath ) then
+    FSearchPaths.Add( ExpandedPath );
+
 end;
 
-procedure TDependencyScanner.ParseUsesClause(const Content: string; UnitInfo: TUnitInfo);
+procedure TDependencyScanner.ParseUsesClause( const Content: string; UnitInfo: TUnitInfo );
 var
   I, Len: Integer;
   InInterface, InImplementation: Boolean;
@@ -160,110 +175,123 @@ var
 
   procedure AddToken;
   begin
+
     if Token <> '' then
     begin
-      if SameText(Token, 'interface') then
+
+      if SameText( Token, 'interface' ) then
       begin
-        InInterface := True;
+        InInterface      := True;
         InImplementation := False;
       end
-      else if SameText(Token, 'implementation') then
+      else if SameText( Token, 'implementation' ) then
       begin
-        InInterface := False;
+        InInterface      := False;
         InImplementation := True;
-        InUses := False;
+        InUses           := False;
       end
-      else if SameText(Token, 'uses') then
+      else if SameText( Token, 'uses' ) then
         InUses := True
-      else if InUses and not SameText(Token, 'in') then
+      else if InUses and ( not SameText( Token, 'in' ) ) then
       begin
-        Dep.UnitName := Token;
-        Dep.FileName := '';
+        Dep.UnitName    := Token;
+        Dep.FileName    := '';
         Dep.IsInterface := InInterface;
-        UnitInfo.Dependencies.Add(Dep);
+        UnitInfo.Dependencies.Add( Dep );
       end;
+
       Token := '';
     end;
+
   end;
 
 begin
-  I := 1;
-  Len := Length(Content);
-  InInterface := False;
+
+  I                := 1;
+  Len              := Length( Content );
+  InInterface      := False;
   InImplementation := False;
-  InUses := False;
-  InString := False;
-  InComment := False;
-  InLineComment := False;
-  BraceDepth := 0;
-  Token := '';
+  InUses           := False;
+  InString         := False;
+  InComment        := False;
+  InLineComment    := False;
+  BraceDepth       := 0;
+  Token            := '';
 
   while I <= Len do
   begin
-    Ch := Content[I];
+    Ch := Content[ I ];
 
     // Handle line comments
     if InLineComment then
     begin
-      if (Ch = #13) or (Ch = #10) then
+
+      if ( Ch = #13 ) or ( Ch = #10 ) then
         InLineComment := False;
-      Inc(I);
+
+      Inc( I );
       Continue;
     end;
 
     // Handle block comments
     if InComment then
     begin
-      if (Ch = '*') and (I < Len) and (Content[I + 1] = ')') then
+
+      if ( Ch = '*' ) and ( I < Len ) and ( Content[ I + 1 ] = ')' ) then
       begin
         InComment := False;
-        Inc(I);
+        Inc( I );
       end
-      else if (Ch = '}') and (BraceDepth > 0) then
-        Dec(BraceDepth);
-      Inc(I);
+      else if ( Ch = '}' ) and ( BraceDepth > 0 ) then
+        Dec( BraceDepth );
+
+      Inc( I );
       Continue;
     end;
 
     if BraceDepth > 0 then
     begin
+
       if Ch = '}' then
-        Dec(BraceDepth);
-      Inc(I);
+        Dec( BraceDepth );
+
+      Inc( I );
       Continue;
     end;
 
     // Handle strings
     if InString then
     begin
+
       if Ch = '''' then
         InString := False;
-      Inc(I);
+
+      Inc( I );
       Continue;
     end;
 
     // Check for comment start
-    if (Ch = '/') and (I < Len) and (Content[I + 1] = '/') then
+    if ( Ch = '/' ) and ( I < Len ) and ( Content[ I + 1 ] = '/' ) then
     begin
       AddToken;
       InLineComment := True;
-      Inc(I, 2);
+      Inc( I, 2 );
       Continue;
     end;
 
-    if (Ch = '(') and (I < Len) and (Content[I + 1] = '*') then
+    if ( Ch = '(' ) and ( I < Len ) and ( Content[ I + 1 ] = '*' ) then
     begin
       AddToken;
       InComment := True;
-      Inc(I, 2);
+      Inc( I, 2 );
       Continue;
     end;
 
     if Ch = '{' then
     begin
       AddToken;
-      Inc(BraceDepth);
-      Inc(I);
+      Inc( BraceDepth );
+      Inc( I );
       Continue;
     end;
 
@@ -271,70 +299,77 @@ begin
     begin
       AddToken;
       InString := True;
-      Inc(I);
+      Inc( I );
       Continue;
     end;
 
     // Parse tokens
-    if CharInSet(Ch, ['A'..'Z', 'a'..'z', '_', '0'..'9', '.']) then
+    if CharInSet( Ch, [ 'A'..'Z', 'a'..'z', '_', '0'..'9', '.' ] ) then
       Token := Token + Ch
     else
     begin
       AddToken;
-      if InUses and (Ch = ';') then
+
+      if InUses and ( Ch = ';' ) then
         InUses := False;
     end;
 
-    Inc(I);
+    Inc( I );
   end;
 
   AddToken;
+
 end;
 
-procedure TDependencyScanner.ScanUnit(const UnitName, FileName: string);
+procedure TDependencyScanner.ScanUnit( const UnitName, FileName: string );
 var
   UnitInfo: TUnitInfo;
   Content: string;
   SL: TStringList;
   LowerName: string;
 begin
-  LowerName := LowerCase(UnitName);
 
-  if FUnits.ContainsKey(LowerName) then
+  LowerName := LowerCase( UnitName );
+
+  if FUnits.ContainsKey( LowerName ) then
   begin
-    UnitInfo := FUnits[LowerName];
+    UnitInfo := FUnits[ LowerName ];
+
     if UnitInfo.Parsed then
       Exit;
   end
   else
   begin
-    UnitInfo := TUnitInfo.Create(UnitName, FileName);
-    FUnits.Add(LowerName, UnitInfo);
+    UnitInfo := TUnitInfo.Create( UnitName, FileName );
+    FUnits.Add( LowerName, UnitInfo );
   end;
 
   FProgressUnit := UnitName;
-  if Assigned(FOnProgress) then
-    FOnProgress(Self);
 
-  if (FileName <> '') and FileExists(FileName) then
+  if Assigned( FOnProgress ) then
+    FOnProgress( Self );
+
+  if ( FileName <> '' ) and FileExists( FileName ) then
   begin
     SL := TStringList.Create;
+
     try
-      SL.LoadFromFile(FileName);
+      SL.LoadFromFile( FileName );
       Content := SL.Text;
     finally
       SL.Free;
     end;
 
-    ParseUsesClause(Content, UnitInfo);
+    ParseUsesClause( Content, UnitInfo );
     UnitInfo.Parsed := True;
 
     // Recursively scan dependencies
     // (Disabled for performance - only scan on demand)
   end;
+
 end;
 
-procedure TDependencyScanner.ScanProject(const Project: IOTAProject);
+procedure TDependencyScanner.ScanProject( const Project: IOTAProject );
 var
   I: Integer;
   ModuleInfo: IOTAModuleInfo;
@@ -343,66 +378,77 @@ var
   SearchPath, OutputDir: string;
   SL: TStringList;
 begin
+
   if Project = nil then
     Exit;
 
   Clear;
 
   // Add project directory as search path
-  AddSearchPath(ExtractFileDir(Project.FileName));
+  AddSearchPath( ExtractFileDir( Project.FileName ) );
 
   // Get search paths from project options
   Options := Project.ProjectOptions;
+
   if Options <> nil then
   begin
-    SearchPath := VarToStr(Options.Values['UnitDir']);
-    SL := TStringList.Create;
+    SearchPath := VarToStr( Options.Values[ 'UnitDir' ] );
+    SL         := TStringList.Create;
+
     try
-      SL.Delimiter := ';';
+      SL.Delimiter       := ';';
       SL.StrictDelimiter := True;
-      SL.DelimitedText := SearchPath;
+      SL.DelimitedText   := SearchPath;
+
       for I := 0 to SL.Count - 1 do
-        AddSearchPath(ExpandFileName(SL[I]));
+        AddSearchPath( ExpandFileName( SL[ I ] ) );
     finally
       SL.Free;
     end;
 
-    OutputDir := VarToStr(Options.Values['UnitOutputDir']);
+    OutputDir := VarToStr( Options.Values[ 'UnitOutputDir' ] );
+
     if OutputDir <> '' then
-      AddSearchPath(ExpandFileName(OutputDir));
+      AddSearchPath( ExpandFileName( OutputDir ) );
   end;
 
   // Scan all units in the project
   for I := 0 to Project.GetModuleCount - 1 do
   begin
-    ModuleInfo := Project.GetModule(I);
-    FileName := ModuleInfo.FileName;
-    if SameText(ExtractFileExt(FileName), '.pas') then
+    ModuleInfo := Project.GetModule( I );
+    FileName   := ModuleInfo.FileName;
+
+    if SameText( ExtractFileExt( FileName ), '.pas' ) then
     begin
-      UnitName := ChangeFileExt(ExtractFileName(FileName), '');
-      ScanUnit(UnitName, FileName);
+      UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
+      ScanUnit( UnitName, FileName );
     end;
   end;
 
   DetectCircularReferences;
+
 end;
 
-procedure TDependencyScanner.ScanFile(const FileName: string);
+procedure TDependencyScanner.ScanFile( const FileName: string );
 var
   UnitName: string;
 begin
-  if FileExists(FileName) and SameText(ExtractFileExt(FileName), '.pas') then
+
+  if FileExists( FileName ) and SameText( ExtractFileExt( FileName ), '.pas' ) then
   begin
-    UnitName := ChangeFileExt(ExtractFileName(FileName), '');
-    AddSearchPath(ExtractFileDir(FileName));
-    ScanUnit(UnitName, FileName);
+    UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
+    AddSearchPath( ExtractFileDir( FileName ) );
+    ScanUnit( UnitName, FileName );
   end;
+
 end;
 
-function TDependencyScanner.GetUnitInfo(const UnitName: string): TUnitInfo;
+function TDependencyScanner.GetUnitInfo( const UnitName: string ): TUnitInfo;
 begin
-  if not FUnits.TryGetValue(LowerCase(UnitName), Result) then
+
+  if ( not FUnits.TryGetValue( LowerCase( UnitName ), Result ) ) then
     Result := nil;
+
 end;
 
 function TDependencyScanner.GetAllUnits: TArray<TUnitInfo>;
@@ -410,14 +456,19 @@ var
   List: TList<TUnitInfo>;
   Pair: TPair<string, TUnitInfo>;
 begin
+
   List := TList<TUnitInfo>.Create;
+
   try
+
     for Pair in FUnits do
-      List.Add(Pair.Value);
+      List.Add( Pair.Value );
+
     Result := List.ToArray;
   finally
     List.Free;
   end;
+
 end;
 
 procedure TDependencyScanner.DetectCircularReferences;
@@ -426,24 +477,28 @@ var
   Path: TList<string>;
   Pair: TPair<string, TUnitInfo>;
 begin
+
   FCircularRefs.Clear;
   Visited := TDictionary<string, Boolean>.Create;
-  Path := TList<string>.Create;
+  Path    := TList<string>.Create;
+
   try
+
     for Pair in FUnits do
     begin
       Visited.Clear;
       Path.Clear;
-      CheckCircular(Pair.Key, Path, Visited);
+      CheckCircular( Pair.Key, Path, Visited );
     end;
   finally
     Path.Free;
     Visited.Free;
   end;
+
 end;
 
-function TDependencyScanner.CheckCircular(const UnitName: string;
-  const Path: TList<string>; var Visited: TDictionary<string, Boolean>): Boolean;
+function TDependencyScanner.CheckCircular( const UnitName: string;
+  const Path: TList<string>; var Visited: TDictionary<string, Boolean> ): Boolean;
 var
   UnitInfo: TUnitInfo;
   Dep: TUnitDependency;
@@ -452,96 +507,119 @@ var
   IsVisited: Boolean;
   LowerName: string;
 begin
-  Result := False;
-  LowerName := LowerCase(UnitName);
+
+  Result    := False;
+  LowerName := LowerCase( UnitName );
 
   // Check if we've found a cycle
   for I := 0 to Path.Count - 1 do
   begin
-    if SameText(Path[I], UnitName) then
+
+    if SameText( Path[ I ], UnitName ) then
     begin
       // Found a cycle - record it
       StartIdx := I;
-      SetLength(CircRef.Path, Path.Count - StartIdx + 1);
+      SetLength( CircRef.Path, Path.Count - StartIdx + 1 );
+
       for J := StartIdx to Path.Count - 1 do
-        CircRef.Path[J - StartIdx] := Path[J];
-      CircRef.Path[High(CircRef.Path)] := UnitName;
-      FCircularRefs.Add(CircRef);
+        CircRef.Path[ J - StartIdx ] := Path[ J ];
+
+      CircRef.Path[ High( CircRef.Path ) ] := UnitName;
+      FCircularRefs.Add( CircRef );
       Result := True;
       Exit;
     end;
   end;
 
-  if Visited.TryGetValue(LowerName, IsVisited) and IsVisited then
+  if Visited.TryGetValue( LowerName, IsVisited ) and IsVisited then
     Exit;
 
-  Visited.AddOrSetValue(LowerName, True);
-  Path.Add(UnitName);
+  Visited.AddOrSetValue( LowerName, True );
+  Path.Add( UnitName );
+
   try
-    if FUnits.TryGetValue(LowerName, UnitInfo) then
+
+    if FUnits.TryGetValue( LowerName, UnitInfo ) then
     begin
+
       for Dep in UnitInfo.Dependencies do
-        CheckCircular(Dep.UnitName, Path, Visited);
+        CheckCircular( Dep.UnitName, Path, Visited );
     end;
   finally
-    Path.Delete(Path.Count - 1);
+    Path.Delete( Path.Count - 1 );
   end;
+
 end;
 
 { TDependencyViewerPlugin }
 
 constructor TDependencyViewerPlugin.Create;
 var
-  ViewMenu: TMenuItem;
+  ToolsMenu: TMenuItem;
 begin
-  inherited Create(AppDataDirectory + '\DependencyViewer.xml', 'DependencyViewer');
 
-  // Add menu item under View menu
-  ViewMenu := FindMenuItem('ViewMenu');
-  if ViewMenu <> nil then
+  inherited Create( AppDataDirectory + '\DependencyViewer.xml', 'DependencyViewer' );
+
+  // Add menu item under Tools menu
+  ToolsMenu := FindMenuItem( 'ToolsMenu' );
+
+  if ToolsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create(ViewMenu);
+    FMenuItem         := TMenuItem.Create( ToolsMenu );
     FMenuItem.Caption := '&Dependency Viewer...';
     FMenuItem.OnClick := MenuItemClick;
-    ViewMenu.Add(FMenuItem);
+    ToolsMenu.Add( FMenuItem );
   end;
+
 end;
 
 destructor TDependencyViewerPlugin.Destroy;
 begin
-  FMenuItem.Free;
+
+  FreeAndNil( FMenuItem );
   inherited Destroy;
+
 end;
 
 procedure TDependencyViewerPlugin.Init;
 begin
+
   FEnabled := True;
+
 end;
 
 function TDependencyViewerPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Dependency Viewer', TFrameOptionPageDependencyViewer, Self);
+
+  Result := TTreePage.Create( 'Dependency Viewer', TFrameOptionPageDependencyViewer, Self );
+
 end;
 
-procedure TDependencyViewerPlugin.MenuItemClick(Sender: TObject);
+procedure TDependencyViewerPlugin.MenuItemClick( Sender: TObject );
 begin
+
   ShowDependencyViewer;
+
 end;
 
 procedure TDependencyViewerPlugin.ShowDependencyViewer;
 begin
+
   TFormDependencyViewer.Execute;
+
 end;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
-  if not Unload then
+
+  if ( not Unload ) then
     DependencyViewerPlugin := TDependencyViewerPlugin.Create
   else
   begin
     DependencyViewerPlugin.Free;
     DependencyViewerPlugin := nil;
   end;
+
 end;
 
 end.

@@ -35,6 +35,9 @@ uses
   {$IFDEF INCLUDE_DEPENDENCYVIEWER}
   DependencyViewer,
   {$ENDIF INCLUDE_DEPENDENCYVIEWER}
+  {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
+  UnusedUnitDetector,
+  {$ENDIF INCLUDE_UNUSEDUNITDETECTOR}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -131,6 +134,11 @@ begin
     {$IFDEF INCLUDE_DEPENDENCYVIEWER}
     if DisabledPlugins.IndexOf('DependencyViewer') = -1 then
       RegisterLateLoader(DependencyViewer.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
+    if DisabledPlugins.IndexOf('UnusedUnitDetector') = -1 then
+      RegisterLateLoader(UnusedUnitDetector.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

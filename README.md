@@ -6,9 +6,14 @@ DDevExtensions adds new features to RAD Studio.
 
 ## Supported Delphi Versions
 
-- Delphi 13.0
+- Delphi 10.2 Tokyo
+- Delphi 10.3 Rio
+- Delphi 10.4 Sydney
+- Delphi 11.0 Alexandria
+- Delphi 12.0 Athens
+- Delphi 13.0 Florence
 
-For older Delphi versions, see the original repository or DelphiPraxis fork.
+For older Delphi versions (2009-10.1), see the original repository or DelphiPraxis fork.
 
 ## Releases
 
@@ -104,7 +109,7 @@ Tracks how long each unit takes to compile and displays the results in a sortabl
 - Double-click to open unit in editor
 - Export to CSV for further analysis
 - Copy selected entries to clipboard
-Access via View menu → "Build Statistics..." when enabled. Can also auto-show after each compile.
+Access via Tools menu → "Build Statistics..." when enabled. Can also auto-show after each compile.
 
 ### Project Manager
 
@@ -142,7 +147,17 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
 - Filter/search to find specific units
 - Double-click to open unit in editor
 - Expand/collapse all for quick navigation
-Access via View menu → "Dependency Viewer..." when enabled.
+Access via Tools menu → "Dependency Viewer..." when enabled.
+
+**Unused Unit Detector** (default: off)
+Scans your project for units in uses clauses that aren't actually referenced in code. Helps reduce compile times and clean up unnecessary dependencies. Features include:
+- Detects unused units in both interface and implementation sections
+- Shows source file, unused unit name, section, and line number
+- Double-click to navigate directly to the uses clause
+- Right-click → "Add to Ignore List" to exclude false positives (e.g., component registration units)
+- Ignore list also configurable via DDevExtensions Options
+- Export results to CSV or copy to clipboard
+Access via Tools menu → "Unused Unit Detector..." when enabled.
 
 ### Debugger
 
@@ -151,3 +166,7 @@ Prevents the debugger from breaking into newly spawned child processes. Useful w
 
 **Show confirmation dialog for Ctrl+F1 while debugging** (default: on)
 Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) during a debug session. Prevents accidentally interrupting debugging to view help.
+
+---
+
+*Version: 1350 – 1 January 2026*

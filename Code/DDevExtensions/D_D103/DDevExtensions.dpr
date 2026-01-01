@@ -96,7 +96,10 @@ uses
   FrmBuildStatistics in '..\Source\CompileProgress\FrmBuildStatistics.pas' {FormBuildStatistics},
   DependencyViewer in '..\Source\DependencyViewer\DependencyViewer.pas',
   FrmDependencyViewer in '..\Source\DependencyViewer\FrmDependencyViewer.pas' {FormDependencyViewer},
-  FrmeOptionPageDependencyViewer in '..\Source\DependencyViewer\FrmeOptionPageDependencyViewer.pas' {FrameOptionPageDependencyViewer: TFrame};
+  FrmeOptionPageDependencyViewer in '..\Source\DependencyViewer\FrmeOptionPageDependencyViewer.pas' {FrameOptionPageDependencyViewer: TFrame},
+  UnusedUnitDetector in '..\Source\UnusedUnitDetector\UnusedUnitDetector.pas',
+  FrmUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmUnusedUnitDetector.pas' {FormUnusedUnitDetector},
+  FrmeOptionPageUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmeOptionPageUnusedUnitDetector.pas' {FrameOptionPageUnusedUnitDetector: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;
