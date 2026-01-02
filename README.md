@@ -34,7 +34,8 @@ Releases are available at https://www.idefixpack.de/ddev
 
 ## Compile
 
-Open `Code\DDevExtensions\D_D130\DDevExtensions.dproj` in the Delphi 13 IDE and build.
+1. Open `Code\DDevExtensions\CompileInterceptorW.dproj` in Delphi IDE (10.2 or newer) and build.
+2. Open the appropriate `Code\DDevExtensions\D_Dxxx\DDevExtensions.groupproj` for your Delphi version and build.
 
 
 ## How to install
