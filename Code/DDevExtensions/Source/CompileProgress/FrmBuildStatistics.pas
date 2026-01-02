@@ -14,10 +14,12 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Clipbrd, Menus,
-  FrmBase, CompileProgress;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Clipbrd, Menus, Math,
+  ToolsAPI, FrmBase, CompileProgress, UnitMetrics;
 
 type
+  TFileFilter = ( ffAll, ffProject, ffExternal );
+
   TFormBuildStatistics = class( TFormBase )
     pnlBottom: TPanel;
     btnClose: TButton;
@@ -26,6 +28,8 @@ type
     ListView: TListView;
     lblTotalTime: TLabel;
     lblUnitCount: TLabel;
+    lblFilter: TLabel;
+    cmbFilter: TComboBox;
     SaveDialog: TSaveDialog;
     PopupMenu: TPopupMenu;
     mnuCopyToClipboard: TMenuItem;
@@ -33,6 +37,8 @@ type
     N1: TMenuItem;
     mnuSortByName: TMenuItem;
     mnuSortByTime: TMenuItem;
+    mnuSortByLOC: TMenuItem;
+    mnuSortByComplexity: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
     procedure btnCopyToClipboardClick( Sender: TObject );
     procedure btnExportCSVClick( Sender: TObject );
@@ -41,12 +47,18 @@ type
       Data: Integer; var Compare: Integer );
     procedure mnuSortByNameClick( Sender: TObject );
     procedure mnuSortByTimeClick( Sender: TObject );
+    procedure mnuSortByLOCClick( Sender: TObject );
+    procedure mnuSortByComplexityClick( Sender: TObject );
+    procedure cmbFilterChange( Sender: TObject );
+    procedure ListViewDblClick( Sender: TObject );
   private
     FBuildStatistics: TBuildStatistics;
     FSortColumn: Integer;
     FSortAscending: Boolean;
+    FFileFilter: TFileFilter;
     procedure PopulateList;
     function FormatDuration( Ms: Int64 ): string;
+    function IsProjectFile( const FileName: string ): Boolean;
   public
     class function Execute( ABuildStatistics: TBuildStatistics ): Boolean;
   end;
@@ -68,9 +80,11 @@ begin
   Form := TFormBuildStatistics.Create( Application );
 
   try
-    Form.FBuildStatistics := ABuildStatistics;
-    Form.FSortColumn      := 1; // Default sort by duration
-    Form.FSortAscending   := False; // Descending (slowest first)
+    Form.FBuildStatistics   := ABuildStatistics;
+    Form.FSortColumn        := 1; // Default sort by duration
+    Form.FSortAscending     := False; // Descending (slowest first)
+    Form.FFileFilter        := ffProject;
+    Form.cmbFilter.ItemIndex := 1; // Project
     Form.PopulateList;
     Form.ShowModal;
     Result := True;
@@ -105,29 +119,76 @@ var
   I: Integer;
   Item: TListItem;
   TotalMs: Int64;
+  TotalLOC: Integer;
+  TotalComplexity: Integer;
+  Metrics: TUnitMetrics;
+  DisplayCount: Integer;
+  IsProject: Boolean;
+  FullPath: string;
+  ProjectPath: string;
 begin
 
   ListView.Items.BeginUpdate;
+  ProjectPath := FBuildStatistics.ProjectPath;
 
   try
     ListView.Items.Clear;
-    Units   := FBuildStatistics.GetUnits;
-    TotalMs := 0;
+    Units           := FBuildStatistics.GetUnits;
+    TotalMs         := 0;
+    TotalLOC        := 0;
+    TotalComplexity := 0;
+    DisplayCount    := 0;
 
     for I := 0 to Length( Units ) - 1 do
     begin
+      // Apply filter
+      IsProject := IsProjectFile( Units[ I ].FileName );
+
+      case FFileFilter of
+        ffProject:
+          if not IsProject then
+            Continue;
+        ffExternal:
+          if IsProject then
+            Continue;
+      end;
+
       Item         := ListView.Items.Add;
       Item.Caption := Units[ I ].UnitName;
       Item.SubItems.Add( FormatDuration( Units[ I ].DurationMs ) );
+
+      // Resolve relative paths using project path
+      FullPath := Units[ I ].FileName;
+      if ( ProjectPath <> '' ) and not FileExists( FullPath ) then
+        FullPath := ExpandFileName( ProjectPath + Units[ I ].FileName );
+
+      // Calculate metrics for this unit
+      if FileExists( FullPath ) then
+      begin
+        Metrics := CalculateUnitMetrics( FullPath );
+        Item.SubItems.Add( IntToStr( Metrics.LinesOfCode ) );
+        Item.SubItems.Add( IntToStr( Metrics.CyclomaticComplexity ) );
+        TotalLOC        := TotalLOC + Metrics.LinesOfCode;
+        TotalComplexity := TotalComplexity + Metrics.CyclomaticComplexity;
+      end
+      else
+      begin
+        Item.SubItems.Add( '-' );
+        Item.SubItems.Add( '-' );
+      end;
+
       Item.SubItems.Add( Units[ I ].FileName );
       Item.Data := Pointer( Units[ I ].DurationMs );
       TotalMs   := TotalMs + Units[ I ].DurationMs;
+      Inc( DisplayCount );
     end;
 
     // Apply current sort
     ListView.CustomSort( nil, 0 );
 
-    lblUnitCount.Caption := Format( 'Units compiled: %d', [ Length( Units ) ] );
+    lblUnitCount.Caption := Format( 'Units: %d  |  Total LOC: %d  |  Avg Complexity: %.1f',
+      [ DisplayCount, TotalLOC,
+        IfThen( DisplayCount > 0, TotalComplexity / DisplayCount, 0 ) ] );
     lblTotalTime.Caption := Format( 'Total time: %s', [ FormatDuration( TotalMs ) ] );
   finally
     ListView.Items.EndUpdate;
@@ -152,14 +213,16 @@ begin
   SL := TStringList.Create;
 
   try
-    SL.Add( 'Unit Name'#9'Duration'#9'File Path' );
+    SL.Add( 'Unit Name'#9'Duration'#9'LOC'#9'Complexity'#9'File Path' );
 
     for I := 0 to ListView.Items.Count - 1 do
     begin
       Item := ListView.Items[ I ];
 
-      if Item.SubItems.Count >= 2 then
-        SL.Add( Format( '%s'#9'%s'#9'%s', [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ] ] ) );
+      if Item.SubItems.Count >= 4 then
+        SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s',
+          [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
+            Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -181,14 +244,16 @@ begin
     SL := TStringList.Create;
 
     try
-      SL.Add( '"Unit Name","Duration (ms)","File Path"' );
+      SL.Add( '"Unit Name","Duration (ms)","Lines of Code","Cyclomatic Complexity","File Path"' );
 
       for I := 0 to ListView.Items.Count - 1 do
       begin
         Item := ListView.Items[ I ];
 
-        if Item.SubItems.Count >= 2 then
-          SL.Add( Format( '"%s",%d,"%s"', [ Item.Caption, Int64( Item.Data ), Item.SubItems[ 1 ] ] ) );
+        if Item.SubItems.Count >= 4 then
+          SL.Add( Format( '"%s",%d,%s,%s,"%s"',
+            [ Item.Caption, Int64( Item.Data ), Item.SubItems[ 1 ],
+              Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
       end;
 
       try
@@ -223,6 +288,7 @@ procedure TFormBuildStatistics.ListViewCompare( Sender: TObject; Item1, Item2: T
   Data: Integer; var Compare: Integer );
 var
   Ms1, Ms2: Int64;
+  Val1, Val2: Integer;
 begin
 
   case FSortColumn of
@@ -240,8 +306,32 @@ begin
         else
           Compare := 0;
       end;
-    2: // File Path
-      Compare := CompareText( Item1.SubItems[ 1 ], Item2.SubItems[ 1 ] );
+    2: // LOC
+      begin
+        Val1 := StrToIntDef( Item1.SubItems[ 1 ], 0 );
+        Val2 := StrToIntDef( Item2.SubItems[ 1 ], 0 );
+
+        if Val1 < Val2 then
+          Compare := -1
+        else if Val1 > Val2 then
+          Compare := 1
+        else
+          Compare := 0;
+      end;
+    3: // Complexity
+      begin
+        Val1 := StrToIntDef( Item1.SubItems[ 2 ], 0 );
+        Val2 := StrToIntDef( Item2.SubItems[ 2 ], 0 );
+
+        if Val1 < Val2 then
+          Compare := -1
+        else if Val1 > Val2 then
+          Compare := 1
+        else
+          Compare := 0;
+      end;
+    4: // File Path
+      Compare := CompareText( Item1.SubItems[ 3 ], Item2.SubItems[ 3 ] );
   else
     Compare := 0;
   end;
@@ -266,6 +356,84 @@ begin
   FSortColumn    := 1;
   FSortAscending := False;
   ListView.CustomSort( nil, 0 );
+
+end;
+
+procedure TFormBuildStatistics.mnuSortByLOCClick( Sender: TObject );
+begin
+
+  FSortColumn    := 2;
+  FSortAscending := False;
+  ListView.CustomSort( nil, 0 );
+
+end;
+
+procedure TFormBuildStatistics.mnuSortByComplexityClick( Sender: TObject );
+begin
+
+  FSortColumn    := 3;
+  FSortAscending := False;
+  ListView.CustomSort( nil, 0 );
+
+end;
+
+procedure TFormBuildStatistics.cmbFilterChange( Sender: TObject );
+begin
+
+  case cmbFilter.ItemIndex of
+    0: FFileFilter := ffAll;
+    1: FFileFilter := ffProject;
+    2: FFileFilter := ffExternal;
+  else
+    FFileFilter := ffAll;
+  end;
+
+  PopulateList;
+
+end;
+
+procedure TFormBuildStatistics.ListViewDblClick( Sender: TObject );
+var
+  Item: TListItem;
+  FileName: string;
+  FullPath: string;
+  ProjectPath: string;
+  ActionServices: IOTAActionServices;
+begin
+
+  Item := ListView.Selected;
+
+  if Item = nil then
+    Exit;
+
+  if Item.SubItems.Count < 4 then
+    Exit;
+
+  FileName := Item.SubItems[ 3 ]; // File Path column
+
+  // Only allow opening files where source was found (has metrics)
+  if Item.SubItems[ 1 ] = '-' then
+    Exit;
+
+  ProjectPath := FBuildStatistics.ProjectPath;
+
+  // Resolve relative paths
+  FullPath := FileName;
+  if ( ProjectPath <> '' ) and not FileExists( FullPath ) then
+    FullPath := ExpandFileName( ProjectPath + FileName );
+
+  if FileExists( FullPath ) and Supports( BorlandIDEServices, IOTAActionServices, ActionServices ) then
+  begin
+    ActionServices.OpenFile( FullPath );
+    Close;
+  end;
+
+end;
+
+function TFormBuildStatistics.IsProjectFile( const FileName: string ): Boolean;
+begin
+
+  Result := FBuildStatistics.IsProjectFile( FileName );
 
 end;
 

@@ -27,6 +27,8 @@ type
     StartTime: TDateTime;
     EndTime: TDateTime;
     DurationMs: Int64;
+    LinesOfCode: Integer;
+    CyclomaticComplexity: Integer;
   end;
 
   TBuildStatistics = class
@@ -37,6 +39,8 @@ type
     FCurrentStartTime: TDateTime;
     FTotalBuildTime: Int64;
     FBuildSucceeded: Boolean;
+    FProjectPath: string;
+    FProjectFiles: TStringList;
     FLock: TCriticalSection;
     procedure DoEndCurrentUnit; // Internal - must be called while holding FLock
   public
@@ -46,10 +50,13 @@ type
     procedure StartUnit(const UnitName, FileName: string);
     procedure EndCurrentUnit;
     procedure FinalizeBuild(Succeeded: Boolean);
+    procedure AddProjectFile(const FileName: string);
+    function IsProjectFile(const FileName: string): Boolean;
     function GetUnits: TArray<TBuildUnitInfo>;
     property TotalBuildTime: Int64 read FTotalBuildTime;
     property BuildSucceeded: Boolean read FBuildSucceeded;
     property UnitCount: Integer read FUnitCount;
+    property ProjectPath: string read FProjectPath write FProjectPath;
   end;
 
   TCompileProgress = class(TPluginConfig, ICompileInterceptor)
@@ -177,12 +184,17 @@ begin
 
   inherited Create;
   FLock := TCriticalSection.Create;
+  FProjectFiles := TStringList.Create;
+  FProjectFiles.CaseSensitive := False;
+  FProjectFiles.Sorted := True;
+  FProjectFiles.Duplicates := dupIgnore;
 
 end;
 
 destructor TBuildStatistics.Destroy;
 begin
 
+  FProjectFiles.Free;
   FLock.Free;
   inherited Destroy;
 
@@ -200,6 +212,40 @@ begin
     FCurrentStartTime := 0;
     FTotalBuildTime   := 0;
     FBuildSucceeded   := False;
+    FProjectPath      := '';
+    FProjectFiles.Clear;
+  finally
+    FLock.Leave;
+  end;
+
+end;
+
+procedure TBuildStatistics.AddProjectFile(const FileName: string);
+begin
+
+  FLock.Enter;
+
+  try
+    // Store just the filename (without path) for reliable matching
+    FProjectFiles.Add(AnsiUpperCase(ExtractFileName(FileName)));
+  finally
+    FLock.Leave;
+  end;
+
+end;
+
+function TBuildStatistics.IsProjectFile(const FileName: string): Boolean;
+begin
+
+  FLock.Enter;
+
+  try
+    // If no project files were added, consider all files as project files
+    if FProjectFiles.Count = 0 then
+      Result := True
+    else
+      // Compare by filename only (without path) for reliable matching
+      Result := FProjectFiles.IndexOf(AnsiUpperCase(ExtractFileName(FileName))) >= 0;
   finally
     FLock.Leave;
   end;
@@ -765,7 +811,12 @@ begin
       FormNativeProgress.ProjectFilesCompiled := 0;
       // Clear build statistics at the start of a new build
       if FEnableBuildStatistics then
+      begin
         FBuildStatistics.Clear;
+        // Store project path for filtering (use first project's path)
+        if Project <> nil then
+          FBuildStatistics.ProjectPath := ExtractFilePath( Project.FileName );
+      end;
     end;
 
     FPasFiles.Add(ExtractFileName(Project.FileName));
@@ -777,6 +828,9 @@ begin
       begin
         FPasFiles.Add(ExtractFileName(FileName));
         FPasFiles.Add(ChangeFileExt(ExtractFileName(FileName), '.dcu'));
+        // Add to build statistics for filtering
+        if FEnableBuildStatistics then
+          FBuildStatistics.AddProjectFile(FileName);
       end;
     end;
     TStringList(FPasFiles).Sorted := True;

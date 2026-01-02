@@ -6,7 +6,9 @@
       "Bash(cmd /c \"cd /d D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions && dir *.dproj 2>&1\")",
       "Bash(dir /B \"D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\D_D*\")",
       "Bash(powershell -Command \"Test-Path ''D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\jedi''\")",
-      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\jedi'' -Recurse | Select-Object FullName\")"
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\jedi'' -Recurse | Select-Object FullName\")",
+      "Bash(cat:*)",
+      "Bash(xargs -I {} sh -c 'echo {} && head -5 {} | grep \"\"DDevExtensions\\\\|Andreas\\\\|unit\"\"')"
     ]
   }
 }

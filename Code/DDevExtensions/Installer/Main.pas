@@ -166,7 +166,6 @@ begin
       SafeProcessMessages;
     end;
     MessageDlg('Installation was successful.', mtInformation, [mbOk], 0);
-    Close;
   finally
     pbProgress.Visible := False;
   end;

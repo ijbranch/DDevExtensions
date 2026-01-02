@@ -1,0 +1,178 @@
+DDevExtensions - Some Potential Enhancements
+======================================
+
+High-Value Enhancements
+-----------------------
+
+1. Code Metrics Dashboard
+   Extend the Build Time Statistics feature to include:
+   [DONE] Lines of code per unit
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+   [DONE] Cyclomatic complexity tracking
+     COMPLEXITY: High | EFFORT: Moderate | BENEFIT: Medium
+   - Historical build time trends (graph over multiple builds)
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+   - Export to JSON/HTML reports
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+
+2. Unit Dependency Visualization
+   Enhance the Dependency Viewer with:
+   - Graphical dependency diagram (like a node graph)
+     COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
+   - Export to DOT/GraphViz format
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+   - Layer violation detection (configurable architecture rules)
+     COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
+   - Impact analysis ("what breaks if I change this unit?")
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Very High
+
+
+Productivity Features
+---------------------
+
+3. Smart Uses Clause Manager
+   - Auto-organize uses clauses (interface vs implementation)
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+   - Auto-add missing units based on identifiers
+     COMPLEXITY: High | EFFORT: Significant | BENEFIT: Very High
+   - Group units by category (VCL, RTL, third-party)
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+
+4. Enhanced Code Navigation
+   - "Go to implementation" from interface declarations
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+   - Quick navigation between form and unit
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+   - Recent files popup with fuzzy search
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+   - Bookmark manager with named bookmarks
+     COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+
+5. Project Templates/Snippets
+   - User-defined code snippets with placeholders
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+   - Project templates for common patterns
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+   - Quick insert for boilerplate (try/finally, property declarations)
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+
+
+Build & Debugging
+-----------------
+
+6. Incremental Build Optimization
+   - Smarter detection of what needs recompiling
+     COMPLEXITY: Very High | EFFORT: Major | BENEFIT: High
+   - Parallel compilation where possible
+     COMPLEXITY: Very High | EFFORT: Major | BENEFIT: High
+   - Pre-build validation (check for obvious errors before compile)
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+
+7. Debug Session Manager
+   - Save/restore breakpoint sets by name
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+   - Conditional breakpoint templates
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+   - Watch expression presets
+     COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
+
+8. Build Configurations Manager
+   - Quick switch between Debug/Release/Custom configurations
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+   - Per-project environment variable overrides
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+   - Build configuration comparison view
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+
+
+Code Quality
+------------
+
+9. Code Style Checker
+    [DONE] Configurable naming convention enforcement
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+    - Detect common anti-patterns
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
+    - Integration with the existing compiler progress UI
+      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium
+
+10. Dead Code Detector
+    Extend the Unused Unit Detector to also find:
+    [DONE] Unused procedures/functions
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
+    [DONE] Unused private fields
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Unreachable code blocks
+      COMPLEXITY: Very High | EFFORT: Significant | BENEFIT: Medium
+
+11. TODO/FIXME Aggregator
+    [DONE] Scan project for TODO comments
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: High
+    [DONE] Display in a dockable panel
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: High
+    [DONE] Filter by priority/author/date
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+
+
+Integration Features
+--------------------
+
+12. Git Integration Enhancements
+    - Show git status in Project Manager
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+    - Quick diff from editor gutter
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
+    - Blame annotations
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+
+13. External Tool Integration
+    - Configure external formatters (JEDI Code Format, etc.)
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+    - Run external analyzers with results in IDE
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Custom tool buttons in toolbar
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+
+14. Documentation Generator
+    - Generate XMLDoc stubs for undocumented methods
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Preview documentation in IDE
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+    - Export to HTML/CHM
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+
+
+Quick Wins (Lower Effort)
+-------------------------
+
+15. Editor Enhancements
+    - Minimap/code outline in editor margin
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
+    - Bracket pair colorization
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+    - Sticky scroll (keep class/method name visible)
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium-High
+
+16. Search Improvements
+    - Search history with favorites
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+    - Search scope presets (current unit, project, group)
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+    - Recent search results panel
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+
+17. UI/UX Polish
+    - Dark theme support for extension dialogs
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Keyboard shortcut customization for all features
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+    - Toolbar buttons for frequently used features
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+
+
+Top 3 Recommendations (Impact vs Effort)
+----------------------------------------
+
+1. [DONE] TODO/FIXME Aggregator (#11) - All sub-items are low complexity with high benefit
+2. Smart Uses Clause Manager (#3) - High daily productivity impact
+3. Debug Session Manager (#7) - Solves real pain point, moderate complexity

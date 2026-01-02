@@ -3,11 +3,14 @@
         <ProjectGuid>{DC66123B-00C0-4588-8B45-BAAB3894C9D2}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="DDevExtensions.dproj">
+        <Projects Include="..\..\..\CompileInterceptor\Source\CompileInterceptorW.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="DDevExtensions.dproj">
+            <Dependencies>CompileInterceptorW.dproj</Dependencies>
+        </Projects>
         <Projects Include="..\Installer\DDevExtensionsReg.dproj">
-            <Dependencies/>
+            <Dependencies>DDevExtensions.dproj</Dependencies>
         </Projects>
     </ItemGroup>
     <ProjectExtensions>
@@ -17,6 +20,15 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
+    <Target Name="CompileInterceptorW">
+        <MSBuild Projects="..\..\..\CompileInterceptor\Source\CompileInterceptorW.dproj"/>
+    </Target>
+    <Target Name="CompileInterceptorW:Clean">
+        <MSBuild Projects="..\..\..\CompileInterceptor\Source\CompileInterceptorW.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="CompileInterceptorW:Make">
+        <MSBuild Projects="..\..\..\CompileInterceptor\Source\CompileInterceptorW.dproj" Targets="Make"/>
+    </Target>
     <Target Name="DDevExtensions">
         <MSBuild Projects="DDevExtensions.dproj"/>
     </Target>
@@ -36,13 +48,13 @@
         <MSBuild Projects="..\Installer\DDevExtensionsReg.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="DDevExtensions;DDevExtensionsReg"/>
+        <CallTarget Targets="CompileInterceptorW;DDevExtensions;DDevExtensionsReg"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="DDevExtensions:Clean;DDevExtensionsReg:Clean"/>
+        <CallTarget Targets="CompileInterceptorW:Clean;DDevExtensions:Clean;DDevExtensionsReg:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="DDevExtensions:Make;DDevExtensionsReg:Make"/>
+        <CallTarget Targets="CompileInterceptorW:Make;DDevExtensions:Make;DDevExtensionsReg:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

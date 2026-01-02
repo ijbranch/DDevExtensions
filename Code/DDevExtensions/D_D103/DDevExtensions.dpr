@@ -31,6 +31,7 @@ uses
   ComponentManager in '..\Source\ComponentManager.pas',
   NativeProgressForm in '..\Source\CompileProgress\NativeProgressForm.pas',
   CompileProgress in '..\Source\CompileProgress\CompileProgress.pas',
+  UnitMetrics in '..\Source\CompileProgress\UnitMetrics.pas',
   FrmProjectSettingsSetVersioninfo in '..\Source\ProjectSettings\FrmProjectSettingsSetVersioninfo.pas' {FormProjectSettingsSetVersioninfo},
   IDEMenuHandler in '..\Source\IDEMenuHandler\IDEMenuHandler.pas',
   DtmImages in '..\Source\DtmImages.pas' {DataModuleImages: TDataModule},
@@ -99,7 +100,16 @@ uses
   FrmeOptionPageDependencyViewer in '..\Source\DependencyViewer\FrmeOptionPageDependencyViewer.pas' {FrameOptionPageDependencyViewer: TFrame},
   UnusedUnitDetector in '..\Source\UnusedUnitDetector\UnusedUnitDetector.pas',
   FrmUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmUnusedUnitDetector.pas' {FormUnusedUnitDetector},
-  FrmeOptionPageUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmeOptionPageUnusedUnitDetector.pas' {FrameOptionPageUnusedUnitDetector: TFrame};
+  FrmeOptionPageUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmeOptionPageUnusedUnitDetector.pas' {FrameOptionPageUnusedUnitDetector: TFrame},
+  TodoAggregator in '..\Source\TodoAggregator\TodoAggregator.pas',
+  FrmTodoAggregator in '..\Source\TodoAggregator\FrmTodoAggregator.pas' {FormTodoAggregator},
+  FrmeOptionPageTodoAggregator in '..\Source\TodoAggregator\FrmeOptionPageTodoAggregator.pas' {FrameOptionPageTodoAggregator: TFrame},
+  CodeStyleChecker in '..\Source\CodeStyleChecker\CodeStyleChecker.pas',
+  FrmCodeStyleChecker in '..\Source\CodeStyleChecker\FrmCodeStyleChecker.pas' {FormCodeStyleChecker},
+  FrmeOptionPageCodeStyle in '..\Source\CodeStyleChecker\FrmeOptionPageCodeStyle.pas' {FrameOptionPageCodeStyle: TFrame},
+  DeadCodeDetector in '..\Source\DeadCodeDetector\DeadCodeDetector.pas',
+  FrmDeadCodeDetector in '..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas' {FormDeadCodeDetector},
+  FrmeOptionPageDeadCode in '..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas' {FrameOptionPageDeadCode: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

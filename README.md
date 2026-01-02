@@ -6,13 +6,15 @@ In addition, to anybody else who has contributed over the years.
 
 DDevExtensions adds new features to RAD Studio.
 
-This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  A couple of new functions.options have been added.
+This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  New features have been added.
 
-This version is set as version 3.00 to clearly break from the old version 2.88, 
+Version 3.0 was set to clearly break from the old version 2.88. 
+
+Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector. 
 
 > **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
 >
-> 
+> A 64-bit version was attempted but proved too daunting for Claude and myself.
 
 ## Supported Delphi Versions
 
@@ -34,8 +36,12 @@ Releases are available at https://www.idefixpack.de/ddev
 
 ## Compile
 
-1. Open `Code\DDevExtensions\CompileInterceptorW.dproj` in Delphi IDE (10.2 or newer) and build.
-2. Open the appropriate `Code\DDevExtensions\D_Dxxx\DDevExtensions.groupproj` for your Delphi version and build.
+Open the appropriate `Code\DDevExtensions\D_Dxxx\DDevExtensions.groupproj` for your Delphi version and build all projects.
+
+The project group includes:
+1. **CompileInterceptorW** - Compiler interceptor library (built first automatically)
+2. **DDevExtensions** - Main extension DLL
+3. **DDevExtensionsReg** - Installer application
 
 
 ## How to install
@@ -49,6 +55,97 @@ in the registry.
 ## How to uninstall
 
 Start the InstallDDevExtensions.exe and press the <Uninstall> button.
+
+
+## Source Structure
+
+```
+Code/DDevExtensions/
+├── CompileInterceptorW.dproj      # Compiler interceptor library (build first)
+├── D_D102/                        # Delphi 10.2 Tokyo project
+├── D_D103/                        # Delphi 10.3 Rio project
+├── D_D104/                        # Delphi 10.4 Sydney project
+├── D_D110/                        # Delphi 11.0 Alexandria project
+├── D_D120/                        # Delphi 12.0 Athens project
+├── D_D130/                        # Delphi 13.0 Florence project
+│
+└── Source/
+    ├── Main.pas                   # Main plugin registration
+    ├── PluginConfig.pas           # Configuration base class
+    ├── FrmTreePages.pas           # Options dialog framework
+    │
+    ├── Common/                    # Shared utilities
+    │   ├── DelphiLexer.pas        # Pascal lexer for code analysis
+    │   ├── DesignerParser.pas     # Class/method parser
+    │   └── UnitMetrics.pas        # LOC and complexity calculation
+    │
+    ├── Keybindings/               # Enhanced keyboard shortcuts
+    │   └── FrmeOptionPageKeybindings.pas
+    │
+    ├── FormDesignerHelpers/       # Form designer enhancements
+    │   ├── LabelMarginHelper.pas
+    │   └── RemoveExplicitProperty.pas
+    │
+    ├── ComponentSelector/         # Quick component search
+    │   └── FrmComponentSelector.pas
+    │
+    ├── CompileProgress/           # Compile progress & Build Statistics
+    │   ├── CompileProgress.pas    # Main plugin, TBuildStatistics class
+    │   ├── FrmBuildStatistics.pas # Build Statistics dialog
+    │   └── FrmeOptionPageCompilerProgress.pas
+    │
+    ├── CompileBackup/             # Pre-compile file backup
+    │
+    ├── FileCleaner/               # Auto-remove unnecessary files
+    │
+    ├── UnitSelector/              # Find Unit / Use Unit dialog
+    │   └── FrmUnitSelector.pas
+    │
+    ├── DSUFeatures/               # Extended IDE settings
+    │   ├── DSUFeatures.pas
+    │   ├── StrucViewSearch.pas    # Structure View search
+    │   └── FrmeOptionPageDSUFeatures.pas
+    │
+    ├── StartParameterTeam/        # Project start parameters
+    │
+    ├── DependencyViewer/          # Unit dependency visualization
+    │   ├── DependencyViewer.pas   # Plugin and scanner
+    │   └── FrmDependencyViewer.pas
+    │
+    ├── UnusedUnitDetector/        # Unused unit detection
+    │   ├── UnusedUnitDetector.pas
+    │   └── FrmUnusedUnitDetector.pas
+    │
+    ├── TodoAggregator/            # TODO/FIXME comment scanner
+    │   ├── TodoAggregator.pas
+    │   └── FrmTodoAggregator.pas
+    │
+    ├── CodeStyleChecker/          # Naming convention checker
+    │   ├── CodeStyleChecker.pas
+    │   └── FrmCodeStyleChecker.pas
+    │
+    └── DeadCodeDetector/          # Unused code detection
+        ├── DeadCodeDetector.pas
+        └── FrmDeadCodeDetector.pas
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `Main.pas` | Registers all plugins with the IDE |
+| `PluginConfig.pas` | Base class for plugin settings (XML storage) |
+| `DelphiLexer.pas` | Tokenizes Pascal source code |
+| `DesignerParser.pas` | Extracts class/method structure |
+| `UnitMetrics.pas` | Calculates LOC and cyclomatic complexity |
+
+### Adding a New Feature
+
+1. Create a new folder under `Source/`
+2. Create the plugin unit (use existing plugins as templates)
+3. Create form/options page if needed
+4. Register in `Main.pas` via `RegisterLateLoader`
+5. Add units to all D_Dxxx project files
 
 
 ## Features
@@ -111,7 +208,10 @@ Creates backup copies of files before compilation. Provides a safety net in case
 **New in 3.0 - Build Time Statistics** (default: off)
 Tracks how long each unit takes to compile and displays the results in a sortable list. Helps identify slow-compiling units and optimize build times. Features include:
 - Per-unit compile time tracking in milliseconds
-- Sortable columns (unit name, file path, duration)
+- **New in 3.1** - Lines of Code (LOC) per unit
+- **New in 3.1** - Cyclomatic Complexity per unit (measures code complexity based on decision points)
+- Sortable columns (unit name, duration, LOC, complexity, file path)
+- Summary statistics: total units, total LOC, average complexity
 - Double-click to open unit in editor
 - Export to CSV for further analysis
 - Copy selected entries to clipboard
@@ -167,6 +267,46 @@ Scans your project for units in uses clauses that aren't actually referenced in 
 - Export results to CSV or copy to clipboard
 Access via Tools menu → "Unused Unit Detector..." when enabled.
 
+**New in 3.1 - TODO/FIXME Aggregator** (default: on)
+Scans your project for TODO, FIXME, HACK, BUG, NOTE, and other comment markers and displays them in a centralized list. Features include:
+
+- Detects common patterns: TODO, FIXME, HACK, BUG, NOTE, XXX
+- Parses optional priority: TODO(high):, FIXME(low):
+- Filter by category and priority
+- Sortable columns (unit, category, priority, line, text)
+- Double-click to navigate to source line
+- Export to CSV or copy to clipboard
+- Configurable patterns via DDevExtensions Options
+Access via Tools menu → "TODO/FIXME Aggregator..." when enabled.
+
+**New in 3.1 - Code Style Checker** (default: on)
+Checks your code for Delphi naming convention compliance. Features include:
+
+- Type names should start with T (e.g., TMyClass)
+- Interface names should start with I (e.g., IMyInterface)
+- Field names should start with F (e.g., FMyField)
+- Exception types should start with E (e.g., EMyError)
+- Pointer types should start with P (e.g., PMyRecord)
+- Parameter names should start with A (optional, off by default)
+- Filter by rule type and severity
+- Double-click to navigate to source
+- Export to CSV or copy to clipboard
+- Enable/disable individual rules via DDevExtensions Options
+Access via Tools menu → "Code Style Checker..." when enabled.
+
+**New in 3.1 - Dead Code Detector** (default: on)
+Detects procedures, functions, and fields that are never referenced in your project. Features include:
+
+- Detects unused procedures and functions
+- Detects unused private and protected fields
+- Automatically ignores: virtual/override methods, constructors/destructors, event handlers, published members
+- Filter by element type (Procedure, Function, Field) and scope
+- Wildcard ignore patterns (e.g., *Click, Get*)
+- Double-click to navigate to source
+- Right-click → "Add to Ignore List" for false positives
+- Export to CSV or copy to clipboard
+Access via Tools menu → "Dead Code Detector..." when enabled.
+
 ### Debugger
 
 **Don't break when starting spawned processes** (default: off)
@@ -177,4 +317,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 1 – 2 January 2026 @ 1315*
+*Version: 3.1 – 3 January 2026*

@@ -946,6 +946,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\ComponentManager.pas"/>
         <DCCReference Include="..\Source\CompileProgress\NativeProgressForm.pas"/>
         <DCCReference Include="..\Source\CompileProgress\CompileProgress.pas"/>
+        <DCCReference Include="..\Source\CompileProgress\UnitMetrics.pas"/>
         <DCCReference Include="..\Source\ProjectSettings\FrmProjectSettingsSetVersioninfo.pas">
             <Form>FormProjectSettingsSetVersioninfo</Form>
         </DCCReference>

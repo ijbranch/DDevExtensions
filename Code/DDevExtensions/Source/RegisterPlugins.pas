@@ -38,6 +38,15 @@ uses
   {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
   UnusedUnitDetector,
   {$ENDIF INCLUDE_UNUSEDUNITDETECTOR}
+  {$IFDEF INCLUDE_TODOAGGREGATOR}
+  TodoAggregator,
+  {$ENDIF INCLUDE_TODOAGGREGATOR}
+  {$IFDEF INCLUDE_CODESTYLECHECKER}
+  CodeStyleChecker,
+  {$ENDIF INCLUDE_CODESTYLECHECKER}
+  {$IFDEF INCLUDE_DEADCODEDETECTOR}
+  DeadCodeDetector,
+  {$ENDIF INCLUDE_DEADCODEDETECTOR}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -139,6 +148,21 @@ begin
     {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
     if DisabledPlugins.IndexOf('UnusedUnitDetector') = -1 then
       RegisterLateLoader(UnusedUnitDetector.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_TODOAGGREGATOR}
+    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
+      RegisterLateLoader(TodoAggregator.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_CODESTYLECHECKER}
+    if DisabledPlugins.IndexOf('CodeStyleChecker') = -1 then
+      RegisterLateLoader(CodeStyleChecker.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_DEADCODEDETECTOR}
+    if DisabledPlugins.IndexOf('DeadCodeDetector') = -1 then
+      RegisterLateLoader(DeadCodeDetector.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}
