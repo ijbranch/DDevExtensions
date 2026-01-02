@@ -12,18 +12,12 @@ unit RemoveExplicitProperty;
 
 interface
 
-{$IFDEF COMPILER10_UP}
-
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
 
 procedure SetRemoveExplicitPropertyActive(Active: Boolean);
 
-{$ENDIF COMPILER10_UP}
-
 implementation
-
-{$IFDEF COMPILER10_UP}
 
 uses
   IDEUtils;
@@ -172,7 +166,5 @@ begin
       UnhookFunction(HookTControl_DefineProperties);
   end;
 end;
-
-{$ENDIF COMPILER10_UP}
 
 end.

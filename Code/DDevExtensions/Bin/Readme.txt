@@ -8,6 +8,12 @@ https://www.idefixpack.de/ddev
 DDevExtensions adds new features to RAD Studio.
 
 
+=== Important Note ===
+
+DDevExtensions only supports the 32-bit IDE (bds.exe). The 64-bit IDE (bds64.exe)
+introduced in RAD Studio 12.3 is not supported.
+
+
 === How to install ===
 
 Simply start the DDevExtensionsReg.exe.

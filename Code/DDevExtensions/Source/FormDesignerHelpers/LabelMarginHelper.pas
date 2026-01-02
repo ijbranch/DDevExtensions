@@ -12,18 +12,12 @@ unit LabelMarginHelper;
 
 interface
 
-{$IFDEF COMPILER10_UP}
-
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking, StdCtrls;
 
 procedure SetLabelMarginActive(Active: Boolean);
 
-{$ENDIF COMPILER10_UP}
-
 implementation
-
-{$IFDEF COMPILER10_UP}
 
 type
   TLabelMargins = class(TMargins)
@@ -71,8 +65,6 @@ begin
       ReplaceVmtField(TLabel, @Label_AfterConstruction, @TLabel.AfterConstruction);
   end;
 end;
-
-{$ENDIF COMPILER10_UP}
 
 end.
 

@@ -8,11 +8,7 @@
 
 unit DelphiParserContainers;
 
-{$I ..\jedi\jedi.inc}
-
-{$IFDEF COMPILER10_UP}
- {$DEFINE D9}
-{$ENDIF}
+{$DEFINE D9}
 
 interface
 

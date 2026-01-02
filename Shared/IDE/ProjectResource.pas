@@ -8,8 +8,6 @@
 
 unit ProjectResource;
 
-{$I ..\jedi\jedi.inc}
-
 interface
 
 uses

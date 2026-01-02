@@ -13,10 +13,7 @@ unit PluginConfig;
 interface
 
 uses
-  {$IFDEF COMPILER6_UP}
-  Variants,
-  {$ENDIF COMPILER6_UP}
-  SysUtils, Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, TypInfo;
+  Variants, SysUtils, Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, TypInfo;
 
 type
   TPluginConfig = class(TComponent)
@@ -91,23 +88,6 @@ begin
   Result := GlobalConfiguration;
 end;
 
-
-{$IFDEF COMPILER5}
-function GetPropList(TypeInfo: PTypeInfo; out PropList: PPropList): Integer; overload;
-begin
-  Result := GetTypeData(TypeInfo)^.PropCount;
-  if Result > 0 then
-  begin
-    GetMem(PropList, Result * SizeOf(Pointer));
-    GetPropInfos(TypeInfo, PropList);
-  end;
-end;
-
-function GetPropList(AObject: TObject; out PropList: PPropList): Integer; overload;
-begin
-  Result := GetPropList(PTypeInfo(AObject.ClassInfo), PropList);
-end;
-{$ENDIF COMPILER5}
 
 { TPluginConfig }
 

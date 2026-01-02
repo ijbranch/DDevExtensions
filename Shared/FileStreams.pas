@@ -9,8 +9,6 @@
 
 unit FileStreams;
 
-{$I ..\jedi\jedi.inc}
-
 interface
 
 uses
@@ -116,11 +114,9 @@ type
     FVirtualPosition: Int64;
     FLoading: Boolean;
     FUtfConversionSize: Integer;
-    {$IFDEF COMPILER10_UP}
     FBOMLen: Integer;
     FBOM: TBOMArray;
     FBOMType: TBOMType;
-    {$ENDIF COMPILER10_UP}
   protected
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
@@ -625,8 +621,6 @@ begin
   end;
 end;
 
-{$IFDEF COMPILER10_UP}
-
 function ReadAllFileUcs2(Stream: TStream; BOMType: TBOMType; ExtraData: UnicodeString): UnicodeString;
 const
   ReadCount = 64 * 1024;
@@ -689,22 +683,17 @@ begin
   end;
 end;
 
-{$ENDIF COMPILER10_UP}
-
 { TInjectStream }
 
 constructor TInjectStream.Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData);
-{$IFDEF COMPILER10_UP}
 var
   I: Integer;
   ExtraData: UnicodeString;
-{$ENDIF COMPILER10_UP}
 begin
   inherited Create(AHandle, AOrgStreamData);
   FInjectData := AInjectData;
   FLoading := True;
 
-  {$IFDEF COMPILER10_UP}
   // BOM detection
   ReadBOM(Self, FBOMLen, FBOM);
 
@@ -762,7 +751,6 @@ begin
         FUtfConversionSize := Length(FInjectData);
       end;
   end;
-  {$ENDIF COMPLER10_UP}
   FLoading := False;
 end;
 
@@ -1024,11 +1012,7 @@ begin
   if ASize = -1 then
   begin
     FBuffer := nil;
-    {$IFDEF COMPILER10_UP}
     Stream := TInjectStream.Create(hFile, '', AOrgStreamData); // UCS2 and UCS4 support
-    {$ELSE}
-    Stream := TOrgStream.Create(hFile, AOrgStreamData); // UCS2 and UCS4 support
-    {$ENDIF COMPILER10_UP}
     try
       ASize := 0;
       repeat

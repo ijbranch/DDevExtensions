@@ -13,10 +13,7 @@ unit ProjectSettingsData;
 interface
 
 uses
-  {$IFDEF COMPILER6_UP}
-  Variants,
-  {$ENDIF COMPILER6_UP}
-  Windows, SysUtils, Classes, Contnrs, ToolsAPI, SimpleXmlImport, SimpleXmlIntf,
+  Variants, Windows, SysUtils, Classes, Contnrs, ToolsAPI, SimpleXmlImport, SimpleXmlIntf,
   TypInfo, Utils;
 
 type

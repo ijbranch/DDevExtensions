@@ -13,10 +13,7 @@ unit ProjectSettings;
 interface
 
 uses
-  {$IFDEF COMPILER6_UP}
-  Variants,
-  {$ENDIF COMPILER6_UP}
-  SysUtils, Classes, Contnrs, ToolsAPI, Menus, ActnList, Forms, Controls,
+  Variants, SysUtils, Classes, Contnrs, ToolsAPI, Menus, ActnList, Forms, Controls,
   ProjectSettingsData, ProjectData, SimpleXmlImport, SimpleXmlIntf, IDENotifiers;
 
 type

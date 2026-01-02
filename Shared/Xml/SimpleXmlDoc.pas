@@ -6,13 +6,7 @@
 
 unit SimpleXmlDoc;
 
-{$I ..\jedi\jedi.inc}
-
 interface
-
-{$IF CompilerVersion < 23.0}
-{.$DEFINE JEDI_XML}
-{$IFEND}
 
 uses
   {$IFDEF JEDI_XML}

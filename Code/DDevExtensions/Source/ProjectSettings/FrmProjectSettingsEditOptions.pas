@@ -13,10 +13,7 @@ unit FrmProjectSettingsEditOptions;
 interface
 
 uses
-  {$IFDEF COMPILER6_UP}
-  Variants,
-  {$ENDIF COMPILER6_UP}
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
+  Variants, Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, Grids, ProjectSettingsData, StdCtrls, CheckLst, FrmBase;
 
 type

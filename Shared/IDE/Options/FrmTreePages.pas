@@ -7,8 +7,6 @@
 
 unit FrmTreePages;
 
-{$I ..\jedi\jedi.inc}
-
 interface
 
 uses

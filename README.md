@@ -1,8 +1,18 @@
 # DDevExtensions
 
-Homepage: https://www.idefixpack.de/ddev
+With full acknowledgement of Andreas Hausladen .  His Homepage: https://www.idefixpack.de/ddev
+
+In addition, to anybody else who has contributed over the years.
 
 DDevExtensions adds new features to RAD Studio.
+
+This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  A couple of new functions.options have been added.
+
+This version is set as version 3.00 to clearly break from the old version 2.88, 
+
+> **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
+>
+> 
 
 ## Supported Delphi Versions
 
@@ -17,14 +27,9 @@ For older Delphi versions (2009-10.1), see the original repository or DelphiPrax
 
 ## Releases
 
-### Delphi 2009-10.4
+### Delphi 2009-10.2
 
 Releases are available at https://www.idefixpack.de/ddev
-
-### Delphi 11.0+
-
-A precompiled version can be downloaded from the DelphiPraxis fork:
-https://github.com/DelphiPraxis/DDevExtensions/releases
 
 
 ## Compile
@@ -102,7 +107,7 @@ Automatically removes unnecessary files after saving, such as .ddp files and emp
 **Compile Backup** (default: on)
 Creates backup copies of files before compilation. Provides a safety net in case compilation modifies files unexpectedly.
 
-**Build Time Statistics** (default: off)
+**New - Build Time Statistics** (default: off)
 Tracks how long each unit takes to compile and displays the results in a sortable list. Helps identify slow-compiling units and optimize build times. Features include:
 - Per-unit compile time tracking in milliseconds
 - Sortable columns (unit name, file path, duration)
@@ -139,8 +144,9 @@ Shows all available forms and data modules in the inheritance dialog, not just t
 **Kill all dexplore.exe when closing the IDE** (default: on)
 Automatically terminates any running instances of the Document Explorer (dexplore.exe) when the IDE closes. Prevents orphaned help viewer processes.
 
-**Dependency Viewer** (default: off)
+**New - Dependency Viewer** (default: off)
 Shows a visual tree of unit dependencies within your project. Helps developers understand code structure and identify potential issues. Features include:
+
 - Tree view of all project units with their dependencies
 - Separate display of interface and implementation uses clauses
 - Circular reference detection with visual indicators
@@ -149,8 +155,9 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
 - Expand/collapse all for quick navigation
 Access via Tools menu → "Dependency Viewer..." when enabled.
 
-**Unused Unit Detector** (default: off)
+**New - Unused Unit Detector** (default: off)
 Scans your project for units in uses clauses that aren't actually referenced in code. Helps reduce compile times and clean up unnecessary dependencies. Features include:
+
 - Detects unused units in both interface and implementation sections
 - Shows source file, unused unit name, section, and line number
 - Double-click to navigate directly to the uses clause
@@ -169,4 +176,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 1350 – 1 January 2026*
+*Version: 1 – 2 January 2026 @ 1315*

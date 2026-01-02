@@ -8,15 +8,10 @@
 
 unit ProjectData;
 
-{$I ..\jedi\jedi.inc}
-
 interface
 
 uses
-  {$IFDEF COMPILER6_UP}
-  Variants,
-  {$ENDIF COMPILER6_UP}
-  SysUtils, Classes, Contnrs, ToolsAPI, Forms, SimpleXmlImport, SimpleXmlIntf;
+  Variants, SysUtils, Classes, Contnrs, ToolsAPI, Forms, SimpleXmlImport, SimpleXmlIntf;
 
 type
   TProjectDataList = class;
