@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.1 | Comprehensive Feature Reference
+Version 3.2 | Comprehensive Feature Reference
 
 ---
 
@@ -8,15 +8,8 @@ Version 3.1 | Comprehensive Feature Reference
 
 1. [Quick Reference](#quick-reference)
 2. [Getting Started](#getting-started)
-3. [Editor Features](#editor-features)
-4. [Form Designer Features](#form-designer-features)
-5. [Component Palette Features](#component-palette-features)
-6. [Compiler & Build Features](#compiler--build-features)
-7. [Project Manager Features](#project-manager-features)
-8. [IDE Features](#ide-features)
-9. [Code Analysis Tools](#code-analysis-tools)
-10. [Debugger Features](#debugger-features)
-11. [Troubleshooting](#troubleshooting)
+3. [Feature Reference (A-Z)](#feature-reference-a-z)
+4. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -24,35 +17,35 @@ Version 3.1 | Comprehensive Feature Reference
 
 | Feature | Default | Access Method |
 |---------|---------|---------------|
-| Enhanced Key Bindings | ON | Automatic |
-| Extended Home Key | ON | Home key |
-| Tab Indent Selection | ON | Tab/Shift+Tab |
-| Move Line/Block | ON | Ctrl+Alt+Shift+Up/Down |
-| Find Declaration on Caret | ON | Ctrl+Alt+PgUp |
-| Structure View Search | OFF | Configurable hotkey |
-| Disable Source Formatter Hotkey | OFF | Options |
-| Editor Tab Double-Click | Zoom | Double-click tab |
-| TLabel.Margins.Bottom to Zero | ON | Automatic |
-| Remove Explicit* Properties | OFF | Options |
-| Component Selector | OFF | Configurable hotkey |
 | Auto-save After Compile | OFF | Options |
-| Switch Project for File | ON | Automatic |
-| Compile Progress | ON | Automatic |
-| Release Compiler Cache | OFF | Options |
-| File Cleaner | ON | Automatic |
-| Compile Backup | ON | Automatic |
 | Build Statistics | OFF | Tools menu |
-| Show Project for Active File | ON | Automatic |
-| Disable Package Cache | OFF | Options |
-| Find Unit Replacement | ON | Ctrl+Shift+A |
-| Dependency Viewer | OFF | Tools menu |
-| Unused Unit Detector | OFF | Tools menu |
-| TODO/FIXME Aggregator | ON | Tools menu |
 | Code Style Checker | ON | Tools menu |
-| Dead Code Detector | ON | Tools menu |
-| Kill dexplore.exe on Exit | ON | Automatic |
-| Don't Break on Spawned Processes | OFF | Options |
+| Compile Backup | ON | Automatic |
+| Compile Progress | ON | Automatic |
+| Component Selector | OFF | Configurable hotkey |
 | Confirm Ctrl+F1 While Debugging | ON | Automatic |
+| Dead Code Detector | ON | Tools menu |
+| Dependency Viewer | OFF | Tools menu |
+| Disable Package Cache | OFF | Options |
+| Disable Source Formatter Hotkey | OFF | Options |
+| Don't Break on Spawned Processes | OFF | Options |
+| Editor Tab Double-Click | Zoom | Double-click tab |
+| Enhanced Key Bindings | ON | Automatic |
+| File Cleaner | ON | Automatic |
+| Find Unit Replacement | ON | Ctrl+Shift+A |
+| Kill dexplore.exe on Exit | ON | Automatic |
+| Release Compiler Cache | OFF | Options |
+| Remove Explicit* Properties | OFF | Options |
+| Remove PixelsPerInch Property | OFF | Options |
+| Remove TextHeight Property | OFF | Options |
+| Replace Open File At Cursor | OFF | Options |
+| Show All Inheritable Modules | OFF | Options |
+| Show Project for Active File | ON | Automatic |
+| Structure View Search | OFF | Configurable hotkey |
+| Switch Project for File | ON | Automatic |
+| TLabel.Margins.Bottom to Zero | ON | Automatic |
+| TODO/FIXME Aggregator | ON | Tools menu |
+| Unused Unit Detector | OFF | Tools menu |
 
 ---
 
@@ -76,230 +69,15 @@ Each feature has its own XML configuration file (e.g., `KeyBindings.xml`, `Compi
 
 ---
 
-## Editor Features
+## Feature Reference (A-Z)
 
-### Enhanced Key Bindings
-
-**Purpose:** Provides additional keyboard shortcuts and improved cursor navigation for more efficient code editing.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Key Bindings
-
-#### Available Bindings
-
-| Shortcut | Action | Option |
-|----------|--------|--------|
-| Tab | Indent selected lines | Tab Indent |
-| Shift+Tab | Unindent selected lines | Tab Indent |
-| Home | Toggle between line start and first non-whitespace | Extended Home |
-| Ctrl+Left/Right | Improved word navigation | Extended Ctrl+Left/Right |
-| Ctrl+Alt+Shift+Up | Move line/block up | Move Line/Block |
-| Ctrl+Alt+Shift+Down | Move line/block down | Move Line/Block |
-| Ctrl+Alt+PgUp | Find declaration at cursor | Find Declaration on Caret |
-
-#### Configuration Options
-
-- **Active**: Master switch for all key bindings
-- **Tab Indent**: Enable Tab/Shift+Tab to indent/unindent selected code
-- **Indent Single Line**: Also indent when only one line is selected
-- **Extended Home**: Toggle between BOL and first non-whitespace
-- **Switched Extended Home**: Reverse the Extended Home behavior
-- **Extended Ctrl+Left/Right**: Smarter word boundary detection
-- **Move Line/Block**: Enable Ctrl+Alt+Shift+Up/Down to move code
-- **Find Declaration on Caret**: Enable Ctrl+Alt+PgUp to find declaration
-
-#### Usage Tips
-
-1. **Tab Indentation**: Select multiple lines, then press Tab to indent or Shift+Tab to unindent. Works with block selections.
-
-2. **Extended Home**: Press Home once to go to first non-whitespace character. Press again to go to column 1.
-
-3. **Move Line/Block**: Place cursor on a line (or select multiple lines), then use Ctrl+Alt+Shift+Up/Down to move the entire block without cut/paste.
-
----
-
-### Structure View Search
-
-**Purpose:** Adds a search/filter box to the Structure View panel for quickly finding methods, properties, and other elements.
-
-**Default:** OFF (no hotkey assigned)
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-#### How to Use
-
-1. Assign a hotkey in Options (e.g., Ctrl+Shift+S)
-2. With Structure View visible, press the hotkey
-3. Type to filter the structure tree
-4. Press Enter to navigate to the selected item
-
----
-
-### Disable Source Formatter Hotkey
-
-**Purpose:** Prevents accidental triggering of the IDE's built-in source formatter (Ctrl+D by default).
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-**Note:** Only affects the hotkey. You can still format via the menu.
-
----
-
-### Editor Tab Double-Click Action
-
-**Purpose:** Configures the behavior when double-clicking an editor tab.
-
-**Default:** Zoom
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-#### Options
-
-| Setting | Behavior |
-|---------|----------|
-| None | No action |
-| Zoom | Maximize editor, hide other panels |
-| Super Zoom | Maximum editor space, minimal UI |
-
-**Usage:** Double-click any editor tab to toggle zoom. Double-click again to restore.
-
----
-
-### Replace Open File At Cursor
-
-**Purpose:** Enhances the "Open File At Cursor" feature with better file resolution and namespace support.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-#### Improvements
-
-- Searches project paths, library paths, and browsing paths
-- Supports XE2+ unit namespaces (e.g., `System.SysUtils`)
-- Searches across all projects in the project group
-- Falls back to standard file dialog if not found
-
----
-
-## Form Designer Features
-
-### Set TLabel.Margins.Bottom to Zero
-
-**Purpose:** Automatically sets the bottom margin of TLabel components to zero when created.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Form Designer
-
-**Why:** Prevents unexpected spacing issues in form layouts when using alignment features.
-
----
-
-### Remove Explicit* Properties
-
-**Purpose:** Prevents ExplicitLeft, ExplicitTop, ExplicitWidth, and ExplicitHeight properties from being saved to DFM files.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Form Designer
-
-#### Benefits
-
-- Reduces DFM file size
-- Eliminates meaningless changes in version control
-- Cleaner form files
-
-#### Caution
-
-These properties are used by the IDE for anchor calculations. Only enable if you understand the implications.
-
----
-
-## Component Palette Features
-
-### Component Selector
-
-**Purpose:** Provides a searchable popup dialog for quickly finding and selecting components.
-
-**Default:** OFF (no hotkey assigned)
-
-**Location:** Options > DDevExtensions > Component Selector
-
-#### How to Use
-
-1. Enable and assign a hotkey (e.g., Ctrl+Shift+C)
-2. In the form designer, press the hotkey
-3. Type to search for a component
-4. Press Enter to select and place the component
-
----
-
-## Compiler & Build Features
-
-### Auto-save Editor Files After Successful Compile
+### Auto-save After Compile
 
 **Purpose:** Automatically saves all modified editor files after a successful compilation.
 
 **Default:** OFF
 
 **Location:** Options > DDevExtensions > Compile Progress
-
----
-
-### Switch Project to Current File's Project
-
-**Purpose:** When compiling a file that belongs to a different project, prompts to switch to that project.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Compile Progress
-
----
-
-### Release Compiler Unit Cache
-
-**Purpose:** Clears the compiler's internal unit cache before each build.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Compile Progress
-
-#### Options
-
-- **Standard**: Releases basic cache
-- **High**: More aggressive cache release
-
-**Use Case:** Helps resolve rare caching issues where the compiler uses stale unit information.
-
----
-
-### File Cleaner
-
-**Purpose:** Automatically removes unnecessary files after saving.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > File Cleaner
-
-#### Files Removed
-
-- `.ddp` files
-- Empty `Model` folders
-- Empty `History` folders
-
----
-
-### Compile Backup
-
-**Purpose:** Creates backup copies of files before compilation.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Compile Backup
 
 ---
 
@@ -346,12 +124,6 @@ These properties are used by the IDE for anchor calculations. Only enable if you
 - 21-50: High complexity, consider refactoring
 - 50+: Very high risk, should be simplified
 
-#### Interpreting Results
-
-1. **Slowest Units**: Sort by Duration (descending) to find compilation bottlenecks
-2. **Complex Units**: Sort by Complexity to identify code that may need refactoring
-3. **Large Units**: Sort by LOC to find units that might benefit from splitting
-
 #### Filter Options
 
 - **All**: Shows all units compiled (project + external)
@@ -362,80 +134,152 @@ These properties are used by the IDE for anchor calculations. Only enable if you
 
 ---
 
-## Project Manager Features
+### Code Style Checker
 
-### Show Project for Active File in Project Manager
+**Purpose:** Checks code against Delphi naming conventions.
 
-**Purpose:** Highlights and expands the project containing the currently active file.
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Code Style Checker
+
+**Access:** Tools > Code Style Checker...
+
+#### Rules
+
+| Rule | Convention | Example |
+|------|------------|---------|
+| Types | Prefix with T | `TMyClass` |
+| Interfaces | Prefix with I | `IMyInterface` |
+| Fields | Prefix with F | `FMyField` |
+| Exceptions | Prefix with E | `EMyError` |
+| Pointers | Prefix with P | `PMyRecord` |
+| Parameters | Prefix with A | `AValue` (optional) |
+
+#### Configuration Options
+
+Enable/disable individual rules:
+- **Check Types**: T prefix for types
+- **Check Interfaces**: I prefix for interfaces
+- **Check Fields**: F prefix for fields
+- **Check Exceptions**: E prefix for exceptions
+- **Check Pointers**: P prefix for pointer types
+- **Check Parameters**: A prefix for parameters (off by default)
+
+#### How to Interpret Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | Source file name |
+| Rule | Which naming rule was violated |
+| Line | Line number |
+| Identifier | The non-compliant name |
+| Expected | What the name should start with |
+
+---
+
+### Compile Backup
+
+**Purpose:** Creates backup copies of files before compilation.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Compile Backup
+
+---
+
+### Compile Progress
+
+**Purpose:** Adds a progress bar to the compile dialog and shows compilation progress in the Windows taskbar.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Compile Progress
+
+---
+
+### Component Selector
+
+**Purpose:** Provides a searchable popup dialog for quickly finding and selecting components.
+
+**Default:** OFF (no hotkey assigned)
+
+**Location:** Options > DDevExtensions > Component Selector
+
+#### How to Use
+
+1. Enable and assign a hotkey (e.g., Ctrl+Shift+C)
+2. In the form designer, press the hotkey
+3. Type to search for a component
+4. Press Enter to select and place the component
+
+---
+
+### Confirm Ctrl+F1 While Debugging
+
+**Purpose:** Shows a confirmation dialog before opening help during debug sessions.
 
 **Default:** ON
 
 **Location:** Options > DDevExtensions > Extended IDE Settings
 
----
-
-### Project Start Parameters
-
-**Purpose:** Manage multiple sets of command-line parameters for running your application.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Start Parameters
+**Why:** Prevents accidentally interrupting debugging to view help documentation.
 
 ---
 
-## IDE Features
+### Dead Code Detector
 
-### Disable Package Cache
-
-**Purpose:** Disables the IDE's package caching mechanism.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-**Use Case:** Resolves issues where packages aren't reloaded after changes.
-
----
-
-### Find Unit / Use Unit Replacement Dialog
-
-**Purpose:** Replaces standard Find Unit and Use Unit dialogs with enhanced versions.
+**Purpose:** Finds procedures, functions, and fields that are never referenced.
 
 **Default:** ON
 
-**Access:** File > Use Unit (Ctrl+Shift+A)
+**Location:** Options > DDevExtensions > Dead Code Detector
 
-#### Enhancements
+**Access:** Tools > Dead Code Detector...
 
-- Faster search
-- Better filtering
-- Preview of unit contents
-- Fuzzy matching
+#### What It Detects
+
+- Unused procedures and functions
+- Unused private fields
+- Unused protected fields
+
+#### What It Ignores (Automatically)
+
+- Virtual/override methods (may be called polymorphically)
+- Abstract methods
+- Constructors and destructors
+- Event handlers (OnClick, etc.)
+- Published members (used by RTTI)
+- Interface implementations
+
+#### Configuration Options
+
+- **Enabled**: Master switch
+- **Check Procedures**: Detect unused procedures/functions
+- **Check Fields**: Detect unused fields
+- **Ignore List**: Patterns to skip (supports wildcards)
+
+#### Ignore List Patterns
+
+Use wildcards to ignore common patterns:
+```
+*Click
+*Change
+*Execute
+Get*
+Set*
+```
+
+#### How to Interpret Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | Source file name |
+| Type | Procedure, Function, or Field |
+| Name | The unused element |
+| Scope | Private, Protected, Public |
+| Line | Line number |
 
 ---
-
-### Show All Inheritable Modules
-
-**Purpose:** Shows forms and data modules from all loaded packages in inheritance dialogs.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
----
-
-### Kill dexplore.exe on IDE Exit
-
-**Purpose:** Terminates Document Explorer processes when closing the IDE.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
----
-
-## Code Analysis Tools
 
 ### Dependency Viewer
 
@@ -465,66 +309,320 @@ These properties are used by the IDE for anchor calculations. Only enable if you
 
 ```
 MyUnit.pas
-├── [Interface Uses]
-│   ├── SysUtils
-│   ├── Classes
-│   └── MyOtherUnit (!) ← Circular reference indicator
-└── [Implementation Uses]
-    └── Forms
++-- [Interface Uses]
+|   +-- SysUtils
+|   +-- Classes
+|   +-- MyOtherUnit (!) <- Circular reference indicator
++-- [Implementation Uses]
+    +-- Forms
 ```
 
 The `(!)` marker indicates a circular dependency, which can cause compilation issues.
 
 ---
 
-### Unused Unit Detector
+### Disable Package Cache
 
-**Purpose:** Finds units in uses clauses that aren't actually referenced in code.
+**Purpose:** Disables the IDE's package caching mechanism.
 
 **Default:** OFF
 
-**Location:** Options > DDevExtensions > Unused Unit Detector
+**Location:** Options > DDevExtensions > Extended IDE Settings
 
-**Access:** Tools > Unused Unit Detector...
+**Use Case:** Resolves issues where packages aren't reloaded after changes.
 
-#### Features
+---
 
-- Scans interface and implementation uses clauses
-- Shows file, unit name, section, and line number
-- Double-click to navigate to the uses clause
-- Right-click to add to ignore list
-- Export to CSV
+### Disable Source Formatter Hotkey
+
+**Purpose:** Prevents accidental triggering of the IDE's built-in source formatter (Ctrl+D by default).
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+**Note:** Only affects the hotkey. You can still format via the menu.
+
+---
+
+### Don't Break on Spawned Processes
+
+**Purpose:** Prevents the debugger from breaking into child processes started by your application.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+**Use Case:** When debugging applications that launch other executables.
+
+---
+
+### Editor Tab Double-Click Action
+
+**Purpose:** Configures the behavior when double-clicking an editor tab.
+
+**Default:** Zoom
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+#### Options
+
+| Setting | Behavior |
+|---------|----------|
+| None | No action |
+| Zoom | Maximize editor, hide other panels |
+| Super Zoom | Maximum editor space, minimal UI |
+
+**Usage:** Double-click any editor tab to toggle zoom. Double-click again to restore.
+
+---
+
+### Enhanced Key Bindings
+
+**Purpose:** Provides additional keyboard shortcuts and improved cursor navigation for more efficient code editing.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Key Bindings
+
+#### Available Bindings
+
+| Shortcut | Action | Option |
+|----------|--------|--------|
+| Tab | Indent selected lines | Tab Indent |
+| Shift+Tab | Unindent selected lines | Tab Indent |
+| Home | Toggle between line start and first non-whitespace | Extended Home |
+| Ctrl+Left/Right | Improved word navigation | Extended Ctrl+Left/Right |
+| Ctrl+Alt+Shift+Up | Move line/block up | Move Line/Block |
+| Ctrl+Alt+Shift+Down | Move line/block down | Move Line/Block |
+| Ctrl+Alt+PgUp | Find declaration at cursor | Find Declaration on Caret |
 
 #### Configuration Options
 
-- **Enabled**: Master switch
-- **Ignore List**: Units to skip (one per line)
+- **Active**: Master switch for all key bindings
+- **Tab Indent**: Enable Tab/Shift+Tab to indent/unindent selected code
+- **Indent Single Line**: Also indent when only one line is selected
+- **Extended Home**: Toggle between BOL and first non-whitespace
+- **Switched Extended Home**: Reverse the Extended Home behavior
+- **Extended Ctrl+Left/Right**: Smarter word boundary detection
+- **Move Line/Block**: Enable Ctrl+Alt+Shift+Up/Down to move code
+- **Find Declaration on Caret**: Enable Ctrl+Alt+PgUp to find declaration
 
-Common units to ignore:
-```
-System
-SysUtils
-Classes
-Windows
-```
+#### Usage Tips
 
-#### How to Interpret Results
+1. **Tab Indentation**: Select multiple lines, then press Tab to indent or Shift+Tab to unindent. Works with block selections.
 
-| Column | Description |
-|--------|-------------|
-| Source File | The file containing the unused unit |
-| Unused Unit | Name of the potentially unused unit |
-| Section | Interface or Implementation |
-| Line | Line number of the uses clause |
+2. **Extended Home**: Press Home once to go to first non-whitespace character. Press again to go to column 1.
 
-#### False Positives
+3. **Move Line/Block**: Place cursor on a line (or select multiple lines), then use Ctrl+Alt+Shift+Up/Down to move the entire block without cut/paste.
 
-Some units may appear unused but are required:
-- Component registration units
-- Units that register classes for streaming
-- Units included for side effects (initialization sections)
+---
 
-Use "Add to Ignore List" for these cases.
+### File Cleaner
+
+**Purpose:** Automatically removes unnecessary files after saving.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > File Cleaner
+
+#### Files Removed
+
+- `.ddp` files
+- Empty `Model` folders
+- Empty `History` folders
+
+---
+
+### Find Unit / Use Unit Replacement Dialog
+
+**Purpose:** Replaces standard Find Unit and Use Unit dialogs with enhanced versions.
+
+**Default:** ON
+
+**Access:** File > Use Unit (Ctrl+Shift+A)
+
+#### Enhancements
+
+- Faster search
+- Better filtering
+- Preview of unit contents
+- Fuzzy matching
+
+---
+
+### Kill dexplore.exe on IDE Exit
+
+**Purpose:** Terminates Document Explorer processes when closing the IDE.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+---
+
+### Release Compiler Unit Cache
+
+**Purpose:** Clears the compiler's internal unit cache before each build.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Compile Progress
+
+#### Options
+
+- **Standard**: Releases basic cache
+- **High**: More aggressive cache release
+
+**Use Case:** Helps resolve rare caching issues where the compiler uses stale unit information.
+
+---
+
+### Remove Explicit* Properties
+
+**Purpose:** Prevents ExplicitLeft, ExplicitTop, ExplicitWidth, and ExplicitHeight properties from being saved to DFM files.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Form Designer
+
+#### Benefits
+
+- Reduces DFM file size
+- Eliminates meaningless changes in version control
+- Cleaner form files
+
+#### Caution
+
+These properties are used by the IDE for anchor calculations. Only enable if you understand the implications.
+
+---
+
+### Remove PixelsPerInch Property (New in 3.2)
+
+**Purpose:** Prevents the PixelsPerInch property from being saved to DFM files.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Form Designer
+
+#### Benefits
+
+- Eliminates DPI-related phantom changes in version control
+- Developers with different monitor DPI settings won't cause unwanted DFM modifications
+- Forms opened on 4K monitors won't conflict with forms saved on standard monitors
+
+#### How It Works
+
+When enabled, the PixelsPerInch property is read from existing DFM files (for backward compatibility) but never written when saving. The IDE recalculates scaling at runtime based on the current display settings.
+
+#### When to Enable
+
+- Teams with developers using different DPI/monitor configurations
+- Projects experiencing frequent PixelsPerInch merge conflicts
+- When using High DPI scaling features (Delphi 10.3+)
+
+---
+
+### Remove TextHeight Property (New in 3.2)
+
+**Purpose:** Prevents the TextHeight property from being saved to DFM files.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Form Designer
+
+#### Benefits
+
+- Eliminates font-rendering related phantom changes
+- Different machines with different font configurations won't cause unwanted DFM modifications
+- Cleaner version control diffs
+
+#### How It Works
+
+When enabled, the TextHeight property is read from existing DFM files but never written when saving. TextHeight is purely informational and is recalculated at runtime based on the form's font.
+
+#### When to Enable
+
+- Teams experiencing frequent TextHeight changes in version control
+- When DFM files show modifications after simply opening a form
+- Projects where TextHeight changes cause merge conflicts
+
+---
+
+### Replace Open File At Cursor
+
+**Purpose:** Enhances the "Open File At Cursor" feature with better file resolution and namespace support.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+#### Improvements
+
+- Searches project paths, library paths, and browsing paths
+- Supports XE2+ unit namespaces (e.g., `System.SysUtils`)
+- Searches across all projects in the project group
+- Falls back to standard file dialog if not found
+
+---
+
+### Show All Inheritable Modules
+
+**Purpose:** Shows forms and data modules from all loaded packages in inheritance dialogs.
+
+**Default:** OFF
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+---
+
+### Show Project for Active File
+
+**Purpose:** Highlights and expands the project containing the currently active file in Project Manager.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+---
+
+### Structure View Search
+
+**Purpose:** Adds a search/filter box to the Structure View panel for quickly finding methods, properties, and other elements.
+
+**Default:** OFF (no hotkey assigned)
+
+**Location:** Options > DDevExtensions > Extended IDE Settings
+
+#### How to Use
+
+1. Assign a hotkey in Options (e.g., Ctrl+Shift+S)
+2. With Structure View visible, press the hotkey
+3. Type to filter the structure tree
+4. Press Enter to navigate to the selected item
+
+---
+
+### Switch Project for File
+
+**Purpose:** When compiling a file that belongs to a different project, prompts to switch to that project.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Compile Progress
+
+---
+
+### TLabel.Margins.Bottom to Zero
+
+**Purpose:** Automatically sets the bottom margin of TLabel components to zero when created in the form designer.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Form Designer
+
+**Why:** Prevents unexpected spacing issues in form layouts when using alignment features.
 
 ---
 
@@ -585,142 +683,54 @@ Default patterns: `TODO,FIXME,HACK,BUG,NOTE,XXX`
 
 ---
 
-### Code Style Checker
+### Unused Unit Detector
 
-**Purpose:** Checks code against Delphi naming conventions.
+**Purpose:** Finds units in uses clauses that aren't actually referenced in code.
 
-**Default:** ON
+**Default:** OFF
 
-**Location:** Options > DDevExtensions > Code Style Checker
+**Location:** Options > DDevExtensions > Unused Unit Detector
 
-**Access:** Tools > Code Style Checker...
+**Access:** Tools > Unused Unit Detector...
 
-#### Rules
+#### Features
 
-| Rule | Convention | Example |
-|------|------------|---------|
-| Types | Prefix with T | `TMyClass` |
-| Interfaces | Prefix with I | `IMyInterface` |
-| Fields | Prefix with F | `FMyField` |
-| Exceptions | Prefix with E | `EMyError` |
-| Pointers | Prefix with P | `PMyRecord` |
-| Parameters | Prefix with A | `AValue` (optional) |
-
-#### Configuration Options
-
-Enable/disable individual rules:
-- **Check Types**: T prefix for types
-- **Check Interfaces**: I prefix for interfaces
-- **Check Fields**: F prefix for fields
-- **Check Exceptions**: E prefix for exceptions
-- **Check Pointers**: P prefix for pointer types
-- **Check Parameters**: A prefix for parameters (off by default)
-
-#### How to Interpret Results
-
-| Column | Description |
-|--------|-------------|
-| Unit | Source file name |
-| Rule | Which naming rule was violated |
-| Line | Line number |
-| Identifier | The non-compliant name |
-| Expected | What the name should start with |
-
-#### Severity Levels
-
-- **Warning**: Style issue, code will compile
-- **Info**: Suggestion for improvement
-
----
-
-### Dead Code Detector
-
-**Purpose:** Finds procedures, functions, and fields that are never referenced.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Dead Code Detector
-
-**Access:** Tools > Dead Code Detector...
-
-#### What It Detects
-
-- Unused procedures and functions
-- Unused private fields
-- Unused protected fields
-
-#### What It Ignores (Automatically)
-
-- Virtual/override methods (may be called polymorphically)
-- Abstract methods
-- Constructors and destructors
-- Event handlers (OnClick, etc.)
-- Published members (used by RTTI)
-- Interface implementations
+- Scans interface and implementation uses clauses
+- Shows file, unit name, section, and line number
+- Double-click to navigate to the uses clause
+- Right-click to add to ignore list
+- Export to CSV
 
 #### Configuration Options
 
 - **Enabled**: Master switch
-- **Check Procedures**: Detect unused procedures/functions
-- **Check Fields**: Detect unused fields
-- **Ignore List**: Patterns to skip (supports wildcards)
+- **Ignore List**: Units to skip (one per line)
 
-#### Ignore List Patterns
-
-Use wildcards to ignore common patterns:
+Common units to ignore:
 ```
-*Click
-*Change
-*Execute
-Get*
-Set*
+System
+SysUtils
+Classes
+Windows
 ```
 
 #### How to Interpret Results
 
 | Column | Description |
 |--------|-------------|
-| Unit | Source file name |
-| Type | Procedure, Function, or Field |
-| Name | The unused element |
-| Scope | Private, Protected, Public |
-| Line | Line number |
+| Source File | The file containing the unused unit |
+| Unused Unit | Name of the potentially unused unit |
+| Section | Interface or Implementation |
+| Line | Line number of the uses clause |
 
 #### False Positives
 
-Some items may appear unused but are:
-- Called via RTTI
-- Called from external assemblies
-- Used in conditional compilation
-- Reserved for future use
+Some units may appear unused but are required:
+- Component registration units
+- Units that register classes for streaming
+- Units included for side effects (initialization sections)
 
 Use "Add to Ignore List" for these cases.
-
----
-
-## Debugger Features
-
-### Don't Break on Spawned Processes
-
-**Purpose:** Prevents the debugger from breaking into child processes started by your application.
-
-**Default:** OFF
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-**Use Case:** When debugging applications that launch other executables.
-
----
-
-### Confirm Ctrl+F1 While Debugging
-
-**Purpose:** Shows a confirmation dialog before opening help during debug sessions.
-
-**Default:** ON
-
-**Location:** Options > DDevExtensions > Extended IDE Settings
-
-**Why:** Prevents accidentally interrupting debugging to view help documentation.
 
 ---
 
@@ -736,11 +746,11 @@ Use "Add to Ignore List" for these cases.
 
 Features accessed via the Tools menu must be enabled in Options first:
 - Build Statistics
-- Dependency Viewer
-- Unused Unit Detector
-- TODO/FIXME Aggregator
 - Code Style Checker
 - Dead Code Detector
+- Dependency Viewer
+- TODO/FIXME Aggregator
+- Unused Unit Detector
 
 ### Hotkeys Not Working
 

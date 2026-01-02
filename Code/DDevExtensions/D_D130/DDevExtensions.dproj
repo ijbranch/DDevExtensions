@@ -77,9 +77,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <Debugger_LoadAllSymbols>false</Debugger_LoadAllSymbols>
         <Debugger_HostApplication>$(BDS)\Bin\bds.exe</Debugger_HostApplication>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_MinorVer>2</VerInfo_MinorVer>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.1.0.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.2.0.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -96,10 +96,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>1</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.1.0.585;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <VerInfo_Build>585</VerInfo_Build>
+        <VerInfo_MinorVer>2</VerInfo_MinorVer>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.2.0.587;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>587</VerInfo_Build>
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_DcuOutput>lib\debug</DCC_DcuOutput>
@@ -231,6 +231,8 @@ $(PreBuildEvent)]]></PreBuildEvent>
             <Form>FormFileSelector</Form>
         </DCCReference>
         <DCCReference Include="..\Source\FormDesignerHelpers\RemoveExplicitProperty.pas"/>
+        <DCCReference Include="..\Source\FormDesignerHelpers\RemovePixelsPerInchProperty.pas"/>
+        <DCCReference Include="..\Source\FormDesignerHelpers\RemoveTextHeightProperty.pas"/>
         <DCCReference Include="..\Source\DSUFeatures\DSUFeatures.pas"/>
         <DCCReference Include="..\Source\DSUFeatures\FrmeOptionPageDSUFeatures.pas">
             <Form>FrameOptionPageDSUFeatures</Form>

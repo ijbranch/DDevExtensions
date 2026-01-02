@@ -4,13 +4,17 @@ With full acknowledgement of Andreas Hausladen .  His Homepage: https://www.idef
 
 In addition, to anybody else who has contributed over the years.
 
+The Remove PixelsPerInch and Remove TextHeight features (v3.2) are based on work from the DelphiPraxis fork: https://github.com/DelphiPraxis/DDevExtensions
+
 DDevExtensions adds new features to RAD Studio.
 
 This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  New features have been added.
 
 Version 3.0 was set to clearly break from the old version 2.88. 
 
-Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector. 
+Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector.
+
+Version 3.2 adds two Form Designer options to prevent PixelsPerInch and TextHeight properties from being saved to DFM files, eliminating phantom changes caused by different DPI settings and font rendering across developer machines.
 
 > **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
 >
@@ -60,84 +64,240 @@ Start the InstallDDevExtensions.exe and press the <Uninstall> button.
 ## Source Structure
 
 ```
-Code/DDevExtensions/
-├── CompileInterceptorW.dproj      # Compiler interceptor library (build first)
-├── D_D102/                        # Delphi 10.2 Tokyo project
-├── D_D103/                        # Delphi 10.3 Rio project
-├── D_D104/                        # Delphi 10.4 Sydney project
-├── D_D110/                        # Delphi 11.0 Alexandria project
-├── D_D120/                        # Delphi 12.0 Athens project
-├── D_D130/                        # Delphi 13.0 Florence project
+DDevExtensions/
+├── README.md                      # This file
+├── LICENSE                        # License file
+├── Help.md                        # Help documentation
 │
-└── Source/
-    ├── Main.pas                   # Main plugin registration
-    ├── PluginConfig.pas           # Configuration base class
-    ├── FrmTreePages.pas           # Options dialog framework
-    │
-    ├── Common/                    # Shared utilities
-    │   ├── DelphiLexer.pas        # Pascal lexer for code analysis
-    │   ├── DesignerParser.pas     # Class/method parser
-    │   └── UnitMetrics.pas        # LOC and complexity calculation
-    │
-    ├── Keybindings/               # Enhanced keyboard shortcuts
-    │   └── FrmeOptionPageKeybindings.pas
-    │
-    ├── FormDesignerHelpers/       # Form designer enhancements
-    │   ├── LabelMarginHelper.pas
-    │   └── RemoveExplicitProperty.pas
-    │
-    ├── ComponentSelector/         # Quick component search
-    │   └── FrmComponentSelector.pas
-    │
-    ├── CompileProgress/           # Compile progress & Build Statistics
-    │   ├── CompileProgress.pas    # Main plugin, TBuildStatistics class
-    │   ├── FrmBuildStatistics.pas # Build Statistics dialog
-    │   └── FrmeOptionPageCompilerProgress.pas
-    │
-    ├── CompileBackup/             # Pre-compile file backup
-    │
-    ├── FileCleaner/               # Auto-remove unnecessary files
-    │
-    ├── UnitSelector/              # Find Unit / Use Unit dialog
-    │   └── FrmUnitSelector.pas
-    │
-    ├── DSUFeatures/               # Extended IDE settings
-    │   ├── DSUFeatures.pas
-    │   ├── StrucViewSearch.pas    # Structure View search
-    │   └── FrmeOptionPageDSUFeatures.pas
-    │
-    ├── StartParameterTeam/        # Project start parameters
-    │
-    ├── DependencyViewer/          # Unit dependency visualization
-    │   ├── DependencyViewer.pas   # Plugin and scanner
-    │   └── FrmDependencyViewer.pas
-    │
-    ├── UnusedUnitDetector/        # Unused unit detection
-    │   ├── UnusedUnitDetector.pas
-    │   └── FrmUnusedUnitDetector.pas
-    │
-    ├── TodoAggregator/            # TODO/FIXME comment scanner
-    │   ├── TodoAggregator.pas
-    │   └── FrmTodoAggregator.pas
-    │
-    ├── CodeStyleChecker/          # Naming convention checker
-    │   ├── CodeStyleChecker.pas
-    │   └── FrmCodeStyleChecker.pas
-    │
-    └── DeadCodeDetector/          # Unused code detection
-        ├── DeadCodeDetector.pas
-        └── FrmDeadCodeDetector.pas
+├── Code/DDevExtensions/           # Main extension project
+│   ├── build.bat                  # Build script
+│   ├── clean.bat                  # Clean script
+│   ├── version.bat                # Version script
+│   ├── Version.rc/.res            # Version resource
+│   │
+│   ├── Bin/                       # Build output
+│   │   ├── DDevExtensionsD130.dll # Extension DLL
+│   │   ├── DDevExtensionsReg.exe  # Installer
+│   │   └── CompileInterceptorW.dll
+│   │
+│   ├── D_D102/                    # Delphi 10.2 Tokyo project
+│   ├── D_D103/                    # Delphi 10.3 Rio project
+│   ├── D_D104/                    # Delphi 10.4 Sydney project
+│   ├── D_D110/                    # Delphi 11.0 Alexandria project
+│   ├── D_D120/                    # Delphi 12.0 Athens project
+│   ├── D_D130/                    # Delphi 13.0 Florence project
+│   │   ├── DDevExtensions.dpr
+│   │   ├── DDevExtensions.dproj
+│   │   ├── DDevExtensions.groupproj
+│   │   └── lib/                   # Compiled DCU files
+│   │
+│   ├── Doc/                       # Documentation
+│   │   ├── Features.docx
+│   │   └── StartParameters.txt
+│   │
+│   ├── Installer/                 # Installer project
+│   │   ├── DDevExtensionsReg.dpr
+│   │   ├── DDevExtensionsReg.dproj
+│   │   └── Main.pas/.dfm
+│   │
+│   └── Source/                    # Main source code
+│       ├── Main.pas               # Main plugin registration
+│       ├── RegisterPlugins.pas    # Plugin registration
+│       ├── PluginConfig.pas       # Configuration base class
+│       ├── AppConsts.pas          # Application constants
+│       ├── ComponentManager.pas   # Component management
+│       ├── CtrlUtils.pas          # Control utilities
+│       ├── EditPopupCtrl.pas      # Edit popup control
+│       ├── TaskbarIntf.pas        # Windows taskbar interface
+│       ├── VirtTreeHandler.pas    # Virtual tree handler
+│       ├── Splash.pas             # Splash screen
+│       ├── DtmImages.pas/.dfm     # Image data module
+│       ├── FrmDDevExtOptions.pas  # Options dialog
+│       ├── FrmeBase.pas/.dfm      # Base frame
+│       ├── DelphiExtension.inc    # Compiler directives
+│       ├── version.inc            # Version include
+│       │
+│       ├── CodeStyleChecker/      # Naming convention checker
+│       │   ├── CodeStyleChecker.pas
+│       │   ├── FrmCodeStyleChecker.pas/.dfm
+│       │   └── FrmeOptionPageCodeStyle.pas/.dfm
+│       │
+│       ├── CompileBackup/         # Pre-compile file backup
+│       │   └── FrmeOptionPageCompileBackup.pas/.dfm
+│       │
+│       ├── CompileProgress/       # Compile progress & Build Statistics
+│       │   ├── CompileProgress.pas
+│       │   ├── CompilerClearOtherStates.pas
+│       │   ├── NativeProgressForm.pas
+│       │   ├── UnitMetrics.pas    # LOC and complexity calculation
+│       │   ├── FrmBuildStatistics.pas/.dfm
+│       │   ├── FrmSwitchToModuleProject.pas/.dfm
+│       │   └── FrmeOptionPageCompilerProgress.pas/.dfm
+│       │
+│       ├── CompilerEnhancements/  # Compiler enhancements
+│       │   └── FrmeOptionPageCompilerEnhancements.pas/.dfm
+│       │
+│       ├── ComponentSelector/     # Quick component search
+│       │   ├── ComponentSelector.pas
+│       │   └── FrmeOptionPageComponentSelector.pas/.dfm
+│       │
+│       ├── DeadCodeDetector/      # Unused code detection
+│       │   ├── DeadCodeDetector.pas
+│       │   ├── FrmDeadCodeDetector.pas/.dfm
+│       │   └── FrmeOptionPageDeadCode.pas/.dfm
+│       │
+│       ├── Debugger/              # Debugger features
+│       │   └── StepIntoSkip/
+│       │       └── DbgStepIntoSkip.pas
+│       │
+│       ├── DependencyViewer/      # Unit dependency visualization
+│       │   ├── DependencyViewer.pas
+│       │   ├── FrmDependencyViewer.pas/.dfm
+│       │   └── FrmeOptionPageDependencyViewer.pas/.dfm
+│       │
+│       ├── DSUFeatures/           # Extended IDE settings
+│       │   ├── DSUFeatures.pas
+│       │   ├── DisableAlphaSortClassCompletion.pas
+│       │   ├── StrucViewSearch.pas
+│       │   └── FrmeOptionPageDSUFeatures.pas/.dfm
+│       │
+│       ├── Editor/                # Editor enhancements
+│       │   ├── CodeInsightHandling.pas
+│       │   ├── DocModuleHandler.pas
+│       │   ├── FocusEditor.pas
+│       │   └── FrmReloadFiles.pas/.dfm
+│       │
+│       ├── ExcelExport/           # Excel export functionality
+│       │   └── FrmExcelExport.pas/.dfm
+│       │
+│       ├── FileCleaner/           # Auto-remove unnecessary files
+│       │   └── FrmeOptionPageFileCleaner.pas/.dfm
+│       │
+│       ├── FileSelector/          # File selector dialog
+│       │   └── FrmFileSelector.pas/.dfm
+│       │
+│       ├── FocusEditor/           # Editor focus handling
+│       │   └── FocusEditor.pas
+│       │
+│       ├── FormDesignerHelpers/   # Form designer enhancements
+│       │   ├── LabelMarginHelper.pas
+│       │   ├── RemoveExplicitProperty.pas
+│       │   ├── RemovePixelsPerInchProperty.pas
+│       │   ├── RemoveTextHeightProperty.pas
+│       │   └── FrmeOptionPageFormDesigner.pas/.dfm
+│       │
+│       ├── IDEMenuHandler/        # IDE menu handling
+│       │   └── IDEMenuHandler.pas
+│       │
+│       ├── Images/                # Image resources
+│       │   ├── DDevExtensionsLogo.bmp/.svg
+│       │   └── (other icons and images)
+│       │
+│       ├── Keybindings/           # Enhanced keyboard shortcuts
+│       │   └── FrmeOptionPageKeybindings.pas/.dfm
+│       │
+│       ├── OldPalette/            # Old-style component palette
+│       │   ├── ComponentPanel.pas/.res
+│       │   ├── OldPalette.pas/.dfm
+│       │   └── FrmeOptionPageOldPalette.pas/.dfm
+│       │
+│       ├── ProjectSettings/       # Project settings management
+│       │   ├── ProjectSettings.pas
+│       │   ├── ProjectSettingsData.pas
+│       │   ├── FrmProjectSettingManageSettings.pas/.dfm
+│       │   ├── FrmProjectSettingsEditOptions.pas/.dfm
+│       │   └── FrmProjectSettingsSetVersioninfo.pas/.dfm
+│       │
+│       ├── StartParameterManager/ # Start parameter management
+│       │   ├── StartParameterClasses.pas
+│       │   ├── StartParameterCtrl.pas
+│       │   └── StartParameterManagerReg.pas
+│       │
+│       ├── StartParameterTeam/    # Team start parameters
+│       │   └── FrmeOptionPageStartParameterTeam.pas/.dfm
+│       │
+│       ├── TodoAggregator/        # TODO/FIXME comment scanner
+│       │   ├── TodoAggregator.pas
+│       │   ├── FrmTodoAggregator.pas/.dfm
+│       │   └── FrmeOptionPageTodoAggregator.pas/.dfm
+│       │
+│       ├── UnitSelector/          # Find Unit / Use Unit dialog
+│       │   └── FrmeOptionPageUnitSelector.pas/.dfm
+│       │
+│       └── UnusedUnitDetector/    # Unused unit detection
+│           ├── UnusedUnitDetector.pas
+│           ├── FrmUnusedUnitDetector.pas/.dfm
+│           └── FrmeOptionPageUnusedUnitDetector.pas/.dfm
+│
+├── CompileInterceptor/            # Compiler interceptor library
+│   ├── build.bat
+│   ├── buildAnsi.bat
+│   ├── Bin/                       # Build output
+│   │   ├── CompileInterceptor.dll
+│   │   └── CompileInterceptorW.dll
+│   ├── Example/                   # Example project
+│   │   └── ExampleCompileInterceptor.dpr
+│   ├── lib/                       # Compiled DCU files
+│   └── Source/
+│       ├── CompileInterceptorW.dpr/.dproj
+│       ├── CompilerHooks.pas
+│       ├── FileStreams.pas
+│       ├── IdeDllNames.pas
+│       ├── InterceptImpl.pas
+│       ├── InterceptIntf.pas
+│       ├── InterceptLoader.pas
+│       └── ToolsAPIIntf.pas
+│
+├── Shared/                        # Shared utilities
+│   ├── FileStreams.pas
+│   ├── Hooking.pas
+│   ├── ImportHooking.pas
+│   │
+│   ├── IDE/                       # IDE utilities
+│   │   ├── FrmBase.pas/.dfm
+│   │   ├── HtHint.pas
+│   │   ├── IDEHooks.pas
+│   │   ├── IDENotifiers.pas
+│   │   ├── IDEUtils.pas
+│   │   ├── ModuleData.pas
+│   │   ├── ProjectData.pas
+│   │   ├── ProjectResource.pas
+│   │   ├── ToolsAPIHelpers.pas
+│   │   ├── UnitVersionInfo.pas
+│   │   └── Options/
+│   │       ├── FrmOptions.pas/.dfm
+│   │       └── FrmTreePages.pas/.dfm
+│   │
+│   ├── PascalParser/              # Pascal lexer/parser
+│   │   ├── DelphiDesignerParser.pas
+│   │   ├── DelphiExpr.pas
+│   │   ├── DelphiLexer.pas
+│   │   ├── DelphiParser.inc
+│   │   ├── DelphiParserContainers.pas
+│   │   └── DelphiPreproc.pas
+│   │
+│   └── Xml/                       # XML utilities
+│       ├── SimpleXmlDoc.pas
+│       ├── SimpleXmlImport.pas
+│       └── SimpleXmlIntf.pas
+│
+└── Tools/                         # Additional tools
+    └── LinkMapFile/
+        └── ReadMe.md
 ```
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `Main.pas` | Registers all plugins with the IDE |
-| `PluginConfig.pas` | Base class for plugin settings (XML storage) |
-| `DelphiLexer.pas` | Tokenizes Pascal source code |
-| `DesignerParser.pas` | Extracts class/method structure |
-| `UnitMetrics.pas` | Calculates LOC and cyclomatic complexity |
+| `Code/.../Source/Main.pas` | Registers all plugins with the IDE |
+| `Code/.../Source/PluginConfig.pas` | Base class for plugin settings (XML storage) |
+| `Code/.../Source/RegisterPlugins.pas` | Plugin registration logic |
+| `Shared/PascalParser/DelphiLexer.pas` | Tokenizes Pascal source code |
+| `Shared/PascalParser/DelphiDesignerParser.pas` | Extracts class/method structure |
+| `Code/.../Source/CompileProgress/UnitMetrics.pas` | Calculates LOC and cyclomatic complexity |
+| `Shared/IDE/ToolsAPIHelpers.pas` | Tools API helper functions |
+| `Shared/IDE/Options/FrmTreePages.pas` | Options dialog framework |
 
 ### Adding a New Feature
 
@@ -179,6 +339,12 @@ Automatically sets the bottom margin of TLabel components to zero when created i
 
 **Remove Explicit\* properties** (default: off)
 Prevents ExplicitLeft, ExplicitTop, ExplicitWidth, and ExplicitHeight properties from being saved to DFM files. Reduces form file clutter and avoids merge conflicts in version control.
+
+**New in 3.2 - Remove PixelsPerInch property** (default: off)
+Prevents the PixelsPerInch property from being saved to DFM files. Eliminates DPI-related phantom changes when developers with different monitor configurations open the same form.
+
+**New in 3.2 - Remove TextHeight property** (default: off)
+Prevents the TextHeight property from being saved to DFM files. Eliminates font-rendering related phantom changes across different machines.
 
 ### Component Palette
 
@@ -317,4 +483,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.1 – 3 January 2026*
+*Version: 3.2 – 3 January 2026*

@@ -8,7 +8,16 @@
       "Bash(powershell -Command \"Test-Path ''D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\jedi''\")",
       "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\jedi'' -Recurse | Select-Object FullName\")",
       "Bash(cat:*)",
-      "Bash(xargs -I {} sh -c 'echo {} && head -5 {} | grep \"\"DDevExtensions\\\\|Andreas\\\\|unit\"\"')"
+      "Bash(xargs -I {} sh -c 'echo {} && head -5 {} | grep \"\"DDevExtensions\\\\|Andreas\\\\|unit\"\"')",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cd:*)",
+      "Bash(dir /s /b /ad)",
+      "Bash(cmd /c \"cd /d D:\\\\DDevExtensions && dir /s /b /a-d 2>nul\")",
+      "Bash(cmd /c \"cd /d D:\\\\DDevExtensions && dir /s /b /ad 2>nul\")",
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions'' -Recurse -File | Select-Object -ExpandProperty FullName | Sort-Object\")",
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions'' -Recurse -Directory | Select-Object -ExpandProperty FullName | Sort-Object\")",
+      "Bash(dir:*)"
     ]
   }
 }
