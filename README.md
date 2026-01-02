@@ -108,7 +108,7 @@ Automatically removes unnecessary files after saving, such as .ddp files and emp
 **Compile Backup** (default: on)
 Creates backup copies of files before compilation. Provides a safety net in case compilation modifies files unexpectedly.
 
-**New - Build Time Statistics** (default: off)
+**New in 3.0 - Build Time Statistics** (default: off)
 Tracks how long each unit takes to compile and displays the results in a sortable list. Helps identify slow-compiling units and optimize build times. Features include:
 - Per-unit compile time tracking in milliseconds
 - Sortable columns (unit name, file path, duration)
@@ -145,7 +145,7 @@ Shows all available forms and data modules in the inheritance dialog, not just t
 **Kill all dexplore.exe when closing the IDE** (default: on)
 Automatically terminates any running instances of the Document Explorer (dexplore.exe) when the IDE closes. Prevents orphaned help viewer processes.
 
-**New - Dependency Viewer** (default: off)
+**New in 3.0 - Dependency Viewer** (default: off)
 Shows a visual tree of unit dependencies within your project. Helps developers understand code structure and identify potential issues. Features include:
 
 - Tree view of all project units with their dependencies
@@ -156,7 +156,7 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
 - Expand/collapse all for quick navigation
 Access via Tools menu → "Dependency Viewer..." when enabled.
 
-**New - Unused Unit Detector** (default: off)
+**New in 3.0 - Unused Unit Detector** (default: off)
 Scans your project for units in uses clauses that aren't actually referenced in code. Helps reduce compile times and clean up unnecessary dependencies. Features include:
 
 - Detects unused units in both interface and implementation sections
