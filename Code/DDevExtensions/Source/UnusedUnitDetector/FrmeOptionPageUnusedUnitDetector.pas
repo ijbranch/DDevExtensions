@@ -21,7 +21,6 @@ type
     chkEnabled: TCheckBox;
     lblIgnoreList: TLabel;
     memoIgnoreList: TMemo;
-    lblDescription: TLabel;
   private
     FPlugin: TUnusedUnitDetectorPlugin;
   public
