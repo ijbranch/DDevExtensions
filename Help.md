@@ -780,13 +780,6 @@ If the IDE becomes slow:
 
 ---
 
-## Support
-
-For issues or feature requests:
-- GitHub: https://github.com/user/ddevextensions/issues
-
----
-
 *DDevExtensions - Enhancing RAD Studio since Delphi 2007*
 
 *Original author: Andreas Hausladen*
