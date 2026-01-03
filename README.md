@@ -483,4 +483,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.2 – 3 January 2026*
+*Version: 3.2.1 – 4 January 2026*

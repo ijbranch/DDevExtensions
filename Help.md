@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.2 | Comprehensive Feature Reference
+Version 3.2.1 | Comprehensive Feature Reference
 
 ---
 

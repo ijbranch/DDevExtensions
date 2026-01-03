@@ -17,7 +17,14 @@
       "Bash(cmd /c \"cd /d D:\\\\DDevExtensions && dir /s /b /ad 2>nul\")",
       "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions'' -Recurse -File | Select-Object -ExpandProperty FullName | Sort-Object\")",
       "Bash(powershell -Command \"Get-ChildItem ''D:\\\\DDevExtensions'' -Recurse -Directory | Select-Object -ExpandProperty FullName | Sort-Object\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Bash(fc /L \"D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\Source\\\\FormDesignerHelpers\\\\RemovePixelsPerInchProperty.pas\" \"D:\\\\DDevExtensions291\\\\Code\\\\DDevExtensions\\\\Source\\\\FormDesignerHelpers\\\\RemovePixelsPerInchProperty.pas\")",
+      "Bash(powershell -Command \"Test-Path ''D:\\\\DDevExtensions291\\\\Code\\\\DDevExtensions\\\\jedi''\")",
+      "Bash(powershell:*)",
+      "Bash(xcopy:*)",
+      "Bash(fc:*)"
     ]
   }
 }

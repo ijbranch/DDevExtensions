@@ -12,36 +12,66 @@ unit RemoveTextHeightProperty;
 
 interface
 
+{$IFDEF DELPHI28_UP}
+
+uses
+  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+
 procedure SetRemoveTextHeightPropertyActive(Active: Boolean);
+
+{$ENDIF DELPHI28_UP}
 
 implementation
 
+{$IFDEF DELPHI28_UP}
+
 uses
-  SysUtils, Classes, Forms, IDEHooks, Hooking;
+  IDEUtils;
 
 var
   HookTForm_DefineProperties: TRedirectCode;
 
 type
-  TOpenForm = class(TCustomForm);
-
   TFormEx = class(TCustomForm)
-  protected
     procedure IgnoreInteger(Reader: TReader);
+    procedure ReadIgnoreFontProperty(Reader: TReader);
+    procedure IgnoreIdent(Reader: TReader);
     procedure DefineProperties(Filer: TFiler); override;
   end;
+
+  TOpenForm = class(TCustomForm);
 
 procedure TFormEx.IgnoreInteger(Reader: TReader);
 begin
   Reader.ReadInteger;
 end;
 
+procedure TFormEx.ReadIgnoreFontProperty(Reader: TReader);
+begin   // reroute BCB IgnoreFontProperty to use VCL locale font solution
+  if Reader.ReadBoolean then
+    ParentFont := True;
+end;
+
+procedure TFormEx.IgnoreIdent(Reader: TReader);
+begin
+  Reader.ReadIdent;
+end;
+
+type
+  TDefinePropertiesProc = procedure(Filer: TFiler) of object;
+
 procedure TFormEx.DefineProperties(Filer: TFiler);
 begin
-  inherited DefineProperties(Filer);
-  // Override TextHeight to be read but never written
-  if csDesigning in ComponentState then
-    Filer.DefineProperty('TextHeight', IgnoreInteger, nil, False);
+  // Call grandparent TScrollingWinControl.DefineProperties directly
+  // to avoid infinite recursion (TCustomForm.DefineProperties is hooked)
+  var DefinePropertiesProc: TDefinePropertiesProc;
+  TMethod(DefinePropertiesProc).Code := @TScrollingWinControl.DefineProperties;
+  TMethod(DefinePropertiesProc).Data := Self;
+  DefinePropertiesProc(Filer);
+
+  Filer.DefineProperty('TextHeight', IgnoreInteger, nil, False);
+  Filer.DefineProperty('IgnoreFontProperty', ReadIgnoreFontProperty, nil, False);
+  Filer.DefineProperty('OldCreateOrder', IgnoreIdent, nil, False);
 end;
 
 var
@@ -58,5 +88,7 @@ begin
       UnhookFunction(HookTForm_DefineProperties);
   end;
 end;
+
+{$ENDIF DELPHI28_UP}
 
 end.

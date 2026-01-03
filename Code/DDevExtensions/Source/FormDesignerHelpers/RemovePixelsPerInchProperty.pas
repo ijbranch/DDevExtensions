@@ -1,10 +1,4 @@
-{******************************************************************************}
-{*                                                                            *}
-{* DDevExtensions                                                             *}
-{*                                                                            *}
-{* (C) 2008 Andreas Hausladen                                                 *}
-{*                                                                            *}
-{******************************************************************************}
+// * Copyright: ©2021 Fred Schetterer
 
 unit RemovePixelsPerInchProperty;
 
@@ -12,120 +6,31 @@ unit RemovePixelsPerInchProperty;
 
 interface
 
+uses
+  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+
+
 procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
 
 implementation
 
 uses
-  SysUtils, Classes, Forms, IDEHooks, Hooking;
+//  CodeSiteLogging,
+  IDEUtils;
 
 var
-  HookTDataModule_DefineProperties: TRedirectCode;
+  HookTControl_DefineProperties: TRedirectCode;
+
+type
+  /// <summary>
+  ///   Access to Private Parts
+  /// </summary>
+  TDataModuleHelper = class helper for TDataModule
+    procedure DefineProperties2(Filer: TFiler);
+  end;
 
 type
   TOpenDataModule = class(TDataModule);
-
-  TDataModuleEx = class(TDataModule)
-  private
-    procedure IgnoreInteger(Reader: TReader);
-    procedure ReadWidth(Reader: TReader);
-    procedure WriteWidth(Writer: TWriter);
-    procedure ReadHeight(Reader: TReader);
-    procedure WriteHeight(Writer: TWriter);
-    procedure ReadHorizontalOffset(Reader: TReader);
-    procedure WriteHorizontalOffset(Writer: TWriter);
-    procedure ReadVerticalOffset(Reader: TReader);
-    procedure WriteVerticalOffset(Writer: TWriter);
-  protected
-    procedure DefineProperties(Filer: TFiler); override;
-  end;
-
-procedure TDataModuleEx.IgnoreInteger(Reader: TReader);
-begin
-  Reader.ReadInteger;
-end;
-
-procedure TDataModuleEx.ReadWidth(Reader: TReader);
-begin
-  DesignSize := Point(Reader.ReadInteger, DesignSize.Y);
-end;
-
-procedure TDataModuleEx.WriteWidth(Writer: TWriter);
-begin
-  Writer.WriteInteger(DesignSize.X);
-end;
-
-procedure TDataModuleEx.ReadHeight(Reader: TReader);
-begin
-  DesignSize := Point(DesignSize.X, Reader.ReadInteger);
-end;
-
-procedure TDataModuleEx.WriteHeight(Writer: TWriter);
-begin
-  Writer.WriteInteger(DesignSize.Y);
-end;
-
-procedure TDataModuleEx.ReadHorizontalOffset(Reader: TReader);
-begin
-  DesignOffset := Point(Reader.ReadInteger, DesignOffset.Y);
-end;
-
-procedure TDataModuleEx.WriteHorizontalOffset(Writer: TWriter);
-begin
-  Writer.WriteInteger(DesignOffset.X);
-end;
-
-procedure TDataModuleEx.ReadVerticalOffset(Reader: TReader);
-begin
-  DesignOffset := Point(DesignOffset.X, Reader.ReadInteger);
-end;
-
-procedure TDataModuleEx.WriteVerticalOffset(Writer: TWriter);
-begin
-  Writer.WriteInteger(DesignOffset.Y);
-end;
-
-procedure TDataModuleEx.DefineProperties(Filer: TFiler);
-
-  function DoWriteWidth: Boolean;
-  begin
-    Result := (Filer.Ancestor = nil) or
-              (TDataModule(Filer.Ancestor).DesignSize.X <> DesignSize.X);
-  end;
-
-  function DoWriteHeight: Boolean;
-  begin
-    Result := (Filer.Ancestor = nil) or
-              (TDataModule(Filer.Ancestor).DesignSize.Y <> DesignSize.Y);
-  end;
-
-  function DoWriteHorizontalOffset: Boolean;
-  begin
-    Result := (Filer.Ancestor <> nil) and
-              (TDataModule(Filer.Ancestor).DesignOffset.X <> DesignOffset.X);
-  end;
-
-  function DoWriteVerticalOffset: Boolean;
-  begin
-    Result := (Filer.Ancestor <> nil) and
-              (TDataModule(Filer.Ancestor).DesignOffset.Y <> DesignOffset.Y);
-  end;
-
-begin
-  // Redefine all properties - PixelsPerInch reads but never writes
-  Filer.DefineProperty('Height', ReadHeight, WriteHeight,
-    not (csReading in ComponentState) and DoWriteHeight);
-  Filer.DefineProperty('HorizontalOffset', ReadHorizontalOffset, WriteHorizontalOffset,
-    not (csReading in ComponentState) and DoWriteHorizontalOffset);
-  Filer.DefineProperty('VerticalOffset', ReadVerticalOffset, WriteVerticalOffset,
-    not (csReading in ComponentState) and DoWriteVerticalOffset);
-  Filer.DefineProperty('Width', ReadWidth, WriteWidth,
-    not (csReading in ComponentState) and DoWriteWidth);
-
-  // PixelsPerInch: read if present, but never write
-  if csDesigning in ComponentState then
-    Filer.DefineProperty('PixelsPerInch', IgnoreInteger, nil, False);
-end;
 
 var
   IsActive: Boolean;
@@ -136,10 +41,64 @@ begin
   begin
     IsActive := Active;
     if Active then
-      CodeRedirect(@TOpenDataModule.DefineProperties, @TDataModuleEx.DefineProperties, HookTDataModule_DefineProperties)
+      CodeRedirect(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties)
     else
-      UnhookFunction(HookTDataModule_DefineProperties);
+      UnhookFunction(HookTControl_DefineProperties);
   end;
+end;
+
+procedure TDataModuleHelper.DefineProperties2(Filer: TFiler);
+var
+  Ancestor: TDataModule;
+
+  function DoWriteWidth: Boolean;
+  begin
+    Result := True;
+    if Ancestor <> nil then
+      Result := DesignSize.X <> Ancestor.DesignSize.X;
+  end;
+
+  function DoWriteHorizontalOffset: Boolean;
+  begin
+    if Ancestor <> nil then
+      Result := DesignOffset.X <> Ancestor.DesignOffset.X else
+      Result := DesignOffset.X <> 0;
+  end;
+
+  function DoWriteVerticalOffset: Boolean;
+  begin
+    if Ancestor <> nil then
+      Result := DesignOffset.Y <> Ancestor.DesignOffset.Y else
+      Result := DesignOffset.Y <> 0;
+  end;
+
+  function DoWriteHeight: Boolean;
+  begin
+    Result := True;
+    if Ancestor <> nil then Result := DesignSize.Y <> Ancestor.DesignSize.Y;
+  end;
+
+begin
+{$If Declared(TCodeSiteLogger)}
+  CodeSite.Send('DefineProperties');
+{$IfEnd}
+
+  Ancestor := TDataModule(Filer.Ancestor);
+  with self do begin // access to private parts
+    Filer.DefineProperty('Height', ReadHeight, WriteHeight, DoWriteHeight);
+    Filer.DefineProperty('HorizontalOffset', ReadHorizontalOffset,
+      WriteHorizontalOffset, DoWriteHorizontalOffset);
+    Filer.DefineProperty('VerticalOffset', ReadVerticalOffset,
+      WriteVerticalOffset, DoWriteVerticalOffset);
+    Filer.DefineProperty('Width', ReadWidth, WriteWidth, DoWriteWidth);
+    Filer.DefineProperty('OldCreateOrder', IgnoreIdent, nil, False);
+    // We need to read if it exists else it Errors, but never write it..
+    Filer.DefineProperty('PixelsPerInch', ReadPixelsPerInch, WritePixelsPerInch, (csReading in ComponentState));
+  end;
+
+{$IF CompilerVersion > 37}
+  Check if anything changed in System.Classes.TDataModule.DefineProperties
+{$IFEND}
 end;
 
 end.

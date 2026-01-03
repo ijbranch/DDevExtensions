@@ -6,6 +6,10 @@
 {*                                                                            *}
 {******************************************************************************}
 
+{
+04/01/2026 - Version 3.2.1 - Bugfix for TextHeight option.
+}
+
 library DDevExtensions;
 
 {$WEAKLINKRTTI ON}

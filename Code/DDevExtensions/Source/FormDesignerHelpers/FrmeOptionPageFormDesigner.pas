@@ -57,6 +57,7 @@ type
     FFormDesigner: TFormDesigner;
   public
     { Public-Deklarationen }
+    constructor Create(AOwner: TComponent); override;
     procedure SetUserData(UserData: TObject);
     procedure LoadData;
     procedure SaveData;
@@ -73,7 +74,11 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Main, LabelMarginHelper, RemoveExplicitProperty, RemovePixelsPerInchProperty,
+  Main, LabelMarginHelper,
+{$IFDEF COMPILER110_UP}
+  RemovePixelsPerInchProperty,
+{$ENDIF COMPILER110_UP}
+  RemoveExplicitProperty,
   RemoveTextHeightProperty;
 
 {$R *.dfm}
@@ -95,12 +100,23 @@ end;
 
 { TFrameOptionPageFormDesigner }
 
+constructor TFrameOptionPageFormDesigner.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  {$IFNDEF DELPHI28_UP}
+  chkRemoveTextHeightProperty.Enabled := False;
+  {$ENDIF}
+end;
+
 procedure TFrameOptionPageFormDesigner.cbxActiveClick(Sender: TObject);
 begin
   cbxLabelMargin.Enabled := cbxActive.Checked;
   chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
-  chkRemovePixelsPerInchProperty.Enabled := cbxActive.Checked;
-  chkRemoveTextHeightProperty.Enabled := cbxActive.Checked;
+{$IFDEF COMPILER110_UP}
+    chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
+{$ELSE}
+    chkRemoveExplicitProperties.Enabled := False;
+{$ENDIF COMPILER110_UP}
 end;
 
 procedure TFrameOptionPageFormDesigner.SetUserData(UserData: TObject);
@@ -115,7 +131,11 @@ begin
   chkRemoveExplicitProperties.Checked := FFormDesigner.RemoveExplicitProperty;
   chkRemovePixelsPerInchProperty.Checked := FFormDesigner.RemovePixelsPerInchProperty;
   chkRemoveTextHeightProperty.Checked := FFormDesigner.RemoveTextHeightProperty;
-
+{$IFDEF COMPILER110_UP}
+    chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
+{$ELSE}
+    chkRemoveExplicitProperties.Enabled := False;
+{$ENDIF COMPILER110_UP}
   cbxActiveClick(cbxActive);
 end;
 
@@ -215,8 +235,12 @@ begin
   {$IFDEF INCLUDE_FORMDESIGNER}
   SetLabelMarginActive(Active and LabelMargin);
   SetRemoveExplicitPropertyActive(Active and RemoveExplicitProperty);
+  {$IFDEF COMPILER110_UP}
   SetRemovePixelsPerInchPropertyActive(Active and RemovePixelsPerInchProperty);
+  {$ENDIF COMPILER110_UP}
+  {$IFDEF DELPHI28_UP}
   SetRemoveTextHeightPropertyActive(Active and RemoveTextHeightProperty);
+  {$ENDIF}
   {$ENDIF INCLUDE_FORMDESIGNER}
 end;
 
