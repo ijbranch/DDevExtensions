@@ -77,11 +77,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <Debugger_LoadAllSymbols>false</Debugger_LoadAllSymbols>
         <Debugger_HostApplication>$(BDS)\Bin\bds.exe</Debugger_HostApplication>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>2</VerInfo_MinorVer>
+        <VerInfo_MinorVer>4</VerInfo_MinorVer>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.2.1.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.4.0.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <VerInfo_Release>1</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <Version>7.0</Version>
@@ -97,9 +96,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>2</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.2.1.598;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>598</VerInfo_Build>
+        <VerInfo_MinorVer>4</VerInfo_MinorVer>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.4.1.647;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>647</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>1</VerInfo_Release>
     </PropertyGroup>
@@ -339,6 +338,38 @@ $(PreBuildEvent)]]></PreBuildEvent>
         </DCCReference>
         <DCCReference Include="..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas">
             <Form>FrameOptionPageDeadCode</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\UnreachableCodeDetector.pas"/>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\FrmUnreachableCodeDetector.pas">
+            <Form>FormUnreachableCodeDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\FrmeOptionPageUnreachableCode.pas">
+            <Form>FrameOptionPageUnreachableCode</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManager.pas"/>
+        <DCCReference Include="..\Source\UsesClauseManager\FrmUsesClauseManager.pas">
+            <Form>FormUsesClauseManager</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\UsesClauseManager\FrmeOptionPageUsesClause.pas">
+            <Form>FrameOptionPageUsesClause</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\EmptyEventHandlerDetector.pas"/>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\FrmEmptyEventHandlerDetector.pas">
+            <Form>FormEmptyEventHandlerDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\FrmeOptionPageEmptyHandler.pas">
+            <Form>FrameOptionPageEmptyHandler</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\DfmPasConsistency\DfmPasConsistency.pas"/>
+        <DCCReference Include="..\Source\DfmPasConsistency\FrmDfmPasConsistency.pas">
+            <Form>FormDfmPasConsistency</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas">
+            <Form>FrameOptionPageDfmPas</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Base">

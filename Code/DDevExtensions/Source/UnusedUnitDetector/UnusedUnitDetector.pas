@@ -2,7 +2,9 @@
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
-{* (C) 2024 Andreas Hausladen                                                 *}
+{* (C) 2006-2024 Andreas Hausladen                                            *}
+{* (C) 2021-2025 DelphiPraxis                                                 *}
+{* (C) 2026 Ian Branch, Claude code                                           *}
 {*                                                                            *}
 {******************************************************************************}
 
@@ -665,8 +667,6 @@ end;
 { TUnusedUnitDetectorPlugin }
 
 constructor TUnusedUnitDetectorPlugin.Create;
-var
-  ToolsMenu: TMenuItem;
 begin
 
   // Create FIgnoreList before inherited, because inherited calls Init and loads config
@@ -677,15 +677,13 @@ begin
 
   inherited Create( AppDataDirectory + '\UnusedUnitDetector.xml', 'UnusedUnitDetector' );
 
-  // Add menu item under Tools menu
-  ToolsMenu := FindMenuItem( 'ToolsMenu' );
-
-  if ToolsMenu <> nil then
+  // Add menu item under DDevExtensions submenu
+  if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( ToolsMenu );
+    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Unused &Unit Detector...';
     FMenuItem.OnClick := MenuItemClick;
-    ToolsMenu.Add( FMenuItem );
+    DDevExtensionsMenu.Add( FMenuItem );
   end;
 
 end;

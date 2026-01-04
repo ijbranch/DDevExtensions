@@ -278,6 +278,57 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\Editor\DocModuleHandler.pas"/>
         <DCCReference Include="..\Source\Editor\CodeInsightHandling.pas"/>
         <DCCReference Include="..\Source\DSUFeatures\DisableAlphaSortClassCompletion.pas"/>
+        <DCCReference Include="..\Source\CompileProgress\FrmBuildStatistics.pas">
+            <Form>FormBuildStatistics</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\DependencyViewer\DependencyViewer.pas"/>
+        <DCCReference Include="..\Source\DependencyViewer\FrmDependencyViewer.pas">
+            <Form>FormDependencyViewer</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\DependencyViewer\FrmeOptionPageDependencyViewer.pas">
+            <Form>FrameOptionPageDependencyViewer</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnusedUnitDetector\UnusedUnitDetector.pas"/>
+        <DCCReference Include="..\Source\UnusedUnitDetector\FrmUnusedUnitDetector.pas">
+            <Form>FormUnusedUnitDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnusedUnitDetector\FrmeOptionPageUnusedUnitDetector.pas">
+            <Form>FrameOptionPageUnusedUnitDetector</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\TodoAggregator\TodoAggregator.pas"/>
+        <DCCReference Include="..\Source\TodoAggregator\FrmTodoAggregator.pas">
+            <Form>FormTodoAggregator</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\TodoAggregator\FrmeOptionPageTodoAggregator.pas">
+            <Form>FrameOptionPageTodoAggregator</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeStyleChecker\CodeStyleChecker.pas"/>
+        <DCCReference Include="..\Source\CodeStyleChecker\FrmCodeStyleChecker.pas">
+            <Form>FormCodeStyleChecker</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeStyleChecker\FrmeOptionPageCodeStyle.pas">
+            <Form>FrameOptionPageCodeStyle</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\DeadCodeDetector\DeadCodeDetector.pas"/>
+        <DCCReference Include="..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas">
+            <Form>FormDeadCodeDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas">
+            <Form>FrameOptionPageDeadCode</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\UnreachableCodeDetector.pas"/>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\FrmUnreachableCodeDetector.pas">
+            <Form>FormUnreachableCodeDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\UnreachableCodeDetector\FrmeOptionPageUnreachableCode.pas">
+            <Form>FrameOptionPageUnreachableCode</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

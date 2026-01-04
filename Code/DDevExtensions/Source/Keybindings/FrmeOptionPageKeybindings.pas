@@ -16,7 +16,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, FrmTreePages, ToolsAPI, PluginConfig, SimpleXmlIntf, Menus,
-  ActnList, FrmeBase, ExtCtrls;
+  ActnList, FrmeBase, ExtCtrls, AnsiStrings;
 
 type
   TKeybindings = class(TPluginConfig, IOTAKeyboardBinding)
@@ -33,7 +33,9 @@ type
     {$IFEND}
     FMoveLineBlock: Boolean;
     FFindDeclOnCaret: Boolean;
+    FSectionToggle: Boolean;
     procedure SetActive(const Value: Boolean);
+    procedure ToggleSection(EditBuffer: IOTAEditBuffer);
     procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
       var BindingResult: TKeyBindingResult);
     procedure InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
@@ -71,6 +73,7 @@ type
     {$IFEND}
     property MoveLineBlock: Boolean read FMoveLineBlock write FMoveLineBlock;
     property FindDeclOnCaret: Boolean read FFindDeclOnCaret write FFindDeclOnCaret;
+    property SectionToggle: Boolean read FSectionToggle write FSectionToggle;
   end;
 
   TFrameOptionPageKeybindings = class(TFrameBase, ITreePageComponent)
@@ -83,6 +86,7 @@ type
     cbxShiftF3: TCheckBox;
     chkMoveLineBlock: TCheckBox;
     chkFindDeclOnCaret: TCheckBox;
+    chkSectionToggle: TCheckBox;
     procedure cbxActiveClick(Sender: TObject);
     procedure cbxExtendedHomeClick(Sender: TObject);
     procedure cbxTabIndentClick(Sender: TObject);
@@ -190,6 +194,7 @@ begin
   {$IFEND}
   chkMoveLineBlock.Checked := FKeyBindings.MoveLineBlock;
   chkFindDeclOnCaret.Checked := FKeyBindings.FindDeclOnCaret;
+  chkSectionToggle.Checked := FKeyBindings.SectionToggle;
 
   cbxActiveClick(cbxActive);
   cbxExtendedHomeClick(cbxExtendedHome);
@@ -208,6 +213,7 @@ begin
   {$IFEND}
   FKeyBindings.MoveLineBlock := chkMoveLineBlock.Checked;
   FKeyBindings.FindDeclOnCaret := chkFindDeclOnCaret.Checked;
+  FKeyBindings.SectionToggle := chkSectionToggle.Checked;
   FKeybindings.Active := cbxActive.Checked; // => add all active key bindings
   FKeyBindings.Save;
 end;
@@ -250,6 +256,7 @@ begin
   {$IFEND}
   MoveLineBlock := True;
   FindDeclOnCaret := True;
+  SectionToggle := True;
   Active := True;
 end;
 
@@ -940,6 +947,17 @@ begin
         begin
           FindDeclaration(EditBuffer);
           BindingResult := krHandled;
+        end
+
+        else if SectionToggle and (KeyCode = ShortCut(VK_UP, [ssCtrl, ssShift])) then
+        begin
+          ToggleSection(EditBuffer);
+          BindingResult := krHandled;
+        end
+        else if SectionToggle and (KeyCode = ShortCut(VK_DOWN, [ssCtrl, ssShift])) then
+        begin
+          ToggleSection(EditBuffer);
+          BindingResult := krHandled;
         end;
 
 
@@ -1039,6 +1057,95 @@ begin
   end;
 end;
 
+procedure TKeybindings.ToggleSection(EditBuffer: IOTAEditBuffer);
+var
+  Source: UTF8String;
+  EditPosition: IOTAEditPosition;
+  CurrentRow: Integer;
+  InterfaceRow, ImplementationRow: Integer;
+  P: PAnsiChar;
+  LineNum: Integer;
+  InInterface: Boolean;
+  TargetRow: Integer;
+
+  function SkipWhitespace(P: PAnsiChar): PAnsiChar;
+  begin
+    Result := P;
+    while Result^ in [' ', #9] do
+      Inc(Result);
+  end;
+
+  function MatchKeyword(P: PAnsiChar; const Keyword: AnsiString): Boolean;
+  var
+    Len: Integer;
+  begin
+    Len := Length(Keyword);
+    Result := (AnsiStrings.StrLIComp(P, PAnsiChar(Keyword), Len) = 0) and
+              not (P[Len] in ['A'..'Z', 'a'..'z', '0'..'9', '_']);
+  end;
+
+begin
+  if EditBuffer = nil then
+    Exit;
+
+  Source := GetEditorSource(EditBuffer);
+  if Source = '' then
+    Exit;
+
+  EditPosition := EditBuffer.EditPosition;
+  CurrentRow := EditPosition.Row;
+
+  // Find interface and implementation line numbers
+  InterfaceRow := 0;
+  ImplementationRow := 0;
+  P := PAnsiChar(Source);
+  LineNum := 1;
+
+  while P^ <> #0 do
+  begin
+    // Skip to start of line content
+    P := SkipWhitespace(P);
+
+    // Check for interface keyword (not 'interface' as type modifier)
+    if (InterfaceRow = 0) and MatchKeyword(P, 'interface') then
+    begin
+      // Make sure it's not inside a type declaration (check if previous non-space is '=')
+      // Simple check: interface at start of line or after only whitespace
+      InterfaceRow := LineNum;
+    end
+    else if MatchKeyword(P, 'implementation') then
+    begin
+      ImplementationRow := LineNum;
+      Break; // We have both, no need to continue
+    end;
+
+    // Skip to next line
+    while (P^ <> #0) and (P^ <> #10) and (P^ <> #13) do
+      Inc(P);
+    if P^ = #13 then
+      Inc(P);
+    if P^ = #10 then
+      Inc(P);
+    Inc(LineNum);
+  end;
+
+  // If we didn't find both sections, nothing to do
+  if (InterfaceRow = 0) or (ImplementationRow = 0) then
+    Exit;
+
+  // Determine current section and target
+  InInterface := CurrentRow < ImplementationRow;
+
+  if InInterface then
+    TargetRow := ImplementationRow + 1  // Jump to implementation
+  else
+    TargetRow := InterfaceRow + 1;      // Jump to interface
+
+  // Move cursor
+  EditPosition.Move(TargetRow, 1);
+  EditBuffer.TopView.MoveViewToCursor;
+end;
+
 procedure TKeybindings.BindKeyboard(const BindingServices: IOTAKeyBindingServices);
 begin
   if TabIndent then
@@ -1080,6 +1187,11 @@ begin
     BindingServices.AddKeyBinding([ShortCut(VK_PRIOR, [ssCtrl, ssAlt])], DoKeyBinding, nil, 0);
   end;
 
+  if SectionToggle then
+  begin
+    BindingServices.AddKeyBinding([ShortCut(VK_UP, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding([ShortCut(VK_DOWN, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
+  end;
 
 end;
 

@@ -114,7 +114,19 @@ uses
   FrmeOptionPageCodeStyle in '..\Source\CodeStyleChecker\FrmeOptionPageCodeStyle.pas' {FrameOptionPageCodeStyle: TFrame},
   DeadCodeDetector in '..\Source\DeadCodeDetector\DeadCodeDetector.pas',
   FrmDeadCodeDetector in '..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas' {FormDeadCodeDetector},
-  FrmeOptionPageDeadCode in '..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas' {FrameOptionPageDeadCode: TFrame};
+  FrmeOptionPageDeadCode in '..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas' {FrameOptionPageDeadCode: TFrame},
+  UnreachableCodeDetector in '..\Source\UnreachableCodeDetector\UnreachableCodeDetector.pas',
+  FrmUnreachableCodeDetector in '..\Source\UnreachableCodeDetector\FrmUnreachableCodeDetector.pas' {FormUnreachableCodeDetector},
+  FrmeOptionPageUnreachableCode in '..\Source\UnreachableCodeDetector\FrmeOptionPageUnreachableCode.pas' {FrameOptionPageUnreachableCode: TFrame},
+  UsesClauseManager in '..\Source\UsesClauseManager\UsesClauseManager.pas',
+  FrmUsesClauseManager in '..\Source\UsesClauseManager\FrmUsesClauseManager.pas' {FormUsesClauseManager},
+  FrmeOptionPageUsesClause in '..\Source\UsesClauseManager\FrmeOptionPageUsesClause.pas' {FrameOptionPageUsesClause: TFrame},
+  EmptyEventHandlerDetector in '..\Source\EmptyEventHandlerDetector\EmptyEventHandlerDetector.pas',
+  FrmEmptyEventHandlerDetector in '..\Source\EmptyEventHandlerDetector\FrmEmptyEventHandlerDetector.pas' {FormEmptyEventHandlerDetector},
+  FrmeOptionPageEmptyHandler in '..\Source\EmptyEventHandlerDetector\FrmeOptionPageEmptyHandler.pas' {FrameOptionPageEmptyHandler: TFrame},
+  DfmPasConsistency in '..\Source\DfmPasConsistency\DfmPasConsistency.pas',
+  FrmDfmPasConsistency in '..\Source\DfmPasConsistency\FrmDfmPasConsistency.pas' {FormDfmPasConsistency},
+  FrmeOptionPageDfmPas in '..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas' {FrameOptionPageDfmPas: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

@@ -47,6 +47,18 @@ uses
   {$IFDEF INCLUDE_DEADCODEDETECTOR}
   DeadCodeDetector,
   {$ENDIF INCLUDE_DEADCODEDETECTOR}
+  {$IFDEF INCLUDE_UNREACHABLECODEDETECTOR}
+  UnreachableCodeDetector,
+  {$ENDIF INCLUDE_UNREACHABLECODEDETECTOR}
+  {$IFDEF INCLUDE_USESCLAUSEMANAGER}
+  UsesClauseManager,
+  {$ENDIF INCLUDE_USESCLAUSEMANAGER}
+  {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
+  EmptyEventHandlerDetector,
+  {$ENDIF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
+  {$IFDEF INCLUDE_DFMPASCONSISTENCY}
+  DfmPasConsistency,
+  {$ENDIF INCLUDE_DFMPASCONSISTENCY}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -163,6 +175,26 @@ begin
     {$IFDEF INCLUDE_DEADCODEDETECTOR}
     if DisabledPlugins.IndexOf('DeadCodeDetector') = -1 then
       RegisterLateLoader(DeadCodeDetector.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_UNREACHABLECODEDETECTOR}
+    if DisabledPlugins.IndexOf('UnreachableCodeDetector') = -1 then
+      RegisterLateLoader(UnreachableCodeDetector.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_USESCLAUSEMANAGER}
+    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
+      RegisterLateLoader(UsesClauseManager.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
+    if DisabledPlugins.IndexOf('EmptyEventHandlerDetector') = -1 then
+      RegisterLateLoader(EmptyEventHandlerDetector.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_DFMPASCONSISTENCY}
+    if DisabledPlugins.IndexOf('DfmPasConsistency') = -1 then
+      RegisterLateLoader(DfmPasConsistency.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

@@ -527,21 +527,17 @@ end;
 { TCodeStyleCheckerPlugin }
 
 constructor TCodeStyleCheckerPlugin.Create;
-var
-  ToolsMenu: TMenuItem;
 begin
 
   inherited Create( AppDataDirectory + '\CodeStyleChecker.xml', 'CodeStyleChecker' );
 
-  // Add menu item under Tools menu
-  ToolsMenu := FindMenuItem( 'ToolsMenu' );
-
-  if ToolsMenu <> nil then
+  // Add menu item under DDevExtensions submenu
+  if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( ToolsMenu );
+    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Code &Style Checker...';
     FMenuItem.OnClick := MenuItemClick;
-    ToolsMenu.Add( FMenuItem );
+    DDevExtensionsMenu.Add( FMenuItem );
   end;
 
 end;

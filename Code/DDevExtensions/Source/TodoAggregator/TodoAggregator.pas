@@ -313,21 +313,17 @@ end;
 { TTodoAggregatorPlugin }
 
 constructor TTodoAggregatorPlugin.Create;
-var
-  ToolsMenu: TMenuItem;
 begin
 
   inherited Create( AppDataDirectory + '\TodoAggregator.xml', 'TodoAggregator' );
 
-  // Add menu item under Tools menu
-  ToolsMenu := FindMenuItem( 'ToolsMenu' );
-
-  if ToolsMenu <> nil then
+  // Add menu item under DDevExtensions submenu
+  if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( ToolsMenu );
+    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'TODO/FIXME &Aggregator...';
     FMenuItem.OnClick := MenuItemClick;
-    ToolsMenu.Add( FMenuItem );
+    DDevExtensionsMenu.Add( FMenuItem );
   end;
 
 end;

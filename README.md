@@ -6,6 +6,8 @@ In addition, to anybody else who has contributed over the years.
 
 The Remove PixelsPerInch and Remove TextHeight features (v3.2) are based on work from the DelphiPraxis fork: https://github.com/DelphiPraxis/DDevExtensions
 
+This is a Best Efforts by Ian Branch & Claude code.  No guarantees.  Whilst care has been taken in creating these enhancements, they are probably not perfect.  Use at your own risk/discretion.
+
 DDevExtensions adds new features to RAD Studio.
 
 This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  New features have been added.
@@ -15,6 +17,20 @@ Version 3.0 was set to clearly break from the old version 2.88.
 Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector.
 
 Version 3.2 adds two Form Designer options to prevent PixelsPerInch and TextHeight properties from being saved to DFM files, eliminating phantom changes caused by different DPI settings and font rendering across developer machines.
+
+Version 3.3.0 enhances the Dependency Viewer with reverse dependency view ("Used By" mode), dependency depth indicators, improved circular reference analysis showing interface/implementation links with click-to-highlight and double-click-to-open functionality, and a new Impact Analysis panel that shows direct/transitive dependents with risk scoring when you select a unit.
+
+Version 3.3.1 adds the Unreachable Code Detector - a new tool that finds code that can never execute, such as statements after Exit, Raise, Break, Continue, Halt, or Abort calls.
+
+Version 3.4 adds the Smart Uses Clause Manager - automatically analyzes which symbols from each unit are used in the interface vs implementation sections, then recommends or applies changes to move units to their optimal uses clause location.
+
+Version 3.4.1 adds three new features: Interface/Implementation Section Toggle (Ctrl+Shift+Up/Down keyboard shortcut), Empty Event Handler Detector (finds event handlers with empty bodies), and DFM/PAS Consistency Checker (detects mismatches between DFM components and PAS field declarations).
+
+### Version Number Interpretation
+
+- **First digit** - Major re-write/update
+- **Second digit** - Feature change (Add/Modify/Delete)
+- **Third digit** - Bug fixes
 
 > **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
 >
@@ -68,6 +84,8 @@ DDevExtensions/
 ├── README.md                      # This file
 ├── LICENSE                        # License file
 ├── Help.md                        # Help documentation
+├── enhancements.txt               # Potential future enhancements
+├── .gitignore                     # Git ignore rules
 │
 ├── Code/DDevExtensions/           # Main extension project
 │   ├── build.bat                  # Build script
@@ -78,7 +96,8 @@ DDevExtensions/
 │   ├── Bin/                       # Build output
 │   │   ├── DDevExtensionsD130.dll # Extension DLL
 │   │   ├── DDevExtensionsReg.exe  # Installer
-│   │   └── CompileInterceptorW.dll
+│   │   ├── CompileInterceptorW.dll
+│   │   └── Changes.txt            # Version history
 │   │
 │   ├── D_D102/                    # Delphi 10.2 Tokyo project
 │   ├── D_D103/                    # Delphi 10.3 Rio project
@@ -110,12 +129,14 @@ DDevExtensions/
 │       ├── EditPopupCtrl.pas      # Edit popup control
 │       ├── TaskbarIntf.pas        # Windows taskbar interface
 │       ├── VirtTreeHandler.pas    # Virtual tree handler
-│       ├── Splash.pas             # Splash screen
+│       ├── Splash.pas/.res        # Splash screen
 │       ├── DtmImages.pas/.dfm     # Image data module
 │       ├── FrmDDevExtOptions.pas  # Options dialog
 │       ├── FrmeBase.pas/.dfm      # Base frame
 │       ├── DelphiExtension.inc    # Compiler directives
 │       ├── version.inc            # Version include
+│       ├── Icon24x24.bmp          # Small icon
+│       ├── Icon32x32.bmp          # Large icon
 │       │
 │       ├── CodeStyleChecker/      # Naming convention checker
 │       │   ├── CodeStyleChecker.pas
@@ -224,6 +245,26 @@ DDevExtensions/
 │       ├── UnitSelector/          # Find Unit / Use Unit dialog
 │       │   └── FrmeOptionPageUnitSelector.pas/.dfm
 │       │
+│       ├── UnreachableCodeDetector/  # Unreachable code detection
+│       │   ├── UnreachableCodeDetector.pas
+│       │   ├── FrmUnreachableCodeDetector.pas/.dfm
+│       │   └── FrmeOptionPageUnreachableCode.pas/.dfm
+│       │
+│       ├── UsesClauseManager/     # Smart uses clause optimization
+│       │   ├── UsesClauseManager.pas
+│       │   ├── FrmUsesClauseManager.pas/.dfm
+│       │   └── FrmeOptionPageUsesClause.pas/.dfm
+│       │
+│       ├── EmptyEventHandlerDetector/  # Empty event handler detection
+│       │   ├── EmptyEventHandlerDetector.pas
+│       │   ├── FrmEmptyEventHandlerDetector.pas/.dfm
+│       │   └── FrmeOptionPageEmptyHandler.pas/.dfm
+│       │
+│       ├── DfmPasConsistency/     # DFM/PAS consistency checking
+│       │   ├── DfmPasConsistency.pas
+│       │   ├── FrmDfmPasConsistency.pas/.dfm
+│       │   └── FrmeOptionPageDfmPas.pas/.dfm
+│       │
 │       └── UnusedUnitDetector/    # Unused unit detection
 │           ├── UnusedUnitDetector.pas
 │           ├── FrmUnusedUnitDetector.pas/.dfm
@@ -308,6 +349,28 @@ DDevExtensions/
 5. Add units to all D_Dxxx project files
 
 
+## Menu Structure
+
+All DDevExtensions tools are organized under a single submenu in the Tools menu:
+
+```
+Tools
+  └── DDevExtensions
+        ├── Options...
+        ├── ─────────────
+        ├── Code Style Checker...
+        ├── Dead Code Detector...
+        ├── Dependency Viewer...
+        ├── DFM/PAS Consistency...
+        ├── Empty Event Handler Detector...
+        ├── TODO/FIXME Aggregator...
+        ├── Unreachable Code Detector...
+        ├── Unused Unit Detector...
+        └── Uses Clause Manager...
+```
+
+This keeps all DDevExtensions functionality in one convenient location.
+
 ## Features
 
 ### Editor
@@ -328,6 +391,7 @@ Provides additional keyboard shortcuts and improved cursor navigation:
 - Improved Ctrl+Left/Right word navigation
 - Alt+Up/Down to move lines or blocks of code
 - Ctrl+Click on identifier to find declaration
+- **New in 3.4.1** - Ctrl+Shift+Up/Down to toggle between interface and implementation sections
 
 **Replace Open File At Cursor** (default: off)
 Replaces the default "Open File At Cursor" behavior with an enhanced version that provides better file resolution and search capabilities.
@@ -381,7 +445,7 @@ Tracks how long each unit takes to compile and displays the results in a sortabl
 - Double-click to open unit in editor
 - Export to CSV for further analysis
 - Copy selected entries to clipboard
-Access via Tools menu → "Build Statistics..." when enabled. Can also auto-show after each compile.
+Access via Tools → DDevExtensions → "Build Statistics..." when enabled. Can also auto-show after each compile.
 
 ### Project Manager
 
@@ -416,11 +480,23 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
 
 - Tree view of all project units with their dependencies
 - Separate display of interface and implementation uses clauses
+- **New in 3.3.0** - "Uses" / "Used By" view modes - toggle between forward dependencies and reverse dependencies ("what units use this unit?")
+- **New in 3.3.0** - Dependency depth indicator - shows how deep each unit sits in the dependency chain (e.g., `[0]` = no project dependencies, `[3]` = depends on units at depth 2)
 - Circular reference detection with visual indicators
-- Filter/search to find specific units
-- Double-click to open unit in editor
-- Expand/collapse all for quick navigation
-Access via Tools menu → "Dependency Viewer..." when enabled.
+- **New in 3.3.0** - Units in any circular reference marked with `(!)` prefix in the tree (e.g., `(!) [1] ReportsFrm`)
+- **New in 3.3.0** - Enhanced circular reference display showing which uses clause causes each link (`-[I]->` for interface, `-[impl]->` for implementation)
+- **New in 3.3.0** - Color-coded circular reference count (green=none, orange=10-99, red=100+)
+- **New in 3.3.0** - Click a circular reference to mark those specific cycle members with `>>> <<<` in the tree
+- **New in 3.3.0** - Double-click a circular reference to open the first unit in the editor
+- **New in 3.3.0** - Auto-sizing tree panel based on longest unit name
+- **New in 3.3.0** - Impact Analysis panel - select any unit to see:
+  - Direct dependents count (units that directly use the selected unit)
+  - Transitive dependents count (all units affected, including indirect dependencies)
+  - Risk level indicator (Safe/Low/Medium/High) with color-coded visual
+- Double-click tree nodes to open unit in editor
+- Expand/collapse for navigation
+
+Access via Tools → DDevExtensions → "Dependency Viewer..." when enabled.
 
 **New in 3.0 - Unused Unit Detector** (default: off)
 Scans your project for units in uses clauses that aren't actually referenced in code. Helps reduce compile times and clean up unnecessary dependencies. Features include:
@@ -431,7 +507,7 @@ Scans your project for units in uses clauses that aren't actually referenced in 
 - Right-click → "Add to Ignore List" to exclude false positives (e.g., component registration units)
 - Ignore list also configurable via DDevExtensions Options
 - Export results to CSV or copy to clipboard
-Access via Tools menu → "Unused Unit Detector..." when enabled.
+Access via Tools → DDevExtensions → "Unused Unit Detector..." when enabled.
 
 **New in 3.1 - TODO/FIXME Aggregator** (default: on)
 Scans your project for TODO, FIXME, HACK, BUG, NOTE, and other comment markers and displays them in a centralized list. Features include:
@@ -443,7 +519,7 @@ Scans your project for TODO, FIXME, HACK, BUG, NOTE, and other comment markers a
 - Double-click to navigate to source line
 - Export to CSV or copy to clipboard
 - Configurable patterns via DDevExtensions Options
-Access via Tools menu → "TODO/FIXME Aggregator..." when enabled.
+Access via Tools → DDevExtensions → "TODO/FIXME Aggregator..." when enabled.
 
 **New in 3.1 - Code Style Checker** (default: on)
 Checks your code for Delphi naming convention compliance. Features include:
@@ -458,7 +534,7 @@ Checks your code for Delphi naming convention compliance. Features include:
 - Double-click to navigate to source
 - Export to CSV or copy to clipboard
 - Enable/disable individual rules via DDevExtensions Options
-Access via Tools menu → "Code Style Checker..." when enabled.
+Access via Tools → DDevExtensions → "Code Style Checker..." when enabled.
 
 **New in 3.1 - Dead Code Detector** (default: on)
 Detects procedures, functions, and fields that are never referenced in your project. Features include:
@@ -471,7 +547,96 @@ Detects procedures, functions, and fields that are never referenced in your proj
 - Double-click to navigate to source
 - Right-click → "Add to Ignore List" for false positives
 - Export to CSV or copy to clipboard
-Access via Tools menu → "Dead Code Detector..." when enabled.
+Access via Tools → DDevExtensions → "Dead Code Detector..." when enabled.
+
+**New in 3.3.1 - Unreachable Code Detector** (default: on)
+Finds code that can never execute because it follows a statement that always exits the current scope. Features include:
+
+- Detects code after Exit, Raise, Break, Continue, Halt, and Abort calls
+- Smart detection: ignores conditional terminators (e.g., `if X then Exit;` - the code after is reachable)
+- Case statement aware: recognizes terminators inside case branches (e.g., `0: Exit;` followed by `1: ...`)
+- Handles variables named after keywords (e.g., `Continue := False;` is recognized as an assignment)
+- Properly skips string literals including Delphi 12+ triple-quoted multi-line strings
+- Conditional compilation aware: reads project defines and correctly handles `{$IFDEF}`, `{$IFNDEF}`, `{$IF}`, and `{$ELSE}` blocks
+- Shows the project name being scanned
+- Shows the reason why the code is unreachable
+- Filter by reason type (After Exit, After Raise, After Break, etc.)
+- Double-click to navigate to the unreachable line
+- Export to CSV or copy to clipboard
+
+**Known Limitations:**
+- Complex `{$IF}` expressions (e.g., with `and`/`or` operators) cannot be fully evaluated and the block is skipped
+- Assembly blocks with embedded jumps are not analyzed
+- Only scans the implementation section (interface section is skipped)
+
+**Note:** This is a static analysis tool and may not catch all cases. Results should always be manually verified before making code changes.
+
+Access via Tools → DDevExtensions → "Unreachable Code Detector..." when enabled.
+
+**New in 3.4 - Uses Clause Manager** (default: on)
+Automatically analyzes which symbols from each unit are used in the interface vs implementation sections, then recommends moving units to their optimal uses clause location. Features include:
+
+- Build exports database from project search paths (shows unit count when complete)
+- Analyze current unit's identifier usage in interface and implementation sections
+- Recommend optimal uses clause placement for each unit
+- Show which identifiers from each unit are used and where
+- Apply changes with full undo support (Ctrl+Z)
+- **Right-click "Move to Recommended Section"** to move selected unit(s) individually
+- RTL/VCL priority for ambiguous identifiers (when same identifier is exported by multiple units)
+- Export results to CSV or copy to clipboard
+- Double-click to navigate to source
+
+**How it works:**
+1. Click "Build Database" to scan all units in the project's search path and build an exports database
+2. Click "Analyze Unit" to analyze the current file's identifier usage
+3. Review the recommendations showing which units should move between uses clauses
+4. Click "Apply Changes" to automatically reorganize the uses clauses
+
+**Decision Logic:**
+- A unit should be in the **interface** uses clause if ANY of its identifiers appear in the interface section
+- A unit should be in the **implementation** uses clause if ALL of its identifiers appear only in the implementation section
+- When an identifier is exported by multiple units, RTL/VCL units take priority
+
+**Known Limitations:**
+- Ambiguous identifiers may not always be resolved correctly without type information
+- Implicit uses (System unit) are not analyzed
+- Generic type parameters require full analysis
+- First database build is slow (subsequent analyses are fast)
+
+Access via Tools → DDevExtensions → "Uses Clause Manager..." when enabled.
+
+**New in 3.4.1 - Empty Event Handler Detector** (default: on)
+Finds event handlers that have empty bodies (just begin/end with no code). These are typically leftover from double-clicking components in the form designer. Features include:
+
+- Detects common event handler patterns (OnClick, OnChange, OnCreate, etc.)
+- Shows class name, method name, and line number
+- Double-click to navigate to source
+- **Non-modal dialog**: Stays open while you work in the IDE; clears results when closed
+- Export to CSV or copy to clipboard
+
+Access via Tools → DDevExtensions → "Empty Event Handler Detector..." when enabled.
+
+**New in 3.4.1 - DFM/PAS Consistency Checker** (default: on)
+Detects inconsistencies between DFM files and their corresponding PAS file field declarations. Catches bugs that can occur after renaming or refactoring. Features include:
+
+- **Missing in PAS**: Component exists in DFM but field is not declared in the form class
+- **Missing in DFM**: Field declared in PAS but no corresponding component in DFM (orphaned declaration)
+- **Type Mismatch**: Component exists in both but types differ (e.g., TButton in DFM, TLabel in PAS)
+- Shows PAS Type/Line and DFM Type/Line for precise navigation (line columns centered)
+- **Filter by control type**: Focus on Input Controls (TEdit, TComboBox, TButton - likely need attention) or Passive Controls (TLabel, TPanel - usually safe to ignore)
+- Double-click navigation: Opens form designer and selects the component (Missing in PAS) or navigates to PAS declaration (Missing in DFM, Type Mismatch)
+- **Non-modal dialog**: Stays open while you work in the IDE; clears results when closed
+- Export to CSV or copy to clipboard
+
+**Note:** "Missing in DFM" intelligently filters out:
+- Non-component types (TStringList, TList, TBitmap, TThread, etc.)
+- Method parameters (correctly skips procedure/function parameter declarations)
+- State/activity types (TGridDrawState, TCloseAction, etc.)
+- Abstract base classes used as variables (TDataSet, TComponent, TControl)
+
+Not all "Missing in PAS" findings indicate problems - passive controls (TLabel, TPanel) often don't need declarations as they're purely visual.
+
+Access via Tools → DDevExtensions → "DFM/PAS Consistency..." when enabled.
 
 ### Debugger
 
@@ -483,4 +648,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.2.1 – 4 January 2026*
+*Version: 3.4.1 – 5 January 2026*

@@ -2,7 +2,9 @@
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
-{* (C) 2006-2007 Andreas Hausladen                                            *}
+{* (C) 2006-2024 Andreas Hausladen                                            *}
+{* (C) 2021-2025 DelphiPraxis                                                 *}
+{* (C) 2026 Ian Branch, Claude code                                           *}
 {*                                                                            *}
 {******************************************************************************}
 
@@ -33,6 +35,7 @@ procedure InitAppDataDirectory; // called by InstallHooks
 var
   APIHookList: TJclPeMapImgHooks;
   AppDataDirectory: string;
+  DDevExtensionsMenu: TMenuItem;  // Submenu for DDevExtensions tools
 
 implementation
 
@@ -158,11 +161,24 @@ end;
 procedure IDELoaded;
 var
   I, Index: Integer;
-  Item: TMenuItem;
+  Item, SeparatorItem: TMenuItem;
 begin
-  MenuItemOptions := TMenuItem.Create(nil);
+  // Create main DDevExtensions submenu
+  DDevExtensionsMenu := TMenuItem.Create(nil);
+  DDevExtensionsMenu.Caption := 'DDevExtensions';
+
+  // Create Options... menu item as first child
+  MenuItemOptions := TMenuItem.Create(DDevExtensionsMenu);
   MenuItemOptions.OnClick := MakeNotifyEvent(nil, @ShowOptionsDialog);
-  MenuItemOptions.Caption := sMenuItemDDevExtensionsOptions;
+  MenuItemOptions.Caption := '&Options...';
+  DDevExtensionsMenu.Add(MenuItemOptions);
+
+  // Add separator after Options
+  SeparatorItem := TMenuItem.Create(DDevExtensionsMenu);
+  SeparatorItem.Caption := '-';
+  DDevExtensionsMenu.Add(SeparatorItem);
+
+  // Add DDevExtensions submenu to Tools menu
   Item := FindMenuItem('ToolsMenu');
   if Item <> nil then
   begin
@@ -170,9 +186,9 @@ begin
     if Index = -1 then
       Index := Item.IndexOf(FindMenuItem('ToolsToolsItem')) - 1;
     if Index >= 0 then
-      Item.Insert(Index + 1, MenuItemOptions)
+      Item.Insert(Index + 1, DDevExtensionsMenu)
     else
-      Item.Insert(1, MenuItemOptions);
+      Item.Insert(1, DDevExtensionsMenu);
   end;
 
   Configuration.BeginUpdate;
@@ -240,6 +256,7 @@ begin
 
     FiniComponentManager;
 
+    FreeAndNil(DDevExtensionsMenu);
     FreeAndNil(DataModuleImages);
   end;
 end;

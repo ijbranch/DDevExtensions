@@ -1,15 +1,11 @@
-DDevExtensions - Some Potential Enhancements
-======================================
+DDevExtensions - Potential Enhancements
+=======================================
 
 High-Value Enhancements
 -----------------------
 
 1. Code Metrics Dashboard
    Extend the Build Time Statistics feature to include:
-   [DONE] Lines of code per unit
-     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
-   [DONE] Cyclomatic complexity tracking
-     COMPLEXITY: High | EFFORT: Moderate | BENEFIT: Medium
    - Historical build time trends (graph over multiple builds)
      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
    - Export to JSON/HTML reports
@@ -23,22 +19,11 @@ High-Value Enhancements
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
    - Layer violation detection (configurable architecture rules)
      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
-   - Impact analysis ("what breaks if I change this unit?")
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Very High
-
 
 Productivity Features
 ---------------------
 
-3. Smart Uses Clause Manager
-   - Auto-organize uses clauses (interface vs implementation)
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
-   - Auto-add missing units based on identifiers
-     COMPLEXITY: High | EFFORT: Significant | BENEFIT: Very High
-   - Group units by category (VCL, RTL, third-party)
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
-
-4. Enhanced Code Navigation
+3. Enhanced Code Navigation
    - "Go to implementation" from interface declarations
      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
    - Quick navigation between form and unit
@@ -89,35 +74,15 @@ Code Quality
 ------------
 
 9. Code Style Checker
-    [DONE] Configurable naming convention enforcement
-      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
-    - Detect common anti-patterns
-      COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
-    - Integration with the existing compiler progress UI
-      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium
-
-10. Dead Code Detector
-    Extend the Unused Unit Detector to also find:
-    [DONE] Unused procedures/functions
-      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
-    [DONE] Unused private fields
-      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
-    - Unreachable code blocks
-      COMPLEXITY: Very High | EFFORT: Significant | BENEFIT: Medium
-
-11. TODO/FIXME Aggregator
-    [DONE] Scan project for TODO comments
-      COMPLEXITY: Low | EFFORT: Low | BENEFIT: High
-    [DONE] Display in a dockable panel
-      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: High
-    [DONE] Filter by priority/author/date
-      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
-
+   - Detect common anti-patterns
+     COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
+   - Integration with the existing compiler progress UI
+     COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium
 
 Integration Features
 --------------------
 
-12. Git Integration Enhancements
+10. Git Integration Enhancements
     - Show git status in Project Manager
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
     - Quick diff from editor gutter
@@ -125,7 +90,7 @@ Integration Features
     - Blame annotations
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
 
-13. External Tool Integration
+11. External Tool Integration
     - Configure external formatters (JEDI Code Format, etc.)
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
     - Run external analyzers with results in IDE
@@ -133,7 +98,7 @@ Integration Features
     - Custom tool buttons in toolbar
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
-14. Documentation Generator
+12. Documentation Generator
     - Generate XMLDoc stubs for undocumented methods
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Preview documentation in IDE
@@ -142,26 +107,28 @@ Integration Features
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
 
 
-Quick Wins (Lower Effort)
--------------------------
+Editor & UI Enhancements
+------------------------
 
-15. Editor Enhancements
+13. Editor Enhancements
     - Minimap/code outline in editor margin
       COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
     - Bracket pair colorization
       COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
     - Sticky scroll (keep class/method name visible)
       COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium-High
+    - Smart Clipboard - Clipboard ring with history
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
 
-16. Search Improvements
+14. Search Improvements
     - Search history with favorites
-      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
-    - Search scope presets (current unit, project, group)
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
     - Recent search results panel
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+    - Search scope presets (current unit, project, group)
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
-17. UI/UX Polish
+15. UI/UX Polish
     - Dark theme support for extension dialogs
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Keyboard shortcut customization for all features
@@ -170,9 +137,122 @@ Quick Wins (Lower Effort)
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
 
-Top 3 Recommendations (Impact vs Effort)
+Project Helpers
+---------------
+
+16. DCU Cleaner
+    - One-click cleanup of compiled units
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+
+17. Search Path Validator
+    - Check for missing/invalid paths in project options
+      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium-High
+
+
+Code Quality Extensions (Building on Existing Tools)
+----------------------------------------------------
+
+18. Conditional Compilation Visualizer
+    - Show which {$IFDEF} paths are active based on project defines
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Extends Unreachable Code Detector's define parsing infrastructure
+
+20. Uses Clause Sorter
+    - One-click alphabetical or categorical sorting
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+    - Simpler alternative to full Smart Uses Clause Manager (#3)
+
+21. Unit Initialization Order Tracker
+    - Visualize initialization/finalization sequence across units
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Common debugging pain point for large projects
+
+
+Navigation & Productivity (Low-Hanging Fruit)
+---------------------------------------------
+
+22. Interface/Implementation Section Toggle
+    - Keyboard shortcut to jump between interface and implementation sections
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: High
+    - Extremely high daily use value
+
+23. Code Region Navigator
+    - Popup to jump between {$REGION} blocks in current unit
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+    - Useful for navigating large units
+
+24. Recent Edits History
+    - Navigate to last N edit locations (beyond bookmarks)
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
+    - IDE lacks this feature natively
+
+25. Quick Project Switcher
+    - Fuzzy-search popup for switching between projects in a group
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+    - Faster than navigating Project Manager tree
+
+
+Form Designer Helpers (Extending Current Work)
+----------------------------------------------
+
+26. Component Property Comparison
+    - Diff properties between two selected components
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+    - Useful for ensuring consistent UI styling
+
+28. Find/Replace in DFM
+    - Search and replace within form definition files
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
+    - No good built-in way to do this currently
+
+
+Reporting & Analysis (Leveraging Parser)
 ----------------------------------------
 
-1. [DONE] TODO/FIXME Aggregator (#11) - All sub-items are low complexity with high benefit
-2. Smart Uses Clause Manager (#3) - High daily productivity impact
-3. Debug Session Manager (#7) - Solves real pain point, moderate complexity
+29. Project Health Dashboard
+    - Combined summary view from all code quality tools
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+    - Single overview vs running 5+ separate tools
+
+30. Cross-Reference Report
+    - Generate symbol usage report across entire project
+      COMPLEXITY: Medium-High | EFFORT: Moderate-Significant | BENEFIT: Medium-High
+    - Leverages existing parser infrastructure
+
+31. Metrics Trend Tracking
+    - Store metrics over time, detect regressions
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+    - Extends Build Statistics with historical analysis
+
+
+Lower-Effort Wins
+-----------------
+
+32. Clipboard Code Reformatter
+    - Adjust pasted code indentation to match current context
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+    - Quality-of-life improvement
+
+33. Code Collapse Memory
+    - Remember folded/collapsed regions between IDE sessions
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+    - Editor state persistence
+
+34. Resource String Editor
+    - Visual editor for managing resourcestring sections
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+    - No good built-in option for this
+
+35. Binary Resource Previewer
+    - Preview icons/images in RES files inline in IDE
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+    - Saves opening external tools
+
+
+Top Recommendations (Impact vs Effort)
+--------------------------------------
+
+1. Debug Session Manager (#7) - Solves real pain point, moderate complexity
+2. Export to DOT/GraphViz format (#2) - Low effort, good visualization benefit
+3. Uses Clause Sorter (#20) - Low effort, immediate benefit
+4. Project Health Dashboard (#29) - Unifies code quality tools into one summary view

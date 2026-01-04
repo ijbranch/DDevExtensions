@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.2.1 | Comprehensive Feature Reference
+Version 3.4.1 | Comprehensive Feature Reference
 
 ---
 
@@ -18,18 +18,20 @@ Version 3.2.1 | Comprehensive Feature Reference
 | Feature | Default | Access Method |
 |---------|---------|---------------|
 | Auto-save After Compile | OFF | Options |
-| Build Statistics | OFF | Tools menu |
-| Code Style Checker | ON | Tools menu |
+| Build Statistics | OFF | DDevExtensions submenu |
+| Code Style Checker | ON | DDevExtensions submenu |
 | Compile Backup | ON | Automatic |
 | Compile Progress | ON | Automatic |
 | Component Selector | OFF | Configurable hotkey |
 | Confirm Ctrl+F1 While Debugging | ON | Automatic |
-| Dead Code Detector | ON | Tools menu |
-| Dependency Viewer | OFF | Tools menu |
+| Dead Code Detector | ON | DDevExtensions submenu |
+| DFM/PAS Consistency Checker | ON | DDevExtensions submenu |
+| Dependency Viewer | OFF | DDevExtensions submenu |
 | Disable Package Cache | OFF | Options |
 | Disable Source Formatter Hotkey | OFF | Options |
 | Don't Break on Spawned Processes | OFF | Options |
 | Editor Tab Double-Click | Zoom | Double-click tab |
+| Empty Event Handler Detector | ON | DDevExtensions submenu |
 | Enhanced Key Bindings | ON | Automatic |
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
@@ -39,13 +41,16 @@ Version 3.2.1 | Comprehensive Feature Reference
 | Remove PixelsPerInch Property | OFF | Options |
 | Remove TextHeight Property | OFF | Options |
 | Replace Open File At Cursor | OFF | Options |
+| Section Toggle (Interface/Implementation) | ON | Ctrl+Shift+Up/Down |
 | Show All Inheritable Modules | OFF | Options |
 | Show Project for Active File | ON | Automatic |
 | Structure View Search | OFF | Configurable hotkey |
 | Switch Project for File | ON | Automatic |
 | TLabel.Margins.Bottom to Zero | ON | Automatic |
-| TODO/FIXME Aggregator | ON | Tools menu |
-| Unused Unit Detector | OFF | Tools menu |
+| TODO/FIXME Aggregator | ON | DDevExtensions submenu |
+| Unreachable Code Detector | ON | DDevExtensions submenu |
+| Unused Unit Detector | OFF | DDevExtensions submenu |
+| Uses Clause Manager | ON | DDevExtensions submenu |
 
 ---
 
@@ -54,9 +59,29 @@ Version 3.2.1 | Comprehensive Feature Reference
 ### Accessing DDevExtensions Options
 
 1. Open RAD Studio/Delphi IDE
-2. Go to **Tools** > **Options**
+2. Go to **Tools** > **DDevExtensions** > **Options...**
 3. In the Options dialog, look for **DDevExtensions** in the left tree
 4. Expand to see all feature categories
+
+### DDevExtensions Menu Structure
+
+All DDevExtensions tools are now organized under a single submenu:
+
+```
+Tools
+  └── DDevExtensions
+        ├── Options...
+        ├── ─────────────
+        ├── Code Style Checker...
+        ├── Dead Code Detector...
+        ├── Dependency Viewer...
+        ├── DFM/PAS Consistency...
+        ├── Empty Event Handler Detector...
+        ├── TODO/FIXME Aggregator...
+        ├── Unreachable Code Detector...
+        ├── Unused Unit Detector...
+        └── Uses Clause Manager...
+```
 
 ### Configuration Files
 
@@ -89,7 +114,7 @@ Each feature has its own XML configuration file (e.g., `KeyBindings.xml`, `Compi
 
 **Location:** Options > DDevExtensions > Compile Progress
 
-**Access:** Tools > Build Statistics...
+**Access:** Tools > DDevExtensions > Build Statistics...
 
 #### Features
 
@@ -142,7 +167,7 @@ Each feature has its own XML configuration file (e.g., `KeyBindings.xml`, `Compi
 
 **Location:** Options > DDevExtensions > Code Style Checker
 
-**Access:** Tools > Code Style Checker...
+**Access:** Tools > DDevExtensions > Code Style Checker...
 
 #### Rules
 
@@ -234,7 +259,7 @@ Enable/disable individual rules:
 
 **Location:** Options > DDevExtensions > Dead Code Detector
 
-**Access:** Tools > Dead Code Detector...
+**Access:** Tools > DDevExtensions > Dead Code Detector...
 
 #### What It Detects
 
@@ -281,6 +306,251 @@ Set*
 
 ---
 
+### DFM/PAS Consistency Checker (New in 3.4.1)
+
+**Purpose:** Detects inconsistencies between DFM files and their corresponding PAS file field declarations.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > DFM/PAS Consistency
+
+**Access:** Tools > DDevExtensions > DFM/PAS Consistency...
+
+#### Why Use This Tool?
+
+When you rename or delete components in the form designer, sometimes the DFM and PAS files can get out of sync:
+
+- A component is deleted from the DFM but the field declaration remains in the PAS (Missing in DFM)
+- A component exists in the DFM but no field declaration in PAS (Missing in PAS)
+- A field is renamed in the PAS but not updated in the DFM
+- A component type is changed but the field type doesn't match (Type Mismatch)
+
+These inconsistencies can cause runtime errors, access violations, or unexpected behavior.
+
+#### What It Detects
+
+| Issue Type | Description |
+|------------|-------------|
+| Missing in PAS | Component exists in DFM but field is not declared in the form class |
+| Missing in DFM | Field declared in PAS but no corresponding component in DFM (orphaned declaration) |
+| Type Mismatch | Component exists in both but types differ |
+
+**Note:** "Missing in DFM" detection intelligently filters out false positives:
+- Collection types: TStringList, TList, TDictionary, TStack, TQueue
+- Graphics objects: TBitmap, TIcon, TPicture, TBrush, TPen, TFont
+- Stream types: TStream and descendants
+- Thread types: TThread and descendants
+- Utility types: TIniFile, TRegistry, JSON types, XML types
+- State/activity types: TGridDrawState, TCloseAction, TShiftState, etc.
+- Abstract base classes: TDataSet, TField, TComponent, TControl, TWinControl
+- Method parameters: Correctly skips procedure/function parameter declarations
+
+#### How to Use
+
+1. Open the tool via Tools > DDevExtensions > DFM/PAS Consistency...
+2. Click "Scan Project" to analyze all forms in the project
+3. Review the results showing any inconsistencies
+4. Double-click an item to navigate:
+   - **Missing in PAS**: Opens the form designer and selects the component
+   - **Missing in DFM**: Opens the PAS file at the field declaration line
+   - **Type Mismatch**: Opens the PAS file at the field declaration line
+5. Fix the issues manually in either the DFM or PAS file
+
+#### How to Interpret Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | The form/data module name |
+| Component | Name of the component/field |
+| Issue | Type of inconsistency (Missing in PAS, Missing in DFM, Type Mismatch) |
+| PAS Type | Field type as declared in the PAS file (empty for Missing in PAS) |
+| PAS Line | Line number in the PAS file where the field is declared ("-" if not in PAS) |
+| DFM Type | Component type as declared in the DFM file (empty for Missing in DFM) |
+| DFM Line | Line number in the DFM file where the component is defined ("-" if not in DFM) |
+| File | Path to the DFM file |
+
+**Note:** The PAS Line and DFM Line columns are centered for easier reading.
+
+#### Understanding "Missing in PAS" Results
+
+**Important:** Not all "Missing in PAS" findings indicate a problem. Components can be categorized as:
+
+**Input Controls (Review Required):**
+These components typically need PAS declarations because code usually reads/writes their values:
+- TEdit, TMemo, TRichEdit, TMaskEdit
+- TComboBox, TListBox, TCheckBox, TRadioButton
+- TDateTimePicker, TSpinEdit, TTrackBar
+- Third-party input controls (TLMDLabeledEdit, TcxTextEdit, etc.)
+
+If an input control is missing from PAS, investigate how the code accesses its value - it may use `FindComponent()`, data binding, or it could be a bug.
+
+**Passive Controls (Usually Safe to Ignore):**
+These components often don't need PAS declarations as they're purely visual:
+- TLabel, TStaticText - Display static text
+- TPanel, TGroupBox, TScrollBox - Layout containers
+- TBevel, TShape, TImage, TSplitter - Decorative/structural
+- TToolBar, TStatusBar, TMainMenu - UI framework
+
+**Note:** Event handlers still work without PAS declarations. A button's OnClick will fire even without a `Button1: TButton` field - the event is wired in the DFM. However, you cannot reference `Button1.Caption` in code without the declaration.
+
+#### Understanding "Missing in DFM" Results
+
+"Missing in DFM" means a field is declared in the PAS file but there's no corresponding component in the DFM. This typically indicates:
+
+**Orphaned Declarations (Should Fix):**
+- A component was deleted from the form but the field declaration wasn't removed
+- A component was renamed in the form but the old declaration remains
+- Copy/paste errors left stale declarations
+
+**What to Do:**
+1. Double-click to navigate to the declaration in the PAS file
+2. Verify the component doesn't exist in the form
+3. Delete the orphaned field declaration from the class
+
+**Note:** The detector automatically filters out common non-component types (TStringList, TBitmap, TThread, etc.) that are legitimately declared as fields without being DFM components.
+
+#### Filtering Results
+
+Use the **Filter** dropdown to focus on specific component types:
+- **All**: Show all inconsistencies
+- **Input Controls**: Show only input controls (TEdit, TComboBox, etc.) - items that likely need attention
+- **Passive Controls**: Show only passive controls (TLabel, TPanel, etc.) - items usually safe to ignore
+
+#### Example Issues
+
+**Missing in PAS:**
+```
+Unit: Form1
+Component: Button1
+Issue: Missing in PAS
+PAS Type: (empty)
+DFM Type: TButton
+```
+The DFM contains `object Button1: TButton` but the form class doesn't declare a `Button1` field.
+
+**Missing in DFM:**
+```
+Unit: Form1
+Component: edtUserName1
+Issue: Missing in DFM
+PAS Type: TRzDBEdit
+DFM Type: (empty)
+```
+The PAS file declares `edtUserName1: TRzDBEdit` but there's no corresponding component in the DFM. This is likely an orphaned declaration from a deleted component.
+
+**Type Mismatch:**
+```
+Unit: Form1
+Component: Panel1
+Issue: Type Mismatch
+PAS Type: TGroupBox
+DFM Type: TPanel
+```
+The DFM has `object Panel1: TPanel` but the PAS declares `Panel1: TGroupBox`.
+
+#### Dialog Behavior
+
+- **Non-modal**: The dialog stays open while you work in the IDE, allowing you to double-click items to navigate and fix issues without closing the checker
+- **Clears on close**: Results are cleared when the dialog is closed; re-scan when you open it again
+- **Singleton**: Clicking the menu item while the dialog is open brings it to front
+
+#### Configuration Options
+
+- **Enabled**: Master switch for the feature
+
+---
+
+### Empty Event Handler Detector (New in 3.4.1)
+
+**Purpose:** Finds event handlers that have empty bodies (just begin/end with no code).
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Empty Event Handler
+
+**Access:** Tools > DDevExtensions > Empty Event Handler Detector...
+
+#### Why Use This Tool?
+
+Empty event handlers are often created accidentally when double-clicking components in the form designer. They:
+
+- Clutter your code with unnecessary methods
+- Increase the compiled executable size slightly
+- Make code harder to read and maintain
+- May indicate forgotten implementation
+
+#### What It Detects
+
+Event handlers with empty bodies - methods that only contain:
+```pascal
+procedure TForm1.Button1Click(Sender: TObject);
+begin
+  // Nothing here - just begin/end
+end;
+```
+
+The detector recognizes common event handler naming patterns:
+- `*Click` - Button clicks, menu clicks
+- `*Change` - Edit changes, combobox changes
+- `*Create` - Form/frame creation
+- `*Destroy` - Form/frame destruction
+- `*Enter`, `*Exit` - Focus events
+- `*KeyDown`, `*KeyUp`, `*KeyPress` - Keyboard events
+- `*MouseDown`, `*MouseUp`, `*MouseMove` - Mouse events
+- And many more...
+
+#### How to Use
+
+1. Open the tool via Tools > DDevExtensions > Empty Event Handler Detector...
+2. Click "Scan Project" to analyze all units in the project
+3. Review the results showing empty event handlers
+4. Double-click an item to navigate to the source
+5. Delete the empty methods and their declarations
+
+#### How to Interpret Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | Source file name |
+| Class | The form/frame class containing the method |
+| Method | Name of the empty event handler |
+| Line | Line number where the method is defined |
+
+#### Deleting Empty Event Handlers
+
+To properly remove an empty event handler:
+
+1. In the form designer, select the component
+2. In Object Inspector, find the event property
+3. Clear the event name (select and delete)
+4. Delete the method body from the source code
+
+Or manually:
+1. Delete the method implementation from the implementation section
+2. Delete the method declaration from the class definition
+3. If the event is still linked in the DFM, clear it via Object Inspector
+
+#### Dialog Behavior
+
+- **Non-modal**: The dialog stays open while you work in the IDE, allowing you to double-click items to navigate and fix issues without closing the detector
+- **Clears on close**: Results are cleared when the dialog is closed; re-scan when you open it again
+- **Singleton**: Clicking the menu item while the dialog is open brings it to front
+
+#### Configuration Options
+
+- **Enabled**: Master switch for the feature
+
+#### False Positives
+
+Some empty event handlers are intentional:
+- Event handlers that deliberately do nothing to prevent default behavior
+- Placeholder handlers for future implementation
+- Handlers used with visual inheritance
+
+Review each result before deleting.
+
+---
+
 ### Dependency Viewer
 
 **Purpose:** Visualizes unit dependencies within your project.
@@ -289,35 +559,240 @@ Set*
 
 **Location:** Options > DDevExtensions > Dependency Viewer
 
-**Access:** Tools > Dependency Viewer...
+**Access:** Tools > DDevExtensions > Dependency Viewer...
 
 #### Features
 
 - Tree view of all project units
 - Shows interface and implementation uses clauses
-- Circular reference detection
-- Filter/search functionality
+- **Uses / Used By view modes** - toggle between forward and reverse dependencies
+- **Dependency depth indicator** - shows each unit's position in the dependency chain
+- **Impact Analysis panel** - shows direct/transitive dependents and risk level for selected unit
+- Circular reference detection with enhanced display
 - Double-click to open unit
 
 #### How to Use
 
 1. Enable in Options
-2. Open via Tools > Dependency Viewer...
+2. Open via Tools > DDevExtensions > Dependency Viewer...
 3. Click "Scan Project" to analyze dependencies
+4. Use the radio buttons to switch between "Uses" and "Used By" views
+5. Toggle "Show Depth" to display dependency depth numbers
 
-#### Understanding the Display
+#### View Modes
+
+| Mode | Description |
+|------|-------------|
+| Uses | Shows what units each unit depends on (forward dependencies) |
+| Used By | Shows what units depend on each unit (reverse dependencies) |
+
+The "Used By" view answers the question "What would break if I changed this unit?"
+
+#### Understanding Dependency Depth
+
+When "Show Depth" is enabled, each unit displays a depth number:
 
 ```
-MyUnit.pas
-+-- [Interface Uses]
-|   +-- SysUtils
-|   +-- Classes
-|   +-- MyOtherUnit (!) <- Circular reference indicator
-+-- [Implementation Uses]
-    +-- Forms
+[0] SysUtils        <- No project dependencies (only RTL/VCL)
+[0] Classes         <- No project dependencies
+[1] MyUtils         <- Depends only on depth-0 units
+[2] DataModule      <- Depends on MyUtils (depth 1)
+[3] MainForm        <- Depends on DataModule (depth 2)
 ```
 
-The `(!)` marker indicates a circular dependency, which can cause compilation issues.
+**Use cases for depth:**
+- Identify units that pull in long dependency chains
+- Find natural architectural layers
+- Spot potential circular dependency risks (units at same depth referencing each other)
+
+#### Understanding the Tree Display
+
+Units involved in any circular reference are marked with `(!)`:
+
+```
+(!) [1] ReportsFrm      <- In at least one cycle
+(!) [3] MainFrm         <- In at least one cycle
+[0] CompanyData         <- Not in any cycle
+[0] dmImages            <- Not in any cycle
+```
+
+When expanded, child nodes show `[interface]` or `[implementation]`:
+
+```
+(!) [2] MyUnit
++-- [1] SysUtils [interface]
++-- [1] Classes [interface]
++-- [0] MyOtherUnit [implementation]
+```
+
+#### Circular Reference Detection
+
+Circular references are displayed in the right panel with enhanced information:
+
+```
+UnitA -[I]-> UnitB -[impl]-> UnitC -[I]-> UnitA
+```
+
+| Marker | Meaning |
+|--------|---------|
+| `-[I]->` | Dependency via interface uses clause |
+| `-[impl]->` | Dependency via implementation uses clause |
+
+The "Circular References" label is color-coded by severity:
+
+| Count | Color | Meaning |
+|-------|-------|---------|
+| 0 | Green | No circular references - healthy codebase |
+| 1-9 | Normal | Few cycles - manageable |
+| 10-99 | Orange | Moderate cycles - attention needed |
+| 100+ | Red | Many cycles - significant architectural issue |
+
+This helps identify how to break the cycle - moving a reference from interface to implementation often resolves circular dependencies.
+
+#### Circular Reference Interaction
+
+- **Initial view**: Units in any cycle show `(!)` prefix automatically
+- **Click** a circular reference to mark those specific cycle members with `>>> <<<` markers:
+  ```
+  >>> [1] ReportsFrm <<<
+  ```
+- **Double-click** a circular reference to open the first unit in the IDE editor
+- Click a different circular reference to update the markers
+- Markers clear when you click elsewhere in the list
+
+#### Auto-sizing
+
+The tree panel automatically sizes to fit the longest unit name after scanning. The splitter remains draggable for manual adjustment.
+
+#### Impact Analysis Panel
+
+**Purpose:** Answers the question "What breaks if I change this unit?"
+
+When you click any unit in the tree, the Impact Analysis panel (top-right) shows how risky it would be to modify that unit.
+
+**What the fields mean:**
+
+| Field | What It Tells You |
+|-------|-------------------|
+| **Unit** | The unit you selected |
+| **Direct dependents** | How many units have `uses ThisUnit` in their code |
+| **Total affected** | All units that might need retesting if you change this unit |
+| **Risk** | How careful you need to be (color-coded) |
+
+**Why is "Total affected" sometimes higher than "Direct dependents"?**
+
+This is the **ripple effect**. If you change UnitA:
+- Units that directly use UnitA need retesting (direct dependents)
+- But units that use *those* units might also be affected (transitive)
+
+Example: You change `dmData`. Forms that use `dmData` might behave differently. And forms that use *those* forms might also be affected.
+
+**Risk Levels:**
+
+| Level | Color | Count | What To Do |
+|-------|-------|-------|------------|
+| Safe | Green | 0 | Change freely - nothing uses this unit |
+| Low | Light Green | 1-3 | Low risk - minor testing needed |
+| Medium | Orange | 4-10 | Be careful - test affected areas |
+| High | Red | 11+ | High risk - thorough testing required |
+
+**Example:**
+
+```
+Impact Analysis:
+  Unit: dmCurrent
+  Direct dependents: 37
+  Total affected: 38 units    [Red] Risk: High
+```
+
+This tells you:
+- 37 units have `uses dmCurrent` in their code
+- 38 units total could be affected (37 direct + 1 that uses one of those 37)
+- **Risk is High** - be very careful modifying this unit, test thoroughly
+
+**Compare to a safe unit:**
+
+```
+Impact Analysis:
+  Unit: MyHelperUtils
+  Direct dependents: 0
+  Total affected: 0 units    [Green] Risk: Safe
+```
+
+This unit can be changed freely - nothing depends on it.
+
+**When to use Impact Analysis:**
+
+1. **Before modifying a unit** - Check the risk level first
+2. **Before refactoring** - Identify which units are safe to change
+3. **Architecture review** - Units with very high impact may be too central (tight coupling)
+4. **Planning testing** - Know which areas need testing after a change
+
+#### Why Circular References Matter
+
+Circular references can cause:
+- **Compilation order issues** - the compiler may fail or produce unexpected results
+- **Initialization order problems** - unit initialization sections may run in wrong order
+- **Tight coupling** - makes code harder to maintain, test, and refactor
+- **Memory/resource issues** - can prevent proper cleanup in finalization sections
+
+#### How to Analyze a Cycle
+
+1. **Click on a circular reference** to see which units are involved
+2. **Look at the arrows** to understand the dependency direction:
+   ```
+   UnitA -[impl]-> UnitB -[I]-> UnitA
+   ```
+   This means: UnitA uses UnitB in implementation, UnitB uses UnitA in interface
+
+3. **Interface cycles are worse** than implementation cycles:
+   - `-[I]->` (interface) = tight coupling, harder to break
+   - `-[impl]->` (implementation) = looser coupling, often acceptable
+
+#### Strategies to Fix Circular References
+
+**1. Move uses to implementation section**
+```pascal
+// Before: UnitA interface uses UnitB
+interface
+uses UnitB;  // Creates tight coupling
+
+// After: Move to implementation if possible
+implementation
+uses UnitB;  // Looser coupling, may break the cycle
+```
+
+**2. Extract shared types to a common unit**
+```
+Before:  UnitA <-> UnitB (both need TSharedType)
+After:   UnitA -> SharedTypes <- UnitB (no cycle)
+```
+
+**3. Use interfaces instead of concrete classes**
+```pascal
+// Before: UnitA uses UnitB for TConcreteClass
+// After: UnitA uses IMyInterface from a separate unit
+//        UnitB implements IMyInterface
+```
+
+**4. Pass dependencies as parameters**
+```pascal
+// Before: UnitB uses UnitA to access GlobalObject
+// After: Pass the object as a parameter to UnitB's procedures
+```
+
+**5. Use events or callbacks**
+```pascal
+// Before: UnitB directly calls UnitA.DoSomething
+// After: UnitB raises an event, UnitA subscribes to it
+```
+
+#### Prioritizing Fixes
+
+1. **Start with interface cycles** (`-[I]->`) - these are the most problematic
+2. **Focus on units with many cycles** - look for units appearing in multiple circular references
+3. **Implementation-only cycles** (`-[impl]->`) are often acceptable and can be left alone
+4. **Short cycles** (2 units) are usually easier to fix than long chains
 
 ---
 
@@ -396,6 +871,8 @@ The `(!)` marker indicates a circular dependency, which can cause compilation is
 | Ctrl+Alt+Shift+Up | Move line/block up | Move Line/Block |
 | Ctrl+Alt+Shift+Down | Move line/block down | Move Line/Block |
 | Ctrl+Alt+PgUp | Find declaration at cursor | Find Declaration on Caret |
+| Ctrl+Shift+Up | Jump to interface section | Section Toggle |
+| Ctrl+Shift+Down | Jump to implementation section | Section Toggle |
 
 #### Configuration Options
 
@@ -407,6 +884,7 @@ The `(!)` marker indicates a circular dependency, which can cause compilation is
 - **Extended Ctrl+Left/Right**: Smarter word boundary detection
 - **Move Line/Block**: Enable Ctrl+Alt+Shift+Up/Down to move code
 - **Find Declaration on Caret**: Enable Ctrl+Alt+PgUp to find declaration
+- **Section Toggle**: Enable Ctrl+Shift+Up/Down to jump between interface and implementation sections
 
 #### Usage Tips
 
@@ -415,6 +893,8 @@ The `(!)` marker indicates a circular dependency, which can cause compilation is
 2. **Extended Home**: Press Home once to go to first non-whitespace character. Press again to go to column 1.
 
 3. **Move Line/Block**: Place cursor on a line (or select multiple lines), then use Ctrl+Alt+Shift+Up/Down to move the entire block without cut/paste.
+
+4. **Section Toggle**: Press Ctrl+Shift+Up to jump to the `interface` keyword, or Ctrl+Shift+Down to jump to the `implementation` keyword. Works from anywhere in the unit.
 
 ---
 
@@ -634,7 +1114,7 @@ When enabled, the TextHeight property is read from existing DFM files but never 
 
 **Location:** Options > DDevExtensions > TODO Aggregator
 
-**Access:** Tools > TODO/FIXME Aggregator...
+**Access:** Tools > DDevExtensions > TODO/FIXME Aggregator...
 
 #### Detected Patterns
 
@@ -683,6 +1163,176 @@ Default patterns: `TODO,FIXME,HACK,BUG,NOTE,XXX`
 
 ---
 
+### Unreachable Code Detector
+
+**Purpose:** Finds code that can never execute because it follows a statement that always exits the current scope.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Unreachable Code Detector
+
+**Access:** Tools > DDevExtensions > Unreachable Code Detector...
+
+#### Features
+
+- Scans all Pascal units in the active project
+- Displays the project name being analyzed
+- Smart detection that ignores conditional terminators
+- Filter results by reason type
+- Double-click to navigate to source
+- Export to CSV
+
+#### What It Detects
+
+Code that appears after these **unconditional** control flow statements:
+
+| Statement | Description |
+|-----------|-------------|
+| Exit | Returns from the current procedure/function |
+| Raise | Throws an exception |
+| Break | Exits the current loop |
+| Continue | Skips to next loop iteration |
+| Halt | Terminates the program |
+| Abort | Raises a silent exception |
+
+#### Examples of Unreachable Code
+
+```pascal
+procedure Example1;
+begin
+  Exit;
+  ShowMessage('Never shown');  // Unreachable - after Exit
+end;
+
+procedure Example2;
+begin
+  raise Exception.Create('Error');
+  CleanupResources;  // Unreachable - after Raise
+end;
+
+procedure Example3;
+var
+  I: Integer;
+begin
+  for I := 1 to 10 do
+  begin
+    if I = 5 then
+      Break;
+      DoSomething;  // Unreachable - after Break (missing begin/end)
+  end;
+end;
+```
+
+#### Smart Conditional Detection
+
+The detector is smart enough to recognize **conditional terminators** and will NOT flag code after them as unreachable:
+
+```pascal
+// These are CONDITIONAL - the code after IS reachable:
+if X > 10 then Exit;           // Exit only if X > 10
+ShowMessage('Still runs');     // This is reachable - NOT flagged
+
+if Error then raise Exception.Create('Oops');
+DoCleanup;                     // This is reachable - NOT flagged
+
+for I := 1 to 10 do
+begin
+  if Found then Break;         // Break only if Found
+  ProcessItem(I);              // This is reachable - NOT flagged
+end;
+```
+
+The detector only flags code after **unconditional** terminators:
+
+```pascal
+// These are UNCONDITIONAL - the code after is NOT reachable:
+Exit;
+ShowMessage('Never runs');     // FLAGGED - truly unreachable
+
+raise Exception.Create('Error');
+DoCleanup;                     // FLAGGED - truly unreachable
+```
+
+#### How to Interpret Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | Source file name |
+| Line | Line number of the unreachable code |
+| Reason | Why the code is unreachable (After Exit, After Raise, etc.) |
+| Code | The unreachable statement |
+
+#### Configuration Options
+
+- **Enabled**: Master switch
+- **Check After Exit**: Detect code after Exit statements
+- **Check After Raise**: Detect code after Raise statements
+- **Check After Break**: Detect code after Break statements
+- **Check After Continue**: Detect code after Continue statements
+- **Check After Halt**: Detect code after Halt calls
+- **Check After Abort**: Detect code after Abort calls
+
+#### Common Causes
+
+1. **Forgotten code** - Old code left behind after refactoring
+2. **Missing begin/end** - Incorrect block structure makes code appear to follow a control statement
+3. **Debug code** - Temporary Exit/Break added during debugging and not removed
+4. **Copy/paste errors** - Code duplicated incorrectly
+
+#### Smart Detection Features
+
+The detector includes several smart features to minimize false positives:
+
+1. **Conditional terminators**: Code after `if X then Exit;` is correctly recognized as reachable
+2. **Case statement branches**: Terminators inside case branches (e.g., `0: Exit;`) don't flag subsequent case labels as unreachable
+3. **Variables named after keywords**: Assignments like `Continue := False;` are recognized as variable assignments, not control flow
+4. **Parameter declarations**: `var Continue: Boolean` in procedure parameters is recognized as a parameter name
+5. **String literals**: Keywords inside strings (including Delphi 12+ triple-quoted multi-line strings) are properly skipped
+6. **Comments**: Keywords inside comments are ignored
+7. **Interface section**: Only the implementation section is scanned (no executable code in interface)
+8. **Conditional compilation**: Reads project defines and correctly evaluates `{$IFDEF}`, `{$IFNDEF}`, and simple `{$IF Defined(X)}` blocks
+
+#### Conditional Compilation Handling
+
+The detector reads the project's conditional defines and intelligently handles conditional compilation:
+
+| Directive | Behavior |
+|-----------|----------|
+| `{$IFDEF X}` | If X is defined in project, scan the block; otherwise skip to `{$ELSE}` or `{$ENDIF}` |
+| `{$IFNDEF X}` | If X is NOT defined, scan the block; otherwise skip |
+| `{$IF Defined(X)}` | Evaluates simple conditions; scans if true, skips if false |
+| `{$IF NOT Defined(X)}` | Evaluates negated conditions correctly |
+| `{$ELSE}` | Switches between scanning and skipping appropriately |
+| `{$ENDIF}` | Ends the conditional block |
+
+**Example:** If your project defines `DBiUsers`, then code inside `{$IFDEF DBiUsers}` will be scanned, while code inside `{$IFNDEF DBiUsers}` will be skipped.
+
+#### Known Limitations
+
+The detector has the following limitations:
+
+| Limitation | Description |
+|------------|-------------|
+| **Complex `{$IF}` expressions** | Expressions with `and`/`or` operators (e.g., `{$IF Defined(A) or Defined(B)}`) cannot be fully evaluated; the block is skipped to avoid false positives. |
+| **Assembly blocks** | Inline assembly with JMP or other branch instructions is not analyzed. |
+| **Complex conditionals** | Only simple `if X then Terminator;` patterns are detected. Multi-statement conditionals may not be recognized. |
+
+#### False Positives
+
+If you encounter false positives:
+
+1. **Complex `{$IF}` expressions**: Code in blocks with complex boolean expressions is skipped rather than potentially flagging incorrectly
+2. **Intentional unreachable code**: Sometimes unreachable code is left for defensive programming or future use
+3. **Complex control flow**: Nested conditions or unusual patterns may confuse the detector
+
+These are typically few in number and can be noted and ignored.
+
+#### Important Note
+
+This is a static analysis tool and is not perfect. It may not catch all cases of unreachable code, and in rare situations may report false positives. **Always manually verify results before making code changes.** Use it as a guide to identify potential issues, not as an authoritative source.
+
+---
+
 ### Unused Unit Detector
 
 **Purpose:** Finds units in uses clauses that aren't actually referenced in code.
@@ -691,7 +1341,7 @@ Default patterns: `TODO,FIXME,HACK,BUG,NOTE,XXX`
 
 **Location:** Options > DDevExtensions > Unused Unit Detector
 
-**Access:** Tools > Unused Unit Detector...
+**Access:** Tools > DDevExtensions > Unused Unit Detector...
 
 #### Features
 
@@ -734,6 +1384,199 @@ Use "Add to Ignore List" for these cases.
 
 ---
 
+### Uses Clause Manager (New in 3.4)
+
+**Purpose:** Automatically analyzes which symbols from each unit are used in the interface vs implementation sections, then recommends moving units to their optimal uses clause location.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Uses Clause Manager
+
+**Access:** Tools > DDevExtensions > Uses Clause Manager...
+
+#### Why Use This Tool?
+
+Proper uses clause organization provides several benefits:
+
+1. **Faster compilation** - Units in the implementation section don't need to be compiled when only the interface changes
+2. **Better encapsulation** - Reduces coupling by only exposing necessary dependencies in the interface
+3. **Cleaner architecture** - Makes unit dependencies clearer and easier to understand
+4. **Smaller interface sections** - Interface section stays focused on the public API
+
+#### How It Works
+
+The Uses Clause Manager works in three steps:
+
+**Step 1: Build Exports Database**
+- Scans all units in the project's search paths
+- Parses each unit's interface section to extract exported identifiers
+- Builds a database mapping identifiers to their source units
+- This only needs to be done once (or when search paths change)
+
+**Step 2: Analyze Current Unit**
+- Parses the current unit with the Delphi lexer
+- Tracks all identifiers used in the interface section
+- Tracks all identifiers used in the implementation section
+- Matches identifiers to their source units using the exports database
+
+**Step 3: Generate Recommendations**
+- For each unit in the uses clauses:
+  - If ANY identifier from that unit appears in the interface section → recommend **interface**
+  - If ALL identifiers appear only in implementation → recommend **implementation**
+- Shows clear reasoning for each recommendation
+
+#### Using the Tool
+
+1. **Open a Pascal unit** in the editor
+2. **Open Uses Clause Manager** via Tools menu
+3. **Click "Build Database"** (first time only)
+   - Shows progress as it scans units
+   - Shows summary when complete (e.g., "Database built: 450 units scanned")
+   - Database is cached for subsequent analyses
+4. **Click "Analyze Unit"**
+   - Analyzes the current file
+   - Populates the list with recommendations
+5. **Review recommendations**
+   - Select a unit to see which identifiers are used where
+   - Units marked for change have different current/recommended sections
+6. **Apply changes** using one of two methods:
+   - **"Apply Changes" button** - applies all recommendations at once
+   - **Right-click → "Move to Recommended Section"** - moves only selected unit(s)
+   - Both methods support undo (Ctrl+Z)
+
+#### Understanding the Results
+
+| Column | Description |
+|--------|-------------|
+| Unit | Name of the used unit |
+| Current | Where the unit is currently (interface/implementation) |
+| Recommended | Where the unit should be |
+| Reason | Why the recommendation was made |
+
+#### Reason Messages and Suggested Actions
+
+| Reason | Current | Recommended | Action |
+|--------|---------|-------------|--------|
+| **OK - used in both sections** | interface | interface | No action needed. Unit is correctly placed. |
+| **OK - used in interface section** | interface | interface | No action needed. Unit is correctly placed. |
+| **OK - only used in implementation** | implementation | implementation | No action needed. Unit is correctly placed. |
+| **Only used in implementation section** | interface | implementation | **Move to implementation.** Right-click → Move to Recommended Section. |
+| **Identifiers used in interface section** | implementation | interface | **Move to interface.** This unit provides types/constants used in class declarations or function signatures. |
+| **No direct usage detected - review manually** | interface | implementation | **Review carefully.** The unit may be unused, or it may be used implicitly (e.g., component registration, initialization side effects). Check before removing. |
+
+**Color Guide:**
+- Rows where Current = Recommended need no action
+- Rows where Current ≠ Recommended should be reviewed and potentially moved
+
+#### Details Panel
+
+When you select a unit in the list, the details panel shows:
+
+```
+Unit: SysUtils
+
+Identifiers used in INTERFACE section:
+  TStringList, TNotifyEvent
+
+Identifiers used in IMPLEMENTATION section:
+  Format, IntToStr, FileExists
+
+Recommendation: Keep in interface (types used in interface)
+```
+
+This helps you understand why each recommendation is made.
+
+#### Decision Logic
+
+The tool uses the following logic:
+
+| Scenario | Recommendation |
+|----------|---------------|
+| Any identifier in interface | Keep in interface uses |
+| All identifiers in implementation only | Move to implementation uses |
+| No identifiers found | Move to implementation (may be unused) |
+
+#### Handling Ambiguous Identifiers
+
+When the same identifier is exported by multiple units (e.g., `Format` from both `SysUtils` and a custom unit), the tool uses priority:
+
+1. **RTL/VCL units take priority** - System, SysUtils, Classes, etc.
+2. **Closer units second** - Units in the same directory
+3. **Others last** - Third-party and distant units
+
+This matches how Delphi resolves identifiers at compile time.
+
+#### RTL/VCL Priority List
+
+These units are automatically prioritized for ambiguous identifiers:
+
+```
+System, SysUtils, Classes, Types, TypInfo,
+Windows, Messages,
+Vcl.Forms, Vcl.Controls, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Graphics,
+Vcl.Dialogs, Vcl.Menus, Vcl.ComCtrls, Vcl.Grids,
+Data.DB,
+Generics.Collections, Generics.Defaults
+```
+
+#### Export and Copy
+
+- **Export**: Save results to CSV for documentation or further analysis
+- **Copy to Clipboard**: Copy selected items in tab-separated format
+
+#### Configuration Options
+
+- **Enabled**: Master switch for the feature
+
+#### Known Limitations
+
+| Limitation | Description |
+|------------|-------------|
+| **Ambiguous identifiers** | Same identifier exported by multiple units may not resolve correctly without type information |
+| **Implicit uses** | System unit is implicitly used and not analyzed |
+| **Generic types** | `TList<T>` and similar generic instantiations require full type analysis |
+| **First scan is slow** | Building the exports database requires parsing many files (subsequent analyses are fast) |
+| **Cross-project** | Only analyzes the current project's search path |
+
+#### Tips for Best Results
+
+1. **Build database after opening project** - Ensures all search paths are included
+2. **Rebuild database when search paths change** - Click Build Database again
+3. **Review before applying** - Check that recommendations make sense for your code
+4. **Use undo if needed** - Ctrl+Z reverts the changes immediately
+5. **Re-analyze after applying** - Verify the new state
+
+#### Common Scenarios
+
+**Scenario 1: Form with data module**
+```
+Before:
+  interface uses DataModule;  // Only used in implementation
+
+After:
+  implementation uses DataModule;  // Moved - cleaner interface
+```
+
+**Scenario 2: Type used in interface**
+```
+Before:
+  implementation uses MyTypes;  // TMyRecord used in interface
+
+After:
+  interface uses MyTypes;  // Moved - required for compilation
+```
+
+**Scenario 3: Mixed usage**
+```
+Unit SysUtils:
+  - TStringList used in interface (type declaration)
+  - Format used in implementation (code)
+
+Recommendation: Keep in interface (interface usage takes priority)
+```
+
+---
+
 ## Troubleshooting
 
 ### Features Not Appearing
@@ -742,15 +1585,19 @@ Use "Add to Ignore List" for these cases.
 2. Check if the feature is enabled in Options
 3. Restart the IDE after changing settings
 
-### Tools Menu Items Missing
+### DDevExtensions Menu Items Missing
 
-Features accessed via the Tools menu must be enabled in Options first:
+Features accessed via the Tools > DDevExtensions submenu must be enabled in Options first:
 - Build Statistics
 - Code Style Checker
 - Dead Code Detector
+- DFM/PAS Consistency Checker
 - Dependency Viewer
+- Empty Event Handler Detector
 - TODO/FIXME Aggregator
+- Unreachable Code Detector
 - Unused Unit Detector
+- Uses Clause Manager
 
 ### Hotkeys Not Working
 

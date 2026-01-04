@@ -1,10 +1,10 @@
 inherited FrameOptionPageKeybindings: TFrameOptionPageKeybindings
   Width = 317
-  Height = 266
+  Height = 290
   TabStop = True
   inherited pnlClient: TPanel
     Width = 317
-    Height = 217
+    Height = 241
     object cbxActive: TCheckBox
       Left = 8
       Top = 8
@@ -101,13 +101,26 @@ inherited FrameOptionPageKeybindings: TFrameOptionPageKeybindings
       Top = 169
       Width = 241
       Height = 17
-      Hint = 
+      Hint =
         'Find the declaration of the word under the caret on Ctrl+Alt+PgU' +
         'p'
       Caption = 'Find declaration on Ctrl+Alt+PgUp'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 7
+    end
+    object chkSectionToggle: TCheckBox
+      Left = 24
+      Top = 215
+      Width = 281
+      Height = 17
+      Hint =
+        'Toggle between interface and implementation sections'#13#10'using Ctrl' +
+        '+Shift+Up or Ctrl+Shift+Down'
+      Caption = 'Section toggle on Ctrl+Shift+Up/Down'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 9
     end
   end
   inherited pnlDescription: TPanel
