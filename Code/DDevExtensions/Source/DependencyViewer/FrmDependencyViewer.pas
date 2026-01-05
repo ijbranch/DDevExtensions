@@ -165,6 +165,7 @@ begin
     lblProgress.Visible := True;
     Application.ProcessMessages;
 
+    FScanner.RespectConditionals := DependencyViewerPlugin.RespectConditionals;
     FScanner.ScanProject( Project );
     BuildUnitsInAnyCycleList;
     PopulateTree;

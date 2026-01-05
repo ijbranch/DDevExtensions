@@ -13,6 +13,14 @@ inherited FrameOptionPageDependencyViewer: TFrameOptionPageDependencyViewer
       Caption = '&Enable Dependency Viewer'
       TabOrder = 0
     end
+    object chkRespectConditionals: TCheckBox
+      Left = 8
+      Top = 33
+      Width = 361
+      Height = 19
+      Caption = '&Respect conditional compilation ({$IFDEF}, {$IF}, etc.)'
+      TabOrder = 1
+    end
   end
   inherited pnlDescription: TPanel
     Width = 403

@@ -1,3 +1,13 @@
+Version: 3.5
+============
+- Added: Dependency Viewer - Conditional compilation support
+  - Reads project defines from .dproj file
+  - Evaluates {$IFDEF}, {$IFNDEF}, {$IF Defined(...)}, {$ELSE}, {$ELSEIF}, {$ENDIF} blocks
+  - Supports compound expressions: Defined(X) or Defined(Y), Defined(X) and Defined(Y)
+  - Excludes inactive code from dependency analysis
+  - Eliminates false positive circular references in multi-app codebases with shared units
+  - New "Respect conditional compilation" option (enabled by default)
+
 Version: 2.88
 =============
 - Added: Support for Delphi 11.0 Alexandria

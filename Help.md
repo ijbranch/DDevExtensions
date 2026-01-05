@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.4.1 | Comprehensive Feature Reference
+Version 3.5 | Comprehensive Feature Reference
 
 ---
 
@@ -568,6 +568,7 @@ Review each result before deleting.
 - **Uses / Used By view modes** - toggle between forward and reverse dependencies
 - **Dependency depth indicator** - shows each unit's position in the dependency chain
 - **Impact Analysis panel** - shows direct/transitive dependents and risk level for selected unit
+- **Respect conditional compilation** - optionally reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude code that wouldn't compile for the current project
 - Circular reference detection with enhanced display
 - Double-click to open unit
 
@@ -793,6 +794,50 @@ After:   UnitA -> SharedTypes <- UnitB (no cycle)
 2. **Focus on units with many cycles** - look for units appearing in multiple circular references
 3. **Implementation-only cycles** (`-[impl]->`) are often acceptable and can be left alone
 4. **Short cycles** (2 units) are usually easier to fix than long chains
+
+#### Configuration Options
+
+- **Enabled**: Master switch for the feature
+- **Respect conditional compilation**: When enabled, the scanner reads the project's conditional defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF}`, `{$ELSE}`, `{$ELSEIF}`, and `{$ENDIF}` blocks. Uses clauses inside inactive conditional blocks are excluded from the dependency analysis.
+
+#### Conditional Compilation Support
+
+When "Respect conditional compilation" is enabled (default), the Dependency Viewer:
+
+1. **Reads project defines** from the `.dproj` file (e.g., `DEBUG`, `RELEASE`, `DBiAdmin`)
+2. **Evaluates conditional directives** in the uses clauses:
+   - `{$IFDEF X}` - includes if X is defined
+   - `{$IFNDEF X}` - includes if X is NOT defined
+   - `{$IF Defined(X)}` - includes if X is defined
+   - `{$IF Defined(X) or Defined(Y)}` - includes if X OR Y is defined
+   - `{$IF Defined(X) and Defined(Y)}` - includes if X AND Y are defined
+   - `{$ELSE}`, `{$ELSEIF}`, `{$ENDIF}` - handled correctly
+
+3. **Excludes inactive code** from dependency analysis
+
+**Example:**
+```pascal
+uses
+  SysUtils,
+  {$IFDEF DBiAdmin}
+  AdminModule,    // Only included when analyzing DBiAdmin project
+  {$ENDIF}
+  {$IFDEF DBiWorkflow}
+  WorkflowModule, // Only included when analyzing DBiWorkflow project
+  {$ENDIF}
+  CommonUnit;
+```
+
+When analyzing the DBiAdmin project (which defines `DBiAdmin`), only `SysUtils`, `AdminModule`, and `CommonUnit` are included. `WorkflowModule` is excluded because `DBiWorkflow` is not defined.
+
+**Benefits:**
+- Eliminates false positive circular references caused by conditional code for other applications
+- Shows accurate dependencies for the specific project being analyzed
+- Useful for codebases with shared units used across multiple applications
+
+**When to Disable:**
+- If you want to see ALL possible dependencies regardless of current project defines
+- If the project doesn't use conditional compilation in uses clauses
 
 ---
 

@@ -21,6 +21,7 @@ uses
 type
   TFrameOptionPageDependencyViewer = class( TFrameBase, ITreePageComponent )
     chkEnabled: TCheckBox;
+    chkRespectConditionals: TCheckBox;
   private
     FPlugin: TDependencyViewerPlugin;
   public
@@ -56,14 +57,16 @@ end;
 procedure TFrameOptionPageDependencyViewer.LoadData;
 begin
 
-  chkEnabled.Checked := FPlugin.Enabled;
+  chkEnabled.Checked             := FPlugin.Enabled;
+  chkRespectConditionals.Checked := FPlugin.RespectConditionals;
 
 end;
 
 procedure TFrameOptionPageDependencyViewer.SaveData;
 begin
 
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled             := chkEnabled.Checked;
+  FPlugin.RespectConditionals := chkRespectConditionals.Checked;
   FPlugin.Save;
 
 end;

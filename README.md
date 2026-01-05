@@ -26,6 +26,8 @@ Version 3.4 adds the Smart Uses Clause Manager - automatically analyzes which sy
 
 Version 3.4.1 adds three new features: Interface/Implementation Section Toggle (Ctrl+Shift+Up/Down keyboard shortcut), Empty Event Handler Detector (finds event handlers with empty bodies), and DFM/PAS Consistency Checker (detects mismatches between DFM components and PAS field declarations).
 
+Version 3.5 enhances the Dependency Viewer with conditional compilation support - reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude inactive code from analysis, eliminating false positive circular references in multi-app codebases with shared units.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -489,6 +491,7 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
 - **New in 3.3.0** - Click a circular reference to mark those specific cycle members with `>>> <<<` in the tree
 - **New in 3.3.0** - Double-click a circular reference to open the first unit in the editor
 - **New in 3.3.0** - Auto-sizing tree panel based on longest unit name
+- **New in 3.5** - Conditional compilation support - reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude inactive code from analysis, eliminating false positive circular references
 - **New in 3.3.0** - Impact Analysis panel - select any unit to see:
   - Direct dependents count (units that directly use the selected unit)
   - Transitive dependents count (all units affected, including indirect dependencies)
@@ -648,4 +651,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.4.1 – 5 January 2026*
+*Version: 3.5 – 5 January 2026*

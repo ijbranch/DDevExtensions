@@ -17,8 +17,17 @@ High-Value Enhancements
      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
    - Export to DOT/GraphViz format
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+   - Export circular references analysis to file (CSV/TXT)
+     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+     NOTE: Useful for analyzing large numbers of circular refs externally
    - Layer violation detection (configurable architecture rules)
      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
+   - Respect project conditional defines ({$IFDEF}) in dependency analysis
+     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+     STATUS: IMPLEMENTED in v3.5
+     Reads project defines from .dproj, evaluates {$IFDEF}, {$IFNDEF},
+     {$IF Defined(...)}, {$ELSE}, {$ELSEIF} with full OR/AND support.
+     "Respect conditional compilation" checkbox added to options.
 
 Productivity Features
 ---------------------
