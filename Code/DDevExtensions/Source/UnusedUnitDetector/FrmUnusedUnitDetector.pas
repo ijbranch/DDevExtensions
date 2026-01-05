@@ -37,6 +37,7 @@ type
     lblSummary: TLabel;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
@@ -56,8 +57,11 @@ type
     procedure AnalyzerProgress( Sender: TObject );
     procedure OpenSelectedFile;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormUnusedUnitDetector = nil;
 
 implementation
 
@@ -76,19 +80,26 @@ begin
 
 end;
 
-class function TFormUnusedUnitDetector.Execute: Boolean;
-var
-  Form: TFormUnusedUnitDetector;
+class procedure TFormUnusedUnitDetector.Execute;
 begin
 
-  Form := TFormUnusedUnitDetector.Create( Application );
-
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormUnusedUnitDetector.Create( Application );
+  FormInstance.Show;
+
+end;
+
+procedure TFormUnusedUnitDetector.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 

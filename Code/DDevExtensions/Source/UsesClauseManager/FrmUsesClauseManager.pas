@@ -46,6 +46,7 @@ type
     procedure btnAnalyzeClick( Sender: TObject );
     procedure btnApplyClick( Sender: TObject );
     procedure btnBuildDBClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
@@ -67,8 +68,11 @@ type
     procedure ShowDetails( const Placement: TUnitPlacement );
     procedure OpenSelectedFile;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormUsesClauseManager = nil;
 
 implementation
 
@@ -85,17 +89,27 @@ begin
     Result := '';
 end;
 
-class function TFormUsesClauseManager.Execute: Boolean;
-var
-  Form: TFormUsesClauseManager;
+class procedure TFormUsesClauseManager.Execute;
 begin
-  Form := TFormUsesClauseManager.Create( Application );
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormUsesClauseManager.Create( Application );
+  FormInstance.Show;
+
+end;
+
+procedure TFormUsesClauseManager.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
+
 end;
 
 procedure TFormUsesClauseManager.FormCreate( Sender: TObject );

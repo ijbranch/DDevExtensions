@@ -30,6 +30,8 @@ Version 3.5 enhances the Dependency Viewer with conditional compilation support 
 
 Version 3.5.1 fixes bugs in the Dead Code Detector, Code Style Checker, and Empty Event Handler Detector. The field detection tools now correctly skip the implicit published section of forms (VCL components) and only check fields after an explicit private/protected keyword. The Empty Event Handler Detector now requires event suffixes at the end of method names and correctly detects case/try statements as non-empty. The DDevExtensions submenu has been reordered by workflow (dependency analysis → code quality → style/consistency).
 
+Version 3.5.2 fixes multiple Code Style Checker bugs: field detection now works correctly, method names and parameters are no longer incorrectly flagged as fields, return types and case labels are no longer flagged as parameters, and line number navigation is now accurate. All feature dialogs are now non-modal and open at screen center.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -653,4 +655,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.5 – 5 January 2026*
+*Version: 3.5.2 – 6 January 2026*

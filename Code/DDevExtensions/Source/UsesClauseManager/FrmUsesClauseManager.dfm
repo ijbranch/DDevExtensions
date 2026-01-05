@@ -2,6 +2,8 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
   Caption = 'Uses Clause Manager'
   ClientHeight = 550
   ClientWidth = 800
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96

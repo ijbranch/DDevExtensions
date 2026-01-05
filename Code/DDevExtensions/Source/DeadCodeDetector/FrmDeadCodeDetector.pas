@@ -39,6 +39,7 @@ type
     mnuAddToIgnoreList: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
@@ -61,8 +62,11 @@ type
     procedure OpenSelectedFile;
     function PassesFilter( const Item: TDeadCodeItem ): Boolean;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormDeadCodeDetector = nil;
 
 implementation
 
@@ -81,19 +85,26 @@ begin
 
 end;
 
-class function TFormDeadCodeDetector.Execute: Boolean;
-var
-  Form: TFormDeadCodeDetector;
+class procedure TFormDeadCodeDetector.Execute;
 begin
 
-  Form := TFormDeadCodeDetector.Create( Application );
-
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormDeadCodeDetector.Create( Application );
+  FormInstance.Show;
+
+end;
+
+procedure TFormDeadCodeDetector.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 

@@ -2,6 +2,8 @@ inherited FormTodoAggregator: TFormTodoAggregator
   Caption = 'TODO/FIXME Aggregator'
   ClientHeight = 450
   ClientWidth = 750
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96

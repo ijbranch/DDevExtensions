@@ -2,8 +2,9 @@ inherited FormBuildStatistics: TFormBuildStatistics
   Caption = 'Build Statistics'
   ClientHeight = 450
   ClientWidth = 850
-  Position = poMainFormCenter
-  OnCreate = nil
+  Position = poScreenCenter
+  OnClose = FormClose
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel

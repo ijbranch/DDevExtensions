@@ -2,7 +2,7 @@ inherited FormEmptyEventHandlerDetector: TFormEmptyEventHandlerDetector
   Caption = 'Empty Event Handler Detector'
   ClientHeight = 450
   ClientWidth = 700
-  Position = poMainFormCenter
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy

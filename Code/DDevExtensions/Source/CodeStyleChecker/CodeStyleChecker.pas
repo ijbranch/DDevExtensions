@@ -194,7 +194,7 @@ begin
   begin
     Violation.FileName := FileName;
     Violation.UnitName := UnitName;
-    Violation.Line     := Line;
+    Violation.Line     := Line + 1;  // Convert from 0-based (lexer) to 1-based (IDE)
     Violation.Column   := Column;
     Violation.Rule     := RuleName;
     Violation.Expected := Prefix + '...';
@@ -205,19 +205,63 @@ begin
 
 end;
 
+function IsBuiltInType( const Name: string ): Boolean;
+var
+  UpperName: string;
+begin
+
+  UpperName := UpperCase( Name );
+  Result    := ( UpperName = 'BOOLEAN' ) or
+               ( UpperName = 'INTEGER' ) or
+               ( UpperName = 'CARDINAL' ) or
+               ( UpperName = 'INT64' ) or
+               ( UpperName = 'UINT64' ) or
+               ( UpperName = 'BYTE' ) or
+               ( UpperName = 'WORD' ) or
+               ( UpperName = 'LONGWORD' ) or
+               ( UpperName = 'SHORTINT' ) or
+               ( UpperName = 'SMALLINT' ) or
+               ( UpperName = 'LONGINT' ) or
+               ( UpperName = 'NATIVEINT' ) or
+               ( UpperName = 'NATIVEUINT' ) or
+               ( UpperName = 'SINGLE' ) or
+               ( UpperName = 'DOUBLE' ) or
+               ( UpperName = 'EXTENDED' ) or
+               ( UpperName = 'REAL' ) or
+               ( UpperName = 'CURRENCY' ) or
+               ( UpperName = 'COMP' ) or
+               ( UpperName = 'STRING' ) or
+               ( UpperName = 'ANSISTRING' ) or
+               ( UpperName = 'WIDESTRING' ) or
+               ( UpperName = 'UNICODESTRING' ) or
+               ( UpperName = 'SHORTSTRING' ) or
+               ( UpperName = 'CHAR' ) or
+               ( UpperName = 'ANSICHAR' ) or
+               ( UpperName = 'WIDECHAR' ) or
+               ( UpperName = 'PCHAR' ) or
+               ( UpperName = 'PANSICHAR' ) or
+               ( UpperName = 'PWIDECHAR' ) or
+               ( UpperName = 'POINTER' ) or
+               ( UpperName = 'VARIANT' ) or
+               ( UpperName = 'OLEVARIANT' ) or
+               ( UpperName = 'TDATETIME' ) or
+               ( UpperName = 'TDATE' ) or
+               ( UpperName = 'TTIME' );
+
+end;
+
 function TStyleChecker.CheckFile( const FileName: string;
   out Violations: TArray<TStyleViolation> ): Boolean;
 var
   Content: UTF8String;
   Lexer: TDelphiLexer;
   Token, IdentToken: TToken;
-  PrevTokenKind: TTokenKind;
   ViolationList: TList<TStyleViolation>;
   Violation: TStyleViolation;
   UnitName: string;
   InType, InClass: Boolean;
   InPrivate, InProtected: Boolean;
-  InParameterList: Boolean;
+  InParameterList, InMethodDeclaration: Boolean;
   ParenDepth: Integer;
   CheckTypes, CheckInterfaces, CheckFields: Boolean;
   CheckExceptions, CheckPointers, CheckParameters: Boolean;
@@ -262,14 +306,13 @@ begin
   InPrivate         := False;
   InProtected       := False;
   InParameterList   := False;
+  InMethodDeclaration := False;
   ParenDepth        := 0;
 
   try
     Lexer := TDelphiLexer.Create( FileName, Content );
 
     try
-      PrevTokenKind := tkNone;
-
       while Lexer.NextToken( Token ) do
       begin
         // Track type section
@@ -282,9 +325,24 @@ begin
                                 tkI_procedure, tkI_function, tkI_constructor,
                                 tkI_destructor, tkI_begin ] then
         begin
-          InType := False;
-          InClass := False;
+          // Only end type/class context if we're NOT inside a class declaration
+          // Method declarations inside a class shouldn't reset InClass
+          if not InClass then
+          begin
+            InType := False;
+            InClass := False;
+          end
+          else
+          begin
+            // Inside a class - this is a method declaration
+            if Token.Kind in [ tkI_procedure, tkI_function, tkI_constructor, tkI_destructor ] then
+              InMethodDeclaration := True;
+          end;
         end;
+
+        // End method declaration on semicolon (when not in nested parentheses)
+        if ( Token.Kind = tkSemicolon ) and ( ParenDepth = 0 ) then
+          InMethodDeclaration := False;
 
         // Track class context
         if Token.Kind = tkI_class then
@@ -326,7 +384,8 @@ begin
         // Track parameter lists
         if Token.Kind = tkLParan then
         begin
-          if PrevTokenKind in [ tkI_procedure, tkI_function, tkI_constructor, tkI_destructor ] then
+          // When in a method declaration, the first ( starts the parameter list
+          if InMethodDeclaration and ( ParenDepth = 0 ) then
             InParameterList := True;
           Inc( ParenDepth );
         end
@@ -340,92 +399,121 @@ begin
           end;
         end;
 
-        // Check type definitions
-        if InType and ( Token.Kind = tkIdent ) then
+        // Check type definitions and field declarations
+        // Note: Both checks are combined because look-ahead consumes the next token
+        // Skip when inside parentheses (e.g., default parameter values like "Boolean = True")
+        if InType and ( Token.Kind = tkIdent ) and ( ParenDepth = 0 ) then
         begin
           IdentToken := Token;
 
-          // Look ahead for = to confirm it's a type definition
-          if Lexer.NextToken( Token ) and ( Token.Kind = tkEqual ) then
+          // Look ahead to determine if this is a type definition (=) or field (:)
+          if Lexer.NextToken( Token ) then
           begin
-            // Look for the type being defined
-            if Lexer.NextToken( Token ) then
-            begin
-              // Skip "packed" if present
-              if Token.Kind = tkI_packed then
-                Lexer.NextToken( Token );
+            // Update ParenDepth for tokens consumed via look-ahead
+            if Token.Kind = tkLParan then
+              Inc( ParenDepth )
+            else if Token.Kind = tkRParan then
+              Dec( ParenDepth );
 
-              // Check what kind of type it is
-              if Token.Kind = tkI_class then
+            if Token.Kind = tkEqual then
+            begin
+              // It's a type definition - look for the type being defined
+              if Lexer.NextToken( Token ) then
               begin
-                // Check for T prefix
-                if CheckTypes then
+                // Skip "packed" if present
+                if Token.Kind = tkI_packed then
+                  Lexer.NextToken( Token );
+
+                // Check what kind of type it is
+                if Token.Kind = tkI_class then
                 begin
-                  if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
-                     IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
-                    ViolationList.Add( Violation );
-                end;
-              end
-              else if Token.Kind = tkI_interface then
-              begin
-                // Check for I prefix
-                if CheckInterfaces then
-                begin
-                  if CheckName( IdentToken.Value, 'InterfacePrefix', 'I', IdentToken.Line,
-                     IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
-                    ViolationList.Add( Violation );
-                end;
-              end
-              else if Token.Kind = tkI_record then
-              begin
-                // Check for T prefix
-                if CheckTypes then
-                begin
-                  if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
-                     IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
-                    ViolationList.Add( Violation );
-                end;
-              end
-              else if Token.Kind = tkPointer then
-              begin
-                // Pointer type (^Something)
-                if CheckPointers then
-                begin
-                  if CheckName( IdentToken.Value, 'PointerPrefix', 'P', IdentToken.Line,
-                     IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
-                    ViolationList.Add( Violation );
-                end;
-              end
-              else if ( Token.Kind = tkI_type ) or ( Token.Kind = tkIdent ) then
-              begin
-                // Type alias or enumeration - check if it's Exception-derived
-                if SameText( Token.Value, 'Exception' ) or
-                   ( Pos( 'EXCEPTION', UpperCase( Token.Value ) ) > 0 ) then
-                begin
-                  if CheckExceptions then
+                  // We consumed the 'class' keyword via look-ahead, so set InClass here
+                  InClass     := True;
+                  InPrivate   := False;
+                  InProtected := False;
+
+                  // Check for T prefix
+                  if CheckTypes then
                   begin
-                    if CheckName( IdentToken.Value, 'ExceptionPrefix', 'E', IdentToken.Line,
+                    if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
                        IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                       ViolationList.Add( Violation );
                   end;
                 end
-                else
+                else if Token.Kind = tkI_interface then
                 begin
-                  // Generic type alias - check for T prefix
+                  // Check for I prefix
+                  if CheckInterfaces then
+                  begin
+                    if CheckName( IdentToken.Value, 'InterfacePrefix', 'I', IdentToken.Line,
+                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      ViolationList.Add( Violation );
+                  end;
+                end
+                else if Token.Kind = tkI_record then
+                begin
+                  // Check for T prefix
                   if CheckTypes then
                   begin
                     if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
+                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      ViolationList.Add( Violation );
+                  end;
+                end
+                else if Token.Kind = tkPointer then
+                begin
+                  // Pointer type (^Something)
+                  if CheckPointers then
+                  begin
+                    if CheckName( IdentToken.Value, 'PointerPrefix', 'P', IdentToken.Line,
                        IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
                       ViolationList.Add( Violation );
                   end;
+                end
+                else if ( Token.Kind = tkI_type ) or ( Token.Kind = tkIdent ) then
+                begin
+                  // Type alias or enumeration - check if it's Exception-derived
+                  if SameText( Token.Value, 'Exception' ) or
+                     ( Pos( 'EXCEPTION', UpperCase( Token.Value ) ) > 0 ) then
+                  begin
+                    if CheckExceptions then
+                    begin
+                      if CheckName( IdentToken.Value, 'ExceptionPrefix', 'E', IdentToken.Line,
+                         IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                        ViolationList.Add( Violation );
+                    end;
+                  end
+                  else
+                  begin
+                    // Generic type alias - check for T prefix
+                    // Skip built-in types (Boolean, Integer, etc.) - these are valid type aliases
+                    // and also appear in default parameter values like "Boolean = True"
+                    if CheckTypes and not IsBuiltInType( IdentToken.Value ) then
+                    begin
+                      if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
+                         IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
+                        ViolationList.Add( Violation );
+                    end;
+                  end;
                 end;
+              end;
+            end
+            else if ( Token.Kind = tkColon ) and InClass and ( InPrivate or InProtected )
+                    and not InMethodDeclaration then
+            begin
+              // It's a field declaration inside a class - check for F prefix
+              if CheckFields then
+              begin
+                if CheckName( IdentToken.Value, 'FieldPrefix', 'F', IdentToken.Line,
+                   IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                  ViolationList.Add( Violation );
               end;
             end;
           end;
-        end;
-
-        // Check field declarations in classes
-        if InClass and ( InPrivate or InProtected ) and ( Token.Kind = tkIdent ) then
+        end
+        // Check field declarations in classes (when not in type section or method declaration)
+        else if InClass and ( InPrivate or InProtected ) and ( Token.Kind = tkIdent )
+                and not InMethodDeclaration then
         begin
           IdentToken := Token;
 
@@ -453,6 +541,19 @@ begin
           // Look ahead for : or , or ; to confirm it's a parameter name
           if Lexer.NextToken( Token ) then
           begin
+            // Update state for consumed token (look-ahead consumes tokens)
+            if Token.Kind = tkRParan then
+            begin
+              Dec( ParenDepth );
+              if ParenDepth <= 0 then
+              begin
+                InParameterList := False;
+                ParenDepth := 0;
+              end;
+            end
+            else if Token.Kind = tkLParan then
+              Inc( ParenDepth );
+
             if Token.Kind in [ tkColon, tkComma, tkSemicolon ] then
             begin
               if CheckName( IdentToken.Value, 'ParameterPrefix', 'A', IdentToken.Line,
@@ -461,8 +562,6 @@ begin
             end;
           end;
         end;
-
-        PrevTokenKind := Token.Kind;
       end;
 
       Violations := ViolationList.ToArray;

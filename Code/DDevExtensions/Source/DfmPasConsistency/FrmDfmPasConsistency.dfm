@@ -2,7 +2,7 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
   Caption = 'DFM/PAS Consistency Checker'
   ClientHeight = 450
   ClientWidth = 800
-  Position = poMainFormCenter
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy

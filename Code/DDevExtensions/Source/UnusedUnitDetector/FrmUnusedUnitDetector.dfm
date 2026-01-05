@@ -2,6 +2,8 @@ inherited FormUnusedUnitDetector: TFormUnusedUnitDetector
   Caption = 'Unused Unit Detector'
   ClientHeight = 450
   ClientWidth = 700
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   ExplicitWidth = 716

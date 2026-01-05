@@ -44,6 +44,8 @@ type
     procedure btnCloseClick( Sender: TObject );
     procedure btnCopyToClipboardClick( Sender: TObject );
     procedure btnExportCSVClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    procedure FormCreate( Sender: TObject );
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
@@ -62,37 +64,54 @@ type
     function FormatDuration( Ms: Int64 ): string;
     function IsProjectFile( const FileName: string ): Boolean;
   public
-    class function Execute( ABuildStatistics: TBuildStatistics ): Boolean;
+    class procedure Execute( ABuildStatistics: TBuildStatistics );
   end;
+
+var
+  FormInstance: TFormBuildStatistics = nil;
 
 implementation
 
 {$R *.dfm}
 
-class function TFormBuildStatistics.Execute( ABuildStatistics: TBuildStatistics ): Boolean;
-var
-  Form: TFormBuildStatistics;
+class procedure TFormBuildStatistics.Execute( ABuildStatistics: TBuildStatistics );
 begin
-
-  Result := False;
 
   if ABuildStatistics = nil then
     Exit;
 
-  Form := TFormBuildStatistics.Create( Application );
-
-  try
-    Form.FBuildStatistics   := ABuildStatistics;
-    Form.FSortColumn        := 1; // Default sort by duration
-    Form.FSortAscending     := False; // Descending (slowest first)
-    Form.FFileFilter        := ffProject;
-    Form.cmbFilter.ItemIndex := 1; // Project
-    Form.PopulateList;
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  // If already open, bring to front and update data
+  if FormInstance <> nil then
+  begin
+    FormInstance.FBuildStatistics := ABuildStatistics;
+    FormInstance.PopulateList;
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormBuildStatistics.Create( Application );
+  FormInstance.FBuildStatistics := ABuildStatistics;
+  FormInstance.PopulateList;
+  FormInstance.Show;
+
+end;
+
+procedure TFormBuildStatistics.FormCreate( Sender: TObject );
+begin
+
+  FSortColumn      := 1;     // Default sort by duration
+  FSortAscending   := False; // Descending (slowest first)
+  FFileFilter      := ffProject;
+  cmbFilter.ItemIndex := 1;  // Project
+
+end;
+
+procedure TFormBuildStatistics.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 

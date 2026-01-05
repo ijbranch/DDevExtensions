@@ -2,7 +2,8 @@ inherited FormDependencyViewer: TFormDependencyViewer
   Caption = 'Dependency Viewer'
   ClientHeight = 500
   ClientWidth = 800
-  Position = poMainFormCenter
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96

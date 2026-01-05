@@ -38,6 +38,7 @@ type
     lblPriority: TLabel;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
@@ -59,8 +60,11 @@ type
     procedure OpenSelectedFile;
     function PassesFilter( const Item: TTodoItem ): Boolean;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormTodoAggregator = nil;
 
 implementation
 
@@ -79,19 +83,26 @@ begin
 
 end;
 
-class function TFormTodoAggregator.Execute: Boolean;
-var
-  Form: TFormTodoAggregator;
+class procedure TFormTodoAggregator.Execute;
 begin
 
-  Form := TFormTodoAggregator.Create( Application );
-
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormTodoAggregator.Create( Application );
+  FormInstance.Show;
+
+end;
+
+procedure TFormTodoAggregator.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 

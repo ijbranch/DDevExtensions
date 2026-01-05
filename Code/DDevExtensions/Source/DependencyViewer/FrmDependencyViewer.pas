@@ -45,6 +45,7 @@ type
     chkShowDepth: TCheckBox;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanProjectClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure TreeViewExpanding( Sender: TObject; Node: TTreeNode;
       var AllowExpansion: Boolean );
     procedure ListBoxCircularClick( Sender: TObject );
@@ -75,8 +76,11 @@ type
     procedure UpdateImpactSummary( const UnitName: string );
     procedure ClearImpactSummary;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormDependencyViewer = nil;
 
 implementation
 
@@ -85,19 +89,26 @@ implementation
 uses
   ToolsAPIHelpers;
 
-class function TFormDependencyViewer.Execute: Boolean;
-var
-  Form: TFormDependencyViewer;
+class procedure TFormDependencyViewer.Execute;
 begin
 
-  Form := TFormDependencyViewer.Create( Application );
-
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormDependencyViewer.Create( Application );
+  FormInstance.Show;
+
+end;
+
+procedure TFormDependencyViewer.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 

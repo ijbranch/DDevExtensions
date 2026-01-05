@@ -1,3 +1,15 @@
+Version: 3.5.2
+==============
+- Fixed: Code Style Checker - Field detection not working (look-ahead consuming tokens)
+- Fixed: Code Style Checker - Method names incorrectly flagged as fields (e.g., DoLogin)
+- Fixed: Code Style Checker - Method parameters incorrectly flagged as fields
+- Fixed: Code Style Checker - Return types incorrectly flagged as parameters (e.g., SmallInt, TSMTPEncryption)
+- Fixed: Code Style Checker - Case labels incorrectly flagged as parameters
+- Fixed: Code Style Checker - Function names without parameters flagged as parameters
+- Fixed: Code Style Checker - False positives for built-in types like Boolean in default parameter values
+- Fixed: Code Style Checker - Line number navigation off by one (0-based to 1-based conversion)
+- Changed: All feature dialogs are now non-modal and open at screen center
+
 Version: 3.5.1
 ==============
 - Fixed: Dead Code Detector - Field names were incorrectly parsed

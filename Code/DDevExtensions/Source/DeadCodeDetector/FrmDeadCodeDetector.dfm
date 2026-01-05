@@ -2,6 +2,8 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
   Caption = 'Dead Code Detector'
   ClientHeight = 450
   ClientWidth = 800
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96

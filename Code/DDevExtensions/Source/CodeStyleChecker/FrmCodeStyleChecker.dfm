@@ -2,6 +2,8 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
   Caption = 'Code Style Checker'
   ClientHeight = 450
   ClientWidth = 750
+  Position = poScreenCenter
+  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96

@@ -2,7 +2,7 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
   Caption = 'Unreachable Code Detector'
   ClientHeight = 450
   ClientWidth = 750
-  Position = poMainFormCenter
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy

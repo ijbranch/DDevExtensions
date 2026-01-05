@@ -38,6 +38,7 @@ type
     lblSeverity: TLabel;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanClick( Sender: TObject );
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
@@ -59,8 +60,11 @@ type
     procedure OpenSelectedFile;
     function PassesFilter( const Item: TStyleViolation ): Boolean;
   public
-    class function Execute: Boolean;
+    class procedure Execute;
   end;
+
+var
+  FormInstance: TFormCodeStyleChecker = nil;
 
 implementation
 
@@ -79,19 +83,19 @@ begin
 
 end;
 
-class function TFormCodeStyleChecker.Execute: Boolean;
-var
-  Form: TFormCodeStyleChecker;
+class procedure TFormCodeStyleChecker.Execute;
 begin
 
-  Form := TFormCodeStyleChecker.Create( Application );
-
-  try
-    Form.ShowModal;
-    Result := True;
-  finally
-    Form.Free;
+  // If already open, bring to front
+  if FormInstance <> nil then
+  begin
+    FormInstance.Show;
+    FormInstance.BringToFront;
+    Exit;
   end;
+
+  FormInstance := TFormCodeStyleChecker.Create( Application );
+  FormInstance.Show;
 
 end;
 
@@ -141,6 +145,14 @@ procedure TFormCodeStyleChecker.btnCloseClick( Sender: TObject );
 begin
 
   Close;
+
+end;
+
+procedure TFormCodeStyleChecker.FormClose( Sender: TObject; var Action: TCloseAction );
+begin
+
+  FormInstance := nil;
+  Action       := caFree;
 
 end;
 
