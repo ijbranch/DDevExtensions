@@ -124,37 +124,44 @@ var
   function IsEventHandlerName(const Name: string): Boolean;
   var
     LowerName: string;
+    Len: Integer;
   begin
     // Event handlers typically have patterns like:
     // Button1Click, FormCreate, Edit1Change, Timer1Timer, etc.
+    // Must end with the event suffix, not just contain it anywhere.
     LowerName := LowerCase(Name);
-    Result := (Pos('click', LowerName) > 0) or
-              (Pos('change', LowerName) > 0) or
-              (Pos('create', LowerName) > 0) or
-              (Pos('destroy', LowerName) > 0) or
-              (Pos('show', LowerName) > 0) or
-              (Pos('hide', LowerName) > 0) or
-              (Pos('close', LowerName) > 0) or
-              (Pos('activate', LowerName) > 0) or
-              (Pos('deactivate', LowerName) > 0) or
-              (Pos('enter', LowerName) > 0) or
-              (Pos('exit', LowerName) > 0) or
-              (Pos('keydown', LowerName) > 0) or
-              (Pos('keyup', LowerName) > 0) or
-              (Pos('keypress', LowerName) > 0) or
-              (Pos('mousedown', LowerName) > 0) or
-              (Pos('mouseup', LowerName) > 0) or
-              (Pos('mousemove', LowerName) > 0) or
-              (Pos('dblclick', LowerName) > 0) or
-              (Pos('timer', LowerName) > 0) or
-              (Pos('paint', LowerName) > 0) or
-              (Pos('resize', LowerName) > 0) or
-              (Pos('scroll', LowerName) > 0) or
-              (Pos('execute', LowerName) > 0) or
-              (Pos('update', LowerName) > 0) or
-              (Pos('validate', LowerName) > 0) or
-              (Pos('notify', LowerName) > 0) or
-              (Pos('action', LowerName) > 0);
+    Len := Length(LowerName);
+    Result := False;
+
+    // Check for common event handler suffixes (must be at end of name)
+    if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'click') then Result := True
+    else if (Len >= 8) and (Copy(LowerName, Len - 7, 8) = 'dblclick') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'change') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'create') then Result := True
+    else if (Len >= 7) and (Copy(LowerName, Len - 6, 7) = 'destroy') then Result := True
+    else if (Len >= 4) and (Copy(LowerName, Len - 3, 4) = 'show') then Result := True
+    else if (Len >= 4) and (Copy(LowerName, Len - 3, 4) = 'hide') then Result := True
+    else if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'close') then Result := True
+    else if (Len >= 8) and (Copy(LowerName, Len - 7, 8) = 'activate') then Result := True
+    else if (Len >= 10) and (Copy(LowerName, Len - 9, 10) = 'deactivate') then Result := True
+    else if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'enter') then Result := True
+    else if (Len >= 4) and (Copy(LowerName, Len - 3, 4) = 'exit') then Result := True
+    else if (Len >= 7) and (Copy(LowerName, Len - 6, 7) = 'keydown') then Result := True
+    else if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'keyup') then Result := True
+    else if (Len >= 8) and (Copy(LowerName, Len - 7, 8) = 'keypress') then Result := True
+    else if (Len >= 9) and (Copy(LowerName, Len - 8, 9) = 'mousedown') then Result := True
+    else if (Len >= 7) and (Copy(LowerName, Len - 6, 7) = 'mouseup') then Result := True
+    else if (Len >= 9) and (Copy(LowerName, Len - 8, 9) = 'mousemove') then Result := True
+    else if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'timer') then Result := True
+    else if (Len >= 5) and (Copy(LowerName, Len - 4, 5) = 'paint') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'resize') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'scroll') then Result := True
+    else if (Len >= 7) and (Copy(LowerName, Len - 6, 7) = 'execute') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'update') then Result := True
+    else if (Len >= 8) and (Copy(LowerName, Len - 7, 8) = 'validate') then Result := True
+    else if (Len >= 6) and (Copy(LowerName, Len - 5, 6) = 'notify') then Result := True;
+    // Note: Removed 'action' - too broad, catches GetTerminateActionText etc.
+    // Action handlers end with 'Execute' or 'Update' which are already covered.
   end;
 
 begin
@@ -229,8 +236,16 @@ begin
         else if InMethodBody then
         begin
           case Token.Kind of
-            tkI_begin, tkI_case, tkI_try:
+            tkI_begin:
               Inc(BeginCount);
+
+            tkI_case, tkI_try:
+              begin
+                Inc(BeginCount);
+                // case and try are actual statements - method is not empty
+                if BeginCount = 2 then  // We're at the first nesting level
+                  HasStatements := True;
+              end;
 
             tkI_end:
               begin

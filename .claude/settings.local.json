@@ -24,7 +24,20 @@
       "Bash(powershell -Command \"Test-Path ''D:\\\\DDevExtensions291\\\\Code\\\\DDevExtensions\\\\jedi''\")",
       "Bash(powershell:*)",
       "Bash(xcopy:*)",
-      "Bash(fc:*)"
+      "Bash(fc:*)",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(del \"E:\\\\DBiWorkflow Development\\\\DBiStore\\\\ReportPrinter.pas\")",
+      "Bash(cmd /c \"del \"\"E:\\\\DBiWorkflow Development\\\\DBiStore\\\\ReportPrinter.pas\"\"\")",
+      "Bash(xargs:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nEliminate circular references by decoupling from ReportsFrm\n\n- Add ReportPrinter.pas utility unit for simplified report printing\n- Update forms to use ReportPrinter instead of direct ReportsFrm dependency:\n  - BackOrdersFrm, POPrintFrm, JTPartsOrdFrm, STPartsOrdFrm\n  - JTViewOrdersFrm, STViewOrdersFrm, STReportsFrm, ASTReportsFrm\n- Reduces circular references from 73 to 0\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nEliminate circular references in shared units\n\n- Add ReportPrinter.pas with ExportReportToPDF function for PDF generation\n- Remove unused dmCurrent import from ReportsFrm.pas\n- Update dmCurrent.pas to use ReportPrinter instead of direct TReportsForm\n- Remove unused JobTicketsFrm import from dmCurrent uses clause\n- Reduces DBiAdmin circular references from 1625 to 65 \\(false positives\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(findstr:*)",
+      "Bash(git push)"
     ]
   }
 }

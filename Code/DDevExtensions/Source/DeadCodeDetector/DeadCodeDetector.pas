@@ -218,6 +218,8 @@ var
   ParamText: string;
   IsFunction: Boolean;
   CheckProcedures, CheckFields: Boolean;
+  FieldName: string;
+  FieldLine: Integer;
 begin
 
   // Get settings from plugin
@@ -279,7 +281,10 @@ begin
         begin
           InClass     := True;
           InRecord    := False;
-          InPrivate   := True;  // Default visibility
+          // Don't assume private - the implicit section before any visibility
+          // keyword is "published" for forms/components (used by DFM streaming).
+          // Only collect fields after an explicit private/protected keyword.
+          InPrivate   := False;
           InProtected := False;
           InPublic    := False;
           InPublished := False;
@@ -306,8 +311,9 @@ begin
         end;
       end;
 
-      // Track class name
-      if InType and ( Token.Kind = tkIdent ) and ( PrevTokenKind in [ tkNone, tkSemicolon, tkI_type ] ) then
+      // Track class name - only when NOT already inside a class
+      // (prevents type names like Boolean from overwriting the class name)
+      if InType and not InClass and ( Token.Kind = tkIdent ) and ( PrevTokenKind in [ tkNone, tkSemicolon, tkI_type ] ) then
       begin
         CurrentClassName := Token.Value;
       end;
@@ -336,15 +342,18 @@ begin
       // Collect private/protected fields in classes
       if CheckFields and InClass and ( InPrivate or InProtected ) and ( Token.Kind = tkIdent ) then
       begin
+        // Save the field name and line BEFORE advancing to check for colon
+        FieldName := Token.Value;
+        FieldLine := Token.Line;
+
         // Check if this is a field declaration (followed by :)
         if Lexer.NextToken( Token ) and ( Token.Kind = tkColon ) then
         begin
-          // Skip if it starts with F (already following convention, but check anyway)
           Symbol                := TSymbolInfo.Create;
-          Symbol.Name           := Token.Value;
+          Symbol.Name           := FieldName;
           Symbol.FileName       := FileName;
           Symbol.UnitName       := UnitName;
-          Symbol.Line           := Token.Line;
+          Symbol.Line           := FieldLine;
           Symbol.ElementType    := 'Field';
           Symbol.ClassName      := CurrentClassName;
           Symbol.IsReferenced   := False;

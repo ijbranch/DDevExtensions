@@ -290,7 +290,10 @@ begin
         if Token.Kind = tkI_class then
         begin
           InClass     := True;
-          InPrivate   := True;  // Default visibility is private
+          // Don't assume private - the implicit section before any visibility
+          // keyword is "published" for forms (VCL components). Only check fields
+          // after an explicit private/protected keyword.
+          InPrivate   := False;
           InProtected := False;
         end
         else if Token.Kind = tkI_end then

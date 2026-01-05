@@ -1,3 +1,18 @@
+Version: 3.5.1
+==============
+- Fixed: Dead Code Detector - Field names were incorrectly parsed
+  - Bug caused garbled output like ":" or "ClassName.:" instead of proper field names
+  - Field name was being read from the colon token instead of the identifier token
+- Fixed: Dead Code Detector and Code Style Checker - VCL components incorrectly flagged
+  - Both tools now correctly skip VCL components in the implicit published section of forms
+  - Only checks fields after an explicit private/protected keyword
+- Fixed: Empty Event Handler Detector - False positives for non-event methods
+  - Event patterns now require suffix at END of name (e.g., "Button1Click" not "GetActionText")
+  - Removed overly broad "action" pattern - action handlers end with Execute/Update
+  - Methods containing case/try statements now correctly detected as non-empty
+- Changed: DDevExtensions submenu items reordered by workflow
+  - Dependency/Uses analysis tools first, then code quality tools, then style/consistency tools
+
 Version: 3.5
 ============
 - Added: Dependency Viewer - Conditional compilation support

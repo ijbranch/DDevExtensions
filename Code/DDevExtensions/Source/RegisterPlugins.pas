@@ -152,6 +152,9 @@ begin
       RegisterLateLoader(StrucViewSearch.InitPlugin);
     {$ENDIF}
 
+    // Menu items appear in registration order - organized by workflow:
+    // 1. Dependency/Uses analysis, 2. Code quality, 3. Style/consistency
+
     {$IFDEF INCLUDE_DEPENDENCYVIEWER}
     if DisabledPlugins.IndexOf('DependencyViewer') = -1 then
       RegisterLateLoader(DependencyViewer.InitPlugin);
@@ -162,14 +165,9 @@ begin
       RegisterLateLoader(UnusedUnitDetector.InitPlugin);
     {$ENDIF}
 
-    {$IFDEF INCLUDE_TODOAGGREGATOR}
-    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
-      RegisterLateLoader(TodoAggregator.InitPlugin);
-    {$ENDIF}
-
-    {$IFDEF INCLUDE_CODESTYLECHECKER}
-    if DisabledPlugins.IndexOf('CodeStyleChecker') = -1 then
-      RegisterLateLoader(CodeStyleChecker.InitPlugin);
+    {$IFDEF INCLUDE_USESCLAUSEMANAGER}
+    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
+      RegisterLateLoader(UsesClauseManager.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DEADCODEDETECTOR}
@@ -182,9 +180,14 @@ begin
       RegisterLateLoader(UnreachableCodeDetector.InitPlugin);
     {$ENDIF}
 
-    {$IFDEF INCLUDE_USESCLAUSEMANAGER}
-    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
-      RegisterLateLoader(UsesClauseManager.InitPlugin);
+    {$IFDEF INCLUDE_TODOAGGREGATOR}
+    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
+      RegisterLateLoader(TodoAggregator.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_CODESTYLECHECKER}
+    if DisabledPlugins.IndexOf('CodeStyleChecker') = -1 then
+      RegisterLateLoader(CodeStyleChecker.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}

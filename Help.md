@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.5 | Comprehensive Feature Reference
+Version 3.5.1 | Comprehensive Feature Reference
 
 ---
 
@@ -8,8 +8,9 @@ Version 3.5 | Comprehensive Feature Reference
 
 1. [Quick Reference](#quick-reference)
 2. [Getting Started](#getting-started)
-3. [Feature Reference (A-Z)](#feature-reference-a-z)
-4. [Troubleshooting](#troubleshooting)
+3. [Recommended Usage Sequence](#recommended-usage-sequence)
+4. [Feature Reference (A-Z)](#feature-reference-a-z)
+5. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -65,22 +66,22 @@ Version 3.5 | Comprehensive Feature Reference
 
 ### DDevExtensions Menu Structure
 
-All DDevExtensions tools are now organized under a single submenu:
+All DDevExtensions tools are organized under a single submenu, ordered by workflow:
 
 ```
 Tools
   └── DDevExtensions
         ├── Options...
         ├── ─────────────
-        ├── Code Style Checker...
-        ├── Dead Code Detector...
         ├── Dependency Viewer...
-        ├── DFM/PAS Consistency...
-        ├── Empty Event Handler Detector...
-        ├── TODO/FIXME Aggregator...
-        ├── Unreachable Code Detector...
         ├── Unused Unit Detector...
-        └── Uses Clause Manager...
+        ├── Uses Clause Manager...
+        ├── Dead Code Detector...
+        ├── Unreachable Code Detector...
+        ├── TODO/FIXME Aggregator...
+        ├── Code Style Checker...
+        ├── Empty Event Handler Detector...
+        └── DFM/PAS Consistency...
 ```
 
 ### Configuration Files
@@ -91,6 +92,74 @@ DDevExtensions stores settings in:
 ```
 
 Each feature has its own XML configuration file (e.g., `KeyBindings.xml`, `CompileProgress.xml`).
+
+---
+
+## Recommended Usage Sequence
+
+While all features are independent and can be enabled/disabled individually, the following sequence provides a logical workflow for getting the most out of DDevExtensions.
+
+### 1. Foundation Features (Enable First)
+
+Start with these core enhancements that improve everyday IDE interaction:
+
+| Feature | Why First |
+|---------|-----------|
+| **DSUFeatures** | Extended IDE settings provide the base configuration |
+| **Editor Enhancements** | Core editing improvements you'll use constantly |
+| **Enhanced Key Bindings** | Keyboard shortcuts for efficient navigation |
+
+### 2. Navigation & Development
+
+Once the foundation is set, enable features that speed up navigation and component work:
+
+| Feature | Purpose |
+|---------|---------|
+| **UnitSelector** | Find/Use unit dialogs with fuzzy matching |
+| **ComponentSelector** | Quick component search in form designer |
+| **StrucViewSearch** | Filter Structure View to find methods quickly |
+| **Section Toggle** | Jump between interface/implementation sections |
+
+### 3. Build & Project Management
+
+Add features that improve the compile and project workflow:
+
+| Feature | Purpose |
+|---------|---------|
+| **CompileProgress** | Visual build progress and taskbar integration |
+| **Build Statistics** | Track compile times and code metrics |
+| **CompileBackup** | Pre-compile backup for safety |
+| **FileCleaner** | Automatic cleanup of unnecessary files |
+| **StartParameterTeam** | Shared start parameters across team |
+
+### 4. Code Analysis Tools (Use After Codebase Established)
+
+These tools analyze existing code patterns and dependencies. They're most valuable once your project structure is established:  This is the suggested usage sequence for these features:
+
+| Feature | When to Use |
+|---------|-------------|
+| **DependencyViewer** | Understanding unit relationships and finding circular references |
+| **UnusedUnitDetector** | Cleaning up uses clauses |
+| **UsesClauseManager** | Optimizing uses clause organization |
+| **DeadCodeDetector** | Finding unused procedures and fields |
+| **UnreachableCodeDetector** | Finding code that never executes |
+| **TodoAggregator** | Tracking TODO/FIXME comments across project |
+| **CodeStyleChecker** | Enforcing naming conventions |
+| **EmptyEventHandlerDetector** | Finding accidental empty handlers |
+| **DfmPasConsistency** | Detecting DFM/PAS synchronization issues |
+
+### Suggested Workflow
+
+1. **New Project**: Start with Groups 1-3 enabled
+2. **Code Review Phase**: Run Group 4 tools to identify issues
+3. **Before Release**: Run all analysis tools for a final cleanup pass
+4. **Maintenance**: Periodically run DependencyViewer and UsesClauseManager to keep architecture clean
+
+### Key Notes
+
+- All features can be disabled via environment variable: `DDevExtensions.DisabledFeatures` (semicolon-separated list)
+- Each feature stores settings independently in `%APPDATA%\DDevExtensions\`
+- No feature depends on another being enabled - use what works for your workflow
 
 ---
 

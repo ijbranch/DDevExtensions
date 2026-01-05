@@ -28,6 +28,8 @@ Version 3.4.1 adds three new features: Interface/Implementation Section Toggle (
 
 Version 3.5 enhances the Dependency Viewer with conditional compilation support - reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude inactive code from analysis, eliminating false positive circular references in multi-app codebases with shared units.
 
+Version 3.5.1 fixes bugs in the Dead Code Detector, Code Style Checker, and Empty Event Handler Detector. The field detection tools now correctly skip the implicit published section of forms (VCL components) and only check fields after an explicit private/protected keyword. The Empty Event Handler Detector now requires event suffixes at the end of method names and correctly detects case/try statements as non-empty. The DDevExtensions submenu has been reordered by workflow (dependency analysis → code quality → style/consistency).
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
