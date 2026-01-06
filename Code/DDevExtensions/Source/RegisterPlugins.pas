@@ -59,6 +59,9 @@ uses
   {$IFDEF INCLUDE_DFMPASCONSISTENCY}
   DfmPasConsistency,
   {$ENDIF INCLUDE_DFMPASCONSISTENCY}
+  {$IFDEF INCLUDE_CODEQUALITYANALYZER}
+  CodeQualityAnalyzer,
+  {$ENDIF INCLUDE_CODEQUALITYANALYZER}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -153,21 +156,26 @@ begin
     {$ENDIF}
 
     // Menu items appear in registration order - organized by workflow:
-    // 1. Dependency/Uses analysis, 2. Code quality, 3. Style/consistency
+    // 1. Architecture overview (Dependency Viewer)
+    // 2. Comprehensive quality check (Code Quality Analyzer)
+    // 3. Remove unused code (Unused Units, Dead Code, Unreachable, Empty Handlers)
+    // 4. Organize (Uses Clause Manager, DFM/PAS Consistency)
+    // 5. Style check (Code Style Checker)
+    // 6. Review work items (TODO/FIXME Aggregator)
 
     {$IFDEF INCLUDE_DEPENDENCYVIEWER}
     if DisabledPlugins.IndexOf('DependencyViewer') = -1 then
       RegisterLateLoader(DependencyViewer.InitPlugin);
     {$ENDIF}
 
+    {$IFDEF INCLUDE_CODEQUALITYANALYZER}
+    if DisabledPlugins.IndexOf('CodeQualityAnalyzer') = -1 then
+      RegisterLateLoader(CodeQualityAnalyzer.InitPlugin);
+    {$ENDIF}
+
     {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
     if DisabledPlugins.IndexOf('UnusedUnitDetector') = -1 then
       RegisterLateLoader(UnusedUnitDetector.InitPlugin);
-    {$ENDIF}
-
-    {$IFDEF INCLUDE_USESCLAUSEMANAGER}
-    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
-      RegisterLateLoader(UsesClauseManager.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DEADCODEDETECTOR}
@@ -180,9 +188,19 @@ begin
       RegisterLateLoader(UnreachableCodeDetector.InitPlugin);
     {$ENDIF}
 
-    {$IFDEF INCLUDE_TODOAGGREGATOR}
-    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
-      RegisterLateLoader(TodoAggregator.InitPlugin);
+    {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
+    if DisabledPlugins.IndexOf('EmptyEventHandlerDetector') = -1 then
+      RegisterLateLoader(EmptyEventHandlerDetector.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_USESCLAUSEMANAGER}
+    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
+      RegisterLateLoader(UsesClauseManager.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_DFMPASCONSISTENCY}
+    if DisabledPlugins.IndexOf('DfmPasConsistency') = -1 then
+      RegisterLateLoader(DfmPasConsistency.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_CODESTYLECHECKER}
@@ -190,14 +208,9 @@ begin
       RegisterLateLoader(CodeStyleChecker.InitPlugin);
     {$ENDIF}
 
-    {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
-    if DisabledPlugins.IndexOf('EmptyEventHandlerDetector') = -1 then
-      RegisterLateLoader(EmptyEventHandlerDetector.InitPlugin);
-    {$ENDIF}
-
-    {$IFDEF INCLUDE_DFMPASCONSISTENCY}
-    if DisabledPlugins.IndexOf('DfmPasConsistency') = -1 then
-      RegisterLateLoader(DfmPasConsistency.InitPlugin);
+    {$IFDEF INCLUDE_TODOAGGREGATOR}
+    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
+      RegisterLateLoader(TodoAggregator.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

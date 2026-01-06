@@ -24,7 +24,7 @@ type
 
   TFormDependencyViewer = class( TFormBase )
     pnlTop: TPanel;
-    pnlBottom: TPanel;
+    pnlBottom: TGridPanel;
     btnClose: TButton;
     btnScanProject: TButton;
     TreeView: TTreeView;
@@ -38,11 +38,18 @@ type
     lblImpactRisk: TLabel;
     shpRiskIndicator: TShape;
     lblCircularRefs: TLabel;
+    btnExportCircular: TButton;
     ListBoxCircular: TListBox;
+    SaveDialogExport: TSaveDialog;
     lblProgress: TLabel;
     rbUses: TRadioButton;
     rbUsedBy: TRadioButton;
     chkShowDepth: TCheckBox;
+    btnLayers: TButton;
+    btnCheckLayers: TButton;
+    lblLayerViolations: TLabel;
+    btnExportViolations: TButton;
+    ListBoxViolations: TListBox;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanProjectClick( Sender: TObject );
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
@@ -50,14 +57,21 @@ type
       var AllowExpansion: Boolean );
     procedure ListBoxCircularClick( Sender: TObject );
     procedure ListBoxCircularDblClick( Sender: TObject );
+    procedure btnExportCircularClick( Sender: TObject );
     procedure FormCreate( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure ViewModeChanged( Sender: TObject );
     procedure TreeViewAdvancedCustomDrawItem( Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: Boolean );
     procedure TreeViewChange( Sender: TObject; Node: TTreeNode );
+    procedure btnLayersClick( Sender: TObject );
+    procedure btnCheckLayersClick( Sender: TObject );
+    procedure btnExportViolationsClick( Sender: TObject );
+    procedure ListBoxViolationsDblClick( Sender: TObject );
   private
     FScanner: TDependencyScanner;
+    FLayerConfig: TLayerConfig;
+    FLayerViolations: TArray<TLayerViolation>;
     FViewMode: TViewMode;
     FShowDepth: Boolean;
     FHighlightedUnits: TStringList;
@@ -75,6 +89,11 @@ type
     procedure OpenUnitFile( const UnitName: string );
     procedure UpdateImpactSummary( const UnitName: string );
     procedure ClearImpactSummary;
+    procedure ExportCircularRefsToCSV( const FileName: string );
+    procedure ExportCircularRefsToTXT( const FileName: string );
+    procedure PopulateLayerViolations;
+    procedure ExportViolationsToCSV( const FileName: string );
+    procedure ExportViolationsToTXT( const FileName: string );
   public
     class procedure Execute;
   end;
@@ -87,7 +106,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers;
+  ToolsAPIHelpers, Main, FrmLayerConfig;
 
 class procedure TFormDependencyViewer.Execute;
 begin
@@ -117,6 +136,8 @@ begin
 
   FScanner            := TDependencyScanner.Create;
   FScanner.OnProgress := ScannerProgress;
+  FLayerConfig        := TLayerConfig.Create( AppDataDirectory + '\LayerConfig.txt' );
+  FLayerConfig.LoadFromFile;
   FViewMode           := vmUses;
   FShowDepth          := True;
   FHighlightedUnits   := TStringList.Create;
@@ -127,8 +148,10 @@ begin
   FUnitsInAnyCycle.CaseSensitive := False;
   FUnitsInAnyCycle.Sorted := True;
   FUnitsInAnyCycle.Duplicates := dupIgnore;
+  SetLength( FLayerViolations, 0 );
 
   ClearImpactSummary;
+  lblLayerViolations.Caption := 'Layer Violations: (run Check Layers)';
 
 end;
 
@@ -137,6 +160,7 @@ begin
 
   FUnitsInAnyCycle.Free;
   FHighlightedUnits.Free;
+  FLayerConfig.Free;
   FScanner.Free;
 
 end;
@@ -743,6 +767,366 @@ begin
   lblImpactTransitive.Caption := 'Total affected: -';
   lblImpactRisk.Caption       := 'Risk: -';
   shpRiskIndicator.Brush.Color := clGray;
+
+end;
+
+procedure TFormDependencyViewer.btnExportCircularClick( Sender: TObject );
+var
+  Ext: string;
+begin
+
+  if FScanner.CircularReferences.Count = 0 then
+  begin
+    ShowMessage( 'No circular references to export.' );
+    Exit;
+  end;
+
+  if SaveDialogExport.Execute then
+  begin
+    Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
+
+    if Ext = '.csv' then
+      ExportCircularRefsToCSV( SaveDialogExport.FileName )
+    else
+      ExportCircularRefsToTXT( SaveDialogExport.FileName );
+
+    ShowMessage( Format( 'Exported %d circular references to %s',
+      [ FScanner.CircularReferences.Count, SaveDialogExport.FileName ] ) );
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ExportCircularRefsToCSV( const FileName: string );
+var
+  SL: TStringList;
+  CircRef: TCircularReference;
+  I: Integer;
+  Line, UsesType: string;
+  MaxSteps, StepCount: Integer;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    // Determine maximum steps for header
+    MaxSteps := 0;
+
+    for CircRef in FScanner.CircularReferences do
+    begin
+
+      if Length( CircRef.Steps ) > MaxSteps then
+        MaxSteps := Length( CircRef.Steps );
+    end;
+
+    // Build header row
+    Line := 'Index,StepCount';
+
+    for I := 1 to MaxSteps do
+      Line := Line + Format( ',Unit%d,UsesType%d', [ I, I ] );
+
+    SL.Add( Line );
+
+    // Add data rows
+    StepCount := 0;
+
+    for CircRef in FScanner.CircularReferences do
+    begin
+      Inc( StepCount );
+      Line := Format( '%d,%d', [ StepCount, Length( CircRef.Steps ) ] );
+
+      for I := 0 to High( CircRef.Steps ) do
+      begin
+
+        if CircRef.Steps[ I ].IsInterface then
+          UsesType := 'interface'
+        else
+          UsesType := 'implementation';
+
+        // Escape any commas in unit names (unlikely but safe)
+        Line := Line + ',"' + CircRef.Steps[ I ].UnitName + '","' + UsesType + '"';
+      end;
+
+      // Pad remaining columns if needed
+      for I := Length( CircRef.Steps ) to MaxSteps - 1 do
+        Line := Line + ',,';
+
+      SL.Add( Line );
+    end;
+
+    SL.SaveToFile( FileName );
+  finally
+    SL.Free;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ExportCircularRefsToTXT( const FileName: string );
+var
+  SL: TStringList;
+  CircRef: TCircularReference;
+  I, RefNum: Integer;
+  Line, UsesType: string;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    SL.Add( 'Circular References Report' );
+    SL.Add( '==========================' );
+    SL.Add( '' );
+    SL.Add( Format( 'Total circular references found: %d', [ FScanner.CircularReferences.Count ] ) );
+    SL.Add( '' );
+
+    RefNum := 0;
+
+    for CircRef in FScanner.CircularReferences do
+    begin
+      Inc( RefNum );
+      SL.Add( Format( '--- Circular Reference #%d (%d units) ---', [ RefNum, Length( CircRef.Steps ) - 1 ] ) );
+      SL.Add( '' );
+
+      // Build the chain representation
+      Line := '';
+
+      for I := 0 to High( CircRef.Steps ) do
+      begin
+
+        if I > 0 then
+        begin
+
+          if CircRef.Steps[ I ].IsInterface then
+            UsesType := 'interface'
+          else
+            UsesType := 'implementation';
+
+          Line := Line + ' -[' + UsesType + ']-> ';
+        end;
+
+        Line := Line + CircRef.Steps[ I ].UnitName;
+      end;
+
+      SL.Add( '  Chain: ' + Line );
+      SL.Add( '' );
+
+      // List each step with details
+      SL.Add( '  Steps:' );
+
+      for I := 0 to High( CircRef.Steps ) - 1 do
+      begin
+
+        if CircRef.Steps[ I + 1 ].IsInterface then
+          UsesType := 'interface'
+        else
+          UsesType := 'implementation';
+
+        SL.Add( Format( '    %d. %s uses %s (%s uses clause)',
+          [ I + 1, CircRef.Steps[ I ].UnitName, CircRef.Steps[ I + 1 ].UnitName, UsesType ] ) );
+      end;
+
+      SL.Add( '' );
+    end;
+
+    SL.SaveToFile( FileName );
+  finally
+    SL.Free;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.btnLayersClick( Sender: TObject );
+begin
+
+  if TFormLayerConfig.Execute( FLayerConfig ) then
+  begin
+    // Re-check violations if we have scan results
+    if Length( FScanner.GetAllUnits ) > 0 then
+      btnCheckLayersClick( Sender );
+  end;
+
+end;
+
+procedure TFormDependencyViewer.btnCheckLayersClick( Sender: TObject );
+begin
+
+  if Length( FScanner.GetAllUnits ) = 0 then
+  begin
+    ShowMessage( 'Please scan a project first.' );
+    Exit;
+  end;
+
+  Screen.Cursor := crHourGlass;
+
+  try
+    FLayerViolations := FScanner.DetectLayerViolations( FLayerConfig );
+    PopulateLayerViolations;
+  finally
+    Screen.Cursor := crDefault;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.PopulateLayerViolations;
+var
+  Violation: TLayerViolation;
+  S, UsesType: string;
+begin
+
+  ListBoxViolations.Items.BeginUpdate;
+
+  try
+    ListBoxViolations.Items.Clear;
+
+    for Violation in FLayerViolations do
+    begin
+
+      if Violation.IsInterface then
+        UsesType := 'interface'
+      else
+        UsesType := 'implementation';
+
+      S := Format( '%s (%s) -> %s (%s) [%s]',
+        [ Violation.SourceUnit, Violation.SourceLayer,
+          Violation.TargetUnit, Violation.TargetLayer, UsesType ] );
+
+      ListBoxViolations.Items.Add( S );
+    end;
+
+    if Length( FLayerViolations ) = 0 then
+    begin
+      lblLayerViolations.Caption := 'Layer Violations: None found';
+      lblLayerViolations.Font.Color := clGreen;
+    end
+    else
+    begin
+      lblLayerViolations.Caption := Format( 'Layer Violations: %d found', [ Length( FLayerViolations ) ] );
+
+      // Color code based on severity
+      if Length( FLayerViolations ) >= 50 then
+        lblLayerViolations.Font.Color := clRed
+      else if Length( FLayerViolations ) >= 10 then
+        lblLayerViolations.Font.Color := $000080FF  // Orange
+      else
+        lblLayerViolations.Font.Color := clWindowText;
+    end;
+  finally
+    ListBoxViolations.Items.EndUpdate;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ListBoxViolationsDblClick( Sender: TObject );
+var
+  Idx: Integer;
+begin
+
+  Idx := ListBoxViolations.ItemIndex;
+
+  if ( Idx >= 0 ) and ( Idx < Length( FLayerViolations ) ) then
+    OpenUnitFile( FLayerViolations[ Idx ].SourceUnit );
+
+end;
+
+procedure TFormDependencyViewer.btnExportViolationsClick( Sender: TObject );
+var
+  Ext: string;
+begin
+
+  if Length( FLayerViolations ) = 0 then
+  begin
+    ShowMessage( 'No layer violations to export.' );
+    Exit;
+  end;
+
+  SaveDialogExport.Title := 'Export Layer Violations';
+
+  if SaveDialogExport.Execute then
+  begin
+    Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
+
+    if Ext = '.csv' then
+      ExportViolationsToCSV( SaveDialogExport.FileName )
+    else
+      ExportViolationsToTXT( SaveDialogExport.FileName );
+
+    ShowMessage( Format( 'Exported %d layer violations to %s',
+      [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ExportViolationsToCSV( const FileName: string );
+var
+  SL: TStringList;
+  Violation: TLayerViolation;
+  UsesType: string;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    SL.Add( 'SourceUnit,SourceLayer,TargetUnit,TargetLayer,UsesClause' );
+
+    for Violation in FLayerViolations do
+    begin
+
+      if Violation.IsInterface then
+        UsesType := 'interface'
+      else
+        UsesType := 'implementation';
+
+      SL.Add( Format( '"%s","%s","%s","%s","%s"',
+        [ Violation.SourceUnit, Violation.SourceLayer,
+          Violation.TargetUnit, Violation.TargetLayer, UsesType ] ) );
+    end;
+
+    SL.SaveToFile( FileName );
+  finally
+    SL.Free;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ExportViolationsToTXT( const FileName: string );
+var
+  SL: TStringList;
+  Violation: TLayerViolation;
+  I: Integer;
+  UsesType: string;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    SL.Add( 'Layer Violations Report' );
+    SL.Add( '=======================' );
+    SL.Add( '' );
+    SL.Add( Format( 'Total violations found: %d', [ Length( FLayerViolations ) ] ) );
+    SL.Add( '' );
+
+    I := 0;
+
+    for Violation in FLayerViolations do
+    begin
+      Inc( I );
+
+      if Violation.IsInterface then
+        UsesType := 'interface'
+      else
+        UsesType := 'implementation';
+
+      SL.Add( Format( '%d. %s (%s layer) uses %s (%s layer)',
+        [ I, Violation.SourceUnit, Violation.SourceLayer,
+          Violation.TargetUnit, Violation.TargetLayer ] ) );
+      SL.Add( Format( '   Uses clause: %s', [ UsesType ] ) );
+      SL.Add( Format( '   VIOLATION: %s layer should not depend on %s layer',
+        [ Violation.SourceLayer, Violation.TargetLayer ] ) );
+      SL.Add( '' );
+    end;
+
+    SL.SaveToFile( FileName );
+  finally
+    SL.Free;
+  end;
 
 end;
 

@@ -726,6 +726,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
             <Form>FrameOptionPageCodeStyle</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Source\CodeStyleChecker\FrmTypePrefixEditor.pas">
+            <Form>FormTypePrefixEditor</Form>
+        </DCCReference>
         <DCCReference Include="..\Source\DeadCodeDetector\DeadCodeDetector.pas"/>
         <DCCReference Include="..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas">
             <Form>FormDeadCodeDetector</Form>
@@ -740,6 +743,38 @@ $(PreBuildEvent)]]></PreBuildEvent>
         </DCCReference>
         <DCCReference Include="..\Source\UnreachableCodeDetector\FrmeOptionPageUnreachableCode.pas">
             <Form>FrameOptionPageUnreachableCode</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManager.pas"/>
+        <DCCReference Include="..\Source\UsesClauseManager\FrmUsesClauseManager.pas">
+            <Form>FormUsesClauseManager</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\UsesClauseManager\FrmeOptionPageUsesClause.pas">
+            <Form>FrameOptionPageUsesClause</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\EmptyEventHandlerDetector.pas"/>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\FrmEmptyEventHandlerDetector.pas">
+            <Form>FormEmptyEventHandlerDetector</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\EmptyEventHandlerDetector\FrmeOptionPageEmptyHandler.pas">
+            <Form>FrameOptionPageEmptyHandler</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\DfmPasConsistency\DfmPasConsistency.pas"/>
+        <DCCReference Include="..\Source\DfmPasConsistency\FrmDfmPasConsistency.pas">
+            <Form>FormDfmPasConsistency</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas">
+            <Form>FrameOptionPageDfmPas</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\CodeQualityAnalyzer.pas"/>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas">
+            <Form>FormCodeQualityAnalyzer</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas">
+            <Form>FrameOptionPageCodeQuality</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Debug">

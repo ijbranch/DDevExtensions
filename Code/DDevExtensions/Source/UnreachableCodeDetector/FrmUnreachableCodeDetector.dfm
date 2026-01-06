@@ -54,44 +54,83 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
       OnChange = cmbFilterChange
     end
   end
-  object pnlBottom: TPanel
+  object pnlBottom: TGridPanel
     Left = 0
     Top = 409
     Width = 750
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
+    ColumnCollection = <
+      item
+        Value = 33.333333333333333333
+      end
+      item
+        Value = 33.333333333333333333
+      end
+      item
+        Value = 33.333333333333333333
+      end>
+    ControlCollection = <
+      item
+        Column = 0
+        Control = btnExport
+        Row = 0
+      end
+      item
+        Column = 1
+        Control = lblProgress
+        Row = 0
+      end
+      item
+        Column = 1
+        Control = lblCount
+        Row = 0
+      end
+      item
+        Column = 2
+        Control = btnClose
+        Row = 0
+      end>
+    RowCollection = <
+      item
+        Value = 100.000000000000000000
+      end>
     TabOrder = 1
     object lblProgress: TLabel
-      Left = 96
+      AlignWithMargins = True
+      Left = 254
       Top = 14
       Width = 3
       Height = 13
     end
     object lblCount: TLabel
-      Left = 450
+      AlignWithMargins = True
+      Left = 263
       Top = 14
       Width = 3
       Height = 13
     end
+    object btnExport: TButton
+      AlignWithMargins = True
+      Left = 4
+      Top = 8
+      Width = 75
+      Height = 25
+      Caption = 'Export CSV'
+      TabOrder = 0
+      OnClick = btnExportClick
+    end
     object btnClose: TButton
+      AlignWithMargins = True
       Left = 667
       Top = 8
       Width = 75
       Height = 25
       Cancel = True
       Caption = 'Close'
-      TabOrder = 0
-      OnClick = btnCloseClick
-    end
-    object btnExport: TButton
-      Left = 8
-      Top = 8
-      Width = 75
-      Height = 25
-      Caption = 'Export CSV'
       TabOrder = 1
-      OnClick = btnExportClick
+      OnClick = btnCloseClick
     end
   end
   object ListView: TListView

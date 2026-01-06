@@ -25,6 +25,19 @@ type
     IsInterface: Boolean; // True if in interface uses, False if in implementation uses
   end;
 
+  TLayerDefinition = record
+    Name: string;
+    Patterns: TArray<string>;  // Unit name patterns (wildcards supported: * for multiple chars, ? for single)
+  end;
+
+  TLayerViolation = record
+    SourceUnit: string;
+    SourceLayer: string;
+    TargetUnit: string;
+    TargetLayer: string;
+    IsInterface: Boolean;
+  end;
+
   {$WARN HIDING_MEMBER OFF}
   TUnitInfo = class
   private
@@ -59,6 +72,27 @@ type
     TransitiveCount: Integer;
     RiskLevel: Integer;                    // 0=Safe, 1=Low, 2=Medium, 3=High
     function RiskLevelText: string;
+  end;
+
+  TLayerConfig = class
+  private
+    FLayers: TList<TLayerDefinition>;
+    FAllowedDeps: TDictionary<string, TStringList>;  // LayerName -> list of allowed target layers
+    FConfigFile: string;
+  public
+    constructor Create( const AConfigFile: string );
+    destructor Destroy; override;
+    procedure Clear;
+    procedure AddLayer( const Name: string; const Patterns: TArray<string> );
+    procedure SetAllowedDependencies( const FromLayer: string; const ToLayers: TArray<string> );
+    function GetLayerForUnit( const UnitName: string ): string;
+    function IsDependencyAllowed( const FromLayer, ToLayer: string ): Boolean;
+    function GetLayers: TArray<TLayerDefinition>;
+    function GetAllowedDependencies( const LayerName: string ): TArray<string>;
+    procedure LoadFromFile;
+    procedure SaveToFile;
+    procedure LoadDefaults;
+    property Layers: TList<TLayerDefinition> read FLayers;
   end;
 
   TDependencyScanner = class
@@ -96,6 +130,7 @@ type
     function GetReverseDependencies( const UnitName: string ): TStringList;
     function GetUnitDepth( const UnitName: string ): Integer;
     function AnalyzeImpact( const UnitName: string ): TImpactAnalysis;
+    function DetectLayerViolations( LayerConfig: TLayerConfig ): TArray<TLayerViolation>;
     property CircularReferences: TList<TCircularReference> read FCircularRefs;
     property OnProgress: TNotifyEvent read FOnProgress write FOnProgress;
     property ProgressUnit: string read FProgressUnit;
@@ -1282,6 +1317,437 @@ begin
     end;
   finally
     Path.Delete( Path.Count - 1 );
+  end;
+
+end;
+
+{ TLayerConfig }
+
+constructor TLayerConfig.Create( const AConfigFile: string );
+begin
+
+  inherited Create;
+  FConfigFile  := AConfigFile;
+  FLayers      := TList<TLayerDefinition>.Create;
+  FAllowedDeps := TDictionary<string, TStringList>.Create;
+
+end;
+
+destructor TLayerConfig.Destroy;
+var
+  Pair: TPair<string, TStringList>;
+begin
+
+  for Pair in FAllowedDeps do
+    Pair.Value.Free;
+
+  FAllowedDeps.Free;
+  FLayers.Free;
+  inherited Destroy;
+
+end;
+
+procedure TLayerConfig.Clear;
+var
+  Pair: TPair<string, TStringList>;
+begin
+
+  FLayers.Clear;
+
+  for Pair in FAllowedDeps do
+    Pair.Value.Free;
+
+  FAllowedDeps.Clear;
+
+end;
+
+procedure TLayerConfig.AddLayer( const Name: string; const Patterns: TArray<string> );
+var
+  Layer: TLayerDefinition;
+begin
+
+  Layer.Name     := Name;
+  Layer.Patterns := Patterns;
+  FLayers.Add( Layer );
+
+end;
+
+procedure TLayerConfig.SetAllowedDependencies( const FromLayer: string;
+  const ToLayers: TArray<string> );
+var
+  SL: TStringList;
+  I: Integer;
+begin
+
+  SL := TStringList.Create;
+  SL.CaseSensitive := False;
+  SL.Sorted        := True;
+  SL.Duplicates    := dupIgnore;
+
+  for I := 0 to High( ToLayers ) do
+    SL.Add( ToLayers[ I ] );
+
+  if FAllowedDeps.ContainsKey( FromLayer ) then
+    FAllowedDeps[ FromLayer ].Free;
+
+  FAllowedDeps.AddOrSetValue( FromLayer, SL );
+
+end;
+
+function TLayerConfig.GetLayerForUnit( const UnitName: string ): string;
+var
+  Layer: TLayerDefinition;
+  Pattern: string;
+  UpperUnit, UpperPattern: string;
+
+  function MatchesWildcard( const S, Pattern: string ): Boolean;
+  var
+    SI, PI: Integer;
+  begin
+    // Simple wildcard matching: * matches any sequence, ? matches single char
+    Result := False;
+    SI     := 1;
+    PI     := 1;
+
+    while ( SI <= Length( S ) ) and ( PI <= Length( Pattern ) ) do
+    begin
+
+      if Pattern[ PI ] = '*' then
+      begin
+        // Skip consecutive stars
+        while ( PI <= Length( Pattern ) ) and ( Pattern[ PI ] = '*' ) do
+          Inc( PI );
+
+        if PI > Length( Pattern ) then
+        begin
+          Result := True;
+          Exit;
+        end;
+
+        // Find next matching position
+        while SI <= Length( S ) do
+        begin
+
+          if MatchesWildcard( Copy( S, SI, MaxInt ), Copy( Pattern, PI, MaxInt ) ) then
+          begin
+            Result := True;
+            Exit;
+          end;
+
+          Inc( SI );
+        end;
+
+        Exit;
+      end
+      else if ( Pattern[ PI ] = '?' ) or ( Pattern[ PI ] = S[ SI ] ) then
+      begin
+        Inc( SI );
+        Inc( PI );
+      end
+      else
+        Exit;
+    end;
+
+    // Skip trailing stars
+    while ( PI <= Length( Pattern ) ) and ( Pattern[ PI ] = '*' ) do
+      Inc( PI );
+
+    Result := ( SI > Length( S ) ) and ( PI > Length( Pattern ) );
+
+  end;
+
+begin
+
+  Result    := '';
+  UpperUnit := UpperCase( UnitName );
+
+  for Layer in FLayers do
+  begin
+
+    for Pattern in Layer.Patterns do
+    begin
+      UpperPattern := UpperCase( Pattern );
+
+      if MatchesWildcard( UpperUnit, UpperPattern ) then
+      begin
+        Result := Layer.Name;
+        Exit;
+      end;
+    end;
+  end;
+
+end;
+
+function TLayerConfig.IsDependencyAllowed( const FromLayer, ToLayer: string ): Boolean;
+var
+  SL: TStringList;
+begin
+
+  Result := True;
+
+  // Same layer is always allowed
+  if SameText( FromLayer, ToLayer ) then
+    Exit;
+
+  // If no rules defined for this layer, allow all
+  if not FAllowedDeps.TryGetValue( FromLayer, SL ) then
+    Exit;
+
+  // Check if target layer is in allowed list
+  Result := SL.IndexOf( ToLayer ) >= 0;
+
+end;
+
+function TLayerConfig.GetLayers: TArray<TLayerDefinition>;
+begin
+
+  Result := FLayers.ToArray;
+
+end;
+
+function TLayerConfig.GetAllowedDependencies( const LayerName: string ): TArray<string>;
+var
+  SL: TStringList;
+  I: Integer;
+begin
+
+  if FAllowedDeps.TryGetValue( LayerName, SL ) then
+  begin
+    SetLength( Result, SL.Count );
+
+    for I := 0 to SL.Count - 1 do
+      Result[ I ] := SL[ I ];
+  end
+  else
+    SetLength( Result, 0 );
+
+end;
+
+procedure TLayerConfig.LoadDefaults;
+begin
+
+  Clear;
+
+  // Default layer configuration for a typical Delphi project
+  AddLayer( 'UI', [ '*Frm', '*Form', '*Frame', 'Frm*', 'Form*', 'Frame*' ] );
+  AddLayer( 'Business', [ '*Logic', '*Service', '*Manager', '*Controller' ] );
+  AddLayer( 'DataAccess', [ '*DM', '*DataModule', '*Data', '*Repository', 'dm*' ] );
+  AddLayer( 'Core', [ '*Utils', '*Types', '*Consts', '*Common', '*Helpers' ] );
+
+  // Default rules: UI -> Business, DataAccess, Core; Business -> DataAccess, Core; DataAccess -> Core
+  SetAllowedDependencies( 'UI', [ 'Business', 'DataAccess', 'Core' ] );
+  SetAllowedDependencies( 'Business', [ 'DataAccess', 'Core' ] );
+  SetAllowedDependencies( 'DataAccess', [ 'Core' ] );
+  SetAllowedDependencies( 'Core', [ ] );
+
+end;
+
+procedure TLayerConfig.LoadFromFile;
+var
+  SL, Lines: TStringList;
+  I, J: Integer;
+  Line, LayerName, PatternStr, AllowedStr: string;
+  Patterns, Allowed: TArray<string>;
+  InLayers, InRules: Boolean;
+begin
+
+  if not FileExists( FConfigFile ) then
+  begin
+    LoadDefaults;
+    Exit;
+  end;
+
+  Clear;
+  SL       := TStringList.Create;
+  Lines    := TStringList.Create;
+  InLayers := False;
+  InRules  := False;
+
+  try
+    SL.LoadFromFile( FConfigFile );
+
+    for I := 0 to SL.Count - 1 do
+    begin
+      Line := Trim( SL[ I ] );
+
+      if ( Line = '' ) or ( Line[ 1 ] = '#' ) then
+        Continue;
+
+      if Line = '[Layers]' then
+      begin
+        InLayers := True;
+        InRules  := False;
+        Continue;
+      end;
+
+      if Line = '[Rules]' then
+      begin
+        InLayers := False;
+        InRules  := True;
+        Continue;
+      end;
+
+      if InLayers then
+      begin
+        // Format: LayerName=Pattern1,Pattern2,Pattern3
+        J := Pos( '=', Line );
+
+        if J > 0 then
+        begin
+          LayerName  := Trim( Copy( Line, 1, J - 1 ) );
+          PatternStr := Trim( Copy( Line, J + 1, MaxInt ) );
+
+          Lines.Clear;
+          Lines.Delimiter       := ',';
+          Lines.StrictDelimiter := True;
+          Lines.DelimitedText   := PatternStr;
+
+          SetLength( Patterns, Lines.Count );
+
+          for J := 0 to Lines.Count - 1 do
+            Patterns[ J ] := Trim( Lines[ J ] );
+
+          AddLayer( LayerName, Patterns );
+        end;
+      end;
+
+      if InRules then
+      begin
+        // Format: FromLayer=ToLayer1,ToLayer2,ToLayer3
+        J := Pos( '=', Line );
+
+        if J > 0 then
+        begin
+          LayerName  := Trim( Copy( Line, 1, J - 1 ) );
+          AllowedStr := Trim( Copy( Line, J + 1, MaxInt ) );
+
+          Lines.Clear;
+          Lines.Delimiter       := ',';
+          Lines.StrictDelimiter := True;
+          Lines.DelimitedText   := AllowedStr;
+
+          SetLength( Allowed, Lines.Count );
+
+          for J := 0 to Lines.Count - 1 do
+            Allowed[ J ] := Trim( Lines[ J ] );
+
+          SetAllowedDependencies( LayerName, Allowed );
+        end;
+      end;
+    end;
+  finally
+    Lines.Free;
+    SL.Free;
+  end;
+
+end;
+
+procedure TLayerConfig.SaveToFile;
+var
+  SL: TStringList;
+  Layer: TLayerDefinition;
+  I: Integer;
+  Line: string;
+  Pair: TPair<string, TStringList>;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    SL.Add( '# Layer Configuration for Dependency Viewer' );
+    SL.Add( '# Patterns support wildcards: * (multiple chars), ? (single char)' );
+    SL.Add( '' );
+    SL.Add( '[Layers]' );
+
+    for Layer in FLayers do
+    begin
+      Line := Layer.Name + '=';
+
+      for I := 0 to High( Layer.Patterns ) do
+      begin
+
+        if I > 0 then
+          Line := Line + ',';
+
+        Line := Line + Layer.Patterns[ I ];
+      end;
+
+      SL.Add( Line );
+    end;
+
+    SL.Add( '' );
+    SL.Add( '[Rules]' );
+
+    for Pair in FAllowedDeps do
+    begin
+      Line := Pair.Key + '=';
+
+      for I := 0 to Pair.Value.Count - 1 do
+      begin
+
+        if I > 0 then
+          Line := Line + ',';
+
+        Line := Line + Pair.Value[ I ];
+      end;
+
+      SL.Add( Line );
+    end;
+
+    SL.SaveToFile( FConfigFile );
+  finally
+    SL.Free;
+  end;
+
+end;
+
+function TDependencyScanner.DetectLayerViolations( LayerConfig: TLayerConfig ): TArray<TLayerViolation>;
+var
+  Violations: TList<TLayerViolation>;
+  Pair: TPair<string, TUnitInfo>;
+  UnitInfo: TUnitInfo;
+  Dep: TUnitDependency;
+  SourceLayer, TargetLayer: string;
+  Violation: TLayerViolation;
+begin
+
+  Violations := TList<TLayerViolation>.Create;
+
+  try
+
+    for Pair in FUnits do
+    begin
+      UnitInfo    := Pair.Value;
+      SourceLayer := LayerConfig.GetLayerForUnit( UnitInfo.UnitName );
+
+      // Skip units that don't belong to any defined layer
+      if SourceLayer = '' then
+        Continue;
+
+      for Dep in UnitInfo.Dependencies do
+      begin
+        TargetLayer := LayerConfig.GetLayerForUnit( Dep.UnitName );
+
+        // Skip dependencies to units not in any layer
+        if TargetLayer = '' then
+          Continue;
+
+        // Check if this dependency violates layer rules
+        if not LayerConfig.IsDependencyAllowed( SourceLayer, TargetLayer ) then
+        begin
+          Violation.SourceUnit  := UnitInfo.UnitName;
+          Violation.SourceLayer := SourceLayer;
+          Violation.TargetUnit  := Dep.UnitName;
+          Violation.TargetLayer := TargetLayer;
+          Violation.IsInterface := Dep.IsInterface;
+          Violations.Add( Violation );
+        end;
+      end;
+    end;
+
+    Result := Violations.ToArray;
+  finally
+    Violations.Free;
   end;
 
 end;

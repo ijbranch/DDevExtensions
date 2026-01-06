@@ -104,6 +104,7 @@ uses
   DependencyViewer in '..\Source\DependencyViewer\DependencyViewer.pas',
   FrmDependencyViewer in '..\Source\DependencyViewer\FrmDependencyViewer.pas' {FormDependencyViewer},
   FrmeOptionPageDependencyViewer in '..\Source\DependencyViewer\FrmeOptionPageDependencyViewer.pas' {FrameOptionPageDependencyViewer: TFrame},
+  FrmLayerConfig in '..\Source\DependencyViewer\FrmLayerConfig.pas' {FormLayerConfig},
   UnusedUnitDetector in '..\Source\UnusedUnitDetector\UnusedUnitDetector.pas',
   FrmUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmUnusedUnitDetector.pas' {FormUnusedUnitDetector},
   FrmeOptionPageUnusedUnitDetector in '..\Source\UnusedUnitDetector\FrmeOptionPageUnusedUnitDetector.pas' {FrameOptionPageUnusedUnitDetector: TFrame},
@@ -113,6 +114,7 @@ uses
   CodeStyleChecker in '..\Source\CodeStyleChecker\CodeStyleChecker.pas',
   FrmCodeStyleChecker in '..\Source\CodeStyleChecker\FrmCodeStyleChecker.pas' {FormCodeStyleChecker},
   FrmeOptionPageCodeStyle in '..\Source\CodeStyleChecker\FrmeOptionPageCodeStyle.pas' {FrameOptionPageCodeStyle: TFrame},
+  FrmTypePrefixEditor in '..\Source\CodeStyleChecker\FrmTypePrefixEditor.pas' {FormTypePrefixEditor},
   DeadCodeDetector in '..\Source\DeadCodeDetector\DeadCodeDetector.pas',
   FrmDeadCodeDetector in '..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas' {FormDeadCodeDetector},
   FrmeOptionPageDeadCode in '..\Source\DeadCodeDetector\FrmeOptionPageDeadCode.pas' {FrameOptionPageDeadCode: TFrame},
@@ -127,7 +129,10 @@ uses
   FrmeOptionPageEmptyHandler in '..\Source\EmptyEventHandlerDetector\FrmeOptionPageEmptyHandler.pas' {FrameOptionPageEmptyHandler: TFrame},
   DfmPasConsistency in '..\Source\DfmPasConsistency\DfmPasConsistency.pas',
   FrmDfmPasConsistency in '..\Source\DfmPasConsistency\FrmDfmPasConsistency.pas' {FormDfmPasConsistency},
-  FrmeOptionPageDfmPas in '..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas' {FrameOptionPageDfmPas: TFrame};
+  FrmeOptionPageDfmPas in '..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas' {FrameOptionPageDfmPas: TFrame},
+  CodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\CodeQualityAnalyzer.pas',
+  FrmCodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas' {FormCodeQualityAnalyzer},
+  FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

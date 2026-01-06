@@ -35,7 +35,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       OnClick = btnScanProjectClick
     end
     object lblProgress: TLabel
-      Left = 568
+      Left = 612
       Top = 10
       Width = 3
       Height = 13
@@ -72,16 +72,52 @@ inherited FormDependencyViewer: TFormDependencyViewer
       TabOrder = 3
       OnClick = ViewModeChanged
     end
+    object btnLayers: TButton
+      Left = 424
+      Top = 4
+      Width = 75
+      Height = 25
+      Caption = 'Layers...'
+      TabOrder = 4
+      OnClick = btnLayersClick
+    end
+    object btnCheckLayers: TButton
+      Left = 504
+      Top = 4
+      Width = 100
+      Height = 25
+      Caption = 'Check Layers'
+      TabOrder = 5
+      OnClick = btnCheckLayersClick
+    end
   end
-  object pnlBottom: TPanel
+  object pnlBottom: TGridPanel
     Left = 0
     Top = 459
     Width = 800
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
+    ColumnCollection = <
+      item
+        Value = 50.000000000000000000
+      end
+      item
+        Value = 50.000000000000000000
+      end>
+    ControlCollection = <
+      item
+        Column = 1
+        Control = btnClose
+        Row = 0
+      end>
+    RowCollection = <
+      item
+        Value = 100.000000000000000000
+      end>
     TabOrder = 1
     object btnClose: TButton
+      AlignWithMargins = True
       Left = 717
       Top = 8
       Width = 75
@@ -178,17 +214,64 @@ inherited FormDependencyViewer: TFormDependencyViewer
       Font.Style = [fsBold]
       ParentFont = False
     end
+    object btnExportCircular: TButton
+      Left = 464
+      Top = 76
+      Width = 75
+      Height = 21
+      Anchors = [akTop, akRight]
+      Caption = 'Export...'
+      TabOrder = 2
+      OnClick = btnExportCircularClick
+    end
     object ListBoxCircular: TListBox
       Left = 0
       Top = 100
       Width = 547
-      Height = 326
-      Align = alBottom
-      Anchors = [akLeft, akTop, akRight, akBottom]
+      Height = 160
+      Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       TabOrder = 1
       OnClick = ListBoxCircularClick
       OnDblClick = ListBoxCircularDblClick
     end
+    object lblLayerViolations: TLabel
+      Left = 8
+      Top = 268
+      Width = 90
+      Height = 13
+      Caption = 'Layer Violations:'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object btnExportViolations: TButton
+      Left = 464
+      Top = 263
+      Width = 75
+      Height = 21
+      Anchors = [akTop, akRight]
+      Caption = 'Export...'
+      TabOrder = 3
+      OnClick = btnExportViolationsClick
+    end
+    object ListBoxViolations: TListBox
+      Left = 0
+      Top = 287
+      Width = 547
+      Height = 139
+      Align = alBottom
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      ItemHeight = 13
+      TabOrder = 4
+      OnDblClick = ListBoxViolationsDblClick
+    end
+  end
+  object SaveDialogExport: TSaveDialog
+    DefaultExt = 'csv'
+    Filter = 'CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt|All Files (*.*)|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Title = 'Export Circular References'
+    Left = 400
+    Top = 8
   end
 end

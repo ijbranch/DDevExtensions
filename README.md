@@ -32,6 +32,10 @@ Version 3.5.1 fixes bugs in the Dead Code Detector, Code Style Checker, and Empt
 
 Version 3.5.2 fixes multiple Code Style Checker bugs: field detection now works correctly, method names and parameters are no longer incorrectly flagged as fields, return types and case labels are no longer flagged as parameters, and line number navigation is now accurate. All feature dialogs are now non-modal and open at screen center.
 
+Version 3.6.0 adds two new Code Style Checker rules (Variable Type Prefix Rules and Unit Scope Names) plus the Code Quality Analyzer - a unified tool that detects common code quality issues including magic numbers, hardcoded strings, commented-out code, empty except blocks, catch-all exception handlers, missing try/finally patterns, and potential memory leaks. All detectors are configurable with whitelists and thresholds. See Help.md for details.
+
+Version 3.6.0 enhances the Dependency Viewer with two new features: Export Circular References (export circular reference analysis to CSV or TXT files for external review) and Layer Violation Detection (define architectural layers with pattern-based unit matching and detect forbidden cross-layer dependencies).
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -90,6 +94,7 @@ DDevExtensions/
 ├── README.md                      # This file
 ├── LICENSE                        # License file
 ├── Help.md                        # Help documentation
+├── DDevExtensions_Map.html        # Interactive project dependency map (open in browser)
 ├── enhancements.txt               # Potential future enhancements
 ├── .gitignore                     # Git ignore rules
 │
@@ -147,6 +152,7 @@ DDevExtensions/
 │       ├── CodeStyleChecker/      # Naming convention checker
 │       │   ├── CodeStyleChecker.pas
 │       │   ├── FrmCodeStyleChecker.pas/.dfm
+│       │   ├── FrmTypePrefixEditor.pas/.dfm  # Variable type prefix rule editor
 │       │   └── FrmeOptionPageCodeStyle.pas/.dfm
 │       │
 │       ├── CompileBackup/         # Pre-compile file backup
@@ -180,6 +186,7 @@ DDevExtensions/
 │       ├── DependencyViewer/      # Unit dependency visualization
 │       │   ├── DependencyViewer.pas
 │       │   ├── FrmDependencyViewer.pas/.dfm
+│       │   ├── FrmLayerConfig.pas/.dfm    # Layer configuration dialog
 │       │   └── FrmeOptionPageDependencyViewer.pas/.dfm
 │       │
 │       ├── DSUFeatures/           # Extended IDE settings
@@ -500,6 +507,16 @@ Shows a visual tree of unit dependencies within your project. Helps developers u
   - Direct dependents count (units that directly use the selected unit)
   - Transitive dependents count (all units affected, including indirect dependencies)
   - Risk level indicator (Safe/Low/Medium/High) with color-coded visual
+- **New in 3.6.0** - Export Circular References: Export all detected circular references to CSV or TXT files for external analysis. CSV format includes unit chains with uses clause types; TXT format provides human-readable reports with detailed chain descriptions.
+- **New in 3.6.0** - Layer Violation Detection: Define architectural layers (UI, Business, DataAccess, Core) using unit name patterns with wildcards (* and ?). Configure allowed dependencies between layers in a visual matrix. Detect and report violations where units depend on layers they shouldn't access. Features include:
+  - Configurable layers via "Layers..." button
+  - Pattern-based unit assignment (e.g., `*Frm` matches all form units)
+  - Visual dependency matrix with checkbox rules
+  - "Check Layers" analyzes project against rules
+  - Color-coded violation count (green=none, orange=10-49, red=50+)
+  - Double-click violation to navigate to source unit
+  - Export violations to CSV or TXT
+  - Default configuration for typical Delphi architecture included
 - Double-click tree nodes to open unit in editor
 - Expand/collapse for navigation
 
@@ -537,6 +554,8 @@ Checks your code for Delphi naming convention compliance. Features include:
 - Exception types should start with E (e.g., EMyError)
 - Pointer types should start with P (e.g., PMyRecord)
 - Parameter names should start with A (optional, off by default)
+- **New in 3.6.0** - Variable Type Prefix Rules: Additional check for variable names against custom type-to-prefix mappings (e.g., String=s, Integer=i, Boolean=l). Supports `array of X` syntax. Includes conflict detection when rule patterns overlap.
+- **New in 3.6.0** - Unit Scope Names: Flags uses clauses missing scope prefixes (e.g., `SysUtils` should be `System.SysUtils`).
 - Filter by rule type and severity
 - Double-click to navigate to source
 - Export to CSV or copy to clipboard
@@ -655,4 +674,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.5.2 – 6 January 2026*
+*Version: 3.6.0 – 6 January 2026*

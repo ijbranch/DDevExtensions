@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.5.2 | Comprehensive Feature Reference
+Version 3.6.0 | Comprehensive Feature Reference
 
 ---
 
@@ -20,6 +20,7 @@ Version 3.5.2 | Comprehensive Feature Reference
 |---------|---------|---------------|
 | Auto-save After Compile | OFF | Options |
 | Build Statistics | OFF | DDevExtensions submenu |
+| Code Quality Analyzer | ON | DDevExtensions submenu |
 | Code Style Checker | ON | DDevExtensions submenu |
 | Compile Backup | ON | Automatic |
 | Compile Progress | ON | Automatic |
@@ -66,23 +67,35 @@ Version 3.5.2 | Comprehensive Feature Reference
 
 ### DDevExtensions Menu Structure
 
-All DDevExtensions tools are organized under a single submenu, ordered by workflow:
+All DDevExtensions tools are organized under a single submenu, ordered by recommended workflow:
 
 ```
 Tools
   └── DDevExtensions
         ├── Options...
         ├── ─────────────
-        ├── Dependency Viewer...
-        ├── Unused Unit Detector...
-        ├── Uses Clause Manager...
-        ├── Dead Code Detector...
-        ├── Unreachable Code Detector...
-        ├── TODO/FIXME Aggregator...
-        ├── Code Style Checker...
-        ├── Empty Event Handler Detector...
-        └── DFM/PAS Consistency...
+        ├── Dependency Viewer...        (1. Architecture overview)
+        ├── Code Quality Analyzer...    (2. Comprehensive quality check)
+        ├── Unused Unit Detector...     (3. Remove unused units)
+        ├── Dead Code Detector...       (4. Remove dead code)
+        ├── Unreachable Code Detector...(5. Remove unreachable code)
+        ├── Empty Event Handler...      (6. Remove empty handlers)
+        ├── Uses Clause Manager...      (7. Organize uses clauses)
+        ├── DFM/PAS Consistency...      (8. Check form/code sync)
+        ├── Code Style Checker...       (9. Style check)
+        └── TODO/FIXME Aggregator...    (10. Review work items)
 ```
+
+### Project Documentation
+
+**DDevExtensions_Map.html** - Interactive visual map showing:
+- All components and their relationships
+- Lines of code per component
+- Architecture overview (Core, Analysis Tools, Shared Libraries, etc.)
+- Build dependencies and installation process
+- Click any component for detailed description
+
+Open `DDevExtensions_Map.html` in a browser to explore the project structure.
 
 ### Configuration Files
 
@@ -134,26 +147,33 @@ Add features that improve the compile and project workflow:
 
 ### 4. Code Analysis Tools (Use After Codebase Established)
 
-These tools analyze existing code patterns and dependencies. They're most valuable once your project structure is established:  This is the suggested usage sequence for these features:
+These tools analyze existing code patterns and dependencies. They're most valuable once your project structure is established. The menu is ordered by recommended workflow - work through them top to bottom for a comprehensive code review:
 
-| Feature | When to Use |
-|---------|-------------|
-| **DependencyViewer** | Understanding unit relationships and finding circular references |
-| **UnusedUnitDetector** | Cleaning up uses clauses |
-| **UsesClauseManager** | Optimizing uses clause organization |
-| **DeadCodeDetector** | Finding unused procedures and fields |
-| **UnreachableCodeDetector** | Finding code that never executes |
-| **TodoAggregator** | Tracking TODO/FIXME comments across project |
-| **CodeStyleChecker** | Enforcing naming conventions |
-| **EmptyEventHandlerDetector** | Finding accidental empty handlers |
-| **DfmPasConsistency** | Detecting DFM/PAS synchronization issues |
+| Step | Feature | Purpose |
+|------|---------|---------|
+| 1 | **Dependency Viewer** | Start here - understand architecture, find circular references, check layer violations |
+| 2 | **Code Quality Analyzer** | Comprehensive scan for magic numbers, hardcoded strings, empty excepts, etc. |
+| 3 | **Unused Unit Detector** | Remove units that are no longer needed |
+| 4 | **Dead Code Detector** | Find procedures, functions, and fields that are never used |
+| 5 | **Unreachable Code Detector** | Find code within functions that can never execute |
+| 6 | **Empty Event Handler Detector** | Find event handlers that were created but never implemented |
+| 7 | **Uses Clause Manager** | After cleanup, organize remaining uses clauses |
+| 8 | **DFM/PAS Consistency** | Verify form files match their code files |
+| 9 | **Code Style Checker** | Check naming conventions and style rules |
+| 10 | **TODO/FIXME Aggregator** | Review outstanding work items and technical debt |
 
 ### Suggested Workflow
 
-1. **New Project**: Start with Groups 1-3 enabled
-2. **Code Review Phase**: Run Group 4 tools to identify issues
-3. **Before Release**: Run all analysis tools for a final cleanup pass
-4. **Maintenance**: Periodically run DependencyViewer and UsesClauseManager to keep architecture clean
+**For Code Review / Cleanup:**
+1. Run tools 1-6 to identify and remove unnecessary code
+2. Run tools 7-8 to organize what remains
+3. Run tools 9-10 to polish and document
+
+**For New Projects:** Start with Groups 1-3 enabled for daily development
+
+**Before Release:** Run all analysis tools (1-10) for a comprehensive cleanup pass
+
+**Maintenance:** Periodically run Dependency Viewer to catch architectural drift
 
 ### Key Notes
 
@@ -228,9 +248,134 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 ---
 
+### Code Quality Analyzer
+
+**Purpose:** A unified tool to detect common code quality issues including magic numbers, hardcoded strings, commented-out code, exception handling problems, and memory leak patterns.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Code Quality Analyzer
+
+**Access:** Tools > DDevExtensions > Code Quality Analyzer...
+
+**Settings File:** `%APPDATA%\DDevExtensions\CodeQualityAnalyzer.xml`
+
+#### Issue Categories
+
+| Category | Description | Severity |
+|----------|-------------|----------|
+| Magic Number | Hardcoded numeric literals that should be constants | Warning |
+| Hardcoded String | String literals that should be resource strings or constants | Info |
+| Commented Code | Blocks of commented-out code (not documentation) | Info |
+| Empty Except | Exception handlers with no code inside | Warning |
+| Catch-All Exception | Generic `except` without `on E:` clause | Warning |
+| Missing Try/Finally | Object creation not followed by try/finally/Free pattern | Warning |
+| Memory Leak | Potential memory leak where object may not be freed | Warning |
+
+#### Configuration Options
+
+**Magic Numbers Tab:**
+- **Check for magic numbers**: Enable/disable magic number detection
+- **Whitelist**: Comma-separated list of allowed numbers (e.g., `0,1,-1,2,10,100,1000`)
+- **Allow in array indices**: Skip magic numbers used as array indices (e.g., `arr[0]`, `arr[1]`)
+
+**Strings Tab:**
+- **Check for hardcoded strings**: Enable/disable string literal detection
+- **Minimum length**: Only flag strings longer than this value (default: 3)
+- **Exclude format strings**: Skip strings containing `%s`, `%d`, etc.
+- **Exclude SQL keywords**: Skip strings containing SQL keywords like SELECT, INSERT, UPDATE
+
+**Comments Tab:**
+- **Check for commented-out code**: Enable/disable commented code detection
+- **Detection threshold**: Minimum score to consider a comment as containing code (default: 3)
+
+**Exceptions Tab:**
+- **Check for empty except blocks**: Flag `except...end` with no statements
+- **Check for catch-all handlers**: Flag `except` without `on E:` clause
+
+**Memory Tab:**
+- **Check for Create without try/finally**: Flag object creation not protected by try/finally
+- **Check for potential memory leaks**: Flag objects that may not be freed
+- **Ignore patterns**: Comma-separated patterns to ignore (e.g., `TStringList,TMemoryStream`)
+
+#### Using the Analyzer
+
+1. Open your project in the Delphi IDE
+2. Go to **Tools > DDevExtensions > Code Quality Analyzer...**
+3. Click **Check Project** to scan all Pascal files
+4. Results appear in the list with Unit, Line, Category, Severity, and Description
+5. Double-click any issue to navigate to the source code location
+6. Use the **Category** and **Severity** filters to focus on specific issue types
+7. Click **Export CSV...** to save results for review
+
+#### Results List Columns
+
+| Column | Description |
+|--------|-------------|
+| Unit | Name of the unit containing the issue |
+| Line | Line number where the issue was found |
+| Category | Type of issue (Magic Number, Hardcoded String, etc.) |
+| Severity | Info, Warning, or Error |
+| Description | Detailed description of the issue |
+| File | Full path to the source file |
+
+#### Tips
+
+- **Start with defaults**: The default whitelist and thresholds work well for most projects
+- **Tune the whitelist**: Add project-specific constants to the magic number whitelist
+- **Focus on high severity**: Address Warning-level issues before Info-level ones
+- **Use filters**: When reviewing a large codebase, filter by category to focus on one issue type at a time
+- **Export for team review**: Export results to CSV for code review meetings
+
+#### Interpreting Results
+
+**Important:** Not every finding requires action. The analyzer identifies *potential* issues for your review - use your judgment to decide what to address.
+
+**Severity Levels:**
+- **Error** = Critical issue that should be fixed (severe memory leak patterns, dangerous exception handling)
+- **Warning** = Likely a real issue that should be addressed (magic numbers, empty except blocks, memory patterns)
+- **Info** = Suggestions that may or may not apply to your situation (hardcoded strings, commented code)
+
+**Hardcoded Strings - What's Usually OK:**
+- Database field names (`'JobNo'`, `'CustomerID'`, `'DateCreated'`) - these rarely change
+- SQL table/column names - tied to database schema
+- Debug/logging messages (`'Starting process...'`, `'End of method'`)
+- Internal identifiers and keys
+- Format strings containing `%s`, `%d` (excluded by default)
+
+**Hardcoded Strings - Consider Changing:**
+- User-facing messages and labels - especially if localization is planned
+- Error messages shown to users
+- Strings duplicated in multiple places (indicates need for a constant)
+
+**Magic Numbers - Usually Worth Fixing:**
+- Timeout values (e.g., `180000` → `const TIMEOUT_MS = 180000`)
+- Status codes (e.g., `200`, `404` → `HTTP_OK`, `HTTP_NOT_FOUND`)
+- Business logic constants (e.g., `60` → `SECONDS_PER_MINUTE`)
+- Array sizes and limits (e.g., `100` → `MAX_ITEMS`)
+
+**Magic Numbers - Often OK:**
+- Loop counters with 0/1 (whitelisted by default)
+- Simple arithmetic with small numbers
+- Values in const declarations (analyzer excludes these)
+
+**Memory/Exception Patterns:**
+- These findings are more likely to indicate real bugs
+- Empty except blocks almost always indicate swallowed errors
+- Missing try/finally around Create calls can cause memory leaks
+- Review these carefully, even if false positives exist
+
+**Reducing Noise:**
+- Adjust the magic number whitelist for your project's common values
+- Increase minimum string length if too many short strings are flagged
+- Use the Severity filter to focus on Warnings first
+- Disable specific check categories that don't apply to your project
+
+---
+
 ### Code Style Checker
 
-**Purpose:** Checks code against Delphi naming conventions.
+**Purpose:** Checks code against Delphi naming conventions and custom variable prefix rules.
 
 **Default:** ON
 
@@ -238,7 +383,9 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 **Access:** Tools > DDevExtensions > Code Style Checker...
 
-#### Rules
+**Settings File:** `%APPDATA%\DDevExtensions\CodeStyleChecker.xml`
+
+#### Standard Naming Convention Rules
 
 | Rule | Convention | Example |
 |------|------------|---------|
@@ -249,15 +396,152 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 | Pointers | Prefix with P | `PMyRecord` |
 | Parameters | Prefix with A | `AValue` (optional) |
 
+#### Variable Type Prefix Rules (New in 3.6.0)
+
+This is an **additional** check, separate from the standard Delphi naming rules above. It validates variable names in `var` sections against custom type-to-prefix mappings.
+
+**How the checkbox affects results:**
+
+| Checkbox State | What Gets Checked |
+|----------------|-------------------|
+| **Unchecked** | Only standard Delphi rules (T, I, F, E, P, A prefixes) |
+| **Checked** | Standard Delphi rules **PLUS** variable type prefix rules |
+
+**Example:** With rules `String=s` and `Boolean=l` configured:
+
+```pascal
+var
+  CustomerName: String;   // Flagged - should be sCustomerName
+  IsActive: Boolean;      // Flagged - should be lIsActive
+  MyForm: TMyForm;        // NOT checked (no rule for TMyForm)
+```
+
+**Configuration:** Click **"Edit Rules..."** to open the popup editor.
+
+**Format:** One rule per line as `Type=Prefix`
+
+**Example Rules:**
+```
+String=s
+Integer=i
+Boolean=l
+Real=r
+Double=f
+Single=f
+Variant=v
+Char=c
+Currency=r
+array of String=sa
+array of Integer=na
+array of Double=na
+array of Byte=na
+```
+
+**Features:**
+- Supports simple types (String, Integer, Boolean, etc.)
+- Supports `array of X` syntax (e.g., `array of String=sa`)
+- Same prefix can be used for related types (e.g., `f` for both Double and Single)
+- Only checks variables whose types have a matching rule defined
+- Types without rules are ignored (not flagged)
+- Settings persist between IDE sessions
+- **Conflict detection**: Warns when rule patterns could clash (see below)
+
+**Note:** The default rules are preset with the developer's preferences as examples. Users should click "Reset to Defaults" or edit to match their own coding standards.
+
+#### Rule Order and Conflict Detection
+
+Type prefix rules use **prefix matching** - a pattern like `TList` will match types like `TList`, `TListBox`, `TListView`, etc. This means **rule order matters**: the first matching rule wins.
+
+**Conflict Warning in Editor:**
+
+When editing rules, the editor displays a warning if one pattern could match types intended for another more specific rule:
+
+```
+Warning: Rule order matters. "TList -> TStringList" - first pattern may match types intended for second.
+```
+
+**Solution:** Put more specific rules before general ones:
+```
+TStringList=sl    ← More specific (check first)
+TObjectList=ol
+TList=l           ← Less specific (check last)
+```
+
+**Conflict Indication in Results:**
+
+When a type matches a less specific rule but a more specific rule also exists, the violation includes a note.
+
+**Example:** If you have these rules:
+```
+TList=l
+TStringList=sl
+```
+
+And code like:
+```pascal
+var
+  MyList: TStringList;
+```
+
+The listing would show:
+
+| Unit | Rule | Line | Expected | Actual | Severity |
+|------|------|------|----------|--------|----------|
+| MyUnit | VariablePrefix | 42 | l... (for TList) [Note: also matches TStringList rule] | MyList | Warning |
+
+The key indicator is **`[Note: also matches TStringList rule]`** appended to the Expected column.
+
+This alerts you that:
+1. `TStringList` matched the `TList` rule first (because `TList` is a prefix of `TStringList`)
+2. There's a more specific `TStringList` rule that was bypassed
+3. You should reorder your rules (put `TStringList` before `TList`)
+
+**After reordering rules:**
+```
+TStringList=sl   ← Check first (more specific)
+TList=l          ← Check second (less specific)
+```
+
+The listing would then show:
+
+| Unit | Rule | Line | Expected | Actual | Severity |
+|------|------|------|----------|--------|----------|
+| MyUnit | VariablePrefix | 42 | sl... (for TStringList) | MyList | Warning |
+
+No conflict note - the correct rule matched.
+
+**Note:** Simple types like `Boolean`, `Integer`, `Double`, `String`, `Currency` etc. never conflict because none is a prefix of another. Conflicts only occur with class-type rules where one pattern starts with another (e.g., `TList` and `TStringList`).
+
+#### Unit Scope Names Rule (New in 3.6.0)
+
+Checks that uses clauses use fully qualified unit names with scope prefixes.
+
+| Unqualified (flagged) | Qualified (correct) |
+|-----------------------|---------------------|
+| `SysUtils` | `System.SysUtils` |
+| `Classes` | `System.Classes` |
+| `Forms` | `Vcl.Forms` |
+| `Windows` | `Winapi.Windows` |
+| `DB` | `Data.DB` |
+
+Covers 97 common RTL, VCL, Winapi, Data, and XML units.
+
 #### Configuration Options
 
-Enable/disable individual rules:
+**Naming Convention Rules** (enable/disable individually):
 - **Check Types**: T prefix for types
 - **Check Interfaces**: I prefix for interfaces
 - **Check Fields**: F prefix for fields
 - **Check Exceptions**: E prefix for exceptions
 - **Check Pointers**: P prefix for pointer types
 - **Check Parameters**: A prefix for parameters (off by default)
+
+**Variable Type Prefix Rules:**
+- **Check variable prefixes by type**: Master switch for type-based variable prefix checking
+- **Edit Rules...**: Opens popup editor for type-to-prefix mappings
+
+**Uses Clause Rules:**
+- **Check unit scope names**: Flags uses clauses missing scope prefixes (e.g., System., Vcl.)
 
 #### How to Interpret Results
 
@@ -639,6 +923,8 @@ Review each result before deleting.
 - **Impact Analysis panel** - shows direct/transitive dependents and risk level for selected unit
 - **Respect conditional compilation** - optionally reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude code that wouldn't compile for the current project
 - Circular reference detection with enhanced display
+- **Export circular references** - save analysis to CSV or TXT for documentation and tracking
+- **Layer violation detection** - enforce architectural boundaries with configurable layer rules
 - Double-click to open unit
 
 #### How to Use
@@ -907,6 +1193,214 @@ When analyzing the DBiAdmin project (which defines `DBiAdmin`), only `SysUtils`,
 **When to Disable:**
 - If you want to see ALL possible dependencies regardless of current project defines
 - If the project doesn't use conditional compilation in uses clauses
+
+#### Export Circular References
+
+The Dependency Viewer can export circular reference analysis to external files for documentation, sharing with team members, or tracking progress over time.
+
+**How to Export:**
+
+1. Click "Scan Project" to analyze dependencies
+2. Click the "Export..." button next to the circular references list
+3. Choose a location and filename
+4. Select the format (CSV or TXT)
+
+**CSV Format:**
+```csv
+Cycle,Unit1,Arrow1,Unit2,Arrow2,Unit3,Arrow3,Unit4
+1,UnitA,-[I]->,UnitB,-[impl]->,UnitA,,
+2,FormA,-[I]->,FormB,-[I]->,FormC,-[impl]->,FormA
+```
+
+- Each row represents one circular reference
+- Units and arrows are in separate columns for easy filtering/sorting in Excel
+- `-[I]->` indicates interface dependency
+- `-[impl]->` indicates implementation dependency
+
+**TXT Format:**
+```
+Circular References Export
+==========================
+Generated: 2026-01-06 14:30:00
+Project: MyProject.dproj
+
+Total Circular References: 3
+
+1. UnitA -[I]-> UnitB -[impl]-> UnitA
+2. FormA -[I]-> FormB -[I]-> FormC -[impl]-> FormA
+3. DataModule -[impl]-> ReportsFrm -[I]-> DataModule
+```
+
+- Human-readable format with header information
+- Useful for documentation and code reviews
+- Can be included in technical debt reports
+
+**Use Cases:**
+- Track circular reference count over time
+- Share analysis with team members who don't have DDevExtensions
+- Include in code review documentation
+- Create baseline before refactoring efforts
+
+#### Layer Violation Detection
+
+Layer violation detection enforces architectural boundaries by checking that units only depend on units in allowed layers.
+
+**What is Layer Architecture?**
+
+Many projects organize code into logical layers:
+
+```
+┌─────────────────────────────────────┐
+│         Presentation Layer          │  Forms, Frames, UI components
+├─────────────────────────────────────┤
+│          Business Layer             │  Business logic, rules, calculations
+├─────────────────────────────────────┤
+│           Data Layer                │  Data modules, database access
+├─────────────────────────────────────┤
+│          Common/Shared              │  Utilities, constants, types
+└─────────────────────────────────────┘
+```
+
+**Layer Rules:**
+- Presentation can use Business, Data, and Common
+- Business can use Data and Common
+- Data can use only Common
+- Common has no project dependencies
+
+**What is a Layer Violation?**
+
+A layer violation occurs when a unit depends on a unit in a layer it shouldn't access:
+
+```
+❌ Data layer unit uses Presentation layer unit
+   dmData uses MainForm  <- VIOLATION!
+
+❌ Common layer unit uses Business layer unit
+   Utils uses Calculator <- VIOLATION!
+```
+
+**Violation Detection Criteria:**
+
+A violation is reported when ALL of these conditions are met:
+
+1. **Source unit matches a layer pattern** - The unit containing the `uses` clause is assigned to a layer
+2. **Target unit matches a different layer pattern** - The unit being used is assigned to a different layer
+3. **Dependency is not allowed** - The checkbox in the dependency matrix (From row, To column) is unchecked
+
+Units that don't match any layer pattern are ignored (no violations reported for them). Dependencies between units in the same layer are always allowed.
+
+**How to Configure Layers:**
+
+1. Click "Layers..." button to open the Layer Configuration dialog
+2. Add layers with descriptive names (e.g., "Presentation", "Business", "Data", "Common")
+3. For each layer, define patterns to match unit names:
+   - `*Frm` - matches any unit ending in "Frm"
+   - `Frm*` - matches any unit starting with "Frm"
+   - `dm*` - matches data modules
+   - `*Utils` - matches utility units
+   - Wildcards: `*` (any characters), `?` (single character)
+4. Use the dependency matrix to define allowed dependencies:
+   - Check the box where row layer can depend on column layer
+   - Unchecked = dependency not allowed (will report violations)
+
+**Example Configuration:**
+
+| Layer | Patterns |
+|-------|----------|
+| Presentation | `*Frm`, `*Form`, `Frme*` |
+| Business | `*Calc`, `*Manager`, `*Service` |
+| Data | `dm*`, `*DataModule` |
+| Common | `*Utils`, `*Consts`, `*Types` |
+
+**Dependency Matrix:**
+
+| From \ To | Presentation | Business | Data | Common |
+|-----------|--------------|----------|------|--------|
+| Presentation | - | ✓ | ✓ | ✓ |
+| Business | | - | ✓ | ✓ |
+| Data | | | - | ✓ |
+| Common | | | | - |
+
+**How to Check for Violations:**
+
+1. Configure layers (click "Layers...")
+2. Click "Scan Project" to analyze dependencies
+3. Click "Check Layers" to detect violations
+4. Violations appear in the Layer Violations list:
+   ```
+   dmData -> MainFrm [interface] - Data cannot use Presentation
+   Utils -> Calculator [implementation] - Common cannot use Business
+   ```
+
+**Understanding Violation Display:**
+
+```
+SourceUnit -> TargetUnit [clause] - FromLayer cannot use ToLayer
+```
+
+| Part | Meaning |
+|------|---------|
+| SourceUnit | The unit with the forbidden dependency |
+| TargetUnit | The unit being incorrectly used |
+| [interface] | Dependency is in interface uses clause |
+| [implementation] | Dependency is in implementation uses clause |
+| FromLayer | The layer of the source unit |
+| ToLayer | The layer of the target unit |
+
+**Real-World Example:**
+
+A data module `dmCurrent` was modified to include `MainFrm` in its implementation uses clause:
+
+```pascal
+implementation
+uses
+  CompanyData, UsersData, MainFrm,  // <- violation added for testing
+  gllFunctions;
+```
+
+After clicking "Check Layers", the detector reported:
+
+```
+Layer Violations: 1 found
+dmCurrent (DataAccess) -> MainFrm (UI) [implementation]
+```
+
+**What this tells us:**
+
+| Finding | Explanation |
+|---------|-------------|
+| `dmCurrent` | The data module containing the problematic `uses` clause |
+| `(DataAccess)` | Matched to DataAccess layer via the `dm*` pattern |
+| `MainFrm` | The form unit being incorrectly referenced |
+| `(UI)` | Matched to UI layer via the `*Frm` pattern |
+| `[implementation]` | The dependency is in the implementation section (not interface) |
+
+**Why this is a violation:** According to the default layer rules, DataAccess units can only depend on Core utilities. A data module should never reference a form directly - this creates tight coupling and makes the data module dependent on the UI layer, inverting the proper dependency direction.
+
+**How to fix:** Remove `MainFrm` from `dmCurrent`'s uses clause. If the data module needs to trigger UI actions, use events, callbacks, or an intermediary Business layer service instead.
+
+**Export Violations:**
+
+Click "Export..." next to the violations list to save violations to CSV or TXT format for documentation and tracking.
+
+**Default Configuration:**
+
+Click "Defaults" in the Layer Configuration dialog to load a standard 4-layer architecture:
+- Presentation (forms, frames)
+- Business (managers, services)
+- Data (data modules)
+- Common (utilities, constants)
+
+**Configuration Storage:**
+
+Layer configuration is saved to `DDevExtensions_Layers.json` in the application data directory and persists across IDE sessions.
+
+**Benefits:**
+- Enforce architectural boundaries automatically
+- Catch violations early before they become embedded
+- Document intended architecture through configuration
+- Track architectural debt over time
+- Guide new team members on proper dependencies
 
 ---
 

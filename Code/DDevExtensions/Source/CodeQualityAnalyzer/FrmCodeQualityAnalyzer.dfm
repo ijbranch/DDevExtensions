@@ -1,82 +1,90 @@
-inherited FormDfmPasConsistency: TFormDfmPasConsistency
-  Caption = 'DFM/PAS Consistency Checker'
+object FormCodeQualityAnalyzer: TFormCodeQualityAnalyzer
+  Left = 0
+  Top = 0
+  Caption = 'Code Quality Analyzer'
   ClientHeight = 450
-  ClientWidth = 800
-  Position = poScreenCenter
+  ClientWidth = 750
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  Position = poMainFormCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 800
+    Width = 750
     Height = 41
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
     object lblProgress: TLabel
-      Left = 380
-      Top = 12
+      Left = 120
+      Top = 14
       Width = 60
       Height = 13
       Caption = 'lblProgress'
       Visible = False
     end
     object lblSummary: TLabel
-      Left = 380
-      Top = 12
-      Width = 56
+      Left = 120
+      Top = 14
+      Width = 55
       Height = 13
       Caption = 'lblSummary'
       Visible = False
     end
-    object lblFilter: TLabel
-      Left = 190
-      Top = 12
-      Width = 28
+    object lblCategory: TLabel
+      Left = 400
+      Top = 14
+      Width = 49
       Height = 13
-      Caption = 'Filter:'
+      Caption = 'Category:'
+    end
+    object lblSeverity: TLabel
+      Left = 580
+      Top = 14
+      Width = 44
+      Height = 13
+      Caption = 'Severity:'
     end
     object btnScan: TButton
       Left = 8
       Top = 8
-      Width = 89
+      Width = 100
       Height = 25
-      Caption = 'Scan Project'
+      Caption = 'Check Project'
       TabOrder = 0
       OnClick = btnScanClick
     end
-    object btnExport: TButton
-      Left = 103
-      Top = 8
-      Width = 75
-      Height = 25
-      Caption = 'Export...'
-      TabOrder = 1
-      OnClick = btnExportClick
-    end
-    object cboFilter: TComboBox
-      Left = 224
-      Top = 9
-      Width = 145
+    object cboCategory: TComboBox
+      Left = 455
+      Top = 10
+      Width = 110
       Height = 21
       Style = csDropDownList
-      ItemIndex = 0
+      TabOrder = 1
+      OnChange = cboCategoryChange
+    end
+    object cboSeverity: TComboBox
+      Left = 630
+      Top = 10
+      Width = 100
+      Height = 21
+      Style = csDropDownList
       TabOrder = 2
-      Text = 'All'
-      OnChange = cboFilterChange
-      Items.Strings = (
-        'All'
-        'Input Controls'
-        'Passive Controls')
+      OnChange = cboSeverityChange
     end
   end
   object pnlBottom: TGridPanel
     Left = 0
     Top = 409
-    Width = 800
+    Width = 750
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
@@ -89,6 +97,11 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
       end>
     ControlCollection = <
       item
+        Column = 0
+        Control = btnExport
+        Row = 0
+      end
+      item
         Column = 1
         Control = btnClose
         Row = 0
@@ -98,61 +111,65 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
         Value = 100.000000000000000000
       end>
     TabOrder = 1
+    object btnExport: TButton
+      AlignWithMargins = True
+      Left = 4
+      Top = 8
+      Width = 90
+      Height = 25
+      Caption = 'Export CSV...'
+      TabOrder = 0
+      OnClick = btnExportClick
+    end
     object btnClose: TButton
       AlignWithMargins = True
-      Left = 717
+      Left = 660
       Top = 8
       Width = 75
       Height = 25
       Caption = 'Close'
-      TabOrder = 0
+      TabOrder = 1
       OnClick = btnCloseClick
     end
   end
   object ListView: TListView
     Left = 0
     Top = 41
-    Width = 800
+    Width = 750
     Height = 368
     Align = alClient
     Columns = <
       item
         Caption = 'Unit'
-        Width = 100
-      end
-      item
-        Caption = 'Component'
         Width = 120
       end
       item
-        Caption = 'Issue'
-        Width = 100
+        Alignment = taCenter
+        Caption = 'Line'
+        Width = 50
       end
       item
-        Caption = 'PAS Type'
+        Caption = 'Category'
         Width = 110
       end
       item
-        Alignment = taCenter
-        Caption = 'PAS Line'
-        Width = 70
+        Caption = 'Severity'
+        Width = 60
       end
       item
-        Caption = 'DFM Type'
-        Width = 110
-      end
-      item
-        Alignment = taCenter
-        Caption = 'DFM Line'
-        Width = 70
+        Caption = 'Description'
+        Width = 300
       end
       item
         Caption = 'File'
-        Width = 130
+        Width = 100
       end>
-    GridLines = True
+    DoubleBuffered = True
+    HideSelection = False
+    MultiSelect = True
     ReadOnly = True
     RowSelect = True
+    ParentDoubleBuffered = False
     PopupMenu = PopupMenu
     TabOrder = 2
     ViewStyle = vsReport
@@ -161,26 +178,26 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
     OnDblClick = ListViewDblClick
   end
   object PopupMenu: TPopupMenu
-    Left = 400
-    Top = 160
+    Left = 344
+    Top = 200
     object mnuOpenFile: TMenuItem
-      Caption = 'Open File'
+      Caption = '&Open File'
+      Default = True
       OnClick = mnuOpenFileClick
     end
     object N1: TMenuItem
       Caption = '-'
     end
     object mnuCopyToClipboard: TMenuItem
-      Caption = 'Copy to Clipboard'
+      Caption = '&Copy to Clipboard'
       OnClick = mnuCopyToClipboardClick
     end
   end
   object SaveDialog: TSaveDialog
     DefaultExt = 'csv'
     Filter = 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*'
-    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
-    Title = 'Export DFM/PAS Consistency Results'
-    Left = 464
-    Top = 160
+    Title = 'Export to CSV'
+    Left = 408
+    Top = 200
   end
 end

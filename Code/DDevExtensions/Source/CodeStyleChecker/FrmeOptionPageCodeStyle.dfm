@@ -1,13 +1,13 @@
 inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
   Width = 400
-  Height = 320
+  Height = 480
   ExplicitWidth = 400
-  ExplicitHeight = 320
+  ExplicitHeight = 480
   inherited pnlClient: TPanel
     Width = 400
-    Height = 271
+    Height = 431
     ExplicitWidth = 400
-    ExplicitHeight = 271
+    ExplicitHeight = 431
     object chkEnabled: TCheckBox
       Left = 16
       Top = 12
@@ -72,6 +72,54 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
         TabOrder = 5
       end
     end
+    object grpTypePrefixes: TGroupBox
+      Left = 16
+      Top = 248
+      Width = 360
+      Height = 100
+      Caption = 'Variable Type Prefix Rules'
+      TabOrder = 2
+      object chkCheckVariablePrefixes: TCheckBox
+        Left = 16
+        Top = 20
+        Width = 250
+        Height = 17
+        Caption = 'Check variable prefixes by type'
+        TabOrder = 0
+      end
+      object lblRulesSummary: TLabel
+        Left = 16
+        Top = 44
+        Width = 250
+        Height = 13
+        Caption = '9 rules configured (String=s, Integer=i, ...)'
+      end
+      object btnEditRules: TButton
+        Left = 16
+        Top = 66
+        Width = 100
+        Height = 25
+        Caption = 'Edit Rules...'
+        TabOrder = 1
+        OnClick = btnEditRulesClick
+      end
+    end
+    object grpUsesClause: TGroupBox
+      Left = 16
+      Top = 356
+      Width = 360
+      Height = 52
+      Caption = 'Uses Clause Rules'
+      TabOrder = 3
+      object chkCheckUnitScopeNames: TCheckBox
+        Left = 16
+        Top = 20
+        Width = 320
+        Height = 17
+        Caption = 'Check unit scope names (e.g., System.SysUtils)'
+        TabOrder = 0
+      end
+    end
   end
   inherited pnlDescription: TPanel
     Width = 400
@@ -82,8 +130,8 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
     inherited lblDescription: TLabel
       Width = 368
       Caption =
-        'Checks your code for Delphi naming convention compliance (T, I,' +
-        ' F, E, P prefixes).'
+        'Checks your code for Delphi naming conventions (T, I, F, E, P ' +
+        'prefixes), custom variable prefixes, and unit scope names.'
     end
   end
 end

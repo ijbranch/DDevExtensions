@@ -1,6 +1,11 @@
 DDevExtensions - Potential Enhancements
 =======================================
 
+STATUS KEY:
+  PLANNED     - Approved for future development
+  PROPOSED    - Under consideration
+
+
 High-Value Enhancements
 -----------------------
 
@@ -17,24 +22,12 @@ High-Value Enhancements
      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
    - Export to DOT/GraphViz format
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
-   - Export circular references analysis to file (CSV/TXT)
-     COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
-     NOTE: Useful for analyzing large numbers of circular refs externally
-   - Layer violation detection (configurable architecture rules)
-     COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
-   - Respect project conditional defines ({$IFDEF}) in dependency analysis
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
-     STATUS: IMPLEMENTED in v3.5
-     Reads project defines from .dproj, evaluates {$IFDEF}, {$IFNDEF},
-     {$IF Defined(...)}, {$ELSE}, {$ELSEIF} with full OR/AND support.
-     "Respect conditional compilation" checkbox added to options.
+
 
 Productivity Features
 ---------------------
 
 3. Enhanced Code Navigation
-   - "Go to implementation" from interface declarations
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
    - Quick navigation between form and unit
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
    - Recent files popup with fuzzy search
@@ -42,7 +35,7 @@ Productivity Features
    - Bookmark manager with named bookmarks
      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
 
-5. Project Templates/Snippets
+4. Project Templates/Snippets
    - User-defined code snippets with placeholders
      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
    - Project templates for common patterns
@@ -54,7 +47,7 @@ Productivity Features
 Build & Debugging
 -----------------
 
-6. Incremental Build Optimization
+5. Incremental Build Optimization
    - Smarter detection of what needs recompiling
      COMPLEXITY: Very High | EFFORT: Major | BENEFIT: High
    - Parallel compilation where possible
@@ -62,15 +55,7 @@ Build & Debugging
    - Pre-build validation (check for obvious errors before compile)
      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
 
-7. Debug Session Manager
-   - Save/restore breakpoint sets by name
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
-   - Conditional breakpoint templates
-     COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
-   - Watch expression presets
-     COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
-
-8. Build Configurations Manager
+6. Build Configurations Manager
    - Quick switch between Debug/Release/Custom configurations
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
    - Per-project environment variable overrides
@@ -82,16 +67,17 @@ Build & Debugging
 Code Quality
 ------------
 
-9. Code Style Checker
+7. Code Style Checker Enhancements
    - Detect common anti-patterns
      COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
    - Integration with the existing compiler progress UI
      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium
 
+
 Integration Features
 --------------------
 
-10. Git Integration Enhancements
+8. Git Integration Enhancements
     - Show git status in Project Manager
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
     - Quick diff from editor gutter
@@ -99,7 +85,7 @@ Integration Features
     - Blame annotations
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
 
-11. External Tool Integration
+9. External Tool Integration
     - Configure external formatters (JEDI Code Format, etc.)
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
     - Run external analyzers with results in IDE
@@ -107,7 +93,7 @@ Integration Features
     - Custom tool buttons in toolbar
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
-12. Documentation Generator
+10. Documentation Generator
     - Generate XMLDoc stubs for undocumented methods
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Preview documentation in IDE
@@ -119,7 +105,7 @@ Integration Features
 Editor & UI Enhancements
 ------------------------
 
-13. Editor Enhancements
+11. Editor Enhancements
     - Minimap/code outline in editor margin
       COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium
     - Bracket pair colorization
@@ -129,7 +115,7 @@ Editor & UI Enhancements
     - Smart Clipboard - Clipboard ring with history
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
 
-14. Search Improvements
+12. Search Improvements
     - Search history with favorites
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
     - Recent search results panel
@@ -137,7 +123,7 @@ Editor & UI Enhancements
     - Search scope presets (current unit, project, group)
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
-15. UI/UX Polish
+13. UI/UX Polish
     - Dark theme support for extension dialogs
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Keyboard shortcut customization for all features
@@ -149,11 +135,11 @@ Editor & UI Enhancements
 Project Helpers
 ---------------
 
-16. DCU Cleaner
+14. DCU Cleaner
     - One-click cleanup of compiled units
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
 
-17. Search Path Validator
+15. Search Path Validator
     - Check for missing/invalid paths in project options
       COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium-High
 
@@ -161,17 +147,17 @@ Project Helpers
 Code Quality Extensions (Building on Existing Tools)
 ----------------------------------------------------
 
-18. Conditional Compilation Visualizer
+16. Conditional Compilation Visualizer
     - Show which {$IFDEF} paths are active based on project defines
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Extends Unreachable Code Detector's define parsing infrastructure
 
-20. Uses Clause Sorter
+17. Uses Clause Sorter
     - One-click alphabetical or categorical sorting
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
-    - Simpler alternative to full Smart Uses Clause Manager (#3)
+    - Simpler alternative to full Smart Uses Clause Manager
 
-21. Unit Initialization Order Tracker
+18. Unit Initialization Order Tracker
     - Visualize initialization/finalization sequence across units
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Common debugging pain point for large projects
@@ -180,22 +166,17 @@ Code Quality Extensions (Building on Existing Tools)
 Navigation & Productivity (Low-Hanging Fruit)
 ---------------------------------------------
 
-22. Interface/Implementation Section Toggle
-    - Keyboard shortcut to jump between interface and implementation sections
-      COMPLEXITY: Low | EFFORT: Low | BENEFIT: High
-    - Extremely high daily use value
-
-23. Code Region Navigator
+19. Code Region Navigator
     - Popup to jump between {$REGION} blocks in current unit
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
     - Useful for navigating large units
 
-24. Recent Edits History
+20. Recent Edits History
     - Navigate to last N edit locations (beyond bookmarks)
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
     - IDE lacks this feature natively
 
-25. Quick Project Switcher
+21. Quick Project Switcher
     - Fuzzy-search popup for switching between projects in a group
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
     - Faster than navigating Project Manager tree
@@ -204,12 +185,12 @@ Navigation & Productivity (Low-Hanging Fruit)
 Form Designer Helpers (Extending Current Work)
 ----------------------------------------------
 
-26. Component Property Comparison
+22. Component Property Comparison
     - Diff properties between two selected components
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
     - Useful for ensuring consistent UI styling
 
-28. Find/Replace in DFM
+23. Find/Replace in DFM
     - Search and replace within form definition files
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
     - No good built-in way to do this currently
@@ -218,17 +199,17 @@ Form Designer Helpers (Extending Current Work)
 Reporting & Analysis (Leveraging Parser)
 ----------------------------------------
 
-29. Project Health Dashboard
+24. Project Health Dashboard
     - Combined summary view from all code quality tools
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
     - Single overview vs running 5+ separate tools
 
-30. Cross-Reference Report
+25. Cross-Reference Report
     - Generate symbol usage report across entire project
       COMPLEXITY: Medium-High | EFFORT: Moderate-Significant | BENEFIT: Medium-High
     - Leverages existing parser infrastructure
 
-31. Metrics Trend Tracking
+26. Metrics Trend Tracking
     - Store metrics over time, detect regressions
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
     - Extends Build Statistics with historical analysis
@@ -237,31 +218,370 @@ Reporting & Analysis (Leveraging Parser)
 Lower-Effort Wins
 -----------------
 
-32. Clipboard Code Reformatter
+27. Clipboard Code Reformatter
     - Adjust pasted code indentation to match current context
       COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
     - Quality-of-life improvement
 
-33. Code Collapse Memory
+28. Code Collapse Memory
     - Remember folded/collapsed regions between IDE sessions
       COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
     - Editor state persistence
 
-34. Resource String Editor
+29. Resource String Editor
     - Visual editor for managing resourcestring sections
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
     - No good built-in option for this
 
-35. Binary Resource Previewer
+30. Binary Resource Previewer
     - Preview icons/images in RES files inline in IDE
       COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
     - Saves opening external tools
 
 
-Top Recommendations (Impact vs Effort)
---------------------------------------
+Method & Class Analysis
+-----------------------
 
-1. Debug Session Manager (#7) - Solves real pain point, moderate complexity
+31. Duplicate Code Detector
+    - Find copy-pasted code blocks that could be refactored
+    - Configurable minimum block size (lines/tokens)
+    - Suggests extraction into shared methods
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
+      NOTE: Common code smell, major refactoring aid
+
+32. Method Length Analyzer
+    - Flag methods exceeding configurable line count (default: 50)
+    - Show distribution histogram of method lengths
+    - Identify candidates for extraction
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+      NOTE: Long methods are hard to maintain
+
+33. Parameter Count Analyzer
+    - Flag methods with too many parameters (default: 5+)
+    - Suggest parameter object refactoring
+    - Exclude overloaded methods from count
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Many parameters suggest design issues
+
+34. Nesting Depth Analyzer
+    - Flag deeply nested code blocks (if/try/for/while)
+    - Configurable maximum depth (default: 4)
+    - Suggest early return or extraction
+      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium-High
+      NOTE: Deep nesting reduces readability
+
+35. Class Size Analyzer
+    - Flag classes with too many methods/fields
+    - Suggest splitting into smaller focused classes
+    - Show class size distribution
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+      NOTE: God classes are maintenance nightmares
+
+36. Inherited Call Checker
+    - Find overridden methods that don't call inherited
+    - Configurable whitelist for intentional omissions
+    - Important for constructors/destructors
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+      NOTE: Missing inherited calls cause subtle bugs
+
+37. Abstract Method Implementation Checker
+    - Find abstract methods without implementations in descendants
+    - Cross-reference class hierarchies
+    - Report incomplete implementations
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Catches compile-time errors early
+
+
+Form Designer & Component Tools
+-------------------------------
+
+38. Component Naming Convention Checker
+    - Verify form components follow naming standards
+    - Flag default names (Button1, Edit1, Label1)
+    - Configurable prefix rules (btn, edt, lbl, etc.)
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+      NOTE: Professional code quality indicator
+
+39. Event Handler Signature Validator
+    - Verify event handlers match expected signatures
+    - Find handlers with wrong parameter types
+    - Detect handlers attached to wrong event types
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Runtime errors from signature mismatches
+
+40. Tab Order Validator
+    - Detect non-sequential tab order in forms
+    - Find components with TabStop=True but invalid TabOrder
+    - Generate optimal tab order suggestion
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium
+      NOTE: Accessibility and UX improvement
+
+41. Anchors/Align Conflict Detector
+    - Find components with conflicting anchor and align settings
+    - Detect alignment issues that cause runtime resize problems
+    - Suggest corrections
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Common form layout bugs
+
+42. DFM Size Analyzer
+    - Report on DFM file sizes, identify bloated forms
+    - Find embedded binary data (images) that could be external
+    - Suggest optimizations
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Large DFMs slow IDE and compilation
+
+
+Database & SQL Tools
+--------------------
+
+43. SQL Syntax Highlighter for String Literals
+    - Recognize SQL strings and apply highlighting
+    - Parse embedded SQL for basic validation
+    - Support common SQL patterns
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: SQL errors in strings are hard to spot
+
+44. Dataset Field Name Validator
+    - Cross-reference field names with database schema
+    - Detect renamed/deleted fields
+    - Requires connection or schema file
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: Medium-High
+      NOTE: Catches runtime field errors at design time
+
+45. SQL Parameter Checker
+    - Find SQL with concatenated values (injection risk)
+    - Suggest parameterized query patterns
+    - Flag dynamic SQL construction
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+      NOTE: Security-focused enhancement
+
+
+Project Organization
+--------------------
+
+46. Orphaned File Detector
+    - Find .pas/.dfm files in project folder not included in .dproj
+    - Find .dcu files with no matching source
+    - Suggest inclusion or cleanup
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Project hygiene
+
+47. Circular Unit Reference Fixer
+    - Extend Dependency Viewer with refactoring suggestions
+    - Auto-generate interface units to break cycles
+    - Move declarations between interface/implementation
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
+      NOTE: Automated fix for common architectural issue
+
+48. Project Comparison Tool
+    - Compare settings between two projects
+    - Identify configuration drift
+    - Synchronize selected settings
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Useful for multi-project solutions
+
+49. Build Configuration Validator
+    - Check for common misconfiguration issues
+    - Verify Debug/Release settings are appropriate
+    - Detect missing search paths
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: Medium-High
+      NOTE: Catches deployment issues early
+
+
+Version Control Integration
+---------------------------
+
+50. Git Blame Integration
+    - Show line-by-line authorship in editor gutter
+    - Click to see commit details
+    - Filter by date range
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: High
+      NOTE: Essential for team development
+
+51. Changed Lines Indicator
+    - Highlight modified lines since last commit
+    - Different colors for added/modified/deleted
+    - Quick diff popup on hover
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+      NOTE: Visual feedback during development
+
+52. Commit Message Validator
+    - Check commit messages follow conventions
+    - Suggest improvements
+    - Link to issue tracker references
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Code review quality improvement
+
+
+Performance & Optimization
+--------------------------
+
+53. String Concatenation Analyzer
+    - Find inefficient string concatenation in loops
+    - Suggest StringBuilder/TStringBuilder patterns
+    - Calculate potential performance impact
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+      NOTE: Common performance issue
+
+54. Interface Reference Cycle Detector
+    - Find interface circular references causing leaks
+    - Detect missing weak references
+    - Suggest [weak] attribute usage
+      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
+      NOTE: Subtle memory leak source in modern Delphi
+
+55. Inline Variable Suggestion
+    - Find variables only used once, suggest inline declaration
+    - Identify candidates for const/var inference
+    - Modernization aid for older codebases
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Code modernization helper
+
+
+Documentation & Comments
+------------------------
+
+56. XMLDoc Coverage Report
+    - Report percentage of public methods with XMLDoc
+    - Identify undocumented public API
+    - Generate stub documentation
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+      NOTE: Documentation quality metric
+
+57. Comment Freshness Checker
+    - Find comments referencing old dates/versions
+    - Detect comments contradicting current code
+    - Flag TODO comments older than threshold
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Outdated comments mislead developers
+
+58. API Change Log Generator
+    - Track public interface changes between versions
+    - Generate breaking change reports
+    - Useful for library developers
+      COMPLEXITY: Medium-High | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Semantic versioning support
+
+
+Testing Support
+---------------
+
+59. Unit Test Coverage Indicator
+    - Show which units have corresponding test units
+    - Visual indicator in Project Manager
+    - Link unit to its test file
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+      NOTE: Test coverage visibility
+
+60. Test Stub Generator
+    - Generate test method stubs for selected methods
+    - Support DUnit/DUnitX patterns
+    - Include common assertion patterns
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium-High
+      NOTE: Reduces test writing friction
+
+61. Mock Interface Generator
+    - Generate mock implementations for interfaces
+    - Support common mocking patterns
+    - Integrate with test frameworks
+      COMPLEXITY: Medium-High | EFFORT: Moderate-Significant | BENEFIT: Medium
+      NOTE: Testing dependency injection code
+
+
+IDE Usability
+-------------
+
+62. Smart Clipboard Manager
+    - Ring buffer of recent clipboard entries
+    - Preview before paste
+    - Persist across IDE restarts
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+      NOTE: Clipboard history is universally useful
+
+63. Recent Edits Navigator
+    - Jump to recent edit locations (beyond bookmarks)
+    - Configurable history size
+    - Visual breadcrumb trail
+      COMPLEXITY: Low-Medium | EFFORT: Low-Moderate | BENEFIT: High
+      NOTE: Fills IDE gap
+
+64. Quick Symbol Search
+    - Fuzzy search across all project symbols
+    - Filter by type (class, method, property)
+    - Preview definition
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: High
+      NOTE: Faster than Find Declaration
+
+65. Split Editor Synchronization
+    - Keep split editor views in sync
+    - Options: scroll sync, position sync, selection sync
+    - Useful for comparing implementations
+      COMPLEXITY: Medium | EFFORT: Moderate | BENEFIT: Medium
+      NOTE: Enhanced split view functionality
+
+
+Low-Effort Quick Wins
+---------------------
+
+66. Auto-Backup Before Refactoring
+    - Create automatic backup before any refactoring operation
+    - Easy restore if refactoring goes wrong
+    - Configurable backup location
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
+      NOTE: Safety net for refactoring
+
+67. Compile Error Bookmark
+    - Auto-bookmark locations with compile errors
+    - Navigate between errors after compilation
+    - Clear on successful compile
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Error navigation enhancement
+
+68. Method Separator Lines
+    - Visual separator between methods in editor
+    - Configurable style (line, gradient, etc.)
+    - Improves code scanning
+      COMPLEXITY: Low-Medium | EFFORT: Low | BENEFIT: Medium
+      NOTE: Visual code organization
+
+69. Current Scope Indicator
+    - Status bar showing current class/method name
+    - Breadcrumb trail of scope hierarchy
+    - Click to navigate
+      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium
+      NOTE: Context awareness in large files
+
+
+================================================================================
+PRIORITY MATRIX
+================================================================================
+
+HIGHEST VALUE / LOWEST EFFORT:
+- #32 Method Length Analyzer
+- #33 Parameter Count Analyzer
+- #38 Component Naming Convention Checker
+- #46 Orphaned File Detector
+- #66 Auto-Backup Before Refactoring
+- #67 Compile Error Bookmark
+
+HIGH VALUE / MODERATE EFFORT:
+- #31 Duplicate Code Detector
+- #50 Git Blame Integration
+- #51 Changed Lines Indicator
+- #62 Smart Clipboard Manager
+- #63 Recent Edits Navigator
+- #64 Quick Symbol Search
+
+STRATEGIC VALUE / SIGNIFICANT EFFORT:
+- #47 Circular Unit Reference Fixer
+- #54 Interface Reference Cycle Detector
+- #24 Project Health Dashboard (consolidates multiple tools)
+
+
+================================================================================
+TOP RECOMMENDATIONS
+================================================================================
+
 2. Export to DOT/GraphViz format (#2) - Low effort, good visualization benefit
-3. Uses Clause Sorter (#20) - Low effort, immediate benefit
-4. Project Health Dashboard (#29) - Unifies code quality tools into one summary view
+3. Uses Clause Sorter (#17) - Low effort, immediate benefit
+4. Project Health Dashboard (#24) - Unifies code quality tools into one summary view

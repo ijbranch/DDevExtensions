@@ -51,15 +51,33 @@ inherited FormEmptyEventHandlerDetector: TFormEmptyEventHandlerDetector
       OnClick = btnExportClick
     end
   end
-  object pnlBottom: TPanel
+  object pnlBottom: TGridPanel
     Left = 0
     Top = 409
     Width = 700
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
+    ColumnCollection = <
+      item
+        Value = 50.000000000000000000
+      end
+      item
+        Value = 50.000000000000000000
+      end>
+    ControlCollection = <
+      item
+        Column = 1
+        Control = btnClose
+        Row = 0
+      end>
+    RowCollection = <
+      item
+        Value = 100.000000000000000000
+      end>
     TabOrder = 1
     object btnClose: TButton
+      AlignWithMargins = True
       Left = 617
       Top = 8
       Width = 75

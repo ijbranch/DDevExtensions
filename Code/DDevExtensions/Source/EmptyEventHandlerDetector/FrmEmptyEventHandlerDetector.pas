@@ -21,7 +21,7 @@ uses
 type
   TFormEmptyEventHandlerDetector = class(TFormBase)
     pnlTop: TPanel;
-    pnlBottom: TPanel;
+    pnlBottom: TGridPanel;
     btnClose: TButton;
     btnScan: TButton;
     ListView: TListView;

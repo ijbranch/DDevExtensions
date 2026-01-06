@@ -37,7 +37,16 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nEliminate circular references in shared units\n\n- Add ReportPrinter.pas with ExportReportToPDF function for PDF generation\n- Remove unused dmCurrent import from ReportsFrm.pas\n- Update dmCurrent.pas to use ReportPrinter instead of direct TReportsForm\n- Remove unused JobTicketsFrm import from dmCurrent uses clause\n- Reduces DBiAdmin circular references from 1625 to 65 \\(false positives\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git commit:*)",
       "Bash(findstr:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(cmd /c \"dir /s /b D:\\\\DDevExtensions\\\\*.md 2>nul\")",
+      "Bash(cmd /c \"dir /s /b D:\\\\*.md 2>nul | findstr /i style\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\Ian\\\\.claude\\\\projects 2>nul | findstr /i DDevExtensions\")",
+      "Bash(cmd /c \"dir /s /b D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\*.h 2>nul\")",
+      "WebFetch(domain:www.tempest-sw.com)",
+      "WebFetch(domain:docwiki.embarcadero.com)",
+      "WebFetch(domain:en.delphipraxis.net)",
+      "WebFetch(domain:gabrielmoraru.com)",
+      "WebFetch(domain:www.marcocantu.com)"
     ]
   }
 }

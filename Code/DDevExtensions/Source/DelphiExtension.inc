@@ -58,6 +58,7 @@
 {$DEFINE INCLUDE_USESCLAUSEMANAGER}
 {$DEFINE INCLUDE_EMPTYEVENTHANDLERDETECTOR}
 {$DEFINE INCLUDE_DFMPASCONSISTENCY}
+{$DEFINE INCLUDE_CODEQUALITYANALYZER}
 
 {------------------------------------------------------------------------------}
 // dependencies

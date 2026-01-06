@@ -22,7 +22,7 @@ uses
 type
   TFormUsesClauseManager = class( TFormBase )
     pnlTop: TPanel;
-    pnlBottom: TPanel;
+    pnlBottom: TGridPanel;
     btnClose: TButton;
     btnAnalyze: TButton;
     btnApply: TButton;

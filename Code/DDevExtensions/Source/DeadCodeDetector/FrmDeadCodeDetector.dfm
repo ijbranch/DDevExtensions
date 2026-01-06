@@ -72,31 +72,55 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
       OnChange = cboScopeChange
     end
   end
-  object pnlBottom: TPanel
+  object pnlBottom: TGridPanel
     Left = 0
     Top = 409
     Width = 800
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
+    ColumnCollection = <
+      item
+        Value = 50.000000000000000000
+      end
+      item
+        Value = 50.000000000000000000
+      end>
+    ControlCollection = <
+      item
+        Column = 0
+        Control = btnExport
+        Row = 0
+      end
+      item
+        Column = 1
+        Control = btnClose
+        Row = 0
+      end>
+    RowCollection = <
+      item
+        Value = 100.000000000000000000
+      end>
     TabOrder = 1
+    object btnExport: TButton
+      AlignWithMargins = True
+      Left = 4
+      Top = 8
+      Width = 90
+      Height = 25
+      Caption = '&Export CSV...'
+      TabOrder = 0
+      OnClick = btnExportClick
+    end
     object btnClose: TButton
+      AlignWithMargins = True
       Left = 712
       Top = 8
       Width = 80
       Height = 25
       Caption = '&Close'
-      TabOrder = 0
-      OnClick = btnCloseClick
-    end
-    object btnExport: TButton
-      Left = 8
-      Top = 8
-      Width = 90
-      Height = 25
-      Caption = '&Export CSV...'
       TabOrder = 1
-      OnClick = btnExportClick
+      OnClick = btnCloseClick
     end
   end
   object ListView: TListView

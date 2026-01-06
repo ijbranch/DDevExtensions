@@ -77,9 +77,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <Debugger_LoadAllSymbols>false</Debugger_LoadAllSymbols>
         <Debugger_HostApplication>$(BDS)\Bin\bds.exe</Debugger_HostApplication>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>4</VerInfo_MinorVer>
+        <VerInfo_MinorVer>6</VerInfo_MinorVer>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.4.0.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.6.0.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -96,11 +96,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>4</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.4.1.669;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>669</VerInfo_Build>
+        <VerInfo_MinorVer>6</VerInfo_MinorVer>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.6.0.689;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>689</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-        <VerInfo_Release>1</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_DcuOutput>lib\debug</DCC_DcuOutput>
@@ -308,6 +307,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
             <Form>FrameOptionPageDependencyViewer</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Source\DependencyViewer\FrmLayerConfig.pas">
+            <Form>FormLayerConfig</Form>
+        </DCCReference>
         <DCCReference Include="..\Source\UnusedUnitDetector\UnusedUnitDetector.pas"/>
         <DCCReference Include="..\Source\UnusedUnitDetector\FrmUnusedUnitDetector.pas">
             <Form>FormUnusedUnitDetector</Form>
@@ -331,6 +333,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\CodeStyleChecker\FrmeOptionPageCodeStyle.pas">
             <Form>FrameOptionPageCodeStyle</Form>
             <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeStyleChecker\FrmTypePrefixEditor.pas">
+            <Form>FormTypePrefixEditor</Form>
         </DCCReference>
         <DCCReference Include="..\Source\DeadCodeDetector\DeadCodeDetector.pas"/>
         <DCCReference Include="..\Source\DeadCodeDetector\FrmDeadCodeDetector.pas">
@@ -370,6 +375,14 @@ $(PreBuildEvent)]]></PreBuildEvent>
         </DCCReference>
         <DCCReference Include="..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas">
             <Form>FrameOptionPageDfmPas</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\CodeQualityAnalyzer.pas"/>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas">
+            <Form>FormCodeQualityAnalyzer</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas">
+            <Form>FrameOptionPageCodeQuality</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Base">
