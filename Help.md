@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.6.0 | Comprehensive Feature Reference
+Version 3.6.1 | Comprehensive Feature Reference
 
 ---
 
@@ -1604,11 +1604,26 @@ These properties are used by the IDE for anchor calculations. Only enable if you
 
 When enabled, the PixelsPerInch property is read from existing DFM files (for backward compatibility) but never written when saving. The IDE recalculates scaling at runtime based on the current display settings.
 
+#### Delphi Version Compatibility (Fixed in 3.6.1)
+
+This feature works in all supported Delphi versions:
+
+| Delphi Version | Behavior |
+|----------------|----------|
+| **11.0+ (Alexandria)** | Full support - reads, applies, and strips PixelsPerInch using native RTL methods |
+| **10.2-10.4 (Tokyo, Rio, Sydney)** | Compatibility mode - reads and discards PixelsPerInch from DFM files, never writes it |
+
+**Cross-version team benefit:** If team members use different Delphi versions, enabling this feature ensures:
+- Delphi 11+ users can open DFMs without PixelsPerInch causing issues
+- Delphi 10.2-10.4 users can open DFMs that were created in Delphi 11+ (which contain PixelsPerInch) without "Unknown property" errors
+- All saved DFMs will have PixelsPerInch stripped, maintaining consistency
+
 #### When to Enable
 
 - Teams with developers using different DPI/monitor configurations
 - Projects experiencing frequent PixelsPerInch merge conflicts
 - When using High DPI scaling features (Delphi 10.3+)
+- **Teams with mixed Delphi versions (10.2-10.4 and 11+)**
 
 ---
 

@@ -35,6 +35,15 @@ type
 var
   IsActive: Boolean;
 
+{$IFNDEF COMPILER110_UP}
+// Workaround for Delphi 10.2-10.4: Read and discard PixelsPerInch if present in DFM
+// The ReadPixelsPerInch/WritePixelsPerInch methods don't exist before Delphi 11
+procedure IgnoreInteger(Reader: TReader);
+begin
+  Reader.ReadInteger;  // Read and discard the value
+end;
+{$ENDIF}
+
 procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
 begin
   if Active <> IsActive then
@@ -92,8 +101,15 @@ begin
       WriteVerticalOffset, DoWriteVerticalOffset);
     Filer.DefineProperty('Width', ReadWidth, WriteWidth, DoWriteWidth);
     Filer.DefineProperty('OldCreateOrder', IgnoreIdent, nil, False);
+{$IFDEF COMPILER110_UP}
     // We need to read if it exists else it Errors, but never write it..
+    // ReadPixelsPerInch/WritePixelsPerInch were introduced in Delphi 11 Alexandria
     Filer.DefineProperty('PixelsPerInch', ReadPixelsPerInch, WritePixelsPerInch, (csReading in ComponentState));
+{$ELSE}
+    // Delphi 10.2-10.4: Read and discard PixelsPerInch if present (from DFMs created in Delphi 11+)
+    // This allows 10.2-10.4 to open DFMs that contain PixelsPerInch without error
+    Filer.DefineProperty('PixelsPerInch', IgnoreInteger, nil, False);
+{$ENDIF}
   end;
 
 {$IF CompilerVersion > 37}
