@@ -38,6 +38,8 @@ Version 3.6.0 enhances the Dependency Viewer with two new features: Export Circu
 
 Version 3.6.1 fixes a compilation error in Delphi 10.2-10.4 where the Remove PixelsPerInch Property feature would fail to compile because `ReadPixelsPerInch`/`WritePixelsPerInch` methods were introduced in Delphi 11. The feature now works in all supported Delphi versions - in Delphi 10.2-10.4, it reads and discards the PixelsPerInch property from DFM files created in Delphi 11+, allowing cross-version compatibility.
 
+Version 3.6.2 removes dead CodeSite logging code from `RemovePixelsPerInchProperty.pas` (commented-out uses clause and unused conditional block).
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -676,4 +678,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.6.1 – 8 January 2026*
+*Version: 3.6.2 – 9 January 2026*

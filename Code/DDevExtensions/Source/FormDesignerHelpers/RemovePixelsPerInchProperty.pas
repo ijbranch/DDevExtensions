@@ -15,7 +15,6 @@ procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
 implementation
 
 uses
-//  CodeSiteLogging,
   IDEUtils;
 
 var
@@ -27,6 +26,11 @@ type
   /// </summary>
   TDataModuleHelper = class helper for TDataModule
     procedure DefineProperties2(Filer: TFiler);
+    {$IFNDEF COMPILER110_UP}
+    // Delphi 10.2-10.4: TDataModule doesn't have these methods (added in Delphi 11)
+    procedure IgnoreIdent(Reader: TReader);
+    procedure IgnoreInteger(Reader: TReader);
+    {$ENDIF}
   end;
 
 type
@@ -36,9 +40,12 @@ var
   IsActive: Boolean;
 
 {$IFNDEF COMPILER110_UP}
-// Workaround for Delphi 10.2-10.4: Read and discard PixelsPerInch if present in DFM
-// The ReadPixelsPerInch/WritePixelsPerInch methods don't exist before Delphi 11
-procedure IgnoreInteger(Reader: TReader);
+procedure TDataModuleHelper.IgnoreIdent(Reader: TReader);
+begin
+  Reader.ReadIdent;  // Read and discard the identifier
+end;
+
+procedure TDataModuleHelper.IgnoreInteger(Reader: TReader);
 begin
   Reader.ReadInteger;  // Read and discard the value
 end;
@@ -88,10 +95,6 @@ var
   end;
 
 begin
-{$If Declared(TCodeSiteLogger)}
-  CodeSite.Send('DefineProperties');
-{$IfEnd}
-
   Ancestor := TDataModule(Filer.Ancestor);
   with self do begin // access to private parts
     Filer.DefineProperty('Height', ReadHeight, WriteHeight, DoWriteHeight);
