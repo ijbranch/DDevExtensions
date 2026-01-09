@@ -41,6 +41,15 @@ type
     mnuSortByTime: TMenuItem;
     mnuSortByLOC: TMenuItem;
     mnuSortByComplexity: TMenuItem;
+    PageControl: TPageControl;
+    tabBuildStats: TTabSheet;
+    tabStyleIssues: TTabSheet;
+    lvStyleIssues: TListView;
+    PopupMenuStyle: TPopupMenu;
+    mnuStyleCopyToClipboard: TMenuItem;
+    mnuStyleExportCSV: TMenuItem;
+    N2: TMenuItem;
+    mnuStyleOpenFile: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
     procedure btnCopyToClipboardClick( Sender: TObject );
     procedure btnExportCSVClick( Sender: TObject );
@@ -55,14 +64,27 @@ type
     procedure mnuSortByComplexityClick( Sender: TObject );
     procedure cmbFilterChange( Sender: TObject );
     procedure ListViewDblClick( Sender: TObject );
+    procedure PageControlChange( Sender: TObject );
+    procedure lvStyleIssuesColumnClick( Sender: TObject; Column: TListColumn );
+    procedure lvStyleIssuesCompare( Sender: TObject; Item1, Item2: TListItem;
+      Data: Integer; var Compare: Integer );
+    procedure lvStyleIssuesDblClick( Sender: TObject );
+    procedure mnuStyleCopyToClipboardClick( Sender: TObject );
+    procedure mnuStyleExportCSVClick( Sender: TObject );
+    procedure mnuStyleOpenFileClick( Sender: TObject );
   private
     FBuildStatistics: TBuildStatistics;
     FSortColumn: Integer;
     FSortAscending: Boolean;
     FFileFilter: TFileFilter;
+    FStyleViolations: TArray<TStyleViolation>;
+    FStyleSortColumn: Integer;
+    FStyleSortAscending: Boolean;
     procedure PopulateList;
+    procedure PopulateStyleList;
     function FormatDuration( Ms: Int64 ): string;
     function IsProjectFile( const FileName: string ): Boolean;
+    procedure OpenStyleFile( const Violation: TStyleViolation );
   public
     class procedure Execute( ABuildStatistics: TBuildStatistics );
   end;
@@ -84,7 +106,9 @@ begin
   if FormInstance <> nil then
   begin
     FormInstance.FBuildStatistics := ABuildStatistics;
+    FormInstance.FStyleViolations := ABuildStatistics.GetStyleViolations;
     FormInstance.PopulateList;
+    FormInstance.PopulateStyleList;
     FormInstance.Show;
     FormInstance.BringToFront;
     Exit;
@@ -92,7 +116,9 @@ begin
 
   FormInstance := TFormBuildStatistics.Create( Application );
   FormInstance.FBuildStatistics := ABuildStatistics;
+  FormInstance.FStyleViolations := ABuildStatistics.GetStyleViolations;
   FormInstance.PopulateList;
+  FormInstance.PopulateStyleList;
   FormInstance.Show;
 
 end;
@@ -104,6 +130,10 @@ begin
   FSortAscending   := False; // Descending (slowest first)
   FFileFilter      := ffProject;
   cmbFilter.ItemIndex := 1;  // Project
+
+  // Style issues sort defaults
+  FStyleSortColumn   := 0;   // Sort by unit name
+  FStyleSortAscending := True;
 
 end;
 
@@ -455,6 +485,258 @@ function TFormBuildStatistics.IsProjectFile( const FileName: string ): Boolean;
 begin
 
   Result := FBuildStatistics.IsProjectFile( FileName );
+
+end;
+
+procedure TFormBuildStatistics.PopulateStyleList;
+var
+  Violation: TStyleViolation;
+  Item: TListItem;
+  Category: string;
+  Idx: Integer;
+begin
+
+  lvStyleIssues.Items.BeginUpdate;
+
+  try
+    lvStyleIssues.Items.Clear;
+    Idx := 0;
+
+    for Violation in FStyleViolations do
+    begin
+      Item := lvStyleIssues.Items.Add;
+      Item.Caption := Violation.UnitName;
+      // Use default category if not set
+      Category := Violation.Category;
+      if Category = '' then
+        Category := 'NamingConvention';
+      Item.SubItems.Add( Category );
+      Item.SubItems.Add( Violation.Rule );
+      Item.SubItems.Add( IntToStr( Violation.Line ) );
+      Item.SubItems.Add( Violation.Expected );
+      Item.SubItems.Add( Violation.Actual );
+      Item.SubItems.Add( Violation.Severity );
+      Item.Data := Pointer( NativeInt( Idx ) );
+      Inc( Idx );
+    end;
+
+    // Update tab caption to show count
+    if Length( FStyleViolations ) > 0 then
+      tabStyleIssues.Caption := Format( 'Style Issues (%d)', [ Length( FStyleViolations ) ] )
+    else
+      tabStyleIssues.Caption := 'Style Issues';
+
+    lvStyleIssues.CustomSort( nil, 0 );
+  finally
+    lvStyleIssues.Items.EndUpdate;
+  end;
+
+end;
+
+procedure TFormBuildStatistics.PageControlChange( Sender: TObject );
+begin
+  // Update bottom panel labels based on current tab
+  if PageControl.ActivePage = tabStyleIssues then
+  begin
+    lblTotalTime.Caption := Format( 'Style issues: %d', [ Length( FStyleViolations ) ] );
+    lblFilter.Visible := False;
+    cmbFilter.Visible := False;
+    lblUnitCount.Caption := '';
+  end
+  else
+  begin
+    lblFilter.Visible := True;
+    cmbFilter.Visible := True;
+    PopulateList; // Refresh to update labels
+  end;
+end;
+
+procedure TFormBuildStatistics.lvStyleIssuesColumnClick( Sender: TObject; Column: TListColumn );
+begin
+
+  if FStyleSortColumn = Column.Index then
+    FStyleSortAscending := not FStyleSortAscending
+  else
+  begin
+    FStyleSortColumn := Column.Index;
+    FStyleSortAscending := ( FStyleSortColumn = 0 ); // Ascending for name
+  end;
+
+  lvStyleIssues.CustomSort( nil, 0 );
+
+end;
+
+procedure TFormBuildStatistics.lvStyleIssuesCompare( Sender: TObject; Item1, Item2: TListItem;
+  Data: Integer; var Compare: Integer );
+var
+  S1, S2: string;
+  SubIdx: Integer;
+begin
+
+  if FStyleSortColumn = 0 then
+  begin
+    S1 := Item1.Caption;
+    S2 := Item2.Caption;
+  end
+  else
+  begin
+    SubIdx := FStyleSortColumn - 1;
+
+    if SubIdx < Item1.SubItems.Count then
+      S1 := Item1.SubItems[ SubIdx ]
+    else
+      S1 := '';
+
+    if SubIdx < Item2.SubItems.Count then
+      S2 := Item2.SubItems[ SubIdx ]
+    else
+      S2 := '';
+  end;
+
+  // Try numeric comparison for line number column (column 3)
+  if FStyleSortColumn = 3 then
+    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+  else
+    Compare := CompareText( S1, S2 );
+
+  if not FStyleSortAscending then
+    Compare := -Compare;
+
+end;
+
+procedure TFormBuildStatistics.lvStyleIssuesDblClick( Sender: TObject );
+var
+  Idx: Integer;
+begin
+
+  if lvStyleIssues.Selected = nil then
+    Exit;
+
+  Idx := NativeInt( lvStyleIssues.Selected.Data );
+
+  if ( Idx >= 0 ) and ( Idx < Length( FStyleViolations ) ) then
+    OpenStyleFile( FStyleViolations[ Idx ] );
+
+end;
+
+procedure TFormBuildStatistics.OpenStyleFile( const Violation: TStyleViolation );
+var
+  ModuleServices: IOTAModuleServices;
+  Module: IOTAModule;
+  SourceEditor: IOTASourceEditor;
+  EditView: IOTAEditView;
+  I: Integer;
+begin
+
+  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
+  begin
+    Module := ModuleServices.OpenModule( Violation.FileName );
+
+    if Module <> nil then
+    begin
+
+      for I := 0 to Module.ModuleFileCount - 1 do
+      begin
+
+        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
+        begin
+          SourceEditor.Show;
+
+          if SourceEditor.EditViewCount > 0 then
+          begin
+            EditView := SourceEditor.EditViews[ 0 ];
+            EditView.SetTopLeft( Violation.Line, 1 );
+            EditView.Center( Violation.Line, Violation.Column );
+          end;
+
+          Break;
+        end;
+      end;
+    end;
+  end;
+
+end;
+
+procedure TFormBuildStatistics.mnuStyleCopyToClipboardClick( Sender: TObject );
+var
+  SL: TStringList;
+  I: Integer;
+  Item: TListItem;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    SL.Add( 'Unit'#9'Category'#9'Rule'#9'Line'#9'Expected'#9'Actual'#9'Severity' );
+
+    for I := 0 to lvStyleIssues.Items.Count - 1 do
+    begin
+      Item := lvStyleIssues.Items[ I ];
+
+      if Item.SubItems.Count >= 6 then
+        SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s',
+          [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
+            Item.SubItems[ 2 ], Item.SubItems[ 3 ], Item.SubItems[ 4 ],
+            Item.SubItems[ 5 ] ] ) );
+    end;
+
+    Clipboard.AsText := SL.Text;
+  finally
+    SL.Free;
+  end;
+
+end;
+
+procedure TFormBuildStatistics.mnuStyleExportCSVClick( Sender: TObject );
+var
+  SL: TStringList;
+  I: Integer;
+  Item: TListItem;
+begin
+
+  if lvStyleIssues.Items.Count = 0 then
+  begin
+    ShowMessage( 'No style issues to export.' );
+    Exit;
+  end;
+
+  SaveDialog.Title := 'Export Style Issues';
+
+  if SaveDialog.Execute then
+  begin
+    SL := TStringList.Create;
+
+    try
+      SL.Add( '"Unit","Category","Rule","Line","Expected","Actual","Severity"' );
+
+      for I := 0 to lvStyleIssues.Items.Count - 1 do
+      begin
+        Item := lvStyleIssues.Items[ I ];
+
+        if Item.SubItems.Count >= 6 then
+          SL.Add( Format( '"%s","%s","%s","%s","%s","%s","%s"',
+            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
+              Item.SubItems[ 2 ], Item.SubItems[ 3 ], Item.SubItems[ 4 ],
+              Item.SubItems[ 5 ] ] ) );
+      end;
+
+      try
+        SL.SaveToFile( SaveDialog.FileName );
+      except
+        on E: Exception do
+          ShowMessage( 'Error saving file: ' + E.Message );
+      end;
+    finally
+      SL.Free;
+    end;
+  end;
+
+end;
+
+procedure TFormBuildStatistics.mnuStyleOpenFileClick( Sender: TObject );
+begin
+
+  lvStyleIssuesDblClick( Sender );
 
 end;
 

@@ -1,7 +1,7 @@
 inherited FormCodeStyleChecker: TFormCodeStyleChecker
   Caption = 'Code Style Checker'
   ClientHeight = 450
-  ClientWidth = 750
+  ClientWidth = 850
   Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
@@ -11,7 +11,7 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 750
+    Width = 850
     Height = 41
     Align = alTop
     BevelOuter = bvNone
@@ -30,15 +30,22 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
       Height = 13
       Visible = False
     end
+    object lblCategory: TLabel
+      Left = 280
+      Top = 14
+      Width = 47
+      Height = 13
+      Caption = 'Category:'
+    end
     object lblRule: TLabel
-      Left = 330
+      Left = 480
       Top = 14
       Width = 25
       Height = 13
       Caption = 'Rule:'
     end
     object lblSeverity: TLabel
-      Left = 530
+      Left = 680
       Top = 14
       Width = 43
       Height = 13
@@ -53,29 +60,38 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
       TabOrder = 0
       OnClick = btnScanClick
     end
+    object cboCategory: TComboBox
+      Left = 333
+      Top = 10
+      Width = 130
+      Height = 21
+      Style = csDropDownList
+      TabOrder = 1
+      OnChange = cboCategoryChange
+    end
     object cboRule: TComboBox
-      Left = 361
+      Left = 511
       Top = 10
       Width = 155
       Height = 21
       Style = csDropDownList
-      TabOrder = 1
+      TabOrder = 2
       OnChange = cboRuleChange
     end
     object cboSeverity: TComboBox
-      Left = 579
+      Left = 729
       Top = 10
       Width = 90
       Height = 21
       Style = csDropDownList
-      TabOrder = 2
+      TabOrder = 3
       OnChange = cboSeverityChange
     end
   end
   object pnlBottom: TGridPanel
     Left = 0
     Top = 409
-    Width = 750
+    Width = 850
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
@@ -114,7 +130,7 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
     end
     object btnClose: TButton
       AlignWithMargins = True
-      Left = 660
+      Left = 760
       Top = 8
       Width = 80
       Height = 25
@@ -126,17 +142,21 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
   object ListView: TListView
     Left = 0
     Top = 41
-    Width = 750
+    Width = 850
     Height = 368
     Align = alClient
     Columns = <
       item
         Caption = 'Unit'
-        Width = 140
+        Width = 120
+      end
+      item
+        Caption = 'Category'
+        Width = 100
       end
       item
         Caption = 'Rule'
-        Width = 110
+        Width = 100
       end
       item
         Caption = 'Line'
@@ -144,7 +164,7 @@ inherited FormCodeStyleChecker: TFormCodeStyleChecker
       end
       item
         Caption = 'Expected'
-        Width = 80
+        Width = 170
       end
       item
         Caption = 'Actual'

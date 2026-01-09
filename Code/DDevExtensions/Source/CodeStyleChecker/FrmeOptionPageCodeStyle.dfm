@@ -1,13 +1,13 @@
 inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
   Width = 400
-  Height = 480
+  Height = 680
   ExplicitWidth = 400
-  ExplicitHeight = 480
+  ExplicitHeight = 680
   inherited pnlClient: TPanel
     Width = 400
-    Height = 431
+    Height = 631
     ExplicitWidth = 400
-    ExplicitHeight = 431
+    ExplicitHeight = 631
     object chkEnabled: TCheckBox
       Left = 16
       Top = 12
@@ -120,6 +120,116 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
         TabOrder = 0
       end
     end
+    object grpAntiPatterns: TGroupBox
+      Left = 16
+      Top = 416
+      Width = 360
+      Height = 200
+      Caption = 'Anti-Pattern Detection'
+      TabOrder = 4
+      object chkCheckAntiPatterns: TCheckBox
+        Left = 16
+        Top = 20
+        Width = 250
+        Height = 17
+        Caption = 'Enable anti-pattern detection'
+        TabOrder = 0
+      end
+      object chkCheckEmptyFinally: TCheckBox
+        Left = 32
+        Top = 44
+        Width = 200
+        Height = 17
+        Caption = 'Detect empty finally blocks'
+        TabOrder = 1
+      end
+      object chkCheckNestedWith: TCheckBox
+        Left = 32
+        Top = 68
+        Width = 200
+        Height = 17
+        Caption = 'Detect nested "with" statements'
+        TabOrder = 2
+      end
+      object chkCheckDeepNesting: TCheckBox
+        Left = 32
+        Top = 92
+        Width = 200
+        Height = 17
+        Caption = 'Detect deep nesting'
+        TabOrder = 3
+      end
+      object chkCheckLongMethods: TCheckBox
+        Left = 32
+        Top = 116
+        Width = 200
+        Height = 17
+        Caption = 'Detect long methods'
+        TabOrder = 4
+      end
+      object chkCheckLongParamLists: TCheckBox
+        Left = 32
+        Top = 140
+        Width = 200
+        Height = 17
+        Caption = 'Detect long parameter lists'
+        TabOrder = 5
+      end
+      object lblMaxNesting: TLabel
+        Left = 240
+        Top = 92
+        Width = 24
+        Height = 13
+        Caption = 'Max:'
+      end
+      object edtMaxNesting: TEdit
+        Left = 270
+        Top = 89
+        Width = 40
+        Height = 21
+        TabOrder = 6
+        Text = '4'
+      end
+      object lblMaxLines: TLabel
+        Left = 240
+        Top = 116
+        Width = 24
+        Height = 13
+        Caption = 'Max:'
+      end
+      object edtMaxLines: TEdit
+        Left = 270
+        Top = 113
+        Width = 40
+        Height = 21
+        TabOrder = 7
+        Text = '100'
+      end
+      object lblMaxParams: TLabel
+        Left = 240
+        Top = 140
+        Width = 24
+        Height = 13
+        Caption = 'Max:'
+      end
+      object edtMaxParams: TEdit
+        Left = 270
+        Top = 137
+        Width = 40
+        Height = 21
+        TabOrder = 8
+        Text = '6'
+      end
+      object lblAntiPatternInfo: TLabel
+        Left = 16
+        Top = 168
+        Width = 320
+        Height = 26
+        AutoSize = False
+        Caption = 'Anti-patterns help identify code that compiles but may indicate design issues.'
+        WordWrap = True
+      end
+    end
   end
   inherited pnlDescription: TPanel
     Width = 400
@@ -131,7 +241,7 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
       Width = 368
       Caption =
         'Checks your code for Delphi naming conventions (T, I, F, E, P ' +
-        'prefixes), custom variable prefixes, and unit scope names.'
+        'prefixes), custom variable prefixes, unit scope names, and anti-patterns.'
     end
   end
 end

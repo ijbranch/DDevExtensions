@@ -1,6 +1,6 @@
 inherited FormBuildStatistics: TFormBuildStatistics
   Caption = 'Build Statistics'
-  ClientHeight = 450
+  ClientHeight = 480
   ClientWidth = 850
   Position = poScreenCenter
   OnClose = FormClose
@@ -9,7 +9,7 @@ inherited FormBuildStatistics: TFormBuildStatistics
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
-    Top = 384
+    Top = 414
     Width = 850
     Height = 66
     Align = alBottom
@@ -84,43 +84,106 @@ inherited FormBuildStatistics: TFormBuildStatistics
       OnClick = btnCloseClick
     end
   end
-  object ListView: TListView
+  object PageControl: TPageControl
     Left = 0
     Top = 0
     Width = 850
-    Height = 409
+    Height = 414
+    ActivePage = tabBuildStats
     Align = alClient
-    Columns = <
-      item
-        Caption = 'Unit Name'
-        Width = 150
-      end
-      item
-        Caption = 'Duration'
-        Width = 80
-      end
-      item
-        Caption = 'LOC'
-        Width = 60
-      end
-      item
-        Caption = 'Complexity'
-        Width = 70
-      end
-      item
-        Caption = 'File Path'
-        Width = 450
-      end>
-    ColumnClick = True
-    GridLines = True
-    ReadOnly = True
-    RowSelect = True
-    PopupMenu = PopupMenu
     TabOrder = 1
-    ViewStyle = vsReport
-    OnColumnClick = ListViewColumnClick
-    OnCompare = ListViewCompare
-    OnDblClick = ListViewDblClick
+    OnChange = PageControlChange
+    object tabBuildStats: TTabSheet
+      Caption = 'Build Statistics'
+      object ListView: TListView
+        Left = 0
+        Top = 0
+        Width = 842
+        Height = 386
+        Align = alClient
+        Columns = <
+          item
+            Caption = 'Unit Name'
+            Width = 150
+          end
+          item
+            Caption = 'Duration'
+            Width = 80
+          end
+          item
+            Caption = 'LOC'
+            Width = 60
+          end
+          item
+            Caption = 'Complexity'
+            Width = 70
+          end
+          item
+            Caption = 'File Path'
+            Width = 450
+          end>
+        ColumnClick = True
+        GridLines = True
+        ReadOnly = True
+        RowSelect = True
+        PopupMenu = PopupMenu
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnColumnClick = ListViewColumnClick
+        OnCompare = ListViewCompare
+        OnDblClick = ListViewDblClick
+      end
+    end
+    object tabStyleIssues: TTabSheet
+      Caption = 'Style Issues'
+      ImageIndex = 1
+      object lvStyleIssues: TListView
+        Left = 0
+        Top = 0
+        Width = 842
+        Height = 386
+        Align = alClient
+        Columns = <
+          item
+            Caption = 'Unit'
+            Width = 120
+          end
+          item
+            Caption = 'Category'
+            Width = 100
+          end
+          item
+            Caption = 'Rule'
+            Width = 100
+          end
+          item
+            Caption = 'Line'
+            Width = 50
+          end
+          item
+            Caption = 'Expected'
+            Width = 170
+          end
+          item
+            Caption = 'Actual'
+            Width = 150
+          end
+          item
+            Caption = 'Severity'
+            Width = 70
+          end>
+        ColumnClick = True
+        GridLines = True
+        ReadOnly = True
+        RowSelect = True
+        PopupMenu = PopupMenuStyle
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnColumnClick = lvStyleIssuesColumnClick
+        OnCompare = lvStyleIssuesCompare
+        OnDblClick = lvStyleIssuesDblClick
+      end
+    end
   end
   object SaveDialog: TSaveDialog
     DefaultExt = 'csv'
@@ -159,6 +222,25 @@ inherited FormBuildStatistics: TFormBuildStatistics
     object mnuSortByComplexity: TMenuItem
       Caption = 'Sort by Complexity (Highest First)'
       OnClick = mnuSortByComplexityClick
+    end
+  end
+  object PopupMenuStyle: TPopupMenu
+    Left = 408
+    Top = 160
+    object mnuStyleCopyToClipboard: TMenuItem
+      Caption = 'Copy to Clipboard'
+      OnClick = mnuStyleCopyToClipboardClick
+    end
+    object mnuStyleExportCSV: TMenuItem
+      Caption = 'Export CSV...'
+      OnClick = mnuStyleExportCSVClick
+    end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object mnuStyleOpenFile: TMenuItem
+      Caption = 'Open File'
+      OnClick = mnuStyleOpenFileClick
     end
   end
 end

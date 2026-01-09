@@ -3,6 +3,7 @@
 {* DDevExtensions                                                             *}
 {*                                                                            *}
 {* (C) 2006-2024 Andreas Hausladen                                            *}
+{* Modified: 2026-01-10 - Added style violation tracking                      *}
 {*                                                                            *}
 {******************************************************************************}
 
@@ -21,6 +22,19 @@ uses
   PluginConfig, Dialogs;
 
 type
+  // Local copy of TStyleViolation to avoid circular dependency with CodeStyleChecker
+  TStyleViolation = record
+    FileName: string;
+    UnitName: string;
+    Line: Integer;
+    Column: Integer;
+    Rule: string;
+    Expected: string;
+    Actual: string;
+    Severity: string;
+    Category: string;  // 'NamingConvention' or 'AntiPattern'
+  end;
+
   TBuildUnitInfo = record
     UnitName: string;
     FileName: string;
@@ -42,6 +56,7 @@ type
     FProjectPath: string;
     FProjectFiles: TStringList;
     FLock: TCriticalSection;
+    FStyleViolations: TArray<TStyleViolation>;
     procedure DoEndCurrentUnit; // Internal - must be called while holding FLock
   public
     constructor Create;
@@ -53,10 +68,13 @@ type
     procedure AddProjectFile(const FileName: string);
     function IsProjectFile(const FileName: string): Boolean;
     function GetUnits: TArray<TBuildUnitInfo>;
+    procedure SetStyleViolations( const Violations: TArray<TStyleViolation> );
+    function GetStyleViolations: TArray<TStyleViolation>;
     property TotalBuildTime: Int64 read FTotalBuildTime;
     property BuildSucceeded: Boolean read FBuildSucceeded;
     property UnitCount: Integer read FUnitCount;
     property ProjectPath: string read FProjectPath write FProjectPath;
+    property StyleViolations: TArray<TStyleViolation> read GetStyleViolations write SetStyleViolations;
   end;
 
   TCompileProgress = class(TPluginConfig, ICompileInterceptor)
@@ -76,6 +94,7 @@ type
     FAskCompileFromDiffProjectTemporary: Boolean;
     FEnableBuildStatistics: Boolean;
     FShowBuildStatisticsAfterCompile: Boolean;
+    FRunStyleCheckAfterCompile: Boolean;
     FBuildStatistics: TBuildStatistics;
     FBuildStatsMenuItem: TMenuItem;
     {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
@@ -132,6 +151,7 @@ type
     property AskCompileFromDiffProjectTemporary: Boolean read FAskCompileFromDiffProjectTemporary write FAskCompileFromDiffProjectTemporary;
     property EnableBuildStatistics: Boolean read FEnableBuildStatistics write SetEnableBuildStatistics;
     property ShowBuildStatisticsAfterCompile: Boolean read FShowBuildStatisticsAfterCompile write FShowBuildStatisticsAfterCompile;
+    property RunStyleCheckAfterCompile: Boolean read FRunStyleCheckAfterCompile write FRunStyleCheckAfterCompile;
   end;
 
 procedure InitPlugin(Unload: Boolean);
@@ -141,7 +161,8 @@ implementation
 uses
   Main, NativeProgressForm, AppConsts, IDEUtils,
   FrmeOptionPageCompilerProgress, ProjectResource, UnitVersionInfo, ToolsAPIHelpers,
-  FrmSwitchToModuleProject, CompilerClearOtherStates, FrmBuildStatistics;
+  FrmSwitchToModuleProject, CompilerClearOtherStates, FrmBuildStatistics,
+  CodeStyleChecker;
 
 function TimeStr(dt: TDateTime; Exact: Boolean = False): string;
 var
@@ -207,6 +228,7 @@ begin
 
   try
     SetLength( FUnits, 0 );
+    SetLength( FStyleViolations, 0 );
     FUnitCount        := 0;
     FCurrentUnit      := '';
     FCurrentStartTime := 0;
@@ -339,6 +361,32 @@ begin
 
   try
     Result := Copy( FUnits, 0, FUnitCount );
+  finally
+    FLock.Leave;
+  end;
+
+end;
+
+function TBuildStatistics.GetStyleViolations: TArray<TStyleViolation>;
+begin
+
+  FLock.Enter;
+
+  try
+    Result := Copy( FStyleViolations );
+  finally
+    FLock.Leave;
+  end;
+
+end;
+
+procedure TBuildStatistics.SetStyleViolations( const Violations: TArray<TStyleViolation> );
+begin
+
+  FLock.Enter;
+
+  try
+    FStyleViolations := Copy( Violations );
   finally
     FLock.Leave;
   end;
@@ -760,11 +808,17 @@ begin
   {$IFEND}
   EnableBuildStatistics := True;
   ShowBuildStatisticsAfterCompile := False;
+  RunStyleCheckAfterCompile := False;  // Off by default
 
   SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
 end;
 
 procedure TCompileProgress.AfterCompile( const Project: IOTAProject; Succeeded, IsCodeInsight: Boolean );
+var
+  StyleChecker: TStyleChecker;
+  CheckerViolations: TArray<CodeStyleChecker.TStyleViolation>;
+  LocalViolations: TArray<TStyleViolation>;
+  I: Integer;
 begin
 
   if ( not IsCodeInsight ) then
@@ -777,6 +831,34 @@ begin
     if FEnableBuildStatistics then
     begin
       FBuildStatistics.FinalizeBuild( Succeeded );
+
+      // Run style checker if enabled and build succeeded
+      if Succeeded and FRunStyleCheckAfterCompile and ( Project <> nil ) then
+      begin
+        StyleChecker := TStyleChecker.Create;
+        try
+          if StyleChecker.CheckProject( Project, CheckerViolations, nil ) then
+          begin
+            // Convert from CodeStyleChecker.TStyleViolation to local TStyleViolation
+            SetLength( LocalViolations, Length( CheckerViolations ) );
+            for I := 0 to High( CheckerViolations ) do
+            begin
+              LocalViolations[I].FileName := CheckerViolations[I].FileName;
+              LocalViolations[I].UnitName := CheckerViolations[I].UnitName;
+              LocalViolations[I].Line     := CheckerViolations[I].Line;
+              LocalViolations[I].Column   := CheckerViolations[I].Column;
+              LocalViolations[I].Rule     := CheckerViolations[I].Rule;
+              LocalViolations[I].Expected := CheckerViolations[I].Expected;
+              LocalViolations[I].Actual   := CheckerViolations[I].Actual;
+              LocalViolations[I].Severity := CheckerViolations[I].Severity;
+              LocalViolations[I].Category := CheckerViolations[I].Category;
+            end;
+            FBuildStatistics.SetStyleViolations( LocalViolations );
+          end;
+        finally
+          StyleChecker.Free;
+        end;
+      end;
 
       if FShowBuildStatisticsAfterCompile and ( FBuildStatistics.UnitCount > 0 ) then
         ShowBuildStatisticsDialog;

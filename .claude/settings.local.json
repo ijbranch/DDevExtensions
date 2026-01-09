@@ -46,7 +46,18 @@
       "WebFetch(domain:docwiki.embarcadero.com)",
       "WebFetch(domain:en.delphipraxis.net)",
       "WebFetch(domain:gabrielmoraru.com)",
-      "WebFetch(domain:www.marcocantu.com)"
+      "WebFetch(domain:www.marcocantu.com)",
+      "Bash(cmd /c \"findstr /n TStyleViolation D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\Source\\\\CompileProgress\\\\CompileProgress.pas\")",
+      "Bash(cmd /c \"type D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\Source\\\\CompileProgress\\\\CompileProgress.pas | more +20\")",
+      "Bash(cmd /c \"dir /b %APPDATA%\\\\DDevExtensions\\\\*.dll 2>nul\")",
+      "Bash(cmd /c \"dir %APPDATA%\\\\DDevExtensions\\\\ 2>nul\")",
+      "Bash(cmd /c \"if exist %APPDATA%\\\\DDevExtensions\\\\ \\(dir %APPDATA%\\\\DDevExtensions\\\\\\) else \\(echo Folder does not exist\\)\")",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\Ian\\\\AppData\\\\Roaming\\\\DDevExtensions\\\\*.dll\")",
+      "Bash(reg query \"HKCU\\\\Software\\\\Embarcadero\\\\BDS\\\\23.0\\\\Experts\")",
+      "Bash(reg query \"HKCU\\\\Software\\\\Embarcadero\\\\BDS\")",
+      "Bash(reg query \"HKCU\\\\Software\\\\Embarcadero\\\\BDS\\\\37.0\\\\Experts\")",
+      "Bash(dumpbin:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

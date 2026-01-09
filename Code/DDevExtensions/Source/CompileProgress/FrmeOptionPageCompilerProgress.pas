@@ -27,6 +27,7 @@ type
     chkReleaseCompilerUnitCacheHigh: TCheckBox;
     chkEnableBuildStatistics: TCheckBox;
     chkShowBuildStatisticsAfterCompile: TCheckBox;
+    chkRunStyleCheckAfterCompile: TCheckBox;
     procedure chkLastCompileVersionInfoClick(Sender: TObject);
     procedure chkReleaseCompilerUnitCacheClick(Sender: TObject);
     procedure chkEnableBuildStatisticsClick(Sender: TObject);
@@ -75,6 +76,7 @@ procedure TFrameOptionPageCompilerProgress.chkEnableBuildStatisticsClick(Sender:
 begin
   inherited;
   chkShowBuildStatisticsAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
+  chkRunStyleCheckAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
 end;
 
 constructor TFrameOptionPageCompilerProgress.Create(AOwner: TComponent);
@@ -118,6 +120,8 @@ begin
   chkEnableBuildStatistics.Checked := FCompileProgress.EnableBuildStatistics;
   chkShowBuildStatisticsAfterCompile.Checked := FCompileProgress.ShowBuildStatisticsAfterCompile;
   chkShowBuildStatisticsAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
+  chkRunStyleCheckAfterCompile.Checked := FCompileProgress.RunStyleCheckAfterCompile;
+  chkRunStyleCheckAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
 
   chkLastCompileVersionInfoClick(chkLastCompileVersionInfo);
 end;
@@ -137,6 +141,7 @@ begin
   FCompileProgress.AskCompileFromDiffProject := chkAskBeforeCompilingFileFromDiffernetProject.Checked;
   FCompileProgress.EnableBuildStatistics := chkEnableBuildStatistics.Checked;
   FCompileProgress.ShowBuildStatisticsAfterCompile := chkShowBuildStatisticsAfterCompile.Checked;
+  FCompileProgress.RunStyleCheckAfterCompile := chkRunStyleCheckAfterCompile.Checked;
   FCompileProgress.Save;
 end;
 

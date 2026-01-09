@@ -32,6 +32,8 @@ type
     btnExport: TButton;
     SaveDialog: TSaveDialog;
     lblSummary: TLabel;
+    cboCategory: TComboBox;
+    lblCategory: TLabel;
     cboRule: TComboBox;
     lblRule: TLabel;
     cboSeverity: TComboBox;
@@ -48,6 +50,7 @@ type
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    procedure cboCategoryChange( Sender: TObject );
     procedure cboRuleChange( Sender: TObject );
     procedure cboSeverityChange( Sender: TObject );
   private
@@ -106,14 +109,29 @@ begin
   FSortColumn    := 0;
   FSortAscending := True;
 
-  // Set up rule filter
+  // Set up category filter
+  cboCategory.Items.Add( '(All)' );
+  cboCategory.Items.Add( 'NamingConvention' );
+  cboCategory.Items.Add( 'AntiPattern' );
+  cboCategory.ItemIndex := 0;
+
+  // Set up rule filter - naming conventions
   cboRule.Items.Add( '(All)' );
   cboRule.Items.Add( 'TypePrefix' );
   cboRule.Items.Add( 'InterfacePrefix' );
   cboRule.Items.Add( 'FieldPrefix' );
+  cboRule.Items.Add( 'FieldTypePrefix' );
   cboRule.Items.Add( 'ExceptionPrefix' );
   cboRule.Items.Add( 'PointerPrefix' );
   cboRule.Items.Add( 'ParameterPrefix' );
+  cboRule.Items.Add( 'VariablePrefix' );
+  cboRule.Items.Add( 'UnitScopePrefix' );
+  // Anti-pattern rules
+  cboRule.Items.Add( 'EmptyFinally' );
+  cboRule.Items.Add( 'NestedWith' );
+  cboRule.Items.Add( 'DeepNesting' );
+  cboRule.Items.Add( 'LongMethod' );
+  cboRule.Items.Add( 'LongParamList' );
   cboRule.ItemIndex := 0;
 
   // Set up severity filter
@@ -193,13 +211,22 @@ end;
 
 function TFormCodeStyleChecker.PassesFilter( const Item: TStyleViolation ): Boolean;
 var
-  RuleFilter, SeverityFilter: string;
+  CategoryFilter, RuleFilter, SeverityFilter: string;
 begin
 
   Result := True;
 
+  // Check category filter
+  if cboCategory.ItemIndex > 0 then
+  begin
+    CategoryFilter := cboCategory.Items[ cboCategory.ItemIndex ];
+
+    if not SameText( Item.Category, CategoryFilter ) then
+      Result := False;
+  end;
+
   // Check rule filter
-  if cboRule.ItemIndex > 0 then
+  if Result and ( cboRule.ItemIndex > 0 ) then
   begin
     RuleFilter := cboRule.Items[ cboRule.ItemIndex ];
 
@@ -223,6 +250,7 @@ var
   Violation: TStyleViolation;
   Item: TListItem;
   Idx: Integer;
+  Category: string;
 begin
 
   ListView.Items.BeginUpdate;
@@ -238,6 +266,11 @@ begin
       begin
         Item         := ListView.Items.Add;
         Item.Caption := Violation.UnitName;
+        // Use default category if not set
+        Category := Violation.Category;
+        if Category = '' then
+          Category := 'NamingConvention';
+        Item.SubItems.Add( Category );
         Item.SubItems.Add( Violation.Rule );
         Item.SubItems.Add( IntToStr( Violation.Line ) );
         Item.SubItems.Add( Violation.Expected );
@@ -251,6 +284,13 @@ begin
   finally
     ListView.Items.EndUpdate;
   end;
+
+end;
+
+procedure TFormCodeStyleChecker.cboCategoryChange( Sender: TObject );
+begin
+
+  PopulateList;
 
 end;
 
@@ -311,8 +351,8 @@ begin
       S2 := '';
   end;
 
-  // Try numeric comparison for line number column
-  if FSortColumn = 2 then
+  // Try numeric comparison for line number column (now column 3)
+  if FSortColumn = 3 then
     Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else
     Compare := CompareText( S1, S2 );
@@ -395,19 +435,20 @@ begin
   SL := TStringList.Create;
 
   try
-    SL.Add( 'Unit'#9'Rule'#9'Line'#9'Expected'#9'Actual'#9'Severity' );
+    SL.Add( 'Unit'#9'Category'#9'Rule'#9'Line'#9'Expected'#9'Actual'#9'Severity' );
 
     for Item in ListView.Items do
     begin
 
       if Item.Selected or ( ListView.SelCount = 0 ) then
-        SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s', [
+        SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s', [
           Item.Caption,
           SafeGetSubItem( Item, 0 ),
           SafeGetSubItem( Item, 1 ),
           SafeGetSubItem( Item, 2 ),
           SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 )
+          SafeGetSubItem( Item, 4 ),
+          SafeGetSubItem( Item, 5 )
         ] ) );
     end;
 
@@ -435,17 +476,18 @@ begin
     SL := TStringList.Create;
 
     try
-      SL.Add( 'Unit,Rule,Line,Expected,Actual,Severity' );
+      SL.Add( 'Unit,Category,Rule,Line,Expected,Actual,Severity' );
 
       for Item in ListView.Items do
       begin
-        SL.Add( Format( '"%s","%s","%s","%s","%s","%s"', [
+        SL.Add( Format( '"%s","%s","%s","%s","%s","%s","%s"', [
           Item.Caption,
           SafeGetSubItem( Item, 0 ),
           SafeGetSubItem( Item, 1 ),
           SafeGetSubItem( Item, 2 ),
           SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 )
+          SafeGetSubItem( Item, 4 ),
+          SafeGetSubItem( Item, 5 )
         ] ) );
       end;
 

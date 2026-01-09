@@ -6,7 +6,7 @@
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>..\..\DLangExtensions\bin\CompileInterceptorW.dll</DCC_DependencyCheckOutputName>
         <ProjectVersion>20.3</ProjectVersion>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Basis>True</Basis>
         <AppType>Library</AppType>
         <FrameworkType>None</FrameworkType>
@@ -220,7 +220,6 @@
                 </DebugEnvironmentVariables>
             </Delphi.Personality>
             <Platforms>
-                <Platform value="Linux64">False</Platform>
                 <Platform value="Win32">True</Platform>
                 <Platform value="Win64">False</Platform>
             </Platforms>

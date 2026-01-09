@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.6.1 | Comprehensive Feature Reference
+Version 3.7.0 | Comprehensive Feature Reference
 
 ---
 
@@ -24,6 +24,7 @@ Version 3.6.1 | Comprehensive Feature Reference
 | Code Style Checker | ON | DDevExtensions submenu |
 | Compile Backup | ON | Automatic |
 | Compile Progress | ON | Automatic |
+| Compile Style Check | OFF | Options (auto after compile) |
 | Component Selector | OFF | Configurable hotkey |
 | Confirm Ctrl+F1 While Debugging | ON | Automatic |
 | Dead Code Detector | ON | DDevExtensions submenu |
@@ -197,7 +198,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 ### Build Statistics
 
-**Purpose:** Tracks compilation time for each unit and displays code metrics.
+**Purpose:** Tracks compilation time for each unit, displays code metrics, and optionally shows style violations.
 
 **Default:** OFF
 
@@ -207,6 +208,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 #### Features
 
+**Build Stats Tab:**
 - Per-unit compile time in milliseconds
 - Lines of Code (LOC) per unit
 - Cyclomatic Complexity per unit
@@ -216,11 +218,22 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 - Copy to clipboard
 - Double-click to open unit (if source available)
 
+**Style Issues Tab (New in 3.7.0):**
+- Shows all Code Style Checker violations from the last compile
+- Requires "Run style check after compile" option enabled
+- Sortable columns: Unit, Category, Rule, Line, Expected, Actual, Severity
+- Filter by Category: All / Naming Convention / Anti-Pattern
+- Double-click to open file at violation line
+- Export to CSV
+- Copy to clipboard
+- Right-click context menu for all actions
+
 #### How to Enable
 
 1. Go to Options > DDevExtensions > Compile Progress
 2. Check "Enable Build Statistics"
 3. Optionally check "Show after compile" for automatic display
+4. **New in 3.7.0**: Check "Run style check after compile" to populate the Style Issues tab
 
 #### Understanding the Metrics
 
@@ -238,11 +251,29 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 - 21-50: High complexity, consider refactoring
 - 50+: Very high risk, should be simplified
 
+#### Style Issues Tab Columns
+
+| Column | Description |
+|--------|-------------|
+| Unit | Source file containing the violation |
+| Category | "NamingConvention" or "AntiPattern" |
+| Rule | Which style rule was violated |
+| Line | Line number in source |
+| Expected | What was expected (e.g., prefix, max depth) |
+| Actual | What was found |
+| Severity | Warning or Error |
+
 #### Filter Options
 
+**Build Stats Tab:**
 - **All**: Shows all units compiled (project + external)
 - **Project**: Only units that are part of your project
 - **External**: RTL/VCL and third-party units
+
+**Style Issues Tab:**
+- **All**: Shows all style violations
+- **Naming Convention**: Only naming rule violations (T, I, F, E, P, A prefixes)
+- **Anti-Pattern**: Only anti-pattern violations (empty finally, nested with, etc.)
 
 **Note:** Metrics (LOC, Complexity) only display when source code is available. External units without source show "-".
 
@@ -375,7 +406,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 ### Code Style Checker
 
-**Purpose:** Checks code against Delphi naming conventions and custom variable prefix rules.
+**Purpose:** Checks code against Delphi naming conventions, custom variable prefix rules, and common anti-patterns.
 
 **Default:** ON
 
@@ -396,9 +427,83 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 | Pointers | Prefix with P | `PMyRecord` |
 | Parameters | Prefix with A | `AValue` (optional) |
 
+#### Anti-Pattern Detection (New in 3.7.0)
+
+The Code Style Checker now detects common structural anti-patterns in your code:
+
+| Anti-Pattern | Description | Default |
+|--------------|-------------|---------|
+| Empty Finally | `finally` blocks with no statements | Enabled |
+| Nested With | `with` statements nested more than 1 level deep | Enabled |
+| Deep Nesting | Control flow nesting exceeding threshold | Enabled (4 levels) |
+| Long Method | Methods exceeding line count threshold | Enabled (100 lines) |
+| Long Parameter List | Methods with too many parameters | Enabled (6 params) |
+
+**Why These Are Anti-Patterns:**
+
+**Empty Finally Blocks:**
+```pascal
+try
+  DoSomething;
+finally
+  // Empty - no cleanup code!
+end;
+```
+An empty `finally` block suggests forgotten cleanup code or unnecessary try/finally structure.
+
+**Nested With Statements:**
+```pascal
+with Customer do
+  with Orders do      // Nested with - ambiguous scope
+    with Items do     // Even deeper - very confusing
+      ShowMessage(Name);  // Which Name? Customer? Order? Item?
+```
+Nested `with` statements make code hard to read and maintain. The identifier scope becomes ambiguous.
+
+**Deep Nesting:**
+```pascal
+if Condition1 then
+  if Condition2 then
+    for I := 0 to Count do
+      if Condition3 then
+        try
+          if Condition4 then  // 5 levels deep - hard to follow
+```
+Deeply nested code is hard to read, test, and maintain. Consider extracting methods or using early exits.
+
+**Long Methods:**
+Methods exceeding 100 lines (configurable) are difficult to understand and test. Consider breaking into smaller, focused methods.
+
+**Long Parameter Lists:**
+```pascal
+procedure ProcessOrder(Customer: TCustomer; Order: TOrder;
+  Items: TItems; Discount: Currency; Tax: Currency;
+  Shipping: Currency; Notes: string);  // 7 parameters
+```
+Too many parameters suggest the method is doing too much, or parameters should be grouped into a record/object.
+
+#### Anti-Pattern Configuration Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| Check Anti-Patterns | Master switch for all anti-pattern detection | ON |
+| Check Empty Finally | Detect empty finally blocks | ON |
+| Check Nested With | Detect nested with statements | ON |
+| Check Deep Nesting | Detect excessive control flow nesting | ON |
+| Check Long Methods | Detect methods exceeding line threshold | ON |
+| Check Long Param Lists | Detect methods with too many parameters | ON |
+| Max Nesting Depth | Threshold for deep nesting (1-10) | 4 |
+| Max Method Lines | Threshold for long methods | 100 |
+| Max Parameters | Threshold for parameter count | 6 |
+
 #### Variable Type Prefix Rules (New in 3.6.0)
 
 This is an **additional** check, separate from the standard Delphi naming rules above. It validates variable names in `var` sections against custom type-to-prefix mappings.
+
+**Important:** These are **optional style suggestions**, not requirements. Your code will compile and run correctly regardless of these warnings. Variable prefix conventions (sometimes called Hungarian notation) are a matter of personal or team preference - many modern style guides do not require them. You can:
+- **Ignore** the warnings if you prefer descriptive names without prefixes
+- **Disable** this check entirely in Options → Code Style Checker
+- **Customize** the prefix rules to match your team's conventions
 
 **How the checkbox affects results:**
 
@@ -548,10 +653,19 @@ Covers 97 common RTL, VCL, Winapi, Data, and XML units.
 | Column | Description |
 |--------|-------------|
 | Unit | Source file name |
-| Rule | Which naming rule was violated |
+| Category | "NamingConvention" or "AntiPattern" |
+| Rule | Which rule was violated |
 | Line | Line number |
-| Identifier | The non-compliant name |
-| Expected | What the name should start with |
+| Expected | What was expected (prefix for naming, threshold for anti-patterns) |
+| Actual | The identifier or value that violated the rule |
+| Severity | Warning or Error |
+
+#### Category Filter (New in 3.7.0)
+
+The results can be filtered by category:
+- **All**: Shows all violations
+- **Naming Convention**: Only prefix naming rule violations (T, I, F, E, P, A)
+- **Anti-Pattern**: Only anti-pattern violations (EmptyFinally, NestedWith, DeepNesting, LongMethod, LongParamList)
 
 ---
 
@@ -567,11 +681,36 @@ Covers 97 common RTL, VCL, Winapi, Data, and XML units.
 
 ### Compile Progress
 
-**Purpose:** Adds a progress bar to the compile dialog and shows compilation progress in the Windows taskbar.
+**Purpose:** Adds a progress bar to the compile dialog, shows compilation progress in the Windows taskbar, and optionally runs code style checking after compilation.
 
 **Default:** ON
 
 **Location:** Options > DDevExtensions > Compile Progress
+
+#### Configuration Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| Enable Build Statistics | Track compile times and code metrics | OFF |
+| Show after compile | Auto-show Build Statistics dialog | OFF |
+| Run style check after compile | Run Code Style Checker after successful compile | OFF |
+
+#### Style Check After Compile (New in 3.7.0)
+
+When "Run style check after compile" is enabled:
+
+1. After a **successful** compilation, the Code Style Checker automatically runs on all project units
+2. Any style violations (naming conventions and anti-patterns) are collected
+3. Results are stored and displayed in the **Style Issues** tab of the Build Statistics dialog
+4. The style check runs silently - no popup unless you open Build Statistics
+
+**Benefits:**
+- Continuous code quality monitoring without manual scans
+- Catch style issues as you develop
+- Review all issues in one place after each build
+- Export violation reports for code review
+
+**Note:** The style check only runs after successful compiles. Failed compilations skip the style check.
 
 ---
 

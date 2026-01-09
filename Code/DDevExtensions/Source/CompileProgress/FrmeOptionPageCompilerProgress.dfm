@@ -79,6 +79,14 @@ inherited FrameOptionPageCompilerProgress: TFrameOptionPageCompilerProgress
       Caption = 'Show statistics dialog after compile'
       TabOrder = 8
     end
+    object chkRunStyleCheckAfterCompile: TCheckBox
+      Left = 24
+      Top = 212
+      Width = 361
+      Height = 19
+      Caption = 'Run code style check after compile'
+      TabOrder = 9
+    end
   end
   inherited pnlDescription: TPanel
     Width = 403

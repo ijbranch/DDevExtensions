@@ -32,6 +32,20 @@ type
     btnEditRules: TButton;
     grpUsesClause: TGroupBox;
     chkCheckUnitScopeNames: TCheckBox;
+    grpAntiPatterns: TGroupBox;
+    chkCheckAntiPatterns: TCheckBox;
+    chkCheckEmptyFinally: TCheckBox;
+    chkCheckNestedWith: TCheckBox;
+    chkCheckDeepNesting: TCheckBox;
+    chkCheckLongMethods: TCheckBox;
+    chkCheckLongParamLists: TCheckBox;
+    lblMaxNesting: TLabel;
+    edtMaxNesting: TEdit;
+    lblMaxLines: TLabel;
+    edtMaxLines: TEdit;
+    lblMaxParams: TLabel;
+    edtMaxParams: TEdit;
+    lblAntiPatternInfo: TLabel;
     procedure btnEditRulesClick( Sender: TObject );
   private
     FPlugin: TCodeStyleCheckerPlugin;
@@ -82,6 +96,17 @@ begin
   chkCheckVariablePrefixes.Checked := FPlugin.CheckVariablePrefixes;
   chkCheckUnitScopeNames.Checked   := FPlugin.CheckUnitScopeNames;
 
+  // Anti-pattern options
+  chkCheckAntiPatterns.Checked     := FPlugin.CheckAntiPatterns;
+  chkCheckEmptyFinally.Checked     := FPlugin.CheckEmptyFinally;
+  chkCheckNestedWith.Checked       := FPlugin.CheckNestedWith;
+  chkCheckDeepNesting.Checked      := FPlugin.CheckDeepNesting;
+  chkCheckLongMethods.Checked      := FPlugin.CheckLongMethods;
+  chkCheckLongParamLists.Checked   := FPlugin.CheckLongParamLists;
+  edtMaxNesting.Text               := IntToStr( FPlugin.MaxNestingDepth );
+  edtMaxLines.Text                 := IntToStr( FPlugin.MaxMethodLines );
+  edtMaxParams.Text                := IntToStr( FPlugin.MaxParameters );
+
   UpdateRulesSummary;
 
 end;
@@ -98,6 +123,18 @@ begin
   FPlugin.CheckParameters       := chkCheckParameters.Checked;
   FPlugin.CheckVariablePrefixes := chkCheckVariablePrefixes.Checked;
   FPlugin.CheckUnitScopeNames   := chkCheckUnitScopeNames.Checked;
+
+  // Anti-pattern options
+  FPlugin.CheckAntiPatterns     := chkCheckAntiPatterns.Checked;
+  FPlugin.CheckEmptyFinally     := chkCheckEmptyFinally.Checked;
+  FPlugin.CheckNestedWith       := chkCheckNestedWith.Checked;
+  FPlugin.CheckDeepNesting      := chkCheckDeepNesting.Checked;
+  FPlugin.CheckLongMethods      := chkCheckLongMethods.Checked;
+  FPlugin.CheckLongParamLists   := chkCheckLongParamLists.Checked;
+  FPlugin.MaxNestingDepth       := StrToIntDef( edtMaxNesting.Text, 4 );
+  FPlugin.MaxMethodLines        := StrToIntDef( edtMaxLines.Text, 100 );
+  FPlugin.MaxParameters         := StrToIntDef( edtMaxParams.Text, 6 );
+
   FPlugin.Save;
 
 end;

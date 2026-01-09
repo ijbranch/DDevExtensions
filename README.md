@@ -40,6 +40,22 @@ Version 3.6.1 fixes a compilation error in Delphi 10.2-10.4 where the Remove Pix
 
 Version 3.6.2 removes dead CodeSite logging code from `RemovePixelsPerInchProperty.pas` (commented-out uses clause and unused conditional block).
 
+Version 3.7.0 adds two major enhancements to the Code Style Checker and Compiler Progress features:
+
+**Code Style Checker Anti-Pattern Detection:**
+- Empty Finally Blocks - detects `finally` blocks with no statements
+- Nested With Statements - detects `with` statements nested more than one level deep
+- Deep Nesting - detects control flow (if/for/while/try) exceeding a configurable depth threshold (default: 4)
+- Long Methods - detects methods exceeding a configurable line count (default: 100 lines)
+- Long Parameter Lists - detects methods with too many parameters (default: 6)
+
+All anti-pattern checks are individually configurable with customizable thresholds.
+
+**Compiler Progress Style Check Integration:**
+- New option to automatically run Code Style Checker after successful compilation
+- New "Style Issues" tab in Build Statistics dialog showing all style violations from the last compile
+- Full sorting, filtering by category (Naming Convention vs Anti-Pattern), navigation, copy, and export functionality
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -462,6 +478,8 @@ Tracks how long each unit takes to compile and displays the results in a sortabl
 - Double-click to open unit in editor
 - Export to CSV for further analysis
 - Copy selected entries to clipboard
+- **New in 3.7.0** - Style Issues tab: Shows all Code Style Checker violations from the last compile when "Run style check after compile" is enabled
+- **New in 3.7.0** - Style Issues features: Category filter (Naming Convention vs Anti-Pattern), sortable columns, double-click navigation, export to CSV, copy to clipboard
 Access via Tools → DDevExtensions → "Build Statistics..." when enabled. Can also auto-show after each compile.
 
 ### Project Manager
@@ -550,8 +568,9 @@ Scans your project for TODO, FIXME, HACK, BUG, NOTE, and other comment markers a
 Access via Tools → DDevExtensions → "TODO/FIXME Aggregator..." when enabled.
 
 **New in 3.1 - Code Style Checker** (default: on)
-Checks your code for Delphi naming convention compliance. Features include:
+Checks your code for Delphi naming convention compliance and common anti-patterns. Features include:
 
+**Naming Convention Rules:**
 - Type names should start with T (e.g., TMyClass)
 - Interface names should start with I (e.g., IMyInterface)
 - Field names should start with F (e.g., FMyField)
@@ -560,7 +579,16 @@ Checks your code for Delphi naming convention compliance. Features include:
 - Parameter names should start with A (optional, off by default)
 - **New in 3.6.0** - Variable Type Prefix Rules: Additional check for variable names against custom type-to-prefix mappings (e.g., String=s, Integer=i, Boolean=l). Supports `array of X` syntax. Includes conflict detection when rule patterns overlap.
 - **New in 3.6.0** - Unit Scope Names: Flags uses clauses missing scope prefixes (e.g., `SysUtils` should be `System.SysUtils`).
-- Filter by rule type and severity
+
+**New in 3.7.0 - Anti-Pattern Detection:**
+- Empty Finally Blocks: Detects `finally` blocks with no statements
+- Nested With Statements: Detects `with` statements nested more than one level deep
+- Deep Nesting: Detects control flow nesting exceeding a configurable depth (default: 4 levels)
+- Long Methods: Detects methods exceeding a configurable line count (default: 100 lines)
+- Long Parameter Lists: Detects methods with too many parameters (default: 6)
+
+**Results Features:**
+- Filter by rule type, category (Naming Convention vs Anti-Pattern), and severity
 - Double-click to navigate to source
 - Export to CSV or copy to clipboard
 - Enable/disable individual rules via DDevExtensions Options
@@ -678,4 +706,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.6.2 – 9 January 2026*
+*Version: 3.7.0 – 10 January 2026*

@@ -26,6 +26,7 @@ type
     Expected: string;
     Actual: string;
     Severity: string;
+    Category: string;  // 'NamingConvention' or 'AntiPattern'
   end;
 
   TTypePrefixRule = record
@@ -75,6 +76,16 @@ type
     FCheckUnitScopeNames: Boolean;
     FTypePrefixRules: TArray<TTypePrefixRule>;
     FMenuItem: TMenuItem;
+    // Anti-pattern detection options
+    FCheckAntiPatterns: Boolean;
+    FCheckEmptyFinally: Boolean;
+    FCheckNestedWith: Boolean;
+    FCheckDeepNesting: Boolean;
+    FCheckLongMethods: Boolean;
+    FCheckLongParamLists: Boolean;
+    FMaxNestingDepth: Integer;
+    FMaxMethodLines: Integer;
+    FMaxParameters: Integer;
     procedure MenuItemClick( Sender: TObject );
     function GetTypePrefixRulesAsString: string;
     procedure SetTypePrefixRulesFromString( const Value: string );
@@ -98,6 +109,16 @@ type
     property CheckVariablePrefixes: Boolean read FCheckVariablePrefixes write FCheckVariablePrefixes;
     property CheckUnitScopeNames: Boolean read FCheckUnitScopeNames write FCheckUnitScopeNames;
     property TypePrefixRulesData: string read GetTypePrefixRulesAsString write SetTypePrefixRulesFromString;
+    // Anti-pattern detection options
+    property CheckAntiPatterns: Boolean read FCheckAntiPatterns write FCheckAntiPatterns;
+    property CheckEmptyFinally: Boolean read FCheckEmptyFinally write FCheckEmptyFinally;
+    property CheckNestedWith: Boolean read FCheckNestedWith write FCheckNestedWith;
+    property CheckDeepNesting: Boolean read FCheckDeepNesting write FCheckDeepNesting;
+    property CheckLongMethods: Boolean read FCheckLongMethods write FCheckLongMethods;
+    property CheckLongParamLists: Boolean read FCheckLongParamLists write FCheckLongParamLists;
+    property MaxNestingDepth: Integer read FMaxNestingDepth write FMaxNestingDepth;
+    property MaxMethodLines: Integer read FMaxMethodLines write FMaxMethodLines;
+    property MaxParameters: Integer read FMaxParameters write FMaxParameters;
   end;
 
 procedure InitPlugin( Unload: Boolean );
@@ -352,6 +373,7 @@ begin
     Violation.Expected := Prefix + '...';
     Violation.Actual   := Name;
     Violation.Severity := Severity;
+    Violation.Category := 'NamingConvention';
     Result             := True;
   end;
 
@@ -464,6 +486,20 @@ var
   CheckExceptions, CheckPointers, CheckParameters: Boolean;
   CheckVariablePrefixes, CheckUnitScopeNames: Boolean;
   I: Integer;
+  // Anti-pattern detection variables
+  CheckAntiPatterns, CheckEmptyFinally, CheckNestedWith: Boolean;
+  CheckDeepNesting, CheckLongMethods, CheckLongParamLists: Boolean;
+  MaxNestingDepth, MaxMethodLines, MaxParameters: Integer;
+  WithDepth: Integer;
+  NestingDepth: Integer;
+  MethodStartLine: Integer;
+  MethodName: string;
+  CurrentParamCount: Integer;
+  InFinally: Boolean;
+  FinallyLine: Integer;
+  FinallyHasContent: Boolean;
+  BeginEndDepth: Integer;
+  InMethodBody: Boolean;
 begin
 
   Result := False;
@@ -483,6 +519,16 @@ begin
     CheckParameters      := CodeStyleCheckerPlugin.CheckParameters;
     CheckVariablePrefixes := CodeStyleCheckerPlugin.CheckVariablePrefixes;
     CheckUnitScopeNames  := CodeStyleCheckerPlugin.CheckUnitScopeNames;
+    // Anti-pattern detection settings
+    CheckAntiPatterns    := CodeStyleCheckerPlugin.CheckAntiPatterns;
+    CheckEmptyFinally    := CodeStyleCheckerPlugin.CheckEmptyFinally;
+    CheckNestedWith      := CodeStyleCheckerPlugin.CheckNestedWith;
+    CheckDeepNesting     := CodeStyleCheckerPlugin.CheckDeepNesting;
+    CheckLongMethods     := CodeStyleCheckerPlugin.CheckLongMethods;
+    CheckLongParamLists  := CodeStyleCheckerPlugin.CheckLongParamLists;
+    MaxNestingDepth      := CodeStyleCheckerPlugin.MaxNestingDepth;
+    MaxMethodLines       := CodeStyleCheckerPlugin.MaxMethodLines;
+    MaxParameters        := CodeStyleCheckerPlugin.MaxParameters;
   end
   else
   begin
@@ -494,6 +540,15 @@ begin
     CheckParameters      := False;
     CheckVariablePrefixes := False;
     CheckUnitScopeNames  := False;
+    CheckAntiPatterns    := False;
+    CheckEmptyFinally    := True;
+    CheckNestedWith      := True;
+    CheckDeepNesting     := True;
+    CheckLongMethods     := True;
+    CheckLongParamLists  := True;
+    MaxNestingDepth      := 4;
+    MaxMethodLines       := 100;
+    MaxParameters        := 6;
   end;
 
   try
@@ -513,6 +568,17 @@ begin
   InVarSection        := False;
   InUsesClause        := False;
   ParenDepth          := 0;
+  // Anti-pattern state initialization
+  WithDepth           := 0;
+  NestingDepth        := 0;
+  MethodStartLine     := 0;
+  MethodName          := '';
+  CurrentParamCount   := 0;
+  InFinally           := False;
+  FinallyLine         := 0;
+  FinallyHasContent   := False;
+  BeginEndDepth       := 0;
+  InMethodBody        := False;
 
   try
     Lexer := TDelphiLexer.Create( FileName, Content );
@@ -969,6 +1035,186 @@ begin
             end;
           end;
         end;
+
+        // =================================================================
+        // Anti-pattern detection
+        // =================================================================
+        if CheckAntiPatterns then
+        begin
+          // Track method start/end for long method detection
+          if Token.Kind in [ tkI_procedure, tkI_function, tkI_constructor, tkI_destructor ] then
+          begin
+            if not InClass then  // Implementation section method
+            begin
+              MethodStartLine := Token.Line;
+              MethodName := '';
+              // Get method name (next identifier token)
+              if Lexer.NextToken( Token ) and ( Token.Kind = tkIdent ) then
+                MethodName := Token.Value;
+            end;
+          end;
+
+          // Track with statement depth
+          if Token.Kind = tkI_with then
+          begin
+            Inc( WithDepth );
+            // Check for nested with (depth > 1)
+            if CheckNestedWith and ( WithDepth > 1 ) then
+            begin
+              Violation.FileName := FileName;
+              Violation.UnitName := UnitName;
+              Violation.Line     := Token.Line + 1;
+              Violation.Column   := Token.Column;
+              Violation.Rule     := 'NestedWith';
+              Violation.Expected := 'Avoid nested "with" statements';
+              Violation.Actual   := 'Nested "with" at depth ' + IntToStr( WithDepth );
+              Violation.Severity := 'Warning';
+              Violation.Category := 'AntiPattern';
+              ViolationList.Add( Violation );
+            end;
+          end;
+
+          // Track begin/end blocks for nesting and method body detection
+          if Token.Kind = tkI_begin then
+          begin
+            Inc( BeginEndDepth );
+            if not InMethodBody then
+            begin
+              InMethodBody := True;
+              MethodStartLine := Token.Line;
+            end;
+          end
+          else if Token.Kind = tkI_end then
+          begin
+            Dec( BeginEndDepth );
+            // Reset with depth when leaving a begin/end block
+            if WithDepth > 0 then
+              Dec( WithDepth );
+            // Check for long method when we exit the outermost begin/end
+            if ( BeginEndDepth = 0 ) and InMethodBody and CheckLongMethods then
+            begin
+              if ( Token.Line - MethodStartLine + 1 ) > MaxMethodLines then
+              begin
+                Violation.FileName := FileName;
+                Violation.UnitName := UnitName;
+                Violation.Line     := MethodStartLine + 1;
+                Violation.Column   := 0;
+                Violation.Rule     := 'LongMethod';
+                Violation.Expected := 'Method should be < ' + IntToStr( MaxMethodLines ) + ' lines';
+                Violation.Actual   := MethodName + ' is ' + IntToStr( Token.Line - MethodStartLine + 1 ) + ' lines';
+                Violation.Severity := 'Warning';
+                Violation.Category := 'AntiPattern';
+                ViolationList.Add( Violation );
+              end;
+              InMethodBody := False;
+              MethodName := '';
+            end;
+          end;
+
+          // Track control flow nesting depth
+          if Token.Kind in [ tkI_if, tkI_for, tkI_while, tkI_repeat, tkI_case ] then
+          begin
+            Inc( NestingDepth );
+            // Check for deep nesting
+            if CheckDeepNesting and ( NestingDepth > MaxNestingDepth ) then
+            begin
+              Violation.FileName := FileName;
+              Violation.UnitName := UnitName;
+              Violation.Line     := Token.Line + 1;
+              Violation.Column   := Token.Column;
+              Violation.Rule     := 'DeepNesting';
+              Violation.Expected := 'Nesting depth should be <= ' + IntToStr( MaxNestingDepth );
+              Violation.Actual   := 'Nesting depth is ' + IntToStr( NestingDepth );
+              Violation.Severity := 'Warning';
+              Violation.Category := 'AntiPattern';
+              ViolationList.Add( Violation );
+            end;
+          end;
+
+          // Track try/finally/except for empty finally detection
+          if Token.Kind = tkI_finally then
+          begin
+            InFinally := True;
+            FinallyLine := Token.Line;
+            FinallyHasContent := False;
+          end
+          else if Token.Kind = tkI_except then
+          begin
+            InFinally := False;  // except ends finally
+          end
+          else if InFinally then
+          begin
+            // Check if finally block has content (any token except 'end')
+            if Token.Kind = tkI_end then
+            begin
+              // Check if finally was empty
+              if CheckEmptyFinally and not FinallyHasContent then
+              begin
+                Violation.FileName := FileName;
+                Violation.UnitName := UnitName;
+                Violation.Line     := FinallyLine + 1;
+                Violation.Column   := 0;
+                Violation.Rule     := 'EmptyFinally';
+                Violation.Expected := 'Finally block should contain cleanup code';
+                Violation.Actual   := 'Empty finally block';
+                Violation.Severity := 'Warning';
+                Violation.Category := 'AntiPattern';
+                ViolationList.Add( Violation );
+              end;
+              InFinally := False;
+            end
+            else if not ( Token.Kind in [ tkComment, tkDirective ] ) then
+              FinallyHasContent := True;
+          end;
+
+          // Decrease nesting depth when exiting control structures
+          if Token.Kind in [ tkI_then, tkI_do ] then
+          begin
+            // These are continuations, don't change depth
+          end
+          else if ( Token.Kind = tkI_end ) and ( NestingDepth > 0 ) then
+          begin
+            Dec( NestingDepth );
+          end
+          else if ( Token.Kind = tkI_until ) and ( NestingDepth > 0 ) then
+          begin
+            Dec( NestingDepth );  // repeat..until
+          end;
+
+          // Track parameter count for long parameter list detection
+          if InMethodDeclaration and ( ParenDepth = 1 ) then
+          begin
+            if Token.Kind = tkColon then
+            begin
+              Inc( CurrentParamCount );
+            end
+            else if Token.Kind = tkRParan then
+            begin
+              // End of parameter list - check count
+              if CheckLongParamLists and ( CurrentParamCount > MaxParameters ) then
+              begin
+                Violation.FileName := FileName;
+                Violation.UnitName := UnitName;
+                Violation.Line     := Token.Line + 1;
+                Violation.Column   := Token.Column;
+                Violation.Rule     := 'LongParamList';
+                Violation.Expected := 'Parameter count should be <= ' + IntToStr( MaxParameters );
+                Violation.Actual   := IntToStr( CurrentParamCount ) + ' parameters';
+                Violation.Severity := 'Info';
+                Violation.Category := 'AntiPattern';
+                ViolationList.Add( Violation );
+              end;
+              CurrentParamCount := 0;
+            end;
+          end
+          else if Token.Kind = tkLParan then
+          begin
+            // Reset param count at start of new parameter list
+            if InMethodDeclaration and ( ParenDepth = 0 ) then
+              CurrentParamCount := 0;
+          end;
+        end;
+        // End anti-pattern detection
       end;
 
       Violations := ViolationList.ToArray;
@@ -1072,6 +1318,17 @@ begin
   FCheckVariablePrefixes := False;  // Off by default - user must enable
   FCheckUnitScopeNames  := False;   // Off by default - user must enable
   InitDefaultTypePrefixRules;
+
+  // Anti-pattern detection defaults
+  FCheckAntiPatterns   := False;  // Off by default - user must enable
+  FCheckEmptyFinally   := True;
+  FCheckNestedWith     := True;
+  FCheckDeepNesting    := True;
+  FCheckLongMethods    := True;
+  FCheckLongParamLists := True;
+  FMaxNestingDepth     := 4;
+  FMaxMethodLines      := 100;
+  FMaxParameters       := 6;
 
 end;
 
