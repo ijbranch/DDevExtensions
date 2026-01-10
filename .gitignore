@@ -28,9 +28,6 @@
 
 # Delphi compiler-generated binaries (safe to delete)
 __history/
-*.exe
-*.dll
-*.bpl
 *.bpi
 *.dcp
 *.so
