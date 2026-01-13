@@ -51,11 +51,21 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       Width = 3
       Height = 13
     end
+    object lblDeleted: TLabel
+      Left = 750
+      Top = 16
+      Width = 80
+      Height = 13
+      Font.Color = clMaroon
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
     object lblCaution: TLabel
       Left = 12
       Top = 44
       Width = 930
       Height = 13
+      Alignment = taCenter
       AutoSize = False
       Caption = 'CAUTION: Path order affects compilation. First matching unit wins. RTL/VCL paths should come first, then vendors, then custom paths.'
       Font.Color = clMaroon
@@ -149,7 +159,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     object pnlCurrent: TPanel
       Left = 0
       Top = 0
-      Width = 440
+      Width = 400
       Height = 300
       Align = alLeft
       BevelOuter = bvNone
@@ -157,7 +167,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       object lblCurrent: TLabel
         Left = 0
         Top = 0
-        Width = 440
+        Width = 400
         Height = 20
         Align = alTop
         Caption = '  Original Paths (Read-Only - Current Registry Order):'
@@ -166,17 +176,27 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       object lstCurrent: TListBox
         Left = 0
         Top = 20
-        Width = 440
+        Width = 400
         Height = 280
         Align = alClient
         ItemHeight = 13
+        PopupMenu = pmCurrent
         TabOrder = 0
+        OnDrawItem = lstCurrentDrawItem
       end
     end
-    object pnlWorking: TPanel
-      Left = 476
+    object SplitterPanels: TSplitter
+      Left = 400
       Top = 0
-      Width = 474
+      Width = 5
+      Height = 300
+      Cursor = crHSplit
+      MinSize = 200
+    end
+    object pnlWorking: TPanel
+      Left = 405
+      Top = 0
+      Width = 545
       Height = 300
       Align = alClient
       BevelOuter = bvNone
@@ -346,6 +366,14 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     object mnuDeleteEntry: TMenuItem
       Caption = 'Delete Entry'
       OnClick = mnuDeleteEntryClick
+    end
+  end
+  object pmCurrent: TPopupMenu
+    Left = 200
+    Top = 200
+    object mnuShowMissing: TMenuItem
+      Caption = 'Show Missing Paths...'
+      OnClick = mnuShowMissingClick
     end
   end
 end
