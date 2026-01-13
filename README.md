@@ -56,6 +56,19 @@ All anti-pattern checks are individually configurable with customizable threshol
 - New "Style Issues" tab in Build Statistics dialog showing all style violations from the last compile
 - Full sorting, filtering by category (Naming Convention vs Anti-Pattern), navigation, copy, and export functionality
 
+Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize Delphi IDE library paths:
+
+- Sort library paths alphabetically in a working panel
+- Support for all path types: Search Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP/DPL Output, and Translated paths
+- Support for all platforms (Win32, Win64, etc.)
+- Dual-panel interface: read-only original paths and editable working panel
+- Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
+- Duplicate path detection with red highlighting
+- Click working panel entry to highlight all matching entries in original panel
+- Automatic backup before applying changes
+- Backup history with restore and delete capabilities
+- Access via Tools → DDevExtensions → "Library Path Sorter..."
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -250,6 +263,10 @@ DDevExtensions/
 │       ├── Keybindings/           # Enhanced keyboard shortcuts
 │       │   └── FrmeOptionPageKeybindings.pas/.dfm
 │       │
+│       ├── LibraryPathSorter/     # Library path management
+│       │   ├── LibraryPathSorter.pas
+│       │   └── FrmLibraryPathSorter.pas/.dfm
+│       │
 │       ├── OldPalette/            # Old-style component palette
 │       │   ├── ComponentPanel.pas/.res
 │       │   ├── OldPalette.pas/.dfm
@@ -396,6 +413,7 @@ Tools
         ├── Dependency Viewer...
         ├── DFM/PAS Consistency...
         ├── Empty Event Handler Detector...
+        ├── Library Path Sorter...
         ├── TODO/FIXME Aggregator...
         ├── Unreachable Code Detector...
         ├── Unused Unit Detector...
@@ -663,6 +681,28 @@ Automatically analyzes which symbols from each unit are used in the interface vs
 
 Access via Tools → DDevExtensions → "Uses Clause Manager..." when enabled.
 
+**New in 3.8.0 - Library Path Sorter** (default: on)
+Provides a tool to manage and organize Delphi IDE library paths with backup/restore capability. Features include:
+
+- **Dual-panel interface**: Left panel shows original paths (read-only), right panel is editable working area
+- **All path types supported**: Search Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP Output, Package DPL Output, Translated Debug Library Path, Translated Library Path, Translated Resource Path
+- **All platforms**: Win32, Win64, and any other platforms configured in the IDE
+- **Sort alphabetically**: One-click alphabetical sorting of paths
+- **Manual reordering**: Move entries up/down/top/bottom using buttons or drag-and-drop
+- **Duplicate detection**: Duplicate paths highlighted in red bold text for easy identification
+- **Cross-panel highlighting**: Click an entry in working panel to highlight all matching entries in original panel (confirms duplicates existed in original)
+- **Delete entries**: Remove unwanted paths from the working panel
+- **Automatic backup**: Creates backup before applying changes (configurable)
+- **Backup history**: View, restore, or delete previous backups
+- **Manual backup**: Create named backups at any time
+
+**Important Notes:**
+- Path order affects unit resolution - the first matching unit found wins
+- Always review changes before applying, especially for Search Path
+- Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
+
+Access via Tools → DDevExtensions → "Library Path Sorter..." when enabled.
+
 **New in 3.4.1 - Empty Event Handler Detector** (default: on)
 Finds event handlers that have empty bodies (just begin/end with no code). These are typically leftover from double-clicking components in the form designer. Features include:
 
@@ -706,4 +746,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.7.0 – 10 January 2026*
+*Version: 3.8.0 – 13 January 2026*
