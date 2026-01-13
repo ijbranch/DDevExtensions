@@ -62,6 +62,9 @@ uses
   {$IFDEF INCLUDE_CODEQUALITYANALYZER}
   CodeQualityAnalyzer,
   {$ENDIF INCLUDE_CODEQUALITYANALYZER}
+  {$IFDEF INCLUDE_LIBRARYPATHSORTER}
+  LibraryPathSorter,
+  {$ENDIF INCLUDE_LIBRARYPATHSORTER}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -211,6 +214,11 @@ begin
     {$IFDEF INCLUDE_TODOAGGREGATOR}
     if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
       RegisterLateLoader(TodoAggregator.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_LIBRARYPATHSORTER}
+    if DisabledPlugins.IndexOf('LibraryPathSorter') = -1 then
+      RegisterLateLoader(LibraryPathSorter.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

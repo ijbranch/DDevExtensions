@@ -59,6 +59,7 @@
 {$DEFINE INCLUDE_EMPTYEVENTHANDLERDETECTOR}
 {$DEFINE INCLUDE_DFMPASCONSISTENCY}
 {$DEFINE INCLUDE_CODEQUALITYANALYZER}
+{$DEFINE INCLUDE_LIBRARYPATHSORTER}
 
 {------------------------------------------------------------------------------}
 // dependencies

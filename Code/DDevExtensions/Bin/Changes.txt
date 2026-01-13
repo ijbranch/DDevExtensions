@@ -1,3 +1,18 @@
+Version: 3.8.0
+==============
+- Added: Library Path Sorter - new tool to manage and organize IDE library paths
+  - Dual-panel interface: read-only original paths and editable working panel
+  - Support for all path types (Search Path, Browsing Path, Debug DCU Path, etc.)
+  - Support for all platforms (Win32, Win64, etc.)
+  - Sort paths alphabetically with one click
+  - Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
+  - Delete unwanted entries from working panel
+  - Duplicate path detection with red bold highlighting
+  - Cross-panel highlighting: click working entry to highlight matches in original
+  - Automatic backup before applying changes (configurable)
+  - Backup history with restore and delete capabilities
+  - Access via Tools > DDevExtensions > Library Path Sorter...
+
 Version: 3.5.2
 ==============
 - Fixed: Code Style Checker - Field detection not working (look-ahead consuming tokens)

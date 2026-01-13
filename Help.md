@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.7.0 | Comprehensive Feature Reference
+Version 3.8.0 | Comprehensive Feature Reference
 
 ---
 
@@ -39,6 +39,7 @@ Version 3.7.0 | Comprehensive Feature Reference
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
+| Library Path Sorter | ON | DDevExtensions submenu |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -84,6 +85,7 @@ Tools
         ├── Uses Clause Manager...      (7. Organize uses clauses)
         ├── DFM/PAS Consistency...      (8. Check form/code sync)
         ├── Code Style Checker...       (9. Style check)
+        ├── Library Path Sorter...      (IDE path management)
         └── TODO/FIXME Aggregator...    (10. Review work items)
 ```
 
@@ -1685,6 +1687,91 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 **Default:** ON
 
 **Location:** Options > DDevExtensions > Extended IDE Settings
+
+---
+
+### Library Path Sorter (New in 3.8.0)
+
+**Purpose:** Manages and organizes Delphi IDE library paths with sorting, editing, and backup/restore capabilities.
+
+**Default:** ON
+
+**Location:** Tools > DDevExtensions > Library Path Sorter...
+
+#### Features
+
+**Dual-Panel Interface:**
+- **Left Panel (Original)**: Shows current registry paths in read-only mode
+- **Right Panel (Working)**: Editable panel for arranging paths before applying
+
+**Path Type Support:**
+- Search Path
+- Browsing Path
+- Debug DCU Path
+- HPP Output Directory
+- Namespace Prefixes
+- Package DCP Output
+- Package DPL Output
+- Translated Debug Library Path
+- Translated Library Path
+- Translated Resource Path
+
+**Platform Support:**
+- Win32, Win64, and any other platforms configured in the IDE
+- Automatically detects available platforms from registry
+
+**Editing Capabilities:**
+- **Sort Alphabetically (A-Z button)**: One-click alphabetical sorting
+- **Move Up/Down/Top/Bottom**: Reorder selected entry using buttons
+- **Drag and Drop**: Reorder entries by dragging with mouse
+- **Delete Entry (X button)**: Remove selected path from working panel
+- **Copy Original (>> button)**: Reset working panel to original order
+
+**Duplicate Detection:**
+- Duplicate paths are highlighted in **red bold text**
+- Click any entry in working panel to highlight all matching entries in original panel
+- Helps identify and remove redundant paths
+
+**Backup System:**
+- **Auto-backup**: Automatically creates backup before applying changes (configurable checkbox)
+- **Manual backup**: Create named backups at any time with "Create Backup" button
+- **Backup history**: ListView showing all backups with timestamp, path type, platform, and description
+- **Restore**: Select a backup and click "Restore Selected" to restore paths
+- **Delete backup**: Remove old backups from history
+
+**Backup Storage:**
+```
+%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml
+```
+
+#### Usage
+
+1. Open **Tools > DDevExtensions > Library Path Sorter...**
+2. Select **Path Type** (e.g., Search Path) and **Platform** (e.g., Win32)
+3. Original paths appear in left panel, sorted copy in right panel
+4. Edit working panel:
+   - Use A-Z to sort alphabetically
+   - Use >> to copy original order
+   - Drag or use buttons to reorder
+   - Click X to delete unwanted entries
+5. Review for duplicates (shown in red)
+6. Click **Apply Working Panel to Registry** to save changes
+7. Confirm the warning dialog
+
+#### Important Notes
+
+- **Path order matters**: The first matching unit found wins during compilation
+- **RTL/VCL paths**: Delphi's core paths should typically come first
+- **Vendor paths**: Third-party component paths usually come after RTL/VCL
+- **Project paths**: Custom project paths typically come last
+- **Always backup**: Enable auto-backup to protect against mistakes
+
+#### Tips
+
+- Use this tool to clean up accumulated paths from uninstalled components
+- Sort paths to make them easier to review and maintain
+- Check for duplicates which can slow compilation and cause confusion
+- Create a manual backup before major changes with a descriptive name
 
 ---
 
