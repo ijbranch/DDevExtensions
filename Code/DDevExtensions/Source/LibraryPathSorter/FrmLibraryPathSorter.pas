@@ -44,6 +44,7 @@ type
     SplitterBackups: TSplitter;
     btnDeleteBackup: TButton;
     lblStatus: TLabel;
+    lblCaution: TLabel;
     chkAutoBackup: TCheckBox;
     pnlWorkingButtons: TPanel;
     btnWorkingUp: TSpeedButton;
@@ -52,9 +53,10 @@ type
     btnWorkingBottom: TSpeedButton;
     btnCopyToWorking: TSpeedButton;
     btnSortAlpha: TButton;
-    btnDeleteEntry: TSpeedButton;
+    pmWorking: TPopupMenu;
+    mnuDeleteEntry: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
-    procedure btnDeleteEntryClick( Sender: TObject );
+    procedure mnuDeleteEntryClick( Sender: TObject );
     procedure btnApplyClick( Sender: TObject );
     procedure btnRestoreClick( Sender: TObject );
     procedure btnBackupClick( Sender: TObject );
@@ -288,7 +290,7 @@ begin
   btnWorkingDown.Enabled := ( WorkingIdx >= 0 ) and ( WorkingIdx < lstWorking.Items.Count - 1 );
   btnWorkingTop.Enabled := WorkingIdx > 0;
   btnWorkingBottom.Enabled := ( WorkingIdx >= 0 ) and ( WorkingIdx < lstWorking.Items.Count - 1 );
-  btnDeleteEntry.Enabled := WorkingIdx >= 0;
+  mnuDeleteEntry.Enabled := WorkingIdx >= 0;
 
   // Copy and sort buttons
   btnCopyToWorking.Enabled := lstCurrent.Items.Count > 0;
@@ -579,7 +581,7 @@ begin
   Close;
 end;
 
-procedure TFormLibraryPathSorter.btnDeleteEntryClick( Sender: TObject );
+procedure TFormLibraryPathSorter.mnuDeleteEntryClick( Sender: TObject );
 begin
   if lstWorking.ItemIndex >= 0 then
   begin

@@ -6,7 +6,7 @@ Version: 3.8.0
   - Support for all platforms (Win32, Win64, etc.)
   - Sort paths alphabetically with one click
   - Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
-  - Delete unwanted entries from working panel
+  - Delete entries via right-click context menu
   - Duplicate path detection with red bold highlighting
   - Cross-panel highlighting: click working entry to highlight matches in original
   - Automatic backup before applying changes (configurable)
