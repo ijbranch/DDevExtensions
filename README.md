@@ -68,7 +68,19 @@ Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize D
 - Click working panel entry to highlight all matching entries in original panel
 - Automatic backup before applying changes
 - Backup history with restore and delete capabilities
-- Access via Tools → DDevExtensions → "Library Path Sorter..."
+- Access via Tools → "Library Path Sorter..." (below Build Statistics)
+
+Version 3.9.0 enhances the **Library Path Sorter** with path loss detection and diagnostics:
+
+- Moved to Tools menu (below Build Statistics) for easier access
+- Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
+- Deleted entry counter tracks manual deletions and compares against actual difference
+- Mismatch warning if deleted count differs from expected (indicates unexpected path loss)
+- Visual highlighting of paths in the original panel that are missing from the working panel (pink background, maroon bold text)
+- "Show Missing Paths..." context menu option to list all paths missing from the working panel
+- Resizable Original Panel width via horizontal splitter between panels
+- Form position, size, and panel width preserved between sessions
+- Fixed potential issue where duplicate paths could be lost during sorting
 
 ### Version Number Interpretation
 
@@ -414,14 +426,16 @@ Tools
         ├── Dependency Viewer...
         ├── DFM/PAS Consistency...
         ├── Empty Event Handler Detector...
-        ├── Library Path Sorter...
         ├── TODO/FIXME Aggregator...
         ├── Unreachable Code Detector...
         ├── Unused Unit Detector...
         └── Uses Clause Manager...
+  └── Library Path Sorter...   (new in 3.9.0 - moved from DDevExtensions submenu)
 ```
 
-This keeps all DDevExtensions functionality in one convenient location.
+![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
+
+This keeps all DDevExtensions functionality in one convenient location, with the Library Path Sorter positioned as a general IDE tool in the main Tools menu.
 
 ## Features
 
@@ -696,13 +710,19 @@ Provides a tool to manage and organize Delphi IDE library paths with backup/rest
 - **Automatic backup**: Creates backup before applying changes (configurable)
 - **Backup history**: View, restore, or delete previous backups
 - **Manual backup**: Create named backups at any time
+- **New in 3.9.0** - Path counts displayed in panel labels
+- **New in 3.9.0** - Deleted entry counter with mismatch warning
+- **New in 3.9.0** - Missing path highlighting (pink background, maroon text)
+- **New in 3.9.0** - "Show Missing Paths..." context menu on original panel
+- **New in 3.9.0** - Resizable Original Panel via horizontal splitter
+- **New in 3.9.0** - Form position, size, and panel width preserved between sessions
 
 **Important Notes:**
 - Path order affects unit resolution - the first matching unit found wins
 - Always review changes before applying, especially for Search Path
 - Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
 
-Access via Tools → DDevExtensions → "Library Path Sorter..." when enabled.
+Access via Tools → "Library Path Sorter..." (below Build Statistics) when enabled.
 
 **New in 3.4.1 - Empty Event Handler Detector** (default: on)
 Finds event handlers that have empty bodies (just begin/end with no code). These are typically leftover from double-clicking components in the form designer. Features include:
@@ -747,4 +767,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.8.0 – 13 January 2026*
+*Version: 3.9.0 – 14 January 2026*

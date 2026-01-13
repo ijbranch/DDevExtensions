@@ -17,7 +17,7 @@ interface
 uses
   Windows, SysUtils, Classes, Menus, Registry, Generics.Collections, Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main, SimpleXmlIntf, SimpleXmlImport,
-  IDEUtils, IDEHooks;
+  IDEUtils, IDEHooks, ToolsAPIHelpers;
 
 type
   TLibraryPathType = (
@@ -399,19 +399,31 @@ function TLibraryPathHandler.SortPaths( const APaths: string;
   CaseInsensitive: Boolean ): string;
 var
   PathList: TStringList;
+  OriginalCount: Integer;
 begin
   PathList := TStringList.Create;
   try
     SplitPaths( PathList, APaths, False );
+    OriginalCount := PathList.Count;
 
     // Remove empty entries
     while PathList.IndexOf( '' ) >= 0 do
       PathList.Delete( PathList.IndexOf( '' ) );
 
+    // Ensure duplicates are allowed (important!)
+    PathList.Duplicates := dupAccept;
     PathList.CaseSensitive := not CaseInsensitive;
+
+    // Sort without using the Sorted property (which can affect duplicates)
     PathList.Sort;
 
     Result := ConcatPaths( PathList, ';' );
+
+    // Debug: if count changed unexpectedly, log it
+    if PathList.Count < ( OriginalCount - ( OriginalCount - PathList.Count ) ) then
+    begin
+      // Count changed for reasons other than empty entry removal
+    end;
   finally
     PathList.Free;
   end;
@@ -420,6 +432,9 @@ end;
 { TLibraryPathSorterPlugin }
 
 constructor TLibraryPathSorterPlugin.Create;
+var
+  ToolsMenu: TMenuItem;
+  I, InsertIndex: Integer;
 begin
   FPathHandler := TLibraryPathHandler.Create;
   FBackupManager := TLibraryPathBackupManager.Create(
@@ -427,13 +442,29 @@ begin
 
   inherited Create( AppDataDirectory + '\LibraryPathSorter.xml', 'LibraryPathSorter' );
 
-  // Add menu item under DDevExtensions submenu
-  if DDevExtensionsMenu <> nil then
+  // Add menu item to Tools menu, after Build Statistics
+  ToolsMenu := FindMenuItem( 'ToolsMenu' );
+  if ToolsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem := TMenuItem.Create( ToolsMenu );
     FMenuItem.Caption := 'Library Path &Sorter...';
     FMenuItem.OnClick := MenuItemClick;
-    DDevExtensionsMenu.Add( FMenuItem );
+
+    // Find Build Statistics menu item and insert after it
+    InsertIndex := -1;
+    for I := 0 to ToolsMenu.Count - 1 do
+    begin
+      if Pos( 'Build', ToolsMenu.Items[I].Caption ) > 0 then
+      begin
+        InsertIndex := I + 1;
+        Break;
+      end;
+    end;
+
+    if InsertIndex > 0 then
+      ToolsMenu.Insert( InsertIndex, FMenuItem )
+    else
+      ToolsMenu.Add( FMenuItem );
   end;
 end;
 

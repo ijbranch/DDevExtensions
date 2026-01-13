@@ -25,6 +25,7 @@ type
     pnlMain: TPanel;
     Splitter: TSplitter;
     pnlCurrent: TPanel;
+    SplitterPanels: TSplitter;
     pnlWorking: TPanel;
     lblPathType: TLabel;
     cboPathType: TComboBox;
@@ -44,6 +45,7 @@ type
     SplitterBackups: TSplitter;
     btnDeleteBackup: TButton;
     lblStatus: TLabel;
+    lblDeleted: TLabel;
     lblCaution: TLabel;
     chkAutoBackup: TCheckBox;
     pnlWorkingButtons: TPanel;
@@ -55,7 +57,10 @@ type
     btnSortAlpha: TButton;
     pmWorking: TPopupMenu;
     mnuDeleteEntry: TMenuItem;
+    pmCurrent: TPopupMenu;
+    mnuShowMissing: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
+    procedure mnuShowMissingClick( Sender: TObject );
     procedure mnuDeleteEntryClick( Sender: TObject );
     procedure btnApplyClick( Sender: TObject );
     procedure btnRestoreClick( Sender: TObject );
@@ -80,10 +85,15 @@ type
       Shift: TShiftState; X, Y: Integer );
     procedure lstWorkingDrawItem( Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState );
+    procedure lstCurrentDrawItem( Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState );
   private
     FDragIndex: Integer;
     FOriginalPaths: string;
+    FDeletedCount: Integer;
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
+    function IsPathInWorkingPanel( const APath: string ): Boolean;
+    procedure UpdatePanelLabels;
     procedure LoadPlatforms;
     procedure LoadPathTypes;
     procedure LoadCurrentPaths;
@@ -97,6 +107,8 @@ type
     procedure MoveListItemToEnd( AListBox: TListBox; ToTop: Boolean );
     function GetPathsFromListBox( AListBox: TListBox ): string;
     procedure ApplyPaths( const APaths: string );
+    procedure LoadFormSettings;
+    procedure SaveFormSettings;
   public
     class procedure Execute;
   end;
@@ -109,7 +121,7 @@ implementation
 {$R *.dfm}
 
 uses
-  IDEUtils;
+  Registry, IDEUtils, Main;
 
 class procedure TFormLibraryPathSorter.Execute;
 begin
@@ -127,9 +139,14 @@ end;
 procedure TFormLibraryPathSorter.FormCreate( Sender: TObject );
 begin
   FDragIndex := -1;
+  FDeletedCount := 0;
 
-  // Enable owner-draw for duplicate highlighting
+  // Load saved form position and size
+  LoadFormSettings;
+
+  // Enable owner-draw for duplicate highlighting and missing path detection
   lstWorking.Style := lbOwnerDrawFixed;
+  lstCurrent.Style := lbOwnerDrawFixed;
 
   // Enable multi-select on original panel to highlight matching entries
   lstCurrent.MultiSelect := True;
@@ -151,6 +168,9 @@ end;
 
 procedure TFormLibraryPathSorter.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+  // Save form position, size, and panel width
+  SaveFormSettings;
+
   FormLibraryPathSorterInstance := nil;
   Action := caFree;
 end;
@@ -205,6 +225,7 @@ begin
   lstCurrent.Items.Clear;
   lstWorking.Items.Clear;
   FOriginalPaths := '';
+  FDeletedCount := 0;
 
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -222,6 +243,7 @@ begin
 
   UpdateStatus( Format( '%d paths loaded', [lstCurrent.Items.Count] ) );
   LoadWorkingPaths;
+  UpdatePanelLabels;
   UpdateButtonStates;
 end;
 
@@ -245,6 +267,14 @@ begin
   finally
     PathList.Free;
   end;
+
+  // Refresh original panel to update missing path highlighting
+  lstCurrent.Invalidate;
+
+  // Check for count mismatch
+  if lstWorking.Items.Count <> lstCurrent.Items.Count then
+    UpdateStatus( Format( 'WARNING: Original has %d paths, Working has %d!',
+      [lstCurrent.Items.Count, lstWorking.Items.Count] ) );
 end;
 
 procedure TFormLibraryPathSorter.LoadBackupHistory;
@@ -469,6 +499,93 @@ begin
     ListBox.Canvas.DrawFocusRect( Rect );
 end;
 
+function TFormLibraryPathSorter.IsPathInWorkingPanel( const APath: string ): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 0 to lstWorking.Items.Count - 1 do
+  begin
+    if SameText( lstWorking.Items[I], APath ) then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+procedure TFormLibraryPathSorter.UpdatePanelLabels;
+var
+  Difference: Integer;
+begin
+  lblCurrent.Caption := Format( '  Original Paths (Read-Only - Current Registry Order): %d',
+    [lstCurrent.Items.Count] );
+  lblWorking.Caption := Format( '  Working Panel (Editable - Arrange Then Apply): %d',
+    [lstWorking.Items.Count] );
+
+  // Update deleted count label and compare with actual difference
+  Difference := lstCurrent.Items.Count - lstWorking.Items.Count;
+
+  if ( FDeletedCount > 0 ) or ( Difference > 0 ) then
+  begin
+    if FDeletedCount = Difference then
+      // Counts match - normal display
+      lblDeleted.Caption := Format( 'Deleted: %d', [FDeletedCount] )
+    else
+      // Mismatch - flag it! Paths were lost/added unexpectedly
+      lblDeleted.Caption := Format( 'Deleted: %d (Expected: %d) WARNING!', [FDeletedCount, Difference] );
+  end
+  else
+    lblDeleted.Caption := '';
+end;
+
+procedure TFormLibraryPathSorter.lstCurrentDrawItem( Control: TWinControl;
+  Index: Integer; Rect: TRect; State: TOwnerDrawState );
+var
+  ListBox: TListBox;
+  ItemText: string;
+  IsMissing: Boolean;
+begin
+  ListBox := Control as TListBox;
+
+  if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
+    Exit;
+
+  ItemText := ListBox.Items[Index];
+  IsMissing := not IsPathInWorkingPanel( ItemText );
+
+  // Set background
+  if odSelected in State then
+    ListBox.Canvas.Brush.Color := clHighlight
+  else if IsMissing then
+    ListBox.Canvas.Brush.Color := $CCCCFF  // Light red/pink background for missing
+  else
+    ListBox.Canvas.Brush.Color := clWindow;
+
+  ListBox.Canvas.FillRect( Rect );
+
+  // Set text color
+  if odSelected in State then
+    ListBox.Canvas.Font.Color := clHighlightText
+  else if IsMissing then
+    ListBox.Canvas.Font.Color := clMaroon
+  else
+    ListBox.Canvas.Font.Color := clWindowText;
+
+  // Make missing items bold
+  if IsMissing then
+    ListBox.Canvas.Font.Style := [fsBold]
+  else
+    ListBox.Canvas.Font.Style := [];
+
+  // Draw the text
+  ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
+
+  // Draw focus rectangle if focused
+  if odFocused in State then
+    ListBox.Canvas.DrawFocusRect( Rect );
+end;
+
 procedure TFormLibraryPathSorter.lstWorkingMouseDown( Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer );
 var
@@ -523,6 +640,7 @@ begin
   lstWorking.ItemIndex := DropIdx;
 
   FDragIndex := -1;
+  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
   UpdateButtonStates;
 end;
 
@@ -549,6 +667,9 @@ end;
 procedure TFormLibraryPathSorter.btnCopyToWorkingClick( Sender: TObject );
 begin
   lstWorking.Items.Assign( lstCurrent.Items );
+  FDeletedCount := 0;  // Reset deleted count
+  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  UpdatePanelLabels;
   UpdateButtonStates;
   UpdateStatus( 'Copied original order to working panel' );
 end;
@@ -557,9 +678,12 @@ procedure TFormLibraryPathSorter.btnSortAlphaClick( Sender: TObject );
 var
   SortedPaths: string;
   PathList: TStringList;
+  OriginalCount: Integer;
 begin
   if lstWorking.Items.Count = 0 then
     Exit;
+
+  OriginalCount := lstWorking.Items.Count;
 
   SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths(
     GetPathsFromListBox( lstWorking ), True );
@@ -572,8 +696,16 @@ begin
     PathList.Free;
   end;
 
+  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  UpdatePanelLabels;
   UpdateButtonStates;
-  UpdateStatus( 'Working panel sorted alphabetically' );
+
+  // Check if any paths were lost during sort
+  if lstWorking.Items.Count <> OriginalCount then
+    UpdateStatus( Format( 'WARNING: Sort changed count from %d to %d!',
+      [OriginalCount, lstWorking.Items.Count] ) )
+  else
+    UpdateStatus( 'Working panel sorted alphabetically' );
 end;
 
 procedure TFormLibraryPathSorter.btnCloseClick( Sender: TObject );
@@ -586,8 +718,46 @@ begin
   if lstWorking.ItemIndex >= 0 then
   begin
     lstWorking.Items.Delete( lstWorking.ItemIndex );
+    Inc( FDeletedCount );
+    lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+    UpdatePanelLabels;
     UpdateButtonStates;
     UpdateStatus( 'Entry deleted from working panel' );
+  end;
+end;
+
+procedure TFormLibraryPathSorter.mnuShowMissingClick( Sender: TObject );
+var
+  I: Integer;
+  MissingPaths: TStringList;
+  Msg: string;
+begin
+  MissingPaths := TStringList.Create;
+  try
+    for I := 0 to lstCurrent.Items.Count - 1 do
+    begin
+      if not IsPathInWorkingPanel( lstCurrent.Items[I] ) then
+        MissingPaths.Add( lstCurrent.Items[I] );
+    end;
+
+    if MissingPaths.Count = 0 then
+      ShowMessage( 'No paths are missing from the working panel.' )
+    else
+    begin
+      Msg := Format( '%d path(s) missing from working panel:'#13#10#13#10, [MissingPaths.Count] );
+      for I := 0 to MissingPaths.Count - 1 do
+      begin
+        Msg := Msg + MissingPaths[I] + #13#10;
+        if I >= 19 then  // Limit display to 20 items
+        begin
+          Msg := Msg + Format( '... and %d more', [MissingPaths.Count - 20] );
+          Break;
+        end;
+      end;
+      ShowMessage( Msg );
+    end;
+  finally
+    MissingPaths.Free;
   end;
 end;
 
@@ -746,6 +916,72 @@ procedure TFormLibraryPathSorter.lvBackupsSelectItem( Sender: TObject;
 begin
   btnRestore.Enabled := ( lvBackups.Selected <> nil );
   btnDeleteBackup.Enabled := ( lvBackups.Selected <> nil );
+end;
+
+procedure TFormLibraryPathSorter.LoadFormSettings;
+var
+  Reg: TRegistry;
+begin
+  Reg := TRegistry.Create;
+  try
+    Reg.RootKey := HKEY_CURRENT_USER;
+
+    if Reg.OpenKeyReadOnly( 'Software\DDevExtensions\LibraryPathSorter' ) then
+    begin
+      try
+        if Reg.ValueExists( 'Left' ) then
+          Left := Reg.ReadInteger( 'Left' );
+        if Reg.ValueExists( 'Top' ) then
+          Top := Reg.ReadInteger( 'Top' );
+        if Reg.ValueExists( 'Width' ) then
+          Width := Reg.ReadInteger( 'Width' );
+        if Reg.ValueExists( 'Height' ) then
+          Height := Reg.ReadInteger( 'Height' );
+        if Reg.ValueExists( 'PanelWidth' ) then
+          pnlCurrent.Width := Reg.ReadInteger( 'PanelWidth' );
+
+        // Ensure form is visible on screen
+        if Left < 0 then Left := 0;
+        if Top < 0 then Top := 0;
+        if Left + Width > Screen.Width then
+          Left := Screen.Width - Width;
+        if Top + Height > Screen.Height then
+          Top := Screen.Height - Height;
+
+        // Set position to default if we loaded settings
+        Position := poDesigned;
+      finally
+        Reg.CloseKey;
+      end;
+    end;
+  finally
+    Reg.Free;
+  end;
+end;
+
+procedure TFormLibraryPathSorter.SaveFormSettings;
+var
+  Reg: TRegistry;
+begin
+  Reg := TRegistry.Create;
+  try
+    Reg.RootKey := HKEY_CURRENT_USER;
+
+    if Reg.OpenKey( 'Software\DDevExtensions\LibraryPathSorter', True ) then
+    begin
+      try
+        Reg.WriteInteger( 'Left', Left );
+        Reg.WriteInteger( 'Top', Top );
+        Reg.WriteInteger( 'Width', Width );
+        Reg.WriteInteger( 'Height', Height );
+        Reg.WriteInteger( 'PanelWidth', pnlCurrent.Width );
+      finally
+        Reg.CloseKey;
+      end;
+    end;
+  finally
+    Reg.Free;
+  end;
 end;
 
 end.

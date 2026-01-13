@@ -1,3 +1,16 @@
+Version: 3.9.0
+==============
+- Enhanced: Library Path Sorter - path loss detection and diagnostics
+  - Moved to Tools menu (below Build Statistics) for easier access
+  - Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
+  - Deleted entry counter tracks manual deletions and compares against actual difference
+  - Mismatch warning displayed if deleted count differs from expected difference
+  - Visual highlighting of paths missing from working panel (pink background, maroon bold text)
+  - "Show Missing Paths..." context menu option on original panel
+  - Resizable Original Panel width via horizontal splitter between panels
+  - Form position, size, and panel width preserved between sessions
+  - Fixed potential issue where duplicate paths could be lost during sorting
+
 Version: 3.8.0
 ==============
 - Added: Library Path Sorter - new tool to manage and organize IDE library paths

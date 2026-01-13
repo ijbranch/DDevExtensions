@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.8.0 | Comprehensive Feature Reference
+Version 3.9.0 | Comprehensive Feature Reference
 
 ---
 
@@ -39,7 +39,7 @@ Version 3.8.0 | Comprehensive Feature Reference
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
-| Library Path Sorter | ON | DDevExtensions submenu |
+| Library Path Sorter | ON | Tools menu (below Build Statistics) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -85,9 +85,12 @@ Tools
         ├── Uses Clause Manager...      (7. Organize uses clauses)
         ├── DFM/PAS Consistency...      (8. Check form/code sync)
         ├── Code Style Checker...       (9. Style check)
-        ├── Library Path Sorter...      (IDE path management)
         └── TODO/FIXME Aggregator...    (10. Review work items)
+
+  └── Library Path Sorter...            (IDE path management - separate from DDevExtensions submenu)
 ```
+
+![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
 
 ### Project Documentation
 
@@ -1690,19 +1693,19 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 ---
 
-### Library Path Sorter (New in 3.8.0)
+### Library Path Sorter (New in 3.8.0, Enhanced in 3.9.0)
 
 **Purpose:** Manages and organizes Delphi IDE library paths with sorting, editing, and backup/restore capabilities.
 
 **Default:** ON
 
-**Location:** Tools > DDevExtensions > Library Path Sorter...
+**Location:** Tools > Library Path Sorter... (below Build Statistics)
 
 #### Features
 
 **Dual-Panel Interface:**
-- **Left Panel (Original)**: Shows current registry paths in read-only mode
-- **Right Panel (Working)**: Editable panel for arranging paths before applying
+- **Left Panel (Original)**: Shows current registry paths in read-only mode, with path count in label
+- **Right Panel (Working)**: Editable panel for arranging paths before applying, with path count in label
 
 **Path Type Support:**
 - Search Path
@@ -1732,6 +1735,34 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 - Click any entry in working panel to highlight all matching entries in original panel
 - Helps identify and remove redundant paths
 
+**Path Count Display (New in 3.9.0):**
+- Both panel labels display the current path count (e.g., "Original Paths: 73", "Working Panel: 73")
+- Counts update automatically when paths are loaded, copied, sorted, or deleted
+- Makes it immediately visible if counts differ between panels
+
+**Deleted Entry Counter (New in 3.9.0):**
+- Tracks number of entries manually deleted via right-click menu
+- Compares deleted count against actual difference (Original - Working)
+- Normal display: "Deleted: 3" when counts match
+- Warning display: "Deleted: 2 (Expected: 5) WARNING!" when counts don't match
+- Mismatch indicates paths were lost unexpectedly (e.g., during sorting)
+- Counter resets when paths are loaded or copied from original
+
+**Missing Path Detection (New in 3.9.0):**
+- Paths in the original panel that are missing from the working panel are highlighted with **pink background and maroon bold text**
+- Warning message displayed in status bar when path counts differ between panels
+- Right-click on original panel and select **"Show Missing Paths..."** to see a list of all missing paths
+- Helps identify when paths are accidentally lost during sorting or editing
+
+**Resizable Panels (New in 3.9.0):**
+- Drag the splitter between the Original and Working panels to resize panel widths
+- Minimum panel size prevents panels from becoming too small
+
+**Position/Size Persistence (New in 3.9.0):**
+- Form position, size, and panel width are saved when closing
+- Settings restored when reopening the tool
+- Form stays within screen bounds even if monitor configuration changes
+
 **Backup System:**
 - **Auto-backup**: Automatically creates backup before applying changes (configurable checkbox)
 - **Manual backup**: Create named backups at any time with "Create Backup" button
@@ -1746,7 +1777,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 #### Usage
 
-1. Open **Tools > DDevExtensions > Library Path Sorter...**
+1. Open **Tools > Library Path Sorter...**
 2. Select **Path Type** (e.g., Search Path) and **Platform** (e.g., Win32)
 3. Original paths appear in left panel, sorted copy in right panel
 4. Edit working panel:
