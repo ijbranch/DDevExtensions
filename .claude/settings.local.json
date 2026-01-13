@@ -57,7 +57,14 @@
       "Bash(reg query \"HKCU\\\\Software\\\\Embarcadero\\\\BDS\")",
       "Bash(reg query \"HKCU\\\\Software\\\\Embarcadero\\\\BDS\\\\37.0\\\\Experts\")",
       "Bash(dumpbin:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" status)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" diff --stat)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" log -3 --oneline)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" add Code/DDevExtensions/Bin/Changes.txt Code/DDevExtensions/Bin/DDevExtensionsD130.dll Code/DDevExtensions/D_D130/DDevExtensions.dpr Code/DDevExtensions/D_D130/DDevExtensions.dproj Code/DDevExtensions/D_D130/DDevExtensions.res Code/DDevExtensions/Source/DelphiExtension.inc Code/DDevExtensions/Source/RegisterPlugins.pas Code/DDevExtensions/Source/version.inc Code/DDevExtensions/Source/LibraryPathSorter/ Help.md README.md enhancements.txt)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" status --short)",
+      "Bash(git -C \"D:\\\\DDevExtensions\" commit -m \"$\\(cat <<''EOF''\nVersion 3.8.0 - Library Path Sorter feature.\n\nNew feature to manage and organize Delphi IDE library paths:\n- Dual-panel interface: read-only original paths and editable working panel\n- Support for all path types \\(Search Path, Browsing Path, Debug DCU Path, etc.\\)\n- Support for all platforms \\(Win32, Win64, etc.\\)\n- Sort paths alphabetically with one click\n- Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop\n- Delete unwanted entries from working panel\n- Duplicate path detection with red bold highlighting\n- Cross-panel highlighting: click working entry to highlight matches in original\n- Automatic backup before applying changes \\(configurable\\)\n- Backup history with restore and delete capabilities\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"D:\\\\DDevExtensions\" log -1 --stat)"
     ]
   }
 }

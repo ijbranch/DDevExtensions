@@ -27,7 +27,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     Left = 0
     Top = 0
     Width = 950
-    Height = 49
+    Height = 70
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
@@ -50,6 +50,17 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       Top = 16
       Width = 3
       Height = 13
+    end
+    object lblCaution: TLabel
+      Left = 12
+      Top = 44
+      Width = 930
+      Height = 13
+      AutoSize = False
+      Caption = 'CAUTION: Path order affects compilation. First matching unit wins. RTL/VCL paths should come first, then vendors, then custom paths.'
+      Font.Color = clMaroon
+      Font.Style = [fsBold]
+      ParentFont = False
     end
     object cboPathType: TComboBox
       Left = 72
@@ -186,6 +197,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
         Height = 235
         Align = alClient
         ItemHeight = 13
+        PopupMenu = pmWorking
         TabOrder = 0
         OnClick = lstWorkingClick
         OnDragDrop = lstWorkingDragDrop
@@ -244,17 +256,6 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
           ParentShowHint = False
           ShowHint = True
           OnClick = btnWorkingBottomClick
-        end
-        object btnDeleteEntry: TSpeedButton
-          Left = 4
-          Top = 134
-          Width = 26
-          Height = 26
-          Hint = 'Delete Selected Entry'
-          Caption = 'X'
-          ParentShowHint = False
-          ShowHint = True
-          OnClick = btnDeleteEntryClick
         end
       end
       object btnApply: TButton
@@ -337,6 +338,14 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       TabOrder = 0
       ViewStyle = vsReport
       OnSelectItem = lvBackupsSelectItem
+    end
+  end
+  object pmWorking: TPopupMenu
+    Left = 500
+    Top = 200
+    object mnuDeleteEntry: TMenuItem
+      Caption = 'Delete Entry'
+      OnClick = mnuDeleteEntryClick
     end
   end
 end

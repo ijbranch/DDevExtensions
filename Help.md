@@ -1724,7 +1724,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 - **Sort Alphabetically (A-Z button)**: One-click alphabetical sorting
 - **Move Up/Down/Top/Bottom**: Reorder selected entry using buttons
 - **Drag and Drop**: Reorder entries by dragging with mouse
-- **Delete Entry (X button)**: Remove selected path from working panel
+- **Delete Entry (right-click menu)**: Right-click any entry and select "Delete Entry" to remove it
 - **Copy Original (>> button)**: Reset working panel to original order
 
 **Duplicate Detection:**
@@ -1753,7 +1753,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
    - Use A-Z to sort alphabetically
    - Use >> to copy original order
    - Drag or use buttons to reorder
-   - Click X to delete unwanted entries
+   - Right-click and select "Delete Entry" to remove unwanted entries
 5. Review for duplicates (shown in red)
 6. Click **Apply Working Panel to Registry** to save changes
 7. Confirm the warning dialog

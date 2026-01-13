@@ -63,6 +63,7 @@ Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize D
 - Support for all platforms (Win32, Win64, etc.)
 - Dual-panel interface: read-only original paths and editable working panel
 - Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
+- Delete entries via right-click context menu
 - Duplicate path detection with red highlighting
 - Click working panel entry to highlight all matching entries in original panel
 - Automatic backup before applying changes
@@ -689,9 +690,9 @@ Provides a tool to manage and organize Delphi IDE library paths with backup/rest
 - **All platforms**: Win32, Win64, and any other platforms configured in the IDE
 - **Sort alphabetically**: One-click alphabetical sorting of paths
 - **Manual reordering**: Move entries up/down/top/bottom using buttons or drag-and-drop
+- **Delete entries**: Right-click any entry and select "Delete Entry" to remove it
 - **Duplicate detection**: Duplicate paths highlighted in red bold text for easy identification
 - **Cross-panel highlighting**: Click an entry in working panel to highlight all matching entries in original panel (confirms duplicates existed in original)
-- **Delete entries**: Remove unwanted paths from the working panel
 - **Automatic backup**: Creates backup before applying changes (configurable)
 - **Backup history**: View, restore, or delete previous backups
 - **Manual backup**: Create named backups at any time
