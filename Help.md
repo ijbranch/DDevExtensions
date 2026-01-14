@@ -39,7 +39,7 @@ Version 3.9.0 | Comprehensive Feature Reference
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
-| Library Path Sorter | ON | Tools menu (below Build Statistics) |
+| Library Path Sorter | ON | Tools menu (below Build Tools...) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -1699,7 +1699,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 **Default:** ON
 
-**Location:** Tools > Library Path Sorter... (below Build Statistics)
+**Location:** Tools > Library Path Sorter... (below Build Tools...)
 
 #### Features
 
