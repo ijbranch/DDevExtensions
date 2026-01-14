@@ -364,6 +364,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
             <Form>FrameOptionPageCodeQuality</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Source\LibraryPathSorter\LibraryPathSorter.pas"/>
+        <DCCReference Include="..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas">
+            <Form>FormLibraryPathSorter</Form>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

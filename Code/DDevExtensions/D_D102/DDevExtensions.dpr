@@ -131,7 +131,9 @@ uses
   FrmeOptionPageDfmPas in '..\Source\DfmPasConsistency\FrmeOptionPageDfmPas.pas' {FrameOptionPageDfmPas: TFrame},
   CodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\CodeQualityAnalyzer.pas',
   FrmCodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas' {FormCodeQualityAnalyzer},
-  FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame};
+  FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame},
+  LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
+  FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;
