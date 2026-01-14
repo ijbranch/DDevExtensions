@@ -68,11 +68,11 @@ Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize D
 - Click working panel entry to highlight all matching entries in original panel
 - Automatic backup before applying changes
 - Backup history with restore and delete capabilities
-- Access via Tools → "Library Path Sorter..." (below Build Statistics)
+- Access via Tools → "Library Path Sorter..." (below Build Tools...)
 
 Version 3.9.1 enhances the **Library Path Sorter** with path loss detection and diagnostics:
 
-- Moved to Tools menu (below Build Statistics) for easier access
+- Moved to Tools menu (below Build Tools...) for easier access
 - Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
 - Deleted entry counter tracks manual deletions and compares against actual difference
 - Mismatch warning if deleted count differs from expected (indicates unexpected path loss)
@@ -724,7 +724,7 @@ Provides a tool to manage and organize Delphi IDE library paths with backup/rest
 - Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
 - **For the sorted/reworked paths to take effect, you must close and reopen Delphi**
 
-Access via Tools → "Library Path Sorter..." (below Build Statistics) when enabled.
+Access via Tools → "Library Path Sorter..." (below Build Tools...) when enabled.
 
 **New in 3.4.1 - Empty Event Handler Detector** (default: on)
 Finds event handlers that have empty bodies (just begin/end with no code). These are typically leftover from double-clicking components in the form designer. Features include:
