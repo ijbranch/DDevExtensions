@@ -375,5 +375,9 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       Caption = 'Show Missing Paths...'
       OnClick = mnuShowMissingClick
     end
+    object mnuShowDiagnostic: TMenuItem
+      Caption = 'Show Diagnostic Info...'
+      OnClick = mnuShowDiagnosticClick
+    end
   end
 end

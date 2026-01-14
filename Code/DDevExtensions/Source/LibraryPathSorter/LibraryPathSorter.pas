@@ -395,34 +395,110 @@ begin
     PathType.ToRegistryValueName, APaths );
 end;
 
+procedure QuickSortPaths( var Arr: TArray<string>; Left, Right: Integer;
+  CaseInsensitive: Boolean );
+var
+  I, J: Integer;
+  Pivot, Temp: string;
+begin
+  if Left >= Right then
+    Exit;
+
+  // Choose middle element as pivot
+  Pivot := Arr[( Left + Right ) div 2];
+  I := Left;
+  J := Right;
+
+  while I <= J do
+  begin
+    if CaseInsensitive then
+    begin
+      while CompareText( Arr[I], Pivot ) < 0 do
+        Inc( I );
+      while CompareText( Arr[J], Pivot ) > 0 do
+        Dec( J );
+    end
+    else
+    begin
+      while CompareStr( Arr[I], Pivot ) < 0 do
+        Inc( I );
+      while CompareStr( Arr[J], Pivot ) > 0 do
+        Dec( J );
+    end;
+
+    if I <= J then
+    begin
+      // Swap
+      Temp := Arr[I];
+      Arr[I] := Arr[J];
+      Arr[J] := Temp;
+      Inc( I );
+      Dec( J );
+    end;
+  end;
+
+  // Recursively sort partitions
+  if Left < J then
+    QuickSortPaths( Arr, Left, J, CaseInsensitive );
+  if I < Right then
+    QuickSortPaths( Arr, I, Right, CaseInsensitive );
+end;
+
 function TLibraryPathHandler.SortPaths( const APaths: string;
   CaseInsensitive: Boolean ): string;
 var
   PathList: TStringList;
-  OriginalCount: Integer;
+  SortedArray: TArray<string>;
+  I, EmptyCount, OriginalCount: Integer;
 begin
   PathList := TStringList.Create;
   try
+    // Split paths - do NOT delete duplicates (pass False)
     SplitPaths( PathList, APaths, False );
     OriginalCount := PathList.Count;
 
-    // Remove empty entries
-    while PathList.IndexOf( '' ) >= 0 do
-      PathList.Delete( PathList.IndexOf( '' ) );
-
-    // Ensure duplicates are allowed (important!)
-    PathList.Duplicates := dupAccept;
-    PathList.CaseSensitive := not CaseInsensitive;
-
-    // Sort without using the Sorted property (which can affect duplicates)
-    PathList.Sort;
-
-    Result := ConcatPaths( PathList, ';' );
-
-    // Debug: if count changed unexpectedly, log it
-    if PathList.Count < ( OriginalCount - ( OriginalCount - PathList.Count ) ) then
+    // Count and remove empty entries
+    EmptyCount := 0;
+    for I := PathList.Count - 1 downto 0 do
     begin
-      // Count changed for reasons other than empty entry removal
+      if Trim( PathList[I] ) = '' then
+      begin
+        PathList.Delete( I );
+        Inc( EmptyCount );
+      end;
+    end;
+
+    // Copy to array for safe sorting (avoids TStringList quirks)
+    SetLength( SortedArray, PathList.Count );
+    for I := 0 to PathList.Count - 1 do
+      SortedArray[I] := PathList[I];
+
+    // QuickSort - O(n log n) and safe with duplicates
+    if Length( SortedArray ) > 1 then
+      QuickSortPaths( SortedArray, 0, Length( SortedArray ) - 1, CaseInsensitive );
+
+    // Rebuild the list from sorted array
+    PathList.Clear;
+    for I := 0 to Length( SortedArray ) - 1 do
+      PathList.Add( SortedArray[I] );
+
+    // Verify count is correct (original minus empties)
+    if PathList.Count <> ( OriginalCount - EmptyCount ) then
+    begin
+      // Critical error - paths were lost during sort!
+      raise Exception.CreateFmt(
+        'Path count mismatch after sort: Expected %d, got %d',
+        [OriginalCount - EmptyCount, PathList.Count] );
+    end;
+
+    // Concatenate paths - Delphi's native format does NOT use quotes
+    Result := '';
+    for I := 0 to PathList.Count - 1 do
+    begin
+      if I = 0 then
+        Result := PathList[I]
+      else
+        Result := Result + ';' + PathList[I];
     end;
   finally
     PathList.Free;

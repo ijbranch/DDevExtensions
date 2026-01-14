@@ -59,7 +59,9 @@ type
     mnuDeleteEntry: TMenuItem;
     pmCurrent: TPopupMenu;
     mnuShowMissing: TMenuItem;
+    mnuShowDiagnostic: TMenuItem;
     procedure btnCloseClick( Sender: TObject );
+    procedure mnuShowDiagnosticClick( Sender: TObject );
     procedure mnuShowMissingClick( Sender: TObject );
     procedure mnuDeleteEntryClick( Sender: TObject );
     procedure btnApplyClick( Sender: TObject );
@@ -91,6 +93,7 @@ type
     FDragIndex: Integer;
     FOriginalPaths: string;
     FDeletedCount: Integer;
+    FChangesApplied: Boolean;
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
     function IsPathInWorkingPanel( const APath: string ): Boolean;
     procedure UpdatePanelLabels;
@@ -140,6 +143,7 @@ procedure TFormLibraryPathSorter.FormCreate( Sender: TObject );
 begin
   FDragIndex := -1;
   FDeletedCount := 0;
+  FChangesApplied := False;
 
   // Load saved form position and size
   LoadFormSettings;
@@ -170,6 +174,11 @@ procedure TFormLibraryPathSorter.FormClose( Sender: TObject; var Action: TCloseA
 begin
   // Save form position, size, and panel width
   SaveFormSettings;
+
+  // Remind user to restart Delphi if changes were applied
+  if FChangesApplied then
+    ShowMessage( 'Library paths have been updated.' + #13#10 + #13#10 +
+      'For the changes to take effect, you must close and reopen Delphi.' );
 
   FormLibraryPathSorterInstance := nil;
   Action := caFree;
@@ -251,27 +260,51 @@ procedure TFormLibraryPathSorter.LoadWorkingPaths;
 var
   SortedPaths: string;
   PathList: TStringList;
+  OriginalCount: Integer;
 begin
   lstWorking.Items.Clear;
 
   if ( LibraryPathSorterPlugin = nil ) or ( FOriginalPaths = '' ) then
     Exit;
 
-  // Start with alphabetically sorted paths in the working panel
-  SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths( FOriginalPaths, True );
+  OriginalCount := lstCurrent.Items.Count;
 
-  PathList := TStringList.Create;
   try
-    SplitPaths( PathList, SortedPaths, False );
-    lstWorking.Items.Assign( PathList );
-  finally
-    PathList.Free;
+    // Start with alphabetically sorted paths in the working panel
+    SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths( FOriginalPaths, True );
+
+    PathList := TStringList.Create;
+    try
+      SplitPaths( PathList, SortedPaths, False );
+
+      // Verify no paths were lost during sort
+      if PathList.Count <> OriginalCount then
+      begin
+        // Sort lost paths - fall back to unsorted copy
+        UpdateStatus( Format( 'WARNING: Sort lost paths (%d -> %d). Using unsorted copy.',
+          [OriginalCount, PathList.Count] ) );
+        lstWorking.Items.Assign( lstCurrent.Items );
+      end
+      else
+      begin
+        lstWorking.Items.Assign( PathList );
+      end;
+    finally
+      PathList.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // On any error, fall back to unsorted copy
+      UpdateStatus( 'Error sorting paths: ' + E.Message );
+      lstWorking.Items.Assign( lstCurrent.Items );
+    end;
   end;
 
   // Refresh original panel to update missing path highlighting
   lstCurrent.Invalidate;
 
-  // Check for count mismatch
+  // Final check for count mismatch (should not happen now)
   if lstWorking.Items.Count <> lstCurrent.Items.Count then
     UpdateStatus( Format( 'WARNING: Original has %d paths, Working has %d!',
       [lstCurrent.Items.Count, lstWorking.Items.Count] ) );
@@ -368,14 +401,39 @@ begin
 end;
 
 function TFormLibraryPathSorter.GetPathsFromListBox( AListBox: TListBox ): string;
+var
+  I: Integer;
 begin
-  Result := ConcatPaths( AListBox.Items, ';' );
+  // Delphi's native format does NOT use quotes - just semicolon-separated paths
+  Result := '';
+  for I := 0 to AListBox.Items.Count - 1 do
+  begin
+    if I = 0 then
+      Result := AListBox.Items[I]
+    else
+      Result := Result + ';' + AListBox.Items[I];
+  end;
 end;
 
 procedure TFormLibraryPathSorter.ApplyPaths( const APaths: string );
+var
+  VerifyPaths: string;
+  OriginalSemicolons, NewSemicolons, VerifySemicolons, I: Integer;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
+
+  // Count semicolons in what we're about to write
+  NewSemicolons := 0;
+  for I := 1 to Length( APaths ) do
+    if APaths[I] = ';' then
+      Inc( NewSemicolons );
+
+  // Count semicolons in original
+  OriginalSemicolons := 0;
+  for I := 1 to Length( FOriginalPaths ) do
+    if FOriginalPaths[I] = ';' then
+      Inc( OriginalSemicolons );
 
   // Create backup if auto-backup is enabled
   if chkAutoBackup.Checked and ( FOriginalPaths <> '' ) then
@@ -392,10 +450,34 @@ begin
   LibraryPathSorterPlugin.PathHandler.WritePaths(
     GetSelectedPathType, GetSelectedPlatform, APaths );
 
+  // VERIFY: Read back and compare
+  VerifyPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+    GetSelectedPathType, GetSelectedPlatform );
+
+  VerifySemicolons := 0;
+  for I := 1 to Length( VerifyPaths ) do
+    if VerifyPaths[I] = ';' then
+      Inc( VerifySemicolons );
+
+  // Check for data loss
+  if VerifySemicolons <> NewSemicolons then
+  begin
+    ShowMessage( Format(
+      'WARNING: Registry verification failed!' + #13#10#13#10 +
+      'Original paths: %d (semicolons: %d)' + #13#10 +
+      'Attempted to write: %d paths (semicolons: %d)' + #13#10 +
+      'Registry now contains: %d paths (semicolons: %d)' + #13#10#13#10 +
+      'DATA MAY HAVE BEEN LOST! Check your backup.',
+      [OriginalSemicolons + 1, OriginalSemicolons,
+       NewSemicolons + 1, NewSemicolons,
+       VerifySemicolons + 1, VerifySemicolons] ) );
+  end;
+
   // Reload
   LoadCurrentPaths;
   LoadBackupHistory;
 
+  FChangesApplied := True;
   UpdateStatus( 'Paths saved successfully' );
 end;
 
@@ -441,12 +523,12 @@ begin
   if ( Index < 0 ) or ( Index >= AListBox.Items.Count ) then
     Exit;
 
-  CurrentPath := AListBox.Items[Index];
+  CurrentPath := Trim( AListBox.Items[Index] );
 
-  // Check if this path appears elsewhere in the list
+  // Check if this path appears elsewhere in the list (case-insensitive, trimmed)
   for I := 0 to AListBox.Items.Count - 1 do
   begin
-    if ( I <> Index ) and SameText( AListBox.Items[I], CurrentPath ) then
+    if ( I <> Index ) and SameText( Trim( AListBox.Items[I] ), CurrentPath ) then
     begin
       Result := True;
       Exit;
@@ -461,52 +543,66 @@ var
   ItemText: string;
   IsDuplicate: Boolean;
 begin
-  ListBox := Control as TListBox;
-
-  if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
+  if not ( Control is TListBox ) then
     Exit;
 
-  ItemText := ListBox.Items[Index];
-  IsDuplicate := IsDuplicatePath( ListBox, Index );
+  ListBox := TListBox( Control );
 
-  // Set background
-  if odSelected in State then
-    ListBox.Canvas.Brush.Color := clHighlight
-  else
-    ListBox.Canvas.Brush.Color := clWindow;
+  // Safety checks
+  if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
+    Exit;
+  if not ListBox.HandleAllocated then
+    Exit;
 
-  ListBox.Canvas.FillRect( Rect );
+  try
+    ItemText := ListBox.Items[Index];
+    IsDuplicate := IsDuplicatePath( ListBox, Index );
 
-  // Set text color
-  if odSelected in State then
-    ListBox.Canvas.Font.Color := clHighlightText
-  else if IsDuplicate then
-    ListBox.Canvas.Font.Color := clRed
-  else
-    ListBox.Canvas.Font.Color := clWindowText;
+    // Set background
+    if odSelected in State then
+      ListBox.Canvas.Brush.Color := clHighlight
+    else
+      ListBox.Canvas.Brush.Color := clWindow;
 
-  // Make duplicates bold
-  if IsDuplicate then
-    ListBox.Canvas.Font.Style := [fsBold]
-  else
-    ListBox.Canvas.Font.Style := [];
+    ListBox.Canvas.FillRect( Rect );
 
-  // Draw the text
-  ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
+    // Set text color
+    if odSelected in State then
+      ListBox.Canvas.Font.Color := clHighlightText
+    else if IsDuplicate then
+      ListBox.Canvas.Font.Color := clRed
+    else
+      ListBox.Canvas.Font.Color := clWindowText;
 
-  // Draw focus rectangle if focused
-  if odFocused in State then
-    ListBox.Canvas.DrawFocusRect( Rect );
+    // Make duplicates bold
+    if IsDuplicate then
+      ListBox.Canvas.Font.Style := [fsBold]
+    else
+      ListBox.Canvas.Font.Style := [];
+
+    // Draw the text
+    ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
+
+    // Draw focus rectangle if focused
+    if odFocused in State then
+      ListBox.Canvas.DrawFocusRect( Rect );
+  except
+    // Silently ignore drawing errors to prevent cascading failures
+  end;
 end;
 
 function TFormLibraryPathSorter.IsPathInWorkingPanel( const APath: string ): Boolean;
 var
   I: Integer;
+  TrimmedPath: string;
 begin
   Result := False;
+  TrimmedPath := Trim( APath );
+
   for I := 0 to lstWorking.Items.Count - 1 do
   begin
-    if SameText( lstWorking.Items[I], APath ) then
+    // Compare trimmed versions to handle any whitespace differences
+    if SameText( Trim( lstWorking.Items[I] ), TrimmedPath ) then
     begin
       Result := True;
       Exit;
@@ -518,9 +614,9 @@ procedure TFormLibraryPathSorter.UpdatePanelLabels;
 var
   Difference: Integer;
 begin
-  lblCurrent.Caption := Format( '  Original Paths (Read-Only - Current Registry Order): %d',
+  lblCurrent.Caption := Format( '  Original Paths (Pink = not in Working): %d',
     [lstCurrent.Items.Count] );
-  lblWorking.Caption := Format( '  Working Panel (Editable - Arrange Then Apply): %d',
+  lblWorking.Caption := Format( '  Working Panel (Red = duplicate): %d',
     [lstWorking.Items.Count] );
 
   // Update deleted count label and compare with actual difference
@@ -546,44 +642,54 @@ var
   ItemText: string;
   IsMissing: Boolean;
 begin
-  ListBox := Control as TListBox;
-
-  if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
+  if not ( Control is TListBox ) then
     Exit;
 
-  ItemText := ListBox.Items[Index];
-  IsMissing := not IsPathInWorkingPanel( ItemText );
+  ListBox := TListBox( Control );
 
-  // Set background
-  if odSelected in State then
-    ListBox.Canvas.Brush.Color := clHighlight
-  else if IsMissing then
-    ListBox.Canvas.Brush.Color := $CCCCFF  // Light red/pink background for missing
-  else
-    ListBox.Canvas.Brush.Color := clWindow;
+  // Safety checks
+  if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
+    Exit;
+  if not ListBox.HandleAllocated then
+    Exit;
 
-  ListBox.Canvas.FillRect( Rect );
+  try
+    ItemText := ListBox.Items[Index];
+    IsMissing := not IsPathInWorkingPanel( ItemText );
 
-  // Set text color
-  if odSelected in State then
-    ListBox.Canvas.Font.Color := clHighlightText
-  else if IsMissing then
-    ListBox.Canvas.Font.Color := clMaroon
-  else
-    ListBox.Canvas.Font.Color := clWindowText;
+    // Set background
+    if odSelected in State then
+      ListBox.Canvas.Brush.Color := clHighlight
+    else if IsMissing then
+      ListBox.Canvas.Brush.Color := $CCCCFF  // Light red/pink background for missing
+    else
+      ListBox.Canvas.Brush.Color := clWindow;
 
-  // Make missing items bold
-  if IsMissing then
-    ListBox.Canvas.Font.Style := [fsBold]
-  else
-    ListBox.Canvas.Font.Style := [];
+    ListBox.Canvas.FillRect( Rect );
 
-  // Draw the text
-  ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
+    // Set text color
+    if odSelected in State then
+      ListBox.Canvas.Font.Color := clHighlightText
+    else if IsMissing then
+      ListBox.Canvas.Font.Color := clMaroon
+    else
+      ListBox.Canvas.Font.Color := clWindowText;
 
-  // Draw focus rectangle if focused
-  if odFocused in State then
-    ListBox.Canvas.DrawFocusRect( Rect );
+    // Make missing items bold
+    if IsMissing then
+      ListBox.Canvas.Font.Style := [fsBold]
+    else
+      ListBox.Canvas.Font.Style := [];
+
+    // Draw the text
+    ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
+
+    // Draw focus rectangle if focused
+    if odFocused in State then
+      ListBox.Canvas.DrawFocusRect( Rect );
+  except
+    // Silently ignore drawing errors to prevent cascading failures
+  end;
 end;
 
 procedure TFormLibraryPathSorter.lstWorkingMouseDown( Sender: TObject;
@@ -679,33 +785,61 @@ var
   SortedPaths: string;
   PathList: TStringList;
   OriginalCount: Integer;
+  BackupItems: TStringList;
 begin
   if lstWorking.Items.Count = 0 then
     Exit;
 
   OriginalCount := lstWorking.Items.Count;
 
-  SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths(
-    GetPathsFromListBox( lstWorking ), True );
-
-  PathList := TStringList.Create;
+  // Keep a backup of items in case sort fails
+  BackupItems := TStringList.Create;
   try
-    SplitPaths( PathList, SortedPaths, False );
-    lstWorking.Items.Assign( PathList );
+    BackupItems.Assign( lstWorking.Items );
+
+    try
+      SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths(
+        GetPathsFromListBox( lstWorking ), True );
+
+      PathList := TStringList.Create;
+      try
+        SplitPaths( PathList, SortedPaths, False );
+
+        // Verify no paths were lost
+        if PathList.Count <> OriginalCount then
+        begin
+          // Restore from backup and show error
+          lstWorking.Items.Assign( BackupItems );
+          ShowMessage( Format(
+            'ERROR: Sort would have lost %d paths!' + #13#10 +
+            'Original: %d, After sort: %d' + #13#10 + #13#10 +
+            'Sort has been cancelled and working panel restored.',
+            [OriginalCount - PathList.Count, OriginalCount, PathList.Count] ) );
+          Exit;
+        end;
+
+        lstWorking.Items.Assign( PathList );
+      finally
+        PathList.Free;
+      end;
+    except
+      on E: Exception do
+      begin
+        // Restore from backup on any error
+        lstWorking.Items.Assign( BackupItems );
+        ShowMessage( 'Error during sort: ' + E.Message + #13#10 +
+          'Working panel has been restored.' );
+        Exit;
+      end;
+    end;
   finally
-    PathList.Free;
+    BackupItems.Free;
   end;
 
   lstCurrent.Invalidate;  // Refresh to update missing path highlighting
   UpdatePanelLabels;
   UpdateButtonStates;
-
-  // Check if any paths were lost during sort
-  if lstWorking.Items.Count <> OriginalCount then
-    UpdateStatus( Format( 'WARNING: Sort changed count from %d to %d!',
-      [OriginalCount, lstWorking.Items.Count] ) )
-  else
-    UpdateStatus( 'Working panel sorted alphabetically' );
+  UpdateStatus( 'Working panel sorted alphabetically' );
 end;
 
 procedure TFormLibraryPathSorter.btnCloseClick( Sender: TObject );
@@ -714,9 +848,19 @@ begin
 end;
 
 procedure TFormLibraryPathSorter.mnuDeleteEntryClick( Sender: TObject );
+var
+  PathToDelete: string;
 begin
   if lstWorking.ItemIndex >= 0 then
   begin
+    PathToDelete := lstWorking.Items[lstWorking.ItemIndex];
+
+    if MessageDlg(
+         'Delete this path from working panel?' + #13#10 + #13#10 +
+         PathToDelete,
+         mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+      Exit;
+
     lstWorking.Items.Delete( lstWorking.ItemIndex );
     Inc( FDeletedCount );
     lstCurrent.Invalidate;  // Refresh to update missing path highlighting
@@ -728,9 +872,10 @@ end;
 
 procedure TFormLibraryPathSorter.mnuShowMissingClick( Sender: TObject );
 var
-  I: Integer;
+  I, J: Integer;
   MissingPaths: TStringList;
-  Msg: string;
+  OrigPath, WorkPath: string;
+  Msg, DetailMsg: string;
 begin
   MissingPaths := TStringList.Create;
   try
@@ -747,17 +892,112 @@ begin
       Msg := Format( '%d path(s) missing from working panel:'#13#10#13#10, [MissingPaths.Count] );
       for I := 0 to MissingPaths.Count - 1 do
       begin
-        Msg := Msg + MissingPaths[I] + #13#10;
-        if I >= 19 then  // Limit display to 20 items
+        OrigPath := MissingPaths[I];
+        Msg := Msg + OrigPath + #13#10;
+
+        // Try to find a close match to explain why it doesn't match
+        for J := 0 to lstWorking.Items.Count - 1 do
         begin
-          Msg := Msg + Format( '... and %d more', [MissingPaths.Count - 20] );
+          WorkPath := lstWorking.Items[J];
+          // Check if paths differ only by whitespace
+          if SameText( Trim( OrigPath ), Trim( WorkPath ) ) and
+             not SameText( OrigPath, WorkPath ) then
+          begin
+            Msg := Msg + '  ^ Has whitespace difference with: ' + WorkPath + #13#10;
+            Break;
+          end;
+          // Check if paths differ only in length (possible truncation)
+          if ( Length( OrigPath ) > 5 ) and ( Length( WorkPath ) > 5 ) and
+             ( Copy( OrigPath, 1, Length( WorkPath ) ) = WorkPath ) then
+          begin
+            Msg := Msg + '  ^ Partial match (truncated?): ' + WorkPath + #13#10;
+            Break;
+          end;
+        end;
+
+        if I >= 9 then  // Limit display to 10 items with details
+        begin
+          Msg := Msg + Format( '... and %d more', [MissingPaths.Count - 10] );
           Break;
         end;
       end;
-      ShowMessage( Msg );
+
+      // Add summary information
+      DetailMsg := #13#10#13#10 + 'DEBUG INFO:' + #13#10 +
+        Format( 'Original panel: %d items', [lstCurrent.Items.Count] ) + #13#10 +
+        Format( 'Working panel: %d items', [lstWorking.Items.Count] ) + #13#10 +
+        Format( 'Missing count: %d', [MissingPaths.Count] );
+
+      ShowMessage( Msg + DetailMsg );
     end;
   finally
     MissingPaths.Free;
+  end;
+end;
+
+procedure TFormLibraryPathSorter.mnuShowDiagnosticClick( Sender: TObject );
+var
+  RawPaths: string;
+  ParsedList: TStringList;
+  SemicolonCount, I, MissingCount: Integer;
+  Msg: string;
+begin
+  if LibraryPathSorterPlugin = nil then
+    Exit;
+
+  // Read raw registry value
+  RawPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+    GetSelectedPathType, GetSelectedPlatform );
+
+  // Count semicolons in raw string
+  SemicolonCount := 0;
+  for I := 1 to Length( RawPaths ) do
+    if RawPaths[I] = ';' then
+      Inc( SemicolonCount );
+
+  // Count missing paths
+  MissingCount := 0;
+  for I := 0 to lstCurrent.Items.Count - 1 do
+    if not IsPathInWorkingPanel( lstCurrent.Items[I] ) then
+      Inc( MissingCount );
+
+  // Parse paths
+  ParsedList := TStringList.Create;
+  try
+    SplitPaths( ParsedList, RawPaths, False );
+
+    Msg := 'DIAGNOSTIC INFO' + #13#10 +
+           '===============' + #13#10#13#10 +
+           Format( 'Raw registry string length: %d chars', [Length( RawPaths )] ) + #13#10 +
+           Format( 'Semicolons in raw string: %d', [SemicolonCount] ) + #13#10 +
+           Format( 'Expected path count: %d', [SemicolonCount + 1] ) + #13#10 +
+           Format( 'Parsed path count: %d', [ParsedList.Count] ) + #13#10 +
+           Format( 'Original panel count: %d', [lstCurrent.Items.Count] ) + #13#10 +
+           Format( 'Working panel count: %d', [lstWorking.Items.Count] ) + #13#10 +
+           Format( 'Paths in Original not in Working: %d', [MissingCount] ) + #13#10#13#10;
+
+    if ParsedList.Count <> lstCurrent.Items.Count then
+      Msg := Msg + 'WARNING: Parsed count differs from Original panel!' + #13#10;
+
+    if lstWorking.Items.Count <> lstCurrent.Items.Count then
+      Msg := Msg + Format( 'WARNING: Working panel has %d fewer paths!',
+        [lstCurrent.Items.Count - lstWorking.Items.Count] ) + #13#10;
+
+    if MissingCount > 0 then
+      Msg := Msg + Format( 'WARNING: %d paths in Original are not matched in Working!', [MissingCount] ) + #13#10 +
+             '(Use "Show Missing Paths" for details)' + #13#10;
+
+    // Show first few and last few chars of raw string
+    Msg := Msg + #13#10 + 'Raw string preview:' + #13#10;
+    if Length( RawPaths ) > 200 then
+      Msg := Msg + Copy( RawPaths, 1, 100 ) + #13#10 + '...' + #13#10 +
+             Copy( RawPaths, Length( RawPaths ) - 99, 100 )
+    else
+      Msg := Msg + RawPaths;
+
+    ShowMessage( Msg );
+  finally
+    ParsedList.Free;
   end;
 end;
 
@@ -789,6 +1029,8 @@ end;
 procedure TFormLibraryPathSorter.btnApplyClick( Sender: TObject );
 var
   NewPaths: string;
+  OriginalCount, WorkingCount, Difference: Integer;
+  WarningMsg: string;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -807,13 +1049,56 @@ begin
     Exit;
   end;
 
-  if MessageDlg(
-       'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
+  // Safety check: verify path counts
+  OriginalCount := lstCurrent.Items.Count;
+  WorkingCount := lstWorking.Items.Count;
+  Difference := OriginalCount - WorkingCount;
+
+  WarningMsg := 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
        'WARNING: Path order affects unit resolution.' + #13#10 +
        'The first matching unit found wins.' + #13#10 + #13#10 +
-       'A backup will be created first.',
-       mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+       'A backup will be created first.';
+
+  // Add extra warning if paths are being lost
+  if Difference > 0 then
+  begin
+    if Difference <> FDeletedCount then
+    begin
+      // Paths disappeared without being explicitly deleted - this is dangerous!
+      if MessageDlg(
+           Format( 'CRITICAL WARNING!' + #13#10 + #13#10 +
+                   'The working panel has %d fewer paths than the original.' + #13#10 +
+                   'Only %d paths were explicitly deleted.' + #13#10 +
+                   '%d paths may have been LOST!' + #13#10 + #13#10 +
+                   'It is STRONGLY recommended to click "Copy from Original" ' +
+                   'to restore all paths before applying.' + #13#10 + #13#10 +
+                   'Do you REALLY want to continue anyway?',
+                   [Difference, FDeletedCount, Difference - FDeletedCount] ),
+           mtError, [mbYes, mbNo], 0 ) <> mrYes then
+        Exit;
+    end
+    else
+    begin
+      // User explicitly deleted these paths
+      WarningMsg := Format( 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
+           'You have deleted %d path(s).' + #13#10 +
+           'Original: %d paths, Working: %d paths' + #13#10 + #13#10 +
+           'WARNING: Path order affects unit resolution.' + #13#10 +
+           'The first matching unit found wins.' + #13#10 + #13#10 +
+           'A backup will be created first.',
+           [Difference, OriginalCount, WorkingCount] );
+    end;
+  end;
+
+  if MessageDlg( WarningMsg, mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
     Exit;
+
+  // Show what we're about to write
+  ShowMessage( Format(
+    'About to write %d paths to registry.' + #13#10 +
+    'String length: %d characters' + #13#10#13#10 +
+    'Click OK to proceed.',
+    [lstWorking.Items.Count, Length( NewPaths )] ) );
 
   ApplyPaths( NewPaths );
   ShowMessage( 'Library paths have been updated.' );

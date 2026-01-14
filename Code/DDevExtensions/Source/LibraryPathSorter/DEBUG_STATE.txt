@@ -1,0 +1,51 @@
+Library Path Sorter Debug State - 2026-01-14
+=============================================
+
+STATUS: AWAITING TEST AFTER PC RESTART
+
+ISSUE (RESOLVED in 3.9.1):
+Paths appeared greyed out (invalid) in Delphi's Library Path dialog after saving
+with the Sorter, even though the paths existed on disk.
+
+ROOT CAUSE:
+Delphi's native path format does NOT use quotes at all. It stores paths as simple
+semicolon-separated values. When our code added quotes around paths with spaces,
+Delphi treated the quotes as literal characters in the path name, making them
+appear invalid (because "C:\Program Files\..." doesn't exist as a path name).
+
+FIX APPLIED (version 3.9.1):
+1. Removed all path quoting logic from GetPathsFromListBox (FrmLibraryPathSorter.pas:396-409)
+2. Removed all path quoting logic from SortPaths (LibraryPathSorter.pas:495-503)
+3. Paths are now saved as simple semicolon-separated values, matching Delphi's format
+4. Added FChangesApplied flag to track when changes are applied
+5. Added reminder dialog when closing the form after changes have been applied
+
+FILES MODIFIED:
+- D:\DDevExtensions\Code\DDevExtensions\Source\LibraryPathSorter\FrmLibraryPathSorter.pas
+  - Removed quoting in GetPathsFromListBox
+  - Added FChangesApplied field
+  - Added reminder message in FormClose
+- D:\DDevExtensions\Code\DDevExtensions\Source\LibraryPathSorter\LibraryPathSorter.pas
+  - Removed quoting in SortPaths
+  - Removed unused Path variable
+- D:\DDevExtensions\Code\DDevExtensions\Bin\Changes.txt
+- D:\DDevExtensions\Code\DDevExtensions\Source\version.inc (stays at 3.9.1)
+- D:\DDevExtensions\README.md
+- D:\DDevExtensions\Help.md
+
+DOCUMENTATION UPDATED:
+- Changes.txt: Added greyed-out fix and restart reminder feature
+- README.md: Added restart note in Important Notes, added 3.9.1 feature list
+- Help.md: Added Restart Reminder section, added restart note to Important Notes
+
+NEXT STEPS AFTER PC RESTART:
+1. Rebuild DDevExtensions DLL in Delphi
+2. Restart Delphi to load new DLL
+3. Open Library Path Sorter (Tools > Library Path Sorter...)
+4. Sort paths alphabetically
+5. Click Apply
+6. Verify reminder dialog appears when closing the form
+7. Close and reopen Delphi
+8. Open Delphi's Options > Library > click "..." on Library path
+9. Verify ALL paths appear in black (valid), NOT greyed out
+10. Paths with spaces (e.g., "C:\Program Files\...") should work correctly
