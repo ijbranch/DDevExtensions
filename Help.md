@@ -1693,7 +1693,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 ---
 
-### Library Path Sorter (New in 3.8.0, Enhanced in 3.9.0)
+### Library Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1)
 
 **Purpose:** Manages and organizes Delphi IDE library paths with sorting, editing, and backup/restore capabilities.
 
@@ -1763,6 +1763,10 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 - Settings restored when reopening the tool
 - Form stays within screen bounds even if monitor configuration changes
 
+**Restart Reminder (New in 3.9.1):**
+- When closing the form after applying changes, a reminder dialog is shown
+- Reminds user that Delphi must be restarted for the path changes to take effect
+
 **Backup System:**
 - **Auto-backup**: Automatically creates backup before applying changes (configurable checkbox)
 - **Manual backup**: Create named backups at any time with "Create Backup" button
@@ -1791,6 +1795,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 #### Important Notes
 
+- **Restart required**: For path changes to take effect, you must close and reopen Delphi
 - **Path order matters**: The first matching unit found wins during compilation
 - **RTL/VCL paths**: Delphi's core paths should typically come first
 - **Vendor paths**: Third-party component paths usually come after RTL/VCL

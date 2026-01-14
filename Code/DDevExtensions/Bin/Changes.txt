@@ -1,3 +1,23 @@
+Version: 3.9.1
+==============
+- Fixed: Library Path Sorter - critical path loss during sorting
+  - Rewrote SortPaths to use array-based QuickSort instead of TStringList.Sort
+  - TStringList.Sort with CaseSensitive=False could lose paths under certain conditions
+  - Added explicit path count validation before and after every sort operation
+  - Sort Alphabetically button now restores from backup if paths are lost
+  - LoadWorkingPaths falls back to unsorted copy if sort loses paths
+  - Apply button shows CRITICAL WARNING if path count mismatch detected
+  - Exception raised if sort produces incorrect path count (fail-safe)
+  - Delete now requires confirmation to prevent accidental deletions
+  - Path comparison now trims whitespace (fixes false "missing" detection)
+  - Enhanced "Show Missing Paths" with close-match analysis
+  - Diagnostic now shows count of unmatched paths
+  - Panel labels explain color coding (Pink = not in Working, Red = duplicate)
+- Fixed: Library Path Sorter - paths appeared invalid (greyed out) in Delphi after saving
+  - Delphi's native path format does NOT use quotes - just semicolon-separated values
+  - Removed all path quoting logic to match Delphi's native registry format
+- Added: Library Path Sorter - reminder to restart Delphi shown when closing after changes applied
+
 Version: 3.9.0
 ==============
 - Enhanced: Library Path Sorter - path loss detection and diagnostics

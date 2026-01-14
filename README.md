@@ -70,7 +70,7 @@ Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize D
 - Backup history with restore and delete capabilities
 - Access via Tools → "Library Path Sorter..." (below Build Statistics)
 
-Version 3.9.0 enhances the **Library Path Sorter** with path loss detection and diagnostics:
+Version 3.9.1 enhances the **Library Path Sorter** with path loss detection and diagnostics:
 
 - Moved to Tools menu (below Build Statistics) for easier access
 - Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
@@ -716,11 +716,13 @@ Provides a tool to manage and organize Delphi IDE library paths with backup/rest
 - **New in 3.9.0** - "Show Missing Paths..." context menu on original panel
 - **New in 3.9.0** - Resizable Original Panel via horizontal splitter
 - **New in 3.9.0** - Form position, size, and panel width preserved between sessions
+- **New in 3.9.1** - Reminder dialog shown when closing after changes applied
 
 **Important Notes:**
 - Path order affects unit resolution - the first matching unit found wins
 - Always review changes before applying, especially for Search Path
 - Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
+- **For the sorted/reworked paths to take effect, you must close and reopen Delphi**
 
 Access via Tools → "Library Path Sorter..." (below Build Statistics) when enabled.
 
@@ -767,4 +769,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.9.0 – 14 January 2026*
+*Version: 3.9.1 – 14 January 2026*
