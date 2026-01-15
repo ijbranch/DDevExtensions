@@ -350,3 +350,6 @@ __recovery/
 
 # Boss dependency manager vendor folder https://github.com/HashLoad/boss
 modules/
+
+# Windows null device file (created by bash redirection)
+nul
