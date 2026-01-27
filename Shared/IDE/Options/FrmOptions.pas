@@ -125,6 +125,7 @@ procedure TFormOptions.PopulateRootPage(Root: TTreePage);
 var
   i: Integer;
   OptionPages: TOptionPages;
+  Page: TTreePage;
 begin
   if GetGlobalOptionPages <> nil then
   begin
@@ -132,9 +133,12 @@ begin
     begin
       OptionPages := TOptionPages(GetGlobalOptionPages[i]);
       if Assigned(OptionPages.Event) then
-        Root.Add(OptionPages.Event())
+        Page := OptionPages.Event()
       else
-        Root.Add(OptionPages.Proc());
+        Page := OptionPages.Proc();
+
+      if Page <> nil then
+        Root.Add(Page);
     end;
   end;
 end;
