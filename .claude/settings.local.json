@@ -64,7 +64,28 @@
       "Bash(git -C \"D:\\\\DDevExtensions\" add Code/DDevExtensions/Bin/Changes.txt Code/DDevExtensions/Bin/DDevExtensionsD130.dll Code/DDevExtensions/D_D130/DDevExtensions.dpr Code/DDevExtensions/D_D130/DDevExtensions.dproj Code/DDevExtensions/D_D130/DDevExtensions.res Code/DDevExtensions/Source/DelphiExtension.inc Code/DDevExtensions/Source/RegisterPlugins.pas Code/DDevExtensions/Source/version.inc Code/DDevExtensions/Source/LibraryPathSorter/ Help.md README.md enhancements.txt)",
       "Bash(git -C \"D:\\\\DDevExtensions\" status --short)",
       "Bash(git -C \"D:\\\\DDevExtensions\" commit -m \"$\\(cat <<''EOF''\nVersion 3.8.0 - Library Path Sorter feature.\n\nNew feature to manage and organize Delphi IDE library paths:\n- Dual-panel interface: read-only original paths and editable working panel\n- Support for all path types \\(Search Path, Browsing Path, Debug DCU Path, etc.\\)\n- Support for all platforms \\(Win32, Win64, etc.\\)\n- Sort paths alphabetically with one click\n- Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop\n- Delete unwanted entries from working panel\n- Duplicate path detection with red bold highlighting\n- Cross-panel highlighting: click working entry to highlight matches in original\n- Automatic backup before applying changes \\(configurable\\)\n- Backup history with restore and delete capabilities\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git -C \"D:\\\\DDevExtensions\" log -1 --stat)"
+      "Bash(git -C \"D:\\\\DDevExtensions\" log -1 --stat)",
+      "Bash(cmd /c COPY-REAL-WORLD-TESTS.bat:*)",
+      "Bash(copy \"E:\\\\DBiWorkflow Development\\\\DBiAdmin\\\\dmImages.dfm\" TestDataRealWorld_DataModule.dfm)",
+      "Bash(copy \"E:\\\\DBiWorkflow Development\\\\DBManager\\\\logindlg.dfm\" TestDataRealWorld_LoginDialog.dfm)",
+      "Bash(copy \"E:\\\\DBiWorkflow Development\\\\DBiWorkflow\\\\JTStatusViewFrm.dfm\" TestDataRealWorld_StatusViewer.dfm)",
+      "Bash(copy \"E:\\\\DBiWorkflow Development\\\\DBiStore\\\\POPrintFrm.dfm\" TestDataRealWorld_PrintForm.dfm)",
+      "Bash(copy \"E:\\\\DBiWorkflow Development\\\\DBManager\\\\backupdlg.dfm\" TestDataRealWorld_BackupDialog.dfm)",
+      "Bash(dcc32:*)",
+      "Bash(./DfmParserTests.exe:*)",
+      "Bash(wc:*)",
+      "Bash(./DebugParenList.exe)",
+      "Bash(DebugParenList.exe)",
+      "Bash(\"./Win32/Debug/DebugParenList.exe\")",
+      "Bash(./DebugBinary.exe:*)",
+      "Bash(./DebugRealWorld.exe)",
+      "Bash(dos2unix:*)",
+      "Bash(unix2dos:*)",
+      "Bash(python3:*)",
+      "Bash(awk:*)",
+      "Bash(./DfmParserTestsDUnitX.exe:*)",
+      "Bash(dcc64:*)",
+      "Bash(timeout:*)"
     ]
   }
 }
