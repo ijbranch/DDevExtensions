@@ -1,0 +1,79 @@
+program DebugParenList;
+
+{$APPTYPE CONSOLE}
+
+uses
+  System.SysUtils,
+  System.Classes,
+  System.IOUtils,
+  gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas';
+
+var
+  Original, Serialized: string;
+  Doc: TDfmDocument;
+  Prop: TDfmProperty;
+begin
+  try
+    WriteLn('Testing parenthesized list parsing...');
+    WriteLn;
+
+    Original :=
+      'object Memo1: TMemo' + #13#10 +
+      '  Lines.Strings = (' + #13#10 +
+      '    ''Line 1''' + #13#10 +
+      '    ''Line 2''' + #13#10 +
+      '    ''Line 3'')' + #13#10 +
+      'end' + #13#10;
+
+    WriteLn('Original:');
+    WriteLn(Original);
+    WriteLn('Length: ' + IntToStr(Length(Original)));
+    WriteLn;
+
+    Doc := TDelphiDfmParser.Parse(Original);
+    try
+      WriteLn('Parsed successfully');
+      WriteLn('Component: ' + Doc.Root.Name + ': ' + Doc.Root.TypeName);
+      WriteLn('Properties: ' + IntToStr(Doc.Root.Properties.Count));
+
+      if Doc.Root.Properties.Count > 0 then
+      begin
+        Prop := Doc.Root.Properties[0];
+        WriteLn('Property: ' + Prop.Name);
+        WriteLn('ValueKind: ' + IntToStr(Ord(Prop.ValueKind)));
+        WriteLn('RawValue:');
+        WriteLn(Prop.RawValue);
+        WriteLn('RawValue Length: ' + IntToStr(Length(Prop.RawValue)));
+      end;
+
+      WriteLn;
+      Serialized := TDelphiDfmParser.Serialize(Doc);
+
+      WriteLn('Serialized:');
+      WriteLn(Serialized);
+      WriteLn('Length: ' + IntToStr(Length(Serialized)));
+      WriteLn;
+
+      if Original = Serialized then
+        WriteLn('SUCCESS - Round-trip is lossless!')
+      else
+      begin
+        WriteLn('FAILED - Round-trip lost data');
+        WriteLn('Lost bytes: ' + IntToStr(Length(Original) - Length(Serialized)));
+      end;
+    finally
+      Doc.Free;
+    end;
+
+    WriteLn;
+    WriteLn('Press Enter...');
+    ReadLn;
+  except
+    on E: Exception do
+    begin
+      WriteLn('ERROR: ' + E.ClassName + ': ' + E.Message);
+      WriteLn('Press Enter...');
+      ReadLn;
+    end;
+  end;
+end.
