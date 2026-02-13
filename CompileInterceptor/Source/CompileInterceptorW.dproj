@@ -5,14 +5,14 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>..\..\DLangExtensions\bin\CompileInterceptorW.dll</DCC_DependencyCheckOutputName>
-        <ProjectVersion>20.3</ProjectVersion>
+        <ProjectVersion>20.4</ProjectVersion>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Basis>True</Basis>
         <AppType>Library</AppType>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
-        <TargetedPlatforms>3</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
         <ProjectName Condition="'$(ProjectName)'==''">CompileInterceptorW</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">

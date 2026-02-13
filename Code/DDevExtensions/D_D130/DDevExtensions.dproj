@@ -5,13 +5,13 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>..\bin\DDevExtensionsD130.dll</DCC_DependencyCheckOutputName>
-        <ProjectVersion>20.3</ProjectVersion>
+        <ProjectVersion>20.4</ProjectVersion>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Basis>True</Basis>
         <AppType>Library</AppType>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <ProjectName Condition="'$(ProjectName)'==''">DDevExtensions</ProjectName>
     </PropertyGroup>
@@ -107,8 +107,8 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.9.2.721;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>721</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.9.2.725;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=2.7;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>725</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MinorVer>9</VerInfo_MinorVer>
         <VerInfo_Release>2</VerInfo_Release>
@@ -422,7 +422,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
     <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
     <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">
-        <PreBuildEvent>copy /Y &quot;$(PROJECTDIR)\..\..\..\CompileInterceptor\Bin\CompileInterceptorW.dll&quot; &quot;$(OUTPUTDIR)&quot;</PreBuildEvent>
+        <PreBuildEvent>copy /Y &quot;$(PROJECTDIR)\..\..\..\CompileInterceptor\Bin\CompileInterceptorW.dll&quot; &quot;$(OUTPUTDIR)&quot;</PreBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
@@ -430,7 +430,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win32'">
-        <PreBuildEvent>copy /Y &quot;$(PROJECTDIR)\..\..\..\CompileInterceptor\Bin\CompileInterceptorW.dll&quot; &quot;$(OUTPUTDIR)&quot;</PreBuildEvent>
+        <PreBuildEvent>copy /Y &quot;$(PROJECTDIR)\..\..\..\CompileInterceptor\Bin\CompileInterceptorW.dll&quot; &quot;$(OUTPUTDIR)&quot;</PreBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
