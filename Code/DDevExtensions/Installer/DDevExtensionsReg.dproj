@@ -4,13 +4,13 @@
         <MainSource>DDevExtensionsReg.dpr</MainSource>
         <Config Condition="'$(Config)'==''">Release</Config>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-        <ProjectVersion>20.3</ProjectVersion>
+        <ProjectVersion>20.4</ProjectVersion>
         <Basis>True</Basis>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
-        <TargetedPlatforms>3</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
         <Platform>Win32</Platform>
         <ProjectName Condition="'$(ProjectName)'==''">DDevExtensionsReg</ProjectName>
     </PropertyGroup>
