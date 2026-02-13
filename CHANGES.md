@@ -4,6 +4,34 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-02-14 - Library Path Sorter - Invalid Path Highlighting
+
+**Context:** Library Path Sorter already highlighted duplicates (red) and missing paths (pink), but provided no filesystem validation. Users needed to identify paths that don't exist on disk to clean up invalid library path entries.
+
+**Changes Made:**
+1. FrmLibraryPathSorter.pas: Added filesystem validation with caching for performance
+2. Added `FPathValidityCache: TDictionary<string, Boolean>` for caching validation results
+3. Implemented `ExpandPathMacros()` - expands `$(PLATFORM)` using combo box selection, delegates to `IDEUtils.ExpandDirMacros` for other macros
+4. Implemented `IsPathValid()` - validates paths with caching, handles empty paths and unexpanded macros, uses `DirectoryExists`
+5. Implemented `InvalidatePathCache()` - clears cache on platform/path type changes
+6. Cache invalidated when switching platforms, path types, or loading paths (macro expansion context changes)
+7. Updated `lstWorkingDrawItem` - invalid paths shown in **bold blue**, takes priority over red duplicates
+8. Updated `lstCurrentDrawItem` - invalid paths shown in **bold blue**, takes priority over maroon missing, pink background preserved for missing paths
+9. Panel labels updated:
+   - Original: "Pink = not in Working, Blue = invalid"
+   - Working: "Red = duplicate, Blue = invalid"
+
+**Colour Precedence:**
+- Working panel: Invalid (blue) > Duplicate (red) > Normal
+- Original panel: Invalid (blue) text > Missing (maroon) text, pink background preserved for missing paths
+- Invalid paths always bold regardless of other conditions
+
+**Result:** Users can now identify non-existent paths on disk at a glance. Invalid paths shown in bold blue on both panels. Validation respects macro expansion and caches results for performance.
+
+**Files Modified:** FrmLibraryPathSorter.pas (line 18: added Generics.Collections; lines 97-101: added private members; lines 613-680: added validation methods; lines 146, 185: cache init/free; lines 237, 488, 492: cache invalidation; lines 541-591: updated lstWorkingDrawItem; lines 639-695: updated lstCurrentDrawItem; lines 617-620: updated labels)
+
+---
+
 ## 2026-02-14 - Project Configuration - Win32-Only Platform
 
 **Context:** DDevExtensions hooks into the Delphi IDE which is 32-bit only. Win64 platform support was incorrectly configured, causing build errors with x86 assembly code incompatible with x64.

@@ -16,7 +16,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Types, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Buttons, FrmBase, LibraryPathSorter;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Buttons, Generics.Collections,
+  FrmBase, LibraryPathSorter;
 
 type
   TFormLibraryPathSorter = class( TFormBase )
@@ -94,8 +95,12 @@ type
     FOriginalPaths: string;
     FDeletedCount: Integer;
     FChangesApplied: Boolean;
+    FPathValidityCache: TDictionary<string, Boolean>;
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
     function IsPathInWorkingPanel( const APath: string ): Boolean;
+    function IsPathValid( const APath: string ): Boolean;
+    procedure InvalidatePathCache;
+    function ExpandPathMacros( const APath: string ): string;
     procedure UpdatePanelLabels;
     procedure LoadPlatforms;
     procedure LoadPathTypes;
@@ -144,6 +149,7 @@ begin
   FDragIndex := -1;
   FDeletedCount := 0;
   FChangesApplied := False;
+  FPathValidityCache := TDictionary<string, Boolean>.Create;
 
   // Load saved form position and size
   LoadFormSettings;
@@ -180,6 +186,7 @@ begin
     ShowMessage( 'Library paths have been updated.' + #13#10 + #13#10 +
       'For the changes to take effect, you must close and reopen Delphi.' );
 
+  FPathValidityCache.Free;
   FormLibraryPathSorterInstance := nil;
   Action := caFree;
 end;
@@ -235,6 +242,7 @@ begin
   lstWorking.Items.Clear;
   FOriginalPaths := '';
   FDeletedCount := 0;
+  InvalidatePathCache;
 
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -483,11 +491,13 @@ end;
 
 procedure TFormLibraryPathSorter.cboPathTypeChange( Sender: TObject );
 begin
+  InvalidatePathCache;
   LoadCurrentPaths;
 end;
 
 procedure TFormLibraryPathSorter.cboPlatformChange( Sender: TObject );
 begin
+  InvalidatePathCache;
   LoadCurrentPaths;
 end;
 
@@ -541,7 +551,7 @@ procedure TFormLibraryPathSorter.lstWorkingDrawItem( Control: TWinControl;
 var
   ListBox: TListBox;
   ItemText: string;
-  IsDuplicate: Boolean;
+  IsDuplicate, IsInvalid: Boolean;
 begin
   if not ( Control is TListBox ) then
     Exit;
@@ -557,6 +567,7 @@ begin
   try
     ItemText := ListBox.Items[Index];
     IsDuplicate := IsDuplicatePath( ListBox, Index );
+    IsInvalid := not IsPathValid( ItemText );
 
     // Set background
     if odSelected in State then
@@ -566,16 +577,18 @@ begin
 
     ListBox.Canvas.FillRect( Rect );
 
-    // Set text color
+    // Set text color (Invalid takes priority)
     if odSelected in State then
       ListBox.Canvas.Font.Color := clHighlightText
+    else if IsInvalid then
+      ListBox.Canvas.Font.Color := clBlue
     else if IsDuplicate then
       ListBox.Canvas.Font.Color := clRed
     else
       ListBox.Canvas.Font.Color := clWindowText;
 
-    // Make duplicates bold
-    if IsDuplicate then
+    // Make duplicates or invalid paths bold
+    if IsDuplicate or IsInvalid then
       ListBox.Canvas.Font.Style := [fsBold]
     else
       ListBox.Canvas.Font.Style := [];
@@ -610,13 +623,71 @@ begin
   end;
 end;
 
+function TFormLibraryPathSorter.ExpandPathMacros( const APath: string ): string;
+var
+  SelectedPlatform: string;
+begin
+  Result := APath;
+
+  // Expand $(PLATFORM) using the combo box selection
+  if cboPlatform.ItemIndex >= 0 then
+  begin
+    SelectedPlatform := cboPlatform.Items[cboPlatform.ItemIndex];
+    Result := StringReplace( Result, '$(PLATFORM)', SelectedPlatform, [rfReplaceAll, rfIgnoreCase] );
+  end;
+
+  // Delegate to IDEUtils for all other macros ($(BDS), $(BDSCOMMONDIR), env vars, etc.)
+  Result := IDEUtils.ExpandDirMacros( Result );
+end;
+
+function TFormLibraryPathSorter.IsPathValid( const APath: string ): Boolean;
+var
+  TrimmedPath, LowerPath, ExpandedPath: string;
+begin
+  TrimmedPath := Trim( APath );
+
+  // Empty paths are invalid
+  if TrimmedPath = '' then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  // Check cache (case-insensitive key)
+  LowerPath := AnsiLowerCase( TrimmedPath );
+  if FPathValidityCache.TryGetValue( LowerPath, Result ) then
+    Exit;
+
+  // Expand macros
+  ExpandedPath := ExpandPathMacros( TrimmedPath );
+
+  // If unexpanded macros remain, treat as valid (can't verify)
+  if Pos( '$(', ExpandedPath ) > 0 then
+  begin
+    Result := True;
+    FPathValidityCache.Add( LowerPath, Result );
+    Exit;
+  end;
+
+  // Check if directory exists
+  Result := DirectoryExists( ExpandedPath );
+
+  // Cache the result
+  FPathValidityCache.Add( LowerPath, Result );
+end;
+
+procedure TFormLibraryPathSorter.InvalidatePathCache;
+begin
+  FPathValidityCache.Clear;
+end;
+
 procedure TFormLibraryPathSorter.UpdatePanelLabels;
 var
   Difference: Integer;
 begin
-  lblCurrent.Caption := Format( '  Original Paths (Pink = not in Working): %d',
+  lblCurrent.Caption := Format( '  Original Paths (Pink = not in Working, Blue = invalid): %d',
     [lstCurrent.Items.Count] );
-  lblWorking.Caption := Format( '  Working Panel (Red = duplicate): %d',
+  lblWorking.Caption := Format( '  Working Panel (Red = duplicate, Blue = invalid): %d',
     [lstWorking.Items.Count] );
 
   // Update deleted count label and compare with actual difference
@@ -640,7 +711,7 @@ procedure TFormLibraryPathSorter.lstCurrentDrawItem( Control: TWinControl;
 var
   ListBox: TListBox;
   ItemText: string;
-  IsMissing: Boolean;
+  IsMissing, IsInvalid: Boolean;
 begin
   if not ( Control is TListBox ) then
     Exit;
@@ -656,8 +727,9 @@ begin
   try
     ItemText := ListBox.Items[Index];
     IsMissing := not IsPathInWorkingPanel( ItemText );
+    IsInvalid := not IsPathValid( ItemText );
 
-    // Set background
+    // Set background (pink preserved for missing regardless of validity)
     if odSelected in State then
       ListBox.Canvas.Brush.Color := clHighlight
     else if IsMissing then
@@ -667,16 +739,18 @@ begin
 
     ListBox.Canvas.FillRect( Rect );
 
-    // Set text color
+    // Set text color (Invalid takes priority)
     if odSelected in State then
       ListBox.Canvas.Font.Color := clHighlightText
+    else if IsInvalid then
+      ListBox.Canvas.Font.Color := clBlue
     else if IsMissing then
       ListBox.Canvas.Font.Color := clMaroon
     else
       ListBox.Canvas.Font.Color := clWindowText;
 
-    // Make missing items bold
-    if IsMissing then
+    // Make missing or invalid items bold
+    if IsMissing or IsInvalid then
       ListBox.Canvas.Font.Style := [fsBold]
     else
       ListBox.Canvas.Font.Style := [];
