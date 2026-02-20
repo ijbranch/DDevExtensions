@@ -49,6 +49,7 @@ var
   LateLoaderList: TList;
   ExpertLoaderList: TList;
   MenuItemOptions: TMenuItem;
+  MenuItemAbout: TMenuItem;
 
 procedure RegisterExpertLoader(Proc: TLateLoaderProc);
 begin
@@ -67,6 +68,84 @@ end;
 procedure ShowOptionsDialog(Data: TObject; Sender: TObject);
 begin
   TFormDDevExtOptions.Execute;
+end;
+
+procedure ShowAboutDialog( Data: TObject; Sender: TObject );
+var
+  Frm: TForm;
+  Lbl: TLabel;
+  Btn: TButton;
+  iY: Integer;
+begin
+
+  Frm := TForm.CreateNew( Application );
+  try
+    Frm.Caption := 'About DDevExtensions';
+    Frm.BorderStyle := bsDialog;
+    Frm.Position := poScreenCenter;
+    Frm.ClientWidth := 380;
+    Frm.ClientHeight := 200;
+
+    iY := 20;
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Font.Size := 14;
+    Lbl.Font.Style := [fsBold];
+    Lbl.Caption := 'DDevExtensions';
+    Inc( iY, 30 );
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Caption := 'Version ' + sPluginVersion;
+    Inc( iY, 24 );
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Caption := sPluginCopyright;
+    Inc( iY, 20 );
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Caption := '(C) 2021-2025 DelphiPraxis';
+    Inc( iY, 20 );
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Caption := '(C) 2026 Ian Branch, Claude Code';
+    Inc( iY, 30 );
+
+    Lbl := TLabel.Create( Frm );
+    Lbl.Parent := Frm;
+    Lbl.Left := 20;
+    Lbl.Top := iY;
+    Lbl.Caption := 'Extensions for the Delphi IDE';
+
+    Btn := TButton.Create( Frm );
+    Btn.Parent := Frm;
+    Btn.Caption := 'OK';
+    Btn.ModalResult := mrOk;
+    Btn.Default := True;
+    Btn.Cancel := True;
+    Btn.Width := 75;
+    Btn.Left := ( Frm.ClientWidth - Btn.Width ) div 2;
+    Btn.Top := Frm.ClientHeight - Btn.Height - 12;
+
+    Frm.ShowModal;
+  finally
+    Frm.Free;
+  end;
+
 end;
 
 procedure HookedFinalizePackage(Module: HMODULE);
@@ -207,6 +286,16 @@ begin
   finally
     Configuration.EndUpdate;
   end;
+
+  // Add separator and About... at end of submenu
+  SeparatorItem := TMenuItem.Create( DDevExtensionsMenu );
+  SeparatorItem.Caption := '-';
+  DDevExtensionsMenu.Add( SeparatorItem );
+
+  MenuItemAbout := TMenuItem.Create( DDevExtensionsMenu );
+  MenuItemAbout.OnClick := MakeNotifyEvent( nil, @ShowAboutDialog );
+  MenuItemAbout.Caption := '&About...';
+  DDevExtensionsMenu.Add( MenuItemAbout );
 end;
 
 procedure UninstallHooks;

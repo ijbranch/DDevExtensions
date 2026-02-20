@@ -82,6 +82,12 @@ Version 3.9.1 enhances the **Library Path Sorter** with path loss detection and 
 - Form position, size, and panel width preserved between sessions
 - Fixed potential issue where duplicate paths could be lost during sorting
 
+Version 3.9.2 fixes a bug in the **Options dialog** that prevented it from operating correctly.
+
+Version 3.9.3 fixes the **compile progress bar position** at non-100% display scaling. The reference panel lookup was updated from `pnErrors` to `pnHints` to match the Delphi 12+/13 IDE compile progress dialog layout. DPI scaling (`ScaleForPPI`) and dynamic height (`TotalLines.Height div 2`) are restored, so the progress bar now positions and sizes correctly at all DPI settings (100%, 125%, 150%, etc.).
+
+Version 3.10.3 adds an **About dialog** to the DDevExtensions submenu. "About..." appears as the last item in the menu and displays the plugin name, version, copyright information, and contributors. The dialog is built programmatically using native VCL components and closes with OK or Escape.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update

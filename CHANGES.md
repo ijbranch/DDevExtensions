@@ -4,6 +4,37 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-02-21 - v3.10.3 - Add About Dialog + Version Bump
+
+**Context:** No About dialog existed in the DDevExtensions submenu. Version bumped from 3.9.3 to 3.10.3 to reflect the new feature.
+
+**Changes Made:**
+1. `Source\Main.pas`: Added `ShowAboutDialog` procedure — builds a programmatic modal dialog using native VCL components (`TForm`, `TLabel`, `TButton`) showing plugin name, version, copyright lines, and an OK button
+2. `Source\Main.pas` line 52: Added `MenuItemAbout: TMenuItem` unit-level variable
+3. `Source\Main.pas` `IDELoaded`: After all LateLoader callbacks complete, appends a separator and `&About...` menu item to the bottom of the DDevExtensions submenu
+4. `Source\version.inc`: Bumped `VersionNumber` from `'3.9.3'` to `'3.10.3'` — single source of truth; About dialog, `sPluginName`, and `sPluginVersion` all update automatically at compile time
+5. All `.dproj` files (D_D102–D_D130, Installer): Updated `VerInfo_MajorVer`, `VerInfo_MinorVer`, `VerInfo_Release`, `FileVersion`, and `ProductVersion` fields to `3.10.3`
+
+**Result:** "About..." appears as the last item in the DDevExtensions submenu. Clicking it displays a centred dialog with version and copyright information. Closes on OK or Escape.
+
+**Files Modified:** Source\Main.pas, Source\version.inc, D_D102\DDevExtensions.dproj, D_D103\DDevExtensions.dproj, D_D104\DDevExtensions.dproj, D_D110\DDevExtensions.dproj, D_D120\DDevExtensions.dproj, D_D130\DDevExtensions.dproj, Installer\DDevExtensionsReg.dproj
+
+---
+
+## 2026-02-21 - v3.9.3 - Fix Compile Progress Bar Position at Non-100% DPI Scaling
+
+**Context:** User feedback (ertank, 2026-02-10) reported that the compilation progress bar position was broken at non-100% display scaling. Root cause: `SetMaxFiles` in `NativeProgressForm.pas` used `pnErrors` as the reference panel, but Delphi 12+ changed the compile progress dialog layout — the correct reference panel is `pnHints`. Additionally, DPI scaling (`ScaleForPPI`) and dynamic height (`TotalLines.Height div 2`) from v2.91 were missing.
+
+**Changes Made:**
+1. `Source\CompileProgress\NativeProgressForm.pas` line 493: Changed component lookup from `'pnErrors'` to `'pnHints'` to match Delphi 12+/13 IDE layout
+2. `Source\CompileProgress\NativeProgressForm.pas` line 499: Added `FProgressBar.ScaleForPPI(Form.CurrentPPI)` for High DPI support; changed fixed height `7` to `TotalLines.Height div 2` for dynamic scaling
+
+**Result:** Progress bar now positions and scales correctly at all DPI settings (100%, 125%, 150%, etc.) on Delphi 13. Build 728.
+
+**Files Modified:** Source\CompileProgress\NativeProgressForm.pas
+
+---
+
 ## 2026-02-14 - Library Path Sorter - Invalid Path Highlighting
 
 **Context:** Library Path Sorter already highlighted duplicates (red) and missing paths (pink), but provided no filesystem validation. Users needed to identify paths that don't exist on disk to clean up invalid library path entries.
