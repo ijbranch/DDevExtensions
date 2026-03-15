@@ -4,9 +4,9 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
-## 2026-03-15 - Fix IDE Path Sorter cosmetic issues and persist panel sizes
+## 2026-03-15 - Fix IDE Path Sorter cosmetic issues, persist panel sizes, add multi-select
 
-**Problem:** The `>>` and `A-Z` buttons were children of `pnlMain` at fixed absolute positions (Left=444), causing them to overlap `lstWorking` content. The "Auto-backup before apply" checkbox text was truncated at Width=150. The main path panel and backup panel heights were not persisted between sessions.
+**Problem:** The `>>` and `A-Z` buttons were children of `pnlMain` at fixed absolute positions (Left=444), causing them to overlap `lstWorking` content. The "Auto-backup before apply" checkbox text was truncated at Width=150. The main path panel and backup panel heights were not persisted between sessions. The working panel only supported single item selection.
 
 **Changes Made:**
 1. `FrmLibraryPathSorter.dfm`: Moved `btnCopyToWorking` and `btnSortAlpha` from `pnlMain` into `pnlWorkingButtons` panel, positioned below the existing navigation buttons (Top=130 and Top=164)
@@ -15,8 +15,13 @@ This file is the sole source and record of all project changes for DDevExtension
 4. `FrmLibraryPathSorter.pas` line 58: Changed `btnSortAlpha: TButton` to `btnSortAlpha: TSpeedButton`
 5. `FrmLibraryPathSorter.pas` `LoadFormSettings`: Added restore of `MainHeight` and `BackupsHeight` from registry
 6. `FrmLibraryPathSorter.pas` `SaveFormSettings`: Added save of `pnlMain.Height` and `pnlBackups.Height` to registry
+7. `FrmLibraryPathSorter.pas` `FormCreate`: Enabled `MultiSelect` on `lstWorking` for Ctrl-Click/Shift-Click selection
+8. `FrmLibraryPathSorter.pas` `mnuDeleteEntryClick`: Updated to delete all selected items with count-aware confirmation message
+9. `FrmLibraryPathSorter.pas` `lstWorkingClick`: Updated to highlight matching original panel entries for all selected working items
+10. `FrmLibraryPathSorter.pas` `UpdateButtonStates`: Delete menu enabled state now uses `SelCount > 0`
+11. `FrmLibraryPathSorter.pas` `lstWorkingMouseDown`: Skip drag initiation when Ctrl/Shift held so multi-select is not overridden; removed explicit `ItemIndex` assignment that was clearing selections
 
-**Result:** Buttons now sit neatly in the left button strip below the navigation buttons, checkbox text displays fully, and all internal panel sizes are persisted between sessions.
+**Result:** Buttons now sit neatly in the left button strip below the navigation buttons, checkbox text displays fully, all internal panel sizes are persisted between sessions, and users can Ctrl-Click/Shift-Click to select multiple working panel entries for bulk deletion.
 
 **Files Modified:** FrmLibraryPathSorter.dfm, FrmLibraryPathSorter.pas
 
