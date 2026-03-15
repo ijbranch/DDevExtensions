@@ -4,6 +4,23 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-15 - v3.11.3 - Rename Library Path Sorter to IDE Path Sorter
+
+**Context:** The tool was named "Library Path Sorter" but it handles all IDE path types (Library Path, Browsing Path, Debug DCU Path, etc.), not just library paths. The dropdown also showed "Search Path" which is the registry key name, not the user-facing Delphi terminology ("Library Path").
+
+**Changes Made:**
+1. `LibraryPathSorter.pas` line 526: Menu caption `'Library Path &Sorter...'` → `'IDE Path &Sorter...'`
+2. `FrmLibraryPathSorter.dfm` line 2: Form caption `'Library Path Sorter'` → `'IDE Path Sorter'`
+3. `LibraryPathSorter.pas` line 130: Display name `'Search Path'` → `'Library Path'` (matches Delphi's terminology)
+4. `version.inc`: Bumped `VersionNumber` from `'3.10.3'` to `'3.11.3'`
+5. All `.dproj` files (D_D102–D_D130, Installer): Updated `VerInfo_MinorVer`, `FileVersion`, and `ProductVersion` to 3.11.3
+
+**Result:** Tool name now accurately reflects its broader scope, and path type names match Delphi's UI terminology.
+
+**Files Modified:** LibraryPathSorter.pas, FrmLibraryPathSorter.dfm, version.inc, version.h, all .dproj files, Changes.txt
+
+---
+
 ## 2026-02-21 - v3.10.3 - Add About Dialog + Version Bump
 
 **Context:** No About dialog existed in the DDevExtensions submenu. Version bumped from 3.9.3 to 3.10.3 to reflect the new feature.

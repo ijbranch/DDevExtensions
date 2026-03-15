@@ -127,7 +127,7 @@ const
   );
 
   PathTypeDisplayNames: array[TLibraryPathType] of string = (
-    'Search Path',
+    'Library Path',
     'Browsing Path',
     'Debug DCU Path',
     'HPP Output Directory',
@@ -523,7 +523,7 @@ begin
   if ToolsMenu <> nil then
   begin
     FMenuItem := TMenuItem.Create( ToolsMenu );
-    FMenuItem.Caption := 'Library Path &Sorter...';
+    FMenuItem.Caption := 'IDE Path &Sorter...';
     FMenuItem.OnClick := MenuItemClick;
 
     // Find Build Statistics menu item and insert after it

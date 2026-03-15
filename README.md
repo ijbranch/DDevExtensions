@@ -56,10 +56,10 @@ All anti-pattern checks are individually configurable with customizable threshol
 - New "Style Issues" tab in Build Statistics dialog showing all style violations from the last compile
 - Full sorting, filtering by category (Naming Convention vs Anti-Pattern), navigation, copy, and export functionality
 
-Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize Delphi IDE library paths:
+Version 3.8.0 adds the **IDE Path Sorter** (formerly Library Path Sorter) - a tool to manage and organize Delphi IDE library paths:
 
 - Sort library paths alphabetically in a working panel
-- Support for all path types: Search Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP/DPL Output, and Translated paths
+- Support for all path types: Library Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP/DPL Output, and Translated paths
 - Support for all platforms (Win32, Win64, etc.)
 - Dual-panel interface: read-only original paths and editable working panel
 - Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
@@ -68,9 +68,9 @@ Version 3.8.0 adds the **Library Path Sorter** - a tool to manage and organize D
 - Click working panel entry to highlight all matching entries in original panel
 - Automatic backup before applying changes
 - Backup history with restore and delete capabilities
-- Access via Tools → "Library Path Sorter..." (below Build Tools...)
+- Access via Tools → "IDE Path Sorter..." (below Build Tools...)
 
-Version 3.9.1 enhances the **Library Path Sorter** with path loss detection and diagnostics:
+Version 3.9.1 enhances the **IDE Path Sorter** with path loss detection and diagnostics:
 
 - Moved to Tools menu (below Build Tools...) for easier access
 - Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
@@ -282,7 +282,7 @@ DDevExtensions/
 │       ├── Keybindings/           # Enhanced keyboard shortcuts
 │       │   └── FrmeOptionPageKeybindings.pas/.dfm
 │       │
-│       ├── LibraryPathSorter/     # Library path management
+│       ├── LibraryPathSorter/     # IDE path management
 │       │   ├── LibraryPathSorter.pas
 │       │   └── FrmLibraryPathSorter.pas/.dfm
 │       │
@@ -436,12 +436,12 @@ Tools
         ├── Unreachable Code Detector...
         ├── Unused Unit Detector...
         └── Uses Clause Manager...
-  └── Library Path Sorter...   (new in 3.9.0 - moved from DDevExtensions submenu)
+  └── IDE Path Sorter...       (new in 3.9.0 - moved from DDevExtensions submenu)
 ```
 
 ![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
 
-This keeps all DDevExtensions functionality in one convenient location, with the Library Path Sorter positioned as a general IDE tool in the main Tools menu.
+This keeps all DDevExtensions functionality in one convenient location, with the IDE Path Sorter positioned as a general IDE tool in the main Tools menu.
 
 ## Features
 
@@ -702,11 +702,11 @@ Automatically analyzes which symbols from each unit are used in the interface vs
 
 Access via Tools → DDevExtensions → "Uses Clause Manager..." when enabled.
 
-**New in 3.8.0 - Library Path Sorter** (default: on)
-Provides a tool to manage and organize Delphi IDE library paths with backup/restore capability. Features include:
+**New in 3.8.0 - IDE Path Sorter** (default: on)
+Provides a tool to manage and organize Delphi IDE paths with backup/restore capability. Features include:
 
 - **Dual-panel interface**: Left panel shows original paths (read-only), right panel is editable working area
-- **All path types supported**: Search Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP Output, Package DPL Output, Translated Debug Library Path, Translated Library Path, Translated Resource Path
+- **All path types supported**: Library Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP Output, Package DPL Output, Translated Debug Library Path, Translated Library Path, Translated Resource Path
 - **All platforms**: Win32, Win64, and any other platforms configured in the IDE
 - **Sort alphabetically**: One-click alphabetical sorting of paths
 - **Manual reordering**: Move entries up/down/top/bottom using buttons or drag-and-drop
@@ -726,11 +726,11 @@ Provides a tool to manage and organize Delphi IDE library paths with backup/rest
 
 **Important Notes:**
 - Path order affects unit resolution - the first matching unit found wins
-- Always review changes before applying, especially for Search Path
+- Always review changes before applying, especially for Library Path
 - Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
 - **For the sorted/reworked paths to take effect, you must close and reopen Delphi**
 
-Access via Tools → "Library Path Sorter..." (below Build Tools...) when enabled.
+Access via Tools → "IDE Path Sorter..." (below Build Tools...) when enabled.
 
 **New in 3.4.1 - Empty Event Handler Detector** (default: on)
 Finds event handlers that have empty bodies (just begin/end with no code). These are typically leftover from double-clicking components in the form designer. Features include:

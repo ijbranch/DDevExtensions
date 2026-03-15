@@ -39,7 +39,7 @@ Version 3.9.0 | Comprehensive Feature Reference
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
-| Library Path Sorter | ON | Tools menu (below Build Tools...) |
+| IDE Path Sorter | ON | Tools menu (below Build Tools...) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -87,7 +87,7 @@ Tools
         ├── Code Style Checker...       (9. Style check)
         └── TODO/FIXME Aggregator...    (10. Review work items)
 
-  └── Library Path Sorter...            (IDE path management - separate from DDevExtensions submenu)
+  └── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
 ```
 
 ![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
@@ -1693,13 +1693,13 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 ---
 
-### Library Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1)
+### IDE Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1, Renamed in 3.11.3)
 
 **Purpose:** Manages and organizes Delphi IDE library paths with sorting, editing, and backup/restore capabilities.
 
 **Default:** ON
 
-**Location:** Tools > Library Path Sorter... (below Build Tools...)
+**Location:** Tools > IDE Path Sorter... (below Build Tools...)
 
 #### Features
 
@@ -1708,7 +1708,7 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 - **Right Panel (Working)**: Editable panel for arranging paths before applying, with path count in label
 
 **Path Type Support:**
-- Search Path
+- Library Path
 - Browsing Path
 - Debug DCU Path
 - HPP Output Directory
@@ -1781,8 +1781,8 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 #### Usage
 
-1. Open **Tools > Library Path Sorter...**
-2. Select **Path Type** (e.g., Search Path) and **Platform** (e.g., Win32)
+1. Open **Tools > IDE Path Sorter...**
+2. Select **Path Type** (e.g., Library Path) and **Platform** (e.g., Win32)
 3. Original paths appear in left panel, sorted copy in right panel
 4. Edit working panel:
    - Use A-Z to sort alphabetically

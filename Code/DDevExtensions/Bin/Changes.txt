@@ -1,3 +1,10 @@
+Version: 3.11.3
+===============
+- Changed: Library Path Sorter renamed to IDE Path Sorter
+  - Menu item: "Library Path Sorter..." → "IDE Path Sorter..."
+  - Form title: "Library Path Sorter" → "IDE Path Sorter"
+  - Path type dropdown: "Search Path" → "Library Path" (matches Delphi's terminology)
+
 Version: 3.9.1
 ==============
 - Fixed: Library Path Sorter - critical path loss during sorting
