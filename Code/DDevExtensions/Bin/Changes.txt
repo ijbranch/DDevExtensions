@@ -4,6 +4,11 @@ Version: 3.11.3
   - Menu item: "Library Path Sorter..." → "IDE Path Sorter..."
   - Form title: "Library Path Sorter" → "IDE Path Sorter"
   - Path type dropdown: "Search Path" → "Library Path" (matches Delphi's terminology)
+- Fixed: IDE Path Sorter - >> and A-Z buttons overlapped working panel listbox
+  - Moved buttons into the working panel button strip for proper alignment
+  - Changed A-Z from TButton to TSpeedButton for visual consistency
+- Fixed: IDE Path Sorter - "Auto-backup before apply" checkbox text was truncated
+- Added: IDE Path Sorter - main panel and backup panel heights now persist between sessions
 
 Version: 3.9.1
 ==============
