@@ -55,7 +55,7 @@ type
     btnWorkingTop: TSpeedButton;
     btnWorkingBottom: TSpeedButton;
     btnCopyToWorking: TSpeedButton;
-    btnSortAlpha: TButton;
+    btnSortAlpha: TSpeedButton;
     pmWorking: TPopupMenu;
     mnuDeleteEntry: TMenuItem;
     pmCurrent: TPopupMenu;
