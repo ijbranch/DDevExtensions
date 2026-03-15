@@ -158,8 +158,9 @@ begin
   lstWorking.Style := lbOwnerDrawFixed;
   lstCurrent.Style := lbOwnerDrawFixed;
 
-  // Enable multi-select on original panel to highlight matching entries
+  // Enable multi-select on both panels
   lstCurrent.MultiSelect := True;
+  lstWorking.MultiSelect := True;
 
   LoadPathTypes;
   LoadPlatforms;
@@ -361,7 +362,7 @@ begin
   btnWorkingDown.Enabled := ( WorkingIdx >= 0 ) and ( WorkingIdx < lstWorking.Items.Count - 1 );
   btnWorkingTop.Enabled := WorkingIdx > 0;
   btnWorkingBottom.Enabled := ( WorkingIdx >= 0 ) and ( WorkingIdx < lstWorking.Items.Count - 1 );
-  mnuDeleteEntry.Enabled := WorkingIdx >= 0;
+  mnuDeleteEntry.Enabled := lstWorking.SelCount > 0;
 
   // Copy and sort buttons
   btnCopyToWorking.Enabled := lstCurrent.Items.Count > 0;
@@ -504,24 +505,29 @@ end;
 procedure TFormLibraryPathSorter.lstWorkingClick( Sender: TObject );
 var
   SelectedPath: string;
-  I: Integer;
+  I, J: Integer;
 begin
+
   UpdateButtonStates;
 
   // Clear previous selections in original panel
   lstCurrent.ClearSelection;
 
-  // If an item is selected, highlight matching entries in original panel
-  if lstWorking.ItemIndex >= 0 then
+  // Highlight matching entries in original panel for all selected working items
+  for I := 0 to lstWorking.Items.Count - 1 do
   begin
-    SelectedPath := lstWorking.Items[lstWorking.ItemIndex];
-
-    for I := 0 to lstCurrent.Items.Count - 1 do
+    if lstWorking.Selected[I] then
     begin
-      if SameText( lstCurrent.Items[I], SelectedPath ) then
-        lstCurrent.Selected[I] := True;
+      SelectedPath := lstWorking.Items[I];
+
+      for J := 0 to lstCurrent.Items.Count - 1 do
+      begin
+        if SameText( lstCurrent.Items[J], SelectedPath ) then
+          lstCurrent.Selected[J] := True;
+      end;
     end;
   end;
+
 end;
 
 function TFormLibraryPathSorter.IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
@@ -771,16 +777,21 @@ procedure TFormLibraryPathSorter.lstWorkingMouseDown( Sender: TObject;
 var
   Idx: Integer;
 begin
+
   if Button = mbLeft then
   begin
-    Idx := lstWorking.ItemAtPos( Point( X, Y ), True );
-    if Idx >= 0 then
+    // Only start drag on plain left click; Ctrl/Shift are for multi-select
+    if not ( ( ssCtrl in Shift ) or ( ssShift in Shift ) ) then
     begin
-      FDragIndex := Idx;
-      lstWorking.ItemIndex := Idx;
-      lstWorking.BeginDrag( False, 5 ); // Start drag after 5 pixel movement
+      Idx := lstWorking.ItemAtPos( Point( X, Y ), True );
+      if Idx >= 0 then
+      begin
+        FDragIndex := Idx;
+        lstWorking.BeginDrag( False, 5 ); // Start drag after 5 pixel movement
+      end;
     end;
   end;
+
 end;
 
 procedure TFormLibraryPathSorter.lstWorkingDragOver( Sender, Source: TObject;
@@ -923,25 +934,42 @@ end;
 
 procedure TFormLibraryPathSorter.mnuDeleteEntryClick( Sender: TObject );
 var
-  PathToDelete: string;
+  I, DeleteCount: Integer;
+  Msg: string;
 begin
-  if lstWorking.ItemIndex >= 0 then
+
+  if lstWorking.SelCount = 0 then
+    Exit;
+
+  if lstWorking.SelCount = 1 then
+    Msg := 'Delete this path from working panel?' + #13#10 + #13#10 +
+           lstWorking.Items[lstWorking.ItemIndex]
+  else
+    Msg := Format( 'Delete %d selected paths from working panel?', [lstWorking.SelCount] );
+
+  if MessageDlg( Msg, mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+    Exit;
+
+  DeleteCount := 0;
+  for I := lstWorking.Items.Count - 1 downto 0 do
   begin
-    PathToDelete := lstWorking.Items[lstWorking.ItemIndex];
-
-    if MessageDlg(
-         'Delete this path from working panel?' + #13#10 + #13#10 +
-         PathToDelete,
-         mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
-      Exit;
-
-    lstWorking.Items.Delete( lstWorking.ItemIndex );
-    Inc( FDeletedCount );
-    lstCurrent.Invalidate;  // Refresh to update missing path highlighting
-    UpdatePanelLabels;
-    UpdateButtonStates;
-    UpdateStatus( 'Entry deleted from working panel' );
+    if lstWorking.Selected[I] then
+    begin
+      lstWorking.Items.Delete( I );
+      Inc( DeleteCount );
+    end;
   end;
+
+  Inc( FDeletedCount, DeleteCount );
+  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  UpdatePanelLabels;
+  UpdateButtonStates;
+
+  if DeleteCount = 1 then
+    UpdateStatus( '1 entry deleted from working panel' )
+  else
+    UpdateStatus( Format( '%d entries deleted from working panel', [DeleteCount] ) );
+
 end;
 
 procedure TFormLibraryPathSorter.mnuShowMissingClick( Sender: TObject );

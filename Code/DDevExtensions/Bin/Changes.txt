@@ -9,6 +9,10 @@ Version: 3.11.3
   - Changed A-Z from TButton to TSpeedButton for visual consistency
 - Fixed: IDE Path Sorter - "Auto-backup before apply" checkbox text was truncated
 - Added: IDE Path Sorter - main panel and backup panel heights now persist between sessions
+- Added: IDE Path Sorter - working panel supports Ctrl-Click/Shift-Click multi-select
+  - Delete removes all selected items with count-aware confirmation
+  - Clicking highlights matching original panel entries for all selected items
+  - Drag-and-drop only starts on plain left click; Ctrl/Shift clicks preserved for selection
 
 Version: 3.9.1
 ==============
