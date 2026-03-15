@@ -88,7 +88,8 @@
       "Bash(timeout:*)",
       "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Embarcadero\\\\Studio\\\\23.0\\\\bin\\\\rsvars.bat\")",
       "Bash(cmd.exe /c \"\"\"C:\\\\Program Files \\(x86\\)\\\\Embarcadero\\\\Studio\\\\37.0\\\\bin\\\\rsvars.bat\"\" && msbuild \"\"D:\\\\DDevExtensions\\\\Code\\\\DDevExtensions\\\\D_D130\\\\DDevExtensions.dproj\"\" /p:Config=Debug /p:Platform=Win32\")",
-      "Bash(cmd.exe:*)"
+      "Bash(cmd.exe:*)",
+      "Bash(for f:*)"
     ]
   }
 }

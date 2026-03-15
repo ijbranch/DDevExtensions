@@ -1,5 +1,5 @@
 inherited FormLibraryPathSorter: TFormLibraryPathSorter
-  Caption = 'Library Path Sorter'
+  Caption = 'IDE Path Sorter'
   ClientHeight = 650
   ClientWidth = 950
   Position = poScreenCenter

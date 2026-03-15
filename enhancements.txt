@@ -582,7 +582,7 @@ STRATEGIC VALUE / SIGNIFICANT EFFORT:
 RECENTLY COMPLETED
 ================================================================================
 
-- Library Path Sorter (v3.8.0) - Manage and organize IDE library paths
+- IDE Path Sorter (v3.8.0, renamed v3.11.3) - Manage and organize IDE paths
   - Sort paths alphabetically
   - Manual reordering (buttons and drag-and-drop)
   - Duplicate detection with highlighting
@@ -593,5 +593,5 @@ TOP RECOMMENDATIONS
 ================================================================================
 
 2. Export to DOT/GraphViz format (#2) - Low effort, good visualization benefit
-3. Uses Clause Sorter (#17) - Low effort, immediate benefit (NOTE: Library Path Sorter now available for IDE paths)
+3. Uses Clause Sorter (#17) - Low effort, immediate benefit (NOTE: IDE Path Sorter now available for IDE paths)
 4. Project Health Dashboard (#24) - Unifies code quality tools into one summary view
