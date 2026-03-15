@@ -102,7 +102,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     object chkAutoBackup: TCheckBox
       Left = 12
       Top = 12
-      Width = 150
+      Width = 170
       Height = 17
       Caption = 'Auto-backup before apply'
       Checked = True
@@ -277,6 +277,28 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
           ShowHint = True
           OnClick = btnWorkingBottomClick
         end
+        object btnCopyToWorking: TSpeedButton
+          Left = 4
+          Top = 130
+          Width = 26
+          Height = 26
+          Hint = 'Copy Original to Working'
+          Caption = '>>'
+          ParentShowHint = False
+          ShowHint = True
+          OnClick = btnCopyToWorkingClick
+        end
+        object btnSortAlpha: TSpeedButton
+          Left = 4
+          Top = 164
+          Width = 26
+          Height = 26
+          Hint = 'Sort Working Alphabetically'
+          Caption = 'A-Z'
+          ParentShowHint = False
+          ShowHint = True
+          OnClick = btnSortAlphaClick
+        end
       end
       object btnApply: TButton
         Left = 0
@@ -288,29 +310,6 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
         TabOrder = 2
         OnClick = btnApplyClick
       end
-    end
-    object btnCopyToWorking: TSpeedButton
-      Left = 444
-      Top = 80
-      Width = 30
-      Height = 50
-      Hint = 'Copy Original to Working'
-      Caption = '>>'
-      ParentShowHint = False
-      ShowHint = True
-      OnClick = btnCopyToWorkingClick
-    end
-    object btnSortAlpha: TButton
-      Left = 444
-      Top = 140
-      Width = 30
-      Height = 50
-      Hint = 'Sort Working Alphabetically'
-      Caption = 'A-Z'
-      ParentShowHint = False
-      ShowHint = True
-      TabOrder = 3
-      OnClick = btnSortAlphaClick
     end
   end
   object pnlBackups: TPanel

@@ -4,6 +4,22 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-15 - Fix IDE Path Sorter cosmetic issues
+
+**Problem:** The `>>` and `A-Z` buttons were children of `pnlMain` at fixed absolute positions (Left=444), causing them to overlap `lstWorking` content. The "Auto-backup before apply" checkbox text was truncated at Width=150.
+
+**Changes Made:**
+1. `FrmLibraryPathSorter.dfm`: Moved `btnCopyToWorking` and `btnSortAlpha` from `pnlMain` into `pnlWorkingButtons` panel, positioned below the existing navigation buttons (Top=130 and Top=164)
+2. `FrmLibraryPathSorter.dfm`: Changed `btnSortAlpha` from `TButton` to `TSpeedButton` for visual consistency with other panel buttons
+3. `FrmLibraryPathSorter.dfm`: Widened `chkAutoBackup` from Width=150 to Width=170 to prevent text truncation
+4. `FrmLibraryPathSorter.pas` line 58: Changed `btnSortAlpha: TButton` to `btnSortAlpha: TSpeedButton`
+
+**Result:** Buttons now sit neatly in the left button strip below the navigation buttons, and checkbox text displays fully.
+
+**Files Modified:** FrmLibraryPathSorter.dfm, FrmLibraryPathSorter.pas
+
+---
+
 ## 2026-03-15 - v3.11.3 - Rename Library Path Sorter to IDE Path Sorter
 
 **Context:** The tool was named "Library Path Sorter" but it handles all IDE path types (Library Path, Browsing Path, Debug DCU Path, etc.), not just library paths. The dropdown also showed "Search Path" which is the registry key name, not the user-facing Delphi terminology ("Library Path").
