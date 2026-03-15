@@ -1298,6 +1298,10 @@ begin
           Height := Reg.ReadInteger( 'Height' );
         if Reg.ValueExists( 'PanelWidth' ) then
           pnlCurrent.Width := Reg.ReadInteger( 'PanelWidth' );
+        if Reg.ValueExists( 'MainHeight' ) then
+          pnlMain.Height := Reg.ReadInteger( 'MainHeight' );
+        if Reg.ValueExists( 'BackupsHeight' ) then
+          pnlBackups.Height := Reg.ReadInteger( 'BackupsHeight' );
 
         // Ensure form is visible on screen
         if Left < 0 then Left := 0;
@@ -1334,6 +1338,8 @@ begin
         Reg.WriteInteger( 'Width', Width );
         Reg.WriteInteger( 'Height', Height );
         Reg.WriteInteger( 'PanelWidth', pnlCurrent.Width );
+        Reg.WriteInteger( 'MainHeight', pnlMain.Height );
+        Reg.WriteInteger( 'BackupsHeight', pnlBackups.Height );
       finally
         Reg.CloseKey;
       end;
