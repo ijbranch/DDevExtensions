@@ -9,7 +9,7 @@ object FormMultiLine: TFormMultiLine
     Height = 150
     Lines.Strings = (
       'This is line 1'
-      'This is line 2 with ''quotes'''
+      'This is line 2 with '#39'quotes'#39
       'This is line 3'
       ''
       'Line 5 after blank line')
@@ -23,7 +23,7 @@ object FormMultiLine: TFormMultiLine
       'Option 1'
       'Option 2'
       'Option 3'
-      'It''s OK'
+      'It'#39's OK'
       'Another "quoted" value')
   end
   object ListBox1: TListBox

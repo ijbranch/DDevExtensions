@@ -184,7 +184,9 @@ inherited FrameOptionPageCodeQuality: TFrameOptionPageCodeQuality
     end
     inherited lblDescription: TLabel
       Width = 418
-      Caption = 'Configure the Code Quality Analyzer to detect common code issues.'
+      Caption = 
+        'Configure the Code Quality Analyzer to detect common code issues' +
+        '.'
     end
   end
 end

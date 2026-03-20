@@ -18,10 +18,10 @@ inherited FrameOptionPageEmptyHandler: TFrameOptionPageEmptyHandler
       Width = 330
       Height = 65
       AutoSize = False
-      Caption =
-        'Scans your project for event handlers that have empty bodies (j' +
-        'ust begin/end with no code). These are typically left over from' +
-        ' design-time component configuration.'
+      Caption = 
+        'Scans your project for event handlers that have empty bodies (ju' +
+        'st begin/end with no code). These are typically left over from d' +
+        'esign-time component configuration.'
       WordWrap = True
     end
   end

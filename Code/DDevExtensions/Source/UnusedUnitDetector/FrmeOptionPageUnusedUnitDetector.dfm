@@ -40,7 +40,7 @@ inherited FrameOptionPageUnusedUnitDetector: TFrameOptionPageUnusedUnitDetector
     end
     inherited lblDescription: TLabel
       Width = 368
-      Caption =
+      Caption = 
         'Detects unit references in uses clauses that may not be actually' +
         ' used in the code.'
     end

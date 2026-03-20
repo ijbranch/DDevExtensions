@@ -101,7 +101,7 @@ inherited FrameOptionPageKeybindings: TFrameOptionPageKeybindings
       Top = 169
       Width = 241
       Height = 17
-      Hint =
+      Hint = 
         'Find the declaration of the word under the caret on Ctrl+Alt+PgU' +
         'p'
       Caption = 'Find declaration on Ctrl+Alt+PgUp'
@@ -114,7 +114,7 @@ inherited FrameOptionPageKeybindings: TFrameOptionPageKeybindings
       Top = 215
       Width = 281
       Height = 17
-      Hint =
+      Hint = 
         'Toggle between interface and implementation sections'#13#10'using Ctrl' +
         '+Shift+Up or Ctrl+Shift+Down'
       Caption = 'Section toggle on Ctrl+Shift+Up/Down'
