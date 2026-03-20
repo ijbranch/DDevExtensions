@@ -63,13 +63,13 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
     BevelOuter = bvNone
     ColumnCollection = <
       item
-        Value = 33.333333333333333333
+        Value = 33.333333333333330000
       end
       item
-        Value = 33.333333333333333333
+        Value = 33.333333333333330000
       end
       item
-        Value = 33.333333333333333333
+        Value = 33.333333333333330000
       end>
     ControlCollection = <
       item

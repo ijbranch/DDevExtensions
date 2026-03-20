@@ -67,7 +67,10 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       Height = 13
       Alignment = taCenter
       AutoSize = False
-      Caption = 'CAUTION: Path order affects compilation. First matching unit wins. RTL/VCL paths should come first, then vendors, then custom paths.'
+      Caption = 
+        'CAUTION: Path order affects compilation. First matching unit win' +
+        's. RTL/VCL paths should come first, then vendors, then custom pa' +
+        'ths.'
       Font.Color = clMaroon
       Font.Style = [fsBold]
       ParentFont = False

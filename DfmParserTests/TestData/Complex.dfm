@@ -115,7 +115,7 @@ object FormComplex: TFormComplex
         Lines.Strings = (
           'Advanced settings'
           'Line 2'
-          'Line 3 with ''quotes'''
+          'Line 3 with '#39'quotes'#39
           ''
           'Final line')
         ScrollBars = ssBoth

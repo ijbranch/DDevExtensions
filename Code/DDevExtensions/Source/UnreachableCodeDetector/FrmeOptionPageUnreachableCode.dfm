@@ -29,10 +29,10 @@ inherited FrameOptionPageUnreachableCode: TFrameOptionPageUnreachableCode
         Width = 329
         Height = 105
         AutoSize = False
-        Caption =
+        Caption = 
           'The detector finds code immediately after:'#13#10#13#10'  - Exit or Exit(v' +
-          'alue)'#13#10'  - Raise Exception'#13#10'  - Break'#13#10'  - Continue'#13#10'  - Halt o' +
-          'r Halt(code)'#13#10'  - Abort'
+          'alue)'#13#10'  - Raise Exception'#13#10'  - Break'#13#10'  - Continue'#13#10'  - Halt or' +
+          ' Halt(code)'#13#10'  - Abort'
       end
     end
   end
@@ -44,10 +44,10 @@ inherited FrameOptionPageUnreachableCode: TFrameOptionPageUnreachableCode
     end
     inherited lblDescription: TLabel
       Width = 368
-      Caption =
-        'Detects code that can never be executed because it appears afte' +
-        'r control flow statements like Exit, Raise, Break, Continue, Ha' +
-        'lt, or Abort.'
+      Caption = 
+        'Detects code that can never be executed because it appears after' +
+        ' control flow statements like Exit, Raise, Break, Continue, Halt' +
+        ', or Abort.'
     end
   end
 end

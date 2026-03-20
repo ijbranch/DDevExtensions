@@ -69,9 +69,9 @@ inherited FrameOptionPageDeadCode: TFrameOptionPageDeadCode
     end
     inherited lblDescription: TLabel
       Width = 368
-      Caption =
-        'Detects procedures, functions, and fields that are never refere' +
-        'nced in your project.'
+      Caption = 
+        'Detects procedures, functions, and fields that are never referen' +
+        'ced in your project.'
     end
   end
 end

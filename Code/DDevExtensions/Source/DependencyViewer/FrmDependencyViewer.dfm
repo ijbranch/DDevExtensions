@@ -268,7 +268,9 @@ inherited FormDependencyViewer: TFormDependencyViewer
   end
   object SaveDialogExport: TSaveDialog
     DefaultExt = 'csv'
-    Filter = 'CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt|All Files (*.*)|*.*'
+    Filter = 
+      'CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt|All Files (*.*)' +
+      '|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Title = 'Export Circular References'
     Left = 400

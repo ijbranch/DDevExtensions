@@ -226,7 +226,9 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
         Width = 320
         Height = 26
         AutoSize = False
-        Caption = 'Anti-patterns help identify code that compiles but may indicate design issues.'
+        Caption = 
+          'Anti-patterns help identify code that compiles but may indicate ' +
+          'design issues.'
         WordWrap = True
       end
     end
@@ -239,9 +241,10 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
     end
     inherited lblDescription: TLabel
       Width = 368
-      Caption =
-        'Checks your code for Delphi naming conventions (T, I, F, E, P ' +
-        'prefixes), custom variable prefixes, unit scope names, and anti-patterns.'
+      Caption = 
+        'Checks your code for Delphi naming conventions (T, I, F, E, P pr' +
+        'efixes), custom variable prefixes, unit scope names, and anti-pa' +
+        'tterns.'
     end
   end
 end

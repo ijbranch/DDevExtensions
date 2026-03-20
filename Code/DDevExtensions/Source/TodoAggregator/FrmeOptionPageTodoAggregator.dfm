@@ -52,9 +52,9 @@ inherited FrameOptionPageTodoAggregator: TFrameOptionPageTodoAggregator
     end
     inherited lblDescription: TLabel
       Width = 368
-      Caption =
-        'Scans project files for TODO, FIXME, and other comment markers ' +
-        'and displays them in a list.'
+      Caption = 
+        'Scans project files for TODO, FIXME, and other comment markers a' +
+        'nd displays them in a list.'
     end
   end
 end

@@ -106,8 +106,8 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.11.3.738;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.11;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>738</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.11.3.739;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.11;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>739</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>

@@ -18,11 +18,11 @@ inherited FrameOptionPageDfmPas: TFrameOptionPageDfmPas
       Width = 330
       Height = 80
       AutoSize = False
-      Caption =
-        'Scans your project for inconsistencies between DFM and PAS file' +
-        's. Detects components in DFM that are not declared in PAS, and ' +
-        'type mismatches where a component exists in both but with diffe' +
-        'rent types. Common after refactoring or manual edits.'
+      Caption = 
+        'Scans your project for inconsistencies between DFM and PAS files' +
+        '. Detects components in DFM that are not declared in PAS, and ty' +
+        'pe mismatches where a component exists in both but with differen' +
+        't types. Common after refactoring or manual edits.'
       WordWrap = True
     end
   end
