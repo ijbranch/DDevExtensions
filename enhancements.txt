@@ -582,7 +582,7 @@ STRATEGIC VALUE / SIGNIFICANT EFFORT:
 RECENTLY COMPLETED
 ================================================================================
 
-- External Mod Monitor (v3.12.3) - Real-time external file change detection
+- External Mod Monitor (v3.12.4) - Real-time external file change detection
   - ReadDirectoryChangesW wrapper with no external dependencies
   - Silent auto-refresh via IOTAModule.Refresh
   - 200ms debounce, compile suppression, unsaved-change protection

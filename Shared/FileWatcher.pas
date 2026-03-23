@@ -17,7 +17,7 @@ unit FileWatcher;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections;
+  Windows, SysUtils, Classes, Generics.Collections, Generics.Defaults;
 
 type
   TFileChangeEvent = procedure( const FileName: string ) of object;
@@ -92,7 +92,7 @@ begin
 
   inherited Create;
 
-  FDirectories := TDictionary<string, Integer>.Create;
+  FDirectories := TDictionary<string, Integer>.Create( TIStringComparer.Ordinal );
   InitializeCriticalSection( FLock );
   FStopEvent := CreateEvent( nil, True, False, nil );
   FUpdateEvent := CreateEvent( nil, False, False, nil );
@@ -119,7 +119,7 @@ var
   NeedStart: Boolean;
 begin
 
-  Dir := UpperCase( ExcludeTrailingPathDelimiter( Directory ) );
+  Dir := ExcludeTrailingPathDelimiter( Directory );
   NeedStart := False;
 
   EnterCriticalSection( FLock );
@@ -148,7 +148,7 @@ var
   RefCount: Integer;
 begin
 
-  Dir := UpperCase( ExcludeTrailingPathDelimiter( Directory ) );
+  Dir := ExcludeTrailingPathDelimiter( Directory );
 
   EnterCriticalSection( FLock );
   try

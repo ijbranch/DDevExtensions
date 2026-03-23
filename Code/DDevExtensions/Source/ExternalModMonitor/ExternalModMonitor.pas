@@ -140,7 +140,7 @@ begin
   inherited Init;
   FActive := True;
   FDebounceMs := 200;
-  FMonitoredExtensions := '.pas;.inc;.dfm;.dproj;.dpk';
+  FMonitoredExtensions := '.pas;.inc;.dfm;.dpr;.dproj;.dpk';
 
 end;
 
