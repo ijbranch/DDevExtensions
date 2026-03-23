@@ -65,6 +65,9 @@ uses
   {$IFDEF INCLUDE_LIBRARYPATHSORTER}
   LibraryPathSorter,
   {$ENDIF INCLUDE_LIBRARYPATHSORTER}
+  {$IFDEF INCLUDE_EXTERNALMODMONITOR}
+  ExternalModMonitor,
+  {$ENDIF INCLUDE_EXTERNALMODMONITOR}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -219,6 +222,11 @@ begin
     {$IFDEF INCLUDE_LIBRARYPATHSORTER}
     if DisabledPlugins.IndexOf('LibraryPathSorter') = -1 then
       RegisterLateLoader(LibraryPathSorter.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_EXTERNALMODMONITOR}
+    if DisabledPlugins.IndexOf('ExternalModMonitor') = -1 then
+      RegisterLateLoader(ExternalModMonitor.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

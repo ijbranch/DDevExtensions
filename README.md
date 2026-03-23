@@ -88,6 +88,8 @@ Version 3.9.3 fixes the **compile progress bar position** at non-100% display sc
 
 Version 3.10.3 adds an **About dialog** to the DDevExtensions submenu. "About..." appears as the last item in the menu and displays the plugin name, version, copyright information, and contributors. The dialog is built programmatically using native VCL components and closes with OK or Escape.
 
+Version 3.12.3 adds the **External Mod Monitor** — real-time detection of externally modified files. The Delphi IDE normally only detects external changes when it regains focus. This feature monitors project directories using the Windows `ReadDirectoryChangesW` API and silently refreshes modified files in the IDE within ~200ms, without any external dependencies. Files with unsaved editor changes are never overwritten, and monitoring is automatically suppressed during compilation. Configurable via Tools > DDevExtensions > Options > External Mod Monitor (enabled by default).
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -253,6 +255,10 @@ DDevExtensions/
 │       │   ├── FocusEditor.pas
 │       │   └── FrmReloadFiles.pas/.dfm
 │       │
+│       ├── ExternalModMonitor/    # Real-time external file change detection
+│       │   ├── ExternalModMonitor.pas
+│       │   └── FrmeOptionPageExternalModMonitor.pas/.dfm
+│       │
 │       ├── ExcelExport/           # Excel export functionality
 │       │   └── FrmExcelExport.pas/.dfm
 │       │
@@ -360,6 +366,7 @@ DDevExtensions/
 │
 ├── Shared/                        # Shared utilities
 │   ├── FileStreams.pas
+│   ├── FileWatcher.pas            # ReadDirectoryChangesW wrapper for file monitoring
 │   ├── Hooking.pas
 │   ├── ImportHooking.pas
 │   │
@@ -542,6 +549,21 @@ Replaces the standard Find Unit and Use Unit dialogs with an enhanced version fe
 
 **Improved reload changed files dialog**
 Enhances the dialog that appears when external file changes are detected. Provides better information and more control over how changed files are handled.
+
+**New in 3.12.3 - External Mod Monitor** (default: on)
+Monitors project directories in real-time for externally modified files and silently refreshes them in the IDE. Unlike the standard IDE behaviour (which only detects changes on focus), this feature uses the Windows `ReadDirectoryChangesW` API to detect changes immediately. Features include:
+
+- Real-time directory monitoring with no external dependencies
+- Silent auto-refresh via `IOTAModule.Refresh` — no dialog interruption
+- 200ms debounce to prevent reload storms during batch operations (e.g., git checkout)
+- Automatically suppresses monitoring during compilation
+- Never overwrites files with unsaved editor changes
+- Configurable monitored extensions (default: `.pas`, `.inc`, `.dfm`, `.dproj`, `.dpk`)
+- Configurable debounce interval
+- Reference-counted directory watches (shared across multiple open projects)
+- Can be disabled via Options if Embarcadero fixes the IDE's own detection
+
+Configure via Tools → DDevExtensions → Options → External Mod Monitor.
 
 **Show all inheritable modules** (default: off)
 Shows all available forms and data modules in the inheritance dialog, not just those from the current project. Useful when inheriting from forms in packages.
@@ -775,4 +797,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.9.1 – 14 January 2026*
+*Version: 3.12.3 – 23 March 2026*
