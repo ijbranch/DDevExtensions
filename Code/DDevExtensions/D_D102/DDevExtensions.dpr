@@ -133,7 +133,10 @@ uses
   FrmCodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas' {FormCodeQualityAnalyzer},
   FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame},
   LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
-  FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter};
+  FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter},
+  FileWatcher in '..\..\..\Shared\FileWatcher.pas',
+  ExternalModMonitor in '..\Source\ExternalModMonitor\ExternalModMonitor.pas',
+  FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

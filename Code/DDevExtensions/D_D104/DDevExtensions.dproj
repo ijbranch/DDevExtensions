@@ -43,11 +43,11 @@
         <VerInfo_Build>575</VerInfo_Build>
         <VerInfo_DLL>true</VerInfo_DLL>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.11.3.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.11;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.12.3.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.12;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_MinorVer>11</VerInfo_MinorVer>
+        <VerInfo_MinorVer>12</VerInfo_MinorVer>
         <Manifest_File>None</Manifest_File>
         <DllSuffix>D104</DllSuffix>
         <DCC_StringChecks>off</DCC_StringChecks>
@@ -99,7 +99,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.11.3.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.11;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.12.3.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.12;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
     </PropertyGroup>
     <ProjectExtensions>
@@ -1148,6 +1148,12 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\LibraryPathSorter\LibraryPathSorter.pas"/>
         <DCCReference Include="..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas">
             <Form>FormLibraryPathSorter</Form>
+        </DCCReference>
+        <DCCReference Include="..\..\..\Shared\FileWatcher.pas"/>
+        <DCCReference Include="..\Source\ExternalModMonitor\ExternalModMonitor.pas"/>
+        <DCCReference Include="..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas">
+            <Form>FrameOptionPageExternalModMonitor</Form>
+            <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
