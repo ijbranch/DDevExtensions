@@ -4,7 +4,22 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
-## 2026-03-23 - v3.12.3 - Add External Mod Monitor (real-time file change detection)
+## 2026-03-23 - v3.12.4 - Fix External Mod Monitor not detecting .dpr file changes
+
+**Problem:** The External Mod Monitor did not refresh `.dpr` files when modified externally. The `.dpr` extension was missing from the default `MonitoredExtensions` list, so file changes were detected by the watcher but silently discarded by the extension filter. Additionally, `FileWatcher.pas` stored directory keys as `UpperCase(...)`, which mangled the path case flowing through to `IOTAModuleServices.FindModule` — an unnecessary risk even though Windows paths are case-insensitive.
+
+**Changes Made:**
+1. `Source/ExternalModMonitor/ExternalModMonitor.pas` line 143: Added `.dpr` to default `MonitoredExtensions` (`.pas;.inc;.dfm;.dpr;.dproj;.dpk`)
+2. `Shared/FileWatcher.pas` constructor: Changed dictionary to use `TIStringComparer.Ordinal` for case-insensitive key matching
+3. `Shared/FileWatcher.pas` AddWatch/RemoveWatch: Removed `UpperCase()` calls — directory paths now preserve their original case
+
+**Result:** `.dpr` files are now monitored and auto-refreshed like other project files. Directory paths passed to `FindOpenModule` retain their original case, eliminating any risk of OTA lookup mismatches.
+
+**Files Modified:** Source/ExternalModMonitor/ExternalModMonitor.pas, Shared/FileWatcher.pas, Source/version.inc, all .dproj files (D_D102–D_D130 + Installer)
+
+---
+
+## 2026-03-23 - v3.12.4 - Add External Mod Monitor (real-time file change detection)
 
 **Problem:** The Delphi IDE only detects external file modifications when it regains focus (Alt-Tab away and back). When using external tools (AI assistants, version control, other editors) that modify project files while the IDE is active, changes go undetected. The VSoft.ExternalModDetector plugin solves this but requires an external FileSystemMonitor dependency, which is undesirable for a public repository.
 
