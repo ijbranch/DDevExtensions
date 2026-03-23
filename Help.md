@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.9.0 | Comprehensive Feature Reference
+Version 3.12.3 | Comprehensive Feature Reference
 
 ---
 
@@ -36,6 +36,7 @@ Version 3.9.0 | Comprehensive Feature Reference
 | Editor Tab Double-Click | Zoom | Double-click tab |
 | Empty Event Handler Detector | ON | DDevExtensions submenu |
 | Enhanced Key Bindings | ON | Automatic |
+| External Mod Monitor | ON | Options (automatic monitoring) |
 | File Cleaner | ON | Automatic |
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
@@ -1647,6 +1648,43 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 3. **Move Line/Block**: Place cursor on a line (or select multiple lines), then use Ctrl+Alt+Shift+Up/Down to move the entire block without cut/paste.
 
 4. **Section Toggle**: Press Ctrl+Shift+Up to jump to the `interface` keyword, or Ctrl+Shift+Down to jump to the `implementation` keyword. Works from anywhere in the unit.
+
+---
+
+### External Mod Monitor
+
+**Purpose:** Monitors project directories in real-time for externally modified files and silently refreshes them in the IDE without requiring an Alt-Tab focus change.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > External Mod Monitor
+
+#### How It Works
+
+When a project is opened, the monitor begins watching its directory using the Windows `ReadDirectoryChangesW` API on a background thread. When a monitored file is modified externally (e.g., by an AI assistant, version control operation, or another editor), the change is detected and the file is silently refreshed in the IDE via `IOTAModule.Refresh`.
+
+#### Options
+
+- **Active**: Enable or disable the monitor. Turn off if Embarcadero fixes the IDE's own detection.
+- **Debounce interval (ms)**: Time to wait after the last detected change before refreshing (default: 200ms). Prevents reload storms during batch operations like `git checkout`.
+- **Monitored extensions**: Semicolon-separated list of file extensions to monitor (default: `.pas;.inc;.dfm;.dproj;.dpk`).
+
+#### Safety Features
+
+- **Unsaved changes protected**: Files with unsaved editor changes are never silently overwritten.
+- **Compile suppression**: Monitoring is automatically suppressed during compilation to avoid false-positive reloads from intermediate build artifacts.
+- **Reference counting**: Multiple open projects sharing the same directory only create one watch.
+
+#### Typical Use Cases
+
+1. **AI-assisted development**: Claude Code or other AI tools edit source files while the IDE is focused — changes appear immediately.
+2. **Git operations**: After `git pull`, `git checkout`, or `git stash pop`, modified files refresh without Alt-Tab.
+3. **External editors**: Editing a `.pas` file in Notepad, VS Code, or another tool while the IDE is open.
+
+#### Can Be Disabled Via
+
+- Options checkbox (persisted in configuration XML)
+- Environment variable: `DDevExtensions.DisabledFeatures=ExternalModMonitor`
 
 ---
 

@@ -4,6 +4,26 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-23 - v3.12.3 - Add External Mod Monitor (real-time file change detection)
+
+**Problem:** The Delphi IDE only detects external file modifications when it regains focus (Alt-Tab away and back). When using external tools (AI assistants, version control, other editors) that modify project files while the IDE is active, changes go undetected. The VSoft.ExternalModDetector plugin solves this but requires an external FileSystemMonitor dependency, which is undesirable for a public repository.
+
+**Changes Made:**
+1. `Shared/FileWatcher.pas`: New unit — self-contained `ReadDirectoryChangesW` wrapper using overlapped I/O. Background thread with reference-counted directory watches, main-thread notification via `TThread.Queue`. Zero external dependencies.
+2. `Source/ExternalModMonitor/ExternalModMonitor.pas`: New feature plugin — `TExternalModMonitorConfig` (inherits `TPluginConfig`). Uses `TIDENotifier` for project open/close events and compile suppression. Debounced (200ms) silent auto-refresh via `IOTAModule.Refresh(False)`. Skips files with unsaved editor changes.
+3. `Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas` + `.dfm`: New options page — Active checkbox, debounce interval (ms), monitored extensions field.
+4. `Source/DelphiExtension.inc`: Added `{$DEFINE INCLUDE_EXTERNALMODMONITOR}`
+5. `Source/RegisterPlugins.pas`: Added uses clause and `RegisterLateLoader` call for `ExternalModMonitor.InitPlugin`
+6. `D_D130/DDevExtensions.dpr`: Added `FileWatcher`, `ExternalModMonitor`, `FrmeOptionPageExternalModMonitor` to uses clause
+7. `D_D130/DDevExtensions.dproj`: Added three `DCCReference` entries for the new units
+
+**Result:** Project directories are monitored in real-time. Externally modified files are silently refreshed within ~200ms. Monitoring is suppressed during compilation. Files with unsaved editor changes are never overwritten. Feature is enabled by default and can be toggled via Tools > DDevExtensions > Options > External Mod Monitor.
+
+**Files Created:** Shared/FileWatcher.pas, Source/ExternalModMonitor/ExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm
+**Files Modified:** Source/DelphiExtension.inc, Source/RegisterPlugins.pas, D_D130/DDevExtensions.dpr, D_D130/DDevExtensions.dproj
+
+---
+
 ## 2026-03-15 - Fix IDE Path Sorter cosmetic issues, persist panel sizes, add multi-select
 
 **Problem:** The `>>` and `A-Z` buttons were children of `pnlMain` at fixed absolute positions (Left=444), causing them to overlap `lstWorking` content. The "Auto-backup before apply" checkbox text was truncated at Width=150. The main path panel and backup panel heights were not persisted between sessions. The working panel only supported single item selection.

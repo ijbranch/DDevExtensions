@@ -60,6 +60,7 @@
 {$DEFINE INCLUDE_DFMPASCONSISTENCY}
 {$DEFINE INCLUDE_CODEQUALITYANALYZER}
 {$DEFINE INCLUDE_LIBRARYPATHSORTER}
+{$DEFINE INCLUDE_EXTERNALMODMONITOR}
 
 {------------------------------------------------------------------------------}
 // dependencies
