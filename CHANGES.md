@@ -14,13 +14,13 @@ This file is the sole source and record of all project changes for DDevExtension
 3. `Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas` + `.dfm`: New options page — Active checkbox, debounce interval (ms), monitored extensions field.
 4. `Source/DelphiExtension.inc`: Added `{$DEFINE INCLUDE_EXTERNALMODMONITOR}`
 5. `Source/RegisterPlugins.pas`: Added uses clause and `RegisterLateLoader` call for `ExternalModMonitor.InitPlugin`
-6. `D_D130/DDevExtensions.dpr`: Added `FileWatcher`, `ExternalModMonitor`, `FrmeOptionPageExternalModMonitor` to uses clause
-7. `D_D130/DDevExtensions.dproj`: Added three `DCCReference` entries for the new units
+6. All version-specific `.dpr` files (D_D102–D_D130): Added `FileWatcher`, `ExternalModMonitor`, `FrmeOptionPageExternalModMonitor` to uses clause
+7. All version-specific `.dproj` files (D_D102–D_D130) + Installer: Added three `DCCReference` entries for the new units; updated `VerInfo_MinorVer`, `FileVersion`, and `ProductVersion` to 3.12.3
 
 **Result:** Project directories are monitored in real-time. Externally modified files are silently refreshed within ~200ms. Monitoring is suppressed during compilation. Files with unsaved editor changes are never overwritten. Feature is enabled by default and can be toggled via Tools > DDevExtensions > Options > External Mod Monitor.
 
 **Files Created:** Shared/FileWatcher.pas, Source/ExternalModMonitor/ExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm
-**Files Modified:** Source/DelphiExtension.inc, Source/RegisterPlugins.pas, D_D130/DDevExtensions.dpr, D_D130/DDevExtensions.dproj
+**Files Modified:** Source/DelphiExtension.inc, Source/RegisterPlugins.pas, Source/version.inc, D_D102–D_D130/DDevExtensions.dpr, D_D102–D_D130/DDevExtensions.dproj, Installer/DDevExtensionsReg.dproj
 
 ---
 
