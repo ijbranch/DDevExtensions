@@ -17,7 +17,7 @@ unit ExternalModMonitor;
 interface
 
 uses
-  Windows, SysUtils, Classes, ExtCtrls, ToolsAPI,
+  Windows, SysUtils, Classes, ExtCtrls, ShellAPI, ToolsAPI,
   FrmTreePages, PluginConfig, IDENotifiers, FileWatcher;
 
 type
@@ -26,9 +26,12 @@ type
     FActive: Boolean;
     FDebounceMs: Integer;
     FMonitoredExtensions: string;
+    FShowNotifications: Boolean;
     FIDENotifier: TIDENotifier;
     FFileWatcher: TFileWatcher;
     FDebounceTimer: TTimer;
+    FNotifyCleanupTimer: TTimer;
+    FNotifyIconData: TNotifyIconData;
     FPendingReloads: TStringList;
     FCompiling: Boolean;
     FExtensionSet: TStringList;
@@ -50,6 +53,8 @@ type
     function IsMonitoredExtension( const FileName: string ): Boolean;
     function FindOpenModule( const FileName: string ): IOTAModule;
     function IsModuleModifiedInEditor( Module: IOTAModule ): Boolean;
+    procedure ShowBalloonNotification( RefreshedFiles: TStringList );
+    procedure HandleNotifyCleanup( Sender: TObject );
   protected
     procedure Init; override;
     function GetOptionPages: TTreePage; override;
@@ -60,6 +65,7 @@ type
     property Active: Boolean read FActive write FActive;
     property DebounceMs: Integer read FDebounceMs write FDebounceMs;
     property MonitoredExtensions: string read FMonitoredExtensions write FMonitoredExtensions;
+    property ShowNotifications: Boolean read FShowNotifications write FShowNotifications;
   end;
 
 procedure InitPlugin( Unload: Boolean );
@@ -67,7 +73,7 @@ procedure InitPlugin( Unload: Boolean );
 implementation
 
 uses
-  Main, FrmeOptionPageExternalModMonitor;
+  Forms, Main, FrmeOptionPageExternalModMonitor;
 
 var
   ExternalModMonitorConfig: TExternalModMonitorConfig;
@@ -104,6 +110,11 @@ begin
   FDebounceTimer.Enabled := False;
   FDebounceTimer.OnTimer := HandleDebounceTimer;
 
+  FNotifyCleanupTimer := TTimer.Create( nil );
+  FNotifyCleanupTimer.Enabled := False;
+  FNotifyCleanupTimer.Interval := 8000;
+  FNotifyCleanupTimer.OnTimer := HandleNotifyCleanup;
+
   FIDENotifier := TIDENotifier.Create;
   FIDENotifier.OnFileNotification := HandleFileNotification;
   FIDENotifier.OnBeforeCompile := HandleBeforeCompile;
@@ -124,7 +135,10 @@ destructor TExternalModMonitorConfig.Destroy;
 begin
 
   FFileWatcher.ClearWatches;
+  // Remove any lingering tray icon
+  Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
   FIDENotifier.Free;
+  FNotifyCleanupTimer.Free;
   FDebounceTimer.Free;
   FFileWatcher.Free;
   FPendingReloads.Free;
@@ -141,6 +155,7 @@ begin
   FActive := True;
   FDebounceMs := 200;
   FMonitoredExtensions := '.pas;.inc;.dfm;.dpr;.dproj;.dpk';
+  FShowNotifications := True;
 
 end;
 
@@ -302,6 +317,7 @@ var
   FileName: string;
   Module: IOTAModule;
   FilesToProcess: TStringList;
+  RefreshedFiles: TStringList;
 begin
 
   FDebounceTimer.Enabled := False;
@@ -313,6 +329,7 @@ begin
   end;
 
   FilesToProcess := TStringList.Create;
+  RefreshedFiles := TStringList.Create;
   try
     FilesToProcess.Assign( FPendingReloads );
     FPendingReloads.Clear;
@@ -331,11 +348,16 @@ begin
 
       try
         Module.Refresh( False );
+        RefreshedFiles.Add( FileName );
       except
         { Silently ignore refresh failures }
       end;
     end;
+
+    if FShowNotifications and ( RefreshedFiles.Count > 0 ) then
+      ShowBalloonNotification( RefreshedFiles );
   finally
+    RefreshedFiles.Free;
     FilesToProcess.Free;
   end;
 
@@ -373,6 +395,64 @@ begin
       end;
     end;
   end;
+
+end;
+
+procedure TExternalModMonitorConfig.ShowBalloonNotification( RefreshedFiles: TStringList );
+var
+  Msg: string;
+  Title: string;
+  I: Integer;
+begin
+
+  if RefreshedFiles.Count = 0 then
+    Exit;
+
+  // Build message with filenames only (max 5, then summary)
+  Msg := '';
+  for I := 0 to RefreshedFiles.Count - 1 do
+  begin
+    if I >= 5 then
+    begin
+      Msg := Msg + #13#10 + Format( '... and %d more', [RefreshedFiles.Count - 5] );
+      Break;
+    end;
+    if I > 0 then
+      Msg := Msg + #13#10;
+    Msg := Msg + ExtractFileName( RefreshedFiles[I] );
+  end;
+
+  if RefreshedFiles.Count = 1 then
+    Title := 'File Refreshed'
+  else
+    Title := Format( '%d Files Refreshed', [RefreshedFiles.Count] );
+
+  // Remove any previous icon
+  Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
+
+  ZeroMemory( @FNotifyIconData, SizeOf( FNotifyIconData ) );
+  FNotifyIconData.cbSize := SizeOf( TNotifyIconData );
+  FNotifyIconData.Wnd := Application.Handle;
+  FNotifyIconData.uID := 42;
+  FNotifyIconData.uFlags := NIF_ICON or NIF_INFO;
+  FNotifyIconData.hIcon := LoadIcon( 0, IDI_APPLICATION );
+  FNotifyIconData.dwInfoFlags := NIIF_INFO;
+  StrPLCopy( FNotifyIconData.szInfoTitle, Title, Length( FNotifyIconData.szInfoTitle ) - 1 );
+  StrPLCopy( FNotifyIconData.szInfo, Msg, Length( FNotifyIconData.szInfo ) - 1 );
+
+  Shell_NotifyIcon( NIM_ADD, @FNotifyIconData );
+
+  // Schedule cleanup to remove the tray icon
+  FNotifyCleanupTimer.Enabled := False;
+  FNotifyCleanupTimer.Enabled := True;
+
+end;
+
+procedure TExternalModMonitorConfig.HandleNotifyCleanup( Sender: TObject );
+begin
+
+  FNotifyCleanupTimer.Enabled := False;
+  Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
 
 end;
 

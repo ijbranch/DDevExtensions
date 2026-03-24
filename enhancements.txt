@@ -582,11 +582,12 @@ STRATEGIC VALUE / SIGNIFICANT EFFORT:
 RECENTLY COMPLETED
 ================================================================================
 
-- External Mod Monitor (v3.12.4) - Real-time external file change detection
+- External Mod Monitor (v3.12.4, enhanced v3.13.4) - Real-time external file change detection
   - ReadDirectoryChangesW wrapper with no external dependencies
   - Silent auto-refresh via IOTAModule.Refresh
   - 200ms debounce, compile suppression, unsaved-change protection
   - Configurable extensions and debounce interval via Options page
+  - Windows balloon notifications showing refreshed filenames (v3.13.4)
 
 - IDE Path Sorter (v3.8.0, renamed v3.11.3, enhanced v3.13.4) - Manage and organize IDE paths
   - Sort paths alphabetically

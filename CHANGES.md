@@ -4,6 +4,26 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-24 - v3.13.4 - External Mod Monitor: Windows Balloon Notifications
+
+**Problem:** When the External Mod Monitor silently refreshed externally modified files, there was no visual feedback to the user about which files had been updated.
+
+**Changes Made:**
+1. `Source/ExternalModMonitor/ExternalModMonitor.pas`:
+   - Added `ShowNotifications` published property (default: True)
+   - Added `ShowBalloonNotification()` — uses `Shell_NotifyIcon` with `NIF_INFO` to display a Windows balloon tip listing refreshed filenames (max 5, then "... and N more")
+   - Added `HandleNotifyCleanup()` — timer-based cleanup removes the tray icon after 8 seconds
+   - Updated `HandleDebounceTimer()` to track successfully refreshed files and trigger notification
+   - Added `ShellAPI` and `Forms` to uses clauses
+2. `Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas`: Added load/save/enable logic for the new checkbox
+3. `Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm`: Added "Show notification on refresh" checkbox
+
+**Result:** A Windows balloon notification now appears listing each refreshed filename when external changes are detected and applied. Configurable via the Options page.
+
+**Files Modified:** Source/ExternalModMonitor/ExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm
+
+---
+
 ## 2026-03-24 - v3.13.4 - IDE Path Sorter: Platform Category Filter Checkboxes
 
 **Problem:** When many platforms are installed (Win32, Win64, Android, iOS, macOS, ARM, Linux, etc.), the Platform dropdown in the IDE Path Sorter shows all of them in a flat list, making it harder to find the desired platform.

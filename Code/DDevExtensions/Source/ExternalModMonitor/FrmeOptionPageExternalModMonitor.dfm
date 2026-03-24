@@ -44,6 +44,14 @@ inherited FrameOptionPageExternalModMonitor: TFrameOptionPageExternalModMonitor
       TabOrder = 2
       Text = '.pas;.inc;.dfm;.dproj;.dpk'
     end
+    object cbxShowNotifications: TCheckBox
+      Left = 24
+      Top = 88
+      Width = 200
+      Height = 17
+      Caption = 'Show &notification on refresh'
+      TabOrder = 3
+    end
   end
   inherited pnlDescription: TPanel
     Width = 507
