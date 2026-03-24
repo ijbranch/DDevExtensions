@@ -25,6 +25,7 @@ type
     edtDebounceMs: TEdit;
     lblExtensions: TLabel;
     edtExtensions: TEdit;
+    cbxShowNotifications: TCheckBox;
     procedure cbxActiveClick( Sender: TObject );
   private
     FConfig: TObject; { TExternalModMonitorConfig - forward avoidance }
@@ -58,6 +59,7 @@ begin
   cbxActive.Checked := ( FConfig as TExternalModMonitorConfig ).Active;
   edtDebounceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).DebounceMs );
   edtExtensions.Text := ( FConfig as TExternalModMonitorConfig ).MonitoredExtensions;
+  cbxShowNotifications.Checked := ( FConfig as TExternalModMonitorConfig ).ShowNotifications;
   cbxActiveClick( cbxActive );
 
 end;
@@ -75,6 +77,7 @@ begin
     ( FConfig as TExternalModMonitorConfig ).DebounceMs := 200;
 
   ( FConfig as TExternalModMonitorConfig ).MonitoredExtensions := edtExtensions.Text;
+  ( FConfig as TExternalModMonitorConfig ).ShowNotifications := cbxShowNotifications.Checked;
   ( FConfig as TExternalModMonitorConfig ).Save;
 
 end;
@@ -94,6 +97,7 @@ begin
   edtExtensions.Enabled := cbxActive.Checked;
   lblDebounceMs.Enabled := cbxActive.Checked;
   lblExtensions.Enabled := cbxActive.Checked;
+  cbxShowNotifications.Enabled := cbxActive.Checked;
 
 end;
 

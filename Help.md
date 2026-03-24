@@ -1668,6 +1668,7 @@ When a project is opened, the monitor begins watching its directory using the Wi
 - **Active**: Enable or disable the monitor. Turn off if Embarcadero fixes the IDE's own detection.
 - **Debounce interval (ms)**: Time to wait after the last detected change before refreshing (default: 200ms). Prevents reload storms during batch operations like `git checkout`.
 - **Monitored extensions**: Semicolon-separated list of file extensions to monitor (default: `.pas;.inc;.dfm;.dproj;.dpk`).
+- **Show notification on refresh** (New in 3.13.4): When enabled, a Windows balloon notification appears listing the filenames that were refreshed. Shows up to 5 filenames with a summary for additional files. Enabled by default.
 
 #### Safety Features
 

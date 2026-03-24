@@ -92,6 +92,8 @@ Version 3.12.4 adds the **External Mod Monitor** — real-time detection of exte
 
 Version 3.13.4 enhances the **IDE Path Sorter** with **platform category filter checkboxes**. When many platforms are installed, the Platform dropdown can be filtered by category (Windows, Android, iOS, ARM, macOS, Linux). An "All" checkbox shows all platforms at once. Only categories with installed platforms appear. Checkbox selections persist across sessions.
 
+Version 3.13.4 also adds **Windows balloon notifications** to the **External Mod Monitor**. When externally modified files are refreshed, a notification shows which files were updated. Configurable via Options (enabled by default).
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -564,6 +566,7 @@ Monitors project directories in real-time for externally modified files and sile
 - Configurable debounce interval
 - Reference-counted directory watches (shared across multiple open projects)
 - Can be disabled via Options if Embarcadero fixes the IDE's own detection
+- **New in 3.13.4** - Windows balloon notification showing which files were refreshed (configurable)
 
 Configure via Tools → DDevExtensions → Options → External Mod Monitor.
 
