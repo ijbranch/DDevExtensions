@@ -4,6 +4,28 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-24 - v3.13.4 - IDE Path Sorter: Platform Category Filter Checkboxes
+
+**Problem:** When many platforms are installed (Win32, Win64, Android, iOS, macOS, ARM, Linux, etc.), the Platform dropdown in the IDE Path Sorter shows all of them in a flat list, making it harder to find the desired platform.
+
+**Changes Made:**
+1. `Source/LibraryPathSorter/FrmLibraryPathSorter.dfm`: Added `pnlPlatformFilter` panel and `lblPlatformFilter` label to `pnlTop`; increased panel height from 70 to 95; moved caution label down to accommodate filter row
+2. `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`:
+   - Added `FAllPlatforms`, `FPlatformCategories`, `FPlatformCheckboxes` fields
+   - Added `CategorizePlatform()` — maps platform names to categories (Windows, Android, iOS, macOS, ARM, Linux, Other) by prefix/content matching
+   - Added `BuildPlatformCategories()` — groups installed platforms into categories
+   - Added `CreatePlatformCheckboxes()` — dynamically creates checkboxes for each category that has installed platforms; loads saved checked state from registry
+   - Added `FilterPlatformDropdown()` — rebuilds the Platform dropdown showing only platforms from checked categories; falls back to all platforms if none checked
+   - Added `PlatformCheckboxClick()` — triggers dropdown filtering on checkbox change
+   - Updated `SaveFormSettings()` to persist checkbox states as `PlatformFilter_<Category>` registry values
+   - Updated `FormCreate()` / `FormClose()` to initialise/free new objects
+
+**Result:** Only categories with installed platforms appear as checkboxes. Unchecking a category hides its platforms from the dropdown. Checkbox states persist across sessions via the registry. Safety fallback shows all platforms if no checkboxes are checked.
+
+**Files Modified:** Source/LibraryPathSorter/FrmLibraryPathSorter.pas, Source/LibraryPathSorter/FrmLibraryPathSorter.dfm
+
+---
+
 ## 2026-03-23 - v3.12.4 - Fix External Mod Monitor not detecting .dpr file changes
 
 **Problem:** The External Mod Monitor did not refresh `.dpr` files when modified externally. The `.dpr` extension was missing from the default `MonitoredExtensions` list, so file changes were detected by the watcher but silently discarded by the extension filter. Additionally, `FileWatcher.pas` stored directory keys as `UpperCase(...)`, which mangled the path case flowing through to `IOTAModuleServices.FindModule` — an unnecessary risk even though Windows paths are case-insensitive.

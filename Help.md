@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.12.4 | Comprehensive Feature Reference
+Version 3.13.4 | Comprehensive Feature Reference
 
 ---
 
@@ -1731,7 +1731,7 @@ When a project is opened, the monitor begins watching its directory using the Wi
 
 ---
 
-### IDE Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1, Renamed in 3.11.3)
+### IDE Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1/3.13.4, Renamed in 3.11.3)
 
 **Purpose:** Manages and organizes Delphi IDE library paths with sorting, editing, and backup/restore capabilities.
 
@@ -1760,6 +1760,14 @@ When a project is opened, the monitor begins watching its directory using the Wi
 **Platform Support:**
 - Win32, Win64, and any other platforms configured in the IDE
 - Automatically detects available platforms from registry
+
+**Platform Category Filter (New in 3.13.4):**
+- Filter the Platform dropdown by category using checkboxes: All, Windows, Android, iOS, ARM, macOS, Linux
+- **All** checkbox: when checked, all category checkboxes are checked and all platforms are shown
+- Only categories with installed platforms appear as checkboxes
+- Platforms containing "ARM" (WinArm64C, OSXARM64, iOSSimARM64) are grouped under ARM
+- Windows appears first after All; remaining categories sorted alphabetically
+- Checkbox selections persist across sessions via the registry
 
 **Editing Capabilities:**
 - **Sort Alphabetically (A-Z button)**: One-click alphabetical sorting
