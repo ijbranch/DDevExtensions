@@ -4,6 +4,21 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-25 - v3.13.5 - External Mod Monitor: Project Load Grace Period
+
+**Problem:** When a project group is loaded in RAD Studio, the IDE normalises/rewrites .dproj files. The External Mod Monitor detected these IDE-initiated writes and showed spurious "Files Refreshed" balloon notifications.
+
+**Changes Made:**
+1. `ExternalModMonitor.pas`: Added `FProjectLoadGraceMs` (default 3000ms) and `FGraceUntilTick` fields. `StartWatchingProject` bumps the grace deadline on every project open. `HandleFileChanged` and `HandleDebounceTimer` discard events arriving within the grace period.
+2. `FrmeOptionPageExternalModMonitor.pas`: Added load/save/enable logic for the new "Load grace period (ms):" setting (minimum 500ms).
+3. `FrmeOptionPageExternalModMonitor.dfm`: Added label and edit for the grace period; shifted extensions and notification controls down.
+
+**Result:** File change events arriving within the configurable grace period after project load are silently discarded, eliminating spurious notifications during project group loading.
+
+**Files Modified:** Source/ExternalModMonitor/ExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm
+
+---
+
 ## 2026-03-24 - v3.13.4 - External Mod Monitor: Windows Balloon Notifications
 
 **Problem:** When the External Mod Monitor silently refreshed externally modified files, there was no visual feedback to the user about which files had been updated.

@@ -25,6 +25,7 @@ type
   private
     FActive: Boolean;
     FDebounceMs: Integer;
+    FProjectLoadGraceMs: Integer;
     FMonitoredExtensions: string;
     FShowNotifications: Boolean;
     FIDENotifier: TIDENotifier;
@@ -34,6 +35,7 @@ type
     FNotifyIconData: TNotifyIconData;
     FPendingReloads: TStringList;
     FCompiling: Boolean;
+    FGraceUntilTick: UInt64;
     FExtensionSet: TStringList;
 
     procedure RebuildExtensionSet;
@@ -66,6 +68,7 @@ type
     property DebounceMs: Integer read FDebounceMs write FDebounceMs;
     property MonitoredExtensions: string read FMonitoredExtensions write FMonitoredExtensions;
     property ShowNotifications: Boolean read FShowNotifications write FShowNotifications;
+    property ProjectLoadGraceMs: Integer read FProjectLoadGraceMs write FProjectLoadGraceMs;
   end;
 
 procedure InitPlugin( Unload: Boolean );
@@ -156,6 +159,7 @@ begin
   FDebounceMs := 200;
   FMonitoredExtensions := '.pas;.inc;.dfm;.dpr;.dproj;.dpk';
   FShowNotifications := True;
+  FProjectLoadGraceMs := 3000;
 
 end;
 
@@ -197,7 +201,10 @@ begin
 
   Dir := ExtractFileDir( ProjectFileName );
   if ( Dir <> '' ) and DirectoryExists( Dir ) then
+  begin
     FFileWatcher.AddWatch( Dir );
+    FGraceUntilTick := GetTickCount64 + UInt64( FProjectLoadGraceMs );
+  end;
 
 end;
 
@@ -299,6 +306,9 @@ begin
   if FCompiling then
     Exit;
 
+  if GetTickCount64 < FGraceUntilTick then
+    Exit;
+
   if not IsMonitoredExtension( FileName ) then
     Exit;
 
@@ -323,6 +333,12 @@ begin
   FDebounceTimer.Enabled := False;
 
   if FCompiling then
+  begin
+    FPendingReloads.Clear;
+    Exit;
+  end;
+
+  if GetTickCount64 < FGraceUntilTick then
   begin
     FPendingReloads.Clear;
     Exit;

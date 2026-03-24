@@ -94,6 +94,8 @@ Version 3.13.4 enhances the **IDE Path Sorter** with **platform category filter 
 
 Version 3.13.4 also adds **Windows balloon notifications** to the **External Mod Monitor**. When externally modified files are refreshed, a notification shows which files were updated. Configurable via Options (enabled by default).
 
+Version 3.13.5 adds a **project load grace period** to the **External Mod Monitor**. When a project group is loaded, the IDE normalises/rewrites `.dproj` files, which previously triggered spurious "Files Refreshed" notifications. File change events arriving within the configurable grace period (default 3 seconds) after project load are now silently discarded.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update

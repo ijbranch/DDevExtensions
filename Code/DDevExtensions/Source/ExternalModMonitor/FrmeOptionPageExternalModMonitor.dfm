@@ -29,28 +29,43 @@ inherited FrameOptionPageExternalModMonitor: TFrameOptionPageExternalModMonitor
       TabOrder = 1
       Text = '200'
     end
-    object lblExtensions: TLabel
+    object lblProjectLoadGraceMs: TLabel
       Left = 24
       Top = 61
+      Width = 130
+      Height = 13
+      Caption = 'Load grace period (ms):'
+    end
+    object edtProjectLoadGraceMs: TEdit
+      Left = 152
+      Top = 58
+      Width = 57
+      Height = 21
+      TabOrder = 2
+      Text = '3000'
+    end
+    object lblExtensions: TLabel
+      Left = 24
+      Top = 87
       Width = 109
       Height = 13
       Caption = 'Monitored extensions:'
     end
     object edtExtensions: TEdit
       Left = 152
-      Top = 58
+      Top = 84
       Width = 337
       Height = 21
-      TabOrder = 2
+      TabOrder = 3
       Text = '.pas;.inc;.dfm;.dproj;.dpk'
     end
     object cbxShowNotifications: TCheckBox
       Left = 24
-      Top = 88
+      Top = 114
       Width = 200
       Height = 17
       Caption = 'Show &notification on refresh'
-      TabOrder = 3
+      TabOrder = 4
     end
   end
   inherited pnlDescription: TPanel
