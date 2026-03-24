@@ -588,11 +588,12 @@ RECENTLY COMPLETED
   - 200ms debounce, compile suppression, unsaved-change protection
   - Configurable extensions and debounce interval via Options page
 
-- IDE Path Sorter (v3.8.0, renamed v3.11.3) - Manage and organize IDE paths
+- IDE Path Sorter (v3.8.0, renamed v3.11.3, enhanced v3.13.4) - Manage and organize IDE paths
   - Sort paths alphabetically
   - Manual reordering (buttons and drag-and-drop)
   - Duplicate detection with highlighting
   - Backup/restore capability
+  - Platform category filter checkboxes (v3.13.4) - filter dropdown by Windows, ARM, Android, iOS, macOS, Linux
 
 
 TOP RECOMMENDATIONS

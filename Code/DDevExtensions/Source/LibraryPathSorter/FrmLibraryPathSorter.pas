@@ -61,6 +61,8 @@ type
     pmCurrent: TPopupMenu;
     mnuShowMissing: TMenuItem;
     mnuShowDiagnostic: TMenuItem;
+    pnlPlatformFilter: TPanel;
+    lblPlatformFilter: TLabel;
     procedure btnCloseClick( Sender: TObject );
     procedure mnuShowDiagnosticClick( Sender: TObject );
     procedure mnuShowMissingClick( Sender: TObject );
@@ -96,6 +98,10 @@ type
     FDeletedCount: Integer;
     FChangesApplied: Boolean;
     FPathValidityCache: TDictionary<string, Boolean>;
+    FAllPlatforms: TStringList;
+    FPlatformCategories: TDictionary<string, TStringList>;
+    FPlatformCheckboxes: TList<TCheckBox>;
+    FChkAll: TCheckBox;
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
     function IsPathInWorkingPanel( const APath: string ): Boolean;
     function IsPathValid( const APath: string ): Boolean;
@@ -117,6 +123,13 @@ type
     procedure ApplyPaths( const APaths: string );
     procedure LoadFormSettings;
     procedure SaveFormSettings;
+    function CategorizePlatform( const APlatform: string ): string;
+    procedure BuildPlatformCategories;
+    procedure CreatePlatformCheckboxes;
+    procedure PlatformCheckboxClick( Sender: TObject );
+    procedure AllCheckboxClick( Sender: TObject );
+    procedure UpdateCategoryCheckboxes;
+    procedure FilterPlatformDropdown;
   public
     class procedure Execute;
   end;
@@ -146,10 +159,14 @@ end;
 
 procedure TFormLibraryPathSorter.FormCreate( Sender: TObject );
 begin
+
   FDragIndex := -1;
   FDeletedCount := 0;
   FChangesApplied := False;
   FPathValidityCache := TDictionary<string, Boolean>.Create;
+  FAllPlatforms := TStringList.Create;
+  FPlatformCategories := TDictionary<string, TStringList>.Create;
+  FPlatformCheckboxes := TList<TCheckBox>.Create;
 
   // Load saved form position and size
   LoadFormSettings;
@@ -164,6 +181,11 @@ begin
 
   LoadPathTypes;
   LoadPlatforms;
+
+  // Build platform category checkboxes and apply filter
+  BuildPlatformCategories;
+  CreatePlatformCheckboxes;
+  FilterPlatformDropdown;
 
   if cboPathType.Items.Count > 0 then
     cboPathType.ItemIndex := 0;
@@ -188,6 +210,13 @@ begin
       'For the changes to take effect, you must close and reopen Delphi.' );
 
   FPathValidityCache.Free;
+  FPlatformCheckboxes.Free;
+
+  for var CatList in FPlatformCategories.Values do
+    CatList.Free;
+  FPlatformCategories.Free;
+
+  FAllPlatforms.Free;
   FormLibraryPathSorterInstance := nil;
   Action := caFree;
 end;
@@ -205,17 +234,21 @@ procedure TFormLibraryPathSorter.LoadPlatforms;
 var
   Platforms: TStringList;
 begin
+
   cboPlatform.Items.Clear;
+  FAllPlatforms.Clear;
 
   if LibraryPathSorterPlugin = nil then
     Exit;
 
   Platforms := LibraryPathSorterPlugin.PathHandler.GetAvailablePlatforms;
   try
+    FAllPlatforms.Assign( Platforms );
     cboPlatform.Items.Assign( Platforms );
   finally
     Platforms.Free;
   end;
+
 end;
 
 function TFormLibraryPathSorter.GetSelectedPathType: TLibraryPathType;
@@ -1305,10 +1338,263 @@ begin
   btnDeleteBackup.Enabled := ( lvBackups.Selected <> nil );
 end;
 
+function TFormLibraryPathSorter.CategorizePlatform( const APlatform: string ): string;
+var
+  UpperPlatform: string;
+begin
+
+  UpperPlatform := AnsiUpperCase( APlatform );
+
+  // ARM check first — catches WinArm64C, OSXARM64, etc.
+  if Pos( 'ARM', UpperPlatform ) > 0 then
+    Result := 'ARM'
+  else if Copy( UpperPlatform, 1, 3 ) = 'WIN' then
+    Result := 'Windows'
+  else if Copy( UpperPlatform, 1, 7 ) = 'ANDROID' then
+    Result := 'Android'
+  else if Copy( UpperPlatform, 1, 3 ) = 'IOS' then
+    Result := 'iOS'
+  else if Copy( UpperPlatform, 1, 3 ) = 'OSX' then
+    Result := 'macOS'
+  else if Copy( UpperPlatform, 1, 5 ) = 'LINUX' then
+    Result := 'Linux'
+  else
+    Result := 'Other';
+
+end;
+
+procedure TFormLibraryPathSorter.BuildPlatformCategories;
+var
+  I: Integer;
+  Category: string;
+  CatList: TStringList;
+begin
+
+  // Clear existing categories
+  for CatList in FPlatformCategories.Values do
+    CatList.Free;
+  FPlatformCategories.Clear;
+
+  // Categorise each installed platform
+  for I := 0 to FAllPlatforms.Count - 1 do
+  begin
+    Category := CategorizePlatform( FAllPlatforms[I] );
+
+    if not FPlatformCategories.TryGetValue( Category, CatList ) then
+    begin
+      CatList := TStringList.Create;
+      FPlatformCategories.Add( Category, CatList );
+    end;
+
+    CatList.Add( FAllPlatforms[I] );
+  end;
+
+end;
+
+procedure TFormLibraryPathSorter.CreatePlatformCheckboxes;
+var
+  Categories: TStringList;
+  Category: string;
+  ChkBox: TCheckBox;
+  XPos: Integer;
+  Reg: TRegistry;
+  ValueName: string;
+begin
+
+  // Remove any existing dynamic checkboxes
+  FreeAndNil( FChkAll );
+  for ChkBox in FPlatformCheckboxes do
+    ChkBox.Free;
+  FPlatformCheckboxes.Clear;
+
+  // Collect and sort category names, with Windows first
+  Categories := TStringList.Create;
+  try
+    for Category in FPlatformCategories.Keys do
+    begin
+      if Category <> 'Windows' then
+        Categories.Add( Category );
+    end;
+    Categories.Sort;
+    if FPlatformCategories.ContainsKey( 'Windows' ) then
+      Categories.Insert( 0, 'Windows' );
+
+    // Load saved filter states from registry
+    Reg := TRegistry.Create;
+    try
+      Reg.RootKey := HKEY_CURRENT_USER;
+      Reg.OpenKeyReadOnly( 'Software\DDevExtensions\LibraryPathSorter' );
+
+      // Create the "All" checkbox first
+      FChkAll := TCheckBox.Create( Self );
+      FChkAll.Parent := pnlPlatformFilter;
+      FChkAll.Left := 4;
+      FChkAll.Top := 3;
+      FChkAll.Width := 50;
+      FChkAll.Height := 17;
+      FChkAll.Caption := 'All';
+      FChkAll.Font.Style := [fsBold];
+
+      // Load saved state; default to unchecked
+      if ( Reg.CurrentKey <> 0 ) and Reg.ValueExists( 'PlatformFilter_All' ) then
+        FChkAll.Checked := ( Reg.ReadInteger( 'PlatformFilter_All' ) <> 0 )
+      else
+        FChkAll.Checked := False;
+
+      FChkAll.OnClick := AllCheckboxClick;
+
+      // Create category checkboxes after "All"
+      XPos := 60;
+      for Category in Categories do
+      begin
+        ChkBox := TCheckBox.Create( Self );
+        ChkBox.Parent := pnlPlatformFilter;
+        ChkBox.Left := XPos;
+        ChkBox.Top := 3;
+        ChkBox.Width := 90;
+        ChkBox.Height := 17;
+        ChkBox.Caption := Category;
+
+        // Load saved state; default to unchecked
+        ValueName := 'PlatformFilter_' + Category;
+        if ( Reg.CurrentKey <> 0 ) and Reg.ValueExists( ValueName ) then
+          ChkBox.Checked := ( Reg.ReadInteger( ValueName ) <> 0 )
+        else
+          ChkBox.Checked := False;
+
+        ChkBox.OnClick := PlatformCheckboxClick;
+        FPlatformCheckboxes.Add( ChkBox );
+        XPos := XPos + 100;
+      end;
+
+      // If "All" is checked, enable all category checkboxes visually
+      UpdateCategoryCheckboxes;
+
+      if Reg.CurrentKey <> 0 then
+        Reg.CloseKey;
+    finally
+      Reg.Free;
+    end;
+  finally
+    Categories.Free;
+  end;
+
+end;
+
+procedure TFormLibraryPathSorter.AllCheckboxClick( Sender: TObject );
+begin
+
+  UpdateCategoryCheckboxes;
+  FilterPlatformDropdown;
+
+end;
+
+procedure TFormLibraryPathSorter.PlatformCheckboxClick( Sender: TObject );
+begin
+
+  FilterPlatformDropdown;
+
+end;
+
+procedure TFormLibraryPathSorter.UpdateCategoryCheckboxes;
+var
+  ChkBox: TCheckBox;
+begin
+
+  // When "All" is checked, check and disable all individual checkboxes
+  // When "All" is unchecked, enable individual checkboxes for selective filtering
+  if FChkAll.Checked then
+  begin
+    for ChkBox in FPlatformCheckboxes do
+    begin
+      ChkBox.Checked := True;
+      ChkBox.Enabled := False;
+    end;
+  end
+  else
+  begin
+    for ChkBox in FPlatformCheckboxes do
+      ChkBox.Enabled := True;
+  end;
+
+end;
+
+procedure TFormLibraryPathSorter.FilterPlatformDropdown;
+var
+  I: Integer;
+  Category, PreviousSelection: string;
+  AnyChecked: Boolean;
+  ChkBox: TCheckBox;
+  CheckedCategories: TStringList;
+begin
+
+  // Remember current selection
+  PreviousSelection := GetSelectedPlatform;
+
+  // If "All" is checked, show all platforms
+  if FChkAll.Checked then
+  begin
+    cboPlatform.Items.BeginUpdate;
+    try
+      cboPlatform.Items.Clear;
+      for I := 0 to FAllPlatforms.Count - 1 do
+        cboPlatform.Items.Add( FAllPlatforms[I] );
+    finally
+      cboPlatform.Items.EndUpdate;
+    end;
+  end
+  else
+  begin
+    // Determine which categories are checked
+    CheckedCategories := TStringList.Create;
+    try
+      AnyChecked := False;
+      for ChkBox in FPlatformCheckboxes do
+      begin
+        if ChkBox.Checked then
+        begin
+          CheckedCategories.Add( ChkBox.Caption );
+          AnyChecked := True;
+        end;
+      end;
+
+      // Rebuild the dropdown
+      cboPlatform.Items.BeginUpdate;
+      try
+        cboPlatform.Items.Clear;
+
+        for I := 0 to FAllPlatforms.Count - 1 do
+        begin
+          Category := CategorizePlatform( FAllPlatforms[I] );
+
+          // If no checkboxes checked, show all (safety fallback)
+          if ( not AnyChecked ) or ( CheckedCategories.IndexOf( Category ) >= 0 ) then
+            cboPlatform.Items.Add( FAllPlatforms[I] );
+        end;
+      finally
+        cboPlatform.Items.EndUpdate;
+      end;
+    finally
+      CheckedCategories.Free;
+    end;
+  end;
+
+  // Try to restore previous selection
+  cboPlatform.ItemIndex := cboPlatform.Items.IndexOf( PreviousSelection );
+  if ( cboPlatform.ItemIndex < 0 ) and ( cboPlatform.Items.Count > 0 ) then
+    cboPlatform.ItemIndex := 0;
+
+  // Reload paths for the (possibly changed) platform selection
+  InvalidatePathCache;
+  LoadCurrentPaths;
+
+end;
+
 procedure TFormLibraryPathSorter.LoadFormSettings;
 var
   Reg: TRegistry;
 begin
+
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
@@ -1348,12 +1634,15 @@ begin
   finally
     Reg.Free;
   end;
+
 end;
 
 procedure TFormLibraryPathSorter.SaveFormSettings;
 var
   Reg: TRegistry;
+  ChkBox: TCheckBox;
 begin
+
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
@@ -1368,6 +1657,12 @@ begin
         Reg.WriteInteger( 'PanelWidth', pnlCurrent.Width );
         Reg.WriteInteger( 'MainHeight', pnlMain.Height );
         Reg.WriteInteger( 'BackupsHeight', pnlBackups.Height );
+
+        // Save platform filter checkbox states
+        if FChkAll <> nil then
+          Reg.WriteInteger( 'PlatformFilter_All', Ord( FChkAll.Checked ) );
+        for ChkBox in FPlatformCheckboxes do
+          Reg.WriteInteger( 'PlatformFilter_' + ChkBox.Caption, Ord( ChkBox.Checked ) );
       finally
         Reg.CloseKey;
       end;
@@ -1375,6 +1670,7 @@ begin
   finally
     Reg.Free;
   end;
+
 end;
 
 end.

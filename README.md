@@ -90,6 +90,8 @@ Version 3.10.3 adds an **About dialog** to the DDevExtensions submenu. "About...
 
 Version 3.12.4 adds the **External Mod Monitor** — real-time detection of externally modified files. The Delphi IDE normally only detects external changes when it regains focus. This feature monitors project directories using the Windows `ReadDirectoryChangesW` API and silently refreshes modified files in the IDE within ~200ms, without any external dependencies. Files with unsaved editor changes are never overwritten, and monitoring is automatically suppressed during compilation. Configurable via Tools > DDevExtensions > Options > External Mod Monitor (enabled by default).
 
+Version 3.13.4 enhances the **IDE Path Sorter** with **platform category filter checkboxes**. When many platforms are installed, the Platform dropdown can be filtered by category (Windows, Android, iOS, ARM, macOS, Linux). An "All" checkbox shows all platforms at once. Only categories with installed platforms appear. Checkbox selections persist across sessions.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -730,6 +732,7 @@ Provides a tool to manage and organize Delphi IDE paths with backup/restore capa
 - **Dual-panel interface**: Left panel shows original paths (read-only), right panel is editable working area
 - **All path types supported**: Library Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP Output, Package DPL Output, Translated Debug Library Path, Translated Library Path, Translated Resource Path
 - **All platforms**: Win32, Win64, and any other platforms configured in the IDE
+- **New in 3.13.4** - Platform category filter checkboxes (All, Windows, Android, iOS, ARM, macOS, Linux) with persistent state
 - **Sort alphabetically**: One-click alphabetical sorting of paths
 - **Manual reordering**: Move entries up/down/top/bottom using buttons or drag-and-drop
 - **Delete entries**: Right-click any entry and select "Delete Entry" to remove it
@@ -797,4 +800,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.12.4 – 23 March 2026*
+*Version: 3.13.4 – 24 March 2026*

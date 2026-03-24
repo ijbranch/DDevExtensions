@@ -27,7 +27,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     Left = 0
     Top = 0
     Width = 950
-    Height = 70
+    Height = 95
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
@@ -62,18 +62,25 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
     end
     object lblCaution: TLabel
       Left = 12
-      Top = 44
+      Top = 72
       Width = 930
       Height = 13
       Alignment = taCenter
       AutoSize = False
-      Caption = 
+      Caption =
         'CAUTION: Path order affects compilation. First matching unit win' +
         's. RTL/VCL paths should come first, then vendors, then custom pa' +
         'ths.'
       Font.Color = clMaroon
       Font.Style = [fsBold]
       ParentFont = False
+    end
+    object lblPlatformFilter: TLabel
+      Left = 12
+      Top = 44
+      Width = 80
+      Height = 13
+      Caption = 'Show Platforms:'
     end
     object cboPathType: TComboBox
       Left = 72
@@ -92,6 +99,14 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       Style = csDropDownList
       TabOrder = 1
       OnChange = cboPlatformChange
+    end
+    object pnlPlatformFilter: TPanel
+      Left = 100
+      Top = 40
+      Width = 840
+      Height = 24
+      BevelOuter = bvNone
+      TabOrder = 2
     end
   end
   object pnlBottom: TPanel
