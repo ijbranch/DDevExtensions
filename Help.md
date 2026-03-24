@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.13.4 | Comprehensive Feature Reference
+Version 3.13.5 | Comprehensive Feature Reference
 
 ---
 
@@ -1669,11 +1669,13 @@ When a project is opened, the monitor begins watching its directory using the Wi
 - **Debounce interval (ms)**: Time to wait after the last detected change before refreshing (default: 200ms). Prevents reload storms during batch operations like `git checkout`.
 - **Monitored extensions**: Semicolon-separated list of file extensions to monitor (default: `.pas;.inc;.dfm;.dproj;.dpk`).
 - **Show notification on refresh** (New in 3.13.4): When enabled, a Windows balloon notification appears listing the filenames that were refreshed. Shows up to 5 filenames with a summary for additional files. Enabled by default.
+- **Load grace period (ms)** (New in 3.13.5): Time to suppress file change events after a project is opened (default: 3000ms). Prevents spurious notifications caused by the IDE normalising `.dproj` files during project group loading. Minimum 500ms.
 
 #### Safety Features
 
 - **Unsaved changes protected**: Files with unsaved editor changes are never silently overwritten.
 - **Compile suppression**: Monitoring is automatically suppressed during compilation to avoid false-positive reloads from intermediate build artifacts.
+- **Project load grace period**: File change events arriving within the grace period after project load are silently discarded, preventing spurious notifications from IDE-initiated file writes.
 - **Reference counting**: Multiple open projects sharing the same directory only create one watch.
 
 #### Typical Use Cases

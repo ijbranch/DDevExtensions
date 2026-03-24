@@ -26,6 +26,8 @@ type
     lblExtensions: TLabel;
     edtExtensions: TEdit;
     cbxShowNotifications: TCheckBox;
+    lblProjectLoadGraceMs: TLabel;
+    edtProjectLoadGraceMs: TEdit;
     procedure cbxActiveClick( Sender: TObject );
   private
     FConfig: TObject; { TExternalModMonitorConfig - forward avoidance }
@@ -60,6 +62,7 @@ begin
   edtDebounceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).DebounceMs );
   edtExtensions.Text := ( FConfig as TExternalModMonitorConfig ).MonitoredExtensions;
   cbxShowNotifications.Checked := ( FConfig as TExternalModMonitorConfig ).ShowNotifications;
+  edtProjectLoadGraceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs );
   cbxActiveClick( cbxActive );
 
 end;
@@ -78,6 +81,12 @@ begin
 
   ( FConfig as TExternalModMonitorConfig ).MonitoredExtensions := edtExtensions.Text;
   ( FConfig as TExternalModMonitorConfig ).ShowNotifications := cbxShowNotifications.Checked;
+
+  if TryStrToInt( edtProjectLoadGraceMs.Text, Val ) and ( Val >= 500 ) then
+    ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs := Val
+  else
+    ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs := 3000;
+
   ( FConfig as TExternalModMonitorConfig ).Save;
 
 end;
@@ -98,6 +107,8 @@ begin
   lblDebounceMs.Enabled := cbxActive.Checked;
   lblExtensions.Enabled := cbxActive.Checked;
   cbxShowNotifications.Enabled := cbxActive.Checked;
+  lblProjectLoadGraceMs.Enabled := cbxActive.Checked;
+  edtProjectLoadGraceMs.Enabled := cbxActive.Checked;
 
 end;
 
