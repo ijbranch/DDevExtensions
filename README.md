@@ -96,6 +96,8 @@ Version 3.13.4 also adds **Windows balloon notifications** to the **External Mod
 
 Version 3.13.5 adds a **project load grace period** to the **External Mod Monitor**. When a project group is loaded, the IDE normalises/rewrites `.dproj` files, which previously triggered spurious "Files Refreshed" notifications. File change events arriving within the configurable grace period (default 3 seconds) after project load are now silently discarded.
 
+Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "Export Graph..." button appears when Graphviz is detected on the system (download from https://graphviz.org/download/). After scanning a project, click "Export Graph..." to export a dependency diagram rendered as PNG. Project units are shown as green nodes, external/RTL units as blue, with solid edges for interface dependencies and dashed edges for implementation dependencies. Units involved in circular references are highlighted with red borders.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update

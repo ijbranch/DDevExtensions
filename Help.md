@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.13.5 | Comprehensive Feature Reference
+Version 3.14.5 | Comprehensive Feature Reference
 
 ---
 
@@ -1069,6 +1069,7 @@ Review each result before deleting.
 - **Respect conditional compilation** - optionally reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude code that wouldn't compile for the current project
 - Circular reference detection with enhanced display
 - **Export circular references** - save analysis to CSV or TXT for documentation and tracking
+- **Export Graph** - export a Graphviz DOT dependency graph rendered as PNG (requires Graphviz)
 - **Layer violation detection** - enforce architectural boundaries with configurable layer rules
 - Double-click to open unit
 
@@ -1385,6 +1386,55 @@ Total Circular References: 3
 - Share analysis with team members who don't have DDevExtensions
 - Include in code review documentation
 - Create baseline before refactoring efforts
+
+#### Export Graph (Graphviz DOT)
+
+The Dependency Viewer can export a visual dependency graph as a PNG image using Graphviz.
+
+**Prerequisite:** Graphviz must be installed. Download it from: https://graphviz.org/download/
+
+The "Export Graph..." button only appears when `dot.exe` is detected on the system (checked in common install locations and the system PATH).
+
+**How to Export:**
+
+1. Click "Scan Project" to analyse dependencies
+2. Click the "Export Graph..." button (bottom of right panel)
+3. Choose a location and filename (saved as `.dot` format)
+4. A PNG is automatically rendered and opened in your default image viewer
+
+**Graph Visual Conventions:**
+
+| Element | Meaning |
+|---------|---------|
+| Light green box | Project unit (source file found) |
+| Light blue box | External/RTL unit (no source file) |
+| Red-bordered box | Unit involved in a circular reference |
+| Solid blue edge | Interface uses dependency |
+| Dashed green edge | Implementation uses dependency |
+
+A legend subgraph is included in the output explaining these conventions.
+
+**Example Output:**
+
+```
+digraph Dependencies {
+  rankdir=LR;
+  MainForm [fillcolor=lightgreen];
+  DataModule [fillcolor=lightgreen];
+  SysUtils [fillcolor=lightblue];
+  MainForm -> DataModule [style=solid, color=blue];
+  DataModule -> SysUtils [style=dashed, color=forestgreen];
+}
+```
+
+**Use Cases:**
+
+- Get an at-a-glance architectural overview of your project
+- Include dependency diagrams in project documentation
+- Identify tightly coupled clusters of units visually
+- Share architecture visualisations with team members
+
+*Version: 3.14.5 – 25 March 2026*
 
 #### Layer Violation Detection
 

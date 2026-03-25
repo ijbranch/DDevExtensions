@@ -20,7 +20,7 @@ High-Value Enhancements
    Enhance the Dependency Viewer with:
    - Graphical dependency diagram (like a node graph)
      COMPLEXITY: High | EFFORT: Significant | BENEFIT: High
-   - Export to DOT/GraphViz format
+   - Export to DOT/GraphViz format  [DONE v3.14.5]
      COMPLEXITY: Low | EFFORT: Low | BENEFIT: Medium-High
 
 
