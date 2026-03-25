@@ -4,6 +4,30 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-25 - v3.14.5 - Dependency Viewer: Graphviz DOT Export
+
+**Problem:** The Dependency Viewer provided interactive tree-based exploration and CSV/TXT exports for circular references and layer violations, but had no way to produce a visual graph diagram showing the full dependency structure at a glance.
+
+**Changes Made:**
+1. `FrmDependencyViewer.pas`: Added `btnExportGraphClick` handler, `ExportToDOT` method (generates Graphviz DOT format with colour-coded nodes and edges), and `FindGraphvizDot` helper (searches PATH and common install locations for dot.exe).
+2. `FrmDependencyViewer.dfm`: Added `btnExportGraph` button (anchored bottom-left in right panel) and `SaveDialogGraph` component for DOT file save.
+
+**Features:**
+- "Export Graph..." button only visible when Graphviz `dot.exe` is detected (common install paths and system PATH)
+- Project units shown as light green nodes, external/RTL units as light blue
+- Interface uses rendered as solid blue edges, implementation uses as dashed green edges
+- Units involved in circular references highlighted with red border
+- Auto-invokes Graphviz `dot.exe` to render PNG, then opens the image
+- Includes a legend subgraph explaining the visual conventions
+
+**Prerequisite:** Graphviz must be installed — download from https://graphviz.org/download/
+
+**Result:** Users can now export a complete visual dependency graph from the Dependency Viewer as a PNG image.
+
+**Files Modified:** Source/DependencyViewer/FrmDependencyViewer.pas, Source/DependencyViewer/FrmDependencyViewer.dfm
+
+---
+
 ## 2026-03-25 - v3.13.5 - External Mod Monitor: Project Load Grace Period
 
 **Problem:** When a project group is loaded in RAD Studio, the IDE normalises/rewrites .dproj files. The External Mod Monitor detected these IDE-initiated writes and showed spurious "Files Refreshed" balloon notifications.

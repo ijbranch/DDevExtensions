@@ -258,22 +258,40 @@ inherited FormDependencyViewer: TFormDependencyViewer
       Left = 0
       Top = 287
       Width = 547
-      Height = 139
+      Height = 109
       Align = alBottom
       Anchors = [akLeft, akTop, akRight, akBottom]
       ItemHeight = 13
       TabOrder = 4
       OnDblClick = ListBoxViolationsDblClick
     end
+    object btnExportGraph: TButton
+      Left = 8
+      Top = 400
+      Width = 120
+      Height = 25
+      Anchors = [akLeft, akBottom]
+      Caption = 'Export Graph...'
+      TabOrder = 5
+      OnClick = btnExportGraphClick
+    end
   end
   object SaveDialogExport: TSaveDialog
     DefaultExt = 'csv'
-    Filter = 
+    Filter =
       'CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt|All Files (*.*)' +
       '|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Title = 'Export Circular References'
     Left = 400
+    Top = 8
+  end
+  object SaveDialogGraph: TSaveDialog
+    DefaultExt = 'dot'
+    Filter = 'Graphviz DOT Files (*.dot)|*.dot|All Files (*.*)|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Title = 'Export Dependency Graph'
+    Left = 440
     Top = 8
   end
 end

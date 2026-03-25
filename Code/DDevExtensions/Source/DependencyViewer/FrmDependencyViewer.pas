@@ -50,6 +50,8 @@ type
     lblLayerViolations: TLabel;
     btnExportViolations: TButton;
     ListBoxViolations: TListBox;
+    btnExportGraph: TButton;
+    SaveDialogGraph: TSaveDialog;
     procedure btnCloseClick( Sender: TObject );
     procedure btnScanProjectClick( Sender: TObject );
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
@@ -68,6 +70,7 @@ type
     procedure btnCheckLayersClick( Sender: TObject );
     procedure btnExportViolationsClick( Sender: TObject );
     procedure ListBoxViolationsDblClick( Sender: TObject );
+    procedure btnExportGraphClick( Sender: TObject );
   private
     FScanner: TDependencyScanner;
     FLayerConfig: TLayerConfig;
@@ -94,6 +97,8 @@ type
     procedure PopulateLayerViolations;
     procedure ExportViolationsToCSV( const FileName: string );
     procedure ExportViolationsToTXT( const FileName: string );
+    procedure ExportToDOT( const FileName: string );
+    function FindGraphvizDot: string;
   public
     class procedure Execute;
   end;
@@ -106,7 +111,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers, Main, FrmLayerConfig;
+  ToolsAPIHelpers, Main, FrmLayerConfig, ShellAPI;
 
 class procedure TFormDependencyViewer.Execute;
 begin
@@ -152,6 +157,7 @@ begin
 
   ClearImpactSummary;
   lblLayerViolations.Caption := 'Layer Violations: (run Check Layers)';
+  btnExportGraph.Visible := FindGraphvizDot <> '';
 
 end;
 
@@ -1050,6 +1056,232 @@ begin
 
     ShowMessage( Format( 'Exported %d layer violations to %s',
       [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
+  end;
+
+end;
+
+procedure TFormDependencyViewer.btnExportGraphClick( Sender: TObject );
+var
+  Units: TArray<TUnitInfo>;
+  DotExe, PngFile: string;
+  ExitCode: DWORD;
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  CmdLine: string;
+begin
+
+  Units := FScanner.GetAllUnits;
+
+  if Length( Units ) = 0 then
+  begin
+    ShowMessage( 'No scan results to export. Please scan a project first.' );
+    Exit;
+  end;
+
+  DotExe := FindGraphvizDot;
+
+  if DotExe = '' then
+  begin
+    ShowMessage( 'Graphviz dot.exe not found.' );
+    Exit;
+  end;
+
+  if SaveDialogGraph.Execute then
+  begin
+    ExportToDOT( SaveDialogGraph.FileName );
+
+    PngFile := ChangeFileExt( SaveDialogGraph.FileName, '.png' );
+    CmdLine := '"' + DotExe + '" -Tpng "' + SaveDialogGraph.FileName + '" -o "' + PngFile + '"';
+
+    ZeroMemory( @SI, SizeOf( SI ) );
+    SI.cb := SizeOf( SI );
+    SI.dwFlags := STARTF_USESHOWWINDOW;
+    SI.wShowWindow := SW_HIDE;
+    ZeroMemory( @PI, SizeOf( PI ) );
+
+    if CreateProcess( nil, PChar( CmdLine ), nil, nil, False, CREATE_NO_WINDOW, nil, nil, SI, PI ) then
+    begin
+
+      try
+        WaitForSingleObject( PI.hProcess, 30000 );
+        GetExitCodeProcess( PI.hProcess, ExitCode );
+      finally
+        CloseHandle( PI.hProcess );
+        CloseHandle( PI.hThread );
+      end;
+
+      if ( ExitCode = 0 ) and FileExists( PngFile ) then
+      begin
+        ShellExecute( 0, 'open', PChar( PngFile ), nil, nil, SW_SHOWNORMAL );
+        ShowMessage( Format( 'Exported dependency graph to:%s%s%s%s',
+          [ sLineBreak, SaveDialogGraph.FileName, sLineBreak, PngFile ] ) );
+      end
+      else
+        ShowMessage( Format( 'DOT file saved to %s but Graphviz rendering failed (exit code %d).',
+          [ SaveDialogGraph.FileName, ExitCode ] ) );
+    end
+    else
+      ShowMessage( Format( 'DOT file saved to %s but failed to launch Graphviz.',
+        [ SaveDialogGraph.FileName ] ) );
+  end;
+
+end;
+
+function TFormDependencyViewer.FindGraphvizDot: string;
+var
+  PathEnv, Dir: string;
+  Dirs: TArray<string>;
+  Candidate: string;
+begin
+
+  Result := '';
+
+  // Check common Graphviz installation paths first
+  Candidate := 'C:\Program Files\Graphviz\bin\dot.exe';
+
+  if FileExists( Candidate ) then
+  begin
+    Result := Candidate;
+    Exit;
+  end;
+
+  Candidate := 'C:\Program Files (x86)\Graphviz\bin\dot.exe';
+
+  if FileExists( Candidate ) then
+  begin
+    Result := Candidate;
+    Exit;
+  end;
+
+  // Search PATH
+  PathEnv := GetEnvironmentVariable( 'PATH' );
+  Dirs    := PathEnv.Split( [ ';' ] );
+
+  for Dir in Dirs do
+  begin
+    Candidate := IncludeTrailingPathDelimiter( Dir ) + 'dot.exe';
+
+    if FileExists( Candidate ) then
+    begin
+      Result := Candidate;
+      Exit;
+    end;
+  end;
+
+end;
+
+procedure TFormDependencyViewer.ExportToDOT( const FileName: string );
+var
+  SL: TStringList;
+  Units: TArray<TUnitInfo>;
+  UnitInfo: TUnitInfo;
+  Dep: TUnitDependency;
+  NodeName, FillColour, EdgeStyle, EdgeColour: string;
+  CycleUnits: TStringList;
+  CircRef: TCircularReference;
+  I: Integer;
+begin
+
+  SL := TStringList.Create;
+
+  try
+    // Build set of units involved in circular references
+    CycleUnits := TStringList.Create;
+
+    try
+      CycleUnits.CaseSensitive := False;
+      CycleUnits.Sorted := True;
+      CycleUnits.Duplicates := dupIgnore;
+
+      for CircRef in FScanner.CircularReferences do
+      begin
+
+        for I := 0 to High( CircRef.Steps ) - 1 do
+          CycleUnits.Add( CircRef.Steps[ I ].UnitName );
+      end;
+
+      SL.Add( 'digraph Dependencies {' );
+      SL.Add( '  rankdir=LR;' );
+      SL.Add( '  node [shape=box, style=filled, fontname="Segoe UI", fontsize=10];' );
+      SL.Add( '  edge [fontname="Segoe UI", fontsize=8];' );
+      SL.Add( '' );
+
+      Units := FScanner.GetAllUnits;
+
+      // Emit nodes
+      for UnitInfo in Units do
+      begin
+        NodeName := StringReplace( UnitInfo.UnitName, '.', '_', [ rfReplaceAll ] );
+
+        // Project units (have a source file) = light green; external/RTL = light blue
+        if UnitInfo.FileName <> '' then
+          FillColour := 'lightgreen'
+        else
+          FillColour := 'lightblue';
+
+        if CycleUnits.IndexOf( UnitInfo.UnitName ) >= 0 then
+          SL.Add( Format( '  %s [label="%s", fillcolor=%s, color=red, penwidth=2];',
+            [ NodeName, UnitInfo.UnitName, FillColour ] ) )
+        else
+          SL.Add( Format( '  %s [label="%s", fillcolor=%s];',
+            [ NodeName, UnitInfo.UnitName, FillColour ] ) );
+      end;
+
+      SL.Add( '' );
+
+      // Emit edges
+      for UnitInfo in Units do
+      begin
+        NodeName := StringReplace( UnitInfo.UnitName, '.', '_', [ rfReplaceAll ] );
+
+        for Dep in UnitInfo.Dependencies do
+        begin
+
+          // Only emit edges to units that are in our graph
+          if FScanner.GetUnitInfo( Dep.UnitName ) <> nil then
+          begin
+
+            if Dep.IsInterface then
+            begin
+              EdgeStyle  := 'solid';
+              EdgeColour := 'blue';
+            end
+            else
+            begin
+              EdgeStyle  := 'dashed';
+              EdgeColour := 'forestgreen';
+            end;
+
+            SL.Add( Format( '  %s -> %s [style=%s, color=%s];',
+              [ NodeName, StringReplace( Dep.UnitName, '.', '_', [ rfReplaceAll ] ),
+                EdgeStyle, EdgeColour ] ) );
+          end;
+        end;
+      end;
+
+      SL.Add( '' );
+      SL.Add( '  // Legend' );
+      SL.Add( '  subgraph cluster_legend {' );
+      SL.Add( '    label="Legend";' );
+      SL.Add( '    style=dashed;' );
+      SL.Add( '    fontname="Segoe UI";' );
+      SL.Add( '    fontsize=10;' );
+      SL.Add( '    leg_proj [label="Project Unit", fillcolor=lightgreen, shape=box, style=filled];' );
+      SL.Add( '    leg_ext [label="External/RTL Unit", fillcolor=lightblue, shape=box, style=filled];' );
+      SL.Add( '    leg_cycle [label="In Circular Ref", fillcolor=lightgreen, color=red, penwidth=2, shape=box, style=filled];' );
+      SL.Add( '    leg_iface [label="", shape=point, width=0];' );
+      SL.Add( '    leg_impl [label="", shape=point, width=0];' );
+      SL.Add( '    leg_proj -> leg_iface [label="interface uses", style=solid, color=blue];' );
+      SL.Add( '    leg_ext -> leg_impl [label="implementation uses", style=dashed, color=forestgreen];' );
+      SL.Add( '  }' );
+      SL.Add( '}' );
+
+      SL.SaveToFile( FileName );
+    finally
+      CycleUnits.Free;
+    end;
+  finally
+    SL.Free;
   end;
 
 end;

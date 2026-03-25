@@ -7,10 +7,10 @@
             <Dependencies/>
         </Projects>
         <Projects Include="DDevExtensions.dproj">
-            <Dependencies>CompileInterceptorW.dproj</Dependencies>
+            <Dependencies/>
         </Projects>
         <Projects Include="..\Installer\DDevExtensionsReg.dproj">
-            <Dependencies>DDevExtensions.dproj</Dependencies>
+            <Dependencies/>
         </Projects>
     </ItemGroup>
     <ProjectExtensions>
