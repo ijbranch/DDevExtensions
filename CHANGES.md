@@ -4,6 +4,12 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-03-27 - Build Config: Map File and EXE Output Standardisation
+
+**Changes Made:** Added `DCC_ExeOutput=..\bin` and `DCC_MapFile=3` to DfmParserTests.dproj (had neither). Added `DCC_ExeOutput=..\bin` to DfmParserTestsDUnitX.dproj (had MapFile but no output path). All 10 .dproj files now consistently have both settings.
+
+**Files Modified:** `DfmParserTests/DfmParserTests.dproj`, `DfmParserTests/DfmParserTestsDUnitX.dproj`
+
 ## 2026-03-25 - v3.14.5 - Dependency Viewer: Graphviz DOT Export
 
 **Problem:** The Dependency Viewer provided interactive tree-based exploration and CSV/TXT exports for circular references and layer violations, but had no way to produce a visual graph diagram showing the full dependency structure at a glance.
