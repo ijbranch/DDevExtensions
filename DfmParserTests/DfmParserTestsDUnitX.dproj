@@ -68,6 +68,7 @@
         <Custom_Styles>&quot;Aqua Light Slate|VCLSTYLE|$(BDSCOMMONDIR)\Styles\AquaLightSlate.vsf&quot;</Custom_Styles>
         <Defines>EUREKALOG_VER7;$(Defines)</Defines>
         <DCC_Define>EUREKALOG_VER7;$(DCC_Define)</DCC_Define>
+        <DCC_ExeOutput>..\bin</DCC_ExeOutput>
         <DCC_MapFile>3</DCC_MapFile>
         <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
     </PropertyGroup>
