@@ -353,3 +353,4 @@ modules/
 
 # Windows null device file (created by bash redirection)
 nul
+*.bak1
