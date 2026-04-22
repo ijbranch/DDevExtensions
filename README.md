@@ -98,6 +98,8 @@ Version 3.13.5 adds a **project load grace period** to the **External Mod Monito
 
 Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "Export Graph..." button appears when Graphviz is detected on the system (download from https://graphviz.org/download/). After scanning a project, click "Export Graph..." to export a dependency diagram rendered as PNG. Project units are shown as green nodes, external/RTL units as blue, with solid edges for interface dependencies and dashed edges for implementation dependencies. Units involved in circular references are highlighted with red borders.
 
+Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -807,4 +809,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.13.4 – 24 March 2026*
+*Version: 3.15.5 – 23 April 2026*

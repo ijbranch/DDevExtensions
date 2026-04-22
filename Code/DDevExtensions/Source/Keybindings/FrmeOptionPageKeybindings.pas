@@ -16,7 +16,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, FrmTreePages, ToolsAPI, PluginConfig, SimpleXmlIntf, Menus,
-  ActnList, FrmeBase, ExtCtrls, AnsiStrings;
+  ActnList, FrmeBase, ExtCtrls, ComCtrls, AnsiStrings;
 
 type
   TKeybindings = class(TPluginConfig, IOTAKeyboardBinding)
@@ -34,6 +34,10 @@ type
     FMoveLineBlock: Boolean;
     FFindDeclOnCaret: Boolean;
     FSectionToggle: Boolean;
+    FSectionToggleUpKey: TShortCut;
+    FSectionToggleDownKey: TShortCut;
+    FMoveLineBlockUpKey: TShortCut;
+    FMoveLineBlockDownKey: TShortCut;
     procedure SetActive(const Value: Boolean);
     procedure ToggleSection(EditBuffer: IOTAEditBuffer);
     procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
@@ -74,6 +78,10 @@ type
     property MoveLineBlock: Boolean read FMoveLineBlock write FMoveLineBlock;
     property FindDeclOnCaret: Boolean read FFindDeclOnCaret write FFindDeclOnCaret;
     property SectionToggle: Boolean read FSectionToggle write FSectionToggle;
+    property SectionToggleUpKey: TShortCut read FSectionToggleUpKey write FSectionToggleUpKey;
+    property SectionToggleDownKey: TShortCut read FSectionToggleDownKey write FSectionToggleDownKey;
+    property MoveLineBlockUpKey: TShortCut read FMoveLineBlockUpKey write FMoveLineBlockUpKey;
+    property MoveLineBlockDownKey: TShortCut read FMoveLineBlockDownKey write FMoveLineBlockDownKey;
   end;
 
   TFrameOptionPageKeybindings = class(TFrameBase, ITreePageComponent)
@@ -87,9 +95,19 @@ type
     chkMoveLineBlock: TCheckBox;
     chkFindDeclOnCaret: TCheckBox;
     chkSectionToggle: TCheckBox;
+    lblMoveLineUp: TLabel;
+    lblMoveLineDown: TLabel;
+    lblSectionUp: TLabel;
+    lblSectionDown: TLabel;
+    hkMoveLineUp: THotKey;
+    hkMoveLineDown: THotKey;
+    hkSectionUp: THotKey;
+    hkSectionDown: THotKey;
     procedure cbxActiveClick(Sender: TObject);
     procedure cbxExtendedHomeClick(Sender: TObject);
     procedure cbxTabIndentClick(Sender: TObject);
+    procedure chkMoveLineBlockClick(Sender: TObject);
+    procedure chkSectionToggleClick(Sender: TObject);
   private
     { Private-Deklarationen }
     FKeyBindings: TKeybindings;
@@ -167,7 +185,12 @@ begin
   cbxTabIndentClick(cbxTabIndent);
   cbxExtendedHome.Enabled := cbxActive.Checked;
   cbxExtendedCtrlLeftRight.Enabled := cbxActive.Checked;
+  chkMoveLineBlock.Enabled := cbxActive.Checked;
+  chkFindDeclOnCaret.Enabled := cbxActive.Checked;
+  chkSectionToggle.Enabled := cbxActive.Checked;
   cbxExtendedHomeClick(cbxExtendedHome);
+  chkMoveLineBlockClick(chkMoveLineBlock);
+  chkSectionToggleClick(chkSectionToggle);
 end;
 
 procedure TFrameOptionPageKeybindings.cbxExtendedHomeClick(Sender: TObject);
@@ -178,6 +201,28 @@ end;
 procedure TFrameOptionPageKeybindings.cbxTabIndentClick(Sender: TObject);
 begin
   cbxIndentSingleLine.Enabled := cbxTabIndent.Enabled;
+end;
+
+procedure TFrameOptionPageKeybindings.chkMoveLineBlockClick(Sender: TObject);
+var
+  FieldsEnabled: Boolean;
+begin
+  FieldsEnabled := chkMoveLineBlock.Enabled and chkMoveLineBlock.Checked;
+  lblMoveLineUp.Enabled := FieldsEnabled;
+  lblMoveLineDown.Enabled := FieldsEnabled;
+  hkMoveLineUp.Enabled := FieldsEnabled;
+  hkMoveLineDown.Enabled := FieldsEnabled;
+end;
+
+procedure TFrameOptionPageKeybindings.chkSectionToggleClick(Sender: TObject);
+var
+  FieldsEnabled: Boolean;
+begin
+  FieldsEnabled := chkSectionToggle.Enabled and chkSectionToggle.Checked;
+  lblSectionUp.Enabled := FieldsEnabled;
+  lblSectionDown.Enabled := FieldsEnabled;
+  hkSectionUp.Enabled := FieldsEnabled;
+  hkSectionDown.Enabled := FieldsEnabled;
 end;
 
 procedure TFrameOptionPageKeybindings.LoadData;
@@ -195,6 +240,10 @@ begin
   chkMoveLineBlock.Checked := FKeyBindings.MoveLineBlock;
   chkFindDeclOnCaret.Checked := FKeyBindings.FindDeclOnCaret;
   chkSectionToggle.Checked := FKeyBindings.SectionToggle;
+  hkMoveLineUp.HotKey := FKeyBindings.MoveLineBlockUpKey;
+  hkMoveLineDown.HotKey := FKeyBindings.MoveLineBlockDownKey;
+  hkSectionUp.HotKey := FKeyBindings.SectionToggleUpKey;
+  hkSectionDown.HotKey := FKeyBindings.SectionToggleDownKey;
 
   cbxActiveClick(cbxActive);
   cbxExtendedHomeClick(cbxExtendedHome);
@@ -214,6 +263,10 @@ begin
   FKeyBindings.MoveLineBlock := chkMoveLineBlock.Checked;
   FKeyBindings.FindDeclOnCaret := chkFindDeclOnCaret.Checked;
   FKeyBindings.SectionToggle := chkSectionToggle.Checked;
+  FKeyBindings.MoveLineBlockUpKey := hkMoveLineUp.HotKey;
+  FKeyBindings.MoveLineBlockDownKey := hkMoveLineDown.HotKey;
+  FKeyBindings.SectionToggleUpKey := hkSectionUp.HotKey;
+  FKeyBindings.SectionToggleDownKey := hkSectionDown.HotKey;
   FKeybindings.Active := cbxActive.Checked; // => add all active key bindings
   FKeyBindings.Save;
 end;
@@ -255,8 +308,15 @@ begin
   ShiftF3 := True;
   {$IFEND}
   MoveLineBlock := True;
+  MoveLineBlockUpKey := ShortCut(VK_UP, [ssShift, ssCtrl, ssAlt]);
+  MoveLineBlockDownKey := ShortCut(VK_DOWN, [ssShift, ssCtrl, ssAlt]);
   FindDeclOnCaret := True;
-  SectionToggle := True;
+  // SectionToggle defaults off. When the feature first shipped it was on and
+  // silently shadowed the IDE's native Ctrl+Shift+Up/Down (jump between method
+  // declaration and implementation body). Users must now opt in and pick keys.
+  SectionToggle := False;
+  SectionToggleUpKey := scNone;
+  SectionToggleDownKey := scNone;
   Active := True;
 end;
 
@@ -932,12 +992,12 @@ begin
           BindingResult := krHandled;
         end
 
-        else if KeyCode = ShortCut(VK_UP, [ssAlt, ssShift, ssCtrl]) then
+        else if MoveLineBlock and (FMoveLineBlockUpKey <> scNone) and (KeyCode = FMoveLineBlockUpKey) then
         begin
           MoveLineBlockText(EditBuffer, False);
           BindingResult := krHandled;
         end
-        else if KeyCode = ShortCut(VK_DOWN, [ssAlt, ssShift, ssCtrl]) then
+        else if MoveLineBlock and (FMoveLineBlockDownKey <> scNone) and (KeyCode = FMoveLineBlockDownKey) then
         begin
           MoveLineBlockText(EditBuffer, True);
           BindingResult := krHandled;
@@ -949,12 +1009,12 @@ begin
           BindingResult := krHandled;
         end
 
-        else if SectionToggle and (KeyCode = ShortCut(VK_UP, [ssCtrl, ssShift])) then
+        else if SectionToggle and (FSectionToggleUpKey <> scNone) and (KeyCode = FSectionToggleUpKey) then
         begin
           ToggleSection(EditBuffer);
           BindingResult := krHandled;
         end
-        else if SectionToggle and (KeyCode = ShortCut(VK_DOWN, [ssCtrl, ssShift])) then
+        else if SectionToggle and (FSectionToggleDownKey <> scNone) and (KeyCode = FSectionToggleDownKey) then
         begin
           ToggleSection(EditBuffer);
           BindingResult := krHandled;
@@ -1178,8 +1238,10 @@ begin
 
   if MoveLineBlock then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_UP, [ssShift, ssCtrl, ssAlt])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_DOWN, [ssShift, ssCtrl, ssAlt])], DoKeyBinding, nil, 0);
+    if FMoveLineBlockUpKey <> scNone then
+      BindingServices.AddKeyBinding([FMoveLineBlockUpKey], DoKeyBinding, nil, 0);
+    if FMoveLineBlockDownKey <> scNone then
+      BindingServices.AddKeyBinding([FMoveLineBlockDownKey], DoKeyBinding, nil, 0);
   end;
 
   if FindDeclOnCaret then
@@ -1189,8 +1251,10 @@ begin
 
   if SectionToggle then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_UP, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_DOWN, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
+    if FSectionToggleUpKey <> scNone then
+      BindingServices.AddKeyBinding([FSectionToggleUpKey], DoKeyBinding, nil, 0);
+    if FSectionToggleDownKey <> scNone then
+      BindingServices.AddKeyBinding([FSectionToggleDownKey], DoKeyBinding, nil, 0);
   end;
 
 end;

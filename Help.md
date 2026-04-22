@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.14.5 | Comprehensive Feature Reference
+Version 3.15.5 | Comprehensive Feature Reference
 
 ---
 
@@ -1434,7 +1434,7 @@ digraph Dependencies {
 - Identify tightly coupled clusters of units visually
 - Share architecture visualisations with team members
 
-*Version: 3.14.5 – 25 March 2026*
+*Version: 3.15.5 – 23 April 2026*
 
 #### Layer Violation Detection
 

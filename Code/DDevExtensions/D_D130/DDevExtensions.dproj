@@ -55,11 +55,11 @@
         <VerInfo_Build>575</VerInfo_Build>
         <VerInfo_DLL>true</VerInfo_DLL>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.14.5.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.14;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.15.5.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.15;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_MinorVer>14</VerInfo_MinorVer>
+        <VerInfo_MinorVer>15</VerInfo_MinorVer>
         <Manifest_File>None</Manifest_File>
         <DllSuffix>D130</DllSuffix>
         <DCC_StringChecks>off</DCC_StringChecks>
@@ -83,9 +83,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <Debugger_HostApplication>$(BDS)\Bin\bds.exe</Debugger_HostApplication>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.14.5.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.14;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.15.5.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.15;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <VerInfo_MinorVer>14</VerInfo_MinorVer>
+        <VerInfo_MinorVer>15</VerInfo_MinorVer>
         <VerInfo_Release>5</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
@@ -106,8 +106,8 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.14.5.751;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.14;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>751</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.15.5.753;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.15;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>753</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>5</VerInfo_Release>
     </PropertyGroup>
@@ -127,10 +127,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.14.5.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.14;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.15.5.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.15;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>14</VerInfo_MinorVer>
+        <VerInfo_MinorVer>15</VerInfo_MinorVer>
         <VerInfo_Release>5</VerInfo_Release>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>

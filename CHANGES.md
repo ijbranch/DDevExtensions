@@ -4,6 +4,27 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-04-23 - v3.15.5 - Key Bindings: User-Configurable Section Toggle and Move Line/Block Shortcuts
+
+**Problem:** The "Interface/Implementation Section Toggle" feature (added in v3.4.1) bound itself to **Ctrl+Shift+Up / Ctrl+Shift+Down** with the default state set to on. Those chords are Delphi's long-standing native shortcut for jumping between a routine's declaration and its implementation body, so installing DDevExtensions silently shadowed a core IDE shortcut. A user reported muscle-memory breakage after installing v3.14.5. "Move line/block up/down" similarly hard-coded Ctrl+Shift+Alt+Up/Down, which collides with GExperts.
+
+**Changes Made:**
+1. `Source/Keybindings/FrmeOptionPageKeybindings.pas`: Added four `TShortCut` published properties on `TKeybindings` — `SectionToggleUpKey`, `SectionToggleDownKey`, `MoveLineBlockUpKey`, `MoveLineBlockDownKey` — persisted via the existing XML config layer. `BindKeyboard` now registers the user's chosen shortcuts (skipping `scNone`) instead of hard-coded `ShortCut(VK_UP, ...)` constants. `DoKeyBinding` compares `KeyCode` against the property values rather than literals.
+2. `Init` defaults changed: `SectionToggle` defaults to **False** (was True); `SectionToggleUpKey`/`DownKey` default to `scNone`. `MoveLineBlockUpKey`/`DownKey` default to the traditional Ctrl+Shift+Alt+Up/Down so existing muscle memory is preserved for the line-mover.
+3. `Source/Keybindings/FrmeOptionPageKeybindings.dfm`: Added four `THotKey` editors with labels under the corresponding toggle checkboxes. Neutralised the checkbox captions ("Section toggle on Ctrl+Shift+Up/Down" → "Toggle interface/implementation section"; "Shift+Ctrl+Alt+Up/Down move line/block" → "Move line/block up/down") since the keys are now customisable. Frame grew from 290 to 395 high.
+4. Added `chkMoveLineBlockClick` and `chkSectionToggleClick` handlers so the hotkey editors enable/disable in step with their parent checkbox. `cbxActiveClick` also cascades to those rows.
+5. Added `ComCtrls` to the uses clause for `THotKey`.
+6. Version bumped: `Source/version.inc`, `version.h`, all six `D_Dxxx/DDevExtensions.dproj` files, and `Installer/DDevExtensionsReg.dproj` → 3.15.5 (`VerInfo_MinorVer` 14 → 15, `FileVersion=3.15.5.*`, `ProductVersion=3.15`).
+
+**Migration impact:**
+- **New installs:** SectionToggle off by default → no collision with native Ctrl+Shift+Up/Down.
+- **Existing installs that had the default SectionToggle=True in XML:** feature stays enabled, but the new `SectionToggleUpKey/DownKey` properties absent from old XML fall back to `Init`'s `scNone`, so no bindings are registered and the native IDE shortcut is restored. Users re-assign in Options if they still want the feature.
+- **MoveLineBlock users:** no behaviour change — defaults preserve Ctrl+Shift+Alt+Up/Down.
+
+**Files Modified:** `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.pas`, `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.dfm`, `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`, `README.md`, `Help.md`
+
+---
+
 ## 2026-03-27 - Build Config: Map File and EXE Output Standardisation
 
 **Changes Made:** Added `DCC_ExeOutput=..\bin` and `DCC_MapFile=3` to DfmParserTests.dproj (had neither). Added `DCC_ExeOutput=..\bin` to DfmParserTestsDUnitX.dproj (had MapFile but no output path). All 10 .dproj files now consistently have both settings.
