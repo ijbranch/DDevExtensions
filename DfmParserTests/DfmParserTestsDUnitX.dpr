@@ -1,3 +1,4 @@
+{$DEFINE  TESTINSIGHT}
 program DfmParserTestsDUnitX;
 
 {$IFNDEF TESTINSIGHT}
@@ -21,6 +22,7 @@ uses
   EDialogWinAPIEurekaLogDetailed,
   EDialogWinAPIStepsToReproduce,
   EBase,
+  EExtraExceptionInfo,
   ExceptionLog7,
   {$ENDIF EurekaLog}
   System.SysUtils,
@@ -54,4 +56,5 @@ begin
   Application.Run;
 {$ENDIF}
 end.
+
 
