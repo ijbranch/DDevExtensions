@@ -8,24 +8,45 @@
 
 unit AppConsts;
 
+/// <summary>
+/// Centralised string constants and localisation helpers for DDevExtensions.
+/// Holds the plug-in version/copyright literals and the per-language captions
+/// (English, German, French) used throughout the extension's UI.
+/// </summary>
+/// <remarks>
+/// Language selection is driven by the <c>LANGDIR</c> environment variable
+/// (resolved by <see cref="GetLang"/>). Each user-facing caption has an
+/// accessor function (e.g. <c>sMenuItemDDevExtensionsOptions</c>) that picks
+/// the localised variant at run-time.
+/// </remarks>
+
 interface
 
 const
   {$I Version.inc}
 
+  /// <summary>Plug-in version number sourced from <c>Version.inc</c>.</summary>
   sPluginVersion = VersionNumber;
+  /// <summary>Full plug-in name (name + version) shown in About dialogs and the splash screen.</summary>
   sPluginName = 'DDevExtensions ' + sPluginVersion;
+  /// <summary>Short copyright line displayed on the About dialog.</summary>
   sPluginSmallCopyright = '(C) 2006-2020 Andreas Hausladen';
+  /// <summary>Full copyright string ("Copyright " + small copyright).</summary>
   sPluginCopyright = 'Copyright ' + sPluginSmallCopyright;
 
 resourcestring
+  /// <summary>"All columns" filter caption used by the column filter combo.</summary>
   RsFilterAllFields = 'All columns';
+  /// <summary>Format string for the count of modules ("%d modules").</summary>
   RsNumberOfModules = '%d modules';
+  /// <summary>"All directories" filter caption used by directory filters.</summary>
   RsFilterAllDirectories = 'All directories';
 
-  RsSetActiveBuildConfiguration = 'Active Build Configuration'; 
+  /// <summary>Caption for the "Active Build Configuration" project menu entry.</summary>
+  RsSetActiveBuildConfiguration = 'Active Build Configuration';
   
 const
+  /// <summary>English-language caption literals. Each constant has matching <c>_Ger</c> and <c>_Fra</c> siblings selected at run-time by <see cref="FromLang"/>.</summary>
   // English
   sSearchComponent_Eng = '(search component)';
   sFilesCompiled_Eng = '%d files compiled';
@@ -138,46 +159,89 @@ const
   sReloadShowInExplorer_Fra = sReloadShowInExplorer_Eng;
 
 
+/// <summary>Returns the localised "(search component)" placeholder caption.</summary>
 function sSearchComponent: string;
+/// <summary>Returns the localised "%d files compiled" status text.</summary>
 function sFilesCompiled: string;
+/// <summary>Returns the localised "&amp;Automatically close on successful compile" check-box caption.</summary>
 function sAutoCloseCaption: string;
+/// <summary>Returns the localised "Manage Configurations..." menu caption.</summary>
 function sMenuItemManageProjectSettings: string;
+/// <summary>Returns the localised "Project Configurations" menu caption.</summary>
 function sMenuItemProjectSettings: string;
+/// <summary>Returns the localised "Set Versioninfo..." menu caption.</summary>
 function sMenuItemSetVersionInfo: string;
+/// <summary>Returns the localised "DDevExtensions options..." menu caption.</summary>
 function sMenuItemDDevExtensionsOptions: string;
+/// <summary>Returns the localised "Find Unit-File..." menu caption.</summary>
 function sMenuItemDDevExtensionsFileSelector: string;
+/// <summary>Returns the localised parser error message reported when the position to insert "uses" cannot be found.</summary>
 function sParseErrorUsesLocationNotFound: string;
 
+/// <summary>Returns the localised caption for the "Compile/Build - Switch Active Project" dialog.</summary>
 function sCapSwitchToModuleProject: string;
+/// <summary>Returns the localised explanatory text shown when the active module is not in the active project.</summary>
 function sLblSwitchCurrentModuleProject: string;
+/// <summary>Returns the localised "Do you want to switch to the module's project?" prompt.</summary>
 function sLblSwitchToModuleProjectQuestion: string;
+/// <summary>Returns the localised "Don't show again" check-box caption.</summary>
 function sLblDontShowAgain: string;
+/// <summary>Returns the localised "Switch temporary [Shift-Key]" caption.</summary>
 function sLblTemporarySwitch: string;
+/// <summary>Returns the localised "Active Project:" label caption.</summary>
 function sLblActiveProject: string;
+/// <summary>Returns the localised "Active Module:" label caption.</summary>
 function sLblActiveModule: string;
 
+/// <summary>Returns the localised "Do you want to invoke the context help?" prompt.</summary>
 function sDoYouWantToInvokeTheContextHelp: string;
 
 // ReloadFiles
+/// <summary>Returns the localised "Cannot unload form '%s'" error message.</summary>
 function sCannotUnloadModuleForm: string;
+/// <summary>Returns the localised "Project files" list-view group caption.</summary>
 function sLVGroup_ProjectFiles: string;
+/// <summary>Returns the localised "Units/Files" list-view group caption.</summary>
 function sLVGroup_UnitFiles: string;
+/// <summary>Returns the localised "Forms/Frames/DataModules" list-view group caption.</summary>
 function sLVGroup_Forms: string;
+/// <summary>Returns the localised "Reload" button caption.</summary>
 function sReloadButton: string;
+/// <summary>Returns the localised caption for the Reload-Changed-Files dialog.</summary>
 function sReloadChangedFilesCaption: string;
+/// <summary>Returns the localised "File" list-view column caption.</summary>
 function sLVColumn_File: string;
+/// <summary>Returns the localised "Path" list-view column caption.</summary>
 function sLVColumn_Path: string;
 
+/// <summary>Returns the localised "Select unmodified buffers" menu caption.</summary>
 function sReloadSelectOnlyUnmodifiedField: string;
+/// <summary>Returns the localised "Select modified buffers" menu caption.</summary>
 function sReloadSelectOnlyModifiedFiles: string;
+/// <summary>Returns the localised "Select all" menu caption.</summary>
 function sReloadSelectAll: string;
+/// <summary>Returns the localised "Deselect all" menu caption.</summary>
 function sReloadDeselectAll: string;
+/// <summary>Returns the localised "Invert selection" menu caption.</summary>
 function sReloadInvertSelection: string;
+/// <summary>Returns the localised "Show in Explorer" menu caption.</summary>
 function sReloadShowInExplorer: string;
 
 
 
+/// <summary>
+/// Returns the active UI language constant (<c>LANG_ENGLISH</c>, <c>LANG_GERMAN</c> or <c>LANG_FRENCH</c>).
+/// </summary>
+/// <remarks>
+/// The language is determined once from the <c>LANGDIR</c> environment variable
+/// and cached. Falls back to <c>LANG_ENGLISH</c>.
+/// </remarks>
 function GetLang: Cardinal;
+/// <summary>
+/// Translation placeholder mirroring the dxgettext signature; currently returns the input string unchanged.
+/// </summary>
+/// <param name="S">Source string to be translated.</param>
+/// <returns>The unaltered <paramref name="S"/> value.</returns>
 function _(const S: WideString): string;
 
 implementation

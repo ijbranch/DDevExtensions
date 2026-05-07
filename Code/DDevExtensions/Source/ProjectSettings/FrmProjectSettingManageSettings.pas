@@ -10,6 +10,12 @@
 
 unit FrmProjectSettingManageSettings;
 
+/// <summary>
+/// Hosts the dialog used to manage local and global project settings: lets the user create, edit,
+/// rename, delete and assign reusable project option presets and apply them across the projects of
+/// the active project group.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,107 +26,205 @@ uses
   ProjectSettingsData, ToolsAPI, Menus, FrmBase;
 
 type
+  /// <summary>
+  /// Modal form that displays local and global project setting presets together with the projects
+  /// they may be assigned to, allowing the user to create, edit, delete and assign presets.
+  /// </summary>
   TFormManageProjectSetting = class(TFormBase)
+    /// <summary>OK button that confirms changes and closes the dialog.</summary>
     btnOk: TButton;
+    /// <summary>Cancel button that aborts changes and closes the dialog.</summary>
     btnCancel: TButton;
+    /// <summary>Main client panel of the dialog hosting all sub-panels.</summary>
     pnlClient: TPanel;
+    /// <summary>Splitter between the settings panels and the projects list.</summary>
     spltProjects: TSplitter;
+    /// <summary>Action list owning the toolbar/menu actions of the form.</summary>
     aclButtons: TActionList;
+    /// <summary>Creates a new local project setting preset.</summary>
     actLocalNewSetting: TAction;
+    /// <summary>Edits the currently selected local project setting preset.</summary>
     actLocalEditSetting: TAction;
+    /// <summary>Deletes the currently selected local project setting preset.</summary>
     actLocalDeleteSetting: TAction;
+    /// <summary>Assigns the selected local preset to the selected projects.</summary>
     actLocalAssignSetting: TAction;
+    /// <summary>Creates a new global project setting preset.</summary>
     actGlobalNewSetting: TAction;
+    /// <summary>Edits the currently selected global project setting preset.</summary>
     actGlobalEditSetting: TAction;
+    /// <summary>Deletes the currently selected global project setting preset.</summary>
     actGlobalDeleteSetting: TAction;
+    /// <summary>Assigns the selected global preset to the selected projects.</summary>
     actGlobalAssignSetting: TAction;
+    /// <summary>Left container panel that holds the local and global settings panels.</summary>
     pnlLeft: TPanel;
+    /// <summary>Container panel for the global settings list and toolbar.</summary>
     pnlGlobal: TPanel;
+    /// <summary>Container panel for the local settings list and toolbar.</summary>
     pnlLocal: TPanel;
+    /// <summary>List view displaying the project's local setting presets.</summary>
     lvwLocal: TListView;
+    /// <summary>List view displaying the global setting presets.</summary>
     lvwGlobal: TListView;
+    /// <summary>Splitter between the local and global setting panels.</summary>
     spltLocalGlobal: TSplitter;
+    /// <summary>Caption label for the local settings list.</summary>
     lblLocalSettings: TLabel;
+    /// <summary>Caption label for the global settings list.</summary>
     lblGlobalSettings: TLabel;
+    /// <summary>Toolbar hosting the local settings actions.</summary>
     tbToolbarLocal: TToolBar;
+    /// <summary>Local toolbar button (New).</summary>
     ToolButton1: TToolButton;
+    /// <summary>Local toolbar button (Edit).</summary>
     ToolButton2: TToolButton;
+    /// <summary>Local toolbar button (Delete).</summary>
     ToolButton3: TToolButton;
+    /// <summary>Local toolbar separator.</summary>
     ToolButton4: TToolButton;
+    /// <summary>Local toolbar button (Assign).</summary>
     ToolButton5: TToolButton;
+    /// <summary>Local toolbar separator.</summary>
     ToolButton6: TToolButton;
+    /// <summary>Toolbar hosting the global settings actions.</summary>
     tbToolbarGlobal: TToolBar;
+    /// <summary>Global toolbar button (New).</summary>
     ToolButton7: TToolButton;
+    /// <summary>Global toolbar button (Edit).</summary>
     ToolButton8: TToolButton;
+    /// <summary>Global toolbar button (Delete).</summary>
     ToolButton9: TToolButton;
+    /// <summary>Global toolbar separator.</summary>
     ToolButton10: TToolButton;
+    /// <summary>Global toolbar button (Assign).</summary>
     ToolButton11: TToolButton;
+    /// <summary>Global toolbar separator.</summary>
     ToolButton12: TToolButton;
+    /// <summary>Container panel for the projects list and its toolbar.</summary>
     pnlProjects: TPanel;
+    /// <summary>List view displaying projects in the current project group.</summary>
     lvwProjects: TListView;
+    /// <summary>Caption label for the projects list.</summary>
     lblProjects: TLabel;
+    /// <summary>Local toolbar button (Edit Options flags).</summary>
     ToolButton13: TToolButton;
+    /// <summary>Opens the option-flag editor for the selected local preset.</summary>
     actLocalEditOptions: TAction;
+    /// <summary>Opens the option-flag editor for the selected global preset.</summary>
     actGlobalEditOptions: TAction;
+    /// <summary>Global toolbar button (Edit Options flags).</summary>
     ToolButton14: TToolButton;
+    /// <summary>Popup menu shown for the local settings list.</summary>
     popLocalSettings: TPopupMenu;
+    /// <summary>Local popup menu item: New.</summary>
     New1: TMenuItem;
+    /// <summary>Local popup menu item: Edit.</summary>
     Edit1: TMenuItem;
+    /// <summary>Local popup menu item: Set active flags.</summary>
     Setactiveflags1: TMenuItem;
+    /// <summary>Local popup menu item: Delete.</summary>
     Delete1: TMenuItem;
+    /// <summary>Local popup menu item: Assign.</summary>
     Assign1: TMenuItem;
+    /// <summary>Local popup menu separator.</summary>
     N1: TMenuItem;
+    /// <summary>Local popup menu separator.</summary>
     N2: TMenuItem;
+    /// <summary>Popup menu shown for the global settings list.</summary>
     popGlobalSettings: TPopupMenu;
+    /// <summary>Global popup menu item: New.</summary>
     MenuItem1: TMenuItem;
+    /// <summary>Global popup menu item: Edit.</summary>
     MenuItem2: TMenuItem;
+    /// <summary>Global popup menu item: Set active flags.</summary>
     MenuItem3: TMenuItem;
+    /// <summary>Global popup menu item: Delete.</summary>
     MenuItem4: TMenuItem;
+    /// <summary>Global popup menu item: Assign.</summary>
     MenuItem5: TMenuItem;
+    /// <summary>Global popup menu separator.</summary>
     MenuItem6: TMenuItem;
+    /// <summary>Global popup menu separator.</summary>
     MenuItem7: TMenuItem;
+    /// <summary>Toolbar hosting the project actions.</summary>
     tbToolbarProjects: TToolBar;
+    /// <summary>Project toolbar button (Edit Project Options).</summary>
     ToolButton16: TToolButton;
+    /// <summary>Project toolbar button (Set Version Info).</summary>
     ToolButton18: TToolButton;
+    /// <summary>Opens the IDE project options dialog for the selected project.</summary>
     actProjectEditProjectOptions: TAction;
+    /// <summary>Project toolbar separator.</summary>
     ToolButton15: TToolButton;
+    /// <summary>Opens the version info dialog for the selected projects.</summary>
     actProjectSetVersionInfo: TAction;
+    /// <summary>Initialises owned fields, sets anchors, captions and double-buffering.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Frees owned setting lists and project-assignment storage.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Updates the enabled state of an action based on the current selection.</summary>
     procedure ActionUpdate(Sender: TObject);
+    /// <summary>Dispatches the New/Edit/Delete/Assign/EditOptions actions for both local and global settings.</summary>
     procedure ActionExecute(Sender: TObject);
+    /// <summary>Custom-draws the active project's row in bold.</summary>
     procedure lvwProjectsCustomDrawItem(Sender: TCustomListView;
       Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
+    /// <summary>Implements Ctrl+A select-all on the projects list view.</summary>
     procedure lvwProjectsKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    /// <summary>Triggers Edit Setting on double-click in the local settings list.</summary>
     procedure lvwLocalDblClick(Sender: TObject);
+    /// <summary>Validates the renamed preset and propagates the new name to project assignments.</summary>
     procedure lvwGlobalEdited(Sender: TObject; Item: TListItem; var S: String);
+    /// <summary>Triggers in-place rename on F2.</summary>
     procedure lvwGlobalKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    /// <summary>Disallows renaming the protected "Default" local preset.</summary>
     procedure lvwGlobalEditing(Sender: TObject; Item: TListItem;
       var AllowEdit: Boolean);
+    /// <summary>Triggers Edit Setting on double-click in the global settings list.</summary>
     procedure lvwGlobalDblClick(Sender: TObject);
+    /// <summary>Updates the enabled state of the project-related actions.</summary>
     procedure ActionProjectUpdate(Sender: TObject);
+    /// <summary>Dispatches Edit Project Options and Set Version Info actions.</summary>
     procedure ActionProjectExecute(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Working copy of the local project setting presets.</summary>
     FSettings: TProjectSettingList;
+    /// <summary>Working copy of the global project setting presets.</summary>
     FGlobalSettings: TProjectSettingList;
+    /// <summary>Maps each project (Objects[]) to its assigned preset id (Strings[]).</summary>
     FProjectAssignments: TStrings;
   protected
+    /// <summary>Populates a settings list view with the items from the supplied list.</summary>
     procedure FillSettingsListViews(ListView: TListView; Settings: TProjectSettingList);
+    /// <summary>Populates the projects list view from the active project group.</summary>
     procedure FillProjectListView;
+    /// <summary>Runs the modal dialog using the supplied local and global settings.</summary>
+    /// <param name="ASettings">Local presets to manage.</param>
+    /// <param name="AGlobalSettings">Global presets to manage.</param>
+    /// <returns>True if the user confirmed with OK.</returns>
     function DoExecute(ASettings, AGlobalSettings: TProjectSettingList): Boolean;
+    /// <summary>Adds a list item representing the given preset to the list view.</summary>
     function AddSettingListItem(ListView: TListView; Setting: TProjectSetting): TListItem;
+    /// <summary>Recomputes which preset (if any) currently matches each project.</summary>
     procedure RefreshProjectAssignment;
+    /// <summary>Stores the chosen preset id for the supplied project.</summary>
     procedure SetProjectAssignment(Project: IOTAProject; const Value: string);
+    /// <summary>Returns the preset id currently assigned to the supplied project.</summary>
     function GetProjectAssignment(Project: IOTAProject): string;
+    /// <summary>Keeps OK as the default button only when no list is in edit mode.</summary>
     procedure UpdateActions; override;
   public
     { Public-Deklarationen }
+    /// <summary>Creates the form, runs the dialog and frees the form.</summary>
+    /// <returns>True if the user confirmed with OK.</returns>
     class function Execute(ASettings, AGlobalSettings: TProjectSettingList): Boolean;
   end;
 
+/// <summary>Auto-created (but unused) form variable retained for IDE compatibility.</summary>
 var
   FormManageProjectSetting: TFormManageProjectSetting;
 

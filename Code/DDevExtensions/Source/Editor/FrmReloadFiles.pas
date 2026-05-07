@@ -1,5 +1,13 @@
 unit FrmReloadFiles;
 
+/// <summary>
+/// Replaces Delphi's built-in per-file CheckFileDates dialog with a single multi-file dialog
+/// that lists every externally modified module, lets the user pick which to reload, exposes a
+/// "Diff" button for any installed diff tool (Beyond Compare, TortoiseSVN/Git/Hg) and supports
+/// "Show in Explorer". The dialog also handles re-entrance: if more files change while the
+/// dialog is already shown, the new modules are appended to the existing list.
+/// </summary>
+
 {
   Replaces Delphi's CheckFileDates() function by a version that collects the changed files and
   shows one dialog for all files. This dialog has the following features:
@@ -23,60 +31,116 @@ uses
   DocModuleHandler;
 
 const
+  /// <summary>Posted to the form whenever the list-view selection changes; updates Diff controls.</summary>
   WM_LISTVIEWSELCHANGED = WM_USER + 1;
 
 type
+  /// <summary>
+  /// Modal dialog presented in place of Delphi's per-file reload prompt. Owns the list of
+  /// externally-changed modules and orchestrates reloading and optional diffing.
+  /// </summary>
   TFormReloadFiles = class(TFormBase)
+    /// <summary>Hosts the OK/Cancel/Diff buttons at the bottom of the dialog.</summary>
     PanelButtons: TPanel;
+    /// <summary>Divider bevel between the list and the button panel.</summary>
     bvlDivider: TBevel;
+    /// <summary>OK / Reload button.</summary>
     btnOk: TButton;
+    /// <summary>Cancel button.</summary>
     btnCancel: TButton;
+    /// <summary>Inner button panel.</summary>
     pnlButtons: TPanel;
+    /// <summary>List of changed modules grouped by Project / Unit / Form.</summary>
     ListViewModules: TListView;
+    /// <summary>Image list providing the modified-file glyph.</summary>
     ImageListModules: TImageList;
+    /// <summary>Pop-up menu shown over the list view.</summary>
     PopupMenuModules: TPopupMenu;
+    /// <summary>"Select only modified files" menu item.</summary>
     mniSelectOnlyModifiedFiles: TMenuItem;
+    /// <summary>"Invert selection" menu item.</summary>
     mniInvertSelection: TMenuItem;
+    /// <summary>"Deselect all" menu item.</summary>
     mniDeselectAll: TMenuItem;
+    /// <summary>"Select all" menu item.</summary>
     mniSelectAll: TMenuItem;
+    /// <summary>"Select only unmodified files" menu item.</summary>
     mniSelectOnlyUnmodifiedField: TMenuItem;
+    /// <summary>Combo box listing the editors of the selected module that can be diffed.</summary>
     ComboBoxDiff: TComboBox;
+    /// <summary>Launches the diff tool for the editor selected in ComboBoxDiff.</summary>
     btnDiff: TButton;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>"Show in Explorer" menu item.</summary>
     mniShowInExplorer: TMenuItem;
+    /// <summary>Pop-up menu used for "Diff &lt;filename&gt;" entries on a multi-editor module.</summary>
     PopupMenuDiff: TPopupMenu;
+    /// <summary>Handles the four selection-changing menu items via Sender comparison.</summary>
     procedure mniDeselectAllClick(Sender: TObject);
+    /// <summary>Pre-populates the diff sub-items before the modules pop-up appears.</summary>
     procedure PopupMenuModulesPopup(Sender: TObject);
+    /// <summary>Localises captions, hooks the list-view window proc and probes installed diff tools.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Posts WM_LISTVIEWSELCHANGED to refresh the diff controls.</summary>
     procedure ListViewModulesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
+    /// <summary>Spawns the configured diff tool against the selected editor's content.</summary>
     procedure btnDiffClick(Sender: TObject);
+    /// <summary>Opens Windows Explorer with the selected file pre-selected.</summary>
     procedure mniShowInExplorerClick(Sender: TObject);
+    /// <summary>Greys out the row caption for modules that cannot be reloaded.</summary>
     procedure ListViewModulesCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
   private
     { Private-Deklarationen }
+    /// <summary>List-view group used for project files (.dproj/.dpr/...).</summary>
     FProjectGroup: TListGroup;
+    /// <summary>List-view group used for plain unit files.</summary>
     FUnitGroup: TListGroup;
+    /// <summary>List-view group used for form files.</summary>
     FFormGroup: TListGroup;
+    /// <summary>List of TDocModule items currently shown in the dialog.</summary>
     FModules: TList;
+    /// <summary>List of TDocModule items that raised when CanReloadFile was called.</summary>
     FCannotReloadModules: TList;
+    /// <summary>Diff command line. Supports the macros %base %mine %basename %minename.</summary>
     FDiffer: string; // support macros %base %mine %basename %minename
+    /// <summary>Original WindowProc for ListViewModules; preserved while we override it.</summary>
     FListViewWindowProc: TWndMethod;
 
+    /// <summary>Reloads each module that the user left checked, collecting any failures into a single dialog.</summary>
+    /// <param name="Modules">List of TDocModule items to reload.</param>
     class procedure ReloadFiles(Modules: TList); static;
+    /// <summary>Appends one TDocModule to the list view in the appropriate group.</summary>
     procedure AddModuleListItem(AModule: TDocModule);
+    /// <summary>Appends every module from the supplied list, deduplicating against FModules.</summary>
     procedure AddModules(AModules: TList);
+    /// <summary>OnClick for dynamically created "Diff &lt;filename&gt;" menu items.</summary>
     procedure DiffMenuItemClick(Sender: TObject);
+    /// <summary>Writes the editor's in-memory contents to a temp file and launches the diff tool.</summary>
+    /// <param name="Editor">The IOTAEditor whose content should be diffed against disk.</param>
     procedure DiffEditor(Editor: IOTAEditor);
+    /// <summary>Updates the Diff combo box and button based on the current selection.</summary>
     procedure WMListViewSelChanged(var Msg: TMessage); message WM_LISTVIEWSELCHANGED;
+    /// <summary>Subclass replacement for ListViewModules.WindowProc; intercepts double-clicks.</summary>
     procedure ListViewWndProc(var Msg: TMessage);
+    /// <summary>Handles a double-click on a list item by triggering Diff or its sub-menu.</summary>
     procedure ListItemDblClick(Item: TListItem);
+    /// <summary>Builds the list of "Diff &lt;filename&gt;" entries for the supplied pop-up menu.</summary>
     procedure AddDiffPopupItems(ADocModule: TDocModule; APopupMenu: TPopupMenu);
   public
     { Public-Deklarationen }
+    /// <summary>Shows the dialog modally and returns True if the user accepted the reload.</summary>
+    /// <param name="AModules">The modules to display; filtered in-place to those still ticked on OK.</param>
+    /// <returns>True if the user clicked OK; False on Cancel or on re-entrant invocation.</returns>
     function ShowDialog(AModules: TList): Boolean;
   end;
 
+/// <summary>
+/// Plug-in entry point. Installs the CheckFileDates hook on initialisation and restores the
+/// original IDE function on shutdown.
+/// </summary>
+/// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

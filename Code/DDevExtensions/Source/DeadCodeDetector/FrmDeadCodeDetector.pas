@@ -8,6 +8,13 @@
 
 unit FrmDeadCodeDetector;
 
+/// <summary>
+/// Non-modal main form of the Dead Code Detector plugin. Runs the analyser against
+/// the active project and lists symbols that appear to be unreferenced, with type
+/// and scope filters, sortable columns, source navigation, clipboard copy and
+/// CSV export.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,54 +25,97 @@ uses
   Generics.Defaults, FrmBase, DeadCodeDetector, ToolsAPI;
 
 type
+  /// <summary>Main detector form for the Dead Code Detector plugin.</summary>
   TFormDeadCodeDetector = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting buttons and labels.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Scans the active project and populates the list.</summary>
     btnScan: TButton;
+    /// <summary>Lists detected dead-code items, filtered by <see cref="cboType"/> and <see cref="cboScope"/>.</summary>
     ListView: TListView;
+    /// <summary>Progress / status label.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu for the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Menu item: copy selected (or all) rows to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Menu item: open the source file at the declaration line.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the result list to a CSV file.</summary>
     btnExport: TButton;
+    /// <summary>Save dialog used by the export button.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Summary line shown after a scan completes.</summary>
     lblSummary: TLabel;
+    /// <summary>Filter combo restricting visible items by element type.</summary>
     cboType: TComboBox;
+    /// <summary>Label for <see cref="cboType"/>.</summary>
     lblType: TLabel;
+    /// <summary>Filter combo restricting visible items by scope.</summary>
     cboScope: TComboBox;
+    /// <summary>Label for <see cref="cboScope"/>.</summary>
     lblScope: TLabel;
+    /// <summary>Menu item: add the selected symbol's name to the persistent ignore list.</summary>
     mnuAddToIgnoreList: TMenuItem;
+    /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Runs the analyser against the active project.</summary>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Releases the singleton form instance and frees the form on close.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Form OnCreate handler: initialises analyser, sort state and filter combos.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Form OnDestroy handler: frees the analyser.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Opens the source file at the declaration line when a row is double-clicked.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Copies selected (or all) rows to the clipboard as TSV.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
+    /// <summary>Opens the source file at the declaration line.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
+    /// <summary>Exports the result list to a CSV file.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Toggles or switches the active sort column.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom-column comparer used by AlphaSort.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Re-applies the type filter when the combo selection changes.</summary>
     procedure cboTypeChange( Sender: TObject );
+    /// <summary>Re-applies the scope filter when the combo selection changes.</summary>
     procedure cboScopeChange( Sender: TObject );
+    /// <summary>Adds the selected symbol's bare name to the persistent ignore list.</summary>
     procedure mnuAddToIgnoreListClick( Sender: TObject );
   private
+    /// <summary>Owned analyser used to perform the analysis.</summary>
     FAnalyzer: TDeadCodeAnalyzer;
+    /// <summary>Most recent analysis result.</summary>
     FDeadCode: TArray<TDeadCodeItem>;
+    /// <summary>Index of the currently active sort column.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Refreshes the list view from <see cref="FDeadCode"/>, applying the current filters.</summary>
     procedure PopulateList;
+    /// <summary>Analyser OnProgress callback that updates the progress label.</summary>
     procedure AnalyzerProgress( Sender: TObject );
+    /// <summary>Opens the source file for the selected row at its declaration line.</summary>
     procedure OpenSelectedFile;
+    /// <summary>Returns True when the supplied item passes both the type and scope filters.</summary>
     function PassesFilter( const Item: TDeadCodeItem ): Boolean;
   public
+    /// <summary>Shows or focuses the singleton detector form.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
   FormInstance: TFormDeadCodeDetector = nil;
 
 implementation

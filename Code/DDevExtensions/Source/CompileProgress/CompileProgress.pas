@@ -9,6 +9,14 @@
 
 unit CompileProgress;
 
+/// <summary>
+/// Core unit of the CompileProgress plug-in. Hooks into the Delphi IDE compile pipeline to
+/// display a native progress bar with file count and taskbar progress, optionally release
+/// the compiler unit cache of inactive projects, prompt the user when compiling a file
+/// from a non-active project, write a "Last Compile" version-info entry, gather per-unit
+/// build statistics and run an optional code-style check after the build.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -22,138 +30,272 @@ uses
   PluginConfig, Dialogs;
 
 type
+  /// <summary>
+  /// Local copy of CodeStyleChecker.TStyleViolation, declared here to avoid a circular
+  /// dependency between CompileProgress and CodeStyleChecker. Describes one detected
+  /// coding-style violation in a Delphi source file.
+  /// </summary>
   // Local copy of TStyleViolation to avoid circular dependency with CodeStyleChecker
   TStyleViolation = record
+    /// <summary>Absolute file name where the violation was detected.</summary>
     FileName: string;
+    /// <summary>Unit name ( file name without extension ) where the violation was detected.</summary>
     UnitName: string;
+    /// <summary>1-based line number of the violation.</summary>
     Line: Integer;
+    /// <summary>1-based column number of the violation.</summary>
     Column: Integer;
+    /// <summary>Identifier of the rule that was violated.</summary>
     Rule: string;
+    /// <summary>What the rule expected to see.</summary>
     Expected: string;
+    /// <summary>What was actually found in the source.</summary>
     Actual: string;
+    /// <summary>Severity label ( e.g. "Warning", "Error" ).</summary>
     Severity: string;
+    /// <summary>Category of the violation: "NamingConvention" or "AntiPattern".</summary>
     Category: string;  // 'NamingConvention' or 'AntiPattern'
   end;
 
+  /// <summary>
+  /// Per-unit timing record captured during a project build.
+  /// </summary>
   TBuildUnitInfo = record
+    /// <summary>Unit name ( file name without extension ).</summary>
     UnitName: string;
+    /// <summary>Source file name ( may be a relative path until resolved ).</summary>
     FileName: string;
+    /// <summary>Time the compiler began processing this unit.</summary>
     StartTime: TDateTime;
+    /// <summary>Time the compiler finished processing this unit.</summary>
     EndTime: TDateTime;
+    /// <summary>Duration in milliseconds.</summary>
     DurationMs: Int64;
+    /// <summary>Lines of code calculated for this unit ( populated by the metrics pass ).</summary>
     LinesOfCode: Integer;
+    /// <summary>Cyclomatic complexity calculated for this unit ( populated by the metrics pass ).</summary>
     CyclomaticComplexity: Integer;
   end;
 
+  /// <summary>
+  /// Thread-safe accumulator for per-unit build statistics. Used by TCompileProgress to
+  /// record timings during a compile and by TFormBuildStatistics to display them.
+  /// </summary>
   TBuildStatistics = class
   private
+    /// <summary>Backing storage for unit info; may be over-allocated and trimmed on FinalizeBuild.</summary>
     FUnits: TArray<TBuildUnitInfo>;
+    /// <summary>Number of valid entries in FUnits.</summary>
     FUnitCount: Integer;
+    /// <summary>Name of the unit currently being timed; empty when no unit is active.</summary>
     FCurrentUnit: string;
+    /// <summary>Start time of the unit currently being timed.</summary>
     FCurrentStartTime: TDateTime;
+    /// <summary>Sum of all per-unit DurationMs values.</summary>
     FTotalBuildTime: Int64;
+    /// <summary>True when the most recent build succeeded.</summary>
     FBuildSucceeded: Boolean;
+    /// <summary>Path of the first project compiled, used to resolve relative file names.</summary>
     FProjectPath: string;
+    /// <summary>Sorted list of project file names ( upper-case, no path ) used by IsProjectFile.</summary>
     FProjectFiles: TStringList;
+    /// <summary>Critical section guarding all mutable state.</summary>
     FLock: TCriticalSection;
+    /// <summary>Style violations collected by the optional post-build style checker.</summary>
     FStyleViolations: TArray<TStyleViolation>;
+    /// <summary>Closes off the timing of the current unit; must be called while holding FLock.</summary>
     procedure DoEndCurrentUnit; // Internal - must be called while holding FLock
   public
+    /// <summary>Creates the statistics container with an empty unit list.</summary>
     constructor Create;
+    /// <summary>Releases all resources held by the container.</summary>
     destructor Destroy; override;
+    /// <summary>Clears all collected statistics in preparation for a new build.</summary>
     procedure Clear;
+    /// <summary>Records the start of compilation for a unit.</summary>
+    /// <param name="UnitName">Unit name without extension.</param>
+    /// <param name="FileName">Full path to the source file.</param>
     procedure StartUnit(const UnitName, FileName: string);
+    /// <summary>Records the end of compilation for the unit currently being timed.</summary>
     procedure EndCurrentUnit;
+    /// <summary>Finalises the build by closing any open unit, recording the result and trimming the array.</summary>
+    /// <param name="Succeeded">True when the compile succeeded.</param>
     procedure FinalizeBuild(Succeeded: Boolean);
+    /// <summary>Adds a file to the project-files filter list ( stored upper-cased without path ).</summary>
+    /// <param name="FileName">File name to register as belonging to the project.</param>
     procedure AddProjectFile(const FileName: string);
+    /// <summary>Returns True when FileName matches an entry registered with AddProjectFile.</summary>
+    /// <param name="FileName">File name to test.</param>
+    /// <returns>True for project files; True for all files if none have been registered.</returns>
     function IsProjectFile(const FileName: string): Boolean;
+    /// <summary>Returns a thread-safe snapshot of the recorded unit information.</summary>
     function GetUnits: TArray<TBuildUnitInfo>;
+    /// <summary>Stores the supplied violations as a copy under the lock.</summary>
+    /// <param name="Violations">Violations produced by the style checker.</param>
     procedure SetStyleViolations( const Violations: TArray<TStyleViolation> );
+    /// <summary>Returns a thread-safe snapshot of the recorded style violations.</summary>
     function GetStyleViolations: TArray<TStyleViolation>;
+    /// <summary>Total milliseconds across all units in the most recent build.</summary>
     property TotalBuildTime: Int64 read FTotalBuildTime;
+    /// <summary>Result of the most recent build.</summary>
     property BuildSucceeded: Boolean read FBuildSucceeded;
+    /// <summary>Number of units recorded for the most recent build.</summary>
     property UnitCount: Integer read FUnitCount;
+    /// <summary>Path used to resolve relative file names returned by the compiler.</summary>
     property ProjectPath: string read FProjectPath write FProjectPath;
+    /// <summary>Style violations gathered by the post-build style checker.</summary>
     property StyleViolations: TArray<TStyleViolation> read GetStyleViolations write SetStyleViolations;
   end;
 
+  /// <summary>
+  /// Plug-in configuration object that owns the CompileProgress feature. Implements
+  /// ICompileInterceptor to receive compile-time file events and exposes the user
+  /// settings that drive the various sub-features.
+  /// </summary>
   TCompileProgress = class(TPluginConfig, ICompileInterceptor)
   private
+    /// <summary>Identifier returned by the compile-interceptor service registration.</summary>
     FCompileInterceptorId: Integer;
+    /// <summary>IDE notifier that delivers Before/AfterCompile callbacks.</summary>
     FIDENotifier: TIDENotifier;
+    /// <summary>List of .pas/.dcu file names expected during the current build, used to update the progress bar.</summary>
     FPasFiles: TStrings;
+    /// <summary>Critical section that protects FPasFiles ( retained for legacy use; see implementation ).</summary>
     FPasFilesLock: TCriticalSection;
+    /// <summary>Backing field for ReleaseCompilerUnitCache.</summary>
     FReleaseCompilerUnitCache: Boolean;
+    /// <summary>Backing field for ReleaseCompilerUnitCacheHigh.</summary>
     FReleaseCompilerUnitCacheHigh: Boolean;
+    /// <summary>Backing field for AutoSaveAfterSuccessfulCompile.</summary>
     FAutoSaveAfterSuccessfulCompile: Boolean;
     {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+    /// <summary>Backing field for LastCompileVersionInfo ( pre-XE2 only ).</summary>
     FLastCompileVersionInfo: Boolean;
+    /// <summary>Backing field for LastCompileVersionInfoFormat ( pre-XE2 only ).</summary>
     FLastCompileVersionInfoFormat: string;
     {$IFEND}
+    /// <summary>Backing field for AskCompileFromDiffProject.</summary>
     FAskCompileFromDiffProject: Boolean;
+    /// <summary>Backing field for AskCompileFromDiffProjectTemporary.</summary>
     FAskCompileFromDiffProjectTemporary: Boolean;
+    /// <summary>Backing field for EnableBuildStatistics.</summary>
     FEnableBuildStatistics: Boolean;
+    /// <summary>Backing field for ShowBuildStatisticsAfterCompile.</summary>
     FShowBuildStatisticsAfterCompile: Boolean;
+    /// <summary>Backing field for RunStyleCheckAfterCompile.</summary>
     FRunStyleCheckAfterCompile: Boolean;
+    /// <summary>Build statistics container populated during compiles.</summary>
     FBuildStatistics: TBuildStatistics;
+    /// <summary>Tools menu item that opens the Build Statistics dialog on demand.</summary>
     FBuildStatsMenuItem: TMenuItem;
     {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+    /// <summary>Writes a "Last Compile" key into the project version info ( pre-XE2 only ).</summary>
+    /// <param name="Project">Project to update.</param>
     procedure UpdateLastCompileVersionInfo(const Project: IOTAProject);
     {$IFEND}
+    /// <summary>Setter for AskCompileFromDiffProject.</summary>
     procedure SetAskCompileFromDiffProject(const Value: Boolean);
+    /// <summary>Increments the progress bar from the main thread ( queued from worker threads ).</summary>
     procedure UpdateInMainThread;
+    /// <summary>Setter for ReleaseCompilerUnitCache; updates the active hook.</summary>
     procedure SetReleaseCompilerUnitCache(const Value: Boolean);
+    /// <summary>Setter for ReleaseCompilerUnitCacheHigh; updates the active hook.</summary>
     procedure SetReleaseCompilerUnitCacheHigh(const Value: Boolean);
+    /// <summary>Setter for EnableBuildStatistics; toggles the menu item visibility.</summary>
     procedure SetEnableBuildStatistics(const Value: Boolean);
+    /// <summary>Shows the singleton Build Statistics dialog.</summary>
     procedure ShowBuildStatisticsDialog;
+    /// <summary>Click handler for the Build Statistics menu item.</summary>
     procedure BuildStatsMenuItemClick(Sender: TObject);
   {$IF CompilerVersion < 22.0} // XE has its own option
   private
+    /// <summary>Backing field for DisableRebuildDlg ( pre-XE only ).</summary>
     FDisableRebuildDlg: Boolean;
+    /// <summary>Address of the patched code in the IDE binary used to suppress the rebuild dialog.</summary>
     FRebuildAddress: Pointer;
+    /// <summary>Original bytes preserved at FRebuildAddress so the patch can be reversed.</summary>
     FRebuildOrgBytes: array[0..2] of Byte;
+    /// <summary>Setter for DisableRebuildDlg; applies or reverses the in-memory patch.</summary>
     procedure SetDisableRebuildDlg(const Value: Boolean);
   {$IFEND}
   protected
+    /// <summary>IDE callback invoked after every compile; finalises statistics, runs style checks, auto-saves, etc.</summary>
+    /// <param name="Project">Project that was compiled.</param>
+    /// <param name="Succeeded">True if the compile succeeded.</param>
+    /// <param name="IsCodeInsight">True if this is a Code Insight background compile.</param>
     procedure AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean);
+    /// <summary>IDE callback invoked before every compile; primes the progress bar and statistics.</summary>
+    /// <param name="Project">Project about to be compiled.</param>
+    /// <param name="IsCodeInsight">True if this is a Code Insight background compile.</param>
+    /// <param name="Cancel">Set to True to cancel the compile.</param>
     procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean);
   protected
+    /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default values when the configuration object is first created.</summary>
     procedure Init; override;
 
     { ICompileInterceptor }
+    /// <summary>Returns the set of compile-interceptor features required by this plug-in.</summary>
     function GetOptions: TCompileInterceptOptions; stdcall;
+    /// <summary>ICompileInterceptor: returns a virtual replacement for Filename, or nil for none.</summary>
     function GetVirtualFile(Filename: PWideChar): IVirtualStream; stdcall;
+    /// <summary>ICompileInterceptor: optionally returns altered file content; this plug-in returns nil.</summary>
     function AlterFile(Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream; stdcall;
+    /// <summary>ICompileInterceptor: receives notifications when the compiler opens or closes a file.</summary>
+    /// <param name="Filename">File being inspected.</param>
+    /// <param name="FileMode">Whether the file was opened or closed.</param>
     procedure InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode); stdcall;
+    /// <summary>ICompileInterceptor: optionally rewrites compiler messages; this plug-in does not.</summary>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; const Filename: IWideString; var Line, Column: Integer;
       const Msg: IWideString): Boolean; stdcall;
+    /// <summary>ICompileInterceptor: invoked when the compiler starts work on a project; not used by this plug-in.</summary>
     procedure CompileProject(ProjectFilename: PWideChar; UnitPaths: PWideChar;
       SourcePaths: PWideChar; DcuOutputDir: PWideChar; IsCodeInsight: Boolean;
       var Cancel: Boolean); stdcall;
   public
+    /// <summary>Constructs the plug-in, registers IDE notifiers, the compile interceptor and the menu item.</summary>
     constructor Create;
+    /// <summary>Releases all resources, unregisters notifiers and removes the menu item.</summary>
     destructor Destroy; override;
+    /// <summary>Build statistics container populated during compiles.</summary>
     property BuildStatistics: TBuildStatistics read FBuildStatistics;
   published
+    /// <summary>When True the cache of inactive projects is released after every compile to recover memory.</summary>
     property ReleaseCompilerUnitCache: Boolean read FReleaseCompilerUnitCache write SetReleaseCompilerUnitCache;
+    /// <summary>When True ReleaseCompilerUnitCache is restricted to high memory-pressure situations.</summary>
     property ReleaseCompilerUnitCacheHigh: Boolean read FReleaseCompilerUnitCacheHigh write SetReleaseCompilerUnitCacheHigh;
     {$IF CompilerVersion < 22.0} // XE has its own option
+    /// <summary>Suppresses the IDE "Rebuild required" dialog ( pre-XE only ).</summary>
     property DisableRebuildDlg: Boolean read FDisableRebuildDlg write SetDisableRebuildDlg;
     {$IFEND}
+    /// <summary>When True all modified files are saved automatically after a successful compile.</summary>
     property AutoSaveAfterSuccessfulCompile: Boolean read FAutoSaveAfterSuccessfulCompile write FAutoSaveAfterSuccessfulCompile;
     {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+    /// <summary>When True a "Last Compile" version-info entry is written before every compile ( pre-XE2 only ).</summary>
     property LastCompileVersionInfo: Boolean read FLastCompileVersionInfo write FLastCompileVersionInfo;
+    /// <summary>FormatDateTime mask used for the "Last Compile" version-info entry ( pre-XE2 only ).</summary>
     property LastCompileVersionInfoFormat: string read FLastCompileVersionInfoFormat write FLastCompileVersionInfoFormat;
     {$IFEND}
+    /// <summary>When True the user is asked before compiling a file from a non-active project.</summary>
     property AskCompileFromDiffProject: Boolean read FAskCompileFromDiffProject write SetAskCompileFromDiffProject;
+    /// <summary>Initial value for the "temporary switch" check box of the switch-project dialog.</summary>
     property AskCompileFromDiffProjectTemporary: Boolean read FAskCompileFromDiffProjectTemporary write FAskCompileFromDiffProjectTemporary;
+    /// <summary>When True per-unit build statistics are collected during every compile.</summary>
     property EnableBuildStatistics: Boolean read FEnableBuildStatistics write SetEnableBuildStatistics;
+    /// <summary>When True the Build Statistics dialog is shown automatically after each compile.</summary>
     property ShowBuildStatisticsAfterCompile: Boolean read FShowBuildStatisticsAfterCompile write FShowBuildStatisticsAfterCompile;
+    /// <summary>When True the code-style checker is run after each successful compile.</summary>
     property RunStyleCheckAfterCompile: Boolean read FRunStyleCheckAfterCompile write FRunStyleCheckAfterCompile;
   end;
 
+/// <summary>
+/// Initialises or shuts down the CompileProgress plug-in. Hooks the IDE compile entry
+/// points and creates the global TCompileProgress instance when Unload is False; restores
+/// the original code and frees the instance when Unload is True.
+/// </summary>
+/// <param name="Unload">False to load the plug-in, True to unload it.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

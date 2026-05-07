@@ -10,6 +10,12 @@
 
 unit LibraryPathSorter;
 
+/// <summary>
+/// Implements the IDE Path Sorter plugin: reads and writes the per-platform Library/Browsing/etc.
+/// path values stored in the Delphi registry, sorts them, and keeps a versioned backup history so
+/// any change can be rolled back.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,90 +26,151 @@ uses
   IDEUtils, IDEHooks, ToolsAPIHelpers;
 
 type
+  /// <summary>Identifies which Library-key value name a path operation targets.</summary>
   TLibraryPathType = (
+    /// <summary>"Search Path" registry value (the Library Path).</summary>
     lptSearchPath,
+    /// <summary>"Browsing Path" registry value.</summary>
     lptBrowsingPath,
+    /// <summary>"Debug DCU Path" registry value.</summary>
     lptDebugDCUPath,
+    /// <summary>"HPP Output Directory" registry value.</summary>
     lptHPPOutputDirectory,
+    /// <summary>"Namespace Prefixes" registry value.</summary>
     lptNamespacePrefixes,
+    /// <summary>"Package DCP Output" registry value.</summary>
     lptPackageDCPOutput,
+    /// <summary>"Package DPL Output" registry value.</summary>
     lptPackageDPLOutput,
+    /// <summary>"Translated Debug Library Path" registry value.</summary>
     lptTranslatedDebugLibraryPath,
+    /// <summary>"Translated Library Path" registry value.</summary>
     lptTranslatedLibraryPath,
+    /// <summary>"Translated Resource Path" registry value.</summary>
     lptTranslatedResourcePath
   );
 
+  /// <summary>Helper that exposes the registry value name and display name of a path-type value.</summary>
   TLibraryPathTypeHelper = record helper for TLibraryPathType
+    /// <summary>Returns the registry value name corresponding to the path type.</summary>
     function ToRegistryValueName: string;
+    /// <summary>Returns a user-facing display name for the path type.</summary>
     function ToDisplayName: string;
   end;
 
+  /// <summary>Snapshot of one path-type/platform value taken at a point in time.</summary>
   TPathBackup = record
+    /// <summary>Path type the snapshot belongs to.</summary>
     PathType: TLibraryPathType;
+    /// <summary>Platform name the snapshot belongs to (e.g. "Win32").</summary>
     Platform: string;
+    /// <summary>Time the snapshot was taken.</summary>
     Timestamp: TDateTime;
+    /// <summary>Semicolon-separated path string captured at Timestamp.</summary>
     Paths: string;
+    /// <summary>Free-text description supplied by the user (or auto-generated).</summary>
     Description: string;
   end;
 
+  /// <summary>Persists and restores TPathBackup snapshots in an XML history file.</summary>
   TLibraryPathBackupManager = class
   private
+    /// <summary>Path of the XML file used to persist the history.</summary>
     FBackupFilename: string;
+    /// <summary>In-memory list of loaded snapshots.</summary>
     FBackups: TList<TPathBackup>;
+    /// <summary>Maximum snapshots retained per (PathType, Platform) combination.</summary>
     FMaxBackupsPerType: Integer;
+    /// <summary>Loads the XML history file into FBackups (silent on errors).</summary>
     procedure LoadBackups;
+    /// <summary>Writes FBackups back to the XML history file.</summary>
     procedure SaveBackups;
   public
+    /// <summary>Creates the manager and loads the history from ABackupFilename.</summary>
     constructor Create( const ABackupFilename: string );
+    /// <summary>Frees the in-memory list (does not delete the on-disk file).</summary>
     destructor Destroy; override;
 
+    /// <summary>Adds a new snapshot to the history and trims older ones if the cap is exceeded.</summary>
+    /// <returns>True if the snapshot was created (False when APaths is empty).</returns>
     function CreateBackup( PathType: TLibraryPathType; const APlatform, APaths: string;
       const ADescription: string = '' ): Boolean;
+    /// <summary>Returns the snapshots for the supplied path type and platform.</summary>
     function GetBackups( PathType: TLibraryPathType; const APlatform: string ): TArray<TPathBackup>;
+    /// <summary>Returns every snapshot in the history.</summary>
     function GetAllBackups: TArray<TPathBackup>;
+    /// <summary>Writes the snapshot's Paths back to the registry.</summary>
+    /// <returns>True on success.</returns>
     function RestoreBackup( const ABackup: TPathBackup ): Boolean;
+    /// <summary>Removes the snapshot from the history (matched by PathType, Platform and Timestamp).</summary>
     function DeleteBackup( const ABackup: TPathBackup ): Boolean;
 
+    /// <summary>Maximum snapshots retained per (PathType, Platform) combination.</summary>
     property MaxBackupsPerType: Integer read FMaxBackupsPerType write FMaxBackupsPerType;
+    /// <summary>Path of the XML file used to persist the history.</summary>
     property BackupFilename: string read FBackupFilename;
   end;
 
+  /// <summary>Reads, writes and sorts the path values stored under HKCU\<BaseRegistryKey>\Library.</summary>
   TLibraryPathHandler = class
   private
+    /// <summary>BorlandIDEServices.GetBaseRegistryKey snapshot taken at construction.</summary>
     FBaseRegistryKey: string;
+    /// <summary>Returns the registry sub-key for the Library values of the supplied platform.</summary>
     function GetLibraryKey( const APlatform: string ): string;
   public
+    /// <summary>Creates the handler and snapshots BaseRegistryKey from BorlandIDEServices.</summary>
     constructor Create;
 
+    /// <summary>Returns the platforms with installed Library sub-keys (Win32 is always present).</summary>
     function GetAvailablePlatforms: TStringList;
+    /// <summary>Reads the named path value from the registry (returns empty if missing).</summary>
     function ReadPaths( PathType: TLibraryPathType; const APlatform: string ): string;
+    /// <summary>Writes the supplied semicolon-separated paths to the named registry value.</summary>
     procedure WritePaths( PathType: TLibraryPathType; const APlatform, APaths: string );
+    /// <summary>Returns APaths sorted (case-insensitively by default), preserving duplicates.</summary>
     function SortPaths( const APaths: string; CaseInsensitive: Boolean = True ): string;
 
+    /// <summary>Base registry key under which the Library sub-key lives.</summary>
     property BaseRegistryKey: string read FBaseRegistryKey;
   end;
 
+  /// <summary>Plugin entry point that owns the menu item, backup manager and path handler.</summary>
   TLibraryPathSorterPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for Enabled.</summary>
     FEnabled: Boolean;
+    /// <summary>Tools-menu item that opens the sorter dialog.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Owned backup history manager.</summary>
     FBackupManager: TLibraryPathBackupManager;
+    /// <summary>Owned registry path handler.</summary>
     FPathHandler: TLibraryPathHandler;
+    /// <summary>OnClick handler for the Tools-menu item.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Sets the default value for Enabled (True) on first creation.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and inserts the Tools-menu item near "Build Statistics".</summary>
     constructor Create;
+    /// <summary>Destroys the menu item, backup manager and path handler.</summary>
     destructor Destroy; override;
+    /// <summary>Opens the sorter dialog (TFormLibraryPathSorter).</summary>
     procedure ShowSorter;
+    /// <summary>Owned backup history manager.</summary>
     property BackupManager: TLibraryPathBackupManager read FBackupManager;
+    /// <summary>Owned registry path handler.</summary>
     property PathHandler: TLibraryPathHandler read FPathHandler;
   published
+    /// <summary>Persisted enable flag for the plugin.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
+/// <summary>Plugin entry point that creates or frees LibraryPathSorterPlugin.</summary>
 procedure InitPlugin( Unload: Boolean );
 
+/// <summary>Singleton instance of the plugin (nil when not loaded).</summary>
 var
   LibraryPathSorterPlugin: TLibraryPathSorterPlugin;
 

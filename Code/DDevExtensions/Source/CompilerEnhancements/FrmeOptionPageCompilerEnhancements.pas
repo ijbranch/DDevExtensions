@@ -10,6 +10,12 @@
 
 unit FrmeOptionPageCompilerEnhancements;
 
+/// <summary>
+/// Implements the Compiler Enhancements feature: when active, registers as an
+/// ICompileInterceptor so it can rewrite compiler messages, optionally promoting
+/// warnings to errors ( with an opt-out list of warning codes ).
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,55 +26,107 @@ uses
   ModuleData, InterceptIntf, FrmeBase, ExtCtrls;
 
 type
+  /// <summary>
+  /// Plug-in configuration object that owns the Compiler Enhancements feature and acts as
+  /// an ICompileInterceptor when active.
+  /// </summary>
   TCompilerEnhancements = class(TPluginConfig, ICompileInterceptor)
   private
+    /// <summary>Backing field for Active.</summary>
     FActive: Boolean;
+    /// <summary>Backing field for TreatWarningsAsErrors.</summary>
     FTreatWarningsAsErrors: Boolean;
+    /// <summary>Backing field for ExceptWarnings.</summary>
     FExceptWarnings: TStrings;
+    /// <summary>Identifier returned by the compile-interceptor service registration.</summary>
     FCompileInterceptorId: Integer;
+    /// <summary>Setter for ExceptWarnings; assigns the supplied list contents into the existing instance.</summary>
     procedure SetExceptWarnings(const Value: TStrings);
+    /// <summary>Setter for Active; registers or unregisters the compile interceptor.</summary>
     procedure SetActive(const Value: Boolean);
   protected
+    /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Sets default values when the configuration is first created.</summary>
     procedure Init; override;
+    /// <summary>Trims and de-quotes each entry in ExceptWarnings and re-sorts the list.</summary>
     procedure UpdateExceptWarnings;
   public
+    /// <summary>Creates the configuration ( Active is set later by the loaded settings ).</summary>
     constructor Create;
+    /// <summary>Unregisters the compile interceptor and frees the warning-exception list.</summary>
     destructor Destroy; override;
 
+    /// <summary>ICompileInterceptor: optionally returns altered file content; this plug-in returns nil.</summary>
     function AlterFile(Filename: PAnsiChar; Content: PAnsiChar;
       FileDate: Integer; FileSize: Integer): IVirtualStream; stdcall;
+    /// <summary>ICompileInterceptor: promotes warnings to errors when TreatWarningsAsErrors is True and the code is not on the exception list.</summary>
+    /// <param name="IsCompilerMessage">True for compiler messages.</param>
+    /// <param name="MsgKind">May be changed from mkWarning to mkError.</param>
+    /// <param name="Code">Warning code being inspected.</param>
+    /// <param name="Filename">File the message refers to.</param>
+    /// <param name="Line">1-based line number.</param>
+    /// <param name="Column">1-based column number.</param>
+    /// <param name="Msg">Message text.</param>
+    /// <returns>True when the message has been altered.</returns>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; var Filename: string; Line: Integer; Column: Integer;
       var Msg: string): Boolean; stdcall;
+    /// <summary>Returns the set of compile-interceptor features required by this plug-in.</summary>
     function GetOptions: TCompileInterceptOptions; stdcall;
+    /// <summary>ICompileInterceptor: returns a virtual replacement for Filename, or nil for none.</summary>
     function GetVirtualFile(Filename: PAnsiChar): IVirtualStream; stdcall;
+    /// <summary>ICompileInterceptor: file-open / file-close notification ( unused by this plug-in ).</summary>
     procedure InspectFilename(Filename: PAnsiChar; FileMode: TInspectFileMode); stdcall;
   published
+    /// <summary>Master switch that enables or disables the compile interceptor.</summary>
     property Active: Boolean read FActive write SetActive;
+    /// <summary>When True warnings are reported as errors ( subject to the ExceptWarnings list ).</summary>
     property TreatWarningsAsErrors: Boolean read FTreatWarningsAsErrors write FTreatWarningsAsErrors;
+    /// <summary>List of warning codes ( e.g. "W1000" ) that should remain warnings.</summary>
     property ExceptWarnings: TStrings read FExceptWarnings write SetExceptWarnings;
   end;
 
+  /// <summary>
+  /// Frame implementing ITreePageComponent for the Compiler Enhancements options page.
+  /// </summary>
   TFrameOptionPageCompilerEnhancements = class(TFrameBase, ITreePageComponent)
+    /// <summary>Master enable check box.</summary>
     cbxActive: TCheckBox;
+    /// <summary>Toggles promotion of warnings to errors.</summary>
     cbxTreatWarningsAsErrors: TCheckBox;
+    /// <summary>Memo holding the comma- or line-separated list of warning codes to ignore.</summary>
     mnoExceptWarnings: TMemo;
+    /// <summary>Caption label for mnoExceptWarnings.</summary>
     lblExceptWarningsCaption: TLabel;
+    /// <summary>Updates the enabled state of dependent controls when cbxActive changes.</summary>
     procedure cbxActiveClick(Sender: TObject);
+    /// <summary>Updates the enabled state of mnoExceptWarnings when cbxTreatWarningsAsErrors changes.</summary>
     procedure cbxTreatWarningsAsErrorsClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Configuration instance bound to this frame.</summary>
     FCompilerEnhancements: TCompilerEnhancements;
   public
     { Public-Deklarationen }
+    /// <summary>Receives the TCompilerEnhancements instance to edit.</summary>
+    /// <param name="UserData">A TCompilerEnhancements instance.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Loads configuration values into the visual controls.</summary>
     procedure LoadData;
+    /// <summary>Persists values from the visual controls back into the configuration.</summary>
     procedure SaveData;
+    /// <summary>Called when the page becomes the selected page.</summary>
     procedure Selected;
+    /// <summary>Called when the page is no longer selected.</summary>
     procedure Unselected;
   end;
 
+/// <summary>
+/// Initialises or shuts down the Compiler Enhancements plug-in by creating or freeing
+/// the global TCompilerEnhancements instance.
+/// </summary>
+/// <param name="Unload">False to load the plug-in, True to unload it.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

@@ -8,6 +8,12 @@
 
 unit FrmTodoAggregator;
 
+/// <summary>
+/// Modeless form that displays the aggregated TODO/FIXME results for the active project.
+/// Provides category and priority filters, a sortable list view, double-click navigation
+/// into the source editor, copy-to-clipboard and CSV export.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,52 +24,97 @@ uses
   Generics.Defaults, FrmBase, TodoAggregator, ToolsAPI;
 
 type
+  /// <summary>
+  /// Singleton aggregator form created by TTodoAggregatorPlugin.ShowAggregator.
+  /// </summary>
   TFormTodoAggregator = class( TFormBase )
+    /// <summary>Top toolbar panel containing the scan button and filters.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting Close and Export buttons.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Scans the active project for TODO comments.</summary>
     btnScan: TButton;
+    /// <summary>List view that presents matched TODO items.</summary>
     ListView: TListView;
+    /// <summary>Status label showing the file currently being scanned.</summary>
     lblProgress: TLabel;
+    /// <summary>Popup menu attached to the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Menu item that copies selected (or all) rows to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Menu separator.</summary>
     N1: TMenuItem;
+    /// <summary>Menu item that opens the selected source file at the TODO location.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the visible rows to a CSV file.</summary>
     btnExport: TButton;
+    /// <summary>Save dialog used by the export action.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Summary label showing the total number of matches.</summary>
     lblSummary: TLabel;
+    /// <summary>Combo box filtering by category (TODO, FIXME, ...).</summary>
     cboCategory: TComboBox;
+    /// <summary>Label for the category combo box.</summary>
     lblCategory: TLabel;
+    /// <summary>Combo box filtering by priority (High, Normal, Low).</summary>
     cboPriority: TComboBox;
+    /// <summary>Label for the priority combo box.</summary>
     lblPriority: TLabel;
+    /// <summary>OnClick handler for the Close button.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>OnClick handler for the Scan button; runs the project scanner and refreshes the list.</summary>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>OnClose handler that releases the singleton instance.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>OnCreate handler that initialises the scanner and filter combo boxes.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>OnDestroy handler that frees the scanner.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Double-click handler that opens the selected file in the IDE editor.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>OnClick handler for the copy-to-clipboard menu item.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
+    /// <summary>OnClick handler for the open-file menu item.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
+    /// <summary>OnClick handler for the Export button.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Toggles ascending/descending order on column header clicks.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom-sort comparator honouring numeric and priority columns.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Refreshes the visible list when the category filter changes.</summary>
     procedure cboCategoryChange( Sender: TObject );
+    /// <summary>Refreshes the visible list when the priority filter changes.</summary>
     procedure cboPriorityChange( Sender: TObject );
   private
+    /// <summary>Owned scanner that performs the TODO extraction.</summary>
     FScanner: TTodoScanner;
+    /// <summary>Cached results from the last scan.</summary>
     FTodoItems: TArray<TTodoItem>;
+    /// <summary>Index of the column the list is currently sorted by.</summary>
     FSortColumn: Integer;
+    /// <summary>True for ascending sort, False for descending.</summary>
     FSortAscending: Boolean;
+    /// <summary>Rebuilds the list view from FTodoItems applying the active filters.</summary>
     procedure PopulateList;
+    /// <summary>Scanner progress callback that updates the status label.</summary>
     procedure ScannerProgress( Sender: TObject );
+    /// <summary>Opens the source file referenced by the currently selected list row.</summary>
     procedure OpenSelectedFile;
+    /// <summary>Returns True when an item satisfies both category and priority filters.</summary>
+    /// <param name="Item">TODO item to test.</param>
+    /// <returns>True when the item should be displayed.</returns>
     function PassesFilter( const Item: TTodoItem ): Boolean;
   public
+    /// <summary>Shows the singleton aggregator form, creating it if necessary.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton form instance; nil when the form is closed.</summary>
   FormInstance: TFormTodoAggregator = nil;
 
 implementation

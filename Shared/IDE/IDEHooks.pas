@@ -10,6 +10,12 @@
 
 unit IDEHooks;
 
+/// <summary>
+/// Central per-Delphi-version constants and runtime helpers used by every other unit that
+/// performs IDE-level patching. Provides BPL/DLL filename mappings (coreide_bpl, designide_bpl,
+/// dcc32_dll, ...), mangled RTL/VCL symbol names and runtime DCC-version comparison helpers.
+/// </summary>
+
 {$IF CompilerVersion >= 25.0} // XE4+
   {$LEGACYIFEND ON}
 {$IFEND}
@@ -349,15 +355,34 @@ const
 
 {$ENDIF ~CONDITIONALEXPRESSIONS}
 
+/// <summary>Returns (and lazily loads) the module handle of the active dcc compiler DLL.</summary>
+/// <returns>HMODULE for dcc32/dcc64/etc. depending on the build platform.</returns>
 function GetDccHandle: HMODULE;
+/// <summary>Wrapper around GetProcAddress that asserts the symbol exists when running under a debugger.</summary>
+/// <param name="Handle">Module handle.</param>
+/// <param name="Name">Mangled symbol name.</param>
+/// <returns>Address of the resolved symbol, or nil on release builds.</returns>
 function DbgStrictGetProcAddress(Handle: THandle; Name: PAnsiChar): Pointer;
 
 const
+  /// <summary>Packed Int64 representing Delphi 10.2 Tokyo RTM (major.minor.release.build).</summary>
   COMPILER_VERSION_10_2_RTM = (Int64(25) shl 48) or (Int64(0) shl 32) or (26309 shl 16) or (314);
+  /// <summary>Packed Int64 representing Delphi 10.2 Tokyo Update 1.</summary>
   COMPILER_VERSION_10_2_UP1 = (Int64(25) shl 48) or (Int64(0) shl 32) or (27659 shl 16) or (1188);
 
+/// <summary>True when the running DCC compiler exactly matches AVersion (build optionally ignored).</summary>
+/// <param name="AVersion">Packed Int64 produced like COMPILER_VERSION_10_2_RTM.</param>
+/// <param name="AIgnoreBuild">When True, only major/minor/release are compared.</param>
 function SameCompilerVersion(AVersion: Int64; AIgnoreBuild: Boolean = True): Boolean;
+/// <summary>True when the running DCC compiler is at or above AVersion.</summary>
+/// <param name="AVersion">Minimum required packed version.</param>
+/// <param name="AIgnoreBuild">When True, only major/minor/release are compared.</param>
 function CheckCompilerVersion(AVersion: Int64; AIgnoreBuild: Boolean = True): Boolean; overload;
+/// <summary>Convenience overload that builds the version Int64 from individual components.</summary>
+/// <param name="AMajor">Major version.</param>
+/// <param name="AMinor">Minor version.</param>
+/// <param name="ARelease">Release number, or -1 to ignore.</param>
+/// <param name="ABuild">Build number, or -1 to ignore.</param>
 function CheckCompilerVersion(AMajor, AMinor, ARelease: Integer; ABuild: Integer = -1): Boolean; overload;
 
 implementation

@@ -1,5 +1,12 @@
 unit DbgStepIntoSkip;
 
+/// <summary>
+/// Experimental debugger helper that intercepts the dcc32 FindSourceLine routine so the
+/// debugger can be told to skip stepping into specific units (currently Vcl.Forms). The
+/// initialisation hook is disabled at compile time; see the implementation TODO regarding
+/// the CPU view fallback when FindSourceLine returns 0.
+/// </summary>
+
 interface
 
 // TODO: If FindSourcLine32 returns 0 the debugger uses the already transfered GetCodeRange32 information

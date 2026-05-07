@@ -23,38 +23,73 @@
 
 unit UnitVersionInfo;
 
+/// <summary>
+/// Reads and modifies the VS_VERSION_INFO resource of a loaded module or raw resource buffer.
+/// Originally by Miha Remec; provides indexed access to StringFileInfo entries plus the fixed
+/// file info structure, and can stream the (modified) resource back to disk.
+/// </summary>
+
 interface
 
 uses
   Windows, Classes, SysUtils;
 
 type
+  /// <summary>Wraps a VS_VERSION_INFO resource and exposes its StringFileInfo entries via indexed properties.</summary>
   TVersionInfo = class
+    /// <summary>Source module handle when constructed from a loaded executable; 0 when constructed from a raw buffer.</summary>
     fModule : THandle;
+    /// <summary>Pointer to the start of the VS_VERSION_INFO block.</summary>
     fVersionInfo : PAnsiChar;
+    /// <summary>Pointer to the version header (currently unused beyond construction).</summary>
     fVersionHeader : PAnsiChar;
+    /// <summary>StringFileInfo entries: each Object is a TVersionStringValue.</summary>
     fChildStrings : TStringList;
+    /// <summary>VarFileInfo translation list (DWORD packed lang/codepage values).</summary>
     fTranslations : TList;
+    /// <summary>Cached pointer to the fixed file info structure embedded in the resource.</summary>
     fFixedInfo : PVSFixedFileInfo;
+    /// <summary>Resource handle used to release the resource on destruction.</summary>
     fVersionResHandle : THandle;
 
   private
+    /// <summary>Lazily parses the resource buffer; returns False on parse failure.</summary>
     function GetInfo : boolean;
+    /// <summary>Returns the number of StringFileInfo entries.</summary>
     function GetKeyCount: Integer;
+    /// <summary>Returns the key name at the supplied StringFileInfo index.</summary>
     function GetKeyName(idx: Integer): string;
+    /// <summary>Returns the value associated with the supplied StringFileInfo key.</summary>
+    /// <exception cref="Exception">Raised when the key cannot be found.</exception>
     function GetKeyValue(const idx: string): string;
+    /// <summary>Sets or appends a StringFileInfo entry.</summary>
     procedure SetKeyValue(const idx, Value: string);
+    /// <summary>Returns the fixed file info pointer or nil when the resource cannot be parsed.</summary>
     function GetFixedInfo: PVSFixedFileInfo;
   public
+    /// <summary>Loads the VS_VERSION_INFO resource from the supplied module handle.</summary>
+    /// <param name="AModule">Module handle whose resource to load.</param>
+    /// <exception cref="Exception">Raised when the module has no version resource.</exception>
     constructor Create (AModule : THandle); overload;
+    /// <summary>Wraps a raw VS_VERSION_INFO buffer.</summary>
+    /// <param name="AVersionInfo">Pointer to a VS_VERSION_INFO block.</param>
+    /// <exception cref="Exception">Raised when AVersionInfo is nil.</exception>
     constructor Create (AVersionInfo : PAnsiChar); overload;
+    /// <summary>Releases the parsed strings and the resource handle (when applicable).</summary>
     destructor Destroy; override;
+    /// <summary>Serialises the (possibly modified) VS_VERSION_INFO resource to strm.</summary>
+    /// <param name="strm">Destination stream.</param>
+    /// <exception cref="Exception">Raised when the resource cannot be parsed.</exception>
     procedure SaveToStream (strm : TStream);
 
-    property FixedFileInfo: PVSFixedFileInfo read GetFixedInfo; // ah 
+    /// <summary>Pointer to the fixed file info structure, or nil when unavailable.</summary>
+    property FixedFileInfo: PVSFixedFileInfo read GetFixedInfo; // ah
 
+    /// <summary>Number of StringFileInfo entries in the resource.</summary>
     property KeyCount : Integer read GetKeyCount;
+    /// <summary>Indexed StringFileInfo key names.</summary>
     property KeyName [idx : Integer] : string read GetKeyName;
+    /// <summary>Indexed StringFileInfo key values; assigning a missing key appends a new entry.</summary>
     property KeyValue [const idx : string] : string read GetKeyValue write SetKeyValue;
   end;
 

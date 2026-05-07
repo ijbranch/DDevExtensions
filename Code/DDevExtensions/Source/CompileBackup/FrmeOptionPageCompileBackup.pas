@@ -10,6 +10,13 @@
 
 unit FrmeOptionPageCompileBackup;
 
+/// <summary>
+/// Implements the Compile Backup feature: before each compile any modified, unsaved
+/// editor buffers are written to ".cbk" sidecar files so the user can recover them if
+/// the IDE crashes during the compile. The backups are removed after the file is saved
+/// or when the module is closed ( configurable ).
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,49 +27,95 @@ uses
   ToolsAPI, ExtCtrls, FrmeBase;
 
 type
+  /// <summary>
+  /// Plug-in configuration object that owns the Compile Backup feature and its IDE
+  /// notifiers.
+  /// </summary>
   TCompileBackupConfig = class(TPluginConfig)
   private
+    /// <summary>IDE notifier delivering BeforeCompile callbacks.</summary>
     FIDENofifier: TIDENotifier;
+    /// <summary>Module-data notifier delivering save and destroy callbacks.</summary>
     FModuleDataNotifier: TModuleDataNotifier;
+    /// <summary>Backing field for Active.</summary>
     FActive: Boolean;
+    /// <summary>Backing field for DeleteBackupAfterClose.</summary>
     FDeleteBackupAfterClose: Boolean;
   protected
+    /// <summary>Sets default values for newly created configurations.</summary>
     procedure Init; override;
 
+    /// <summary>Deletes all backup files associated with the supplied module data.</summary>
+    /// <param name="Data">Module data whose backup file list should be removed.</param>
     procedure DeleteBackupFiles(Data: TModuleData);
+    /// <summary>Iterates over all open modules and writes a ".cbk" backup for each modified file.</summary>
     procedure BackupModifiedFiles;
 
+    /// <summary>IDE callback invoked before each compile; triggers BackupModifiedFiles when active.</summary>
+    /// <param name="Project">Project being compiled.</param>
+    /// <param name="IsCodeInsight">True for Code Insight background compiles ( ignored ).</param>
+    /// <param name="Cancel">May be set to True to cancel the compile.</param>
     procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean;
       var Cancel: Boolean);
+    /// <summary>Module-data callback: deletes backup files after a module has been saved.</summary>
+    /// <param name="Data">Module data describing the module that was just saved.</param>
     procedure ModuleAfterSave(Data: TModuleData);
+    /// <summary>Module-data callback: optionally deletes backups when the module is being destroyed.</summary>
+    /// <param name="Data">Module data describing the module being destroyed.</param>
     procedure ModuleDestroying(Data: TModuleData);
 
+    /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Builds the backup file name for the supplied source file ( appends ".cbk" ).</summary>
+    /// <param name="Filename">Source file name.</param>
+    /// <returns>Filename with the ".cbk" extension appended.</returns>
     function GetCompileBackupFilename(const Filename: string): string;
   public
+    /// <summary>Constructs the configuration and registers the IDE notifiers.</summary>
     constructor Create;
+    /// <summary>Releases all notifiers and saved state.</summary>
     destructor Destroy; override;
   published
+    /// <summary>Master switch enabling or disabling the Compile Backup feature.</summary>
     property Active: Boolean read FActive write FActive;
+    /// <summary>When True backup files are deleted as soon as their owning module is closed.</summary>
     property DeleteBackupAfterClose: Boolean read FDeleteBackupAfterClose write FDeleteBackupAfterClose;
   end;
 
+  /// <summary>
+  /// Frame implementing ITreePageComponent for the Compile Backup options page.
+  /// </summary>
   TFrameOptionPageCompileBackup = class(TFrameBase, ITreePageComponent)
+    /// <summary>Master enable check box, bound to TCompileBackupConfig.Active.</summary>
     cbxActive: TCheckBox;
+    /// <summary>Bound to TCompileBackupConfig.DeleteBackupAfterClose.</summary>
     cbxDeleteBackupAfterClose: TCheckBox;
+    /// <summary>Enables or disables dependent controls when the master switch changes.</summary>
     procedure cbxActiveClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Configuration instance bound to this frame.</summary>
     FCompileBackupConfig: TCompileBackupConfig;
   public
     { Public-Deklarationen }
+    /// <summary>Receives the TCompileBackupConfig instance to edit.</summary>
+    /// <param name="UserData">A TCompileBackupConfig instance.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Loads the configuration values into the visual controls.</summary>
     procedure LoadData;
+    /// <summary>Persists values from the visual controls back into the configuration.</summary>
     procedure SaveData;
+    /// <summary>Called when the page becomes the selected page.</summary>
     procedure Selected;
+    /// <summary>Called when the page is no longer selected.</summary>
     procedure Unselected;
   end;
 
+/// <summary>
+/// Initialises or shuts down the Compile Backup plug-in by creating or freeing the
+/// global TCompileBackupConfig instance.
+/// </summary>
+/// <param name="Unload">False to load the plug-in, True to unload it.</param>
 procedure InitPlugin(Unload: Boolean);
   
 implementation

@@ -10,6 +10,12 @@
 
 unit FocusEditor;
 
+/// <summary>
+/// Hooks TDesktopStates.LoadDesktop so that, after a desktop layout change, focus is moved
+/// back to the editor control inside the first visible TEditWindow. Without this, the IDE
+/// often leaves focus on the project manager or message pane.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -21,6 +27,11 @@ interface
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
 
+/// <summary>
+/// Plug-in entry point. Installs the LoadDesktop hook on initialisation and removes it on
+/// shutdown.
+/// </summary>
+/// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

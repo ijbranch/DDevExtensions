@@ -10,6 +10,17 @@
 
 unit UnusedUnitDetector;
 
+/// <summary>
+/// Implements the Unused Unit Detector DDevExtensions plugin: analyses each unit's
+/// uses clauses against its source code to identify uses entries whose identifiers
+/// do not appear to be referenced.
+/// </summary>
+/// <remarks>
+/// Detection is heuristic. The analyser uses a built-in table of well-known identifiers
+/// for common RTL/VCL units and a substring whole-word search for everything else.
+/// False positives are filtered through a user-configurable ignore list.
+/// </remarks>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,65 +30,122 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>One reference to a unit appearing in a uses clause.</summary>
   TUsedUnitInfo = record
+    /// <summary>Name of the unit being used.</summary>
     UnitName: string;
+    /// <summary>Resolved source file path, when known.</summary>
     FileName: string;
+    /// <summary>True when the reference appears in the interface uses clause.</summary>
     IsInterface: Boolean;
+    /// <summary>Source line number of the unit reference.</summary>
     LineNumber: Integer;
   end;
 
+  /// <summary>A potentially unused uses entry detected by the analyser.</summary>
   TUnusedUnitInfo = record
+    /// <summary>Name of the unit containing the suspected unused reference.</summary>
     SourceUnit: string;
+    /// <summary>Path of the unit containing the reference.</summary>
     SourceFileName: string;
+    /// <summary>Name of the unit that appears to be unused.</summary>
     UnusedUnit: string;
+    /// <summary>True when the unused reference is in the interface uses clause.</summary>
     IsInterface: Boolean;
+    /// <summary>Source line number of the unused reference.</summary>
     LineNumber: Integer;
   end;
 
+  /// <summary>
+  /// Heuristic analyser that examines a unit's source for unused uses entries by
+  /// comparing the uses list against the identifiers detected in the source.
+  /// </summary>
   TUnitAnalyzer = class
   private
+    /// <summary>Search paths used when resolving unit names (currently informational).</summary>
     FSearchPaths: TStringList;
-    FKnownIdentifiers: TDictionary<string, TStringList>; // UnitName -> List of known identifiers
+    /// <summary>Map of unit name -&gt; well-known identifiers exported by that unit.</summary>
+    FKnownIdentifiers: TDictionary<string, TStringList>;
+    /// <summary>Backing field for <see cref="ProgressFileName"/>.</summary>
     FProgressFileName: string;
+    /// <summary>Seeds <see cref="FKnownIdentifiers"/> with common RTL/VCL exports.</summary>
     procedure LoadKnownIdentifiers;
+    /// <summary>Tokenises the source and returns lists of interface/implementation uses entries.</summary>
     function ExtractUsedUnits( const Content: string; out InterfaceUnits, ImplUnits: TList<TUsedUnitInfo> ): Boolean;
+    /// <summary>Returns True when the unit appears to be referenced in the appropriate scope of the source.</summary>
     function IsUnitReferenced( const UnitName, Content: string; InterfaceEndPos: Integer; IsInterfaceUnit: Boolean ): Boolean;
+    /// <summary>Returns the well-known exports list for a unit, or nil if not registered.</summary>
     function GetUnitExports( const UnitName: string ): TStringList;
   public
+    /// <summary>Creates a new analyser and seeds the known-identifier table.</summary>
     constructor Create;
+    /// <summary>Releases all owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Adds a directory to the search-path collection (duplicates ignored).</summary>
     procedure AddSearchPath( const Path: string );
+    /// <summary>Empties the search-path collection.</summary>
     procedure ClearSearchPaths;
+    /// <summary>Analyses a single unit file and returns the suspected unused entries.</summary>
+    /// <param name="FileName">Full path of the .pas file to analyse.</param>
+    /// <param name="UnusedUnits">Receives the suspected unused entries (empty if none).</param>
+    /// <returns>True on success, False if the file could not be read.</returns>
     function AnalyzeUnit( const FileName: string; out UnusedUnits: TArray<TUnusedUnitInfo> ): Boolean;
+    /// <summary>Analyses every .pas module in the supplied project.</summary>
+    /// <param name="Project">The project to scan.</param>
+    /// <param name="AllUnusedUnits">Receives the aggregated suspected unused entries.</param>
+    /// <param name="OnProgress">Optional progress callback (read <see cref="ProgressFileName"/> for the current file).</param>
+    /// <returns>True on success.</returns>
     function AnalyzeProject( const Project: IOTAProject; out AllUnusedUnits: TArray<TUnusedUnitInfo>;
       OnProgress: TNotifyEvent ): Boolean;
+    /// <summary>Name of the file currently being analysed (read by the OnProgress callback).</summary>
     property ProgressFileName: string read FProgressFileName;
   end;
 
+  /// <summary>
+  /// Plugin host: registers the menu item, owns the persisted ignore list and exposes
+  /// the entry point for displaying the detector form.
+  /// </summary>
   TUnusedUnitDetectorPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for <see cref="Enabled"/>.</summary>
     FEnabled: Boolean;
+    /// <summary>List of unit names to skip during analysis (e.g. Windows, Messages).</summary>
     FIgnoreList: TStringList;
+    /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Menu click handler that opens the detector form.</summary>
     procedure MenuItemClick( Sender: TObject );
+    /// <summary>Property setter for the comma-text serialised ignore list.</summary>
     procedure SetIgnoreListText( const Value: string );
+    /// <summary>Property getter for the comma-text serialised ignore list.</summary>
     function GetIgnoreListText: string;
   protected
+    /// <summary>Returns the IDE Tools options page for this plugin.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default option values and seeds the ignore list.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin, the ignore list and the menu item.</summary>
     constructor Create;
+    /// <summary>Releases the menu item and the ignore list.</summary>
     destructor Destroy; override;
+    /// <summary>Opens (or focuses) the Unused Unit Detector form.</summary>
     procedure ShowDetector;
+    /// <summary>Read-only access to the ignore list.</summary>
     property IgnoreList: TStringList read FIgnoreList;
   published
+    /// <summary>Whether the plugin's features are enabled.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
+    /// <summary>Comma-text serialisation of the ignore list (used by the configuration storage).</summary>
     property IgnoreListText: string read GetIgnoreListText write SetIgnoreListText;
   end;
 
+/// <summary>Plugin entry point invoked by the IDE host to load or unload the plugin singleton.</summary>
+/// <param name="Unload">When True the plugin is unloaded; otherwise it is loaded.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton instance of the Unused Unit Detector plugin.</summary>
   UnusedUnitDetectorPlugin: TUnusedUnitDetectorPlugin;
 
 implementation

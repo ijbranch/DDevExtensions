@@ -9,6 +9,12 @@
 
 unit FrmEmptyEventHandlerDetector;
 
+/// <summary>
+/// Singleton results form for the Empty Event Handler Detector. Initiates project-wide scans and
+/// presents the empty handlers in a sortable list view with copy-to-clipboard, CSV export, and
+/// double-click navigation to the offending source line.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,39 +25,71 @@ uses
   FrmBase, EmptyEventHandlerDetector, ToolsAPI;
 
 type
+  /// <summary>Singleton results form for the Empty Event Handler Detector.</summary>
   TFormEmptyEventHandlerDetector = class(TFormBase)
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom action-button panel.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Initiates a project-wide scan.</summary>
     btnScan: TButton;
+    /// <summary>List view displaying the empty handlers.</summary>
     ListView: TListView;
+    /// <summary>Status text shown while scanning.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu attached to the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Copies the selected (or all) results to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Opens the source file at the selected handler's line.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the visible results to CSV.</summary>
     btnExport: TButton;
+    /// <summary>File-save dialog used by <see cref="btnExport"/>.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Result summary text.</summary>
     lblSummary: TLabel;
+    /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
     procedure btnCloseClick(Sender: TObject);
+    /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
     procedure btnScanClick(Sender: TObject);
+    /// <summary>Initialises sort state.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Clears the result set when the form closes.</summary>
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    /// <summary>Clears the singleton reference when the form is destroyed.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Opens the file referenced by the double-clicked row.</summary>
     procedure ListViewDblClick(Sender: TObject);
+    /// <summary>Context-menu handler that copies result data to the clipboard.</summary>
     procedure mnuCopyToClipboardClick(Sender: TObject);
+    /// <summary>Context-menu handler that opens the source file at the handler's line.</summary>
     procedure mnuOpenFileClick(Sender: TObject);
+    /// <summary>Exports the visible results to a CSV file.</summary>
     procedure btnExportClick(Sender: TObject);
+    /// <summary>Cycles sort direction when a column header is clicked.</summary>
     procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
+    /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
     procedure ListViewCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
   private
+    /// <summary>Latest scan results.</summary>
     FResults: TArray<TEmptyHandlerInfo>;
+    /// <summary>Index of the column currently being sorted.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Rebuilds the list view from <see cref="FResults"/>.</summary>
     procedure PopulateList;
+    /// <summary>Opens the file/line of the currently selected list item in the IDE.</summary>
     procedure OpenSelectedFile;
   public
+    /// <summary>Displays the singleton form, creating it if required.</summary>
+    /// <returns><c>True</c> when the form was shown.</returns>
     class function Execute: Boolean;
   end;
 

@@ -8,6 +8,12 @@
 
 unit FrmTypePrefixEditor;
 
+/// <summary>
+/// Modal editor that lets the user view, modify, and reset the variable-prefix rule list used by
+/// the Code Style Checker. Rules are entered as <c>TypePattern=Prefix</c> lines and persisted back
+/// onto the supplied <see cref="TCodeStyleCheckerPlugin"/>.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,22 +23,42 @@ uses
   Dialogs, StdCtrls, CodeStyleChecker;
 
 type
+  /// <summary>Editor dialog for the type/prefix rule list.</summary>
   TFormTypePrefixEditor = class( TForm )
+    /// <summary>Static instructions label.</summary>
     lblInstructions: TLabel;
+    /// <summary>Warning label populated when overlapping prefix patterns are detected.</summary>
     lblWarning: TLabel;
+    /// <summary>Memo holding one <c>TypePattern=Prefix</c> rule per line.</summary>
     memRules: TMemo;
+    /// <summary>OK button — saves the edited rules.</summary>
     btnOK: TButton;
+    /// <summary>Cancel button — discards changes.</summary>
     btnCancel: TButton;
+    /// <summary>Restores the plugin defaults via <see cref="TCodeStyleCheckerPlugin.InitDefaultTypePrefixRules"/>.</summary>
     btnResetDefaults: TButton;
+    /// <summary>OnClick handler for <see cref="btnResetDefaults"/>.</summary>
     procedure btnResetDefaultsClick( Sender: TObject );
+    /// <summary>Form creation handler (placeholder used by the form designer).</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Re-validates the rule list whenever the memo content changes.</summary>
     procedure memRulesChange( Sender: TObject );
   private
+    /// <summary>Plugin whose <c>TypePrefixRules</c> the form is editing.</summary>
     FPlugin: TCodeStyleCheckerPlugin;
+    /// <summary>Loads the plugin's rules into the memo.</summary>
     procedure LoadRules;
+    /// <summary>Parses the memo content and writes the result back to the plugin.</summary>
     procedure SaveRules;
+    /// <summary>Detects rules whose pattern is a prefix of another rule and reports them in <see cref="lblWarning"/>.</summary>
     procedure CheckForConflicts;
   public
+    /// <summary>
+    /// Convenience modal launcher — creates the form, loads rules from <paramref name="APlugin"/>,
+    /// and writes them back when the user accepts the dialog.
+    /// </summary>
+    /// <param name="APlugin">Plugin instance whose rules are edited.</param>
+    /// <returns><c>True</c> when the dialog closed via OK.</returns>
     class function Execute( APlugin: TCodeStyleCheckerPlugin ): Boolean;
   end;
 

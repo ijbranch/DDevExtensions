@@ -8,6 +8,13 @@
 
 unit InterceptImpl;
 
+/// <summary>
+/// In-DLL implementation of the CompileInterceptor host services. Maintains the list of
+/// registered <see cref="ICompileInterceptor"/> plug-ins, fans out compiler callbacks to
+/// each plug-in (in last-registered-first order), and exposes the
+/// <c>GetCompileInterceptorServices</c> entry point used by client packages.
+/// </summary>
+
 {$I CompileInterceptor.inc}
 
 interface
@@ -16,88 +23,160 @@ uses
   SysUtils, Classes, Contnrs, FileStreams, InterceptIntf;
 
 type
+  /// <summary>
+  /// Concrete <see cref="ICompileInterceptorServices"/> implementation. Keeps a list of
+  /// registered plug-ins, caches their option flags for fast dispatch and dispatches
+  /// compiler events to the plug-ins that opted into each event class.
+  /// </summary>
   TCompileInterceptorServices = class(TComponent, ICompileInterceptorServices)
   private
+    /// <summary>Registered <see cref="ICompileInterceptor"/> instances in registration order.</summary>
     FItems: TInterfaceList;
+    /// <summary>Registration IDs, parallel to <see cref="FItems"/>.</summary>
     FIds: TList;
+    /// <summary>Cached <see cref="TCompileInterceptOptions"/> values, parallel to <see cref="FItems"/>.</summary>
     FOptions: TList;
+    /// <summary>Cached "any plug-in implements <c>AlterFile</c>" flag.</summary>
     FHasAlterFile: Boolean;
+    /// <summary>Cached "any plug-in implements virtual file opening" flag.</summary>
     FHasVirtualFiles: Boolean;
+    /// <summary>Cached "any plug-in implements <c>InspectFilename</c>" flag.</summary>
     FHasInspectFilename: Boolean;
+    /// <summary>Cached "any plug-in implements <c>AlterMessage</c>" flag.</summary>
     FHasAlterMessage: Boolean;
+    /// <summary>Cached "any plug-in implements <c>CompileProject</c>" flag.</summary>
     FHasCompileProjects: Boolean;
+    /// <summary>Cached "any plug-in implements virtual output file creation" flag.</summary>
     FHasVirtualOutFiles: Boolean;
+    /// <summary>Cached "any plug-in implements <c>FileNameDate</c>" flag.</summary>
     FHasFileNameDates: Boolean;
+    /// <summary>Returns the count of registered interceptors.</summary>
     function GetCount: Integer;
+    /// <summary>Returns the registered interceptor at <paramref name="Index"/>.</summary>
     function GetItem(Index: Integer): ICompileInterceptor;
+    /// <summary>Returns the cached options for the interceptor at <paramref name="Index"/>.</summary>
     function GetOption(Index: Integer): TCompileInterceptOptions;
+    /// <summary>Recomputes the <c>FHas...</c> flags from the current option list (called after unregister).</summary>
     procedure UpdateOptionCache;
   public
+    /// <summary>Creates the service container.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases the registered plug-ins and internal lists.</summary>
     destructor Destroy; override;
   public
     { ICompileInterceptorServices }
+    /// <summary>Registers a plug-in and returns the ID to pass back to <see cref="UnregisterInterceptor"/>.</summary>
     function RegisterInterceptor(Interceptor: ICompileInterceptor): Integer; stdcall;
+    /// <summary>Unregisters the plug-in previously registered with the given <paramref name="Id"/>.</summary>
     procedure UnregisterInterceptor(Id: Integer); stdcall;
+    /// <summary>Returns a virtual stream over the editor or on-disk content of <paramref name="Filename"/>.</summary>
     function GetFileContent(Filename: PWideChar): IVirtualStream; stdcall;
   public
+    /// <summary>Asks each registered plug-in (in reverse registration order) to open a virtual file.</summary>
     function OpenVirtualFile(Filename: PAnsiChar; out Stream: IVirtualStream): Boolean;
+    /// <summary>Asks each registered plug-in to provide a virtual output stream for a file create.</summary>
     function CreateVirtualFile(Filename: PAnsiChar; out Stream: IVirtualOutStream): Boolean;
+    /// <summary>Lets registered plug-ins alter the content of a file just opened by the compiler.</summary>
     function AlterFile(Filename: PAnsiChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream;
+    /// <summary>Notifies registered plug-ins that the compiler has opened or created <paramref name="Filename"/>.</summary>
     procedure InspectFilename(Filename: PAnsiChar; FileMode: TInspectFileMode);
+    /// <summary>Lets registered plug-ins alter a compiler/linker message before it is emitted.</summary>
+    /// <returns><c>True</c> if any plug-in modified one of the in/out parameters.</returns>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String): Boolean;
+    /// <summary>Notifies plug-ins that a project compile is about to start; any plug-in may set <paramref name="Cancel"/>.</summary>
     procedure CompileProject(const ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: string;
       IsCodeInsight: Boolean; var Cancel: Boolean);
+    /// <summary>Asks plug-ins to resolve the file timestamp for <paramref name="Filename"/>.</summary>
     function FileNameDate(Filename: PAnsiChar; out FileDate: Integer): Boolean;
 
+    /// <summary>Number of registered plug-ins.</summary>
     property Count: Integer read GetCount;
+    /// <summary>Registered plug-ins indexed by registration order.</summary>
     property Items[Index: Integer]: ICompileInterceptor read GetItem; default;
+    /// <summary>Cached option masks for each registered plug-in.</summary>
     property Options[Index: Integer]: TCompileInterceptOptions read GetOption;
 
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_ALTERFILES</c>.</summary>
     property HasAlterFile: Boolean read FHasAlterFile;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_VIRTUALFILES</c>.</summary>
     property HasVirtualFiles: Boolean read FHasVirtualFiles;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_VIRTUALOUTFILES</c>.</summary>
     property HasVirtualOutFiles: Boolean read FHasVirtualOutFiles;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_INSPECTFILENAMES</c>.</summary>
     property HasInspectFilename: Boolean read FHasInspectFilename;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_ALTERMESSAGES</c>.</summary>
     property HasAlterMessage: Boolean read FHasAlterMessage;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_COMPILEPROJECTS</c>.</summary>
     property HasCompileProjects: Boolean read FHasCompileProjects;
+    /// <summary>True when at least one registered plug-in advertises <c>CIO_FILENAMEDATES</c>.</summary>
     property HasFileNameDate: Boolean read FHasFileNameDates;
   end;
 
+  /// <summary>
+  /// VCL <see cref="TStream"/> facade over an <see cref="IVirtualStream"/>, so virtual file
+  /// content from a plug-in can be passed to APIs that expect a stream object. Writing is
+  /// not supported.
+  /// </summary>
   TVirtualStreamAdapter = class(TStream)
   private
+    /// <summary>Underlying interceptor virtual stream.</summary>
     FVirtualStream: IVirtualStream;
   protected
+    /// <summary>Routes 32-bit <c>SetSize</c> via <c>Seek</c>.</summary>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Routes 64-bit <c>SetSize</c> via <c>Seek</c>.</summary>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
+    /// <summary>Creates an adapter that delegates to <paramref name="AVirtualStream"/>.</summary>
     constructor Create(AVirtualStream: IVirtualStream);
 
+    /// <summary>Reads up to <paramref name="Count"/> bytes from the underlying virtual stream.</summary>
     function Read(var Buffer; Count: Integer): Integer; override;
+    /// <summary>Always fails (returns -1) - the underlying virtual stream is read-only.</summary>
     function Write(const Buffer; Count: Integer): Integer; override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Repositions the underlying virtual stream (64-bit overload).</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
+    /// <summary>Repositions the underlying virtual stream (legacy 32-bit overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
   end;
 
+  /// <summary>
+  /// Default <see cref="IVirtualStream"/> implementation that wraps an existing
+  /// <see cref="TStream"/> and reports a caller-supplied file timestamp.
+  /// </summary>
   TVirtualStream = class(TInterfacedObject, IVirtualStream)
   private
+    /// <summary>When True, the wrapped stream is freed in <see cref="Destroy"/>.</summary>
     FAutoDelete: Boolean;
+    /// <summary>Wrapped stream that supplies file content.</summary>
     FStream: TStream;
+    /// <summary>File date stamp returned from <see cref="FileStatus"/>.</summary>
     FFileDate: Integer;
   public
+    /// <summary>
+    /// Creates a virtual stream over <paramref name="AStream"/>. When
+    /// <paramref name="AAutoDelete"/> is True (default), the wrapped stream is freed when
+    /// this instance is released.
+    /// </summary>
     constructor Create(AStream: TStream; AFileDate: Integer; AAutoDelete: Boolean = True);
+    /// <summary>Frees the wrapped stream if <see cref="FAutoDelete"/> is set.</summary>
     destructor Destroy; override;
 
+    /// <summary>Repositions the wrapped stream.</summary>
     function Seek(Offset: Integer; Origin: Integer): Integer; stdcall;
+    /// <summary>Reads up to <paramref name="Size"/> bytes from the wrapped stream.</summary>
     function Read(var Buffer; Size: Integer): Integer; stdcall;
+    /// <summary>Returns the wrapped stream's size and the cached file date.</summary>
     procedure FileStatus(out FileDate: Integer; out FileSize: Integer); stdcall;
   end;
 
+/// <summary>Singleton <see cref="TCompileInterceptorServices"/> instance for the loaded DLL.</summary>
 var
   CompileInterceptorServices: TCompileInterceptorServices;
 

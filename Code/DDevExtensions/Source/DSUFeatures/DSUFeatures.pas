@@ -8,11 +8,27 @@
 
 unit DSUFeatures;
 
+/// <summary>
+/// Implements the core "DSU" (Delphi Speed Up) IDE-feature hooks: the Ctrl+Close-and-kill
+/// behaviour for the IDE main form, the package-cache disable patch, the package loading
+/// progress cursor, the TMethodProperty "(nil)" override and the legacy KillAllDexplore
+/// helper used on Delphi 2007-XE6 to terminate the DExplorer help viewer.
+/// </summary>
+
 interface
 
+/// <summary>
+/// Installs or removes the DSU feature hooks (form close, package cache disable, package
+/// load cursor, etc.).
+/// </summary>
+/// <param name="Unload">True to remove all hooks, False to install them.</param>
 procedure InitPlugin(Unload: Boolean);
 
 {$IF CompilerVersion <= 28.0} // XE7-, XE8 replaced DExplorer with *.chm files
+/// <summary>
+/// Enumerates running processes and terminates every dexplore.exe instance. Used on Delphi
+/// 2007-XE6 to clean up the orphaned MS Help 2 viewer when the IDE shuts down.
+/// </summary>
 procedure KillAllDexplore;
 {$IFEND}
 
@@ -36,7 +52,7 @@ const
   // English
   sConfirmCloseAllAndKillException_Eng = 'An exception occured while quitting. Do you want to kill Delphi/BCB now?';
   // German
-  sConfirmCloseAllAndKillException_Ger = 'Es trat eine Exception während des Beendens auf. Soll der Prozess Delphi/BCB trotzdem beendet werden?';
+  sConfirmCloseAllAndKillException_Ger = 'Es trat eine Exception wï¿½hrend des Beendens auf. Soll der Prozess Delphi/BCB trotzdem beendet werden?';
   (* PrY - French Translation by Pierre Y. / pierre@levosgien.net *)
   sConfirmCloseAllAndKillException_Fre = 'Une erreur s''est produite pendant la fermeture de Delphi/BCB. Voulez-vous terminer le processus?';
   (* /PrY *)

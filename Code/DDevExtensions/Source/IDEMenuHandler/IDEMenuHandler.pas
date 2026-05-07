@@ -10,6 +10,13 @@
 
 unit IDEMenuHandler;
 
+/// <summary>
+/// Adds DDevExtensions menu items and shortcut bindings to the IDE main menu. Inserts a "File
+/// Selector" entry under the Search menu, intercepts the View > Swap Source/Form action so it
+/// also fires when the editor isn't focused, and (on Delphi 2007+) adds a placeholder for
+/// future Set-Active-Build-Configuration handling.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -22,42 +29,83 @@ uses
   ToolsAPI;
 
 type
+  /// <summary>
+  /// Owns the actions and menu items that this plug-in injects into the IDE. The class is
+  /// instantiated once per session by InitPlugin and tears the additions back down on
+  /// shutdown so that re-opening the package leaves no stale entries.
+  /// </summary>
   TIDEMenuHandler = class(TObject)
   private
+    /// <summary>Cached reference to the IDE's Project menu item (used to inject sub-items).</summary>
     FMenuProject: TMenuItem;
+    /// <summary>List of TMenuItem instances created by the handler (frees them on destroy).</summary>
     FMenuItems: TObjectList;
+    /// <summary>List of TAction instances created by the handler (frees them on destroy).</summary>
     FActionItems: TObjectList;
 
     {$IFDEF COMPILER9_UP}
+    /// <summary>Original OnUpdate handler for ViewSwapSourceFormItem, restored at destroy.</summary>
     FOrgUpdateSwapSourceForm, FOrgExecuteSwapSourceForm: TNotifyEvent;
+    /// <summary>Cached IDE menu item for View > Swap Source/Form.</summary>
     FViewSwapSourceFormItem: TMenuItem;
     {$ENDIF COMPILER9_UP}
     {$IFDEF DELPHI2007_UP}
+    /// <summary>Action that triggers the (currently disabled) build-configuration sub-menu.</summary>
     FActionSetActiveBuildConfiguration: TAction;
     //FBuildConfigActions: TObjectList;
     {$ENDIF DELPHI2007_UP}
 
+    /// <summary>Action that opens the DDevExtensions File Selector dialog.</summary>
     FActionFileSelector: TAction;
 
   protected
+    /// <summary>
+    /// Creates an IDE action plus a hosting menu item, registers them with INTAServices and
+    /// inserts the menu item adjacent to BaseItemName.
+    /// </summary>
+    /// <param name="BaseMainItemName">Top-level menu (used as fall-back insertion target).</param>
+    /// <param name="BaseItemName">The sibling or parent item to insert against.</param>
+    /// <param name="ItemName">Component name to assign to the new menu item.</param>
+    /// <param name="Caption">Menu item caption.</param>
+    /// <param name="Execute">OnExecute handler for the action.</param>
+    /// <param name="InsertAfter">True to insert after BaseItemName, False for before.</param>
+    /// <param name="InsertAsChild">True to insert as a child of BaseItemName.</param>
+    /// <param name="ShortCut">Initial keyboard shortcut (defaults to scNone).</param>
+    /// <returns>The newly created TAction.</returns>
     function AddMenuAction(const BaseMainItemName, BaseItemName, ItemName, Caption: string;
       Execute: TNotifyEvent; InsertAfter, InsertAsChild: Boolean; ShortCut: TShortCut = scNone): TAction;
 
+    /// <summary>Shared OnUpdate handler that adjusts visibility/enabled state of injected actions.</summary>
     procedure ActionUpdate(Sender: TObject);
 
     {$IFDEF COMPILER9_UP}
+    /// <summary>Override for View > Swap Source/Form that synthesises the shortcut on the editor.</summary>
     procedure ExecuteSwapSourceForm(Sender: TObject);
+    /// <summary>Override for View > Swap Source/Form's update handler so it stays enabled.</summary>
     procedure UpdateSwapSourceForm(Sender: TObject);
     {$ENDIF COMPILER9_UP}
 
+    /// <summary>OnExecute handler for the File Selector action; opens TFormFileSelector.</summary>
     procedure FileSelectorItemClick(Sender: TObject);
   public
+    /// <summary>Creates the handler and injects every menu item/action it manages.</summary>
     constructor Create;
+    /// <summary>Restores any swapped IDE handlers and frees the injected actions/items.</summary>
     destructor Destroy; override;
 
+    /// <summary>
+    /// Updates the global hot-key associated with the File Selector action. Safe to call before
+    /// the handler exists (the value is cached for the next Create).
+    /// </summary>
+    /// <param name="Value">The new TShortCut to assign, or scNone to clear it.</param>
     class procedure SetFindUseUnitHotKey(Value: TShortCut);
   end;
 
+/// <summary>
+/// Plug-in entry point. Creates the global TIDEMenuHandler instance on load and frees it on
+/// unload.
+/// </summary>
+/// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

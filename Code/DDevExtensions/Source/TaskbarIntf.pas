@@ -1,37 +1,63 @@
 unit TaskbarIntf;
 
+/// <summary>
+/// Delphi import declarations for the Windows 7+ Shell Taskbar API
+/// (<c>ITaskbarList</c> through <c>ITaskbarList4</c>) plus the related
+/// <c>THUMBBUTTON</c>/<c>TBPF_*</c>/<c>STPF_*</c> constants. Used by the
+/// Compile Progress feature to display compile state on the IDE's taskbar
+/// button.
+/// </summary>
+/// <remarks>
+/// COM is initialised lazily on the first call to <see cref="CreateTaskbarList"/>
+/// and uninitialised in the unit's finalisation section.
+/// </remarks>
+
 interface
 
 uses
   Windows, CommCtrl, ComObj, ActiveX;
 
 const
+  /// <summary>COM class ID of the Shell Taskbar List object.</summary>
   {$EXTERNALSYM CLSID_TaskbarList}
   CLSID_TaskbarList: TGUID = '{56FDF344-FD6D-11d0-958A-006097C9A090}';
 
 const
+  /// <summary>Interface ID of <see cref="ITaskbarList"/>.</summary>
   {$EXTERNALSYM IID_ITaskbarList}
   IID_ITaskbarList: TGUID = '{56FDF342-FD6D-11d0-958A-006097C9A090}';
 
 type
+  /// <summary>
+  /// Original Windows 95+ taskbar interface that lets an application add,
+  /// remove, activate or alt-mark its taskbar tab.
+  /// </summary>
   {$EXTERNALSYM ITaskbarList}
   ITaskbarList = interface(IUnknown)
   ['{56FDF342-FD6D-11d0-958A-006097C9A090}']
+    /// <summary>Initialises the taskbar-list object; call once before any other method.</summary>
     function HrInit: HResult; stdcall;
+    /// <summary>Adds an item to the taskbar.</summary>
     function AddTab(hwnd: HWND): HResult; stdcall;
+    /// <summary>Removes an item from the taskbar.</summary>
     function DeleteTab(hwnd: HWND): HResult; stdcall;
+    /// <summary>Marks an item as the active tab.</summary>
     function ActivateTab(hwnd: HWND): HResult; stdcall;
+    /// <summary>Marks the alt-tab focus on the given item without activating it.</summary>
     function SetActiveAlt(hwnd: HWND): HResult; stdcall;
   end;
 
 const
+  /// <summary>Interface ID of <see cref="ITaskbarList2"/>.</summary>
   {$EXTERNALSYM IID_ITaskbarList2}
   IID_ITaskbarList2: TGUID = '{602D4995-B13A-429b-A66E-1935E44F4317}';
 
 type
+  /// <summary>Adds full-screen-window marking on top of <see cref="ITaskbarList"/>.</summary>
   {$EXTERNALSYM ITaskbarList2}
   ITaskbarList2 = interface(ITaskbarList)
   ['{602D4995-B13A-429b-A66E-1935E44F4317}']
+    /// <summary>Marks a window as occupying the full screen so the shell can hide its UI.</summary>
     function MarkFullscreenWindow(hwnd: HWND;
       fFullscreen: BOOL): HResult; stdcall;
   end;
@@ -63,7 +89,9 @@ const
   THB_FLAGS   = $8;           //The dwFlags member contains valid information.
 
 type
+  /// <summary>Pointer to <see cref="TThumbButton"/>.</summary>
   PThumbButton = ^TThumbButton;
+  /// <summary>Describes a single button on a thumbnail toolbar (Win7+).</summary>
   {$EXTERNALSYM THUMBBUTTON}
   THUMBBUTTON = record
     dwMask: DWORD;                   //A combination of THUMBBUTTONMASK values that specify which members
@@ -75,7 +103,9 @@ type
     szTip: array [0..259] of WCHAR;
     dwFlags: DWORD;
   end;
+  /// <summary>Pascal-style alias for <see cref="THUMBBUTTON"/>.</summary>
   TThumbButton = THUMBBUTTON;
+  /// <summary>Win32-style pointer alias for <see cref="THUMBBUTTON"/>.</summary>
   {$EXTERNALSYM LPTHUMBBUTTON}
   LPTHUMBBUTTON = PThumbButton;
 
@@ -115,32 +145,49 @@ const
                                     //of a generic percentage not indicative of actual progress.
 
 const
+  /// <summary>Interface ID of <see cref="ITaskbarList3"/>.</summary>
   {$EXTERNALSYM IID_ITaskbarList3}
   IID_ITaskbarList3: TGUID = '{ea1afb91-9e28-4b86-90e9-9e9f8a5eefaf}';
 
 type
+  /// <summary>
+  /// Windows 7+ taskbar interface adding progress bars, overlay icons,
+  /// thumbnail toolbars and tab grouping to <see cref="ITaskbarList2"/>.
+  /// </summary>
   {$EXTERNALSYM ITaskbarList3}
   ITaskbarList3 = interface(ITaskBarList2)
   ['{ea1afb91-9e28-4b86-90e9-9e9f8a5eefaf}']
+    /// <summary>Sets a determinate progress value (completed/total) on the window's taskbar button.</summary>
     function SetProgressValue(hwnd: HWND;
                               ullCompleted,
                               ullTotal: ULONGLONG): HRESULT ; stdcall;
+    /// <summary>Sets the progress-bar state (one of the <c>TBPF_*</c> flags).</summary>
     function SetProgressState(hwnd: HWND; tbpFlags: DWORD): HRESULT; stdcall;
+    /// <summary>Registers a child tab window with its MDI parent for taskbar tab grouping.</summary>
     function RegisterTab(hwndTab, hwndMDI: HWND): HRESULT; stdcall;
+    /// <summary>Removes a previously registered tab.</summary>
     function UnregisterTab(hwndTab: HWND): HRESULT; stdcall;
+    /// <summary>Sets the relative order of taskbar thumbnail tabs.</summary>
     function SetTabOrder(hwndTab, hwndInsertBefore: HWND): HRESULT; stdcall;
+    /// <summary>Marks a tab as the active tab within its MDI group.</summary>
     function SetTabActive(hwndTab, hwndMDI: HWND;
                           dwReserved: DWORD): HRESULT; stdcall;
+    /// <summary>Adds buttons to the window's thumbnail toolbar (max 7).</summary>
     function ThumbBarAddButtons(hwnd: HWND; cButtons: UINT;
                                 pButton: LPTHUMBBUTTON): HRESULT; stdcall;
+    /// <summary>Updates state/image of previously added thumbnail-toolbar buttons.</summary>
     function ThumbBarUpdateButtons(hwnd: HWND; cButtons: UINT;
                                    pButton: LPTHUMBBUTTON): HRESULT; stdcall;
+    /// <summary>Sets the image list used by the thumbnail toolbar.</summary>
     function ThumbBarSetImageList(hwnd: HWND;
                                   himl: HIMAGELIST): HRESULT; stdcall;
+    /// <summary>Overlays the taskbar icon with a small icon plus description.</summary>
     function SetOverlayIcon(hwnd: HWND; hIcon: HICON;
                             pszDescription: LPCWSTR): HRESULT; stdcall;
+    /// <summary>Sets the tooltip text shown on the thumbnail.</summary>
     function SetThumbnailTooltip(hwnd: HWND;
                                  pszTip: LPCWSTR): HRESULT; stdcall;
+    /// <summary>Restricts the thumbnail to a sub-rectangle of the window.</summary>
     function SetThumbnailClip(hwnd: HWND; prcClip: PRECT): HRESULT; stdcall;
 
   end;
@@ -174,16 +221,24 @@ const
                                                 //Do not combine this value with STPF_USEAPPPEEKALWAYS;
                                                 //doing so will result in an error.
 
+  /// <summary>Interface ID of <see cref="ITaskbarList4"/>.</summary>
   {$EXTERNALSYM IID_ITaskbarList4}
   IID_ITaskbarList4: TGUID = '{c43dc798-95d1-4bea-9030-bb99e2983a1a}';
 
 type
+  /// <summary>Adds <see cref="ITaskbarList4.SetTabProperties"/> on top of <see cref="ITaskbarList3"/>.</summary>
   {$EXTERNALSYM ITaskbarList4}
   ITaskbarList4 = interface(ITaskbarList3)
   ['{c43dc798-95d1-4bea-9030-bb99e2983a1a}']
+    /// <summary>Sets per-tab thumbnail/peek behaviour using the <c>STPF_*</c> flags.</summary>
     function SetTabProperties(hwndTab: HWND; stpFlags: DWORD): HRESULT; stdcall;
   end;
 
+/// <summary>
+/// Creates and initialises an <see cref="ITaskbarList"/> COM object,
+/// initialising COM apartment-threaded on first use.
+/// </summary>
+/// <returns>An initialised taskbar-list interface, or nil if creation failed.</returns>
 function CreateTaskbarList: ITaskbarList;
 
 implementation

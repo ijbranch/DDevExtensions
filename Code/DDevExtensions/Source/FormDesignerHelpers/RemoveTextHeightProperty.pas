@@ -10,6 +10,12 @@
 
 unit RemoveTextHeightProperty;
 
+/// <summary>
+/// Replaces TCustomForm.DefineProperties so that the TextHeight, IgnoreFontProperty and
+/// OldCreateOrder DFM properties are read but not written. Available only on Delphi 11 (DELPHI28_UP)
+/// and later, where TextHeight was introduced.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,6 +25,11 @@ interface
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
 
+/// <summary>
+/// Activates or deactivates the TCustomForm.DefineProperties redirection that suppresses
+/// streaming of the TextHeight property.
+/// </summary>
+/// <param name="Active">True to install the redirect, False to restore the original method.</param>
 procedure SetRemoveTextHeightPropertyActive(Active: Boolean);
 
 {$ENDIF DELPHI28_UP}

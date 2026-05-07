@@ -10,6 +10,12 @@
 
 unit FrmeOptionPageStartParameterTeam;
 
+/// <summary>
+/// Implements the "Local Start Parameters" team feature: when active, run parameters stored in the
+/// project file are stripped on save (so they stay local to each developer) and re-applied on the
+/// next open from the per-user project data store.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,42 +26,68 @@ uses
   ModuleData, IDENotifiers, FrmeBase, ExtCtrls, IDEHooks, Hooking;
 
 type
+  /// <summary>
+  /// Plugin configuration object that registers the IDE notifiers used to keep run parameters out
+  /// of shared project files while preserving them locally per developer.
+  /// </summary>
   TStartParameterTeam = class(TPluginConfig)
   private
+    /// <summary>Notifier that hooks BeforeSave/AfterSave to capture and strip RunParams.</summary>
     FModuleNotifier: TModuleDataNotifier;
+    /// <summary>Notifier that re-applies the saved RunParams when the project is reopened.</summary>
     FIDENotifier: TIDENotifier;
+    /// <summary>Backing field for Active.</summary>
     FActive: Boolean;
   protected
+    /// <summary>Returns the options-page descriptor for the IDE's options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises Active to False.</summary>
     procedure Init; override;
+    /// <summary>BeforeSave handler that captures the project's current RunParams to user storage.</summary>
     procedure DoModuleBeforeSave(Data: TModuleData);
+    /// <summary>AfterSave handler that strips the RunParams XML element from the project file.</summary>
     procedure DoModuleAfterSave(Data: TModuleData);
+    /// <summary>Reserved hook for module rename (currently a no-op).</summary>
     procedure DoModuleRenamed(Data: TModuleData; const NewName: string);
+    /// <summary>OnFileOpened handler that re-applies the saved RunParams to the project.</summary>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string;
       var Cancel: Boolean);
   public
+    /// <summary>Creates the configuration object and registers the IDE notifiers.</summary>
     constructor Create;
+    /// <summary>Frees the notifiers and disables the feature.</summary>
     destructor Destroy; override;
 
+    /// <summary>Strips the RunParams/Debugger_RunParams XML element from the project file in place.</summary>
     procedure RemoveRunParams(Project: IOTAProject);
   published
+    /// <summary>Enables or disables the team feature.</summary>
     property Active: Boolean read FActive write FActive;
   end;
 
+  /// <summary>Frame for the IDE options page that lets the user toggle the team feature.</summary>
   TFrameOptionPageStartParameterTeam = class(TFrameBase, ITreePageComponent)
+    /// <summary>Checkbox that mirrors TStartParameterTeam.Active.</summary>
     cbxActive: TCheckBox;
   private
     { Private-Deklarationen }
+    /// <summary>Backing reference to the configuration object whose state is edited.</summary>
     FStartParameterTeam: TStartParameterTeam;
   public
     { Public-Deklarationen }
+    /// <summary>Receives the configuration object from the host page.</summary>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Pushes the current Active value into the checkbox.</summary>
     procedure LoadData;
+    /// <summary>Pulls the checkbox value into Active and persists the configuration.</summary>
     procedure SaveData;
+    /// <summary>ITreePageComponent: called when the page becomes active (no-op).</summary>
     procedure Selected;
+    /// <summary>ITreePageComponent: called when the page becomes inactive (no-op).</summary>
     procedure Unselected;
   end;
 
+/// <summary>Plugin entry point that creates or frees the global TStartParameterTeam.</summary>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

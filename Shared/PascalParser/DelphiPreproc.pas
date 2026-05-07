@@ -8,23 +8,38 @@
 
 unit DelphiPreproc;
 
+/// <summary>
+/// Preprocessor layered on top of TDelphiLexer. Tracks $DEFINE/$UNDEF state, evaluates $IF/$IFDEF/
+/// $IFNDEF/$IFOPT/$ELSE/$ELSEIF/$ENDIF/$IFEND blocks and inlines $INCLUDE files. Subscribers
+/// resolve unknown identifiers via OnGetDeclared / OnGetConstBoolValue / OnGetConstValue.
+/// </summary>
+
 interface
 
 uses
   SysUtils, Classes, Contnrs, DelphiParserContainers, DelphiLexer, DelphiExpr;
 
 type
+  /// <summary>Notification raised when the preprocessor emits a token (such as a comment or directive).</summary>
   TTokenEvent = procedure(Sender: TObject; Token: TToken) of object;
+  /// <summary>Notification raised when an $INCLUDE file is encountered, before its contents are inlined.</summary>
   TIncludeEvent = procedure(Sender: TObject; const Name: string) of object;
+  /// <summary>Notification raised when the preprocessor reports an error.</summary>
   TPreprocessorErrorEvent = procedure(Sender: TObject; const Msg: string; Token: TToken) of object;
+  /// <summary>Subscriber-supplied resolver for Boolean compile-time constants in $IF expressions.</summary>
   TGetConstBoolValueEvent = procedure(Sender: TObject; const Name: string; var Value: Boolean) of object;
+  /// <summary>Subscriber-supplied resolver for non-Boolean compile-time constants in $IF expressions.</summary>
   TGetConstValueEvent = procedure(Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string) of object;
+  /// <summary>Subscriber-supplied resolver for the Declared() pseudo-function.</summary>
   TGetDeclaredEvent = procedure(Sender: TObject; const Name: string; var Value: Boolean) of object;
 
+  /// <summary>Method used to handle a single compiler directive token (such as $IFDEF or $DEFINE).</summary>
   TTokenParserMethod = procedure(Token: TToken; Lexer: TDelphiLexer) of object;
 
+  /// <summary>Exception type raised by the preprocessor on unrecoverable errors.</summary>
   EDelphiPreprocessor = class(Exception);
 
+  /// <summary>Hash-table entry pairing a directive name with its handler method.</summary>
   TTokenParserItem = class(TObject)
   private
     FMethod: TTokenParserMethod;
@@ -33,6 +48,7 @@ type
     property Method: TTokenParserMethod read FMethod;
   end;
 
+  /// <summary>Hash-table mapping directive names to TTokenParserMethod handlers.</summary>
   TTokenParserList = class(THashtable)
   private
     function GetMethod(const Name: string): TTokenParserMethod;
@@ -41,6 +57,7 @@ type
     property Methods[const Name: string]: TTokenParserMethod read GetMethod; default;
   end;
 
+  /// <summary>State for a single $IF/$IFDEF block on TIfdefStack.</summary>
   TIfdefStackItem = class(TObject)
   private
     FSkip: Boolean;
@@ -55,6 +72,7 @@ type
     property OuterSkip: Boolean read FOuterSkip write FOuterSkip;
   end;
 
+  /// <summary>Stack of nested $IF/$IFDEF blocks; combines outer-skip flags so nested blocks remain skipped.</summary>
   TIfdefStack = class(TObject)
   private
     FStack: TStack;
@@ -77,6 +95,10 @@ type
     property InElse: Boolean read GetInElse;
   end;
 
+  /// <summary>
+  /// Pascal preprocessor. Owns a stack of TDelphiLexer instances (one per active $INCLUDE) and
+  /// emits tokens via GetToken with conditional-compilation rules applied.
+  /// </summary>
   TDelphiPreprocessor = class(TObject)
   private
     FLexers: TObjectList;
@@ -150,8 +172,10 @@ type
     property Tokens[Index: Integer]: TToken read GetTokenProp;
   end;
 
+  /// <summary>Discriminator passed to TExpressionParser.Match to decide whether failure raises an exception.</summary>
   MatchFail = (mfYes, mfNo);
 
+  /// <summary>$IF expression evaluator that consults the owning preprocessor for identifier resolution.</summary>
   TPreprocessorIfParser = class(TExpressionParser)
   private
     FPreprocessor: TDelphiPreprocessor;
@@ -165,6 +189,7 @@ type
     procedure ErrorMsg(const Msg: string; const Args: array of const; Token: TToken); override;
   end;
 
+/// <summary>Case-insensitive filename comparison that also folds short paths so 8.3 and long forms match.</summary>
 function CompareFileName(const Filename1, Filename2: string): Boolean;
 
 implementation

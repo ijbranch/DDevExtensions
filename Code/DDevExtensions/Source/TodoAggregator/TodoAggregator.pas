@@ -8,6 +8,13 @@
 
 unit TodoAggregator;
 
+/// <summary>
+/// Plugin that scans the current project's Pascal sources for TODO/FIXME-style comments
+/// and presents them in a sortable, filterable list. Provides a configurable comma-
+/// separated pattern list, optional priority parsing such as TODO(high), and integrates
+/// into the IDE through a DDevExtensions submenu entry.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,52 +24,110 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>
+  /// Single hit produced by the TODO scanner: source location, category (TODO, FIXME, ...),
+  /// optional priority and the comment body text.
+  /// </summary>
   TTodoItem = record
+    /// <summary>Full path to the source file containing the comment.</summary>
     FileName: string;
+    /// <summary>Unit name (file name without extension).</summary>
     UnitName: string;
+    /// <summary>1-based line number of the comment.</summary>
     Line: Integer;
+    /// <summary>0-based column where the comment starts.</summary>
     Column: Integer;
+    /// <summary>Matched category keyword (e.g. TODO, FIXME, HACK, BUG, NOTE, XXX).</summary>
     Category: string;      // TODO, FIXME, HACK, BUG, NOTE, XXX
+    /// <summary>Parsed priority text: High, Normal or Low (defaults to Normal).</summary>
     Priority: string;      // High, Medium, Low
+    /// <summary>Comment body text after the category and optional priority/colon.</summary>
     Text: string;          // Full comment text
   end;
 
+  /// <summary>
+  /// Lexer-driven scanner that walks the comment tokens of a Delphi source file and
+  /// extracts items matching the configured pattern list.
+  /// </summary>
   TTodoScanner = class
   private
+    /// <summary>Most recently scanned file name, exposed via ProgressFileName for UI feedback.</summary>
     FProgressFileName: string;
+    /// <summary>Active list of category keywords to recognise.</summary>
     FPatterns: TStringList;
+    /// <summary>Parses one comment body looking for any configured keyword and optional priority.</summary>
+    /// <param name="CommentText">Text of the comment without delimiters.</param>
+    /// <param name="Category">Receives the matched keyword in its configured case.</param>
+    /// <param name="Priority">Receives the parsed priority (High, Normal or Low).</param>
+    /// <param name="Text">Receives the trimmed remainder of the comment.</param>
+    /// <returns>True if a pattern was recognised; False otherwise.</returns>
     function ParseTodoComment( const CommentText: string; out Category, Priority, Text: string ): Boolean;
   public
+    /// <summary>Creates the scanner with the default pattern list (TODO, FIXME, HACK, BUG, NOTE, XXX).</summary>
     constructor Create;
+    /// <summary>Releases the pattern list.</summary>
     destructor Destroy; override;
+    /// <summary>Replaces the active patterns from a comma-separated string.</summary>
+    /// <param name="PatternList">Comma-separated list of keywords.</param>
     procedure SetPatterns( const PatternList: string );
+    /// <summary>Scans a single .pas file and returns matching TODO items.</summary>
+    /// <param name="FileName">Path to a Pascal source file.</param>
+    /// <param name="TodoItems">Receives the matches (empty array on no matches or failure).</param>
+    /// <returns>True if the file was readable and scanning completed.</returns>
     function ScanFile( const FileName: string; out TodoItems: TArray<TTodoItem> ): Boolean;
+    /// <summary>Scans every .pas module in the supplied IDE project, raising OnProgress per file.</summary>
+    /// <param name="Project">IDE project to walk.</param>
+    /// <param name="AllTodoItems">Receives the aggregated matches.</param>
+    /// <param name="OnProgress">Optional callback invoked before each file is scanned.</param>
+    /// <returns>True on success; False if Project is nil.</returns>
     function ScanProject( const Project: IOTAProject; out AllTodoItems: TArray<TTodoItem>;
       OnProgress: TNotifyEvent ): Boolean;
+    /// <summary>Name of the file currently being scanned, suitable for status labels.</summary>
     property ProgressFileName: string read FProgressFileName;
   end;
 
+  /// <summary>
+  /// Persistent plugin configuration that owns the menu entry and exposes Enabled/Patterns
+  /// as published settings (stored in TodoAggregator.xml).
+  /// </summary>
   TTodoAggregatorPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for the Enabled property.</summary>
     FEnabled: Boolean;
+    /// <summary>Backing field for the Patterns property (comma-separated).</summary>
     FPatterns: string;
+    /// <summary>Menu item added under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>OnClick handler that opens the aggregator window.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Returns the configuration page shown in the IDE Options dialog.</summary>
+    /// <returns>A TTreePage describing the TODO/FIXME Aggregator settings.</returns>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Sets default Enabled and Patterns values.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the configuration object and adds the IDE menu item.</summary>
     constructor Create;
+    /// <summary>Removes the menu item.</summary>
     destructor Destroy; override;
+    /// <summary>Shows the TODO aggregator form (singleton).</summary>
     procedure ShowAggregator;
   published
+    /// <summary>True when the aggregator menu/feature is active (currently informational).</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
+    /// <summary>Comma-separated list of category keywords used by the scanner.</summary>
     property Patterns: string read FPatterns write FPatterns;
   end;
 
+/// <summary>
+/// Creates or destroys the singleton TodoAggregator plugin instance.
+/// </summary>
+/// <param name="Unload">True to shut down, False to start up.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton plugin instance accessed by the form and option page.</summary>
   TodoAggregatorPlugin: TTodoAggregatorPlugin;
 
 implementation

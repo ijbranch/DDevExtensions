@@ -8,6 +8,11 @@
 
 unit FrmeOptionPageUnreachableCode;
 
+/// <summary>
+/// IDE Tools options page frame for the Unreachable Code Detector plugin. Exposes
+/// the Enabled flag and a static description of what the detector identifies.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,19 +22,31 @@ uses
   Dialogs, StdCtrls, FrmeBase, FrmTreePages, UnreachableCodeDetector;
 
 type
+  /// <summary>Options page frame shown inside the IDE Tools dialog for the Unreachable Code Detector plugin.</summary>
   TFrameOptionPageUnreachableCode = class( TFrameBase, ITreePageComponent )
+    /// <summary>Toggles whether the plugin is enabled.</summary>
     chkEnabled: TCheckBox;
+    /// <summary>Group box framing the description of what the detector identifies.</summary>
     grpDetection: TGroupBox;
+    /// <summary>Static description label inside the group box.</summary>
     lblDetects: TLabel;
   private
+    /// <summary>The plugin instance whose settings are being edited.</summary>
     FPlugin: TUnreachableCodeDetectorPlugin;
   public
+    /// <summary>Creates the frame; required override of the base constructor.</summary>
     constructor Create( AOwner: TComponent ); override;
 
+    /// <summary>Loads current plugin settings into the frame's controls.</summary>
     procedure LoadData;
+    /// <summary>Writes the controls' values back to the plugin and persists them.</summary>
     procedure SaveData;
+    /// <summary>Called when this options page becomes visible (no-op).</summary>
     procedure Selected;
+    /// <summary>Called when this options page becomes hidden (no-op).</summary>
     procedure Unselected;
+    /// <summary>Receives the plugin instance from the options host.</summary>
+    /// <param name="UserData">The associated <see cref="TUnreachableCodeDetectorPlugin"/> instance.</param>
     procedure SetUserData( UserData: TObject );
   end;
 

@@ -10,6 +10,12 @@
 
 unit ProjectSettings;
 
+/// <summary>
+/// Implements the IDE plugin that manages reusable project setting presets (local and global) and
+/// installs the corresponding "Project Settings" menu, including dynamically-built submenus that
+/// let the user apply a preset to the active project.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,43 +25,73 @@ uses
   ProjectSettingsData, ProjectData, SimpleXmlImport, SimpleXmlIntf, IDENotifiers;
 
 type
+  /// <summary>
+  /// Component that owns the Project Settings menu, the global settings list and the IDE/project
+  /// notifiers used to load, save and apply project setting presets.
+  /// </summary>
   TProjectSettingsNotifier = class(TComponent)
   private
+    /// <summary>Global setting presets shared across projects (loaded from AppData XML).</summary>
     FGlobalSettings: TProjectSettingList;
+    /// <summary>Top-level "Project Settings" menu item added to the IDE's Project menu.</summary>
     FMenuItemProjectSettings: TMenuItem;
+    /// <summary>Action backing the top-level Project Settings menu item.</summary>
     FActionProjectSettings: TAction;
+    /// <summary>"Manage configurations..." menu item.</summary>
     FMenuItemManageSettings: TMenuItem;
+    /// <summary>Action backing the "Manage configurations..." menu item.</summary>
     FActionManageSettings: TAction;
+    /// <summary>"Set Versioninfo..." menu item.</summary>
     FMenuItemSetVersionInfo: TMenuItem;
+    /// <summary>Action backing the "Set Versioninfo..." menu item.</summary>
     FActionSetVersionInfo: TAction;
+    /// <summary>Notifier used to persist per-project preset assignments inside the project data.</summary>
     FProjectDataNotifier: TProjectDataNotifier;
+    /// <summary>Action list owning all menu actions.</summary>
     FActionList: TActionList;
+    /// <summary>IDE-level notifier used to react to project file open/close events.</summary>
     FIDENotifier: TIDENotifier;
 
+    /// <summary>Creates the menu items and actions and attaches them to the IDE's Project menu.</summary>
     procedure InitMenu;
   protected
+    /// <summary>Applies the preset associated with the clicked menu item to the active project.</summary>
     procedure DoAssignSettingClick(Sender: TObject);
+    /// <summary>TProjectDataNotifier callback: a new project has been added; create its preset list.</summary>
     procedure ProjectAdded(Data: TProjectData);
+    /// <summary>TProjectDataNotifier callback: a project is being destroyed; free its preset list.</summary>
     procedure ProjectDestroying(Data: TProjectData);
+    /// <summary>TProjectDataNotifier callback: persists the project's local preset list into XML.</summary>
     procedure SaveSettings(Data: TProjectData; Node: IXmlNode);
+    /// <summary>TProjectDataNotifier callback: restores the project's local preset list from XML.</summary>
     procedure LoadSettings(Data: TProjectData; Node: IXmlNode);
   protected
+    /// <summary>Toggles the visibility of the Manage Settings menu item based on the active project.</summary>
     procedure FileNotification(NotifyCode: TOTAFileNotification;
       const FileName: String; var Cancel: Boolean);
   public
+    /// <summary>Creates the notifier, loads global presets and installs the menu.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Frees notifiers and the global settings list and uninstalls the menu.</summary>
     destructor Destroy; override;
 
+    /// <summary>OnUpdate handler that enables Manage Settings only when an active project exists.</summary>
     procedure DoUpdateManageSettings(Sender: TObject = nil);
+    /// <summary>OnUpdate handler that enables Set Version Info when applicable.</summary>
     procedure DoUpdateSetVersionInfo(Sender: TObject = nil);
+    /// <summary>Rebuilds the dynamic submenu of presets under the Project Settings menu.</summary>
     procedure DoUpdateProjectSettings(Sender: TObject = nil);
+    /// <summary>Opens the Manage Settings dialog and persists global changes when accepted.</summary>
     procedure DoManageSettings(Sender: TObject = nil);
+    /// <summary>Opens the Set Version Info dialog for the active project group.</summary>
     procedure DoSetVersionInfo(Sender: TObject = nil);
   end;
 
 const
+  /// <summary>NonPersistent/Values key used to store the project's preset list and assignment.</summary>
   sProjectSettings = 'ProjectSettings';
 
+/// <summary>Plugin entry point that creates or frees the global TProjectSettingsNotifier.</summary>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

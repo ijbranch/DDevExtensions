@@ -10,6 +10,14 @@
 
 unit OldPalette;
 
+/// <summary>
+/// Implements the legacy ("Old Palette") component palette frame that mirrors the
+/// IDE component palette as a tab control plus a scrollable button strip. Hooks the
+/// IDE's tool form so the alternate palette stays in sync with palette changes,
+/// preselects categories appropriately for the editor and form designer contexts,
+/// and provides a popup menu listing all palette pages.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -25,112 +33,213 @@ uses
   ToolsAPI, ToolsAPIHelpers;
 
 const
+  /// <summary>Custom message posted to defer a palette rebuild to the next message loop iteration.</summary>
   WM_REBUILD = WM_USER + 1;
 
 type
+  /// <summary>
+  /// Represents one tab in the Old Palette tab control, holding its caption, the
+  /// underlying IDE button category and the cached list of <see cref="TCompItem"/>
+  /// components for that category.
+  /// </summary>
   TTabItem = class(TObject)
   private
+    /// <summary>List of components belonging to this tab.</summary>
     FComponents: TObjectList;
+    /// <summary>Source IDE palette category being mirrored.</summary>
     FPalGroup: TButtonCategory;
+    /// <summary>Cached caption (palette page name).</summary>
     FCaption: string;
   public
+    /// <summary>Creates the tab item bound to the supplied palette category.</summary>
+    /// <param name="APalGroup">IDE palette category to mirror.</param>
     constructor Create(APalGroup: TButtonCategory);
+    /// <summary>Releases the owned component list.</summary>
     destructor Destroy; override;
 
+    /// <summary>Tab caption (palette page name).</summary>
     property Caption: string read FCaption;
+    /// <summary>Source IDE palette category being mirrored.</summary>
     property PalGroup: TButtonCategory read FPalGroup;
+    /// <summary>Cached list of <see cref="TCompItem"/> entries for this tab.</summary>
     property Components: TObjectList read FComponents;
   end;
 
+  /// <summary>
+  /// Represents one component on the Old Palette: name, palette page, the underlying
+  /// IDE palette item and category, plus the originating package metadata.
+  /// </summary>
   TCompItem = class(TObject)
   private
+    /// <summary>Pascal unit declaring the component.</summary>
     FUnitName: string;
+    /// <summary>Component class name as displayed.</summary>
     FName: string;
+    /// <summary>Palette page caption.</summary>
     FPalette: string;
+    /// <summary>Underlying IDE palette button item.</summary>
     FPalItem: TButtonItem;
+    /// <summary>Underlying IDE palette category.</summary>
     FPalGroup: TButtonCategory;
+    /// <summary>Class reference for the component when known.</summary>
     FComponentClass: TComponentClass;
+    /// <summary>Module handle of the originating BPL.</summary>
     FhInst: HINST;
+    /// <summary>File name of the originating BPL.</summary>
     FModuleName: string;
   public
+    /// <summary>Component class name as displayed.</summary>
     property Name: string read FName write FName;
+    /// <summary>Palette page caption.</summary>
     property Palette: string read FPalette write FPalette;
 
+    /// <summary>Underlying IDE palette button item.</summary>
     property PalItem: TButtonItem read FPalItem write FPalItem;
+    /// <summary>Underlying IDE palette category.</summary>
     property PalGroup: TButtonCategory read FPalGroup write FPalGroup;
 
+    /// <summary>Class reference for the component when known.</summary>
     property ComponentClass: TComponentClass read FComponentClass write FComponentClass;
+    /// <summary>Pascal unit declaring the component.</summary>
     property CompUnitName: string read FUnitName write FUnitName;
+    /// <summary>Module handle of the originating BPL.</summary>
     property hInst: HINST read FhInst write FhInst;
+    /// <summary>File name of the originating BPL.</summary>
     property ModuleName: string read FModuleName write FModuleName;
   end;
 
+  /// <summary>
+  /// The Old Palette VCL frame: hosts a tab control listing palette pages and a
+  /// scrollable component panel showing the buttons for the selected page. Hooks
+  /// into the IDE palette to mirror selection, ordering and updates.
+  /// </summary>
   TFrameOldPalette = class(TFrame)
+    /// <summary>Scrollable button strip holding the components for the active tab.</summary>
     Palette: TJvComponentPanel;
+    /// <summary>Spacer panel used for layout.</summary>
     PanelSpacer: TPanel;
+    /// <summary>Popup menu listing all palette pages for quick navigation.</summary>
     PopupMenuPalette: TPopupMenu;
+    /// <summary>Container panel hosting the palette button strip.</summary>
     PanelPalette: TPanel;
+    /// <summary>Tab control listing one tab per palette category.</summary>
     TabControl: TTabControl;
+    /// <summary>Click handler for a component button on the strip.</summary>
     procedure PaletteClick(Sender: TObject; Button: Integer);
+    /// <summary>Double-click handler that selects and instantiates a component.</summary>
     procedure PaletteDblClick(Sender: TObject; Button: Integer);
+    /// <summary>Popup-menu item handler that switches to the corresponding palette page.</summary>
     procedure PaletteMenuItemClick(Sender: TObject);
+    /// <summary>Mouse-down handler used to coax mouse-wheel focus on .NET personalities.</summary>
     procedure TabBarPaletteMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    /// <summary>OnPaintContent handler that gradient-fills the strip when needed.</summary>
     procedure PalettePaintContent(Sender: TObject; Canvas: TCanvas; R: TRect);
+    /// <summary>OnChange handler that mirrors the active tab into the button strip.</summary>
     procedure TabControlChange(Sender: TObject);
+    /// <summary>OnResize handler that constrains the tab control's height.</summary>
     procedure TabControlResize(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>True when the IDE is currently showing a form designer.</summary>
     FIsFormDesigner: Boolean;
+    /// <summary>Active configuration snapshot.</summary>
     FConfig: TOldPaletteConfig;
+    /// <summary>Most recently double-clicked component (used to toggle selection).</summary>
     FDblClicked: TCompItem;
+    /// <summary>True when the user has reordered tabs/buttons during the session.</summary>
     FModified: Boolean;
+    /// <summary>Re-entrancy guard counter for rebuild operations.</summary>
     FRebuilding: Integer;
+    /// <summary>Suppresses TabSelected during programmatic tab changes.</summary>
     FLockTabSelected: Boolean;
+    /// <summary>Last palette page selected while a designer was active.</summary>
     FDesignerSelectedPaletteName: string;
+    /// <summary>Last palette page selected while only the editor was active.</summary>
     FEditorSelectedPaletteName: string;
+    /// <summary>Original window procedure of the tab control before subclassing.</summary>
     FOrgTabControlWndProc: TWndMethod;
+    /// <summary>True while a delayed rebuild is queued.</summary>
     FRebuildDelay: Boolean;
 
+    /// <summary>Original IDE handler for OnSelectedItemChange, restored on shutdown.</summary>
     FOrgSelectedItemChange: TCatButtonEvent;
+    /// <summary>Original IDE handler for OnReorderButton, restored on shutdown.</summary>
     FOrgReorderButton: TCatButtonReorderEvent;
+    /// <summary>Original IDE handler for OnReorderCategory, restored on shutdown.</summary>
     FOrgReorderCategory: TCategoryReorderEvent;
+    /// <summary>Hooked IDE selected-item handler that mirrors the selection on the Old Palette.</summary>
     procedure PaletteSelectedItemChange(Sender: TObject; const Button: TButtonItem);
+    /// <summary>Hooked IDE button-reorder handler that refreshes the cached tab buttons.</summary>
     procedure PaletteReorderButton(Sender: TObject; const Button: TButtonItem;
       const SourceCategory, TargetCategory: TButtonCategory);
+    /// <summary>Hooked IDE category-reorder handler that triggers a reorder-only rebuild.</summary>
     procedure PaletteReorderCategory(Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory);
+    /// <summary>Returns the currently selected tab item, or nil.</summary>
     function GetSelectedTab: TTabItem;
+    /// <summary>Determines whether <paramref name="Categories"/> represent a form-designer palette.</summary>
     procedure UpdateIsFormDesigner(Categories: TButtonCategories);
+    /// <summary>Clears the cached component lists on every tab without removing the tabs.</summary>
     procedure ClearTabItemComponents;
+    /// <summary>Returns the tab item at <paramref name="Index"/>.</summary>
     function GetTabItem(Index: Integer): TTabItem; inline;
+    /// <summary>Returns the number of tabs in the tab control.</summary>
     function GetTabItemCount: Integer; inline;
   protected
+    /// <summary>Detaches IDE hooks and clears the tabs when the tool form is gone.</summary>
     procedure ReleaseToolForm;
+    /// <summary>Frees all <see cref="TTabItem"/> instances and clears the tab control.</summary>
     procedure ClearTabs;
+    /// <summary>Programmatically changes the active tab and synchronises the strip.</summary>
     procedure ChangeTabIndex(NewTabIndex: Integer);
+    /// <summary>Populates the button strip from <paramref name="ComponentList"/>.</summary>
     procedure TabSelected(ComponentList: TObjectList);
+    /// <summary>Releases hooks if the IDE component palette is being freed.</summary>
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    /// <summary>Suppresses default background erasing to avoid flicker.</summary>
     procedure WMEraseBkgnd(var Msg: TWMEraseBkgnd); message WM_ERASEBKGND;
+    /// <summary>Handler for <see cref="WM_REBUILD"/> that performs the deferred rebuild.</summary>
     procedure WMRebuild(var Msg: TMessage); message WM_REBUILD;
+    /// <summary>Subclassed tab-control window procedure intercepting mouse wheel events.</summary>
     procedure TabControlWndProc(var Msg: TMessage);
+    /// <summary>Resets the deferred rebuild flag when the window handle is created.</summary>
     procedure CreateWnd; override;
   public
+    /// <summary>Updates the band geometry and persists changes to <see cref="Config"/>.</summary>
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
+    /// <summary>Number of tabs currently in the tab control.</summary>
     property TabItemCount: Integer read GetTabItemCount;
+    /// <summary>Indexed access to the tab items.</summary>
     property TabItems[Index: Integer]: TTabItem read GetTabItem;
   public
     { Public-Deklarationen }
+    /// <summary>Creates the frame and installs IDE hooks on the component palette.</summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases IDE hooks and the singleton pointer before destruction.</summary>
     destructor Destroy; override;
+    /// <summary>Initialises the frame with the supplied configuration and triggers a rebuild.</summary>
+    /// <param name="AConfig">Configuration providing tab style and behavioural options.</param>
     procedure Init(AConfig: TOldPaletteConfig);
+    /// <summary>Applies tab style, multi-line, ragged-right and font settings from the configuration.</summary>
+    /// <param name="AConfig">Source configuration.</param>
     procedure InitTabControl(AConfig: TOldPaletteConfig);
+    /// <summary>Rebuilds the tab list from the current IDE palette state.</summary>
+    /// <param name="ReorderOnly">When true, only the order is updated; component caches are reused.</param>
     procedure Rebuild(ReorderOnly: Boolean = False);
+    /// <summary>Posts a <see cref="WM_REBUILD"/> message to perform a rebuild on the next message loop iteration.</summary>
     procedure RebuildDelayed;
+    /// <summary>Rebuilds the popup menu listing all palette pages.</summary>
     procedure RebuildPaletteMenu;
+    /// <summary>Switches to the tab and button matching the supplied palette item.</summary>
+    /// <param name="PalGroup">Palette category, or nil to derive from <paramref name="PalItem"/>.</param>
+    /// <param name="PalItem">Palette button to highlight, or nil for the pointer button.</param>
     procedure SelectComponent(PalGroup: TButtonCategory; PalItem: TButtonItem);
+    /// <summary>Active configuration snapshot.</summary>
     property Config: TOldPaletteConfig read FConfig;
   end;
 
+/// <summary>Singleton instance of the Old Palette frame, owned by the IDE ControlBar when active.</summary>
 var
   FrameOldPalette: TFrameOldPalette;
 

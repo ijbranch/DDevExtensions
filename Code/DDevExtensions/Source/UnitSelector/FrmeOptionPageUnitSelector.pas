@@ -8,6 +8,12 @@
 
 unit FrmeOptionPageUnitSelector;
 
+/// <summary>
+/// Hosts the Unit Selector / Find Unit feature configuration: persistent options,
+/// hooks into the IDE's File Use Unit and View Unit dialogs, and the matching IDE
+/// options page frame.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,52 +24,91 @@ uses
   PluginConfig, FrmeBase, ExtCtrls, ComCtrls, Menus, ToolsAPI;
 
 type
+  /// <summary>
+  /// Persistent configuration for the Unit Selector feature. Manages the optional
+  /// active flag (legacy Delphi 2009), the Find/Use Unit hotkey and the toggle that
+  /// replaces the IDE's stock File Use Unit dialog with the custom Unit Selector.
+  /// </summary>
   TUnitSelectorConfig = class(TPluginConfig)
   private
     {$IF CompilerVersion < 21.0} // Delphi 2009
+    /// <summary>Active flag for the Delphi 2009 implementation only.</summary>
     FActive: Boolean;
     {$IFEND}
+    /// <summary>Backing store for <see cref="FindUseUnitHotKey"/>.</summary>
     FFindUseUnitHotKey: TShortCut;
+    /// <summary>Backing store for <see cref="ReplaceUseUnit"/>.</summary>
     FReplaceUseUnit: Boolean;
     {$IF CompilerVersion < 21.0} // Delphi 2009
+    /// <summary>Setter that hooks/unhooks the legacy view dialog when toggled.</summary>
+    /// <param name="Value">New active state.</param>
     procedure SetActive(const Value: Boolean);
     {$IFEND}
+    /// <summary>Setter that updates the IDE menu hotkey when changed.</summary>
+    /// <param name="Value">The new shortcut.</param>
     procedure SetFindUseUnitHotKey(const Value: TShortCut);
+    /// <summary>Setter that hooks/unhooks the File Use Unit command override when toggled.</summary>
+    /// <param name="Value">True to install the override, false to remove it.</param>
     procedure SetReplaceUseUnit(const Value: Boolean);
   protected
+    /// <summary>Returns the option page tree node registered for this feature.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Sets default values when no configuration file exists.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the configuration, loading from the standard XML file.</summary>
     constructor Create;
+    /// <summary>Tears down all installed hooks before releasing the configuration.</summary>
     destructor Destroy; override;
   published
     {$IF CompilerVersion < 21.0} // Delphi 2009
+    /// <summary>Whether the legacy View Unit dialog override is enabled (Delphi 2009 only).</summary>
     property Active: Boolean read FActive write SetActive;
     {$IFEND}
+    /// <summary>When true, the IDE's File Use Unit command is replaced by the custom selector.</summary>
     property ReplaceUseUnit: Boolean read FReplaceUseUnit write SetReplaceUseUnit;
+    /// <summary>Shortcut that opens the Find/Use Unit dialog from anywhere in the IDE.</summary>
     property FindUseUnitHotKey: TShortCut read FFindUseUnitHotKey write SetFindUseUnitHotKey;
   end;
 
+  /// <summary>
+  /// IDE options page frame that lets the user enable the Unit Selector and configure
+  /// its hotkey and File Use Unit replacement.
+  /// </summary>
   TFrameOptionPageUnitSelector = class(TFrameBase, ITreePageComponent)
+    /// <summary>Toggles the legacy Unit Selector replacement (Delphi 2009 only).</summary>
     cbxUseUnitSelector: TCheckBox;
+    /// <summary>Editor for the Find/Use Unit hotkey.</summary>
     hkFindUseUnit: THotKey;
+    /// <summary>Caption for the hotkey editor.</summary>
     lblFindUseUnitHotKey: TLabel;
+    /// <summary>Toggles replacement of the IDE's File Use Unit dialog.</summary>
     chkReplaceUseUnit: TCheckBox;
   private
     { Private declarations }
+    /// <summary>Configuration object the page edits.</summary>
     FUnitSelectorConfig: TUnitSelectorConfig;
   public
+    /// <summary>Receives the <see cref="TUnitSelectorConfig"/> instance edited by this page.</summary>
+    /// <param name="UserData">The configuration cast to TObject.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Populates the controls from the configuration's current values.</summary>
     procedure LoadData;
+    /// <summary>Writes the control values back to the configuration and persists them.</summary>
     procedure SaveData;
+    /// <summary>Called when the page becomes active in the options dialog.</summary>
     procedure Selected;
+    /// <summary>Called when the page is deactivated in the options dialog.</summary>
     procedure Unselected;
     { Public declarations }
   end;
 
+/// <summary>Singleton configuration instance owned by the plugin.</summary>
 var
   UnitSelectorConfig: TUnitSelectorConfig;
 
+/// <summary>Plugin entry point; creates or destroys the singleton configuration.</summary>
+/// <param name="Unload">When true, the configuration is freed; otherwise it is created.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

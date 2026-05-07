@@ -10,33 +10,57 @@
 
 unit IDENotifiers;
 
+/// <summary>
+/// Helper layer over IOTAIDENotifier that lets multiple subscribers receive BeforeCompile,
+/// AfterCompile and FileNotification callbacks via Delphi-style event handlers without each
+/// extension having to implement a separate ToolsAPI notifier.
+/// </summary>
+
 interface
 
 uses
   SysUtils, Classes, Contnrs, ToolsAPI;
 
 type
+  /// <summary>Event raised before the IDE starts compiling Project. Set Cancel to True to abort.</summary>
   TBeforeCompileEvent = procedure(const Project: IOTAProject; IsCodeInsight: Boolean;
       var Cancel: Boolean) of object;
+  /// <summary>Event raised after the IDE has finished compiling Project; Succeeded reports the outcome.</summary>
   TAfterCompileEvent = procedure(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean) of object;
+  /// <summary>Event raised when the IDE notifies of a file-level event (open/close/save/...). Set Cancel to True to suppress the operation.</summary>
   TFileNotificationEvent = procedure(NotifyCode: TOTAFileNotification; const FileName: string;
       var Cancel: Boolean) of object;
 
+  /// <summary>
+  /// Subscriber object that registers itself with the global IDE notifier list on construction and
+  /// re-publishes ToolsAPI notifications via Delphi event properties.
+  /// </summary>
   TIDENotifier = class(TObject)
   private
+    /// <summary>Handler invoked before each compile.</summary>
     FOnBeforeCompile: TBeforeCompileEvent;
+    /// <summary>Handler invoked when the IDE raises a file notification.</summary>
     FOnFileNotification: TFileNotificationEvent;
+    /// <summary>Handler invoked after each compile.</summary>
     FOnAfterCompile: TAfterCompileEvent;
   protected
+    /// <summary>Calls FOnBeforeCompile if assigned. Override to extend behaviour.</summary>
     procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean); virtual;
+    /// <summary>Calls FOnAfterCompile if assigned. Override to extend behaviour.</summary>
     procedure AfterCompile(Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean); virtual;
+    /// <summary>Calls FOnFileNotification if assigned. Override to extend behaviour.</summary>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
   public
+    /// <summary>Registers this notifier with the IDE notifier list.</summary>
     constructor Create;
+    /// <summary>Unregisters this notifier from the IDE notifier list.</summary>
     destructor Destroy; override;
 
+    /// <summary>Event raised before each project compile.</summary>
     property OnBeforeCompile: TBeforeCompileEvent read FOnBeforeCompile write FOnBeforeCompile;
+    /// <summary>Event raised after each project compile.</summary>
     property OnAfterCompile: TAfterCompileEvent read FOnAfterCompile write FOnAfterCompile;
+    /// <summary>Event raised on each ToolsAPI file notification.</summary>
     property OnFileNotification: TFileNotificationEvent read FOnFileNotification write FOnFileNotification;
   end;
 

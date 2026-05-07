@@ -9,6 +9,12 @@
 
 unit EmptyEventHandlerDetector;
 
+/// <summary>
+/// DDevExtensions plugin that scans Pascal sources for VCL/FMX event-handler methods whose body
+/// contains only <c>begin..end</c> with no real statements. Such handlers are typically left over
+/// from form designer experiments and clutter the codebase.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,34 +24,65 @@ uses
   FrmeOptionPageEmptyHandler;
 
 type
+  /// <summary>Description of one empty event handler discovered during analysis.</summary>
   TEmptyHandlerInfo = record
+    /// <summary>Bare unit name (without extension).</summary>
     UnitName: string;
+    /// <summary>Method name as written in the source.</summary>
     MethodName: string;
+    /// <summary>Owning class name (or empty for unit-scope routines).</summary>
     ClassName: string;
+    /// <summary>One-based line number of the method declaration.</summary>
     LineNumber: Integer;
+    /// <summary>Absolute path of the source file.</summary>
     FileName: string;
   end;
 
+  /// <summary>
+  /// Plugin host for the Empty Event Handler Detector. Adds a menu item to DDevExtensions and
+  /// exposes the static <see cref="AnalyzeUnit"/> entry point used by the result form.
+  /// </summary>
   TEmptyEventHandlerDetectorPlugin = class(TPluginConfig)
   private
+    /// <summary>Menu item added to the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Master enable flag for the plugin.</summary>
     FEnabled: Boolean;
+    /// <summary>Menu OnClick handler that opens the result form.</summary>
     procedure MenuItemClick(Sender: TObject);
   protected
+    /// <summary>Returns the option page used in the IDE options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and registers its menu item.</summary>
     constructor Create;
+    /// <summary>Removes the menu item and releases the plugin.</summary>
     destructor Destroy; override;
 
+    /// <summary>
+    /// Lexes <paramref name="Source"/> looking for routines whose name matches a VCL/FMX event
+    /// suffix (<c>Click</c>, <c>Change</c>, <c>Create</c>, ...) and whose body contains no real
+    /// statements.
+    /// </summary>
+    /// <param name="Source">UTF-8 source text.</param>
+    /// <param name="FileName">Absolute path of the source file (used for report metadata).</param>
+    /// <returns>Array of <see cref="TEmptyHandlerInfo"/> values; empty when none are found.</returns>
     class function AnalyzeUnit(const Source: UTF8String; const FileName: string): TArray<TEmptyHandlerInfo>;
   published
+    /// <summary>Persisted master enable flag.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
 var
+  /// <summary>Singleton plugin instance.</summary>
   EmptyEventHandlerDetectorPlugin: TEmptyEventHandlerDetectorPlugin;
 
+/// <summary>
+/// Plugin lifecycle entry point — creates or releases <see cref="EmptyEventHandlerDetectorPlugin"/>.
+/// </summary>
+/// <param name="Unload"><c>True</c> to release the plugin, <c>False</c> to create it.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

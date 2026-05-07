@@ -8,6 +8,12 @@
 
 unit FrmeOptionPageCompilerProgress;
 
+/// <summary>
+/// Options page frame that exposes the user-configurable settings of the CompileProgress
+/// plug-in ( progress bar, build statistics, style checks, compiler unit-cache release,
+/// auto-save, etc. ) inside the DDevExtensions options dialog.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,31 +23,57 @@ uses
   Dialogs, FrmTreePages, CompileProgress;
 
 type
+  /// <summary>
+  /// Frame implementing ITreePageComponent for the "Compilation" page in the options tree.
+  /// Loads and saves settings against the associated TCompileProgress instance.
+  /// </summary>
   TFrameOptionPageCompilerProgress = class(TFrameBase, ITreePageComponent)
+    /// <summary>Disables the IDE "Rebuild required" dialog ( pre-XE only ).</summary>
     cbxDisableRebuildDlg: TCheckBox;
+    /// <summary>Saves all modified files automatically after a successful compile.</summary>
     chkAutoSaveAfterSuccessfulCompile: TCheckBox;
+    /// <summary>Writes a "Last Compile" version-info entry on each compile ( pre-XE2 only ).</summary>
     chkLastCompileVersionInfo: TCheckBox;
+    /// <summary>Date/time format string used for the Last Compile entry.</summary>
     edtLastCompileVersionInfoFormat: TEdit;
+    /// <summary>Asks the user before compiling a file owned by a project other than the active one.</summary>
     chkAskBeforeCompilingFileFromDiffernetProject: TCheckBox;
+    /// <summary>Releases the compiler unit cache of other projects to recover memory.</summary>
     chkReleaseCompilerUnitCache: TCheckBox;
+    /// <summary>Limits cache release to high-memory situations only.</summary>
     chkReleaseCompilerUnitCacheHigh: TCheckBox;
+    /// <summary>Enables the per-unit build statistics tracker.</summary>
     chkEnableBuildStatistics: TCheckBox;
+    /// <summary>Shows the build statistics dialog automatically after each compile.</summary>
     chkShowBuildStatisticsAfterCompile: TCheckBox;
+    /// <summary>Runs the code-style checker after each successful compile.</summary>
     chkRunStyleCheckAfterCompile: TCheckBox;
+    /// <summary>Enables or disables the version-info format edit based on the check-box state.</summary>
     procedure chkLastCompileVersionInfoClick(Sender: TObject);
+    /// <summary>Enables or disables the high-memory-only check box based on the parent option.</summary>
     procedure chkReleaseCompilerUnitCacheClick(Sender: TObject);
+    /// <summary>Enables or disables build-statistics related options based on the parent option.</summary>
     procedure chkEnableBuildStatisticsClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Plug-in configuration object whose properties are bound to this frame.</summary>
     FCompileProgress: TCompileProgress;
   public
     { Public-Deklarationen }
+    /// <summary>Creates the frame and adjusts the layout for compiler versions that hide certain options.</summary>
+    /// <param name="AOwner">Owning component for the frame.</param>
     constructor Create(AOwner: TComponent); override;
 
+    /// <summary>Loads the plug-in settings into the visual controls.</summary>
     procedure LoadData;
+    /// <summary>Persists the values from the visual controls back into the plug-in configuration.</summary>
     procedure SaveData;
+    /// <summary>Called when this options page becomes the selected page.</summary>
     procedure Selected;
+    /// <summary>Called when this options page is no longer selected.</summary>
     procedure Unselected;
+    /// <summary>Receives the TCompileProgress instance that this page edits.</summary>
+    /// <param name="UserData">A TCompileProgress instance.</param>
     procedure SetUserData(UserData: TObject);
   end;
 

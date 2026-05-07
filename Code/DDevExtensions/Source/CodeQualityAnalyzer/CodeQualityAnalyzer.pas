@@ -9,6 +9,13 @@
 
 unit CodeQualityAnalyzer;
 
+/// <summary>
+/// DDevExtensions plugin that lexes Pascal sources and detects common code-quality issues —
+/// magic numbers, hardcoded strings, commented-out code, suspicious exception handlers, and
+/// constructor calls without matching try/finally protection. Results are surfaced via a
+/// dedicated form and persisted via <see cref="TPluginConfig"/>.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,100 +25,182 @@ uses
   Generics.Collections;
 
 type
+  /// <summary>Category of code-quality issue produced by the analyser.</summary>
   TIssueCategory = (
+    /// <summary>Numeric literal that should be a named constant.</summary>
     icMagicNumber,
+    /// <summary>String literal that should be a resource or constant.</summary>
     icHardcodedString,
+    /// <summary>Block of comment text that resembles real source code.</summary>
     icCommentedCode,
+    /// <summary>Empty <c>except</c> block that silently swallows exceptions.</summary>
     icEmptyExcept,
+    /// <summary>Generic <c>except</c> block with no <c>on E:</c> clause.</summary>
     icCatchAllException,
+    /// <summary>Constructor call without try/finally protection.</summary>
     icMissingTryFinally,
+    /// <summary>Suspected memory leak (reserved for future use).</summary>
     icMemoryLeak
   );
 
-  TIssueSeverity = ( isInfo, isWarning, isError );
+  /// <summary>Severity classification for a <see cref="TCodeQualityIssue"/>.</summary>
+  TIssueSeverity = (
+    /// <summary>Informational note.</summary>
+    isInfo,
+    /// <summary>Warning that should be addressed.</summary>
+    isWarning,
+    /// <summary>Error-level finding.</summary>
+    isError
+  );
 
+  /// <summary>Detected issue with full source location and supporting metadata.</summary>
   TCodeQualityIssue = record
+    /// <summary>Absolute path of the file containing the issue.</summary>
     FileName: string;
+    /// <summary>Bare unit name for display.</summary>
     UnitName: string;
+    /// <summary>One-based line number.</summary>
     Line: Integer;
+    /// <summary>Column number reported by the lexer.</summary>
     Column: Integer;
+    /// <summary>Issue category.</summary>
     Category: TIssueCategory;
+    /// <summary>Issue severity.</summary>
     Severity: TIssueSeverity;
+    /// <summary>Human-readable description of the issue.</summary>
     Description: string;
+    /// <summary>Snippet from the source illustrating the issue.</summary>
     CodePreview: string;
   end;
 
+  /// <summary>
+  /// Plugin host integrating the Code Quality Analyzer into the DDevExtensions menu and storing
+  /// its persistent configuration. Provides the static <see cref="AnalyzeUnit"/> entry point.
+  /// </summary>
   TCodeQualityAnalyzerPlugin = class( TPluginConfig )
   private
+    /// <summary>Menu item added to the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Master enable flag for the plugin.</summary>
     FEnabled: Boolean;
 
     // Magic Numbers
+    /// <summary>Whether magic-number detection is active.</summary>
     FCheckMagicNumbers: Boolean;
+    /// <summary>Comma-separated list of literal values exempt from the magic-number check.</summary>
     FMagicNumberWhitelist: string;
+    /// <summary>When set, numeric literals used as array indices are exempt.</summary>
     FAllowMagicInArrayIndex: Boolean;
 
     // Hardcoded Strings
+    /// <summary>Whether hardcoded-string detection is active.</summary>
     FCheckHardcodedStrings: Boolean;
+    /// <summary>Minimum string length that triggers a finding.</summary>
     FMinStringLength: Integer;
+    /// <summary>When set, format strings (containing <c>%s</c>, <c>%d</c>, ...) are exempt.</summary>
     FExcludeFormatStrings: Boolean;
+    /// <summary>When set, strings containing SQL keywords are exempt.</summary>
     FExcludeSQLKeywords: Boolean;
 
     // Commented-Out Code
+    /// <summary>Whether commented-out-code detection is active.</summary>
     FCheckCommentedCode: Boolean;
+    /// <summary>Heuristic score threshold above which a comment is reported.</summary>
     FCommentCodeThreshold: Integer;
 
     // Exception Handling
+    /// <summary>Whether empty-except detection is active.</summary>
     FCheckEmptyExcept: Boolean;
+    /// <summary>Whether catch-all-exception detection is active.</summary>
     FCheckCatchAllException: Boolean;
 
     // Memory Management
+    /// <summary>Whether constructor-without-try/finally detection is active.</summary>
     FCheckMissingTryFinally: Boolean;
+    /// <summary>Whether memory-leak detection is active (reserved).</summary>
     FCheckMemoryLeaks: Boolean;
+    /// <summary>Comma-separated patterns excluded from the memory-leak check.</summary>
     FMemoryLeakIgnorePatterns: string;
 
+    /// <summary>Menu OnClick handler that launches the analyser form.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Returns the option page representing this plugin in the IDE options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and registers its menu item.</summary>
     constructor Create;
+    /// <summary>Removes the menu item and releases the plugin.</summary>
     destructor Destroy; override;
 
+    /// <summary>
+    /// Tokenises <paramref name="Source"/> with the Delphi lexer and returns every issue detected
+    /// according to the configuration in <paramref name="Plugin"/>.
+    /// </summary>
+    /// <param name="Source">UTF-8 source text to analyse.</param>
+    /// <param name="FileName">Absolute path of the source file (used for report metadata).</param>
+    /// <param name="Plugin">Configuration container that controls which checks run.</param>
+    /// <returns>Array of <see cref="TCodeQualityIssue"/> values; empty when no issues are found.</returns>
     class function AnalyzeUnit( const Source: UTF8String; const FileName: string;
       Plugin: TCodeQualityAnalyzerPlugin ): TArray<TCodeQualityIssue>;
 
+    /// <summary>Splits <see cref="MagicNumberWhitelist"/> into its individual values.</summary>
     function GetMagicNumberWhitelistArray: TArray<string>;
+    /// <summary>Splits <see cref="MemoryLeakIgnorePatterns"/> into its individual values.</summary>
     function GetMemoryLeakIgnorePatternsArray: TArray<string>;
   published
+    /// <summary>Persisted master enable flag.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
 
+    /// <summary>Persisted state of the magic-number check.</summary>
     property CheckMagicNumbers: Boolean read FCheckMagicNumbers write FCheckMagicNumbers;
+    /// <summary>Persisted comma-separated whitelist of allowed literals.</summary>
     property MagicNumberWhitelist: string read FMagicNumberWhitelist write FMagicNumberWhitelist;
+    /// <summary>Persisted toggle exempting array-index literals.</summary>
     property AllowMagicInArrayIndex: Boolean read FAllowMagicInArrayIndex write FAllowMagicInArrayIndex;
 
+    /// <summary>Persisted state of the hardcoded-string check.</summary>
     property CheckHardcodedStrings: Boolean read FCheckHardcodedStrings write FCheckHardcodedStrings;
+    /// <summary>Persisted minimum reportable string length.</summary>
     property MinStringLength: Integer read FMinStringLength write FMinStringLength;
+    /// <summary>Persisted toggle exempting format strings.</summary>
     property ExcludeFormatStrings: Boolean read FExcludeFormatStrings write FExcludeFormatStrings;
+    /// <summary>Persisted toggle exempting strings containing SQL keywords.</summary>
     property ExcludeSQLKeywords: Boolean read FExcludeSQLKeywords write FExcludeSQLKeywords;
 
+    /// <summary>Persisted state of the commented-out-code check.</summary>
     property CheckCommentedCode: Boolean read FCheckCommentedCode write FCheckCommentedCode;
+    /// <summary>Persisted heuristic threshold for commented-out-code detection.</summary>
     property CommentCodeThreshold: Integer read FCommentCodeThreshold write FCommentCodeThreshold;
 
+    /// <summary>Persisted state of the empty-except check.</summary>
     property CheckEmptyExcept: Boolean read FCheckEmptyExcept write FCheckEmptyExcept;
+    /// <summary>Persisted state of the catch-all-exception check.</summary>
     property CheckCatchAllException: Boolean read FCheckCatchAllException write FCheckCatchAllException;
 
+    /// <summary>Persisted state of the missing-try/finally check.</summary>
     property CheckMissingTryFinally: Boolean read FCheckMissingTryFinally write FCheckMissingTryFinally;
+    /// <summary>Persisted state of the memory-leak check.</summary>
     property CheckMemoryLeaks: Boolean read FCheckMemoryLeaks write FCheckMemoryLeaks;
+    /// <summary>Persisted comma-separated patterns excluded from memory-leak detection.</summary>
     property MemoryLeakIgnorePatterns: string read FMemoryLeakIgnorePatterns write FMemoryLeakIgnorePatterns;
   end;
 
 var
+  /// <summary>Singleton plugin instance accessed by the result form and option page.</summary>
   CodeQualityAnalyzerPlugin: TCodeQualityAnalyzerPlugin;
 
+/// <summary>Returns a human-readable label for the supplied <paramref name="Category"/>.</summary>
 function IssueCategoryToString( Category: TIssueCategory ): string;
+/// <summary>Returns a human-readable label for the supplied <paramref name="Severity"/>.</summary>
 function IssueSeverityToString( Severity: TIssueSeverity ): string;
 
+/// <summary>
+/// Plugin lifecycle entry point — creates or releases <see cref="CodeQualityAnalyzerPlugin"/>.
+/// </summary>
+/// <param name="Unload"><c>True</c> to release the plugin, <c>False</c> to create it.</param>
 procedure InitPlugin( Unload: Boolean );
 
 implementation

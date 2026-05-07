@@ -8,6 +8,16 @@
 
 unit Splash;
 
+/// <summary>
+/// Adds DDevExtensions to the Delphi splash screen and About box, and polls
+/// for the IDE main form becoming visible so <see cref="Main.IDELoaded"/>
+/// can be invoked at the right moment.
+/// </summary>
+/// <remarks>
+/// The IDE-loaded detection uses a <c>SetTimer</c> poll because there is no
+/// reliable ToolsAPI notification for "main form is now visible".
+/// </remarks>
+
 {$I DelphiExtension.inc}
 
 interface
@@ -17,8 +27,11 @@ uses
   ToolsAPI,
   ExtCtrls, AppConsts;
 
+/// <summary>Registers the DDevExtensions name/bitmap with the IDE splash screen and starts the IDE-loaded poll timer.</summary>
 procedure ShowOnSplashScreen;
+/// <summary>Updates the (legacy) progress label shown during plug-in initialisation.</summary>
 procedure SetSplashProgress(const Text: string);
+/// <summary>Cancels the IDE-loaded poll timer (called during plug-in unload).</summary>
 procedure DoneSplash;
 
 implementation

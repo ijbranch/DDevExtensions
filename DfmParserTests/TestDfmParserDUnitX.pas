@@ -1,5 +1,12 @@
 unit TestDfmParserDUnitX;
 
+/// <summary>
+/// DUnitX test fixture for the Delphi DFM parser in <c>gllDelphiDFMParser</c>. Verifies
+/// parsing, round-trip serialisation, property manipulation, edge cases and real-world
+/// DFM files copied from production projects. The fixture is registered in this unit's
+/// initialisation section.
+/// </summary>
+
 interface
 
 uses
@@ -10,89 +17,124 @@ uses
   gllDelphiDFMParser;
 
 type
+  /// <summary>DUnitX test fixture exercising the Delphi DFM parser API surface.</summary>
   [TestFixture]
   TTestDelphiDfmParser = class
   public
+    /// <summary>Per-test setup hook (currently a no-op).</summary>
     [Setup]
     procedure Setup;
+    /// <summary>Per-test teardown hook (currently a no-op).</summary>
     [TearDown]
     procedure TearDown;
 
     // Basic parsing tests
+    /// <summary>Verifies that a small form with three primitive properties parses to the expected name, type, count and CRLF line ending.</summary>
     [Test]
     procedure TestSimpleProperties;
+    /// <summary>Verifies that nested <c>object</c> blocks build the expected parent/child component tree.</summary>
     [Test]
     procedure TestNestedComponents;
+    /// <summary>Verifies that the <c>inherited</c> keyword maps the child component's <c>ObjectKind</c> to <c>dokInherited</c>.</summary>
     [Test]
     procedure TestInheritedKeyword;
+    /// <summary>Verifies that the <c>inline</c> keyword maps the child component's <c>ObjectKind</c> to <c>dokInline</c>.</summary>
     [Test]
     procedure TestInlineKeyword;
 
     // Round-trip tests
+    /// <summary>Verifies that a simple form is reproduced byte-exact when parsed and re-serialised.</summary>
     [Test]
     procedure TestRoundTripSimple;
+    /// <summary>Verifies that a form with nested components is reproduced byte-exact when parsed and re-serialised.</summary>
     [Test]
     procedure TestRoundTripNested;
 
     // Property manipulation tests
+    /// <summary>Verifies that <c>SetProperty</c> updates an existing property's <c>RawValue</c>.</summary>
     [Test]
     procedure TestPropertyModification;
+    /// <summary>Verifies that <c>DeleteProperty</c> removes a property and decrements the property count.</summary>
     [Test]
     procedure TestPropertyDeletion;
+    /// <summary>Verifies that <c>SetProperty</c> appends a brand-new property when one with that name does not exist.</summary>
     [Test]
     procedure TestPropertyAddition;
 
     // Advanced value type tests
+    /// <summary>Verifies that <c>{ ... }</c> binary blocks parse with <c>ValueKind = dvkBinary</c> and preserve the braces in <c>RawValue</c>.</summary>
     [Test]
     procedure TestBinaryData;
+    /// <summary>Verifies that <c>&lt; ... &gt;</c> collection literals parse with <c>ValueKind = dvkCollection</c> and preserve their items.</summary>
     [Test]
     procedure TestCollectionProperties;
+    /// <summary>Verifies that multi-line parenthesised string lists parse with <c>ValueKind = dvkParenList</c> and retain every line.</summary>
     [Test]
     procedure TestMultiLineStrings;
+    /// <summary>Verifies that <c>[ ... ]</c> set literals parse with <c>ValueKind = dvkSet</c> and preserve the brackets.</summary>
     [Test]
     procedure TestSetProperties;
+    /// <summary>Verifies that simple parenthesised string lists parse with <c>ValueKind = dvkParenList</c>.</summary>
     [Test]
     procedure TestParenthesizedLists;
 
     // Edge case tests
+    /// <summary>Verifies that a form with no properties and no children parses with empty collections.</summary>
     [Test]
     procedure TestEmptyDfm;
+    /// <summary>Verifies that a child component without any properties is captured as a child with an empty property list.</summary>
     [Test]
     procedure TestComponentWithNoProperties;
+    /// <summary>Verifies that a form with properties but no children parses with the expected property count and zero children.</summary>
     [Test]
     procedure TestComponentWithNoChildren;
+    /// <summary>Verifies that DFM-style escaped quotes (<c>''</c> within a string literal) are preserved in <c>RawValue</c>.</summary>
     [Test]
     procedure TestEscapedQuotes;
+    /// <summary>Verifies that hexadecimal numeric values such as <c>$00FF00FF</c> are preserved verbatim.</summary>
     [Test]
     procedure TestHexColorValues;
+    /// <summary>Verifies that an empty set <c>[]</c> is preserved verbatim.</summary>
     [Test]
     procedure TestEmptySet;
+    /// <summary>Verifies that negative numeric values such as <c>-100</c> are preserved verbatim.</summary>
     [Test]
     procedure TestNegativeNumbers;
 
     // File round-trip tests
+    /// <summary>Round-trips <c>TestData\Simple.dfm</c> and asserts the serialised output matches the original byte-for-byte.</summary>
     [Test]
     procedure TestFileRoundTrip_Simple;
+    /// <summary>Round-trips <c>TestData\Nested.dfm</c> and asserts the serialised output matches the original byte-for-byte.</summary>
     [Test]
     procedure TestFileRoundTrip_Nested;
+    /// <summary>Round-trips <c>TestData\Binary.dfm</c> covering binary <c>{...}</c> data blocks.</summary>
     [Test]
     procedure TestFileRoundTrip_Binary;
+    /// <summary>Round-trips <c>TestData\Collections.dfm</c> covering <c>&lt;...&gt;</c> collection properties.</summary>
     [Test]
     procedure TestFileRoundTrip_Collections;
+    /// <summary>Round-trips <c>TestData\MultiLineStrings.dfm</c> covering parenthesised string lists.</summary>
     [Test]
     procedure TestFileRoundTrip_MultiLineStrings;
+    /// <summary>Round-trips <c>TestData\Complex.dfm</c> covering a mixed-feature form.</summary>
     [Test]
     procedure TestFileRoundTrip_Complex;
 
     // Real-world file tests from DBiWorkflow
+    /// <summary>Round-trips the real-world <c>BackupDialog</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_BackupDialog;
+    /// <summary>Round-trips the real-world <c>DataModule</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_DataModule;
+    /// <summary>Round-trips the real-world <c>LoginDialog</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_LoginDialog;
+    /// <summary>Round-trips the real-world <c>PrintForm</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_PrintForm;
+    /// <summary>Round-trips the real-world <c>StatusViewer</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_StatusViewer;
   end;

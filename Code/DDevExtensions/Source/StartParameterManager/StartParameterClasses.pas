@@ -1,5 +1,11 @@
 unit StartParameterClasses;
 
+/// <summary>
+/// Defines the data model for the Start Parameter Manager: an XML-backed list of named parameters,
+/// macros and includes resolved on demand for the currently active project. Supports built-in macros,
+/// environment-variable fallback, conditional include/macro/param tags and recursive include files.
+/// </summary>
+
 {
 Project.dproj
   Project.params
@@ -78,175 +84,297 @@ uses
   SysUtils, Classes, Contnrs, XMLDoc, XMLIntf;
 
 type
+  /// <summary>Exception class raised by the Start Parameter loader/parser.</summary>
   EStartParameterError = class(Exception);
 
   TStartParamList = class;
 
+  /// <summary>Abstract base class for Include, Macro and Param items in a TStartParamList.</summary>
   TStartParamBase = class(TObject)
   private
+    /// <summary>Owning parameter list (also gives access to FileName/macros).</summary>
     FOwner: TStartParamList;
+    /// <summary>Backing XML node (when loaded from / saved to disk).</summary>
     FNode: IXMLNode;
+    /// <summary>Optional condition expression that must evaluate to True for the item to apply.</summary>
     FCondition: string;
+    /// <summary>Cached condition result (-1 means not yet evaluated).</summary>
     FConditionEvalValue: Integer;
+    /// <summary>Setter for Condition; resets the cached result and marks the list modified.</summary>
     procedure SetCondition(const AValue: string);
   protected
+    /// <summary>Marks the owning list as modified (and invalidates condition caches).</summary>
     procedure MarkModified;
   public
+    /// <summary>Creates an item belonging to AOwner.</summary>
     constructor Create(AOwner: TStartParamList);
+    /// <summary>Removes the item from its owner and deletes its XML node.</summary>
     destructor Destroy; override;
 
+    /// <summary>Synonym for Free, used to remove the item.</summary>
     procedure Delete;
+    /// <summary>Restores common state (FNode, Condition) from an XML node; subclasses extend.</summary>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); virtual;
+    /// <summary>Persists common state (Condition) into an XML node; subclasses extend.</summary>
     procedure SaveToXml(ANode: IXmlNode); virtual;
 
+    /// <summary>Evaluates Condition (resolving macros first); empty Condition is treated as True.</summary>
     function EvalCondition: Boolean;
 
+    /// <summary>Optional condition expression that must evaluate to True for the item to apply.</summary>
     property Condition: string read FCondition write SetCondition;
 
+    /// <summary>Owning parameter list.</summary>
     property Owner: TStartParamList read FOwner;
   end;
 
+  /// <summary>"Include" item that links to another .params file whose contents are merged in.</summary>
   TStartParamInclude = class(TStartParamBase)
   private
+    /// <summary>Raw (possibly macro-bearing) include file name.</summary>
     FFileName: string;
+    /// <summary>Owned parameter list loaded from the include file.</summary>
     FStartParamList: TStartParamList;
+    /// <summary>If True, missing include files raise an error; otherwise they are silently skipped.</summary>
     FForce: Boolean;
+    /// <summary>Returns the include file name with macros and relative paths resolved.</summary>
     function GetResolvedFileName: string;
+    /// <summary>Setter for FileName; marks the list modified on change.</summary>
     procedure SetFileName(const AValue: string);
+    /// <summary>Setter for Force; marks the list modified on change.</summary>
     procedure SetForce(const AValue: Boolean);
   public
+    /// <summary>Creates an Include item and its owned child TStartParamList.</summary>
     constructor Create(AOwner: TStartParamList);
+    /// <summary>Frees the owned child TStartParamList.</summary>
     destructor Destroy; override;
+    /// <summary>Restores File, Force and Condition attributes from XML.</summary>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
-    procedure SaveToXml(ANode: IXmlNode); override;
+    /// <summary>Persists File, Force and Condition attributes to XML.</summary>
+    procedure SaveToXml(ANode: IxmlNode); override;
 
+    /// <summary>If True, missing include files raise an error.</summary>
     property Force: Boolean read FForce write SetForce;
+    /// <summary>Raw (possibly macro-bearing) include file name.</summary>
     property FileName: string read FFileName write SetFileName;
+    /// <summary>Include file name with macros and relative paths resolved.</summary>
     property ResolvedFileName: string read GetResolvedFileName;
 
+    /// <summary>Owned parameter list loaded from the include file.</summary>
     property StartParamList: TStartParamList read FStartParamList;
   end;
 
+  /// <summary>Distinguishes value-defined macros from file-defined macros.</summary>
   TStartParamMacroKind = (mkValue, mkFile);
 
+  /// <summary>"Macro" item providing a name/value pair (or a name backed by a file's contents).</summary>
   TStartParamMacro = class(TStartParamBase)
   private
+    /// <summary>Source file name (mkFile) or empty (mkValue).</summary>
     FFileName: string;
+    /// <summary>Macro name (used as $(Name) elsewhere).</summary>
     FName: string;
+    /// <summary>Optional regular expression filter applied to file contents (mkFile).</summary>
     FRegEx: string;
+    /// <summary>Macro kind: value or file-backed.</summary>
     FKind: TStartParamMacroKind;
+    /// <summary>Literal value (mkValue).</summary>
     FValue: string;
+    /// <summary>1-based line index inside the source file (mkFile); 0 means whole file.</summary>
     FLine: string;
+    /// <summary>Computes the macro's resolved value (recursively resolving nested macros).</summary>
     function GetResolvedValue: string;
+    /// <summary>Setter for FileName; marks the list modified on change.</summary>
     procedure SetFileName(const AValue: string);
+    /// <summary>Setter for Kind; marks the list modified on change.</summary>
     procedure SetKind(const AValue: TStartParamMacroKind);
+    /// <summary>Setter for Line; marks the list modified on change.</summary>
     procedure SetLine(const AValue: string);
+    /// <summary>Setter for RegEx; marks the list modified on change.</summary>
     procedure SetRegEx(const AValue: string);
+    /// <summary>Setter for Value; marks the list modified on change.</summary>
     procedure SetValue(const AValue: string);
+    /// <summary>Setter for Name; marks the list modified on change.</summary>
     procedure SetName(const AValue: string);
+    /// <summary>Returns the macro's source file name with macros and relative paths resolved.</summary>
     function GetResolvedFileName: string;
   public
+    /// <summary>Restores Name, Value, FromFile, Line, RegEx and Condition attributes from XML.</summary>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
-    procedure SaveToXml(ANode: IXmlNode); override;
+    /// <summary>Persists Name, Value, FromFile, Line, RegEx and Condition attributes to XML.</summary>
+    procedure SaveToXml(ANode: IxmlNode); override;
 
+    /// <summary>Macro kind: value or file-backed.</summary>
     property Kind: TStartParamMacroKind read FKind write SetKind;
+    /// <summary>Macro name (used as $(Name) elsewhere).</summary>
     property Name: string read FName write SetName;
 
     // mkValue
+    /// <summary>Literal macro value (mkValue).</summary>
     property Value: string read FValue write SetValue;
 
     // mkFile
+    /// <summary>Source file name (mkFile).</summary>
     property FileName: string read FFileName write SetFileName;
+    /// <summary>Optional regex applied to the file contents (mkFile).</summary>
     property RegEx: string read FRegEx write SetRegEx;
+    /// <summary>1-based line index (mkFile); 0/empty means whole file.</summary>
     property Line: string read FLine write SetLine;
 
+    /// <summary>Source file name with macros and relative paths resolved.</summary>
     property ResolvedFileName: string read GetResolvedFileName;
+    /// <summary>Computed macro value (with nested macros resolved).</summary>
     property ResolvedValue: string read GetResolvedValue;
   end;
 
+  /// <summary>"Param" item that contributes a named command-line parameter set.</summary>
   TStartParam = class(TStartParamBase)
   private
+    /// <summary>Display name of the parameter (shown in the toolbar dropdown).</summary>
     FName: string;
+    /// <summary>Raw parameter value (may contain macros).</summary>
     FValue: string;
 
+    /// <summary>True once the parameter value has been resolved into FResolvedValue.</summary>
     FResolved: Boolean;
+    /// <summary>Cached resolved parameter value.</summary>
     FResolvedValue: string;
+    /// <summary>Computes (and caches) the parameter value with macros resolved.</summary>
     function GetResolvedValue: string;
+    /// <summary>Setter for Value; marks the list modified on change.</summary>
     procedure SetValue(const AValue: string);
+    /// <summary>Setter for Name; marks the list modified on change.</summary>
     procedure SetName(const Value: string);
   public
+    /// <summary>Restores Name, Value and Condition attributes from XML.</summary>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
-    procedure SaveToXml(ANode: IXmlNode); override;
+    /// <summary>Persists Name, Value and Condition attributes to XML.</summary>
+    procedure SaveToXml(ANode: IxmlNode); override;
 
+    /// <summary>Display name of the parameter.</summary>
     property Name: string read FName write SetName;
+    /// <summary>Raw parameter value (may contain macros).</summary>
     property Value: string read FValue write SetValue;
+    /// <summary>Parameter value with macros resolved.</summary>
     property ResolvedValue: string read GetResolvedValue;
   end;
 
+  /// <summary>Lightweight enumerator over the TStartParam items of a TList.</summary>
   TStartParamListEnumerator = record
   private
+    /// <summary>Underlying list to enumerate.</summary>
     FList: TList;
+    /// <summary>Current zero-based index (-1 before MoveNext is called).</summary>
     FIndex: Integer;
   public
+    /// <summary>Initialises the enumerator over AList.</summary>
     constructor Create(AList: TList);
+    /// <summary>Advances to the next element; returns False at end.</summary>
     function MoveNext: Boolean;
+    /// <summary>Returns the element at the current index.</summary>
     function GetCurrent: TStartParam;
+    /// <summary>Element at the current index.</summary>
     property Current: TStartParam read GetCurrent;
   end;
 
+  /// <summary>Owns a TList of TStartParam objects and provides a "for in" enumerator.</summary>
   TStartParamListEnumeration = class(TObject)
   private
+    /// <summary>Owned underlying list.</summary>
     FList: TList;
   public
+    /// <summary>Takes ownership of AList.</summary>
     constructor Create(AList: TList);
+    /// <summary>Frees the underlying list.</summary>
     destructor Destroy; override;
+    /// <summary>Returns an enumerator over the list.</summary>
     function GetEnumerator: TStartParamListEnumerator;
   end;
 
+  /// <summary>Top-level container for the items (Include, Macro, Param) of a .params file.</summary>
   TStartParamList = class(TObject)
   private
+    /// <summary>Parent Include item (nil for the root list).</summary>
     FParent: TStartParamInclude;
+    /// <summary>Backing XML document.</summary>
     FXmlDoc: IXMLDocument;
+    /// <summary>Owned items (TStartParamInclude, TStartParamMacro, TStartParam).</summary>
     FItems: TObjectList;
+    /// <summary>True after a structural or value change requires a save.</summary>
     FModified: Boolean;
+    /// <summary>Persisted name of the active parameter (root list only).</summary>
     FActiveParamName: string;
+    /// <summary>Source file name of the loaded .params file.</summary>
     FFileName: string;
+    /// <summary>Last-modified time of the loaded source file (for change detection).</summary>
     FFileTime: TDateTime;
+    /// <summary>Returns the number of items in the list.</summary>
     function GetCount: Integer;
+    /// <summary>Returns the item at the given index.</summary>
     function GetItem(Index: Integer): TStartParamBase;
+    /// <summary>Loads an &lt;Include&gt; XML node into the list (recursively loading the included file).</summary>
     procedure LoadIncludeNode(ANode: IXMLNode; AErrors: TStrings; ARecursionCount: Integer);
+    /// <summary>Returns ActiveParamName, clearing it if the parameter no longer exists.</summary>
     function GetActiveParamName: string;
+    /// <summary>Recursively appends every available TStartParam (respecting Condition) to AList.</summary>
     procedure CollectParams(AList: TList; AIgnoreCondition: Boolean);
+    /// <summary>Setter for ActiveParamName; marks the list modified on change.</summary>
     procedure SetActiveParamName(const AValue: string);
+    /// <summary>Internal recursive loader that enforces the include depth limit.</summary>
     procedure InternLoadFromFile(const AFileName: string; ARecursionCount: Integer);
+    /// <summary>Removes the supplied XML node and surrounding indentation whitespace.</summary>
     procedure DeleteNode(Node: IXMLNode);
+    /// <summary>Lazily creates the backing IXmlDocument with auto-indent enabled.</summary>
     procedure RequireXmlDoc;
   protected
+    /// <summary>Marks this list modified and invalidates every item's cached condition result.</summary>
     procedure MarkModified;
+    /// <summary>Recursively expands $(Macro) and built-in tokens inside AValue, stopping before AStopItem.</summary>
     function ResolveValue(AStopItem: TStartParamBase; const AValue: string): string;
+    /// <summary>Locates the last matching macro by name, recursing into includes and the parent list.</summary>
     function FindMacro(AStopItem: TStartParamBase; const AMacroName: string): TStartParamMacro;
   public
+    /// <summary>Creates the list (with optional parent Include item).</summary>
     constructor Create(AParent: TStartParamInclude);
+    /// <summary>Frees the owned items.</summary>
     destructor Destroy; override;
+    /// <summary>Removes every item from the list and clears the XML document.</summary>
     procedure Clear;
+    /// <summary>Loads the list from the supplied .params file.</summary>
     procedure LoadFromFile(const AFileName: string);
+    /// <summary>Saves the list to the supplied .params file.</summary>
     procedure SaveToFile(const AFileName: string);
+    /// <summary>Saves the list to its currently associated file (or the parent's resolved file).</summary>
     procedure Save;
+    /// <summary>Re-reads the file if its modification time changed; recurses into includes.</summary>
+    /// <returns>True if any list (this or an included one) was actually reloaded.</returns>
     function Reload: Boolean;
+    /// <summary>Returns the last param matching AParamName whose Condition holds (recursing into includes).</summary>
     function FindParam(const AParamName: string): TStartParam;
+    /// <summary>Returns the child include list whose unresolved file name matches AIncludeFileName, or nil.</summary>
     function FindIncludeParamList(const AIncludeFileName: string): TStartParamList;
+    /// <summary>Returns an enumerable of the available parameters, respecting Condition by default.</summary>
     function AvailableParams(AIgnoreCondition: Boolean = False): TStartParamListEnumeration;
 
+    /// <summary>Adds AItem to the list and returns it.</summary>
     function Add(AItem: TStartParamBase): TStartParamBase;
+    /// <summary>Returns an existing matching include or creates a new one for AIncludeFileName.</summary>
     function AddInclude(const AIncludeFileName: string; AForceInclude: Boolean): TStartParamInclude;
 
+    /// <summary>Number of items in the list.</summary>
     property Count: Integer read GetCount;
+    /// <summary>Default indexer over the items.</summary>
     property Items[Index: Integer]: TStartParamBase read GetItem; default;
+    /// <summary>Currently active parameter (persisted on the root list only).</summary>
     property ActiveParamName: string read GetActiveParamName write SetActiveParamName;
 
+    /// <summary>Source .params file name.</summary>
     property FileName: string read FFileName;
+    /// <summary>Last-modified time of the source file at load.</summary>
     property FileTime: TDateTime read FFileTime;
+    /// <summary>True after a structural or value change requires a save.</summary>
     property Modified: Boolean read FModified;
+    /// <summary>Parent Include item (nil for the root list).</summary>
     property Parent: TStartParamInclude read FParent;
   end;
 

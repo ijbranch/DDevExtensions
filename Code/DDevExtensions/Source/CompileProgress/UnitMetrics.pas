@@ -8,16 +8,33 @@
 
 unit UnitMetrics;
 
+/// <summary>
+/// Calculates basic source-code metrics for a single Delphi unit. The metrics are used by
+/// the Build Statistics dialog to summarise lines of code and cyclomatic complexity per
+/// unit after a successful compile.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
 
 type
+  /// <summary>
+  /// Aggregated metrics for a single Delphi unit.
+  /// </summary>
   TUnitMetrics = record
+    /// <summary>Number of source lines that contain non-comment, non-directive tokens.</summary>
     LinesOfCode: Integer;
+    /// <summary>Cyclomatic complexity ( base 1 plus one per control-flow branch ).</summary>
     CyclomaticComplexity: Integer;
   end;
 
+/// <summary>
+/// Computes lines of code and cyclomatic complexity for the supplied Delphi unit by
+/// running the file through TDelphiLexer and counting branching tokens.
+/// </summary>
+/// <param name="FileName">Absolute path to the .pas file to analyse.</param>
+/// <returns>Populated TUnitMetrics; returns zero values when the file cannot be loaded.</returns>
 function CalculateUnitMetrics(const FileName: string): TUnitMetrics;
 
 implementation

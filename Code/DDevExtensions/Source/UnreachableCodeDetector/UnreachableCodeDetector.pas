@@ -8,6 +8,16 @@
 
 unit UnreachableCodeDetector;
 
+/// <summary>
+/// Implements the Unreachable Code Detector DDevExtensions plugin: scans implementation
+/// sections looking for code that follows an unconditional control-flow terminator
+/// (Exit, Raise, Break, Continue, Halt, Abort) before the next end/else/finally/until.
+/// </summary>
+/// <remarks>
+/// Honours $IFDEF/$IFNDEF/$IF blocks and skips terminators that are conditional (e.g.
+/// "if X then Exit;"), assignments to variables named like keywords, and case labels.
+/// </remarks>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,71 +27,126 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>Identifies which terminator keyword preceded a block of unreachable code.</summary>
   TUnreachableReason = (
+    /// <summary>Code follows an unconditional Exit.</summary>
     urAfterExit,
+    /// <summary>Code follows a Raise statement.</summary>
     urAfterRaise,
+    /// <summary>Code follows a Break statement.</summary>
     urAfterBreak,
+    /// <summary>Code follows a Continue statement.</summary>
     urAfterContinue,
+    /// <summary>Code follows a Halt call.</summary>
     urAfterHalt,
+    /// <summary>Code follows an Abort call.</summary>
     urAfterAbort
   );
 
+  /// <summary>One detected block of unreachable code.</summary>
   TUnreachableCodeItem = record
+    /// <summary>Full path of the file containing the unreachable code.</summary>
     FileName: string;
+    /// <summary>Unit name (without extension).</summary>
     UnitName: string;
+    /// <summary>Source line of the unreachable code.</summary>
     Line: Integer;
+    /// <summary>Source column (currently always 1).</summary>
     Column: Integer;
+    /// <summary>Terminator type that made this code unreachable.</summary>
     Reason: TUnreachableReason;
+    /// <summary>Source line of the terminator statement that preceded the unreachable code.</summary>
     TerminatorLine: Integer;
+    /// <summary>Up to 50 characters of the unreachable code, used for display.</summary>
     CodePreview: string;
+    /// <summary>Returns the reason as a human-readable phrase ("After Exit", "After Raise", ...).</summary>
     function ReasonText: string;
   end;
 
+  /// <summary>
+  /// Source-level scanner that detects unreachable code following unconditional control-flow terminators.
+  /// </summary>
   TUnreachableCodeScanner = class
   private
+    /// <summary>List of detected unreachable code items.</summary>
     FItems: TList<TUnreachableCodeItem>;
+    /// <summary>Optional progress callback.</summary>
     FOnProgress: TNotifyEvent;
+    /// <summary>Backing field for <see cref="ProgressUnit"/>.</summary>
     FProgressUnit: string;
+    /// <summary>Conditional defines extracted from the project options.</summary>
     FProjectDefines: TStringList;
+    /// <summary>Loads the supplied file and forwards it to <see cref="ScanSource"/>.</summary>
     procedure ScanUnit( const FileName: string );
+    /// <summary>Scans the supplied source text for unreachable code, skipping the interface section.</summary>
     procedure ScanSource( const Source, FileName, UnitName: string );
+    /// <summary>Returns up to 50 characters of source from <paramref name="StartPos"/> for display.</summary>
     function GetCodePreview( const Source: string; StartPos: Integer ): string;
+    /// <summary>Advances past whitespace, brace comments, paren comments and line comments.</summary>
     function SkipWhitespaceAndComments( const Source: string; StartPos: Integer ): Integer;
+    /// <summary>Reverse-direction equivalent of <see cref="SkipWhitespaceAndComments"/>.</summary>
     function SkipWhitespaceAndCommentsBackward( const Source: string; StartPos: Integer ): Integer;
+    /// <summary>Returns True when the terminator at <paramref name="TerminatorPos"/> follows a "then" (e.g. inline "if ... then Exit;").</summary>
     function IsConditionalTerminator( const Source: string; TerminatorPos: Integer ): Boolean;
+    /// <summary>Returns the 1-based line number of the supplied byte position in the source.</summary>
     function GetLineNumber( const Source: string; Position: Integer ): Integer;
+    /// <summary>Returns True when the supplied conditional define is active for this project.</summary>
     function IsDefineDefined( const DefineName: string ): Boolean;
-    function EvaluateIfCondition( const Condition: string ): Integer;  // 1=true, 0=false, -1=unknown
+    /// <summary>Evaluates a $IF condition. Returns 1 (true), 0 (false) or -1 (unknown / unsupported).</summary>
+    function EvaluateIfCondition( const Condition: string ): Integer;
   public
+    /// <summary>Creates a new scanner with empty state.</summary>
     constructor Create;
+    /// <summary>Releases all owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Discards all previously detected items.</summary>
     procedure Clear;
+    /// <summary>Scans every .pas module in the supplied project, honouring its conditional defines.</summary>
     procedure ScanProject( const Project: IOTAProject );
+    /// <summary>Scans a single file and replaces any previously detected items.</summary>
     procedure ScanFile( const FileName: string );
+    /// <summary>Returns a snapshot of all detected unreachable code items.</summary>
     function GetItems: TArray<TUnreachableCodeItem>;
+    /// <summary>Notification fired periodically during scanning so the UI can update progress.</summary>
     property OnProgress: TNotifyEvent read FOnProgress write FOnProgress;
+    /// <summary>Name of the unit currently being scanned (set just before <see cref="OnProgress"/> fires).</summary>
     property ProgressUnit: string read FProgressUnit;
   end;
 
+  /// <summary>
+  /// Plugin host: registers the menu item and exposes the entry point for the detector form.
+  /// </summary>
   TUnreachableCodeDetectorPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for <see cref="Enabled"/>.</summary>
     FEnabled: Boolean;
+    /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Menu click handler that opens the detector form.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Returns the IDE Tools options page for this plugin.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default option values.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and adds its menu item.</summary>
     constructor Create;
+    /// <summary>Frees the menu item.</summary>
     destructor Destroy; override;
+    /// <summary>Opens the Unreachable Code Detector form.</summary>
     procedure ShowUnreachableCodeDetector;
   published
+    /// <summary>Whether the plugin's features are enabled.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
+/// <summary>Plugin entry point invoked by the IDE host to load or unload the plugin singleton.</summary>
+/// <param name="Unload">When True the plugin is unloaded; otherwise it is loaded.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton instance of the Unreachable Code Detector plugin.</summary>
   UnreachableCodeDetectorPlugin: TUnreachableCodeDetectorPlugin;
 
 implementation

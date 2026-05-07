@@ -11,6 +11,12 @@
 
 unit FrmBase;
 
+/// <summary>
+/// Common ancestor for every dialog the plugin presents. Suppresses TReader resource errors so
+/// stale .dfm streams still load, normalises every control's font to the IDE default and swaps
+/// in THtHintWindow for the duration of ShowModal so hints can use inline mark-up.
+/// </summary>
+
 interface
 
 uses
@@ -18,19 +24,25 @@ uses
   Dialogs;
 
 type
+  /// <summary>Base form class for plugin dialogs; see the unit summary for behavioural details.</summary>
   TFormBase = class(TForm)
   private
     { Private-Deklarationen }
   protected
+    /// <summary>Persists dialog state when the form closes (placeholder).</summary>
     procedure DoClose(var Action: TCloseAction); override;
+    /// <summary>Restores state and rewrites every "Tahoma" font to the IDE default font.</summary>
     procedure DoShow; override;
   public
     { Public-Deklarationen }
+    /// <summary>Patches TReader.NewInstance for the duration of construction so resource-load errors are swallowed.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Installs THtHintWindow and a long hint timeout for the duration of the modal display.</summary>
     function ShowModal: Integer; override;
   end;
 
 var
+  /// <summary>Auto-created singleton declared by the .dfm; not used directly.</summary>
   FormBase: TFormBase;
 
 implementation

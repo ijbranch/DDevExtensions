@@ -10,6 +10,13 @@
 
 unit ComponentSelector;
 
+/// <summary>
+/// Provides the Component Selector toolbar control that lives in the IDE main toolbar
+/// and lets the developer locate and pick a VCL/FMX component by typing all or part of
+/// its class name. Supports a sortable, filtered drop-down list with optional palette
+/// grouping plus a configurable hotkey to focus the search edit.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -21,98 +28,212 @@ uses
   MultiMon, Menus, ImgList, ToolsAPIHelpers, EditPopupCtrl;
 
 type
+  /// <summary>
+  /// Persisted layout state for the Component Selector toolbar (position and visibility).
+  /// </summary>
   TToolbarInfo = packed record
+    /// <summary>Toolbar X coordinate within its parent ControlBar.</summary>
     Left, Top: Integer;
+    /// <summary>True when the toolbar is currently shown in the IDE.</summary>
     Visible: Boolean;
   end;
 
+  /// <summary>
+  /// Represents a single component palette entry shown in the selector drop-down list,
+  /// together with its owning module, palette page, class reference and any additional
+  /// data needed for icon painting and selection.
+  /// </summary>
   TCompItem = class(TObject)
   private
+    /// <summary>Module handle of the BPL providing the component.</summary>
     FModule: HMODULE;
+    /// <summary>Palette page (category) caption that owns the component.</summary>
     FPalette: string;
+    /// <summary>Display name of the component on the palette.</summary>
     FCompName: string;
+    /// <summary>Auxiliary data, typically a <see cref="TPaletteItemHolder"/>.</summary>
     FData: TObject;
+    /// <summary>Class reference of the component when known.</summary>
     FComponentClass: TComponentClass;
   public
+    /// <summary>
+    /// Creates the item, capturing the module handle, palette page, component name,
+    /// optional class reference and arbitrary holder data.
+    /// </summary>
+    /// <param name="AModule">Module handle of the providing BPL.</param>
+    /// <param name="APalette">Palette page caption.</param>
+    /// <param name="ACompName">Display name of the component.</param>
+    /// <param name="AComponentClass">Class reference, or nil when unknown.</param>
+    /// <param name="AData">Optional auxiliary data; freed when it is a <see cref="TPaletteItemHolder"/>.</param>
     constructor Create(AModule: HMODULE; const APalette, ACompName: string;
       AComponentClass: TComponentClass; AData: TObject);
+    /// <summary>Frees the item and any owned <see cref="TPaletteItemHolder"/> data.</summary>
     destructor Destroy; override;
+    /// <summary>Loads the component bitmap for the represented class.</summary>
+    /// <returns>A bitmap handle for the component glyph, or 0 when not available.</returns>
     function LoadBitmap: HBitmap;
 
+    /// <summary>Palette page caption that owns the component.</summary>
     property Palette: string read FPalette;
+    /// <summary>Display name of the component.</summary>
     property CompName: string read FCompName;
+    /// <summary>Optional auxiliary data attached to the item.</summary>
     property Data: TObject read FData;
+    /// <summary>Class reference for the component, when known.</summary>
     property ComponentClass: TComponentClass read FComponentClass;
+    /// <summary>Module handle of the providing BPL.</summary>
     property Module: HMODULE read FModule;
   end;
 
+  /// <summary>
+  /// Specialised drop-down edit used by the Component Selector. Hosts a bottom panel
+  /// with the simple-search and palette-sort checkboxes plus a status caption, and
+  /// paints the search prompt graphic when the edit is unfocused.
+  /// </summary>
   TDropDownEdit = class(TDropDownEditBase)
   private
+    /// <summary>Footer panel hosting the option checkboxes and result count caption.</summary>
     FPanelBottom: TPanel;
+    /// <summary>Toggles prefix-match (simple) versus substring search.</summary>
     FCheckBoxSimpleSearch: TCheckBox;
+    /// <summary>Notifies the owning selector when the user changes an option.</summary>
     FOnOptionsChanged: TNotifyEvent;
+    /// <summary>Toggles grouping of results by palette page.</summary>
     FCheckBoxPaletteSort: TCheckBox;
+    /// <summary>Custom WM_PAINT handler that draws the search prompt when unfocused.</summary>
     procedure WMPaint(var Msg: TWMPaint); message WM_PAINT;
   protected
+    /// <summary>Returns focus to the drop-down panel after a checkbox click.</summary>
+    /// <param name="Sender">The control that triggered the focus change.</param>
     procedure LooseFocus(Sender: TObject);
+    /// <summary>Common click handler for the option checkboxes; raises <see cref="OnOptionsChanged"/>.</summary>
+    /// <param name="Sender">The checkbox that changed.</param>
     procedure DoOptionChangeClick(Sender: TObject);
   public
+    /// <summary>Creates the edit and constructs its hosted footer panel and checkboxes.</summary>
+    /// <param name="AOwner">Owner component for memory management.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Footer panel hosting the option checkboxes and counter.</summary>
     property PanelBottom: TPanel read FPanelBottom;
+    /// <summary>Checkbox toggling simple (prefix) search mode.</summary>
     property CheckBoxSimpleSearch: TCheckBox read FCheckBoxSimpleSearch;
+    /// <summary>Checkbox toggling palette grouping in the result list.</summary>
     property CheckBoxPaletteSort: TCheckBox read FCheckBoxPaletteSort;
+    /// <summary>Recalculates the drop-down bounds, accounting for the footer panel.</summary>
     procedure UpdateDropDownBounds; override;
 
+    /// <summary>Fired after any option checkbox changes value.</summary>
     property OnOptionsChanged: TNotifyEvent read FOnOptionsChanged write FOnOptionsChanged;
   end;
 
+  /// <summary>
+  /// Top-level controller for the Component Selector feature. Creates and owns the
+  /// IDE toolbar, the drop-down edit, the filter debounce timer and the global
+  /// hotkey action; persists configuration in the registry.
+  /// </summary>
   TComponentSelector = class(TComponent)
   private
+    /// <summary>Drop-down edit that hosts the search field and result list.</summary>
     FEdit: TDropDownEdit;
+    /// <summary>Custom IDE toolbar that hosts the search edit.</summary>
     FToolBar: TToolBar;
+    /// <summary>Timer that debounces user typing before the result list is rebuilt.</summary>
     FTimerFilterUpdate: TTimer;
+    /// <summary>Reference to the IDE component palette being mirrored.</summary>
     FPalette: TCategoryButtons;
+    /// <summary>Owns the per-result <see cref="TPaletteItemHolder"/> instances.</summary>
     FCompObjects: TObjectList;
+    /// <summary>IDE action providing the configurable focus hotkey.</summary>
     FHotkeyAction: TAction;
 
+    /// <summary>Timer tick handler that performs the debounced list rebuild.</summary>
+    /// <param name="Sender">The triggering timer.</param>
     procedure TimerFilterUpdateTimer(Sender: TObject);
+    /// <summary>OnChange handler for the search edit; restarts the filter timer.</summary>
+    /// <param name="Sender">The search edit control.</param>
     procedure EditChange(Sender: TObject);
+    /// <summary>OnKeyPress handler that selects the highlighted item on Enter.</summary>
+    /// <param name="Sender">The search edit control.</param>
+    /// <param name="Key">The pressed character; cleared after handling.</param>
     procedure EditKeyPress(Sender: TObject; var Key: Char);
 
+    /// <summary>Owner-draw callback used to render each list entry with its glyph and palette label.</summary>
+    /// <param name="Control">The host listbox.</param>
+    /// <param name="Index">Index of the item being painted.</param>
+    /// <param name="Rect">Bounds of the item.</param>
+    /// <param name="State">Current draw state flags.</param>
     procedure DrawItem(Control: TWinControl; Index: Integer; Rect: TRect; State: TOwnerDrawState);
+    /// <summary>Selects the clicked component palette item without executing it.</summary>
+    /// <param name="Sender">The host listbox.</param>
     procedure ClickItem(Sender: TObject); overload;
+    /// <summary>Selects the clicked component palette item and optionally executes it.</summary>
+    /// <param name="Sender">The host listbox.</param>
+    /// <param name="ExecuteItem">When true, simulates a double-click to instantiate the component immediately.</param>
     procedure ClickItem(Sender: TObject; ExecuteItem: Boolean); overload;
+    /// <summary>Refreshes the result list immediately before the drop-down is shown.</summary>
+    /// <param name="Sender">The drop-down edit raising the event.</param>
     procedure BeforeDropDown(Sender: TObject);
+    /// <summary>Handles option changes by saving config and refreshing the list.</summary>
+    /// <param name="Sender">The drop-down edit.</param>
     procedure OptionsChanged(Sender: TObject);
+    /// <summary>Setter for <see cref="Hotkey"/>; updates the IDE action shortcut.</summary>
+    /// <param name="Value">The new shortcut.</param>
     procedure SetHotkey(const Value: TShortCut);
+    /// <summary>Returns the currently configured hotkey shortcut.</summary>
     function GetHotkey: TShortCut;
   protected
+    /// <summary>Determines whether <paramref name="AClassName"/> matches the current filter text.</summary>
+    /// <param name="AClassName">Component class name to test.</param>
+    /// <returns>True when the entry should appear in the result list.</returns>
     function Filter(const AClassName: string): Boolean;
+    /// <summary>Executes the focus hotkey action by opening and focusing the search edit.</summary>
+    /// <param name="Sender">The source action.</param>
     procedure ExecuteHotkeyAction(Sender: TObject);
+    /// <summary>Walks the IDE palette and rebuilds the filtered result list.</summary>
     procedure UpdateComponentList;
 //    procedure DoTimer(Sender: TObject); //testing
+    /// <summary>Returns the option page tree node registered for this feature.</summary>
     function GetOptionPages: TTreePage; virtual;
+    /// <summary>Loads the toolbar geometry, options and hotkey from the registry.</summary>
     procedure LoadToolbarConfig;
   public
+    /// <summary>Creates the controller, registering hooks, options page and IDE action.</summary>
+    /// <param name="AOwner">Owner component, typically the IDE main form.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Saves toolbar configuration and releases owned resources.</summary>
     destructor Destroy; override;
 
+    /// <summary>Persists the toolbar geometry, options and hotkey to the registry.</summary>
     procedure SaveToolbarConfig;
 
+    /// <summary>Configurable IDE-wide hotkey that focuses and opens the search edit.</summary>
     property Hotkey: TShortCut read GetHotkey write SetHotkey;
+    /// <summary>The drop-down edit hosting the search input and result list.</summary>
     property Edit: TDropDownEdit read FEdit;
+    /// <summary>The IDE toolbar that hosts the search edit.</summary>
     property ToolBar: TToolBar read FToolBar;
   end;
 
+  /// <summary>
+  /// Lightweight wrapper that owns a reference to a <see cref="TButtonItem"/> palette
+  /// entry so it can be safely attached to <see cref="TCompItem.Data"/>.
+  /// </summary>
   TPaletteItemHolder = class(TObject)
   private
+    /// <summary>The wrapped palette button item.</summary>
     FItem: TButtonItem;
   public
+    /// <summary>Creates the holder for the supplied palette button item.</summary>
+    /// <param name="AItem">The palette button item to hold.</param>
     constructor Create(AItem: TButtonItem);
+    /// <summary>The wrapped palette button item.</summary>
     property Item: TButtonItem read FItem;
   end;
 
+/// <summary>Returns the singleton <see cref="TComponentSelector"/> instance, or nil when the plugin is unloaded.</summary>
 function ComponentSelectorCtrl: TComponentSelector;
+/// <summary>Plugin entry point; creates or destroys the singleton controller.</summary>
+/// <param name="Unload">When true, the controller is freed; otherwise it is created.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

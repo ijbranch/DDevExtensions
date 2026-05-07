@@ -1,5 +1,11 @@
 unit StrucViewSearch;
 
+/// <summary>
+/// Adds an incremental search/filter combo box to the IDE's Structure View. Typing in the
+/// combo narrows a drop-down list of matching nodes; selecting an entry navigates the
+/// underlying VirtualStringTree to that node and, for source code, opens it in the editor.
+/// </summary>
+
 interface
 
 uses
@@ -8,45 +14,96 @@ uses
   EditPopupCtrl, VirtTreeHandler, ToolsAPI, StructureViewAPI;
 
 type
+  /// <summary>
+  /// Lightweight item describing one match in the search drop-down: the displayed caption,
+  /// the position of the matched filter substring, the underlying structure node and its
+  /// path within the tree.
+  /// </summary>
   TNodeItem = class(TObject)
   public
+    /// <summary>Visible caption for the item (without parent path).</summary>
     Caption: string;
+    /// <summary>1-based position of the filter text inside Caption, or -1 if no filter is active.</summary>
     FoundPos: Integer;
+    /// <summary>Underlying IDE structure node for navigation.</summary>
     Node: IOTAStructureNode;
+    /// <summary>Parent-chain text shown in grey after the caption.</summary>
     Path: string;
 
+    /// <summary>Creates a node item with the given caption, match offset, structure node and path.</summary>
+    /// <param name="ACaption">Caption text to display.</param>
+    /// <param name="AFoundPos">1-based position of the filter substring or -1.</param>
+    /// <param name="ANode">Structure node referenced by the item.</param>
+    /// <param name="APath">Parent-chain path string.</param>
     constructor Create(const ACaption: string; AFoundPos: Integer; const ANode: IOTAStructureNode;
       const APath: string);
   end;
 
+  /// <summary>
+  /// Owner of the search combo and the IDE-wide hot-key action that focuses it. Manages
+  /// the filter timer, drop-down population, owner-draw rendering and node navigation.
+  /// </summary>
   TStructureViewSearch = class(TComponent)
   private
+    /// <summary>Search combo placed above the Structure View tree.</summary>
     FEdit: TDropDownEditSearchBase;
+    /// <summary>Debounce timer that delays UpdateList until typing pauses.</summary>
     FFilterTimer: TTimer;
+    /// <summary>Wrapper around the Structure View's VirtualStringTree.</summary>
     FTree: TIDEVirtualTreeHandler;
+    /// <summary>Owns the TNodeItem objects shown in the drop-down list.</summary>
     FItems: TObjectList;
+    /// <summary>Length of the current filter text, used by the owner-draw routine.</summary>
     FFilterLen: Integer;
+    /// <summary>Action registered with the IDE that fires SetEditFocus on the configured hot-key.</summary>
     FHotkeyAction: TAction;
+    /// <summary>Owner-draw handler that renders a list item with bolded match, icon and grey path.</summary>
+    /// <param name="Control">The list box being drawn.</param>
+    /// <param name="Index">Index of the item.</param>
+    /// <param name="R">Rectangle in which to paint.</param>
+    /// <param name="State">Drawing state flags.</param>
     procedure DrawItem(Control: TWinControl; Index: Integer; R: TRect; State: TOwnerDrawState);
   protected
+    /// <summary>Creates and configures the search combo box and docks it to the parent form.</summary>
+    /// <param name="AParent">Parent control (typically the Structure View form).</param>
     procedure CreateComboBox(AParent: TWinControl);
+    /// <summary>Filter timer tick; calls UpdateList once typing has paused.</summary>
     procedure TimerFilterTimer(Sender: TObject);
+    /// <summary>Restarts the debounce timer when the search text changes.</summary>
     procedure EditChange(Sender: TObject);
+    /// <summary>Treats Enter as either "click selected item" or "force filter refresh".</summary>
+    /// <param name="Sender">The combo edit raising the event.</param>
+    /// <param name="Key">Character pressed; set to #0 to swallow.</param>
     procedure EditKeyPress(Sender: TObject; var Key: Char);
+    /// <summary>List mouse-up handler that activates the item under the cursor.</summary>
     procedure ListMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    /// <summary>Navigates the Structure View tree to the selected drop-down item and opens its source.</summary>
     procedure ClickItem(Sender: TObject);
+    /// <summary>Refreshes the drop-down list before it opens, provided the application is still running.</summary>
     procedure BeforeDropDown(Sender: TObject);
+    /// <summary>Rebuilds FItems and the list box contents from the current Structure View context using the active filter.</summary>
     procedure UpdateList;
+    /// <summary>Brings the Structure View to the foreground and focuses the search edit.</summary>
     procedure SetEditFocus(Sender: TObject);
   public
+    /// <summary>Creates the component, locates the Structure View, builds the search UI and attaches the timer.</summary>
+    /// <param name="AOwner">Owning component (may be nil).</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Removes the hot-key action and frees owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Installs or replaces the IDE hot-key that focuses the search edit.</summary>
+    /// <param name="AHotkey">New shortcut, or 0 to remove the binding.</param>
     procedure SetHotkey(AHotkey: TShortCut);
   end;
 
+/// <summary>
+/// Creates or destroys the singleton structure-view search component.
+/// </summary>
+/// <param name="Unload">True to shut down, False to start up.</param>
 procedure InitPlugin(Unload: Boolean);
 
 var
+  /// <summary>Singleton instance referenced by other plugin units.</summary>
   StructureViewSearch: TStructureViewSearch;
 
 implementation

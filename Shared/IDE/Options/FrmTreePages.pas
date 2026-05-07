@@ -7,6 +7,12 @@
 
 unit FrmTreePages;
 
+/// <summary>
+/// Generic tree-and-frame options dialog: a TTreeView on the left selects pages whose contents
+/// are dynamically created from a TComponentClass that implements ITreePageComponent. Used as
+/// the base for the plugin's environment-options dialogs.
+/// </summary>
+
 interface
 
 uses
@@ -14,95 +20,142 @@ uses
   Dialogs, StdCtrls, ExtCtrls, ComCtrls, FrmBase;
 
 type
-  { ITreePageComponent is used by the environment option dialog to save and load
-    the data from and into the personalitiy options. }
+  /// <summary>Implemented by every options page so the environment-options dialog can load/save the corresponding personality option.</summary>
   ITreePageComponent = interface
     ['{353613EA-B5BF-43BC-A7D0-0AADD9388A03}']
-      { LoadData loads the options into the dialog controls. }
+    /// <summary>Loads the personality options into the dialog controls.</summary>
     procedure LoadData;
-      { SaveData stores the data from the dialog controls into the personality
-        options. }
+    /// <summary>Stores the data from the dialog controls into the personality options.</summary>
     procedure SaveData;
 
-      { Selected is called when the page becomes selected. }
+    /// <summary>Called when this page becomes selected in the tree.</summary>
     procedure Selected;
-      { Unselected is called when the page becomes unselected. }
+    /// <summary>Called when this page is no longer selected.</summary>
     procedure Unselected;
 
-      { SetUserData is called after the frame was created. The "UserData"
-        parameter is the one that was specified when the tree page was
-        registered. }
+    /// <summary>Receives the UserData parameter that was supplied when the page was registered.</summary>
     procedure SetUserData(UserData: TObject);
   end;
 
+  /// <summary>Optional second interface that allows a page to display its caption.</summary>
   ITreePageComponentEx = interface
     ['{9260B5AB-8021-4208-9EEF-B3BD24C3AF9B}']
-      { The implementor can use the caption to display it in the page }
+    /// <summary>Receives the page caption so the implementor can display it.</summary>
     procedure SetTitle(const ACaption: string);
   end;
 
+  /// <summary>Definition of a single page in the options tree: name, component class and optional user data.</summary>
   TTreePage = class(TObject)
   private
+    /// <summary>Owned list of child pages.</summary>
     FItems: TObjectList;
+    /// <summary>Parent page in the tree; nil at the root.</summary>
     FParent: TTreePage;
+    /// <summary>Display name shown in the TreeView.</summary>
     FName: string;
+    /// <summary>Component class instantiated when the page is selected.</summary>
     FComponentClass: TComponentClass;
+    /// <summary>Caller-supplied object handed to the page's SetUserData.</summary>
     FUserData: TObject;
+    /// <summary>Returns the number of child pages.</summary>
     function GetCount: Integer;
+    /// <summary>Returns the child page at Index.</summary>
     function GetItem(Index: Integer): TTreePage;
   public
+    /// <summary>Initialises the page; AComponentClass must implement ITreePageComponent or be nil for grouping nodes.</summary>
+    /// <exception cref="ETreePageError">Raised when AComponentClass does not implement ITreePageComponent.</exception>
     constructor Create(const AName: string; AComponentClass: TComponentClass; AUserData: TObject = nil);
+    /// <summary>Detaches from the parent and frees every child page.</summary>
     destructor Destroy; override;
 
+    /// <summary>Appends Page as a child and assumes ownership.</summary>
     procedure Add(Page: TTreePage);
+    /// <summary>Removes the child page at Index.</summary>
     procedure Delete(Index: Integer);
+    /// <summary>Removes every child page.</summary>
     procedure Clear;
 
+    /// <summary>Parent page (nil at the root).</summary>
     property Parent: TTreePage read FParent;
+    /// <summary>Number of child pages.</summary>
     property Count: Integer read GetCount;
+    /// <summary>Indexed accessor for child pages.</summary>
     property Items[Index: Integer]: TTreePage read GetItem; default;
 
+    /// <summary>Caller-supplied user data.</summary>
     property UserData: TObject read FUserData;
+    /// <summary>Display name shown in the tree.</summary>
     property Name: string read FName;
+    /// <summary>Component class instantiated when the page is selected.</summary>
     property ComponentClass: TComponentClass read FComponentClass;
   end;
 
+  /// <summary>Raised when a TTreePage is constructed with a TComponentClass that does not implement ITreePageComponent.</summary>
   ETreePageError = class(Exception);
 
+  /// <summary>Generic tree-and-pane options dialog. Subclasses populate the tree by overriding PopulateRootPage.</summary>
   TFormTreePages = class(TFormBase)
+    /// <summary>Bottom button panel.</summary>
     PanelButtons: TPanel;
+    /// <summary>OK button.</summary>
     btnOk: TButton;
+    /// <summary>Cancel button.</summary>
     btnCancel: TButton;
+    /// <summary>Visual separator between the buttons and the working area.</summary>
     bvlDivider: TBevel;
+    /// <summary>Container for the tree view, splitter and page client area.</summary>
     PanelWorkingArea: TPanel;
+    /// <summary>Tree view used to navigate between pages.</summary>
     TreeView: TTreeView;
+    /// <summary>Container that hosts the currently selected page component.</summary>
     PanelClient: TPanel;
+    /// <summary>Splitter between the tree view and the page client area.</summary>
     SplitterTree: TSplitter;
+    /// <summary>Activates the selected page, instantiating its component on demand.</summary>
     procedure TreeViewChange(Sender: TObject; Node: TTreeNode);
+    /// <summary>Frees the root TTreePage on form destruction.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Anchors the OK/Cancel buttons and creates the root page.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Hooks up the TreeView OnChange handler and forces an initial selection.</summary>
     procedure FormShow(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Root TTreePage that owns the entire page hierarchy.</summary>
     FRootPage: TTreePage;
+    /// <summary>Currently selected page component (or nil).</summary>
     FSelected: TComponent;
+    /// <summary>Returns the Index'th page component currently parented to PanelClient.</summary>
     function GetPageComponent(Index: Integer): ITreePageComponent;
+    /// <summary>Number of page components currently parented to PanelClient.</summary>
     function GetPageComponentCount: Integer;
+    /// <summary>Rebuilds TreeView nodes from FRootPage.</summary>
     procedure PopulateTreeNodes;
   protected
+    /// <summary>Shows the dialog modally and persists the page data when the user clicks OK.</summary>
     function DoExecute: Boolean; virtual;
+    /// <summary>Invoked after a TreeView selection change; default implementation does nothing.</summary>
     procedure SelectionChanged(Node: TTreeNode); virtual;
-    
+
+    /// <summary>Subclasses must populate Root with the pages they want to display.</summary>
     procedure PopulateRootPage(Root: TTreePage); virtual; abstract;
+    /// <summary>Hook called immediately before SaveData is invoked on every page.</summary>
     procedure BeforeSaveData; virtual;
+    /// <summary>Hook called immediately after SaveData was invoked on every page.</summary>
     procedure AfterSaveData; virtual;
+    /// <summary>Hook called after the dialog has finished closing (regardless of OK/Cancel).</summary>
     procedure AfterClose; virtual;
 
+    /// <summary>Root TTreePage that owns the page hierarchy.</summary>
     property RootPage: TTreePage read FRootPage;
+    /// <summary>Number of page components currently parented to PanelClient.</summary>
     property PageComponentCount: Integer read GetPageComponentCount;
+    /// <summary>Indexed accessor for the page components currently parented to PanelClient.</summary>
     property PageComponents[Index: Integer]: ITreePageComponent read GetPageComponent;
   public
     { Public-Deklarationen }
+    /// <summary>Convenience method that creates the dialog, runs DoExecute and frees it.</summary>
+    /// <returns>True when the user accepted the dialog.</returns>
     class function Execute: Boolean;
   end;
 

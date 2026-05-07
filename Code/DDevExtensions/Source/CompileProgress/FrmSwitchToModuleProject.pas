@@ -1,5 +1,11 @@
 unit FrmSwitchToModuleProject;
 
+/// <summary>
+/// Provides the dialog that prompts the user to switch the active project when they
+/// initiate a compile from a module that belongs to a different project ( or several
+/// projects ) than the one currently active in the IDE.
+/// </summary>
+
 interface
 
 uses
@@ -7,30 +13,65 @@ uses
   Dialogs, FrmBase, StdCtrls, ExtCtrls, ToolsAPI;
 
 type
+  /// <summary>
+  /// Modal dialog that lets the user choose which of the owning projects of the current
+  /// module should become the active project before the compile proceeds.
+  /// </summary>
   TFormSwitchToModuleProject = class(TFormBase)
+    /// <summary>Bottom panel containing the action buttons.</summary>
     PanelBottom: TPanel;
+    /// <summary>Confirms the project switch ( returns mrYes ).</summary>
     ButtonYes: TButton;
+    /// <summary>Continues without switching the project ( returns mrNo ).</summary>
     ButtonNo: TButton;
+    /// <summary>Cancels the compile ( returns mrCancel ).</summary>
     ButtonCancel: TButton;
+    /// <summary>When checked the dialog will not be shown again for the same situation.</summary>
     CheckBoxDontShowAgain: TCheckBox;
+    /// <summary>Visual separator above the bottom panel.</summary>
     BevelBottom: TBevel;
+    /// <summary>Drop-down listing all the projects that own the current module.</summary>
     ComboBoxProjects: TComboBox;
+    /// <summary>Caption label for the active module section.</summary>
     LabelModuleCaption: TLabel;
+    /// <summary>Displays the file name of the module being compiled.</summary>
     LabelFileName: TLabel;
+    /// <summary>Caption label for the active project section.</summary>
     LabelActiveProjectCaption: TLabel;
+    /// <summary>Displays the name of the currently active project.</summary>
     LabelActiveProject: TLabel;
+    /// <summary>Prompt asking the user whether they want to switch project.</summary>
     LabelQuestion: TLabel;
+    /// <summary>Explanatory text shown above the question.</summary>
     LabelText: TLabel;
+    /// <summary>When checked the project switch is only applied for this single compile.</summary>
     CheckBoxTempSwitch: TCheckBox;
+    /// <summary>Form-create handler that localises the captions of all controls.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Toggles CheckBoxTempSwitch when the user holds Shift while a key is pressed.</summary>
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private-Deklarationen }
+    /// <summary>Returns a friendly project name ( file name without path or extension ) for display.</summary>
+    /// <param name="AProject">Project to obtain the display name for; may be nil.</param>
+    /// <returns>Project name without extension, or an empty string if AProject is nil.</returns>
     function GetProjectName(const AProject: IOTAProject): string;
+    /// <summary>Populates the controls and shows the dialog modally; called by ShowDialog.</summary>
+    /// <param name="AModule">Module being compiled.</param>
+    /// <param name="AProject">On entry the active project; on exit the project the user chose.</param>
+    /// <param name="ADontShowAgain">On exit, True if the user ticked the "don't show again" check box.</param>
+    /// <param name="SwitchTemporary">Initial state of the "temporary switch" check box.</param>
+    /// <returns>mrYes, mrNo, mrCancel or mrRetry ( retry indicates a temporary switch ).</returns>
     function InternShowDialog(AModule: IOTAModule; var AProject: IOTAProject;
       var ADontShowAgain: Boolean; SwitchTemporary: Boolean): TModalResult;
   public
     { Public-Deklarationen }
+    /// <summary>Shows the switch-to-module-project dialog and returns the user's choice.</summary>
+    /// <param name="AModule">Module that triggered the compile.</param>
+    /// <param name="AProject">On entry the currently active project; on exit the project chosen by the user.</param>
+    /// <param name="ADontShowAgain">On exit, True if the user wishes to suppress this dialog in future.</param>
+    /// <param name="SwitchTemporary">Initial value for the "temporary switch" check box.</param>
+    /// <returns>mrYes to switch project, mrNo to compile as-is, mrCancel to abort, mrRetry for a temporary switch.</returns>
     class function ShowDialog(AModule: IOTAModule; var AProject: IOTAProject;
       var ADontShowAgain: Boolean; SwitchTemporary: Boolean): TModalResult;
   end;

@@ -10,6 +10,12 @@
 
 unit ProjectSettingsData;
 
+/// <summary>
+/// Defines the data model for reusable project setting presets: a single named option
+/// (TSettingsOption), a named bag of options (TProjectSetting) and a list of presets
+/// (TProjectSettingList) with XML persistence and copy-to/from-IOTAProject support.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,99 +25,167 @@ uses
   TypInfo, Utils;
 
 type
+  /// <summary>Controls how option values are copied between a TProjectSetting and an IOTAProject.</summary>
+  /// <remarks>
+  /// scCopyDefault honours the global "exclude" list (paths and version info), scCopyAll copies
+  /// every option regardless, and scAssign only writes options whose Active flag is set.
+  /// </remarks>
   TSettingCopyMode = (scCopyDefault, scCopyAll, scAssign);
 
+  /// <summary>A single named project option together with its value and an Active flag.</summary>
   TSettingsOption = class(TObject)
   private
+    /// <summary>Backing field for the immutable Name property.</summary>
     FName: string;
+    /// <summary>Backing field for Value.</summary>
     FValue: Variant;
+    /// <summary>Backing field for Active.</summary>
     FActive: Boolean;
   public
+    /// <summary>Creates an option with the supplied name and value (Active defaults to True).</summary>
     constructor Create(const AName: string; const AValue: Variant);
+    /// <summary>Returns a deep copy of the option.</summary>
     function Clone: TSettingsOption; virtual;
 
+    /// <summary>Read-only name of the option.</summary>
     property Name: string read FName;
+    /// <summary>Variant value of the option.</summary>
     property Value: Variant read FValue write FValue;
+    /// <summary>If True, the option will be applied when the parent preset is assigned.</summary>
     property Active: Boolean read FActive write FActive;
   end;
 
+  /// <summary>A named preset that holds a list of TSettingsOption values for a project.</summary>
   TProjectSetting = class(TPersistent)
   private
+    /// <summary>Owned list of TSettingsOption items.</summary>
     FOptions: TObjectList;
+    /// <summary>Display name of the preset.</summary>
     FName: string;
+    /// <summary>Returns the variant value of the option named Name, or Null if absent.</summary>
     function GetOption(const Name: string): Variant;
+    /// <summary>Updates the value of the option named Name (no-op if absent).</summary>
     procedure SetOption(const Name: string; const Value: Variant);
+    /// <summary>Returns the number of options in the preset.</summary>
     function GetCount: Integer;
+    /// <summary>Returns the option at the given index.</summary>
     function GetItem(Index: Integer): TSettingsOption;
   public
+    /// <summary>Creates an empty preset.</summary>
     constructor Create;
+    /// <summary>Frees the owned option list.</summary>
     destructor Destroy; override;
 
+    /// <summary>Serialises the preset (and its options) into the supplied XML node.</summary>
     procedure SaveToXml(Xml: IXmlNode);
+    /// <summary>Restores the preset (and its options) from the supplied XML node.</summary>
     procedure LoadFromXml(Xml: IXmlNode);
 
+    /// <summary>Copies the name and options from another TProjectSetting (delegates to CopyFrom).</summary>
     procedure Assign(Source: TPersistent); override;
+    /// <summary>Returns True if every active option in this preset matches the corresponding option of Setting.</summary>
     function Compare(Setting: TProjectSetting): Boolean;
 
+    /// <summary>Replaces the option list with a clone of Source's options.</summary>
     procedure CopyFrom(Source: TProjectSetting); overload;
+    /// <summary>Replaces the option list with a clone of Source's options, skipping the named exclusions.</summary>
     procedure CopyFrom(Source: TProjectSetting; const ExceptList: array of string); overload; virtual;
+    /// <summary>Replaces the option list with the project's current option values (respecting CopyMode).</summary>
     procedure CopyFrom(Project: IOTAProject; CopyMode: TSettingCopyMode = scCopyDefault); overload;
+    /// <summary>Replaces the option list with the project's current option values, skipping the named exclusions.</summary>
     procedure CopyFrom(Project: IOTAProject; const ExceptList: array of string; CopyMode: TSettingCopyMode = scCopyDefault); overload;
+    /// <summary>Writes the preset's option values into the supplied project (respecting CopyMode).</summary>
     procedure CopyTo(Project: IOTAProject; CopyMode: TSettingCopyMode = scCopyDefault); overload;
+    /// <summary>Writes the preset's option values into the supplied project, skipping the named exclusions.</summary>
     procedure CopyTo(Project: IOTAProject; const ExceptList: array of string;
       CopyMode: TSettingCopyMode = scCopyDefault); overload;
 
+    /// <summary>Returns the index of the option named AName, or -1 if absent.</summary>
     function IndexOf(const AName: string): Integer;
 
+    /// <summary>Display name of the preset.</summary>
     property Name: string read FName write FName;
+    /// <summary>Default indexer that gets/sets an option's value by its name.</summary>
     property Options[const Name: string]: Variant read GetOption write SetOption; default;
+    /// <summary>Number of options in the preset.</summary>
     property Count: Integer read GetCount;
+    /// <summary>Indexed access to the option items.</summary>
     property Items[Index: Integer]: TSettingsOption read GetItem;
   end;
 
+  /// <summary>Owned list of TProjectSetting presets with file/XML persistence and lookup helpers.</summary>
   TProjectSettingList = class(TPersistent)
   private
+    /// <summary>Owned list of TProjectSetting items.</summary>
     FItems: TObjectList;
+    /// <summary>Cached compiler-option names (populated lazily by FillOptionNames).</summary>
     FCompilerOptions: TStrings;
+    /// <summary>Cached version-info option names (currently unused).</summary>
     FVersionInfoOptions: TStrings;
+    /// <summary>Cached linker-option names (populated lazily by FillOptionNames).</summary>
     FLinkerOptions: TStrings;
 
+    /// <summary>Returns the number of presets in the list.</summary>
     function GetCount: Integer;
+    /// <summary>Returns the preset at the given index.</summary>
     function GetItem(Index: Integer): TProjectSetting;
   protected
+    /// <summary>Initialises the global compiler/linker option-name caches with their built-in defaults.</summary>
     class procedure InitOptions; virtual;
   public
+    /// <summary>Creates an empty preset list.</summary>
     constructor Create;
+    /// <summary>Frees the owned preset list.</summary>
     destructor Destroy; override;
 
+    /// <summary>Removes the preset at the given index.</summary>
     procedure Delete(Index: Integer);
+    /// <summary>Removes the supplied preset from the list (no-op if absent).</summary>
     procedure Remove(Setting: TProjectSetting);
+    /// <summary>Creates a new empty preset, adds it to the list, and returns it.</summary>
     function Add: TProjectSetting;
+    /// <summary>Clears all presets.</summary>
     procedure Clear;
 
+    /// <summary>Populates List with all known option names (lazily initialising the caches).</summary>
     class procedure FillOptionNames(List: TStrings);
 
+    /// <summary>Returns the first preset whose options match Setting (TProjectSetting.Compare), or nil.</summary>
     function FindEqual(Setting: TProjectSetting): TProjectSetting;
 
+    /// <summary>Serialises the list to the named XML file (creating the directory if needed).</summary>
     procedure SaveToFile(const Filename: string);
+    /// <summary>Loads the list from the named XML file.</summary>
     procedure LoadFromFile(const Filename: string);
+    /// <summary>Serialises the list as &lt;ProjectSetting&gt; children of Xml.</summary>
     procedure SaveToXml(Xml: IXmlNode);
+    /// <summary>Restores the list from the &lt;ProjectSetting&gt; children of Xml.</summary>
     procedure LoadFromXml(Xml: IXmlNode);
 
+    /// <summary>Replaces this list with a deep copy of Source (or clears if Source is nil).</summary>
     procedure Assign(Source: TPersistent); override;
+    /// <summary>Returns the index of Setting in the list, or -1 if absent.</summary>
     function IndexOf(Setting: TProjectSetting): Integer;
+    /// <summary>Returns the first preset with the supplied name, or nil if absent.</summary>
     function FindByName(const AName: string): TProjectSetting;
 
+    /// <summary>Sorts the presets alphabetically by Name.</summary>
     procedure Sort;
 
+    /// <summary>Cached list of compiler-option names (read-only).</summary>
     property CompilerOptions: TStrings read FCompilerOptions;
+    /// <summary>Cached list of linker-option names (read-only).</summary>
     property LinkerOptions: TStrings read FLinkerOptions;
+    /// <summary>Cached list of version-info option names (read-only).</summary>
     property VersionInfoOptions: TStrings read FVersionInfoOptions;
 
+    /// <summary>Number of presets in the list.</summary>
     property Count: Integer read GetCount;
+    /// <summary>Default indexer over the presets.</summary>
     property Items[Index: Integer]: TProjectSetting read GetItem; default;
   end;
 
+/// <summary>Frees the cached compiler/linker option-name lists; call once on plugin shutdown.</summary>
 procedure FinializeCachedSettingData;
 
 implementation

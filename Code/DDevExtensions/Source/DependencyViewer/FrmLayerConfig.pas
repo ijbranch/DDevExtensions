@@ -10,6 +10,12 @@
 
 unit FrmLayerConfig;
 
+/// <summary>
+/// Modal dialog for editing the Dependency Viewer's <see cref="TLayerConfig"/>: lets the
+/// user define layers (with wildcard patterns) and the matrix of allowed inter-layer
+/// dependencies used to detect violations.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,46 +25,86 @@ uses
   Dialogs, StdCtrls, ExtCtrls, Grids, FrmBase, DependencyViewer;
 
 type
+  /// <summary>Two-dimensional boolean matrix used to represent the allowed-dependency rules.</summary>
   TBoolMatrix = array of array of Boolean;
 
+  /// <summary>
+  /// Modal form for editing layer definitions and dependency rules.
+  /// </summary>
   TFormLayerConfig = class( TFormBase )
+    /// <summary>Top panel hosting the layer list and pattern editor.</summary>
     pnlTop: TPanel;
+    /// <summary>Middle panel hosting the rules grid.</summary>
     pnlMiddle: TPanel;
+    /// <summary>Bottom panel hosting the OK/Cancel/Defaults buttons.</summary>
     pnlBottom: TPanel;
+    /// <summary>Label for the layers list.</summary>
     lblLayers: TLabel;
+    /// <summary>Label for the patterns memo.</summary>
     lblPatterns: TLabel;
+    /// <summary>List of defined layers; each item's Object holds its TStringList of patterns.</summary>
     ListBoxLayers: TListBox;
+    /// <summary>Multi-line editor for the selected layer's patterns (one per line).</summary>
     MemoPatterns: TMemo;
+    /// <summary>Adds a new layer to the list.</summary>
     btnAddLayer: TButton;
+    /// <summary>Deletes the selected layer (after confirmation).</summary>
     btnDeleteLayer: TButton;
+    /// <summary>Label for the rules grid.</summary>
     lblRules: TLabel;
+    /// <summary>Help text describing how to read the rules matrix.</summary>
     lblRulesHelp: TLabel;
+    /// <summary>Custom-drawn checkbox grid showing which "from -&gt; to" dependencies are allowed.</summary>
     StringGridRules: TStringGrid;
+    /// <summary>Confirms changes and closes the dialog.</summary>
     btnOK: TButton;
+    /// <summary>Discards changes and closes the dialog.</summary>
     btnCancel: TButton;
+    /// <summary>Resets layers and rules to the built-in defaults.</summary>
     btnDefaults: TButton;
+    /// <summary>Form OnCreate handler: initialises internal state.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Form OnDestroy handler: releases the rules matrix.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Loads the selected layer's patterns into the memo.</summary>
     procedure ListBoxLayersClick( Sender: TObject );
+    /// <summary>Persists the memo's lines back into the selected layer's stored patterns.</summary>
     procedure MemoPatternsChange( Sender: TObject );
+    /// <summary>Prompts for a layer name and adds it to the list.</summary>
     procedure btnAddLayerClick( Sender: TObject );
+    /// <summary>Removes the selected layer and shrinks the rules matrix.</summary>
     procedure btnDeleteLayerClick( Sender: TObject );
+    /// <summary>Persists pending pattern edits before the dialog closes with OK.</summary>
     procedure btnOKClick( Sender: TObject );
+    /// <summary>Asks the user to confirm, then reloads the default configuration.</summary>
     procedure btnDefaultsClick( Sender: TObject );
+    /// <summary>Custom-draws each cell of the rules grid as a checkbox.</summary>
     procedure StringGridRulesDrawCell( Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState );
+    /// <summary>Toggles the boolean cell when the user clicks a non-diagonal data cell.</summary>
     procedure StringGridRulesSelectCell( Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean );
   private
+    /// <summary>The layer configuration being edited (owned externally).</summary>
     FLayerConfig: TLayerConfig;
+    /// <summary>Matrix backing the allowed-dependency rules grid.</summary>
     FRulesMatrix: TBoolMatrix;
+    /// <summary>Re-entrancy guard while loading data into controls.</summary>
     FUpdating: Boolean;
+    /// <summary>Loads layers, patterns and rules from <see cref="FLayerConfig"/> into the UI.</summary>
     procedure LoadFromConfig;
+    /// <summary>Writes the current UI state back to <see cref="FLayerConfig"/> and saves it.</summary>
     procedure SaveToConfig;
+    /// <summary>Refreshes the delete button's enabled state based on selection.</summary>
     procedure RefreshLayerList;
+    /// <summary>Recalculates and repaints the rules grid from the current layers.</summary>
     procedure RefreshRulesGrid;
+    /// <summary>Persists the patterns memo back into the selected layer's pattern list.</summary>
     procedure SaveCurrentPatterns;
   public
+    /// <summary>Shows the dialog modally and persists the changes when the user confirms.</summary>
+    /// <param name="LayerConfig">The configuration to edit; updated in place if the user clicks OK.</param>
+    /// <returns>True when the user clicked OK and changes were saved; False on Cancel.</returns>
     class function Execute( LayerConfig: TLayerConfig ): Boolean;
   end;
 

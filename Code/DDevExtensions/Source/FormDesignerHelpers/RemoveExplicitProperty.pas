@@ -10,6 +10,12 @@
 
 unit RemoveExplicitProperty;
 
+/// <summary>
+/// Replaces TControl.DefineProperties so that the four ExplicitLeft/Top/Width/Height streaming
+/// hooks become no-ops in the form designer. This stops the IDE from writing those properties
+/// into the DFM, producing cleaner diffs for source-controlled forms.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,6 +23,11 @@ interface
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
 
+/// <summary>
+/// Activates or deactivates the TControl.DefineProperties redirection that suppresses streaming
+/// of the ExplicitLeft/Top/Width/Height properties.
+/// </summary>
+/// <param name="Active">True to install the redirect, False to restore the original method.</param>
 procedure SetRemoveExplicitPropertyActive(Active: Boolean);
 
 implementation

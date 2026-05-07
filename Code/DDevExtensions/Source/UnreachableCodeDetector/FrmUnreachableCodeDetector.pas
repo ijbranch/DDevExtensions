@@ -8,6 +8,12 @@
 
 unit FrmUnreachableCodeDetector;
 
+/// <summary>
+/// Non-modal main form of the Unreachable Code Detector plugin. Scans the active
+/// project, lists every detected unreachable code block, and supports filtering by
+/// terminator type, sorting, opening the source location and CSV export.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,38 +24,69 @@ uses
   FrmBase, UnreachableCodeDetector, ToolsAPI;
 
 type
+  /// <summary>Main detector form for the Unreachable Code Detector plugin.</summary>
   TFormUnreachableCodeDetector = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting buttons and labels.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Scans the active project and populates the list.</summary>
     btnScan: TButton;
+    /// <summary>Lists detected unreachable code blocks (filtered by <see cref="cmbFilter"/>).</summary>
     ListView: TListView;
+    /// <summary>Progress / status label.</summary>
     lblProgress: TLabel;
+    /// <summary>Filter combo restricting the visible items by terminator reason.</summary>
     cmbFilter: TComboBox;
+    /// <summary>Label for the filter combo.</summary>
     lblFilter: TLabel;
+    /// <summary>Exports all detected items to a CSV file.</summary>
     btnExport: TButton;
+    /// <summary>Shows "Showing X of Y items".</summary>
     lblCount: TLabel;
+    /// <summary>Shows the project name being analysed.</summary>
     lblProject: TLabel;
+    /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Runs the scanner against the active project.</summary>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Form OnCreate handler: initialises scanner and filter items.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Releases the form when closed (non-modal).</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Form OnDestroy handler: frees the scanner.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Opens the source file at the offending line when a row is double-clicked.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Re-applies the filter when the combo selection changes.</summary>
     procedure cmbFilterChange( Sender: TObject );
+    /// <summary>Exports all detected items to a CSV file.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Custom-column comparer used by AlphaSort.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Toggles or switches the active sort column.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
   private
+    /// <summary>Owned scanner used to perform the analysis.</summary>
     FScanner: TUnreachableCodeScanner;
+    /// <summary>Most recent scan result.</summary>
     FItems: TArray<TUnreachableCodeItem>;
+    /// <summary>Index of the currently active sort column.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Refreshes the list view from <see cref="FItems"/>, applying the current filter.</summary>
     procedure PopulateList;
+    /// <summary>Scanner OnProgress callback that updates the progress label.</summary>
     procedure ScannerProgress( Sender: TObject );
+    /// <summary>Opens the source file for the supplied item and centres the view on its line.</summary>
     procedure OpenItem( const Item: TUnreachableCodeItem );
   public
+    /// <summary>Creates and shows a new (non-modal) detector form.</summary>
+    /// <returns>Always True.</returns>
     class function Execute: Boolean;
   end;
 

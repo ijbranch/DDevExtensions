@@ -8,10 +8,22 @@
 
 unit DisableAlphaSortClassCompletion;
 
+/// <summary>
+/// Installs binary patches into the Delphi class-completion code so that newly generated
+/// method stubs are inserted in declaration order rather than alphabetically. Locates the
+/// relevant call sites by signature scanning and redirects TSortedThingList.SetSorted and
+/// TTableIterator construction/iteration through replacement routines defined in this unit.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
 
+/// <summary>
+/// Installs (when Value is True) or removes the alpha-sort-disable patches in the IDE's
+/// class completer.
+/// </summary>
+/// <param name="Value">True to disable alphabetical sorting; False to restore the original IDE behaviour.</param>
 procedure InstallDisableAlphaSortClassCompletion(Value: Boolean);
 
 implementation
@@ -20,69 +32,136 @@ uses
   Windows, SysUtils, Classes, TypInfo, Hooking, IDEHooks;
 
 type
+  /// <summary>
+  /// Opaque placeholder mirroring the IDE's internal TClassSymbol used to type
+  /// the patched MethodAddPos call.
+  /// </summary>
   TClassSymbol = class
   end;
 
+  /// <summary>
+  /// Layout-compatible mirror of the IDE's symbol-table base record. Field order and
+  /// types must match the compiler's internal representation exactly.
+  /// </summary>
   TBaseSymbol = class(TObject)
   public
+    /// <summary>Next symbol in the hash bucket chain.</summary>
     Next: TBaseSymbol;
+    /// <summary>UTF-8 encoded short-form identifier.</summary>
     FShortIdent: ShortString;    //UTF8-encoded data
+    /// <summary>Unicode form of the identifier.</summary>
     FIdent: UnicodeString;
   end;
 
+  /// <summary>
+  /// Layout-compatible mirror of the IDE's symbol table. Only Count and the bucket array
+  /// are accessed.
+  /// </summary>
   TSymbolTable = class(TObject)
   private
+    /// <summary>Total number of symbols stored.</summary>
     FCount: Integer;
+    /// <summary>Hash buckets holding linked lists of symbols.</summary>
     FSymbolList: array[0..31] of TBaseSymbol;
     //FCompare: TCompareSymbols;
   public
+    /// <summary>Returns the number of symbols in the table.</summary>
     property Count: Integer read FCount;
   end;
 
+  /// <summary>
+  /// Replacement iterator that loads all symbols from a TSymbolTable and sorts them in
+  /// declaration order rather than the IDE's default alphabetical order.
+  /// </summary>
   TTableIterator = class
   protected
+    /// <summary>Layout filler matching IDE iterator field offsets.</summary>
     FxxxLocation: Integer;
+    /// <summary>Layout filler matching IDE iterator field offsets.</summary>
     FxxxIndex: Integer;
+    /// <summary>Layout filler matching IDE iterator field offsets.</summary>
     FxxxSymbol: TBaseSymbol;
+    /// <summary>Number of symbols loaded; field offset must match the IDE's iterator.</summary>
     FCount: Integer; // FCount must be at this offset
 
+    /// <summary>Sorted snapshot of the symbols copied from the source table.</summary>
     FSymbols: array of TBaseSymbol;
 
+    /// <summary>Returns the symbol at the given zero-based index.</summary>
+    /// <param name="Index">Zero-based symbol index.</param>
+    /// <returns>The symbol stored at Index in FSymbols.</returns>
     function GetSymbol(Index: Integer): TBaseSymbol;
+    /// <summary>Copies all symbols from Table into FSymbols and sorts them.</summary>
+    /// <param name="Table">Source symbol table to enumerate.</param>
     procedure LoadSymbols(Table: TSymbolTable);
+    /// <summary>Recursive in-place quick-sort over FSymbols using CompareSymbol.</summary>
+    /// <param name="L">Lower bound (inclusive).</param>
+    /// <param name="R">Upper bound (inclusive).</param>
     procedure QuickSort(L, R: Integer);
   public
+    /// <summary>Creates the iterator and populates it from the supplied table.</summary>
+    /// <param name="Table">Symbol table to snapshot, or nil for an empty iterator.</param>
     constructor Create(Table: TSymbolTable);
+    /// <summary>Number of symbols held by the iterator.</summary>
     property Count: Integer read FCount;
+    /// <summary>Indexed access to the loaded symbols.</summary>
     property Symbols[Index: Integer]: TBaseSymbol read GetSymbol; default;
   end;
 
   TMethodSymbol = class;
 
+  /// <summary>
+  /// Mirrors the IDE's access-specifier enumeration for class members.
+  /// </summary>
   TAccess = (saDefault, saStrictPrivate, saPrivate, saStrictProtected, saProtected, saPublic, saPublished, saAutomated);
 
+  /// <summary>
+  /// Layout-compatible mirror of the IDE's method-signature record. Only the fields
+  /// referenced by sort/order logic are documented; the rest are positional placeholders.
+  /// </summary>
   TMethodSignature = class
   public
+    /// <summary>Owning method symbol.</summary>
     MethodSymbol: TMethodSymbol;
+    /// <summary>RTTI describing the method type.</summary>
     TypeData: PTypeData;
+    /// <summary>Size in bytes of the typed parameter block.</summary>
     TypeSize: Word;
+    /// <summary>True when the method has no parameters or body.</summary>
     Empty: Boolean;
+    /// <summary>Source positions of the interface declaration header.</summary>
     HeaderPos, HeaderNamePos, HeaderEnd, HeaderLineEnd: LongInt;
+    /// <summary>Source positions of the implementation header and body.</summary>
     CodePos, CodeNamePos, CodeHeaderEnd, CodeBegin, CodeEnd, CodeStatement: LongInt;
+    /// <summary>Source positions for implementation header end markers.</summary>
     ImplHeaderEnd, ImplEnd: LongInt;
+    /// <summary>Source position of the begin keyword.</summary>
     BeginPos: LongInt;
+    /// <summary>Visibility of the method declaration.</summary>
     Access: TAccess;
+    /// <summary>Source range of the optional dispid clause.</summary>
     DispidPos, DispidEnd: LongInt;
+    /// <summary>Next signature in a chained list (e.g. overloaded methods).</summary>
     Next: TMethodSignature;
+    /// <summary>True if this method is part of an interface declaration.</summary>
     InterfaceMethod: Boolean;
+    /// <summary>Symbol table of locally-declared nested procedures.</summary>
     NestedProcedures: TSymbolTable;
 
+    /// <summary>Returns True when the method has a body in the implementation section.</summary>
+    /// <returns>True if CodePos and TypeData are both set.</returns>
     function IsImplemented: Boolean;
+    /// <summary>Returns a sort weight grouping constructors, destructors and operators ahead of normal methods.</summary>
+    /// <returns>An integer used to keep declaration order stable across kinds.</returns>
     function GetTypeSortId: Integer;
   end;
 
+  /// <summary>
+  /// Mirrors the IDE's method-symbol class, exposing the signature pointer used by sorting.
+  /// </summary>
   TMethodSymbol = class(TBaseSymbol)
   public
+    /// <summary>Backing signature describing this method.</summary>
     FMethodSignature: TMethodSignature;
   end;
 

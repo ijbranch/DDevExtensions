@@ -9,6 +9,12 @@
 
 unit FrmDfmPasConsistency;
 
+/// <summary>
+/// Singleton results form for the DFM/PAS Consistency plugin. Initiates project-wide scans,
+/// presents inconsistencies in a sortable, filterable list view, and supports navigation,
+/// clipboard copy, and CSV export.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,46 +25,95 @@ uses
   FrmBase, DfmPasConsistency, ToolsAPI;
 
 type
-  TFilterMode = (fmAll, fmInputControls, fmPassiveControls);
+  /// <summary>Filter applied to the displayed inconsistency list.</summary>
+  TFilterMode = (
+    /// <summary>Show every inconsistency.</summary>
+    fmAll,
+    /// <summary>Show only input controls that typically need PAS declarations.</summary>
+    fmInputControls,
+    /// <summary>Show only non-input/passive controls.</summary>
+    fmPassiveControls
+  );
 
+  /// <summary>Singleton results form for the DFM/PAS Consistency plugin.</summary>
   TFormDfmPasConsistency = class(TFormBase)
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom action-button panel.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Initiates a project-wide scan.</summary>
     btnScan: TButton;
+    /// <summary>List view displaying inconsistencies.</summary>
     ListView: TListView;
+    /// <summary>Status text shown while scanning.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu attached to the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Copies the selected (or all) results to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Navigates the IDE to the selected inconsistency.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the visible results to CSV.</summary>
     btnExport: TButton;
+    /// <summary>File-save dialog used by <see cref="btnExport"/>.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Result summary text.</summary>
     lblSummary: TLabel;
+    /// <summary>Label for <see cref="cboFilter"/>.</summary>
     lblFilter: TLabel;
+    /// <summary>Combo controlling the active <see cref="TFilterMode"/>.</summary>
     cboFilter: TComboBox;
+    /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
     procedure btnCloseClick(Sender: TObject);
+    /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
     procedure btnScanClick(Sender: TObject);
+    /// <summary>Initialises sort state and the default filter mode.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Clears the result set when the form closes.</summary>
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    /// <summary>Clears the singleton reference when the form is destroyed.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Opens the file referenced by the double-clicked row.</summary>
     procedure ListViewDblClick(Sender: TObject);
+    /// <summary>Context-menu handler that copies result data to the clipboard.</summary>
     procedure mnuCopyToClipboardClick(Sender: TObject);
+    /// <summary>Context-menu handler that opens the source file at the relevant line.</summary>
     procedure mnuOpenFileClick(Sender: TObject);
+    /// <summary>Exports the visible results to a CSV file.</summary>
     procedure btnExportClick(Sender: TObject);
+    /// <summary>Cycles sort direction when a column header is clicked.</summary>
     procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
+    /// <summary>Custom comparator with numeric sort support for the line-number columns.</summary>
     procedure ListViewCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
+    /// <summary>Updates <see cref="FFilterMode"/> and refreshes the list.</summary>
     procedure cboFilterChange(Sender: TObject);
   private
+    /// <summary>Latest scan results.</summary>
     FResults: TArray<TInconsistencyInfo>;
+    /// <summary>Index of the column currently being sorted.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Currently active filter mode.</summary>
     FFilterMode: TFilterMode;
+    /// <summary>Returns <c>True</c> when <paramref name="TypeName"/> looks like a user-input control.</summary>
+    /// <param name="TypeName">Component type name to classify.</param>
     function IsInputControl(const TypeName: string): Boolean;
+    /// <summary>Rebuilds the list view from <see cref="FResults"/> using <see cref="FFilterMode"/>.</summary>
     procedure PopulateList;
+    /// <summary>
+    /// Opens the file/line of the currently selected list item. For "missing in PAS" entries,
+    /// attempts to launch the form designer and select the offending component.
+    /// </summary>
     procedure OpenSelectedFile;
   public
+    /// <summary>Displays the singleton form, creating it if required.</summary>
+    /// <returns><c>True</c> when the form was shown.</returns>
     class function Execute: Boolean;
   end;
 

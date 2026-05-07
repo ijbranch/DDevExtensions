@@ -14,33 +14,62 @@
 
 unit FileWatcher;
 
+/// <summary>
+/// Lightweight ReadDirectoryChangesW wrapper. Watches one or more directories for file
+/// modifications and dispatches a callback on the main thread. Reference-counts each watched
+/// directory so multiple subscribers can register the same path safely.
+/// </summary>
+
 interface
 
 uses
   Windows, SysUtils, Classes, Generics.Collections, Generics.Defaults;
 
 type
+  /// <summary>Callback signature raised when a watched file is modified. FileName is the full path.</summary>
   TFileChangeEvent = procedure( const FileName: string ) of object;
 
+  /// <summary>
+  /// Manages a worker thread that monitors a set of directories using ReadDirectoryChangesW and
+  /// marshals modification notifications back to the main thread via TThread.Queue.
+  /// </summary>
   TFileWatcher = class( TObject )
   private
+    /// <summary>Background thread that performs the overlapped I/O wait loop.</summary>
     FWatchThread: TThread;
+    /// <summary>Map of watched directory path to subscriber reference count.</summary>
     FDirectories: TDictionary<string, Integer>; // path -> ref count
+    /// <summary>Callback invoked on the main thread when a watched file changes.</summary>
     FOnFileChanged: TFileChangeEvent;
+    /// <summary>Critical section guarding FDirectories.</summary>
     FLock: TRTLCriticalSection;
+    /// <summary>Manual-reset event signalled to terminate the worker thread.</summary>
     FStopEvent: THandle;
+    /// <summary>Auto-reset event signalled when the watch list changes so the worker rebuilds its handles.</summary>
     FUpdateEvent: THandle;
+    /// <summary>Spawns the worker thread if it is not already running.</summary>
     procedure StartThread;
+    /// <summary>Signals the worker thread to terminate and waits for it to finish.</summary>
     procedure StopThread;
+    /// <summary>Returns a snapshot of currently watched directory paths under the lock.</summary>
+    /// <returns>Array of directory paths.</returns>
     function GetWatchedDirectories: TArray<string>;
   public
+    /// <summary>Initialises internal state, creates synchronisation primitives, but does not start watching.</summary>
     constructor Create;
+    /// <summary>Stops the worker thread and releases all resources.</summary>
     destructor Destroy; override;
 
+    /// <summary>Adds a directory to the watch set, or increments its reference count if already watched.</summary>
+    /// <param name="Directory">Directory path to monitor; the trailing separator is stripped.</param>
     procedure AddWatch( const Directory: string );
+    /// <summary>Decrements the reference count for the directory and removes it when the count reaches zero.</summary>
+    /// <param name="Directory">Previously added directory path.</param>
     procedure RemoveWatch( const Directory: string );
+    /// <summary>Removes every watched directory and stops the worker thread.</summary>
     procedure ClearWatches;
 
+    /// <summary>Event invoked on the main thread whenever a modification notification is received for a watched file.</summary>
     property OnFileChanged: TFileChangeEvent read FOnFileChanged write FOnFileChanged;
   end;
 

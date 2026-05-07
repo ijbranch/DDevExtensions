@@ -10,6 +10,13 @@
 
 unit FrmFileSelector;
 
+/// <summary>
+/// Implements the File Selector dialog used as a replacement for the IDE's File Use
+/// Unit / View Unit dialogs. Provides incremental filtering, directory and form-name
+/// search, an Excel export and a queued list of units to insert into the active source
+/// editor's uses clauses.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -21,174 +28,331 @@ uses
   ToolsAPIHelpers, FrmBase, DelphiDesignerParser;
 
 type
+  /// <summary>
+  /// Specialised <see cref="ComCtrls.TListView"/> that suppresses item-by-item callbacks
+  /// when clearing in OwnerData mode for significantly faster bulk clears.
+  /// </summary>
   { Fix Clear() in OwnerData Mode. We don't need to get every item (OnData) if we delete them all. }
   TListView = class(ComCtrls.TListView)
   protected
+    /// <summary>Intercepts CN_NOTIFY/LVN_DELETEALLITEMS to short-circuit OwnerData clears.</summary>
+    /// <param name="Message">The forwarded notification.</param>
     procedure CNNotify(var Message: TWMNotifyLV); message CN_NOTIFY;
   end;
 
+  /// <summary>Predicate used to decide whether a given filter string matches.</summary>
   TFilterListViewDataEvent = function(Sender: TObject; const S: string): Boolean of object;
 
+  /// <summary>
+  /// Per-row metadata captured from the project for one project file: image index, open
+  /// state, display and disk names, the matching form name/caption (when any) and the
+  /// relative path used by the IDE.
+  /// </summary>
   TInfo = class(TObject)
   public
+    /// <summary>Resource icon index used in the list view.</summary>
     ImageIndex: Integer;
+    /// <summary>True when the file is currently open in the IDE.</summary>
     Opened: Boolean;
+    /// <summary>Display name (typically the unit name).</summary>
     Name: string;
+    /// <summary>Absolute file name on disk.</summary>
     FileName: string;
+    /// <summary>Form class name when the unit defines one, otherwise empty.</summary>
     FormName: string;
+    /// <summary>Form caption when known, otherwise empty.</summary>
     FormCaption: string;
+    /// <summary>File name relative to the project directory.</summary>
     RelFileName: string;
+    /// <summary>True when form metadata has been resolved by the resource thread.</summary>
     FormTypeDetected: Boolean;
   end;
 
+  /// <summary>Strongly typed list of <see cref="TInfo"/> entries owning its items.</summary>
   TInfoList = class(TObjectList)
   private
+    /// <summary>Returns the <see cref="TInfo"/> at <paramref name="Index"/>.</summary>
     function GetItem(Index: Integer): TInfo;
   public
+    /// <summary>Default indexed access to the contained items.</summary>
     property Items[Index: Integer]: TInfo read GetItem; default;
   end;
 
   TFormFileSelector = class;
 
+  /// <summary>
+  /// Background worker that resolves per-row resource type and form metadata so the
+  /// list view can display correct icons without blocking the UI thread.
+  /// </summary>
   TResourceTypeThread = class(TThread)
   private
+    /// <summary>The owning selector form whose data is being enriched.</summary>
     FForm: TFormFileSelector;
   protected
+    /// <summary>Synchronised callback that updates a row's image index on the UI thread.</summary>
     procedure UpdateImageIndex;
+    /// <summary>Worker entry point; iterates rows and resolves their image index.</summary>
     procedure Execute; override;
   public
+    /// <summary>Creates the worker bound to the supplied selector form.</summary>
+    /// <param name="AForm">The owning <see cref="TFormFileSelector"/>.</param>
     constructor Create(AForm: TFormFileSelector);
   end;
 
+  /// <summary>
+  /// The File Selector dialog form. Lists project files with incremental filtering by
+  /// unit name, file name, form name or form caption, supports an "insert units" queue
+  /// for Use clauses manipulation, and offers an Excel export of the visible rows.
+  /// </summary>
   TFormFileSelector = class(TFormBase)
+    /// <summary>List view showing the filtered project files.</summary>
     ListView: TListView;
+    /// <summary>Container for the form's actions.</summary>
     ActionList: TActionList;
+    /// <summary>Exports the currently filtered rows to Excel.</summary>
     ActionExportToExcel: TAction;
+    /// <summary>Debounce timer for incremental filter input.</summary>
     TimerFilterUpdate: TTimer;
+    /// <summary>Status bar showing match counts and tips.</summary>
     StatusBar: TStatusBar;
+    /// <summary>Top toolbar hosting the filter controls and action buttons.</summary>
     ToolBar: TToolBar;
+    /// <summary>Toolbar button bound to <see cref="ActionExportToExcel"/>.</summary>
     tbExportToExcel: TToolButton;
+    /// <summary>Separator preceding the export button.</summary>
     tbExportSeparator: TToolButton;
+    /// <summary>Free-text filter edit.</summary>
     edtFilter: TEdit;
+    /// <summary>Separator on the toolbar.</summary>
     ToolButton5: TToolButton;
+    /// <summary>Drop-down selecting which column the filter applies to.</summary>
     cbxFilterField: TComboBox;
+    /// <summary>Footer panel hosting OK/Cancel/Options buttons.</summary>
     PanelButtons: TPanel;
+    /// <summary>Button that adds the selected unit(s) to the active editor's uses clause.</summary>
     btnUseUnit: TButton;
+    /// <summary>Cancel button.</summary>
     btnCancel: TButton;
+    /// <summary>Separator preceding the directory filter.</summary>
     tsepDir: TToolButton;
+    /// <summary>Drop-down filter restricting results to a sub-directory.</summary>
     cbxFilterDirectory: TComboBox;
+    /// <summary>When checked, units are added to the implementation uses clause instead of interface.</summary>
     chkUseUnitsImplementation: TCheckBox;
+    /// <summary>Button that opens the highlighted file(s) in the IDE.</summary>
     btnOpen: TButton;
+    /// <summary>Context menu for the main list view.</summary>
     popListView: TPopupMenu;
+    /// <summary>Context-menu item invoking <see cref="ActionExportToExcel"/>'s open behaviour.</summary>
     mniOpenFile: TMenuItem;
+    /// <summary>Context-menu item bound to <see cref="ActionAddToInsertList"/>.</summary>
     mniAddtoInsertList: TMenuItem;
+    /// <summary>Adds the selected files to the queued insertion list.</summary>
     ActionAddToInsertList: TAction;
+    /// <summary>Context menu for the queued insertion list view.</summary>
     popListViewInsertUnits: TPopupMenu;
+    /// <summary>Removes the selected items from the queued insertion list.</summary>
     ActionRemoveFromInsertList: TAction;
+    /// <summary>Context-menu item bound to <see cref="ActionRemoveFromInsertList"/>.</summary>
     mniRemovefromInsertList: TMenuItem;
+    /// <summary>Bottom panel hosting the queued insertion list.</summary>
     PanelBottom: TPanel;
+    /// <summary>Secondary list view holding files queued to be added to uses clauses.</summary>
     ListViewInsertUnits: TListView;
+    /// <summary>Caption panel for the queued insertion list.</summary>
     Panel1: TPanel;
+    /// <summary>Title label for the queued insertion list.</summary>
     Label1: TLabel;
+    /// <summary>Empties the queued insertion list.</summary>
     ActionClearInsertList: TAction;
+    /// <summary>Menu item bound to <see cref="ActionClearInsertList"/>.</summary>
     ClearInsertList1: TMenuItem;
+    /// <summary>Drop-down launcher for the options menu.</summary>
     btnOptions: TButton;
+    /// <summary>Popup containing toggleable behavioural options.</summary>
     popOptions: TPopupMenu;
+    /// <summary>Toggles whether moves from interface to implementation uses are allowed.</summary>
     mniAllowMoveFromInterfaceToImpl: TMenuItem;
+    /// <summary>Toggles whether each inserted unit goes on its own line.</summary>
     mniEveryUnitOnSingleLine: TMenuItem;
+    /// <summary>Owner-draws an item in the filter-field combo, including the column glyph.</summary>
     procedure cbxFilterFieldDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
+    /// <summary>Updates the active filter column when the combo selection changes.</summary>
     procedure cbxFilterFieldChange(Sender: TObject);
+    /// <summary>Handles Enter in the filter edit to commit the search immediately.</summary>
     procedure edtFilterKeyPress(Sender: TObject; var Key: Char);
+    /// <summary>Forwards arrow keys from the filter edit to the list view for navigation.</summary>
     procedure edtFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    /// <summary>Restarts the debounce timer when the filter text changes.</summary>
     procedure edtFilterChange(Sender: TObject);
+    /// <summary>Performs the debounced filter rebuild after typing pauses.</summary>
     procedure TimerFilterUpdateTimer(Sender: TObject);
+    /// <summary>Exports the currently filtered list to an Excel workbook.</summary>
     procedure ActionExportToExcelExecute(Sender: TObject);
+    /// <summary>Opens the double-clicked file in the IDE.</summary>
     procedure ListViewDblClick(Sender: TObject);
+    /// <summary>Handles mouse-down on the list view to support drag-source initiation.</summary>
     procedure ListViewMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    /// <summary>Sorts the list view by the clicked column.</summary>
     procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
+    /// <summary>Initialises the form: filter combo, list view columns, settings, etc.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Selects all text in the filter edit when it gains focus.</summary>
     procedure edtFilterEnter(Sender: TObject);
+    /// <summary>Restores selection state when the filter edit loses focus.</summary>
     procedure edtFilterExit(Sender: TObject);
+    /// <summary>Persists settings and tears down owned helpers when the form closes.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Owner-draws an item in the directory filter combo.</summary>
     procedure cbxFilterDirectoryDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
+    /// <summary>Updates the directory filter when the combo selection changes.</summary>
     procedure cbxFilterDirectoryChange(Sender: TObject);
+    /// <summary>Handles list view key presses for shortcuts (Enter, etc.).</summary>
     procedure ListViewKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    /// <summary>Custom-draws each list item to highlight opened files and other states.</summary>
     procedure ListViewCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
+    /// <summary>Returns a tooltip string for the hovered list item.</summary>
     procedure ListViewInfoTip(Sender: TObject; Item: TListItem; var InfoTip: string);
+    /// <summary>OwnerData callback that supplies a list item from the filtered cache.</summary>
     procedure ListViewData(Sender: TObject; Item: TListItem);
+    /// <summary>Updates the action and button states when the list selection changes.</summary>
     procedure ListViewSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
+    /// <summary>Adjusts column widths when the form is resized.</summary>
     procedure FormResize(Sender: TObject);
+    /// <summary>Context-menu handler that opens the highlighted file.</summary>
     procedure mniOpenFileClick(Sender: TObject);
+    /// <summary>Refreshes button enabled state on key release.</summary>
     procedure ListViewKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    /// <summary>Refreshes button enabled state on filter-edit key release.</summary>
     procedure edtFilterKeyUp(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    /// <summary>Handles Delete/etc keys in the queued insertion list.</summary>
     procedure ListViewInsertUnitsKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    /// <summary>Enables the remove action only when items are selected.</summary>
     procedure ActionRemoveFromInsertListUpdate(Sender: TObject);
+    /// <summary>Removes the selected items from the queued insertion list.</summary>
     procedure ActionRemoveFromInsertListExecute(Sender: TObject);
+    /// <summary>Enables the add action only when files are selected in the main list.</summary>
     procedure ActionAddToInsertListUpdate(Sender: TObject);
+    /// <summary>Adds the selected main-list rows to the queued insertion list.</summary>
     procedure ActionAddToInsertListExecute(Sender: TObject);
+    /// <summary>Enables the clear action only when the queue is non-empty.</summary>
     procedure ActionClearInsertListUpdate(Sender: TObject);
+    /// <summary>Empties the queued insertion list.</summary>
     procedure ActionClearInsertListExecute(Sender: TObject);
+    /// <summary>Accepts drags from the queued insertion list back into the main list.</summary>
     procedure ListViewDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
       var Accept: Boolean);
+    /// <summary>Handles drops from the queued insertion list onto the main list.</summary>
     procedure ListViewDragDrop(Sender, Source: TObject; X, Y: Integer);
+    /// <summary>Accepts drags from the main list into the queued insertion list.</summary>
     procedure ListViewInsertUnitsDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
       var Accept: Boolean);
+    /// <summary>Handles drops from the main list onto the queued insertion list.</summary>
     procedure ListViewInsertUnitsDragDrop(Sender, Source: TObject; X, Y: Integer);
+    /// <summary>Pops up the options menu beneath the Options button.</summary>
     procedure btnOptionsClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Index of the column the free-text filter currently targets.</summary>
     FFilterField: Integer;
+    /// <summary>Absolute path of the active project file used for relative paths and caching.</summary>
     FProjectFilename: string;
+    /// <summary>Tokenised filter text split on whitespace.</summary>
     FFilterTexts: TStrings;
+    /// <summary>True when a directory filter is active.</summary>
     FDirectoryFiltered: Boolean;
+    /// <summary>Current directory filter string.</summary>
     FDirectoryFilter: string;
 
+    /// <summary>Index of the column currently used for sorting.</summary>
     FSortColumn: Integer;
+    /// <summary>True for ascending sort, false for descending.</summary>
     FSortAsc: Boolean;
 
+    /// <summary>Master list of every project file row.</summary>
     FAllData: TInfoList;
+    /// <summary>Filtered subset currently shown in the list view.</summary>
     FCurrentData: TInfoList;
+    /// <summary>Background worker resolving form types and image indexes.</summary>
     FResourceTypeThread: TResourceTypeThread;
+    /// <summary>Active source editor at the time the dialog was opened.</summary>
     FEditor: IOTASourceEditor;
+    /// <summary>Designer parser used to inspect DFM contents during enrichment.</summary>
     FParser: TDesignerParser;
 
+    /// <summary>Subclassed window proc used to forward keys from the filter edit.</summary>
+    /// <param name="Msg">The forwarded window message.</param>
     procedure FilerEditWndProc(var Msg: TMessage);
+    /// <summary>Removes the requested unit identifiers from a uses clause via the supplied writer.</summary>
+    /// <param name="Writer">Editor writer positioned at the source.</param>
+    /// <param name="StopIndex">Position at which to stop searching.</param>
+    /// <param name="DeleteUsesList">Items to delete (parsed entries).</param>
+    /// <param name="UsesList">The full parsed uses list providing positions.</param>
     procedure RemoveUsesUnits(Writer: IOTAEditWriter; StopIndex: Integer; DeleteUsesList: TList;
       UsesList: TUsesList);
   protected
+    /// <summary>Tests whether <paramref name="Info"/> matches the active filters.</summary>
+    /// <param name="Info">The candidate row.</param>
+    /// <param name="NewSelLen">Receives the length of the matched prefix when applicable.</param>
+    /// <returns>True when the row should be visible.</returns>
     function FilterInfo(Info: TInfo; var NewSelLen: Integer): Boolean;
+    /// <summary>Returns true when <paramref name="S"/> matches every token in the filter text.</summary>
     function FilterListViewData(S: string): Boolean;
 
+    /// <summary>Enumerates project files and populates <see cref="FAllData"/>.</summary>
     procedure GetFilenames;
+    /// <summary>Rebuilds <see cref="FCurrentData"/> from <see cref="FAllData"/> applying current filters.</summary>
     procedure UpdateListViewData;
+    /// <summary>Sorts <see cref="FCurrentData"/> by <see cref="FSortColumn"/> in <see cref="FSortAsc"/> order.</summary>
     procedure Sort;
 
+    /// <summary>Loads persisted UI settings (column widths, options, etc.) from configuration.</summary>
     procedure LoadSettings;
+    /// <summary>Persists UI settings to configuration.</summary>
     procedure SaveSettings;
+    /// <summary>Re-fetches the project file list and refreshes the view.</summary>
     procedure UpdateData;
+    /// <summary>Inserts the supplied <see cref="TInfo"/> files into the active editor's uses clause.</summary>
+    /// <param name="Files">List of <see cref="TInfo"/> entries to insert.</param>
     procedure UseSelectedUnits(Files: TList);
+    /// <summary>Returns the currently active source editor.</summary>
     function GetCurrentSourceEditor: IOTASourceEditor;
+    /// <summary>Returns true when the file extension indicates a binary resource.</summary>
+    /// <param name="Filename">File to inspect.</param>
     function IsBinaryFile(const Filename: string): Boolean;
 
+    /// <summary>Refreshes the enabled state of all command buttons.</summary>
     procedure RefreshButtons;
+    /// <summary>Internal entry point for both Open and Use Unit modes.</summary>
+    /// <param name="OpenMode">True to open files, false to insert them as uses.</param>
+    /// <returns>True when the user accepted the dialog.</returns>
     function InternExecute(OpenMode: Boolean): Boolean;
   public
     { Public-Deklarationen }
+    /// <summary>Creates the form, allocating helper objects and initial state.</summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases helper objects and the worker thread before destruction.</summary>
     destructor Destroy; override;
 
+    /// <summary>Convenience entry point that creates and modally executes the dialog.</summary>
+    /// <param name="OpenMode">True to open the selected files, false to insert them.</param>
+    /// <returns>True when the user confirmed the operation.</returns>
     class function Execute(OpenMode: Boolean): Boolean;
   end;
 
+/// <summary>Returns true when the supplied string contains a wildcard character (* or ?).</summary>
 function ContainsAsterisk(const S: string): Boolean;
+/// <summary>Pattern-matches <paramref name="S"/> against <paramref name="MatchString"/> using ? and * wildcards.</summary>
 function MatchStr(const S: string; const MatchString: string): Boolean;
+/// <summary>Splits <paramref name="Text"/> into whitespace-delimited tokens added to <paramref name="List"/>.</summary>
 procedure SplitFilterText(const Text: string; List: TStrings);
 
 implementation

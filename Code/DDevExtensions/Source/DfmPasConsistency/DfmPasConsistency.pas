@@ -9,6 +9,12 @@
 
 unit DfmPasConsistency;
 
+/// <summary>
+/// DDevExtensions plugin that compares each form's <c>.dfm</c> file with its companion <c>.pas</c>
+/// unit, looking for components that appear in one file but not the other, or whose declared type
+/// does not match. Helps surface stale designer state and orphaned field declarations.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,45 +24,84 @@ uses
   FrmeOptionPageDfmPas, Generics.Collections;
 
 type
+  /// <summary>Classification of a DFM/PAS inconsistency.</summary>
   TInconsistencyType = (
-    itMissingInPas,      // Component in DFM but not declared in PAS
-    itMissingInDfm,      // Declared in PAS but not in DFM
-    itTypeMismatch       // Component exists but type differs
+    /// <summary>Component appears in the DFM but is not declared in the PAS.</summary>
+    itMissingInPas,
+    /// <summary>Field is declared in the PAS but no component exists in the DFM.</summary>
+    itMissingInDfm,
+    /// <summary>Component exists in both files but the declared types differ.</summary>
+    itTypeMismatch
   );
 
+  /// <summary>Detailed description of one inconsistency between a DFM and its PAS unit.</summary>
   TInconsistencyInfo = record
+    /// <summary>Bare unit name for display.</summary>
     UnitName: string;
+    /// <summary>Component identifier as it appears in the source.</summary>
     ComponentName: string;
+    /// <summary>Component type as declared in the DFM (or empty when missing).</summary>
     DfmType: string;
+    /// <summary>Field type as declared in the PAS (or empty when missing).</summary>
     PasType: string;
+    /// <summary>Classification of the inconsistency.</summary>
     InconsistencyType: TInconsistencyType;
+    /// <summary>Absolute path of the DFM file.</summary>
     DfmFileName: string;
+    /// <summary>Absolute path of the PAS file.</summary>
     PasFileName: string;
+    /// <summary>Line number in the DFM file (0 when not applicable).</summary>
     DfmLineNumber: Integer;
+    /// <summary>Line number in the PAS file (0 when not applicable).</summary>
     PasLineNumber: Integer;
   end;
 
+  /// <summary>
+  /// Plugin host integrating the DFM/PAS consistency check into DDevExtensions. Provides the
+  /// static <see cref="AnalyzeUnit"/> entry point used by the result form.
+  /// </summary>
   TDfmPasConsistencyPlugin = class(TPluginConfig)
   private
+    /// <summary>Menu item added to the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Master enable flag for the plugin.</summary>
     FEnabled: Boolean;
+    /// <summary>Menu OnClick handler that opens the result form.</summary>
     procedure MenuItemClick(Sender: TObject);
   protected
+    /// <summary>Returns the option page used in the IDE options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and registers its menu item.</summary>
     constructor Create;
+    /// <summary>Removes the menu item and releases the plugin.</summary>
     destructor Destroy; override;
 
+    /// <summary>
+    /// Analyses one form unit by comparing the components declared in <paramref name="DfmSource"/>
+    /// with the field declarations in <paramref name="PasSource"/>.
+    /// </summary>
+    /// <param name="PasSource">UTF-8 text of the Pascal unit.</param>
+    /// <param name="DfmSource">UTF-8 text of the companion DFM file.</param>
+    /// <param name="FileName">Absolute path of the PAS file (used for report metadata).</param>
+    /// <returns>Array of <see cref="TInconsistencyInfo"/> values describing the differences.</returns>
     class function AnalyzeUnit(const PasSource, DfmSource: UTF8String;
       const FileName: string): TArray<TInconsistencyInfo>;
   published
+    /// <summary>Persisted master enable flag.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
 var
+  /// <summary>Singleton plugin instance.</summary>
   DfmPasConsistencyPlugin: TDfmPasConsistencyPlugin;
 
+/// <summary>
+/// Plugin lifecycle entry point — creates or releases <see cref="DfmPasConsistencyPlugin"/>.
+/// </summary>
+/// <param name="Unload"><c>True</c> to release the plugin, <c>False</c> to create it.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

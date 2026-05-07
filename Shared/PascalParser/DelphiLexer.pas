@@ -8,6 +8,14 @@
 
 unit DelphiLexer;
 
+/// <summary>
+/// Hand-written lexer for Object Pascal source. Produces a stream of TToken values classified by
+/// TTokenKind (symbols, identifiers, keywords, comments, directives, numeric and string literals)
+/// suitable for the higher-level DelphiPreproc / DelphiDesignerParser units. UTF-8 input is
+/// preferred; PUTF8Char/UTF8Char aliases are provided so the same code compiles on pre-Unicode
+/// Delphi versions.
+/// </summary>
+
 {$I DelphiParser.inc}
 
 {$IFDEF COMPILER12_UP}
@@ -218,14 +226,20 @@ type
   TTokenKindSet = set of TTokenKind;
 
 const
+  /// <summary>First token kind that represents a multi-character compound operator (>=, &lt;=, ...).</summary>
   tkSymbolLevel2 = tkGreaterEqualThan;
+  /// <summary>First token kind that represents a strictly-reserved keyword (if, else, ...).</summary>
   tkIdentStrictReserved = tkI_if;
+  /// <summary>Highest TTokenKind value; useful for array bounds.</summary>
   tkLast = High(TTokenKind);
+  /// <summary>Alias for tkQualifier so callers can use the more descriptive name "tkDot".</summary>
   tkDot = tkQualifier;
 
 type
+  /// <summary>Forward declaration of the lexer.</summary>
   TDelphiLexer = class;
 
+  /// <summary>Single token produced by the lexer: classification, source value and source location.</summary>
   TToken = class(TObject)
   private
     FTokenIndex: Integer;
@@ -263,9 +277,11 @@ type
     property EndIndex: Integer read GetEndIndex; // 1..k
   end;
 
-  { Delphi Lexer. There must not be a BOM in the Text.
-    Delphi 2009 or newer: Text must be encoded in UTF8.
-    Delphi 5-2007: Text must be encoded in ANSI }
+  /// <summary>
+  /// Delphi lexer. Text must not contain a BOM. On Delphi 2009 and later Text is interpreted as
+  /// UTF-8; on Delphi 5..2007 it is treated as ANSI. Maintains a list of previously parsed tokens
+  /// so the caller can rewind, look ahead and edit the source via DeleteToken / InsertText.
+  /// </summary>
   TDelphiLexer = class(TObject)
   private
     FFilename: string;
@@ -347,16 +363,20 @@ type
   end;
 
 type
+  /// <summary>Byte-order-mark identifier returned by TTextFileReader after BOM detection.</summary>
   TBOMType = (bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE);
 
   {$IFDEF CONDITIONALEXPRESSIONS}
    {$IF not declared(TBytes)}
+  /// <summary>Fallback declaration of TBytes for Delphi versions that lack it.</summary>
   TBytes = array of Byte;
    {$IFEND}
   {$ELSE}
+  /// <summary>Fallback declaration of TBytes for pre-conditional-expression compilers.</summary>
   TBytes = array of Byte;
   {$ENDIF}
 
+  /// <summary>Buffered text reader that detects the input BOM and transcodes UCS to UTF-8 on the fly.</summary>
   TTextFileReader = class(TObject)
   private
     FOwnStream: Boolean;
@@ -390,14 +410,23 @@ type
     property BOMType: TBOMType read FBOMType;
   end;
 
+/// <summary>Returns a human-readable name for the supplied TTokenKind value.</summary>
 function TokenKindToString(Kind: TTokenKind): string;
+/// <summary>Reads Filename via TTextFileReader and returns its content as a native string.</summary>
 function LoadTextFileToString(const Filename: string; MaxReadBytes: Cardinal = 0): string;
+/// <summary>Reads up to MaxReadBytes from Filename and returns it as UTF-8 (BOM-stripped).</summary>
 function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal): UTF8String; overload;
+/// <summary>UTF-8 reader overload that also reports the detected encoding.</summary>
 function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding): UTF8String; overload;
+/// <summary>Reads the entire Filename and returns it as UTF-8 (BOM-stripped).</summary>
 function LoadTextFileToUtf8String(const Filename: string): UTF8String; overload;
+/// <summary>Whole-file UTF-8 reader overload that also reports the detected encoding.</summary>
 function LoadTextFileToUtf8String(const Filename: string; out Encoding: TEncoding): UTF8String; overload;
+/// <summary>Returns the C++Builder mangled name (length-prefixed) for the supplied identifier.</summary>
 function Mangle(const Name: string): string;
+/// <summary>True when Token is an $ENDIF / $IFEND directive.</summary>
 function IsEndIfToken(Token: TToken): Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+/// <summary>ASCII-only case-insensitive StartsText that does not depend on the locale.</summary>
 function AsciiStartsText(const SubStr, S: string): Boolean;
 
 implementation

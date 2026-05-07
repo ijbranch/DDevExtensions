@@ -10,6 +10,13 @@
 
 unit FrmBuildStatistics;
 
+/// <summary>
+/// Non-modal dialog that presents the per-unit build timings, lines-of-code and complexity
+/// metrics gathered during the most recent compile, together with any style-check
+/// violations. Supports filtering, sorting, copying to clipboard, exporting to CSV and
+/// double-click navigation to source files in the IDE.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,76 +27,149 @@ uses
   ToolsAPI, FrmBase, CompileProgress, UnitMetrics;
 
 type
+  /// <summary>
+  /// Filter used to restrict the units displayed in the build statistics list.
+  /// </summary>
   TFileFilter = ( ffAll, ffProject, ffExternal );
 
+  /// <summary>
+  /// Singleton form that displays build statistics and code-style violations after a
+  /// project compile. Use Execute to show or refresh the form.
+  /// </summary>
   TFormBuildStatistics = class( TFormBase )
+    /// <summary>Bottom panel hosting the action buttons and summary labels.</summary>
     pnlBottom: TPanel;
+    /// <summary>Closes the dialog.</summary>
     btnClose: TButton;
+    /// <summary>Copies the visible build-statistics rows to the clipboard as tab-separated text.</summary>
     btnCopyToClipboard: TButton;
+    /// <summary>Exports the visible build-statistics rows to a CSV file.</summary>
     btnExportCSV: TButton;
+    /// <summary>List view showing per-unit timings and metrics.</summary>
     ListView: TListView;
+    /// <summary>Displays the total build time ( or style-issue count when the style tab is active ).</summary>
     lblTotalTime: TLabel;
+    /// <summary>Displays the count of units, total lines of code and average complexity.</summary>
     lblUnitCount: TLabel;
+    /// <summary>Caption label for the file filter combo box.</summary>
     lblFilter: TLabel;
+    /// <summary>Filter selector ( All, Project, External ) for the build-statistics list.</summary>
     cmbFilter: TComboBox;
+    /// <summary>Save dialog used by the CSV export actions.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Context menu attached to the build-statistics list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Pop-up menu item: copy build-statistics to clipboard.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Pop-up menu item: export build-statistics to CSV.</summary>
     mnuExportCSV: TMenuItem;
+    /// <summary>Visual separator in the build-statistics pop-up menu.</summary>
     N1: TMenuItem;
+    /// <summary>Pop-up menu item: sort build-statistics by unit name.</summary>
     mnuSortByName: TMenuItem;
+    /// <summary>Pop-up menu item: sort build-statistics by compile duration.</summary>
     mnuSortByTime: TMenuItem;
+    /// <summary>Pop-up menu item: sort build-statistics by lines of code.</summary>
     mnuSortByLOC: TMenuItem;
+    /// <summary>Pop-up menu item: sort build-statistics by cyclomatic complexity.</summary>
     mnuSortByComplexity: TMenuItem;
+    /// <summary>Hosts the Build Statistics and Style Issues tabs.</summary>
     PageControl: TPageControl;
+    /// <summary>Tab containing the per-unit build statistics.</summary>
     tabBuildStats: TTabSheet;
+    /// <summary>Tab containing the code-style violations.</summary>
     tabStyleIssues: TTabSheet;
+    /// <summary>List view showing detected style violations.</summary>
     lvStyleIssues: TListView;
+    /// <summary>Context menu attached to the style-issues list view.</summary>
     PopupMenuStyle: TPopupMenu;
+    /// <summary>Pop-up menu item: copy style violations to clipboard.</summary>
     mnuStyleCopyToClipboard: TMenuItem;
+    /// <summary>Pop-up menu item: export style violations to CSV.</summary>
     mnuStyleExportCSV: TMenuItem;
+    /// <summary>Visual separator in the style-issues pop-up menu.</summary>
     N2: TMenuItem;
+    /// <summary>Pop-up menu item: open the source file at the offending location.</summary>
     mnuStyleOpenFile: TMenuItem;
+    /// <summary>Click handler for btnClose.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Click handler for btnCopyToClipboard.</summary>
     procedure btnCopyToClipboardClick( Sender: TObject );
+    /// <summary>Click handler for btnExportCSV.</summary>
     procedure btnExportCSVClick( Sender: TObject );
+    /// <summary>Closes the form by setting Action to caFree and clearing the singleton reference.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Initialises default sort and filter state when the form is created.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Toggles or sets the sort column when a build-statistics column header is clicked.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom comparison callback for sorting build-statistics list items.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Sorts the build-statistics list ascending by unit name.</summary>
     procedure mnuSortByNameClick( Sender: TObject );
+    /// <summary>Sorts the build-statistics list descending by compile time.</summary>
     procedure mnuSortByTimeClick( Sender: TObject );
+    /// <summary>Sorts the build-statistics list descending by lines of code.</summary>
     procedure mnuSortByLOCClick( Sender: TObject );
+    /// <summary>Sorts the build-statistics list descending by cyclomatic complexity.</summary>
     procedure mnuSortByComplexityClick( Sender: TObject );
+    /// <summary>Updates FFileFilter and re-populates the list when the filter combo changes.</summary>
     procedure cmbFilterChange( Sender: TObject );
+    /// <summary>Opens the source file for the selected unit in the IDE.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Updates the bottom-panel summary labels when the active tab changes.</summary>
     procedure PageControlChange( Sender: TObject );
+    /// <summary>Toggles or sets the sort column for the style-issues list.</summary>
     procedure lvStyleIssuesColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom comparison callback for sorting style-issue list items.</summary>
     procedure lvStyleIssuesCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Opens the source file at the violation location when a style row is double-clicked.</summary>
     procedure lvStyleIssuesDblClick( Sender: TObject );
+    /// <summary>Click handler for the style-issues "Copy to Clipboard" pop-up menu item.</summary>
     procedure mnuStyleCopyToClipboardClick( Sender: TObject );
+    /// <summary>Click handler for the style-issues "Export CSV" pop-up menu item.</summary>
     procedure mnuStyleExportCSVClick( Sender: TObject );
+    /// <summary>Click handler for the "Open File" style-issues pop-up menu item; delegates to lvStyleIssuesDblClick.</summary>
     procedure mnuStyleOpenFileClick( Sender: TObject );
   private
+    /// <summary>Source of build statistics data displayed by the form.</summary>
     FBuildStatistics: TBuildStatistics;
+    /// <summary>Currently selected sort column index for the build-statistics list.</summary>
     FSortColumn: Integer;
+    /// <summary>True when the build-statistics sort is ascending.</summary>
     FSortAscending: Boolean;
+    /// <summary>Current file filter applied to the build-statistics list.</summary>
     FFileFilter: TFileFilter;
+    /// <summary>Cached snapshot of style violations displayed on the Style Issues tab.</summary>
     FStyleViolations: TArray<TStyleViolation>;
+    /// <summary>Currently selected sort column index for the style-issues list.</summary>
     FStyleSortColumn: Integer;
+    /// <summary>True when the style-issues sort is ascending.</summary>
     FStyleSortAscending: Boolean;
+    /// <summary>Rebuilds the build-statistics list view from FBuildStatistics, applying the current filter.</summary>
     procedure PopulateList;
+    /// <summary>Rebuilds the style-issues list view from FStyleViolations and updates the tab caption.</summary>
     procedure PopulateStyleList;
+    /// <summary>Formats a duration in milliseconds as ms, seconds or minutes.</summary>
+    /// <param name="Ms">Duration in milliseconds.</param>
+    /// <returns>Human-readable string such as "523 ms", "3.21 s" or "1.5 min".</returns>
     function FormatDuration( Ms: Int64 ): string;
+    /// <summary>Returns True when the supplied file belongs to the currently compiled project.</summary>
+    /// <param name="FileName">Source file name to test.</param>
     function IsProjectFile( const FileName: string ): Boolean;
+    /// <summary>Opens the source file referenced by Violation in the IDE editor and centres on the violation line.</summary>
+    /// <param name="Violation">Style violation describing the file and location to navigate to.</param>
     procedure OpenStyleFile( const Violation: TStyleViolation );
   public
+    /// <summary>Shows the build-statistics dialog ( or refreshes it if already visible ).</summary>
+    /// <param name="ABuildStatistics">Build-statistics object whose data will be displayed; ignored when nil.</param>
     class procedure Execute( ABuildStatistics: TBuildStatistics );
   end;
 
 var
+  /// <summary>Singleton instance reference; nil when the form is not currently shown.</summary>
   FormInstance: TFormBuildStatistics = nil;
 
 implementation

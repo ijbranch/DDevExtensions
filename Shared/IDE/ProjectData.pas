@@ -10,122 +10,207 @@
 
 unit ProjectData;
 
+/// <summary>
+/// Per-project key/value store backed by an XML side-car file (Project.dproj.projdata) that is
+/// saved alongside the project. Subscribers receive notifications when projects are added,
+/// destroyed, renamed or when the data is being loaded/saved so they can read/write their own
+/// XML nodes inside the side-car document.
+/// </summary>
+
 interface
 
 uses
   Variants, SysUtils, Classes, Contnrs, ToolsAPI, Forms, SimpleXmlImport, SimpleXmlIntf;
 
 type
+  /// <summary>Forward declaration of the project-data registry.</summary>
   TProjectDataList = class;
 
+  /// <summary>Wrapper that holds a Variant value for storage in TProjectData's name/value list.</summary>
   TDataVariantItem = class(TObject)
   private
+    /// <summary>Backing Variant value.</summary>
     FValue: Variant;
   public
+    /// <summary>Initialises the wrapper with the supplied value.</summary>
     constructor Create(const AValue: Variant);
+    /// <summary>Wrapped Variant value.</summary>
     property Value: Variant read FValue write FValue;
   end;
 
+  /// <summary>
+  /// Per-project record installed as an IOTAModuleNotifier; persists Variant Values to a
+  /// .projdata XML side-car and exposes a non-persistent object map for in-memory state.
+  /// </summary>
   TProjectData = class(TInterfacedObject, IOTANotifier, IOTAModuleNotifier)
   private
+    /// <summary>Cached project filename used to detect renames and locate the side-car.</summary>
     FFilename: string;
+    /// <summary>Owning registry.</summary>
     FOwner: TProjectDataList;
+    /// <summary>Notifier ID returned by Project.AddNotifier; -1 once Destroyed has fired.</summary>
     FId: Integer;
+    /// <summary>String list mapping Variant value names to TDataVariantItem objects.</summary>
     FItems: TStrings;
+    /// <summary>String list mapping non-persistent object names to caller-owned TObject references.</summary>
     FNonPersistents: TStrings;
+    /// <summary>The wrapped IOTAProject.</summary>
     FProject: IOTAProject;
+    /// <summary>When False, AfterSave does not write the side-car file (used by transient projects).</summary>
     FAllowSaveData: Boolean;
+    /// <summary>True while Reload is parsing the side-car so SetValue does not mark the project modified.</summary>
     FLoading: Boolean;
+    /// <summary>Reads a Variant value by name; returns Null when missing.</summary>
     function GetValue(const Name: string): Variant;
+    /// <summary>Writes a Variant value by name and marks the project modified outside Loading.</summary>
     procedure SetValue(const Name: string; const Value: Variant);
+    /// <summary>Reads a non-persistent object reference by name.</summary>
     function GetNonPersistent(const Name: string): TObject;
+    /// <summary>Stores or replaces a non-persistent object reference by name.</summary>
     procedure SetNonPersistent(const Name: string; const Value: TObject);
   protected
+    /// <summary>Frees and removes every TDataVariantItem in FItems.</summary>
     procedure Clear;
   protected
     { IOTAModuleNotifier }
+    /// <summary>Writes the persistent values plus subscriber-supplied XML nodes to the .projdata file.</summary>
     procedure AfterSave;
+    /// <summary>IOTAModuleNotifier no-op.</summary>
     procedure BeforeSave;
+    /// <summary>IOTAModuleNotifier: always returns True.</summary>
     function CheckOverwrite: Boolean;
+    /// <summary>IOTANotifier: handles Destroyed, broadcasts to subscribers and detaches.</summary>
     procedure Destroyed;
+    /// <summary>IOTAModuleNotifier no-op.</summary>
     procedure Modified;
+    /// <summary>Renames the .projdata side-car file alongside the project rename.</summary>
     procedure ModuleRenamed(const NewName: String);
 
+    /// <summary>True while a Reload pass is in progress.</summary>
     property Loading: Boolean read FLoading;
   public
+    /// <summary>Registers as a notifier on AProject and announces the new entry to subscribers.</summary>
     constructor Create(AOwner: TProjectDataList; AProject: IOTAProject);
+    /// <summary>Detaches from the project and frees value/non-persistent maps.</summary>
     destructor Destroy; override;
+    /// <summary>Reloads persistent values from the .projdata side-car (if present).</summary>
     procedure Reload;
+    /// <summary>True when Name has a stored persistent value (even if Null).</summary>
     function HasValue(const Name: string): Boolean;
 
+    /// <summary>The wrapped project.</summary>
     property Project: IOTAProject read FProject;
 
+    /// <summary>Whether AfterSave writes the .projdata side-car. Default True.</summary>
     property AllowSaveData: Boolean read FAllowSaveData write FAllowSaveData;
+    /// <summary>Indexed access to non-persistent (in-memory only) objects keyed by name.</summary>
     property NonPersistents[const Name: string]: TObject read GetNonPersistent write SetNonPersistent;
+    /// <summary>Indexed access to persistent Variant values keyed by name.</summary>
     property Values[const Name: string]: Variant read GetValue write SetValue;
   end;
 
+  /// <summary>Skeleton for transactional changes across every TProjectData; rollback is currently unimplemented.</summary>
   TProjectDataTransaction = class(TObject)
   private
+    /// <summary>Owning registry.</summary>
     FOwner: TProjectDataList;
+    /// <summary>Snapshot of project references at transaction start.</summary>
     FProjects: TList;
+    /// <summary>Captured value lists for rollback (currently unused).</summary>
     FItems: TObjectList;
   public
+    /// <summary>Snapshots the current project list.</summary>
     constructor Create(AOwner: TProjectDataList);
+    /// <summary>Releases the snapshot.</summary>
     destructor Destroy; override;
 
+    /// <summary>Reverts changes made since this transaction started. Currently a no-op.</summary>
     procedure Rollback;
   end;
 
 
+  /// <summary>Event signature for project lifecycle notifications (added, destroying).</summary>
   TProjectDataEvent = procedure(Data: TProjectData) of object;
+  /// <summary>Event signature for save/load callbacks; Node is the .projdata document element.</summary>
   TProjectDataSavingEvent = procedure(Data: TProjectData; Node: IXmlNode) of object;
+  /// <summary>Event signature for project rename notifications.</summary>
   TProjectRenamedEvent = procedure(Data: TProjectData; const Filename, NewName: string) of object;
 
+  /// <summary>Subscriber object that registers itself with the project registry on construction.</summary>
   TProjectDataNotifier = class(TObject)
   public
+    /// <summary>Raised when a new project becomes known to the registry.</summary>
     Added: TProjectDataEvent;
+    /// <summary>Raised when a project is being destroyed.</summary>
     Destroying: TProjectDataEvent;
+    /// <summary>Raised while saving the .projdata file so subscribers can append XML nodes.</summary>
     Saving: TProjectDataSavingEvent;
+    /// <summary>Raised while loading the .projdata file so subscribers can read XML nodes.</summary>
     Loading: TProjectDataSavingEvent;
+    /// <summary>Raised when a project is renamed.</summary>
     Renamed: TProjectRenamedEvent;
 
+    /// <summary>Registers this subscriber with the project registry singleton.</summary>
     constructor Create;
+    /// <summary>Unregisters this subscriber from the project registry.</summary>
     destructor Destroy; override;
   end;
 
+  /// <summary>Registry of TProjectData entries plus a subscriber list and a transaction stack.</summary>
   TProjectDataList = class(TObject)
   private
+    /// <summary>Owned list of TProjectData entries.</summary>
     FList: TObjectList;
+    /// <summary>Active TProjectDataTransaction stack.</summary>
     FTransactions: TObjectList;
+    /// <summary>Subscriber list of TProjectDataNotifier objects.</summary>
     FNotifiers: TList;
+    /// <summary>Indexed accessor; lazily creates a TProjectData and reloads its side-car.</summary>
     function GetProjectData(const Project: IOTAProject): TProjectData;
+    /// <summary>Subscriber accessor.</summary>
     function GetNotifier(Index: Integer): TProjectDataNotifier;
+    /// <summary>Number of registered subscribers.</summary>
     function GetNotifierCount: Integer;
   protected
+    /// <summary>Broadcasts the Saving event to every subscriber.</summary>
     procedure Saving(Data: TProjectData; Node: IXmlNode); virtual;
+    /// <summary>Broadcasts the Loading event to every subscriber.</summary>
     procedure Loading(Data: TProjectData; Node: IXmlNode); virtual;
+    /// <summary>Broadcasts the Added event to every subscriber.</summary>
     procedure ProjectAdded(Data: TProjectData); virtual;
+    /// <summary>Broadcasts the Destroying event to every subscriber.</summary>
     procedure ProjectDestroying(Data: TProjectData); virtual;
+    /// <summary>Broadcasts the Renamed event to every subscriber.</summary>
     procedure ProjectRenamed(Data: TProjectData; const Filename, NewName: string); virtual;
 
+    /// <summary>Number of registered subscribers.</summary>
     property NotifierCount: Integer read GetNotifierCount;
+    /// <summary>Indexed accessor for subscribers.</summary>
     property Notifiers[Index: Integer]: TProjectDataNotifier read GetNotifier;
 
+    /// <summary>Adds a subscriber; usually invoked by TProjectDataNotifier.Create.</summary>
     procedure AddNotifier(ANotifier: TProjectDataNotifier);
+    /// <summary>Removes a subscriber; usually invoked by TProjectDataNotifier.Destroy.</summary>
     procedure RemoveNotifier(ANotifier: TProjectDataNotifier);
 
     // not working yet
+    /// <summary>Pushes a new transaction onto the stack. Currently incomplete.</summary>
     procedure StartTransaction;
+    /// <summary>Pops the topmost transaction without rolling back.</summary>
     procedure Commit;
+    /// <summary>Pops the topmost transaction and asks it to roll back. Currently a no-op.</summary>
     procedure Rollback;
   public
+    /// <summary>Initialises the registry; subscribers must be added separately.</summary>
     constructor Create;
+    /// <summary>Releases the registry plus its transaction and subscriber lists.</summary>
     destructor Destroy; override;
 
+    /// <summary>Default indexed accessor mapping IOTAProject to the matching TProjectData (created on demand).</summary>
     property ProjectData[const Project: IOTAProject]: TProjectData read GetProjectData; default;
   end;
 
+/// <summary>Returns the lazily-instantiated project-registry singleton.</summary>
 function ProjectDataList: TProjectDataList;
 
 implementation

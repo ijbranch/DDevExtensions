@@ -8,6 +8,13 @@
 
 unit IDEUtils;
 
+/// <summary>
+/// Grab-bag of utility routines used throughout the DDevExtensions IDE plugin: file/registry
+/// helpers, string-to-integer/string-to-string hash tables, a reusable bucket list, low-level
+/// VMT and IInterface tricks, environment macro expansion ($ ( BDS ), $ ( PLATFORM ), ...) and
+/// IDE-event subscription helpers (TIDEEvent, MainFormShown/Created/Destroyed).
+/// </summary>
+
 {.$I jedi\jedi.inc}
 {$IFDEF VER170} {$DEFINE COMPILER9} {$ENDIF}  // Delphi 2005
 {$IFDEF VER180} {$DEFINE COMPILER10} {$ENDIF} // Delphi 2006
@@ -36,200 +43,342 @@ uses
 
 {$IFNDEF COMPILER11_UP}
 type
+  /// <summary>Pointer-sized signed integer alias for pre-D2007 compilers.</summary>
   INT_PTR = Integer;
+  /// <summary>Pointer-sized unsigned integer alias for pre-D2007 compilers.</summary>
   DWORD_PTR = DWORD;
 {$ENDIF ~COMPILER11_UP}
 
+/// <summary>Convenience wrapper around Supports that returns False for nil instances without raising.</summary>
+/// <param name="Instance">Object to query.</param>
+/// <param name="IID">Interface GUID.</param>
+/// <param name="Intf">Receives the interface reference on success.</param>
+/// <returns>True when Instance implements IID.</returns>
 function SupportsEx(const Instance: TObject; const IID: TGUID; out Intf): Boolean;
 
+/// <summary>Faster alternative to SysUtils.FileExists that excludes directories and avoids exception cost.</summary>
 function FastFileExists(const Filename: string): Boolean;
+/// <summary>Returns Dir with a trailing path delimiter appended when missing.</summary>
 function IncludeTrailingPathDelimiter(const Dir: string): string;
+/// <summary>Returns Dir with any trailing path delimiter removed (preserving "C:\").</summary>
 function ExcludeTrailingPathDelimiter(const Dir: string): string;
+/// <summary>Returns the DOS-format last-write timestamp of Filename, or -1 when the file is missing.</summary>
 function FileAgeFindFile(const Filename: string): Integer;
+/// <summary>Returns the size in bytes of Filename without opening it.</summary>
 function GetFileSize(const Filename: string): Cardinal;
+/// <summary>Generates a unique temporary filename in the user temp directory using Base as the prefix.</summary>
+/// <exception cref="EOSError">Raised when GetTempFileName fails.</exception>
 function GetTempName(const Base: string): string;
 
+/// <summary>Case-insensitive AnsiStartsText wrapper.</summary>
 function StartsText(const SubStr, S: string): Boolean;
+/// <summary>Case-insensitive AnsiEndsText wrapper.</summary>
 function EndsText(const SubStr, S: string): Boolean;
 
+/// <summary>True when Value matches any element of Values (case-insensitive).</summary>
 function InArray(const Value: string; const Values: array of string): Boolean;
+/// <summary>Strips matching surrounding double-quote characters from S.</summary>
 function DequoteStr(const S: string): string;
 
+/// <summary>Reads a Boolean option from the IDE's Globals registry key.</summary>
+/// <param name="ValueName">Name of the registry value.</param>
+/// <param name="DefaultValue">Returned when the key is missing.</param>
 function ReadGlobalRegOption(const ValueName: string; DefaultValue: Boolean = False): Boolean;
+/// <summary>Reads a string registry value, accepting integer/expand_string variants and returning DefaultValue when absent.</summary>
 function RegReadStringDef(RootKey: HKEY; const Key, ValueName, DefaultValue: string): string;
+/// <summary>Reads a Boolean registry value, accepting string/integer variants and returning DefaultValue when absent.</summary>
 function RegReadBoolDef(RootKey: HKEY; const Key, ValueName: string; DefaultValue: Boolean): Boolean;
+/// <summary>Writes Value as a string registry value at Key/ValueName, creating the key when needed.</summary>
 procedure RegWriteString(RootKey: HKEY; const Key, ValueName, Value: string);
+/// <summary>Deletes the registry value at Key/ValueName when it exists.</summary>
 procedure RegDeleteEntry(RootKey: HKEY; const Key, ValueName: string);
 
+/// <summary>Locates a TCustomForm by name and/or class name. Pass empty strings to match any.</summary>
 function FindForm(const AFormName, AFormClassName: string): TCustomForm;
+/// <summary>True when AObject's class hierarchy contains a class whose name matches AClassName.</summary>
 function InheritsFromClassName(AObject: TObject; const AClassName: string): Boolean;
 
 const
+  /// <summary>Number of preallocated cache slots used by the string hash tables.</summary>
   MaxCacheItems = $1000;
 
 type
+  /// <summary>Strongly-typed Cardinal used as a hash bucket index.</summary>
   THashValue = type Cardinal;
 
   { The hash tables cannot be used with Key='' }
+  /// <summary>Pointer to a TStringIntegerItem.</summary>
   PStringIntegerItem = ^TStringIntegerItem;
+  /// <summary>Bucket entry storing a string key and Integer value plus a chain pointer.</summary>
   TStringIntegerItem = record
+    /// <summary>String key (must not be empty).</summary>
     Key: string;
+    /// <summary>Integer value associated with Key.</summary>
     Value: Integer;
+    /// <summary>Next entry in the same bucket chain.</summary>
     Next: PStringIntegerItem;
   end;
 
+  /// <summary>Open-addressing string-to-Integer hash with a static $1000-bucket table and a preallocated cache pool.</summary>
   TStringIntegerHash = class(TObject)
   private
+    /// <summary>Bucket array.</summary>
     FItems: array[0..$1000 - 1] of PStringIntegerItem;
+    /// <summary>Total number of stored entries.</summary>
     FCount: Integer;
+    /// <summary>Preallocated entry pool to avoid GetMem on every Add.</summary>
     FCacheItems: array[0..MaxCacheItems] of TStringIntegerItem;
+    /// <summary>Index of the next free entry in FCacheItems.</summary>
     FCacheIndex: Integer;
   public
+    /// <summary>Frees every chained entry that was allocated from the heap.</summary>
     destructor Destroy; override;
+    /// <summary>Empties the table.</summary>
     procedure Clear; virtual;
 
+    /// <summary>Looks up AItem and returns its value via Value.</summary>
     function Find(const AItem: string; out Value: Integer): Boolean; overload;
+    /// <summary>True when AItem is present in the table.</summary>
     function HasKey(const AItem: string): Boolean; overload;
 
+    /// <summary>Find overload that accepts a precomputed hash to avoid recomputation.</summary>
     function Find(AHash: Integer; const AItem: string; out Value: Integer): Boolean; overload;
+    /// <summary>HasKey overload that accepts a precomputed hash.</summary>
     function HasKey(AHash: Integer; const AItem: string): Boolean; overload;
 
+    /// <summary>Adds (AItem, AData) without checking for duplicates.</summary>
     function Add(const AItem: string; AData: Integer): Integer; overload;
+    /// <summary>Add overload that accepts a precomputed hash.</summary>
     function Add(AHash: Integer; const AItem: string; AData: Integer): Integer; overload;
+    /// <summary>Removes the entry for AItem, returning its previous value (0 when absent).</summary>
     function Remove(const AItem: string): Integer;
+    /// <summary>Updates AItem's value, adding it when not already present.</summary>
     procedure SetValue(const AItem: string; AData: Integer); overload;
+    /// <summary>SetValue overload accepting a precomputed hash.</summary>
     procedure SetValue(AHash: Integer; const AItem: string; AData: Integer); overload;
 
+    /// <summary>Number of stored entries.</summary>
     property Count: Integer read FCount;
   end;
 
 type
+  /// <summary>Pointer to a TStringStringItem.</summary>
   PStringStringItem = ^TStringStringItem;
+  /// <summary>Bucket entry storing a string key and string value plus a chain pointer.</summary>
   TStringStringItem = record
+    /// <summary>String key (must not be empty).</summary>
     Key: string;
+    /// <summary>String value associated with Key.</summary>
     Value: string;
+    /// <summary>Next entry in the same bucket chain.</summary>
     Next: PStringStringItem;
   end;
 
+  /// <summary>String-to-string variant of TStringIntegerHash.</summary>
   TStringStringHash = class(TObject)
   private
+    /// <summary>Bucket array.</summary>
     FItems: array[0..$1000 - 1] of PStringStringItem;
+    /// <summary>Total number of stored entries.</summary>
     FCount: Integer;
+    /// <summary>Preallocated entry pool.</summary>
     FCacheItems: array[0..MaxCacheItems] of TStringStringItem;
+    /// <summary>Index of the next free entry in FCacheItems.</summary>
     FCacheIndex: Integer;
   public
+    /// <summary>Frees every chained entry that was allocated from the heap.</summary>
     destructor Destroy; override;
+    /// <summary>Empties the table.</summary>
     procedure Clear; virtual;
 
+    /// <summary>Looks up AItem and returns its value via Value.</summary>
     function Find(const AItem: string; out Value: string): Boolean; overload;
+    /// <summary>True when AItem is present in the table.</summary>
     function HasKey(const AItem: string): Boolean; overload;
 
+    /// <summary>Find overload accepting a precomputed hash.</summary>
     function Find(AHash: Integer; const AItem: string; out Value: string): Boolean; overload;
+    /// <summary>HasKey overload accepting a precomputed hash.</summary>
     function HasKey(AHash: Integer; const AItem: string): Boolean; overload;
 
+    /// <summary>Adds (AItem, AData) without checking for duplicates.</summary>
     function Add(const AItem: string; const AData: string): string; overload;
+    /// <summary>Add overload accepting a precomputed hash.</summary>
     function Add(AHash: Integer; const AItem: string; const AData: string): string; overload;
+    /// <summary>Removes the entry for AItem and returns its previous value (empty when absent).</summary>
     function Remove(const AItem: string): string;
 
+    /// <summary>Number of stored entries.</summary>
     property Count: Integer read FCount;
   end;
 
+/// <summary>Computes a fast hash of AItem in the range 0..MaxBucketItems-1.</summary>
 function HashString(const AItem: string): Integer;
 
 const
+  /// <summary>Number of buckets used by TCustomBucketList.</summary>
   MaxBucketItems = $1000;
 
 type
   { The hash tables cannot be used with Key='' }
+  /// <summary>Pointer to a TBucketListItem.</summary>
   PBucketListItem = ^TBucketListItem;
+  /// <summary>Bucket entry mapping a Pointer key to a Pointer value with a chain link.</summary>
   TBucketListItem = record
+    /// <summary>Pointer-typed key.</summary>
     Key: Pointer;
+    /// <summary>Pointer-typed value.</summary>
     Value: Pointer;
+    /// <summary>Next entry in the same bucket chain.</summary>
     Next: PBucketListItem;
   end;
 
+  /// <summary>Callback used by TCustomBucketList.ForEach. Set AContinue to False to stop the iteration.</summary>
   TBucketProc = procedure(AInfo, AItem, AData: Pointer; out AContinue: Boolean);
 
+  /// <summary>Pointer-to-Pointer hash list with $1000 buckets.</summary>
   TCustomBucketList = class(TObject)
   private
+    /// <summary>Bucket array.</summary>
     FItems: array[0..MaxBucketItems - 1] of PBucketListItem;
+    /// <summary>Total number of stored entries.</summary>
     FCount: Integer;
+    /// <summary>Indexed-property getter; raises when AItem is absent.</summary>
     function GetData(AItem: Pointer): Pointer;
+    /// <summary>Indexed-property setter; raises when AItem is absent.</summary>
     procedure SetData(AItem: Pointer; const Value: Pointer);
   protected
+    /// <summary>Returns the bucket index for AItem (overridable for custom hashing).</summary>
     function BucketFor(AItem: Pointer): THashValue; virtual;
   public
+    /// <summary>Frees every chained entry.</summary>
     destructor Destroy; override;
+    /// <summary>Empties the list.</summary>
     procedure Clear; virtual;
 
+    /// <summary>Adds (AItem, AData); duplicates are not detected.</summary>
     function Add(AItem, AData: Pointer): Pointer;
+    /// <summary>Removes the entry whose key matches AItem and returns the associated value.</summary>
     function Remove(AItem: Pointer): Pointer;
 
+    /// <summary>Iterates over every entry calling AProc; iteration stops when AProc sets AContinue to False.</summary>
     function ForEach(AProc: TBucketProc; AInfo: Pointer = nil): Boolean;
+    /// <summary>Replaces this list's contents with a copy of AList.</summary>
     procedure Assign(AList: TCustomBucketList);
 
+    /// <summary>True when the list contains AItem.</summary>
     function Exists(AItem: Pointer): Boolean;
+    /// <summary>Looks up AItem and returns its value via AData.</summary>
     function Find(AItem: Pointer; out AData: Pointer): Boolean;
+    /// <summary>Indexed accessor by key.</summary>
     property Data[AItem: Pointer]: Pointer read GetData write SetData; default;
   end;
 
+  /// <summary>Bucket-size selector accepted by TBucketList.Create (currently informational only).</summary>
   TBucketListSizes = (bl2, bl4, bl8, bl16, bl32, bl64, bl128, bl256);
 
+  /// <summary>TCustomBucketList descendant exposing the standard "buckets" constructor signature.</summary>
   TBucketList = class(TCustomBucketList)
   public
+    /// <summary>Initialises the list. ABuckets is currently informational.</summary>
     constructor Create(ABuckets: TBucketListSizes = bl16);
   end;
 
+  /// <summary>TBucketList variant whose hash function is tuned for module-handle keys.</summary>
   TModuleBucketList = class(TBucketList)
   protected
+    /// <summary>Hashes AItem by shifting away the low 16 bits typical of HMODULE addresses.</summary>
     function BucketFor(AItem: Pointer): THashValue; override;
   end;
 
+/// <summary>Performs a colour-keyed StretchBlt by composing the foreground onto the destination through a mask.</summary>
 procedure StretchBltTransparent(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; Palette: HPALETTE;
   TransparentColor: TColorRef);
 
+/// <summary>Returns the module handle that owns the specified code address.</summary>
 function ModuleFromAddr(const Addr: Pointer): HMODULE;
+/// <summary>Walks the call stack and returns the address of the caller at the requested level.</summary>
+/// <param name="Level">0 returns the immediate caller; positive values look further up.</param>
 function Caller(Level: Integer): Pointer;
+/// <summary>Builds a TNotifyEvent value from raw Data and Code pointers.</summary>
 function MakeNotifyEvent(Data, Code: Pointer): TNotifyEvent;
 
+/// <summary>
+/// Recovers the underlying Delphi TObject from an interface reference by inspecting the
+/// thunk that QueryInterface uses to compute Self.
+/// </summary>
 function DelphiInterfaceToObject(const Intf: IInterface): TObject;
+/// <summary>Returns the address of the QueryInterface implementation referenced by Intf's vtable.</summary>
 function GetQueryInterfaceImplFromDelphiInterface(const Intf: IInterface): Pointer;
+/// <summary>Returns the address of the method at VmtOffset in the vtable referenced by Intf.</summary>
 function GetMethodImplFromDelphiInterface(const Intf: IInterface; VmtOffset: Integer): Pointer;
+/// <summary>Scans Obj's fields and returns the first (or last) one whose object's class hierarchy contains AClassName.</summary>
+/// <exception cref="Exception">Raised when no matching field is found.</exception>
 function FindObjectField(Obj: TObject; const AClassName: string; FindLast: Boolean = False): TObject;
+/// <summary>Returns the byte offset within Obj of a field whose object inherits from AClassName, or 0 when not found.</summary>
 function FindObjectFieldOffset(Obj: TObject; const AClassName: string; FindLast: Boolean): Cardinal; // Result=0 => not found
 
+/// <summary>Variant-to-Integer conversion that returns Default on null/empty/invalid values.</summary>
 function VarToIntDef(const V: Variant; Default: Integer): Integer;
+/// <summary>Variant-to-Boolean conversion that returns Default on null/empty/invalid values.</summary>
 function VarToBoolDef(const V: Variant; Default: Boolean): Boolean;
+/// <summary>Variant-to-string conversion that returns Default on null/empty/invalid values.</summary>
 function VarToStrDef(const V: Variant; const Default: string): string;
 
+/// <summary>Wraps Filename in double quotes when it contains spaces, dashes or pluses.</summary>
 function QuoteFilename(const Filename: string): string;
+/// <summary>Strips matching surrounding double quotes from S.</summary>
 function Dequote(const S: string): string;
 
+/// <summary>Splits a semicolon-delimited path list into List, optionally skipping duplicates and stripping quotes.</summary>
 procedure SplitPaths(List: TStrings; const Paths: string; DeleteDuplicates: Boolean = False); // removes quotes
+/// <summary>Joins List using Delim, quoting individual paths that contain spaces.</summary>
 function ConcatPaths(List: TStrings; const Delim: string): string; // add quotes where necessary
+/// <summary>Convenience helper that splits Paths and re-joins it with Separator while removing duplicates.</summary>
 function SplitAndConcatPaths(const Paths, Separator: string): string;
+/// <summary>Joins List using Delim without quoting any of the entries.</summary>
 function ConcatList(List: TStrings; const Delim: string): string;
+/// <summary>Convenience helper that splits Paths and re-joins it with Separator (no quoting, duplicates removed).</summary>
 function SplitAndConcatList(const Paths, Separator: string): string;
 
+/// <summary>Returns the BDS Projects directory, honouring the BDSPROJECTSDIR environment variable when set.</summary>
 function GetBDSProjectsDir: string;
+/// <summary>Expands $(NAME) macros (BDS, PLATFORM, CONFIG, BDSPROJECTSDIR, environment variables) inside Path.</summary>
+/// <param name="Path">Source path containing $(NAME) tokens.</param>
+/// <param name="Project">Optional project used to resolve PLATFORM/CONFIG; defaults to the active project.</param>
 function ExpandDirMacros(const Path: string; Project: IOTAProject = nil): string;
+/// <summary>Expands $(NAME) macros inside Expression using the supplied name/value array.</summary>
+/// <param name="Expression">Source expression.</param>
+/// <param name="MacroNameValue">Flat array of alternating name/value pairs.</param>
 function ExpandMacros(const Expression: string; const MacroNameValue: array of string): string;
 
 type
+  /// <summary>
+  /// Strongly-typed wrapper around the IDE's internal multicast event objects exposed by coreide
+  /// and designide. Provides Add / ForceAdd / Remove operations imported by linker symbol name.
+  /// </summary>
   TIDEEvent = class(TObject)
   public
+    /// <summary>Adds AHandler to the event subscriber list.</summary>
     procedure Add(AHandler: TNotifyEvent);
+    /// <summary>Adds AHandler even when the event is currently being raised.</summary>
     procedure ForceAdd(AHandler: TNotifyEvent);
+    /// <summary>Removes AHandler from the event subscriber list.</summary>
     procedure Remove(AHandler: TNotifyEvent);
   end;
 
+/// <summary>Returns the IDE's MainFormShown event object (raised once after the IDE main form first appears).</summary>
 function MainFormShown: TIDEEvent;
+/// <summary>Returns the IDE's MainFormCreated event object (raised when the IDE main form is constructed).</summary>
 function MainFormCreated: TIDEEvent;
+/// <summary>Returns the IDE's MainFormDestroyed event object (raised when the IDE main form is destroyed).</summary>
 function MainFormDestroyed: TIDEEvent;
 
 var
+  /// <summary>Application directory (folder containing the running executable). Initialised at unit start.</summary>
   AppDir: string;
+  /// <summary>True when the host IDE is Delphi 2007 (detected via product version).</summary>
   IsDelphi2007: Boolean = False;
 
 implementation

@@ -8,6 +8,12 @@
 
 unit DelphiParserContainers;
 
+/// <summary>
+/// Lightweight container helpers used by the Pascal lexer/parser units. Wraps TStringList to
+/// provide hash-table semantics (THashtable, TStringDictionary), an integer-typed TList
+/// (TIntegerList) and a TStringCollection convenience subclass.
+/// </summary>
+
 {$DEFINE D9}
 
 interface
@@ -16,62 +22,101 @@ uses
   SysUtils, Classes;
 
 type
+  /// <summary>Sorted TStringList that overrides CompareStrings to honour CaseSensitive without locale folding.</summary>
   THashtableStringList = class(TStringList)
   protected
+    /// <summary>Compares S1 and S2 using CompareStr or CompareText depending on CaseSensitive.</summary>
     function CompareStrings(const S1: string; const S2: string): Integer; override;
   end;
 
+  /// <summary>Sorted hash-table mapping case-sensitive (or insensitive) string keys to TObject values.</summary>
   THashtable = class(TObject)
   private
+    /// <summary>Backing sorted string list holding the keys.</summary>
     FItems: THashtableStringList;
+    /// <summary>When True the table frees stored values on Remove/Destroy.</summary>
     FOwnsObjects: Boolean;
+    /// <summary>Returns the number of stored entries.</summary>
     function GetCount: Integer; {$IFDEF D9}inline;{$ENDIF}
+    /// <summary>Default-property getter that returns nil for missing keys.</summary>
     function GetValue(const AKey: string): TObject; {$IFDEF D9}inline;{$ENDIF}
+    /// <summary>Indexed getter for sequential iteration in storage order.</summary>
     function GetItem(Index: Integer): TObject; {$IFDEF D9}inline;{$ENDIF}
   public
+    /// <summary>Initialises an empty hash-table.</summary>
+    /// <param name="CaseSensitive">Whether keys are compared case-sensitively.</param>
+    /// <param name="AOwnsObjects">When True, stored values are freed automatically.</param>
     constructor Create(CaseSensitive: Boolean; AOwnsObjects: Boolean = True);
+    /// <summary>Frees stored values (when ownership is enabled) and the backing list.</summary>
     destructor Destroy; override;
+    /// <summary>Empties the table without freeing values.</summary>
     procedure Clear;
 
+    /// <summary>Removes and (optionally) frees the entry for AKey.</summary>
     procedure Remove(const AKey: string);
+    /// <summary>Inserts (AKey, AValue); raises when AKey already exists.</summary>
     procedure Add(const AKey: string; AValue: TObject); {$IFDEF D9}inline;{$ENDIF}
+    /// <summary>True when AKey is present in the table.</summary>
     function Contains(const AKey: string): Boolean; {$IFDEF D9}inline;{$ENDIF}
 
+    /// <summary>Default indexed accessor by key; returns nil for missing entries.</summary>
     property Values[const AKey: string]: TObject read GetValue; default;
+    /// <summary>Sequential accessor for iteration in storage order.</summary>
     property Items[Index: Integer]: TObject read GetItem;
+    /// <summary>Number of stored entries.</summary>
     property Count: Integer read GetCount;
   end;
 
+  /// <summary>TList descendant that exposes its slots as Integers via casts to/from Pointer.</summary>
   TIntegerList = class(TList)
   private
+    /// <summary>Returns the integer stored at Index.</summary>
     function GetItem(Index: Integer): Integer; {$IFDEF D9}inline;{$ENDIF}
+    /// <summary>Stores an integer at Index.</summary>
     procedure SetItem(Index: Integer; const Value: Integer);{$IFDEF D9}inline;{$ENDIF}
   public
+    /// <summary>Appends Value and returns its index.</summary>
     function Add(Value: Integer): Integer; {$IFDEF D9}inline;{$ENDIF}
+    /// <summary>Indexed accessor for the integer slots.</summary>
     property Items[Index: Integer]: Integer read GetItem write SetItem; default;
   end;
 
+  /// <summary>Sorted string-to-string dictionary backed by a key list and a separate value pool.</summary>
   TStringDictionary = class(TObject)
   private
+    /// <summary>Sorted key list; each Object stores the index into FValues.</summary>
     FItems: THashtableStringList;
+    /// <summary>Value pool referenced by FItems.</summary>
     FValues: TStringList;
+    /// <summary>Returns the number of stored entries.</summary>
     function GetCount: Integer;
+    /// <summary>Default-property getter; returns '' for missing keys.</summary>
     function GetValue(const AKey: string): string;
   public
+    /// <summary>Initialises an empty dictionary.</summary>
     constructor Create;
+    /// <summary>Releases internal storage.</summary>
     destructor Destroy; override;
 
+    /// <summary>Inserts (AKey, AValue); raises when AKey already exists.</summary>
     procedure Add(const AKey: string; const AValue: string);
+    /// <summary>True when AKey is present.</summary>
     function Contains(const AKey: string): Boolean;
+    /// <summary>Returns the value for AKey, or '' when missing.</summary>
     function Find(const AKey: string): string;
 
+    /// <summary>Default indexed accessor by key.</summary>
     property Values[const AKey: string]: string read GetValue; default;
+    /// <summary>Number of stored entries.</summary>
     property Count: Integer read GetCount;
   end;
 
+  /// <summary>TStringList descendant exposing Contains and RemoveAt convenience methods.</summary>
   TStringCollection = class(TStringList)
   public
+    /// <summary>True when Value is present in the list.</summary>
     function Contains(const Value: string): Boolean;
+    /// <summary>Removes the entry at Index (alias for Delete).</summary>
     procedure RemoveAt(Index: Integer);
   end;
 

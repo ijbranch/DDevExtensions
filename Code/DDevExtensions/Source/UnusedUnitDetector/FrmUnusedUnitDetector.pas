@@ -10,6 +10,12 @@
 
 unit FrmUnusedUnitDetector;
 
+/// <summary>
+/// Non-modal main form of the Unused Unit Detector plugin. Scans the active project
+/// and lists every uses entry that appears to be unused, with sort, filter, copy,
+/// export and "add to ignore list" actions.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,47 +26,83 @@ uses
   Generics.Defaults, FrmBase, UnusedUnitDetector, ToolsAPI;
 
 type
+  /// <summary>Main detector form for the Unused Unit Detector plugin.</summary>
   TFormUnusedUnitDetector = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting buttons and progress label.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Scans the active project and populates the list.</summary>
     btnScan: TButton;
+    /// <summary>Lists suspected unused uses entries.</summary>
     ListView: TListView;
+    /// <summary>Progress / status label.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu for the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Menu item: copy selected (or all) rows to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Menu item: add the selected unit name to the persistent ignore list.</summary>
     mnuAddToIgnoreList: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Menu item: open the source file at the offending line.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the result list to a CSV file.</summary>
     btnExport: TButton;
+    /// <summary>Save dialog used by the export button.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Summary line shown after a scan completes.</summary>
     lblSummary: TLabel;
+    /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Runs the analyser against the active project.</summary>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Releases the singleton form instance and frees the form on close.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Form OnCreate handler: initialises analyser and sort state.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Form OnDestroy handler: frees the analyser.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Opens the source file at the offending line when a row is double-clicked.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Copies selected (or all) rows to the clipboard as TSV.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
+    /// <summary>Adds the selected row's unit name to the persistent ignore list.</summary>
     procedure mnuAddToIgnoreListClick( Sender: TObject );
+    /// <summary>Re-opens the source file at the offending line.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
+    /// <summary>Exports the result list to a CSV file.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Toggles or switches the active sort column.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom-column comparer used by AlphaSort.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
   private
+    /// <summary>Owned analyser used to perform the scan.</summary>
     FAnalyzer: TUnitAnalyzer;
+    /// <summary>Most recent scan result.</summary>
     FUnusedUnits: TArray<TUnusedUnitInfo>;
+    /// <summary>Index of the currently active sort column.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Refreshes the list view from <see cref="FUnusedUnits"/>.</summary>
     procedure PopulateList;
+    /// <summary>Analyser OnProgress callback that updates the progress label.</summary>
     procedure AnalyzerProgress( Sender: TObject );
+    /// <summary>Re-opens the source file for the selected row at its offending line.</summary>
     procedure OpenSelectedFile;
   public
+    /// <summary>Shows or focuses the singleton detector form.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
   FormInstance: TFormUnusedUnitDetector = nil;
 
 implementation

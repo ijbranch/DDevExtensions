@@ -10,6 +10,11 @@
 
 unit FrmeOptionPageComponentSelector;
 
+/// <summary>
+/// Implements the IDE options page frame for the Component Selector feature, exposing
+/// the active flag, search-mode toggles and the focus hotkey to the user.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,22 +24,40 @@ uses
   StdCtrls, ComponentSelector, FrmTreePages, ComCtrls, FrmeBase, ExtCtrls;
 
 type
+  /// <summary>
+  /// Options page frame that hosts the Component Selector configuration controls and
+  /// applies them to the running <see cref="TComponentSelector"/> instance.
+  /// </summary>
   TFrameOptionPageComponentSelector = class(TFrameBase, ITreePageComponent)
+    /// <summary>Toggles prefix-only (simple) search.</summary>
     cbxSimpleSearch: TCheckBox;
+    /// <summary>Toggles palette grouping in the result list.</summary>
     cbxSortByPalette: TCheckBox;
+    /// <summary>Toggles whether the Component Selector toolbar is visible.</summary>
     cbxActive: TCheckBox;
+    /// <summary>Editor for the focus hotkey.</summary>
     HotKey: THotKey;
+    /// <summary>Caption for the hotkey editor.</summary>
     lblHotkey: TLabel;
+    /// <summary>Enables or disables dependent controls when the active state changes.</summary>
+    /// <param name="Sender">The active checkbox.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Selector instance the page edits.</summary>
     FComponentSelector: TComponentSelector;
   public
     { Public-Deklarationen }
+    /// <summary>Receives the <see cref="TComponentSelector"/> instance edited by this page.</summary>
+    /// <param name="UserData">The selector cast to TObject.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Populates the controls from the controller's current configuration.</summary>
     procedure LoadData;
+    /// <summary>Writes the control values back to the controller and persists them.</summary>
     procedure SaveData;
+    /// <summary>Called when the page becomes active in the options dialog.</summary>
     procedure Selected;
+    /// <summary>Called when the page is deactivated in the options dialog.</summary>
     procedure Unselected;
   end;
 

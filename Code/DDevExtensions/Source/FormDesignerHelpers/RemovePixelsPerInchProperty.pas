@@ -2,6 +2,13 @@
 
 unit RemovePixelsPerInchProperty;
 
+/// <summary>
+/// Replaces TDataModule.DefineProperties with a version that no longer writes the
+/// PixelsPerInch property to the DFM, while still tolerating its presence on read so DFMs
+/// produced by newer IDE versions can be opened in older versions. Toggle the redirect with
+/// SetRemovePixelsPerInchPropertyActive.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -10,6 +17,11 @@ uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
 
 
+/// <summary>
+/// Activates or deactivates the TDataModule.DefineProperties redirection that suppresses
+/// streaming of the PixelsPerInch property.
+/// </summary>
+/// <param name="Active">True to install the redirect, False to restore the original method.</param>
 procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
 
 implementation
@@ -22,18 +34,26 @@ var
 
 type
   /// <summary>
-  ///   Access to Private Parts
+  /// Class helper used to gain access to the private read/write callbacks declared on
+  /// TDataModule (ReadHeight, WriteHeight, etc.) so the replacement DefineProperties body can
+  /// register the same DFM properties without those callbacks being protected against external
+  /// callers.
   /// </summary>
   TDataModuleHelper = class helper for TDataModule
+    /// <summary>Replacement DefineProperties body installed by the hook.</summary>
+    /// <param name="Filer">The DFM filer that the VCL passes during streaming.</param>
     procedure DefineProperties2(Filer: TFiler);
     {$IFNDEF COMPILER110_UP}
     // Delphi 10.2-10.4: TDataModule doesn't have these methods (added in Delphi 11)
+    /// <summary>Reads and discards an identifier (used for OldCreateOrder on Delphi 10.x).</summary>
     procedure IgnoreIdent(Reader: TReader);
+    /// <summary>Reads and discards an integer (used for PixelsPerInch on Delphi 10.x).</summary>
     procedure IgnoreInteger(Reader: TReader);
     {$ENDIF}
   end;
 
 type
+  /// <summary>Friend declaration giving the unit visibility of TDataModule's protected DefineProperties.</summary>
   TOpenDataModule = class(TDataModule);
 
 var

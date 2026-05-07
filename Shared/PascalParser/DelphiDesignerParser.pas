@@ -11,6 +11,14 @@
 
 unit DelphiDesignerParser;
 
+/// <summary>
+/// High-level Object Pascal parser used by IDE-extension features that need symbol-level
+/// information (refactoring, code generators, the form designer). Builds a tree of TCodeSymbol
+/// descendants (units, types, methods, fields, properties, local variables) that can be queried
+/// by name and that retain source-location metadata for navigation. Built on top of
+/// TDelphiPreprocessor / TDelphiLexer.
+/// </summary>
+
 {$I DelphiParser.inc}
 
 interface
@@ -19,45 +27,53 @@ uses
   SysUtils, Classes, Contnrs, DelphiPreproc, DelphiLexer;
 
 type
+  /// <summary>Forward declaration of the class-list container.</summary>
   TCodeClassList = class;
-  
+
+  /// <summary>Discriminator for the kind of compilation unit (unit/program/library/package).</summary>
   TModuleType = (
     mtUnit, mtProgram, mtLibrary, mtPackage
   );
 
+  /// <summary>Visibility of a class member (private/protected/public/published with strict variants).</summary>
   TAccessKind = (
     akPrivate, akStrictPrivate, akProtected, akStrictProtected,
     akPublic, akPublished
   );
 
+  /// <summary>Virtual-table classification for a method (static/virtual/override/abstract/dynamic/message).</summary>
   TVirtualKind = (
     vkStatic, vkVirtual, vkOverride, vkAbstract, vkDynamic, vkMessage
   );
 
+  /// <summary>Calling convention applied to a method or procedure pointer.</summary>
   TCallConvention = (
     ccRegister, ccStdCall, ccCdecl, ccPascal, ccSafecall
   );
 
+  /// <summary>Parameter passing modifier (none / var / out / const).</summary>
   TArgModifier = (
     amNone, amVar, amOut, amConst
   );
 
+  /// <summary>Kind of method being parsed (constructor/destructor/function/procedure).</summary>
   TMethodType = (
     mtConstructor, mtDestructor, mtFunction, mtProcedure
   );
 
+  /// <summary>Hint that selects how the variable-list parser interprets the current declaration.</summary>
   TVarListMode = (
     vmFunctionArguments, vmFields, vmVariables
   );
 
-  { TLocation represents the location in a file }
+  /// <summary>Source location captured by parser symbols (line, column, filename and absolute index).</summary>
   TLocation = record
     Line, Column: Integer;
     Filename: string;
     Index: Integer; // linear position
   end;
 
-  { TCodeSymbol is the base class for all symbols of the parser. }
+  /// <summary>Base class for every parsed symbol; carries a name plus three source locations (start, name, end).</summary>
   TCodeSymbol = class(TObject)
   private
     FName: string;
@@ -82,7 +98,7 @@ type
     property Access: TAccessKind read FAccess;
   end;
 
-  { TCodeField represents a field of a class. }
+  /// <summary>Field of a class or record (also used as a base for local variables and method arguments).</summary>
   TCodeField = class(TCodeSymbol)
   private
     FTypeName: string;
@@ -98,6 +114,7 @@ type
     property IsClassField: Boolean read FIsClassField;
   end;
 
+  /// <summary>Class property declaration with getter/setter/storage information.</summary>
   TCodeProperty = class(TCodeSymbol)
   private
     FTypeName: string;
@@ -128,9 +145,11 @@ type
     property IsInheritChange: Boolean read FIsInheritChange; // specifies if the property is inherited but with differnent visibility/default value.
   end;
 
+  /// <summary>Local variable inside a procedure or function (alias of TCodeField for clarity).</summary>
   TCodeLocalVariable = class(TCodeField)
   end;
 
+  /// <summary>Argument of a method, including the parameter modifier (var/out/const/none).</summary>
   TCodeMethodArg = class(TCodeField)
   private
     FModifier: TArgModifier;
@@ -141,6 +160,11 @@ type
     property Modifier: TArgModifier read FModifier;
   end;
 
+  /// <summary>
+  /// Method, procedure or function declaration. Tracks both the interface declaration and the
+  /// implementation body so callers can navigate between them and find safe insertion locations
+  /// for new local variables or generated code.
+  /// </summary>
   TCodeMethod = class(TCodeSymbol)
   private
     FArgs: TObjectList;
@@ -230,8 +254,7 @@ type
     property LocalProcss[Index: Integer]: TCodeMethod read GetLocalProc;
   end;
 
-  { TCodeClass contains all information the designer parser extracted for a
-    class (methods, properties, fields). }
+  /// <summary>Class declaration: base class, supported interfaces, fields, properties and methods.</summary>
   TCodeClass = class(TCodeSymbol)
   private
     FAccessInsert: array[TAccessKind] of TLocation;
@@ -298,7 +321,7 @@ type
     property Fields[Index: Integer]: TCodeField read GetField;
   end;
 
-  { TCodeClassList contains a list of code-classes }
+  /// <summary>Owned collection of TCodeClass instances with name-based look-up.</summary>
   TCodeClassList = class(TObject)
   private
     FItems: TObjectList;
@@ -319,6 +342,7 @@ type
     property Items[Index: Integer]: TCodeClass read GetItem; default;
   end;
 
+  /// <summary>Single entry in a uses/contains/requires clause: unit name plus an optional "in 'file.pas'" filename.</summary>
   TUsesItem = class(TCodeSymbol)
   private
     FFilename: string;
@@ -333,7 +357,7 @@ type
     property Filename: string read FFilename;
   end;
 
-  { TUsesList contains a list of USES-items. }
+  /// <summary>Collection of TUsesItem entries that also captures the source location of the surrounding clause.</summary>
   TUsesList = class(TObject)
   private
     FItems: TObjectList;
@@ -360,10 +384,11 @@ type
     property EndLocation: TLocation read FEndLocation;
   end;
 
-  { TDesignerParser parses a file in highspeed. It does not really parse the
-    code, it simply searches for certain keywords.
-    After the designer parser has finished it's lists are filled with
-    information the designer needs. }
+  /// <summary>
+  /// Fast structural parser. Rather than building a full AST it scans for the keywords needed by
+  /// the form designer (unit/program/library/package, uses, class, property, function, ...) and
+  /// captures sufficient location data to navigate, refactor and generate code.
+  /// </summary>
   TDesignerParser = class(TObject)
   private
     p: TDelphiPreprocessor;
@@ -492,6 +517,7 @@ type
   end;
 
 const
+  /// <summary>Sentinel TLocation value used to indicate "no location".</summary>
   EmptyLocation: TLocation = (Line: 0; Column: 0; Filename: '');
 
 implementation

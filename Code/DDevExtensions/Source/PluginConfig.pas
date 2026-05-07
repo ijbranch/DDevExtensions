@@ -10,6 +10,19 @@
 
 unit PluginConfig;
 
+/// <summary>
+/// XML-backed persistent configuration framework for DDevExtensions plug-ins.
+/// Each plug-in derives a class from <see cref="TPluginConfig"/> whose
+/// published properties are streamed automatically (via RTTI) into the shared
+/// <see cref="TConfiguration"/> document, which lives at
+/// <c>%APPDATA%\DDevExtensions\DDevExtensions{IDEVersion}.xml</c>.
+/// </summary>
+/// <remarks>
+/// Use <see cref="TConfiguration.BeginUpdate"/>/<see cref="TConfiguration.EndUpdate"/>
+/// to batch many <see cref="TConfiguration.Modified"/> calls into a single
+/// disk write.
+/// </remarks>
+
 {$I DelphiExtension.inc}
 
 interface
@@ -18,55 +31,103 @@ uses
   Variants, SysUtils, Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, TypInfo;
 
 type
+  /// <summary>
+  /// Base class for plug-in configuration objects. Streams its published
+  /// properties to and from an XML node and registers any option pages with
+  /// <see cref="TFormDDevExtOptions"/>.
+  /// </summary>
   TPluginConfig = class(TComponent)
   private
+    /// <summary>Legacy stand-alone XML filename (used during one-off migration into the shared document).</summary>
     FFilename: string;
+    /// <summary>Name of the root XML node under which this plug-in's settings are stored.</summary>
     FRootNodeName: string;
+    /// <summary>True while <see cref="LoadFromXml"/> is running so setters can suppress side effects.</summary>
     FLoading: Boolean;
-    procedure LoadFromFile(const Filename: string); 
+    /// <summary>Loads from a stand-alone XML file on disk (legacy migration path).</summary>
+    procedure LoadFromFile(const Filename: string);
   protected
+    /// <summary>
+    /// Override to return the option-page tree for this plug-in. The default
+    /// returns nil (no options page).
+    /// </summary>
     function GetOptionPages: TTreePage; virtual;
+    /// <summary>Override to perform construction-time initialisation before settings are loaded.</summary>
     procedure Init; virtual;
+    /// <summary>Registers the result of <see cref="GetOptionPages"/> with the options dialog.</summary>
     procedure RegisterOptionPages; virtual;
 
+    /// <summary>True while <see cref="LoadFromXml"/> is running.</summary>
     property Loading: Boolean read FLoading;
   public
+    /// <summary>
+    /// Creates the configuration, loads existing settings (XML node or legacy
+    /// file) and registers option pages.
+    /// </summary>
+    /// <param name="AFilename">Legacy stand-alone XML filename (used for one-off migration).</param>
+    /// <param name="ARootNodeName">Name of the XML root node used for this plug-in's settings.</param>
     constructor Create(const AFilename, ARootNodeName: string); reintroduce;
 
+    /// <summary>Streams every supported published property of <c>Self</c> into <paramref name="Node"/>.</summary>
     procedure SaveToXml(Node: IXmlNode); virtual;
+    /// <summary>Loads every supported published property of <c>Self</c> from <paramref name="Node"/>.</summary>
     procedure LoadFromXml(Node: IXmlNode); virtual;
 
+    /// <summary>Persists current settings into the shared <see cref="TConfiguration"/> document.</summary>
     procedure Save;
 
+    /// <summary>Name of the XML root node used for this plug-in's settings.</summary>
     property RootNodeName: string read FRootNodeName;
   end;
 
+  /// <summary>
+  /// Singleton XML document holding the merged settings of every DDevExtensions
+  /// plug-in. Loaded on first access via <see cref="Configuration"/>.
+  /// </summary>
   TConfiguration = class(TObject)
   private
+    /// <summary>True when in-memory state differs from disk; triggers a save on <see cref="EndUpdate"/>.</summary>
     FModified: Boolean;
+    /// <summary>Path of the on-disk XML file.</summary>
     FFilename: string;
+    /// <summary>Nesting counter for <see cref="BeginUpdate"/>/<see cref="EndUpdate"/>.</summary>
     FUpdateLock: Integer;
+    /// <summary>The underlying XML document.</summary>
     FXml: IXmlDocument;
   public
+    /// <summary>Creates an empty in-memory document with a <c>DDevExtensions</c> root element.</summary>
     constructor Create;
+    /// <summary>Releases the document.</summary>
     destructor Destroy; override;
 
+    /// <summary>Returns True if a child node with the given name exists under the document root.</summary>
     function HasNode(const NodeName: string): Boolean;
+    /// <summary>Returns the named child node under the document root, or nil if it does not exist.</summary>
     function FindNode(const NodeName: string): IXmlNode;
+    /// <summary>Returns the named child node under the document root, creating it if needed.</summary>
     function GetNode(const NodeName: string): IXmlNode; overload;
+    /// <summary>Returns the named child node under <paramref name="ParentNode"/>, creating it if needed.</summary>
     class function GetNode(ParentNode: IXmlNode; const NodeName: string): IXmlNode; overload;
+    /// <summary>Marks the document dirty; saves immediately if no <see cref="BeginUpdate"/> is active.</summary>
     procedure Modified;
 
+    /// <summary>Saves the document to a specific path without changing <see cref="Filename"/>.</summary>
     procedure SaveToFile(const AFilename: string);
+    /// <summary>Loads the document from a file (creates an empty document if the file does not exist).</summary>
     procedure LoadFromFile(const AFilename: string);
+    /// <summary>Saves the document to <see cref="Filename"/>.</summary>
     procedure Save;
 
+    /// <summary>Begins a batch update; pairs with <see cref="EndUpdate"/> to defer writes.</summary>
     procedure BeginUpdate;
+    /// <summary>Ends a batch update; saves if any changes were marked while batched.</summary>
     procedure EndUpdate;
 
+    /// <summary>Path of the on-disk XML file backing the document.</summary>
     property Filename: string read FFilename;
   end;
 
+/// <summary>Lazily creates and returns the global configuration singleton.</summary>
 function Configuration: TConfiguration;
 
 implementation

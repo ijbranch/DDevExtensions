@@ -8,6 +8,14 @@
 
 unit FrmeOptionPageDSUFeatures;
 
+/// <summary>
+/// Options page and configuration class for the "Extended IDE Settings" feature group.
+/// Owns the persisted settings (TDSUFeaturesConfig), drives the editor double-click zoom
+/// patches, source-formatter hotkey override, structure view search hotkey, project manager
+/// "show file project" decoration, "don't break on spawned processes" debugger tweak, the
+/// Ctrl+F1 confirmation dialog and several other low-level IDE behaviour switches.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -22,129 +30,239 @@ uses
   ModuleData, FrmeBase, ExtCtrls, ActnList, Menus, VirtTreeHandler, ComCtrls;
 
 type
+  /// <summary>
+  /// Action performed when the user double-clicks an editor tab: do nothing, zoom the
+  /// editor or "super-zoom" (full-screen the editor pane).
+  /// </summary>
   TEditorDblClickAction = (ecaNone, ecaZoom, ecaSuperZoom);
 
+  /// <summary>
+  /// Persisted configuration and runtime hook controller for the Extended IDE Settings.
+  /// Storage backs the DSUFeatures.xml file in the Application Data directory.
+  /// </summary>
   TDSUFeaturesConfig = class(TPluginConfig)
   private
+    /// <summary>Backing field for DisablePackageCache.</summary>
     FDisablePackageCache: Boolean;
     //FDisableEditorClearType: Boolean;
+    /// <summary>Backing field for EditorDblClickAction.</summary>
     FEditorDblClickAction: TEditorDblClickAction;
+    /// <summary>Cached byte offset of the IDE's tab-control zoom-mode flag, found by signature scan.</summary>
     FZoomModeOffset: Integer;
     {$IF CompilerVersion = 21.0} // Delphi 2010
+    /// <summary>Backing field for IncBuildNumOnBuildOnly (Delphi 2010 only).</summary>
     FIncBuildNumOnBuildOnly: Boolean;
     {$IFEND}
     {$IF CompilerVersion >= 21.0} // Delphi 2010+
+    /// <summary>Backing field for DisableSourceFormatterHotkey.</summary>
     FDisableSourceFormatterHotkey: Boolean;
+    /// <summary>Original Format-Source action shortcut, captured before disabling.</summary>
     FFormatSourceOrgShortCut: TShortCut;
     {$ELSE}
+    /// <summary>Backing field for DisableCodeFolding (Delphi 2009 and earlier).</summary>
     FDisableCodeFolding: Boolean;
+    /// <summary>Backing field for ReplacePackageAddContain (Delphi 2009 and earlier).</summary>
     FReplacePackageAddContain: Boolean;
     {$IFEND}
+    /// <summary>Backing field for ShowFileProjectInPrjMgr.</summary>
     FShowFileProjectInPrjMgr: Boolean;
+    /// <summary>Backing field for StructureViewSearchHotKey.</summary>
     FStructureViewSearchHotKey: TShortCut;
+    /// <summary>Backing field for ReplaceOpenFileAtCursor.</summary>
     FReplaceOpenFileAtCursor: Boolean;
+    /// <summary>Backing field for ShowAllFrames.</summary>
     FShowAllFrames: Boolean;
+    /// <summary>Backing field for DontBreakOnSpawnedProcesses.</summary>
     FDontBreakOnSpawnedProcesses: Boolean;
+    /// <summary>Backing field for KillDExplore.</summary>
     FKillDExplore: Boolean;
+    /// <summary>Backing field for ConfirmDlgOnDebugCtrlF1.</summary>
     FConfirmDlgOnDebugCtrlF1: Boolean;
+    /// <summary>Backing field for DisableAlphaSortClassCompletion.</summary>
     FDisableAlphaSortClassCompletion: Boolean;
 
+    /// <summary>Setter for DisablePackageCache; writes the registry flag the IDE consults.</summary>
     procedure SetDisablePackageCache(Value: Boolean);
+    /// <summary>Setter for EditorDblClickAction; installs/removes the desktop-load hook and patches the IDE.</summary>
     procedure SetEditorDblClickAction(Value: TEditorDblClickAction);
     {$IF CompilerVersion = 21.0} // Delphi 2010
+    /// <summary>Setter for IncBuildNumOnBuildOnly; binary-patches AfterCompile to gate version increments.</summary>
     procedure SetIncBuildNumOnBuildOnly(const Value: Boolean);
     {$IFEND}
     {$IF CompilerVersion >= 21.0} // Delphi 2010+
+    /// <summary>Setter for DisableSourceFormatterHotkey; removes the Ctrl+D hotkey from the source formatter action.</summary>
     procedure SetDisableSourceFormatterHotkey(Value: Boolean);
     {$ELSE}
+    /// <summary>Setter for DisableCodeFolding; hooks TUnitManager.GetRegions to return nil.</summary>
     procedure SetDisableCodeFolding(const Value: Boolean);
+    /// <summary>Setter for ReplacePackageAddContain; reroutes Add menu in package projects.</summary>
     procedure SetReplacePackageAddContain(const Value: Boolean);
     {$IFEND}
+    /// <summary>Setter for ShowFileProjectInPrjMgr; toggles project name suffix decoration.</summary>
     procedure SetShowFileProjectInPrjMgr(const Value: Boolean);
+    /// <summary>Setter for StructureViewSearchHotKey; updates the StructureViewSearch hotkey.</summary>
     procedure SetStructureViewSearchHotKey(const Value: TShortCut);
+    /// <summary>Setter for ReplaceOpenFileAtCursor; hooks the IDE's OpenModuleFile routine.</summary>
     procedure SetReplaceOpenFileAtCursor(const Value: Boolean);
+    /// <summary>Setter for ShowAllFrames; hooks TDelphiProjectModuleHandler.GetFormList.</summary>
     procedure SetShowAllFrames(const Value: Boolean);
+    /// <summary>Setter for DontBreakOnSpawnedProcesses; redirects TProcess.stopOnFirstAddr.</summary>
     procedure SetDontBreakOnSpawnedProcesses(const Value: Boolean);
+    /// <summary>Setter for ConfirmDlgOnDebugCtrlF1; hooks TCustomEditControl.HelpKeyword.</summary>
     procedure SetConfirmDlgOnDebugCtrlF1(const Value: Boolean);
     //procedure SetDisableEditorClearType(Value: Boolean);
+    /// <summary>Setter for DisableAlphaSortClassCompletion; installs or removes the class-completion order patches.</summary>
     procedure SetDisableAlphaSortClassCompletion(const Value: Boolean);
   protected
+    /// <summary>Timer that polls the structure view to append parsing dots to its caption.</summary>
     FTimerStructureView: TTimer;
+    /// <summary>Counter (0..3) used to animate the trailing dots on the structure view caption.</summary>
     FLastParsingDots: Integer;
+    /// <summary>Cached pointer to the IDE's background parser thread.</summary>
     FParseThread: TThread;
+    /// <summary>Wrapper around the project manager's virtual tree control.</summary>
     FPrjMgrTree: TIDEVirtualTreeHandler;
+    /// <summary>Original OnGetText handler captured before installing PMGetText.</summary>
     FOrgPMGetTextEvent: TVSTGetTextEvent;
 
+    /// <summary>OnGetText override that appends "(ProjectName)" to file nodes when ShowFileProjectInPrjMgr is on.</summary>
+    /// <param name="Sender">The virtual tree raising the event.</param>
+    /// <param name="Node">The node whose text is being requested.</param>
+    /// <param name="Column">Column index of the cell.</param>
+    /// <param name="TextType">Whether normal or static text is being requested.</param>
+    /// <param name="CellText">Receives the text to display.</param>
     procedure PMGetText(Sender: TObject; Node: PVirtualNode; Column: Integer;
       TextType: TVSTTextType; var CellText: WideString);
 
+    /// <summary>Helper that mirrors a boolean flag into a registry value under the IDE's Globals key.</summary>
+    /// <param name="Value">Reference to the field to update.</param>
+    /// <param name="NewValue">New value to assign.</param>
+    /// <param name="ValueName">Registry value name under the Globals key.</param>
     procedure SetRegValue(var Value: Boolean; NewValue: Boolean; const ValueName: string);
+    /// <summary>Returns the option page tree node for "Extended IDE Settings".</summary>
+    /// <returns>A TTreePage instance owned by the configuration framework.</returns>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Sets default values for all options before the persisted XML is loaded.</summary>
     procedure Init; override;
+    /// <summary>Loads registry-only flags (such as DisablePackageCache) overriding the XML defaults.</summary>
     procedure LoadFromRegistry;
+    /// <summary>Re-applies registry overrides after the XML configuration has been loaded.</summary>
     procedure Loaded; override;
 
+    /// <summary>Timer tick that animates parsing dots in the Structure View caption.</summary>
+    /// <param name="Sender">The owning TTimer.</param>
     procedure StructureViewTimer(Sender: TObject);
+    /// <summary>Returns True while the IDE's background parser thread is processing.</summary>
+    /// <returns>True if parsing is in progress; False otherwise (or if the thread cannot be located).</returns>
     function IsBackgroundParsing: Boolean;
 
+    /// <summary>Locates the editor zoom-mode byte and writes the requested value into the running IDE.</summary>
     procedure UpdateEditorDblClickAction;
   public
+    /// <summary>Creates the configuration object, locates the IDE registry key and starts the structure-view timer.</summary>
     constructor Create;
+    /// <summary>Restores hooks, frees the timer, optionally kills DExplorer and saves settings.</summary>
     destructor Destroy; override;
   published
+    /// <summary>When True, disables the IDE's package and palette caches.</summary>
     property DisablePackageCache: Boolean read FDisablePackageCache write SetDisablePackageCache;
+    /// <summary>When True, replaces the IDE's "Open File at Cursor" with a search-path-aware version.</summary>
     property ReplaceOpenFileAtCursor: Boolean read FReplaceOpenFileAtCursor write SetReplaceOpenFileAtCursor;
+    /// <summary>When True, includes frames from sibling package projects in the form list.</summary>
     property ShowAllFrames: Boolean read FShowAllFrames write SetShowAllFrames;
     {$IF CompilerVersion = 21.0} // Delphi 2010
+    /// <summary>When True, only increments the build number for full builds (Delphi 2010 only).</summary>
     property IncBuildNumOnBuildOnly: Boolean read FIncBuildNumOnBuildOnly write SetIncBuildNumOnBuildOnly;
     {$IFEND}
     {$IF CompilerVersion >= 21.0} // Delphi 2010+
+    /// <summary>When True, suppresses the source formatter's keyboard shortcut.</summary>
     property DisableSourceFormatterHotkey: Boolean read FDisableSourceFormatterHotkey write SetDisableSourceFormatterHotkey;
     {$ELSE}
+    /// <summary>When True, disables the (slow) Delphi 2009 code-folding region calculation.</summary>
     property DisableCodeFolding: Boolean read FDisableCodeFolding write SetDisableCodeFolding;
+    /// <summary>When True, reroutes the package "Add" command through the regular project Add (Delphi 2009 and earlier).</summary>
     property ReplacePackageAddContain: Boolean read FReplacePackageAddContain write SetReplacePackageAddContain;
     {$IFEND}
+    /// <summary>When True, appends the owning project name in parentheses to file nodes in the project manager.</summary>
     property ShowFileProjectInPrjMgr: Boolean read FShowFileProjectInPrjMgr write SetShowFileProjectInPrjMgr;
+    /// <summary>Behaviour for editor tab double-click: none, zoom or super-zoom.</summary>
     property EditorDblClickAction: TEditorDblClickAction read FEditorDblClickAction write SetEditorDblClickAction;
     //property DisableEditorClearType: Boolean read FDisableEditorClearType write SetDisableEditorClearType;
+    /// <summary>Hot-key that focuses the search box in the Structure View.</summary>
     property StructureViewSearchHotKey: TShortCut read FStructureViewSearchHotKey write SetStructureViewSearchHotKey;
+    /// <summary>When True, suppresses the debugger's "stop on first instruction" for spawned processes.</summary>
     property DontBreakOnSpawnedProcesses: Boolean read FDontBreakOnSpawnedProcesses write SetDontBreakOnSpawnedProcesses;
+    /// <summary>When True, terminates DExplorer (MS Help 2 viewer) processes on IDE shutdown.</summary>
     property KillDExplore: Boolean read FKillDExplore write FKillDExplore;
+    /// <summary>When True, prompts before invoking context help with Ctrl+F1 during debugging.</summary>
     property ConfirmDlgOnDebugCtrlF1: Boolean read FConfirmDlgOnDebugCtrlF1 write SetConfirmDlgOnDebugCtrlF1;
+    /// <summary>When True, disables alphabetical sorting of newly generated class-completion methods.</summary>
     property DisableAlphaSortClassCompletion: Boolean read FDisableAlphaSortClassCompletion write SetDisableAlphaSortClassCompletion;
   end;
 
+  /// <summary>
+  /// VCL frame that hosts the option-page UI for TDSUFeaturesConfig in the IDE Options
+  /// dialog tree.
+  /// </summary>
   TFrameOptionPageDSUFeatures = class(TFrameBase, ITreePageComponent)
+    /// <summary>Check box for the DisablePackageCache option.</summary>
     chkDisablePackageCache: TCheckBox;
+    /// <summary>Combo box selecting the editor tab double-click action.</summary>
     cbxEditorTabDblClickAction: TComboBox;
+    /// <summary>Label for the editor tab double-click combo box.</summary>
     lblEditorTabDblClickAction: TLabel;
+    /// <summary>Check box for the DisableSourceFormatterHotkey option.</summary>
     chkDisableSourceFormatterHotkey: TCheckBox;
+    /// <summary>Check box for the ShowFileProjectInPrjMgr option.</summary>
     chkShowFileProjectInPrjMgr: TCheckBox;
+    /// <summary>Hot-key editor for the Structure View search shortcut.</summary>
     HotKeyStructureViewSearch: THotKey;
+    /// <summary>Label for the Structure View search hot-key editor.</summary>
     LabelStructureViewSearchHotkey: TLabel;
+    /// <summary>Check box for the IncBuildNumOnBuildOnly option (Delphi 2010 only).</summary>
     chkIncBuildNumOnBuildOnly: TCheckBox;
+    /// <summary>Check box for the DisableCodeFolding option (Delphi 2009 and earlier).</summary>
     chkDisableCodeFolding: TCheckBox;
+    /// <summary>Check box for the ReplaceOpenFileAtCursor option.</summary>
     chkReplaceOpenFileAtCursor: TCheckBox;
+    /// <summary>Check box for the ShowAllFrames option.</summary>
     chkShowAllFrames: TCheckBox;
+    /// <summary>Check box for the DontBreakOnSpawnedProcesses option.</summary>
     chkDontBreakOnSpawnedProcesses: TCheckBox;
+    /// <summary>Check box for the KillDExplore option.</summary>
     chkKillDExplore: TCheckBox;
+    /// <summary>Check box for the ConfirmDlgOnDebugCtrlF1 option.</summary>
     chkConfirmDlgOnDebugCtrlF1: TCheckBox;
+    /// <summary>Check box for the DisableAlphaSortClassCompletion option.</summary>
     chkDisableAlphaSortClassCompletion: TCheckBox;
   private
     { Private-Deklarationen }
+    /// <summary>Backing configuration object supplied through SetUserData.</summary>
     FDSUFeatures: TDSUFeaturesConfig;
   public
     { Public-Deklarationen }
+    /// <summary>Stores the supplied configuration object for later Load/Save calls.</summary>
+    /// <param name="UserData">Configuration object expected to be a TDSUFeaturesConfig.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Loads the configuration into the frame controls and removes controls not relevant to this IDE version.</summary>
     procedure LoadData;
+    /// <summary>Reads the controls back into the configuration object and persists it.</summary>
     procedure SaveData;
+    /// <summary>Called by the framework when the page is shown; no-op.</summary>
     procedure Selected;
+    /// <summary>Called by the framework when the page is hidden; no-op.</summary>
     procedure Unselected;
   end;
 
+/// <summary>
+/// Installs or removes the DSU features hook layer and creates/destroys the singleton
+/// configuration object.
+/// </summary>
+/// <param name="Unload">True to shut down, False to start up.</param>
 procedure InitPlugin(Unload: Boolean);
 
 var
+  /// <summary>Singleton configuration instance accessed by other plugin units.</summary>
   DSUFeaturesConfig: TDSUFeaturesConfig;
 
 implementation

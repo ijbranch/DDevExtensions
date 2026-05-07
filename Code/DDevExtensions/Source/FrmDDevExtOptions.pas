@@ -8,6 +8,12 @@
 
 unit FrmDDevExtOptions;
 
+/// <summary>
+/// DDevExtensions options dialog: the tabbed configuration window invoked
+/// from the IDE's <c>Tools | DDevExtensions | Options...</c> menu. Each
+/// plug-in registers its own page on the embedded tree at startup.
+/// </summary>
+
 interface
 
 uses
@@ -15,7 +21,9 @@ uses
   Dialogs, FrmOptions, ExtCtrls, ComCtrls, StdCtrls;
 
 type
+  /// <summary>Concrete options form used by DDevExtensions; descends from the generic <c>TFormOptions</c> tree-page host.</summary>
   TFormDDevExtOptions = class(TFormOptions)
+    /// <summary>Sets the version and copyright labels at form creation time.</summary>
     procedure FormCreate(Sender: TObject);
   private
     { Private-Deklarationen }

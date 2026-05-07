@@ -8,10 +8,27 @@
 
 unit RegisterPlugins;
 
+/// <summary>
+/// Central registration point for every DDevExtensions feature. Calls the
+/// <c>InitPlugin</c> entry point of each enabled feature unit during
+/// <see cref="Main.InstallHooks"/>.
+/// </summary>
+/// <remarks>
+/// Individual features can be disabled at run-time by listing their key in
+/// the <c>DDevExtensions.DisabledFeatures</c> environment variable
+/// (semicolon-separated). Compile-time feature gating is controlled by the
+/// <c>INCLUDE_*</c> conditional defines in <c>DelphiExtension.inc</c>.
+/// </remarks>
+
 {$I DelphiExtension.inc}
 
 interface
 
+/// <summary>
+/// Iterates over every supported feature unit and registers either an
+/// expert loader (early) or late loader (after IDE main form is up).
+/// Honours the <c>DDevExtensions.DisabledFeatures</c> environment variable.
+/// </summary>
 procedure RegisterIDEPlugins;
 
 implementation

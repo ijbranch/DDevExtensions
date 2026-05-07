@@ -12,6 +12,13 @@
 
 unit gllDelphiDFMParser;
 
+/// <summary>
+/// Lossless DFM (Delphi Form Module) text parser and serialiser. The contract is that
+/// Serialize(Parse(Text)) produces the original text byte-for-byte: indentation, line endings
+/// and the exact value strings are preserved so the parser can be used by tooling that round-
+/// trips DFM files without disturbing unrelated formatting.
+/// </summary>
+
 interface
 
 uses
@@ -29,12 +36,16 @@ type
     dvkParenList     // Name = ( item1 item2 )
   );
 
-  /// <summary>Represents a single property in a DFM component</summary>
+  /// <summary>Represents a single property in a DFM component.</summary>
   TDfmProperty = class
   private
+    /// <summary>Property name (left of "=").</summary>
     FName: string;
+    /// <summary>Discriminator describing how the value is formatted in the DFM.</summary>
     FValueKind: TDfmValueKind;
+    /// <summary>Exact text of the value after "=" so round-tripping preserves formatting.</summary>
     FRawValue: string;
+    /// <summary>Leading whitespace before the property name.</summary>
     FIndent: string;
   public
     /// <summary>Property name</summary>
@@ -50,18 +61,27 @@ type
   /// <summary>DFM object declaration types</summary>
   TDfmObjectKind = (dokObject, dokInherited, dokInline);
 
-  /// <summary>Represents a component (object) in a DFM file</summary>
+  /// <summary>Represents a component (object) in a DFM file: type, name, properties and child components.</summary>
   TDfmComponent = class
   private
+    /// <summary>Component name (right of object/inherited/inline keyword, left of ":").</summary>
     FName: string;
+    /// <summary>Component class name (right of ":").</summary>
     FTypeName: string;
+    /// <summary>Which keyword introduced this component (object/inherited/inline).</summary>
     FObjectKind: TDfmObjectKind;
+    /// <summary>Owned list of properties belonging to this component.</summary>
     FProperties: TObjectList<TDfmProperty>;
+    /// <summary>Owned list of child components.</summary>
     FChildren: TObjectList<TDfmComponent>;
+    /// <summary>Leading whitespace before the object/inherited/inline keyword.</summary>
     FIndent: string;
+    /// <summary>Leading whitespace before the matching "end" keyword.</summary>
     FEndIndent: string;
   public
+    /// <summary>Initialises empty property and child lists; the default ObjectKind is dokObject.</summary>
     constructor Create;
+    /// <summary>Frees the property and child lists (and their entries).</summary>
     destructor Destroy; override;
 
     /// <summary>Find a property by name (case-insensitive)</summary>
@@ -89,15 +109,21 @@ type
     property EndIndent: string read FEndIndent write FEndIndent;
   end;
 
-  /// <summary>Represents a complete DFM document</summary>
+  /// <summary>Represents a complete DFM document: a root component plus optional surrounding text.</summary>
   TDfmDocument = class
   private
+    /// <summary>Root component (typically the form, frame or data module).</summary>
     FRoot: TDfmComponent;
+    /// <summary>Detected line ending sequence (CRLF or LF) used during serialisation.</summary>
     FLineEnding: string;
+    /// <summary>Free-form text preceding the root object declaration.</summary>
     FHeader: string;
+    /// <summary>Free-form text following the final end.</summary>
     FTrailer: string;
   public
+    /// <summary>Initialises a fresh document with an empty root component and CRLF line endings.</summary>
     constructor Create;
+    /// <summary>Frees the root component.</summary>
     destructor Destroy; override;
 
     /// <summary>Root component (the form/frame/datamodule)</summary>

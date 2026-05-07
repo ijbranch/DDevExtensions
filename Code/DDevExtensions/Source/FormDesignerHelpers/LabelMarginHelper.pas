@@ -8,6 +8,12 @@
 
 unit LabelMarginHelper;
 
+/// <summary>
+/// Patches TLabel so that, in the form designer, the default value for its bottom margin is zero
+/// rather than the VCL default. This stops streaming the property out into DFMs unless explicitly
+/// changed and keeps generated DFMs cleaner. Toggle the behaviour via SetLabelMarginActive.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -15,6 +21,11 @@ interface
 uses
   SysUtils, Classes, Forms, Controls, IDEHooks, Hooking, StdCtrls;
 
+/// <summary>
+/// Activates or deactivates the TLabel margin override by replacing the VMT entry for
+/// AfterConstruction with a hook that initialises Margins.Bottom to zero at design time.
+/// </summary>
+/// <param name="Active">True to install the hook, False to restore the original VMT entry.</param>
 procedure SetLabelMarginActive(Active: Boolean);
 
 implementation

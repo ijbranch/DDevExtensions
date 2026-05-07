@@ -6,6 +6,13 @@
 
 unit Hooking;
 
+/// <summary>
+/// Low-level x86/x64 code patching primitives used to redirect, hook and unhook procedure calls
+/// in-process. Provides VMT/DMT manipulation, relative call/jump rewriting, WinAPI hot-patch
+/// detection and a small disassembler used to compute trampoline sizes. Range checks are disabled
+/// throughout because this unit performs deliberate pointer arithmetic with Integer overflows.
+/// </summary>
+
 // Don't ever activate them here. This unit depends on pointer arithmetic with Integer overflows.
 {$RANGECHECKS OFF}
 
@@ -21,85 +28,246 @@ uses
 
 type
   {$IF not declared(SIZE_T)}
+  /// <summary>Fallback declaration of SIZE_T for older Delphi versions where Windows.pas omits it.</summary>
   SIZE_T = DWORD;
   {$IFEND}
 
+  /// <summary>Five-byte "JMP rel32" instruction layout used to redirect a function entry point.</summary>
   TXRedirCode = packed record
+    /// <summary>Opcode byte; always $E9 for an unconditional rel32 jump.</summary>
     Jump: Byte;
+    /// <summary>Signed 32-bit relative displacement to the new target.</summary>
     Offset: Integer;
   end;
 
+  /// <summary>
+  /// Saved state for a code redirection. RealProc points at the patched function; Code holds the
+  /// overwritten bytes so the original prologue can be restored. Count is a redirection ref-count
+  /// allowing nested CodeRedirect/CodeRestore calls.
+  /// </summary>
   TRedirectCode = packed record
+    /// <summary>Address of the original function whose prologue was patched.</summary>
     RealProc: Pointer;
+    /// <summary>Reference count tracking nested redirections.</summary>
     Count: Integer;
     case Byte of
+      /// <summary>The original five bytes captured as a TXRedirCode record.</summary>
       0: (Code: TXRedirCode);
+      /// <summary>Convenience 8-byte view used to copy Code as a single Int64.</summary>
       1: (Code2: Int64);
   end;
 
+/// <summary>Patches the first five bytes of Proc to JMP NewProc and stores the original bytes in Data.</summary>
+/// <param name="Proc">Function to redirect.</param>
+/// <param name="NewProc">Replacement function.</param>
+/// <param name="Data">Receives the saved prologue and ref-count.</param>
 procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <summary>Convenience overload of CodeRedirect that returns the redirection record by value.</summary>
+/// <param name="Proc">Function to redirect.</param>
+/// <param name="NewProc">Replacement function.</param>
+/// <returns>Redirection record holding the saved prologue.</returns>
 function CodeRedirect(Proc: Pointer; NewProc: Pointer): TRedirectCode; overload;
+/// <summary>Restores the original prologue captured in Data, decrementing the redirection ref-count.</summary>
+/// <param name="Data">State previously populated by CodeRedirect.</param>
 procedure CodeRestore(var Data: TRedirectCode);
 
+/// <summary>Re-applies an existing redirection with a different replacement function, reusing Data.</summary>
+/// <param name="NewProc">New replacement function.</param>
+/// <param name="Data">Existing redirection state for the original function.</param>
 procedure RehookFunction(NewProc: Pointer; var Data: TRedirectCode);
+/// <summary>Looks up SymbolName via GetProcAddress on ModuleHandle and redirects it to NewProc.</summary>
+/// <param name="ModuleHandle">Loaded module handle.</param>
+/// <param name="SymbolName">Exported symbol name.</param>
+/// <param name="NewProc">Replacement function.</param>
+/// <param name="Data">Receives the redirection state.</param>
 procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <summary>Looks up SymbolName in ModuleName via GetProcAddress and redirects it to NewProc.</summary>
+/// <param name="ModuleName">DLL/module name.</param>
+/// <param name="SymbolName">Exported symbol name.</param>
+/// <param name="NewProc">Replacement function.</param>
+/// <param name="Data">Receives the redirection state.</param>
 procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <summary>Restores the prologue captured by HookFunction.</summary>
+/// <param name="Data">Existing redirection state.</param>
 procedure UnhookFunction(var Data: TRedirectCode);
+/// <summary>Overwrites Size bytes at DestProc with the bytes from SourceProc, bypassing memory protection.</summary>
+/// <param name="DestProc">Destination address (machine code).</param>
+/// <param name="SourceProc">Source bytes.</param>
+/// <param name="Size">Number of bytes to copy.</param>
+/// <returns>True when all bytes were written successfully.</returns>
 function InjectCode(DestProc, SourceProc: Pointer; Size: Cardinal): Boolean;
 
+/// <summary>Resolves an indirect "JMP [rel]" thunk (such as an import-table stub) to the underlying function.</summary>
+/// <param name="Proc">Possibly thunked address.</param>
+/// <returns>The resolved function address, or Proc if it is not a thunk.</returns>
 function GetActualAddr(Proc: Pointer): Pointer; //inline;
+/// <summary>Patches the import address table of the module at Base so calls to FromProc go to ToProc.</summary>
+/// <param name="Base">Module base address.</param>
+/// <param name="ModuleName">Imported DLL name to match.</param>
+/// <param name="FromProc">Original imported function pointer.</param>
+/// <param name="ToProc">Replacement function pointer.</param>
+/// <returns>True when at least one IAT entry was patched.</returns>
 function ReplaceDllImport(Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer): Boolean;
+/// <summary>Replaces every VMT slot of AClass that points at OldProc (or a thunk to it) with NewProc.</summary>
+/// <param name="AClass">Class whose VMT is patched.</param>
+/// <param name="OldProc">Original method address.</param>
+/// <param name="NewProc">Replacement method address.</param>
+/// <returns>True when a slot was patched.</returns>
 function ReplaceVmtField(AClass: TClass; OldProc, NewProc: Pointer): Boolean;
+/// <summary>Replaces a dynamic-method-table entry with NewProc and returns the previous handler.</summary>
+/// <param name="AClass">Owning class.</param>
+/// <param name="Index">Dynamic method index.</param>
+/// <param name="NewProc">Replacement handler.</param>
+/// <returns>Previous handler, or nil if not found.</returns>
 function ReplaceDmtField(AClass: TClass; Index: Integer; NewProc: Pointer): Pointer;
+/// <summary>Returns the implementation of the dynamic method with the given index for AClass.</summary>
+/// <param name="AClass">Class to query.</param>
+/// <param name="Index">Dynamic method index.</param>
+/// <returns>Method address, or nil when not found.</returns>
 function GetDynamicMethod(AClass: TClass; Index: Integer): Pointer;
 
+/// <summary>Returns the number of virtual method slots in the VMT of AClass.</summary>
+/// <param name="AClass">Class to inspect.</param>
+/// <returns>Slot count.</returns>
 function GetVirtualMethodCount(AClass: TClass): Integer;
+/// <summary>Reads the virtual method address at the given VMT byte offset.</summary>
+/// <param name="AClass">Owning class.</param>
+/// <param name="Index">Byte offset within the VMT.</param>
+/// <returns>Method address.</returns>
 function GetVirtualMethod(AClass: TClass; const Index: Integer): Pointer;
+/// <summary>Writes Method into the VMT slot at the given byte offset, bypassing memory protection.</summary>
+/// <param name="AClass">Owning class.</param>
+/// <param name="Index">Byte offset within the VMT.</param>
+/// <param name="Method">New method address.</param>
 procedure SetVirtualMethod(AClass: TClass; const Index: Integer; const Method: Pointer);
 
-// FindMethodPtr doesn't call GetActualAddr
+/// <summary>
+/// Scans executable memory starting at Start for a byte pattern and returns the matching address.
+/// Bytes entries equal to -1 act as wildcards. Note: FindMethodPtr does not call GetActualAddr.
+/// </summary>
+/// <param name="Start">First address to scan.</param>
+/// <param name="Bytes">Pattern (entries set to -1 match any byte).</param>
+/// <param name="MaxOffset">Optional limit on scan distance from Start (0 means unlimited within the region).</param>
+/// <returns>Matching address, or nil when no match is found.</returns>
 function FindMethodPtr(Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer; overload;
+/// <summary>Convenience overload that accepts a module handle as the start address.</summary>
+/// <param name="Start">Module handle treated as the start address.</param>
+/// <param name="Bytes">Pattern (entries set to -1 match any byte).</param>
+/// <param name="MaxOffset">Optional limit on scan distance from Start.</param>
+/// <returns>Matching address, or nil when no match is found.</returns>
 function FindMethodPtr(Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer; overload;
+/// <summary>Enables or disables caching of VirtualQuery results inside FindMethodPtr to speed up repeated DLL scans.</summary>
+/// <param name="Enable">True to enable caching.</param>
 procedure EnableFindMethodPtrDllVirtualQueryCache(Enable: Boolean);
 
 type
+  /// <summary>Pointer to a TOffsetTable.</summary>
   POffsetTable = ^TOffsetTable;
+  /// <summary>Collects the addresses of relative offset fields encountered while disassembling a function prologue.</summary>
   TOffsetTable = record
   public
+    /// <summary>Captured pointers to the rel32 fields that need fix-up when relocating code.</summary>
     Offsets: array of PInteger;
+    /// <summary>Appends a captured offset pointer to the table.</summary>
+    /// <param name="P">Pointer to the rel32 field within the relocated code.</param>
     procedure Add(P: PInteger);
   end;
 
+/// <summary>
+/// Walks a function prologue starting at CodePtr and returns the smallest number of complete
+/// instruction bytes that totals at least RequiredSize. When OffsetTable is non-nil any rel32
+/// call/jump fields encountered are recorded for later fix-up.
+/// </summary>
+/// <param name="CodePtr">Start of the prologue to disassemble.</param>
+/// <param name="RequiredSize">Minimum number of bytes required.</param>
+/// <param name="OffsetTable">Optional collector for rel32 offset pointers.</param>
+/// <returns>Number of bytes covered by full instructions.</returns>
+/// <exception cref="Exception">Raised when an unsupported instruction or a debug breakpoint is encountered.</exception>
 function GetStartCodeSize(CodePtr: Pointer; RequiredSize: Integer; OffsetTable: POffsetTable = nil): Integer;
+/// <summary>Allocates an executable trampoline that calls the original prologue of Proc followed by a JMP back into Proc.</summary>
+/// <param name="Proc">Function whose original behaviour must remain callable.</param>
+/// <returns>Address of the generated trampoline.</returns>
+/// <exception cref="Exception">Raised when Proc is nil or its prologue cannot be relocated.</exception>
 function CreateOrgCallMethodPtr(Proc: Pointer): Pointer;
+/// <summary>Redirects OrgProc to NewProc and returns a trampoline that still invokes the original implementation.</summary>
+/// <param name="OrgProc">Function to redirect.</param>
+/// <param name="NewProc">Replacement function.</param>
+/// <returns>Trampoline that calls the original OrgProc.</returns>
+/// <exception cref="Exception">Raised on x64 (currently unsupported) or on memory write failure.</exception>
 function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
+/// <summary>Restores the prologue of OrgProc using the bytes captured in OrgCall, undoing RedirectOrgCall.</summary>
+/// <param name="OrgProc">Function whose prologue was patched.</param>
+/// <param name="OrgCall">Trampoline returned by RedirectOrgCall.</param>
 procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
+/// <summary>Re-redirects OrgProc to a different replacement while preserving the existing trampoline.</summary>
+/// <param name="OrgProc">Function whose redirection should be updated.</param>
+/// <param name="NewProc">New replacement function.</param>
+/// <param name="ExistingOrgCall">Existing trampoline (preserved for callers).</param>
 procedure ReRedirectOrgCall(OrgProc, NewProc, ExistingOrgCall: Pointer);
+/// <summary>Patches the prologue of OrgProc with a JMP to NewProc without producing a trampoline.</summary>
+/// <param name="OrgProc">Function to patch.</param>
+/// <param name="NewProc">Replacement function.</param>
 procedure RedirectOrg(OrgProc, NewProc: Pointer);
 
-// ReplaceRelCallOffset replaces the offset in a "call/jmp rel32" to point to NewFunction. It
-// returns the absolute address of the original function. CallJmpPtr must point to the $E8/$E9
+/// <summary>Replaces the offset of an existing call/jmp rel32 instruction at CallJmpPtr to point at NewFunction.</summary>
+/// <param name="CallJmpPtr">Pointer to the $E8 (call) or $E9 (jmp) opcode.</param>
+/// <param name="NewFunction">New target address.</param>
+/// <returns>The absolute address that the call/jmp originally targeted, or nil on failure.</returns>
 function ReplaceRelCallOffset(CallJmpPtr: PByte; NewFunction: Pointer): Pointer;
-// GetCallTargetAddress returns the absolute address of a rel call at CallJmpPtr
+/// <summary>Returns the absolute target address of a call/jmp rel32 instruction at CallJmpPtr.</summary>
+/// <param name="CallJmpPtr">Pointer to the $E8 or $E9 opcode.</param>
+/// <returns>Absolute target address, or nil when CallJmpPtr is not a recognised opcode.</returns>
 function GetCallTargetAddress(CallJmpPtr: PByte): Pointer;
-// ReplaceOpCodeByRelCall replaces the 5 bytes at FiveByteStart with a rel call to CallFunction
+/// <summary>Overwrites the five bytes at FiveByteStart with "CALL CallFunction" (rel32).</summary>
+/// <param name="FiveByteStart">Address of the five-byte slot to patch.</param>
+/// <param name="CallFunction">Target function.</param>
+/// <returns>True on success.</returns>
 function ReplaceOpCodeByRelCall(FiveByteStart: PByte; CallFunction: Pointer): Boolean;
-// ReplaceOpCodeByRelJump replaces the 5 bytes at FiveByteStart with a rel jump to JumpTargetz
+/// <summary>Overwrites the five bytes at FiveByteStart with "JMP JumpTarget" (rel32), optionally padding with NOPs.</summary>
+/// <param name="FiveByteStart">Address of the five-byte slot to patch.</param>
+/// <param name="JumpTarget">Target address.</param>
+/// <param name="FillWithNop">When True, pad the remainder of the original instruction with $90.</param>
+/// <returns>True on success.</returns>
 function ReplaceOpCodeByRelJump(FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean = False): Boolean;
-// ReplaceInstructionByRelCall replaces the instruction at InstructionStart by a rel call to
-// CallFunction and fills the remaining bytes with NOP
+/// <summary>Replaces a complete instruction at IntructionStart with a "CALL CallFunction" rel32 and pads remaining bytes with NOPs.</summary>
+/// <param name="IntructionStart">Address of the instruction to replace.</param>
+/// <param name="CallFunction">Target function.</param>
+/// <returns>True on success.</returns>
 function ReplaceInstructionByRelCall(IntructionStart: PByte; CallFunction: Pointer): Boolean;
 
 type
+  /// <summary>
+  /// State stored by HookWinApiProc and consumed by UnhookWinApiProc. The Mode discriminator
+  /// records which patching strategy was used so the original code can be restored exactly.
+  /// </summary>
   TWinApiHookInfo = record
+    /// <summary>Address of the WinAPI function (or import slot for Mode 100) that was patched.</summary>
     WinApiProc: PByte;
     case Mode: Byte of
+      /// <summary>Modes 1 and 2: original five-byte hot-patch prologue and short jump.</summary>
       1, 2: (Data: array[0..4+2] of Byte);
+      /// <summary>Modes 3 and 100: pointer to the trampoline returned by RedirectOrgCall or the saved IAT entry.</summary>
       3, 100: (OrgCall: Pointer);
   end;
 
+/// <summary>Hooks AWinApiProc so that calls go to ANewProc, returning a callable pointer to the original implementation.</summary>
+/// <param name="AWinApiProc">WinAPI function to hook.</param>
+/// <param name="ANewProc">Replacement function.</param>
+/// <param name="AHookInfo">Receives state required to undo the hook.</param>
+/// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
+/// <returns>Trampoline pointer for invoking the original function, or nil on failure.</returns>
 function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Pointer; overload;
+/// <summary>Hooks AWinApiProc and writes the original-call pointer into the supplied untyped variable.</summary>
+/// <param name="AWinApiProc">WinAPI function to hook.</param>
+/// <param name="ANewProc">Replacement function.</param>
+/// <param name="AOrgCallProc">Untyped variable that receives a pointer to the original implementation.</param>
+/// <param name="AHookInfo">Receives state required to undo the hook.</param>
+/// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
+/// <returns>True on success.</returns>
 function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Boolean; overload;
+/// <summary>Reverses a hook installed by HookWinApiProc using the captured AHookInfo.</summary>
+/// <param name="AHookInfo">State produced by HookWinApiProc.</param>
+/// <returns>True when the original code was restored.</returns>
 function UnhookWinApiProc(const AHookInfo: TWinApiHookInfo): Boolean;
 
 implementation

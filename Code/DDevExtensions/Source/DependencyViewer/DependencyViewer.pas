@@ -10,6 +10,17 @@
 
 unit DependencyViewer;
 
+/// <summary>
+/// Implements the Dependency Viewer DDevExtensions plugin: scans the active project's
+/// uses clauses to build a unit dependency graph, detects circular references, performs
+/// impact analysis and enforces architectural layer rules.
+/// </summary>
+/// <remarks>
+/// Provides the core scanner, layer-rule engine and plugin host class. The visual
+/// presentation lives in FrmDependencyViewer; the IDE Tools options page lives in
+/// FrmeOptionPageDependencyViewer.
+/// </remarks>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,145 +30,284 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>
+  /// One entry of a unit's uses clause, indicating which section it appears in.
+  /// </summary>
   TUnitDependency = record
+    /// <summary>Name of the unit being referenced.</summary>
     UnitName: string;
+    /// <summary>Resolved source file path for the referenced unit, if known.</summary>
     FileName: string;
-    IsInterface: Boolean; // True if in interface uses, False if in implementation uses
+    /// <summary>True when the reference appears in the interface uses clause; False for implementation.</summary>
+    IsInterface: Boolean;
   end;
 
+  /// <summary>
+  /// Definition of an architectural layer: a name plus a set of unit-name match patterns.
+  /// </summary>
   TLayerDefinition = record
+    /// <summary>Layer name (e.g. "UI", "Business", "DataAccess").</summary>
     Name: string;
-    Patterns: TArray<string>;  // Unit name patterns (wildcards supported: * for multiple chars, ? for single)
+    /// <summary>Wildcard patterns matching unit names belonging to this layer (* = many chars, ? = single).</summary>
+    Patterns: TArray<string>;
   end;
 
+  /// <summary>
+  /// A single layer-rule violation: a source unit using a target unit across a forbidden layer boundary.
+  /// </summary>
   TLayerViolation = record
+    /// <summary>Name of the unit containing the offending uses reference.</summary>
     SourceUnit: string;
+    /// <summary>Layer that the source unit belongs to.</summary>
     SourceLayer: string;
+    /// <summary>Name of the unit being used.</summary>
     TargetUnit: string;
+    /// <summary>Layer that the target unit belongs to.</summary>
     TargetLayer: string;
+    /// <summary>True when the violating reference is in the interface uses clause.</summary>
     IsInterface: Boolean;
   end;
 
   {$WARN HIDING_MEMBER OFF}
+  /// <summary>
+  /// Information about a single Pascal unit, including its parsed dependencies.
+  /// </summary>
   TUnitInfo = class
   private
+    /// <summary>Backing field for <see cref="UnitName"/>.</summary>
     FUnitName: string;
+    /// <summary>Backing field for <see cref="FileName"/>.</summary>
     FFileName: string;
+    /// <summary>Backing field for <see cref="Dependencies"/>.</summary>
     FDependencies: TList<TUnitDependency>;
+    /// <summary>Backing field for <see cref="Parsed"/>.</summary>
     FParsed: Boolean;
   public
+    /// <summary>Creates a new unit info record for the given unit name and source file path.</summary>
+    /// <param name="AUnitName">The unit name (without extension).</param>
+    /// <param name="AFileName">The full path to the .pas file (may be empty for external units).</param>
     constructor Create( const AUnitName, AFileName: string );
+    /// <summary>Releases the dependency list.</summary>
     destructor Destroy; override;
+    /// <summary>Read-only unit name.</summary>
     property UnitName: string read FUnitName;
+    /// <summary>Read-only source file path.</summary>
     property FileName: string read FFileName;
+    /// <summary>List of units this unit depends on (interface and implementation uses).</summary>
     property Dependencies: TList<TUnitDependency> read FDependencies;
+    /// <summary>True after the source has been parsed for its uses clauses.</summary>
     property Parsed: Boolean read FParsed write FParsed;
   end;
   {$WARN HIDING_MEMBER ON}
 
+  /// <summary>
+  /// One step in a circular dependency path.
+  /// </summary>
   TCircularReferenceStep = record
+    /// <summary>Unit name at this step.</summary>
     UnitName: string;
-    IsInterface: Boolean;  // True if this unit is referenced via interface uses
+    /// <summary>True when this unit is reached via the interface uses clause of the previous step.</summary>
+    IsInterface: Boolean;
   end;
 
+  /// <summary>
+  /// A complete circular reference cycle expressed as an ordered chain of steps.
+  /// </summary>
   TCircularReference = record
+    /// <summary>Ordered sequence of steps that closes back on the first step.</summary>
     Steps: TArray<TCircularReferenceStep>;
   end;
 
+  /// <summary>
+  /// Result of impact analysis for a single unit: how many units would be affected by changes to it.
+  /// </summary>
   TImpactAnalysis = record
+    /// <summary>The unit being analysed.</summary>
     UnitName: string;
-    DirectDependents: TArray<string>;      // Units that directly use this unit
-    TransitiveDependents: TArray<string>;  // All units affected (recursive)
+    /// <summary>Units that directly use this unit.</summary>
+    DirectDependents: TArray<string>;
+    /// <summary>All units affected, computed recursively through reverse dependencies.</summary>
+    TransitiveDependents: TArray<string>;
+    /// <summary>Count of direct dependents (length of DirectDependents).</summary>
     DirectCount: Integer;
+    /// <summary>Count of all transitively affected units.</summary>
     TransitiveCount: Integer;
-    RiskLevel: Integer;                    // 0=Safe, 1=Low, 2=Medium, 3=High
+    /// <summary>Risk score: 0=Safe, 1=Low, 2=Medium, 3=High.</summary>
+    RiskLevel: Integer;
+    /// <summary>Returns the risk level as a human-readable string ("Safe", "Low", "Medium", "High").</summary>
     function RiskLevelText: string;
   end;
 
+  /// <summary>
+  /// Persistent layer configuration: layer definitions plus allowed inter-layer dependencies.
+  /// Loaded from / saved to a simple INI-like text file.
+  /// </summary>
   TLayerConfig = class
   private
+    /// <summary>Backing field for <see cref="Layers"/>.</summary>
     FLayers: TList<TLayerDefinition>;
-    FAllowedDeps: TDictionary<string, TStringList>;  // LayerName -> list of allowed target layers
+    /// <summary>Maps each layer name to the list of layer names it is allowed to depend on.</summary>
+    FAllowedDeps: TDictionary<string, TStringList>;
+    /// <summary>Path of the configuration file used by LoadFromFile/SaveToFile.</summary>
     FConfigFile: string;
   public
+    /// <summary>Creates a layer config bound to the given configuration file path.</summary>
+    /// <param name="AConfigFile">Path of the file used for persistence.</param>
     constructor Create( const AConfigFile: string );
+    /// <summary>Releases all owned layer/dependency resources.</summary>
     destructor Destroy; override;
+    /// <summary>Removes all layer definitions and rules.</summary>
     procedure Clear;
+    /// <summary>Adds a new layer with the supplied wildcard patterns.</summary>
+    /// <param name="Name">Layer name.</param>
+    /// <param name="Patterns">Unit-name match patterns.</param>
     procedure AddLayer( const Name: string; const Patterns: TArray<string> );
+    /// <summary>Sets the layers that <paramref name="FromLayer"/> is permitted to depend on.</summary>
+    /// <param name="FromLayer">Source layer name.</param>
+    /// <param name="ToLayers">Allowed target layer names.</param>
     procedure SetAllowedDependencies( const FromLayer: string; const ToLayers: TArray<string> );
+    /// <summary>Returns the layer name a given unit belongs to, or empty if no pattern matches.</summary>
     function GetLayerForUnit( const UnitName: string ): string;
+    /// <summary>Returns True when <paramref name="FromLayer"/> may depend on <paramref name="ToLayer"/>.</summary>
+    /// <remarks>Same-layer dependencies are always allowed; layers with no rules allow all targets.</remarks>
     function IsDependencyAllowed( const FromLayer, ToLayer: string ): Boolean;
+    /// <summary>Returns a snapshot of all defined layers.</summary>
     function GetLayers: TArray<TLayerDefinition>;
+    /// <summary>Returns the allowed target layer names for the given source layer.</summary>
     function GetAllowedDependencies( const LayerName: string ): TArray<string>;
+    /// <summary>Loads layers and rules from the configured file; falls back to defaults if missing.</summary>
     procedure LoadFromFile;
+    /// <summary>Persists the current layers and rules to the configured file.</summary>
     procedure SaveToFile;
+    /// <summary>Loads a sensible default configuration for typical Delphi projects.</summary>
     procedure LoadDefaults;
+    /// <summary>Read-only access to the underlying layer list.</summary>
     property Layers: TList<TLayerDefinition> read FLayers;
   end;
 
+  /// <summary>
+  /// Scans a project's units to build the dependency graph, detect cycles, compute depth
+  /// and reverse-dependency information, and report layer violations.
+  /// Honours conditional compilation directives when <see cref="RespectConditionals"/> is True.
+  /// </summary>
   TDependencyScanner = class
   private
+    /// <summary>All units known to the scanner, keyed by lower-case name.</summary>
     FUnits: TObjectDictionary<string, TUnitInfo>;
+    /// <summary>Search paths used to resolve unit source files.</summary>
     FSearchPaths: TStringList;
+    /// <summary>List of detected circular references.</summary>
     FCircularRefs: TList<TCircularReference>;
+    /// <summary>Maps each unit (lower-case) to the units that reference it.</summary>
     FReverseDeps: TObjectDictionary<string, TStringList>;
+    /// <summary>Cached depth (longest dependency chain) for each unit.</summary>
     FDepthMap: TDictionary<string, Integer>;
+    /// <summary>Optional progress callback.</summary>
     FOnProgress: TNotifyEvent;
+    /// <summary>Backing field for <see cref="ProgressUnit"/>.</summary>
     FProgressUnit: string;
+    /// <summary>Conditional defines extracted from the project options.</summary>
     FProjectDefines: TStringList;
+    /// <summary>Backing field for <see cref="RespectConditionals"/>.</summary>
     FRespectConditionals: Boolean;
+    /// <summary>Parses the supplied source content and populates <paramref name="UnitInfo"/>'s dependencies.</summary>
     procedure ParseUsesClause( const Content: string; UnitInfo: TUnitInfo );
+    /// <summary>Loads and parses a single unit, adding it to the graph if not already present.</summary>
     procedure ScanUnit( const UnitName, FileName: string );
+    /// <summary>Walks every unit looking for cycles and populates <see cref="CircularReferences"/>.</summary>
     procedure DetectCircularReferences;
+    /// <summary>Recursive cycle-detection helper used by <see cref="DetectCircularReferences"/>.</summary>
     function CheckCircular( const UnitName: string; IsInterface: Boolean;
       const Path: TList<TCircularReferenceStep>;
       var Visited: TDictionary<string, Boolean> ): Boolean;
+    /// <summary>Builds the reverse-dependency map after scanning is complete.</summary>
     procedure BuildReverseDependencies;
+    /// <summary>Computes the depth of every unit in the graph.</summary>
     procedure CalculateDepths;
+    /// <summary>Recursively computes the depth of a single unit, guarding against cycles.</summary>
     function CalculateUnitDepth( const UnitName: string;
       var Calculating: TDictionary<string, Boolean> ): Integer;
+    /// <summary>Returns True when the supplied conditional define is active for this project.</summary>
     function IsDefineDefined( const DefineName: string ): Boolean;
+    /// <summary>Evaluates a conditional expression. Returns 1 (true), 0 (false) or -1 (unknown).</summary>
     function EvaluateIfCondition( const Condition: string ): Integer;
   public
+    /// <summary>Creates a new scanner with empty state.</summary>
     constructor Create;
+    /// <summary>Releases all owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Clears all scan results, search paths and project defines.</summary>
     procedure Clear;
+    /// <summary>Adds a directory to the unit search path (duplicates are ignored).</summary>
     procedure AddSearchPath( const Path: string );
+    /// <summary>Scans every .pas module belonging to the supplied project.</summary>
+    /// <param name="Project">The active project to scan.</param>
     procedure ScanProject( const Project: IOTAProject );
+    /// <summary>Scans a single .pas file (also adding its directory to the search path).</summary>
     procedure ScanFile( const FileName: string );
+    /// <summary>Returns the <see cref="TUnitInfo"/> for a unit name, or nil if not scanned.</summary>
     function GetUnitInfo( const UnitName: string ): TUnitInfo;
+    /// <summary>Returns a snapshot of all units known to the scanner.</summary>
     function GetAllUnits: TArray<TUnitInfo>;
+    /// <summary>Returns the list of units that reference the named unit, or nil if none.</summary>
     function GetReverseDependencies( const UnitName: string ): TStringList;
+    /// <summary>Returns the dependency depth of a unit (0 for external/leaf units).</summary>
     function GetUnitDepth( const UnitName: string ): Integer;
+    /// <summary>Computes impact analysis for a unit, including direct and transitive dependents.</summary>
     function AnalyzeImpact( const UnitName: string ): TImpactAnalysis;
+    /// <summary>Returns all dependencies that violate the supplied layer configuration.</summary>
     function DetectLayerViolations( LayerConfig: TLayerConfig ): TArray<TLayerViolation>;
+    /// <summary>Detected circular references after the most recent scan.</summary>
     property CircularReferences: TList<TCircularReference> read FCircularRefs;
+    /// <summary>Notification fired periodically during scanning so the UI can update progress.</summary>
     property OnProgress: TNotifyEvent read FOnProgress write FOnProgress;
+    /// <summary>Name of the unit currently being processed (set just before <see cref="OnProgress"/> fires).</summary>
     property ProgressUnit: string read FProgressUnit;
+    /// <summary>When True, the parser honours $IFDEF/$IF directives using the project defines.</summary>
     property RespectConditionals: Boolean read FRespectConditionals write FRespectConditionals;
   end;
 
+  /// <summary>
+  /// Plugin host class: registers the menu item, owns the persisted options and exposes
+  /// the entry point for displaying the Dependency Viewer form.
+  /// </summary>
   TDependencyViewerPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for <see cref="Enabled"/>.</summary>
     FEnabled: Boolean;
+    /// <summary>Backing field for <see cref="RespectConditionals"/>.</summary>
     FRespectConditionals: Boolean;
+    /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Menu click handler that opens the viewer.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Returns the IDE Tools options page for this plugin.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default option values when no persisted state is found.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin and adds its menu item.</summary>
     constructor Create;
+    /// <summary>Frees the menu item.</summary>
     destructor Destroy; override;
+    /// <summary>Opens (or focuses) the Dependency Viewer form.</summary>
     procedure ShowDependencyViewer;
   published
+    /// <summary>Whether the plugin's features are enabled.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
+    /// <summary>Whether the scanner should honour conditional compilation directives.</summary>
     property RespectConditionals: Boolean read FRespectConditionals write FRespectConditionals;
   end;
 
+/// <summary>
+/// Plugin entry point invoked by the IDE host. Creates or releases the singleton plugin instance.
+/// </summary>
+/// <param name="Unload">When True the plugin is being unloaded; otherwise it is being loaded.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton instance of the Dependency Viewer plugin (set by InitPlugin).</summary>
   DependencyViewerPlugin: TDependencyViewerPlugin;
 
 implementation

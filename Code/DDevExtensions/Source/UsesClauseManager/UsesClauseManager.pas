@@ -10,6 +10,17 @@
 
 unit UsesClauseManager;
 
+/// <summary>
+/// Implements the Uses Clause Manager DDevExtensions plugin: scans the search path to
+/// build an identifier-export database, analyses a unit to determine the optimal
+/// interface vs implementation placement of each used unit, and rewrites the source.
+/// </summary>
+/// <remarks>
+/// The plugin host (<see cref="TUsesClauseManagerPlugin"/>) owns a project-wide
+/// <see cref="TUnitExportsDatabase"/>; the form in FrmUsesClauseManager drives the
+/// analyse/apply workflow.
+/// </remarks>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,113 +30,195 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>Identifies which uses-clause section a unit appears in.</summary>
   TUsesSection = ( usInterface, usImplementation );
 
+  /// <summary>Categorises an identifier exported from a unit's interface section.</summary>
   TExportKind = ( ekType, ekProcedure, ekFunction, ekConst, ekVar );
 
+  /// <summary>One identifier exported from a unit's interface section.</summary>
   TUnitExport = record
+    /// <summary>The exported identifier name.</summary>
     Identifier: string;
+    /// <summary>The kind of declaration (type, procedure, function, const, var).</summary>
     Kind: TExportKind;
   end;
 
+  /// <summary>
+  /// Result for a single used unit: where it currently lives, where it should live and why.
+  /// The two TStringList fields are owned and must be freed by the caller.
+  /// </summary>
   TUnitPlacement = record
+    /// <summary>Name of the used unit.</summary>
     UnitName: string;
+    /// <summary>Section in which the unit currently appears.</summary>
     CurrentSection: TUsesSection;
+    /// <summary>Section the analyser recommends.</summary>
     RecommendedSection: TUsesSection;
+    /// <summary>Human-readable explanation of the recommendation.</summary>
     Reason: string;
+    /// <summary>Identifiers from this unit detected in the interface section.</summary>
     IdentifiersUsedInInterface: TStringList;
+    /// <summary>Identifiers from this unit detected in the implementation section.</summary>
     IdentifiersUsedInImplementation: TStringList;
   end;
 
   /// <summary>
-  /// Database of what identifiers each unit exports.
-  /// Built by scanning interface sections of units in the search path.
+  /// Database of what identifiers each unit exports. Built by scanning the interface
+  /// sections of every .pas file found in the project's search path.
   /// </summary>
   TUnitExportsDatabase = class
   private
+    /// <summary>Maps lower-case unit name -&gt; its list of exports.</summary>
     FExports: TDictionary<string, TList<TUnitExport>>;
-    FIdentifierToUnits: TDictionary<string, TStringList>;  // Reverse lookup: identifier -> units
-    FRTLVCLPriority: TStringList;  // Priority order for RTL/VCL units
+    /// <summary>Reverse lookup: lower-case identifier -&gt; list of unit names that export it.</summary>
+    FIdentifierToUnits: TDictionary<string, TStringList>;
+    /// <summary>Priority-ordered list of RTL/VCL units used to break ties when an identifier has many providers.</summary>
+    FRTLVCLPriority: TStringList;
+    /// <summary>Backing field for <see cref="ProgressFileName"/>.</summary>
     FProgressFileName: string;
+    /// <summary>Scans a single unit file and adds its interface exports to the database.</summary>
     procedure ScanUnit( const UnitPath: string );
+    /// <summary>Populates <see cref="FRTLVCLPriority"/> with the standard preferred-unit ordering.</summary>
     procedure BuildRTLVCLPriority;
   public
+    /// <summary>Creates an empty database and seeds the RTL/VCL priority list.</summary>
     constructor Create;
+    /// <summary>Releases all owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Empties the exports and reverse-lookup dictionaries.</summary>
     procedure Clear;
+    /// <summary>Builds the database by scanning every .pas file in the project's search paths.</summary>
+    /// <param name="Project">The project whose options provide the search path.</param>
+    /// <param name="OnProgress">Optional callback fired per file (read <see cref="ProgressFileName"/> for the current file).</param>
     procedure BuildFromSearchPath( Project: IOTAProject; OnProgress: TNotifyEvent );
+    /// <summary>Returns the list of exports for a unit, or nil if the unit was not scanned.</summary>
     function GetExports( const UnitName: string ): TList<TUnitExport>;
+    /// <summary>Returns the units that export the given identifier, or nil if unknown.</summary>
     function FindUnitsForIdentifier( const Identifier: string ): TStringList;
+    /// <summary>Picks the preferred providing unit for an identifier, honouring the RTL/VCL priority list.</summary>
     function GetPreferredUnit( const Identifier: string; const CandidateUnits: TStringList ): string;
+    /// <summary>Returns the number of units currently held in the database.</summary>
     function GetUnitCount: Integer;
+    /// <summary>Name of the file currently being scanned (updated for the <c>OnProgress</c> callback).</summary>
     property ProgressFileName: string read FProgressFileName;
+    /// <summary>Number of units in the database.</summary>
     property UnitCount: Integer read GetUnitCount;
   end;
 
+  /// <summary>One reference to a unit appearing in a uses clause, along with its line number.</summary>
   TUsedUnitInfo = record
+    /// <summary>Name of the unit (may include dotted prefixes).</summary>
     UnitName: string;
+    /// <summary>The section (interface/implementation) in which the unit was used.</summary>
     Section: TUsesSection;
+    /// <summary>Source line number of the unit reference.</summary>
     LineNumber: Integer;
   end;
 
   /// <summary>
-  /// Analyzes which identifiers are used in interface vs implementation sections.
+  /// Tokenises a unit's source and records which identifiers are used in the interface
+  /// vs implementation sections, plus any qualified references (UnitName.Identifier).
   /// </summary>
   TIdentifierUsageAnalyzer = class
   private
+    /// <summary>Identifiers seen in the interface section.</summary>
     FInterfaceIdentifiers: TStringList;
+    /// <summary>Identifiers seen in the implementation section.</summary>
     FImplementationIdentifiers: TStringList;
-    FQualifiedReferences: TDictionary<string, string>;  // Identifier -> QualifyingUnit
+    /// <summary>Qualified references: lower-case identifier -&gt; the qualifying unit name.</summary>
+    FQualifiedReferences: TDictionary<string, string>;
+    /// <summary>Units listed in the interface uses clause.</summary>
     FInterfaceUsedUnits: TList<TUsedUnitInfo>;
+    /// <summary>Units listed in the implementation uses clause.</summary>
     FImplementationUsedUnits: TList<TUsedUnitInfo>;
   public
+    /// <summary>Creates the analyser with empty result collections.</summary>
     constructor Create;
+    /// <summary>Releases all owned collections.</summary>
     destructor Destroy; override;
+    /// <summary>Tokenises the supplied source and populates all result properties.</summary>
+    /// <param name="Source">UTF-8 source code of a single Pascal unit.</param>
     procedure Analyze( const Source: UTF8String );
+    /// <summary>Clears all collected identifiers and unit references.</summary>
     procedure Clear;
+    /// <summary>Identifiers detected in the interface section of the analysed source.</summary>
     property InterfaceIdentifiers: TStringList read FInterfaceIdentifiers;
+    /// <summary>Identifiers detected in the implementation section of the analysed source.</summary>
     property ImplementationIdentifiers: TStringList read FImplementationIdentifiers;
+    /// <summary>Map of identifier -&gt; qualifying unit for "Unit.Identifier" references.</summary>
     property QualifiedReferences: TDictionary<string, string> read FQualifiedReferences;
+    /// <summary>Units found in the interface uses clause.</summary>
     property InterfaceUsedUnits: TList<TUsedUnitInfo> read FInterfaceUsedUnits;
+    /// <summary>Units found in the implementation uses clause.</summary>
     property ImplementationUsedUnits: TList<TUsedUnitInfo> read FImplementationUsedUnits;
   end;
 
   /// <summary>
-  /// Refactors uses clauses based on analysis results.
+  /// Combines the exports database and a usage analyser to compute placement
+  /// recommendations for each used unit and to rewrite the source's uses clauses.
   /// </summary>
   TUsesClauseRefactorer = class
   private
+    /// <summary>Reference to the project-wide exports database (not owned).</summary>
     FExportsDB: TUnitExportsDatabase;
+    /// <summary>Owned analyser used to inspect the source.</summary>
     FUsageAnalyzer: TIdentifierUsageAnalyzer;
   public
+    /// <summary>Creates a refactorer that consults the supplied exports database.</summary>
+    /// <param name="AExportsDB">Database to consult; not owned by this instance.</param>
     constructor Create( AExportsDB: TUnitExportsDatabase );
+    /// <summary>Releases the owned analyser.</summary>
     destructor Destroy; override;
+    /// <summary>Analyses the source and returns one <see cref="TUnitPlacement"/> per used unit.</summary>
+    /// <remarks>The caller takes ownership of the TStringList fields inside each returned record.</remarks>
     function Analyze( const Source: UTF8String ): TArray<TUnitPlacement>;
+    /// <summary>Returns a rewritten copy of <paramref name="Source"/> with uses clauses adjusted to match the placements.</summary>
     function GenerateRefactoredSource( const Source: UTF8String;
       const Placements: TArray<TUnitPlacement> ): UTF8String;
   end;
 
+  /// <summary>
+  /// Plugin host: registers the menu item, owns the persistent options and the shared
+  /// <see cref="TUnitExportsDatabase"/> used across analysis runs.
+  /// </summary>
   TUsesClauseManagerPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for <see cref="Enabled"/>.</summary>
     FEnabled: Boolean;
+    /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Project-wide exports database, built on demand and cached.</summary>
     FExportsDB: TUnitExportsDatabase;
+    /// <summary>Menu click handler that opens the manager form.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
+    /// <summary>Returns the IDE Tools options page for this plugin.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default option values.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin, the exports database and the menu item.</summary>
     constructor Create;
+    /// <summary>Releases the menu item and the exports database.</summary>
     destructor Destroy; override;
+    /// <summary>Opens (or focuses) the Uses Clause Manager form.</summary>
     procedure ShowManager;
+    /// <summary>Read-only access to the shared exports database.</summary>
     property ExportsDB: TUnitExportsDatabase read FExportsDB;
   published
+    /// <summary>Whether the plugin's features are enabled.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
   end;
 
+/// <summary>
+/// Plugin entry point invoked by the IDE host to load or unload the plugin singleton.
+/// </summary>
+/// <param name="Unload">When True the plugin is unloaded; otherwise it is loaded.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton instance of the Uses Clause Manager plugin.</summary>
   UsesClauseManagerPlugin: TUsesClauseManagerPlugin;
 
 implementation

@@ -8,6 +8,13 @@
 
 unit FrmeOptionPageKeybindings;
 
+/// <summary>
+/// Configuration class and options-page frame for the Key Bindings plug-in. Implements an
+/// IOTAKeyboardBinding that intercepts a configurable set of editor keystrokes (smart Tab,
+/// extended Home/Ctrl-Left/Ctrl-Right, Move-Line-Block, Find-Declaration on caret and
+/// Interface/Implementation Section Toggle) and persists user choices to KeyBindings.xml.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 {.$O-}
 
@@ -19,107 +26,205 @@ uses
   ActnList, FrmeBase, ExtCtrls, ComCtrls, AnsiStrings;
 
 type
+  /// <summary>
+  /// Persistent configuration plus IOTAKeyboardBinding implementation. Owns every preference
+  /// that the Key Bindings options page exposes and (un)registers IDE key bindings as
+  /// settings change.
+  /// </summary>
   TKeybindings = class(TPluginConfig, IOTAKeyboardBinding)
   private
+    /// <summary>Notifier index returned by AddKeyboardBinding; -1 when not currently registered.</summary>
     FNotifierIndex: Integer;
+    /// <summary>Master on/off switch for every key binding the plug-in installs.</summary>
     FActive: Boolean;
+    /// <summary>True to indent/un-indent the selection with Tab/Shift-Tab.</summary>
     FTabIndent: Boolean;
+    /// <summary>True to apply Tab indentation to single-line selections too.</summary>
     FIndentSingleLine: Boolean;
+    /// <summary>True to make Home toggle between BOL and first non-whitespace.</summary>
     FExtendedHome: Boolean;
+    /// <summary>True to invert the Extended Home order (first non-whitespace, then BOL).</summary>
     FSwitchedExtendedHome: Boolean;
+    /// <summary>True to enable richer Ctrl-Left/Ctrl-Right cursor moves through tokens/operators.</summary>
     FExtendedCtrlLeftRight: Boolean;
     {$IF CompilerVersion <= 20.0}
+    /// <summary>True to make Shift-F3 perform a reverse search on Delphi 2009 and earlier.</summary>
     FShiftF3: Boolean;
     {$IFEND}
+    /// <summary>True to enable the Move-Line/Block-up/down feature.</summary>
     FMoveLineBlock: Boolean;
+    /// <summary>True to enable Ctrl-Alt-PgUp Find-Declaration-on-caret.</summary>
     FFindDeclOnCaret: Boolean;
+    /// <summary>True to enable the interface/implementation Section Toggle feature.</summary>
     FSectionToggle: Boolean;
+    /// <summary>User-chosen shortcut to jump up to the previous section heading.</summary>
     FSectionToggleUpKey: TShortCut;
+    /// <summary>User-chosen shortcut to jump down to the next section heading.</summary>
     FSectionToggleDownKey: TShortCut;
+    /// <summary>User-chosen shortcut to move the current line/block up.</summary>
     FMoveLineBlockUpKey: TShortCut;
+    /// <summary>User-chosen shortcut to move the current line/block down.</summary>
     FMoveLineBlockDownKey: TShortCut;
+    /// <summary>Updates FActive and (un)registers the keyboard binding with the IDE.</summary>
     procedure SetActive(const Value: Boolean);
+    /// <summary>Implements the Section Toggle, jumping between interface and implementation.</summary>
     procedure ToggleSection(EditBuffer: IOTAEditBuffer);
+    /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.</summary>
+    /// <param name="Context">Editor context for the keystroke.</param>
+    /// <param name="KeyCode">The shortcut that was pressed.</param>
+    /// <param name="BindingResult">Out parameter set to krHandled / krUnhandled / krNextProc.</param>
     procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
       var BindingResult: TKeyBindingResult);
+    /// <summary>Internal worker for CtrlMoveCursor that consumes a single token starting at the caret.</summary>
     procedure InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
+    /// <summary>Smart Ctrl-Left/Ctrl-Right cursor movement with optional selection extension.</summary>
     procedure CtrlMoveCursor(EditBuffer: IOTAEditBuffer; View: IOTAEditView;
       EditPosition: IOTAEditPosition; ForwardMove: Boolean);
+    /// <summary>Moves the current line or selected block up or down within the buffer.</summary>
+    /// <param name="EditBuffer">Buffer to operate on.</param>
+    /// <param name="Down">True to move down, False to move up.</param>
     procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
+    /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
     procedure FindDeclaration(EditBuffer: IOTAEditBuffer);
     //procedure ReturnPressed(EditBuffer: IOTAEditBuffer);
   protected
+    /// <summary>Returns the option-page descriptor for the IDE Tools > Options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises preferences to factory defaults.</summary>
     procedure Init; override;
+    /// <summary>Re-arms the keyboard binding once configuration has been loaded.</summary>
     procedure Loaded; override;
   public
+    /// <summary>Creates the configuration and loads it from KeyBindings.xml in the app data directory.</summary>
     constructor Create;
+    /// <summary>Deactivates the binding (removes the notifier) and frees the instance.</summary>
     destructor Destroy; override;
 
     { IOTAKeyboardBinding }
+    /// <summary>Adds every active key binding to the IDE's keyboard service.</summary>
     procedure BindKeyboard(const BindingServices: IOTAKeyBindingServices);
+    /// <summary>Returns btPartial - this binding only handles selected shortcuts.</summary>
     function GetBindingType: TBindingType;
+    /// <summary>Returns the display name shown in Tools > Options &gt; Editor &gt; Key Mappings.</summary>
     function GetDisplayName: string;
+    /// <summary>Returns the unique internal name of the binding.</summary>
     function GetName: string;
+    /// <summary>IOTAKeyboardBinding hook fired after a save; no-op.</summary>
     procedure AfterSave;
+    /// <summary>IOTAKeyboardBinding hook fired before a save; no-op.</summary>
     procedure BeforeSave;
+    /// <summary>IOTAKeyboardBinding hook fired when the binding is destroyed; no-op.</summary>
     procedure Destroyed;
+    /// <summary>IOTAKeyboardBinding hook fired when the binding is marked modified; no-op.</summary>
     procedure Modified;
   published
+    /// <summary>Master switch that enables or disables every key binding at once.</summary>
     property Active: Boolean read FActive write SetActive;
+    /// <summary>Enables Tab / Shift-Tab block indentation.</summary>
     property TabIndent: Boolean read FTabIndent write FTabIndent;
+    /// <summary>True to apply TabIndent even when only a single line is selected.</summary>
     property IndentSingleLine: Boolean read FIndentSingleLine write FIndentSingleLine;
+    /// <summary>True to enable Extended Home behaviour.</summary>
     property ExtendedHome: Boolean read FExtendedHome write FExtendedHome;
+    /// <summary>True to invert the Extended Home toggle order.</summary>
     property SwitchedExtendedHome: Boolean read FSwitchedExtendedHome write FSwitchedExtendedHome;
+    /// <summary>True to enable the smarter Ctrl-Left/Ctrl-Right movement.</summary>
     property ExtendedCtrlLeftRight: Boolean read FExtendedCtrlLeftRight write FExtendedCtrlLeftRight;
     {$IF CompilerVersion <= 20.0}
+    /// <summary>True to provide reverse-Find behaviour for Shift-F3 on Delphi 2009 and earlier.</summary>
     property ShiftF3: Boolean read FShiftF3 write FShiftF3;
     {$IFEND}
+    /// <summary>True to enable the Move-Line/Block feature.</summary>
     property MoveLineBlock: Boolean read FMoveLineBlock write FMoveLineBlock;
+    /// <summary>True to enable Ctrl-Alt-PgUp Find-Declaration-on-caret.</summary>
     property FindDeclOnCaret: Boolean read FFindDeclOnCaret write FFindDeclOnCaret;
+    /// <summary>True to enable the interface/implementation Section Toggle.</summary>
     property SectionToggle: Boolean read FSectionToggle write FSectionToggle;
+    /// <summary>Shortcut for Section Toggle - jump to previous section heading.</summary>
     property SectionToggleUpKey: TShortCut read FSectionToggleUpKey write FSectionToggleUpKey;
+    /// <summary>Shortcut for Section Toggle - jump to next section heading.</summary>
     property SectionToggleDownKey: TShortCut read FSectionToggleDownKey write FSectionToggleDownKey;
+    /// <summary>Shortcut to move the current line or selection up.</summary>
     property MoveLineBlockUpKey: TShortCut read FMoveLineBlockUpKey write FMoveLineBlockUpKey;
+    /// <summary>Shortcut to move the current line or selection down.</summary>
     property MoveLineBlockDownKey: TShortCut read FMoveLineBlockDownKey write FMoveLineBlockDownKey;
   end;
 
+  /// <summary>
+  /// Designer frame providing the user interface for the Key Bindings options page hosted in
+  /// the IDE's Tools > Options dialog.
+  /// </summary>
   TFrameOptionPageKeybindings = class(TFrameBase, ITreePageComponent)
+    /// <summary>Master on/off check box.</summary>
     cbxActive: TCheckBox;
+    /// <summary>Toggle for Tab indentation.</summary>
     cbxTabIndent: TCheckBox;
+    /// <summary>Toggle for the Extended Home behaviour.</summary>
     cbxExtendedHome: TCheckBox;
+    /// <summary>Toggle for swapping the Extended Home order (first non-whitespace first).</summary>
     cbxSwitchExtendedHome: TCheckBox;
+    /// <summary>Toggle for indenting single-line selections.</summary>
     cbxIndentSingleLine: TCheckBox;
+    /// <summary>Toggle for the Ctrl-Left/Ctrl-Right enhancement.</summary>
     cbxExtendedCtrlLeftRight: TCheckBox;
+    /// <summary>Toggle for the legacy Shift-F3 reverse search (Delphi 2009 and earlier only).</summary>
     cbxShiftF3: TCheckBox;
+    /// <summary>Toggle for Move-Line/Block.</summary>
     chkMoveLineBlock: TCheckBox;
+    /// <summary>Toggle for Find-Declaration-on-caret.</summary>
     chkFindDeclOnCaret: TCheckBox;
+    /// <summary>Toggle for Section Toggle.</summary>
     chkSectionToggle: TCheckBox;
+    /// <summary>Caption for hkMoveLineUp.</summary>
     lblMoveLineUp: TLabel;
+    /// <summary>Caption for hkMoveLineDown.</summary>
     lblMoveLineDown: TLabel;
+    /// <summary>Caption for hkSectionUp.</summary>
     lblSectionUp: TLabel;
+    /// <summary>Caption for hkSectionDown.</summary>
     lblSectionDown: TLabel;
+    /// <summary>Hot-key control for capturing the Move-Line-Up shortcut.</summary>
     hkMoveLineUp: THotKey;
+    /// <summary>Hot-key control for capturing the Move-Line-Down shortcut.</summary>
     hkMoveLineDown: THotKey;
+    /// <summary>Hot-key control for capturing the Section-Toggle-Up shortcut.</summary>
     hkSectionUp: THotKey;
+    /// <summary>Hot-key control for capturing the Section-Toggle-Down shortcut.</summary>
     hkSectionDown: THotKey;
+    /// <summary>Re-evaluates dependent control enabled state when Active changes.</summary>
     procedure cbxActiveClick(Sender: TObject);
+    /// <summary>Enables/disables the swap-order check box based on cbxExtendedHome.</summary>
     procedure cbxExtendedHomeClick(Sender: TObject);
+    /// <summary>Enables/disables cbxIndentSingleLine based on cbxTabIndent.</summary>
     procedure cbxTabIndentClick(Sender: TObject);
+    /// <summary>Enables/disables the Move-Line shortcut controls based on the master check box.</summary>
     procedure chkMoveLineBlockClick(Sender: TObject);
+    /// <summary>Enables/disables the Section-Toggle shortcut controls based on the master check box.</summary>
     procedure chkSectionToggleClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Configuration object passed in via SetUserData.</summary>
     FKeyBindings: TKeybindings;
   public
     { Public-Deklarationen }
+    /// <summary>Receives the TKeybindings configuration object that backs this page.</summary>
+    /// <param name="UserData">Must be a TKeybindings instance.</param>
     procedure SetUserData(UserData: TObject);
+    /// <summary>Copies current configuration values into the controls.</summary>
     procedure LoadData;
+    /// <summary>Persists control values back into the configuration object and saves to disk.</summary>
     procedure SaveData;
+    /// <summary>Called when the page becomes visible. No-op.</summary>
     procedure Selected;
+    /// <summary>Called when the page is hidden. No-op.</summary>
     procedure Unselected;
   end;
 
+/// <summary>
+/// Plug-in entry point. Creates the global TKeybindings instance on load and frees it on
+/// unload.
+/// </summary>
+/// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

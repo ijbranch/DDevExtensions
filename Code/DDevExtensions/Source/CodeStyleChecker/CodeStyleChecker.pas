@@ -8,6 +8,13 @@
 
 unit CodeStyleChecker;
 
+/// <summary>
+/// DDevExtensions plugin that scans Pascal sources in the active project for naming-convention
+/// violations (T/I/F/E/P prefixes, parameter and variable prefix rules, missing unit-scope prefixes)
+/// and a configurable set of anti-patterns (empty finally, nested with, deep nesting, long methods,
+/// long parameter lists). Reports violations through a dockable results form.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,113 +24,239 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>
+  /// Single style or anti-pattern violation discovered while analysing a Pascal source unit.
+  /// </summary>
   TStyleViolation = record
+    /// <summary>Absolute path of the file containing the violation.</summary>
     FileName: string;
+    /// <summary>Bare unit name (without extension) for display.</summary>
     UnitName: string;
+    /// <summary>One-based line number of the violation.</summary>
     Line: Integer;
+    /// <summary>Column number reported by the lexer.</summary>
     Column: Integer;
+    /// <summary>Identifier of the rule that was violated (e.g. <c>TypePrefix</c>).</summary>
     Rule: string;
+    /// <summary>Description of what the analyser expected to see.</summary>
     Expected: string;
+    /// <summary>The offending value as found in the source.</summary>
     Actual: string;
+    /// <summary>Severity classification: <c>Warning</c> or <c>Info</c>.</summary>
     Severity: string;
-    Category: string;  // 'NamingConvention' or 'AntiPattern'
+    /// <summary>Top-level category — <c>NamingConvention</c> or <c>AntiPattern</c>.</summary>
+    Category: string;
   end;
 
+  /// <summary>
+  /// User-defined mapping that associates a type-name pattern with a required identifier prefix
+  /// (for example <c>String</c> -&gt; <c>s</c>, <c>TStringList</c> -&gt; <c>l</c>).
+  /// </summary>
   TTypePrefixRule = record
-    TypePattern: string;   // e.g., 'String', 'Integer', 'TStringList'
-    Prefix: string;        // e.g., 's', 'i', 'l'
+    /// <summary>Type pattern such as <c>String</c>, <c>Integer</c>, or <c>TStringList</c>.</summary>
+    TypePattern: string;
+    /// <summary>Required identifier prefix (e.g. <c>s</c>, <c>i</c>, <c>l</c>).</summary>
+    Prefix: string;
+    /// <summary>Whether the rule participates in checking.</summary>
     Enabled: Boolean;
   end;
 
+  /// <summary>
+  /// Built-in style rule describing one naming-convention check (e.g. types must start with T).
+  /// </summary>
   TStyleRule = class
   public
+    /// <summary>Short identifier of the rule.</summary>
     Name: string;
+    /// <summary>Human-readable description shown to the user.</summary>
     Description: string;
+    /// <summary>Required prefix for matching identifiers.</summary>
     Prefix: string;
+    /// <summary>Construct category the rule applies to (Types, Interfaces, Fields, ...).</summary>
     AppliesTo: string;
+    /// <summary>Whether this rule is currently enabled.</summary>
     Enabled: Boolean;
+    /// <summary>Severity reported when the rule is violated.</summary>
     Severity: string;
   end;
 
+  /// <summary>
+  /// Engine that lexes Pascal source files and accumulates <see cref="TStyleViolation"/> entries
+  /// according to the configured naming and anti-pattern rules.
+  /// </summary>
   TStyleChecker = class
   private
+    /// <summary>Built-in default rule set (independent of the user's prefix map).</summary>
     FRules: TObjectList<TStyleRule>;
+    /// <summary>File currently being analysed; surfaced via <see cref="ProgressFileName"/>.</summary>
     FProgressFileName: string;
+    /// <summary>Populates <see cref="FRules"/> with the standard naming-convention rules.</summary>
     procedure InitDefaultRules;
+    /// <summary>
+    /// Tests <paramref name="Name"/> against the required <paramref name="Prefix"/> and, when it
+    /// fails, fills <paramref name="Violation"/> with the source location and rule metadata.
+    /// </summary>
+    /// <param name="Name">Identifier under inspection.</param>
+    /// <param name="RuleName">Identifier of the rule being applied.</param>
+    /// <param name="Prefix">Required leading characters.</param>
+    /// <param name="Line">Zero-based line reported by the lexer (converted to 1-based).</param>
+    /// <param name="Column">Column reported by the lexer.</param>
+    /// <param name="FileName">Absolute path of the source file.</param>
+    /// <param name="UnitName">Bare unit name for display.</param>
+    /// <param name="Severity">Severity tag stored on the violation.</param>
+    /// <param name="Violation">Populated when the function returns <c>True</c>.</param>
+    /// <returns><c>True</c> when the identifier is non-empty and lacks the required prefix.</returns>
     function CheckName( const Name, RuleName, Prefix: string; Line, Column: Integer;
       const FileName, UnitName, Severity: string;
       var Violation: TStyleViolation ): Boolean;
   public
+    /// <summary>Creates the checker and initialises the default rule set.</summary>
     constructor Create;
+    /// <summary>Releases the internal rule list.</summary>
     destructor Destroy; override;
+    /// <summary>
+    /// Analyses a single Pascal file and returns all violations encountered.
+    /// </summary>
+    /// <param name="FileName">Absolute path of the source file.</param>
+    /// <param name="Violations">Receives the array of detected violations.</param>
+    /// <returns><c>True</c> when the file was readable and processed.</returns>
     function CheckFile( const FileName: string; out Violations: TArray<TStyleViolation> ): Boolean;
+    /// <summary>
+    /// Iterates every <c>.pas</c> module in the supplied IDE project and aggregates the violations.
+    /// </summary>
+    /// <param name="Project">Active OTA project to scan.</param>
+    /// <param name="AllViolations">Receives the combined violation list.</param>
+    /// <param name="OnProgress">Optional callback invoked between files (use <see cref="ProgressFileName"/>).</param>
+    /// <returns><c>True</c> when scanning completed.</returns>
     function CheckProject( const Project: IOTAProject; out AllViolations: TArray<TStyleViolation>;
       OnProgress: TNotifyEvent ): Boolean;
+    /// <summary>Built-in style rules.</summary>
     property Rules: TObjectList<TStyleRule> read FRules;
+    /// <summary>Name of the file currently being analysed (for progress reporting).</summary>
     property ProgressFileName: string read FProgressFileName;
   end;
 
+  /// <summary>
+  /// Plugin host integrating the Code Style Checker into the DDevExtensions menu and persisting
+  /// its configuration via <see cref="TPluginConfig"/>.
+  /// </summary>
   TCodeStyleCheckerPlugin = class( TPluginConfig )
   private
+    /// <summary>Master enable flag for the entire plugin.</summary>
     FEnabled: Boolean;
+    /// <summary>Whether type-name (T) prefix checks are active.</summary>
     FCheckTypes: Boolean;
+    /// <summary>Whether interface-name (I) prefix checks are active.</summary>
     FCheckInterfaces: Boolean;
+    /// <summary>Whether class field (F) prefix checks are active.</summary>
     FCheckFields: Boolean;
+    /// <summary>Whether exception-class (E) prefix checks are active.</summary>
     FCheckExceptions: Boolean;
+    /// <summary>Whether pointer-type (P) prefix checks are active.</summary>
     FCheckPointers: Boolean;
+    /// <summary>Whether parameter-name (A) prefix checks are active.</summary>
     FCheckParameters: Boolean;
+    /// <summary>Whether variable-prefix rules from the type-prefix map are applied.</summary>
     FCheckVariablePrefixes: Boolean;
+    /// <summary>Whether identifiers in the uses clause are required to use the unit-scope prefix.</summary>
     FCheckUnitScopeNames: Boolean;
+    /// <summary>User-defined type-prefix rules used for variable and field checks.</summary>
     FTypePrefixRules: TArray<TTypePrefixRule>;
+    /// <summary>Menu item added to the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
     // Anti-pattern detection options
+    /// <summary>Master enable flag for anti-pattern detection.</summary>
     FCheckAntiPatterns: Boolean;
+    /// <summary>Detect <c>finally</c> blocks containing no statements.</summary>
     FCheckEmptyFinally: Boolean;
+    /// <summary>Detect <c>with</c> statements nested within other <c>with</c> blocks.</summary>
     FCheckNestedWith: Boolean;
+    /// <summary>Detect control-flow nesting beyond <see cref="FMaxNestingDepth"/>.</summary>
     FCheckDeepNesting: Boolean;
+    /// <summary>Detect methods exceeding <see cref="FMaxMethodLines"/> lines.</summary>
     FCheckLongMethods: Boolean;
+    /// <summary>Detect parameter lists longer than <see cref="FMaxParameters"/>.</summary>
     FCheckLongParamLists: Boolean;
+    /// <summary>Threshold used by the deep-nesting check.</summary>
     FMaxNestingDepth: Integer;
+    /// <summary>Threshold used by the long-method check.</summary>
     FMaxMethodLines: Integer;
+    /// <summary>Threshold used by the long-parameter-list check.</summary>
     FMaxParameters: Integer;
+    /// <summary>Menu OnClick handler that opens the checker form.</summary>
     procedure MenuItemClick( Sender: TObject );
+    /// <summary>Serialises the type-prefix rules to a single delimited string for persistence.</summary>
     function GetTypePrefixRulesAsString: string;
+    /// <summary>Restores the type-prefix rules from the delimited string written by the getter.</summary>
     procedure SetTypePrefixRulesFromString( const Value: string );
   protected
+    /// <summary>Returns the option page used in the DDevExtensions options dialog.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin, loads its configuration, and registers the menu item.</summary>
     constructor Create;
+    /// <summary>Removes the menu item and releases the plugin.</summary>
     destructor Destroy; override;
+    /// <summary>Opens the Code Style Checker results form.</summary>
     procedure ShowChecker;
+    /// <summary>
+    /// Resets <see cref="TypePrefixRules"/> to the built-in defaults (s/i/l/r/f/v/c/r and array variants).
+    /// </summary>
     procedure InitDefaultTypePrefixRules;
+    /// <summary>User-defined type-prefix rules consulted when checking variables and fields.</summary>
     property TypePrefixRules: TArray<TTypePrefixRule> read FTypePrefixRules write FTypePrefixRules;
   published
+    /// <summary>Master enable flag persisted in the configuration file.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
+    /// <summary>Persisted state of the type-prefix check.</summary>
     property CheckTypes: Boolean read FCheckTypes write FCheckTypes;
+    /// <summary>Persisted state of the interface-prefix check.</summary>
     property CheckInterfaces: Boolean read FCheckInterfaces write FCheckInterfaces;
+    /// <summary>Persisted state of the field-prefix check.</summary>
     property CheckFields: Boolean read FCheckFields write FCheckFields;
+    /// <summary>Persisted state of the exception-prefix check.</summary>
     property CheckExceptions: Boolean read FCheckExceptions write FCheckExceptions;
+    /// <summary>Persisted state of the pointer-prefix check.</summary>
     property CheckPointers: Boolean read FCheckPointers write FCheckPointers;
+    /// <summary>Persisted state of the parameter-prefix check.</summary>
     property CheckParameters: Boolean read FCheckParameters write FCheckParameters;
+    /// <summary>Persisted state of the variable-prefix check.</summary>
     property CheckVariablePrefixes: Boolean read FCheckVariablePrefixes write FCheckVariablePrefixes;
+    /// <summary>Persisted state of the unit-scope check.</summary>
     property CheckUnitScopeNames: Boolean read FCheckUnitScopeNames write FCheckUnitScopeNames;
+    /// <summary>Serialised representation of <see cref="TypePrefixRules"/> for persistence.</summary>
     property TypePrefixRulesData: string read GetTypePrefixRulesAsString write SetTypePrefixRulesFromString;
     // Anti-pattern detection options
+    /// <summary>Persisted master enable for anti-pattern detection.</summary>
     property CheckAntiPatterns: Boolean read FCheckAntiPatterns write FCheckAntiPatterns;
+    /// <summary>Persisted state of the empty-finally check.</summary>
     property CheckEmptyFinally: Boolean read FCheckEmptyFinally write FCheckEmptyFinally;
+    /// <summary>Persisted state of the nested-with check.</summary>
     property CheckNestedWith: Boolean read FCheckNestedWith write FCheckNestedWith;
+    /// <summary>Persisted state of the deep-nesting check.</summary>
     property CheckDeepNesting: Boolean read FCheckDeepNesting write FCheckDeepNesting;
+    /// <summary>Persisted state of the long-method check.</summary>
     property CheckLongMethods: Boolean read FCheckLongMethods write FCheckLongMethods;
+    /// <summary>Persisted state of the long-parameter-list check.</summary>
     property CheckLongParamLists: Boolean read FCheckLongParamLists write FCheckLongParamLists;
+    /// <summary>Persisted maximum control-flow nesting depth.</summary>
     property MaxNestingDepth: Integer read FMaxNestingDepth write FMaxNestingDepth;
+    /// <summary>Persisted maximum method length, in lines.</summary>
     property MaxMethodLines: Integer read FMaxMethodLines write FMaxMethodLines;
+    /// <summary>Persisted maximum number of parameters per method.</summary>
     property MaxParameters: Integer read FMaxParameters write FMaxParameters;
   end;
 
+/// <summary>
+/// Plugin lifecycle entry point — creates or releases <see cref="CodeStyleCheckerPlugin"/>.
+/// </summary>
+/// <param name="Unload"><c>True</c> to release the plugin, <c>False</c> to create it.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton plugin instance accessed from elsewhere in the package.</summary>
   CodeStyleCheckerPlugin: TCodeStyleCheckerPlugin;
 
 implementation

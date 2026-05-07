@@ -9,232 +9,436 @@
 
 unit FileStreams;
 
+/// <summary>
+/// Stream classes used by the CompileInterceptor to feed the Delphi compiler with file contents
+/// while transparently injecting prologue text, decoding UTF/UCS BOMs and pooling write buffers
+/// for large in-memory caches.
+/// </summary>
+
 interface
 
 uses
   Windows, SysUtils, Classes, Contnrs;
 
 const
+  /// <summary>Maximum number of idle write buffers to keep cached in TBufferPool before freeing extras.</summary>
   MaxWriteAvgBufferCount = 5;
+  /// <summary>Maximum number of idle read buffers to keep cached in TBufferPool before freeing extras.</summary>
   MaxReadAvgBufferCount = 3;
+  /// <summary>Disk sector size used to align buffered writes for optimal I/O throughput.</summary>
   DISK_SECTOR_SIZE = 512;
+  /// <summary>Size of each pooled write buffer, in bytes.</summary>
   MaxWritePoolBufferSize = DISK_SECTOR_SIZE * 256;
+  /// <summary>Size of each pooled read buffer, in bytes.</summary>
   MaxReadPoolBufferSize = DISK_SECTOR_SIZE * 24;
 
 type
   {$IFNDEF UNICODE}
+  /// <summary>Pre-Unicode alias for AnsiString.</summary>
   RawByteString = AnsiString;
+  /// <summary>Pre-Unicode alias for WideString.</summary>
   UnicodeString = WideString;
   {$ENDIF ~UNICODE}
 
+  /// <summary>
+  /// Pool of fixed-size virtual-memory buffers that amortises allocation cost across the many
+  /// short-lived buffered streams created during a compile. Buffers are reused while the pool is
+  /// short of MaxWriteAvgBufferCount/MaxReadAvgBufferCount idle entries; surplus buffers are
+  /// returned to the OS via VirtualFree.
+  /// </summary>
   TBufferPool = class(TObject)
   private
+    /// <summary>Allocated write buffers (PByteArray) or nil for slots that have been freed.</summary>
     FWriteBuffers: TList;
+    /// <summary>Per-write-buffer locked/unlocked flag (Pointer(1) = locked, nil = free).</summary>
     FWriteBufferState: TList;
+    /// <summary>Allocated read buffers (PByteArray) or nil for slots that have been freed.</summary>
     FReadBuffers: TList;
+    /// <summary>Per-read-buffer locked/unlocked flag.</summary>
     FReadBufferState: TList;
   public
+    /// <summary>Initialises the empty pool.</summary>
     constructor Create;
+    /// <summary>Frees all pooled buffers via VirtualFree.</summary>
     destructor Destroy; override;
 
+    /// <summary>Acquires an idle write buffer, allocating a fresh one when the pool is empty.</summary>
+    /// <returns>Pointer to a buffer of size MaxWritePoolBufferSize.</returns>
     function AllocWrite: PByteArray;
+    /// <summary>Returns a write buffer to the pool, freeing it when the idle count exceeds the cap.</summary>
+    /// <param name="P">Buffer obtained from AllocWrite.</param>
     procedure ReleaseWrite(P: PByteArray);
+    /// <summary>Acquires an idle read buffer, allocating a fresh one when the pool is empty.</summary>
+    /// <returns>Pointer to a buffer of size MaxReadPoolBufferSize.</returns>
     function AllocRead: PByteArray;
+    /// <summary>Returns a read buffer to the pool, freeing it when the idle count exceeds the cap.</summary>
+    /// <param name="P">Buffer obtained from AllocRead.</param>
     procedure ReleaseRead(P: PByteArray);
   end;
 
+  /// <summary>Identifier for the byte-order mark detected at the start of a stream.</summary>
   TBOMType = (bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE);
+  /// <summary>Buffer used to capture the first four bytes of a stream during BOM detection.</summary>
   TBOMArray = array[0..3] of Byte;
 
+  /// <summary>Pointer to a TOrgStreamData record.</summary>
   POrgStreamData = ^TOrgStreamData;
+  /// <summary>
+  /// Set of function pointers exposed by the IDE's compiler that allow the interceptor to delegate
+  /// file I/O back to the original implementation when wrapping handles in TOrgStream.
+  /// </summary>
   TOrgStreamData = record
+    /// <summary>Original file-open routine.</summary>
     Open: function(const Filename: PAnsiChar): THandle; pascal;
+    /// <summary>Original seek routine.</summary>
     Seek: function(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
+    /// <summary>Original read routine.</summary>
     Read: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+    /// <summary>Original write routine.</summary>
     Write: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+    /// <summary>Original status routine returning the file's modification date and size.</summary>
     FileStatus: function(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
   end;
 
+  /// <summary>TStream wrapper around a Win32 file handle that optionally delegates to an original IDE routine set.</summary>
   TOrgStream = class(TStream)
   private
+    /// <summary>Underlying Win32 file handle.</summary>
     FHandle: THandle;
+    /// <summary>Optional pointer to original IDE I/O routines; nil routes to the default Delphi RTL helpers.</summary>
     FOrgStreamData: POrgStreamData;
   protected
+    /// <summary>Truncates the stream to NewSize using either the IDE routines or SetEndOfFile.</summary>
+    /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Int64 overload of SetSize for Delphi 6+.</summary>
+    /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
+    /// <summary>Wraps an existing handle. Ownership is not transferred.</summary>
+    /// <param name="AHandle">Open file handle.</param>
+    /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData = nil);
 
+    /// <summary>Reads up to Count bytes from the underlying handle.</summary>
     function Read(var Buffer; Count: Integer): Integer; override;
+    /// <summary>Writes up to Count bytes to the underlying handle.</summary>
     function Write(const Buffer; Count: Integer): Integer; override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Seeks within the underlying handle (Delphi 6+ Int64 overload).</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
+    /// <summary>Seeks within the underlying handle (legacy Longint overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
 
+    /// <summary>Underlying file handle.</summary>
     property Handle: THandle read FHandle;
   end;
 
+  /// <summary>
+  /// Sector-aligned write buffer that batches small writes into MaxWritePoolBufferSize chunks
+  /// before flushing to the wrapped stream. Designed to be the only writer for the wrapped stream.
+  /// </summary>
   TBufferedWriteStream = class(TStream)
   private
+    /// <summary>Number of bytes currently held in FBuffer.</summary>
     FBufSize: Cardinal;
+    /// <summary>Pooled write buffer.</summary>
     FBuffer: PByteArray;
+    /// <summary>Offset within FBuffer at which valid data starts (used for sector alignment).</summary>
     FBufStart: Cardinal;
+    /// <summary>True when FBufStart needs recalculation from the wrapped stream's position.</summary>
     FCalcBufStart: Boolean;
+    /// <summary>Wrapped destination stream.</summary>
     FStream: TStream;
+    /// <summary>True when the wrapped stream is owned and freed by this instance.</summary>
     FOwnsStream: Boolean;
   protected
+    /// <summary>Flushes pending writes and resizes the wrapped stream.</summary>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Int64 overload of SetSize.</summary>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
+    /// <summary>Wraps a file handle behind a fresh TOrgStream.</summary>
+    /// <param name="AHandle">Open file handle.</param>
+    /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData = nil); overload;
+    /// <summary>Wraps an existing TStream.</summary>
+    /// <param name="AStream">Destination stream.</param>
+    /// <param name="AOwnsStream">When True, AStream is freed by this instance.</param>
     constructor Create(AStream: TStream; AOwnsStream: Boolean = True); overload;
+    /// <summary>Flushes pending writes, releases the buffer and (optionally) frees the wrapped stream.</summary>
     destructor Destroy; override;
+    /// <summary>Flushes the buffer and reads from the wrapped stream.</summary>
     function Read(var Buffer; Count: Longint): Longint; override;
+    /// <summary>Buffers Count bytes; flushes automatically when the buffer fills up.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Seeks within the wrapped stream, flushing the buffer as needed.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
+    /// <summary>Seeks within the wrapped stream (legacy overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
+    /// <summary>Writes any buffered bytes to the wrapped stream and resets the buffer.</summary>
     procedure Flush;
 
+    /// <summary>Underlying destination stream.</summary>
     property Stream: TStream read FStream write FStream;
+    /// <summary>Whether the wrapped stream is freed by this instance.</summary>
     property OwnsStream: Boolean read FOwnsStream write FOwnsStream;
   end;
 
+  /// <summary>
+  /// Stream that prepends an arbitrary block of bytes ("inject data") to the contents of a file
+  /// handle. Detects the file's BOM, transcodes UCS2/UCS4 source to UTF-8 so the Delphi compiler
+  /// can read it, and exposes the resulting view as a single read-only stream.
+  /// </summary>
   TInjectStream = class(TOrgStream)
   private
+    /// <summary>Bytes prepended to the file contents (after BOM normalisation).</summary>
     FInjectData: RawByteString;
+    /// <summary>Logical position within the combined inject + file stream.</summary>
     FVirtualPosition: Int64;
+    /// <summary>True while the constructor is reading the underlying file for BOM detection.</summary>
     FLoading: Boolean;
+    /// <summary>Length of the UTF-8 conversion result when the source was transcoded; 0 otherwise.</summary>
     FUtfConversionSize: Integer;
+    /// <summary>Length of the BOM detected at the start of the file.</summary>
     FBOMLen: Integer;
+    /// <summary>Bytes captured during BOM detection.</summary>
     FBOM: TBOMArray;
+    /// <summary>Detected BOM type.</summary>
     FBOMType: TBOMType;
   protected
+    /// <summary>Always raises; injecting streams are read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Always raises; injecting streams are read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
+    /// <summary>Creates the stream and decodes the BOM, transcoding the file payload when necessary.</summary>
+    /// <param name="AHandle">Open file handle.</param>
+    /// <param name="AInjectData">Bytes to prepend to the file contents.</param>
+    /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData = nil);
+    /// <summary>Reads from the inject buffer and then transparently from the underlying file.</summary>
     function Read(var Buffer; Count: Longint): Longint; override;
+    /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Seeks within the combined view of inject buffer and underlying file.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
+    /// <summary>Seeks within the combined view (legacy overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
 
+    /// <summary>Length of the UTF-8 conversion result when the source had a UCS2/UCS4 BOM.</summary>
     property UtfConversionSize: Integer read FUtfConversionSize;
+    /// <summary>Bytes prepended to the file contents (after BOM normalisation).</summary>
     property InjectData: RawByteString read FInjectData;
   end;
 
+  /// <summary>Forward declaration; defined below.</summary>
   TFileCache = class;
 
+  /// <summary>Read-only stream view over a TFileCache that supports independent positions per reader.</summary>
   TFileCacheReaderStream = class(TStream)
   private
+    /// <summary>Owning cache providing the backing buffer.</summary>
     FFileCache: TFileCache;
+    /// <summary>Current read position within the cache.</summary>
     FPosition: Integer;
   protected
+    /// <summary>Always raises; reader streams are read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Always raises; reader streams are read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
+    /// <summary>Custom allocator that uses GetMem for direct instances to avoid GetMemoryManager overhead.</summary>
     class function NewInstance: TObject; override;
+    /// <summary>Custom deallocator paired with NewInstance.</summary>
     procedure FreeInstance; override;
+    /// <summary>Registers the reader with the file cache.</summary>
+    /// <param name="AFileCache">Cache providing the data.</param>
     constructor Create(AFileCache: TFileCache);
+    /// <summary>Removes the reader from the cache's reader list.</summary>
     destructor Destroy; override;
+    /// <summary>Reads up to Count bytes from the cache.</summary>
     function Read(var Buffer; Count: Longint): Longint; override;
+    /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
+    /// <summary>Adjusts the reader's position within the cache.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
+    /// <summary>Adjusts the reader's position within the cache (legacy overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
 
+    /// <summary>Owning cache.</summary>
     property FileCache: TFileCache read FFileCache;
   end;
 
+  /// <summary>
+  /// In-memory cache of an entire file or stream. Multiple TFileCacheReaderStream instances can
+  /// then read concurrently from the same backing buffer, each maintaining its own position.
+  /// </summary>
   TFileCache = class(TObject)
   private
+    /// <summary>Heap-allocated buffer holding the cached contents.</summary>
     FBuffer: PByteArray;
+    /// <summary>Length of FBuffer in bytes.</summary>
     FSize: Integer;
+    /// <summary>List of currently registered TFileCacheReaderStream instances.</summary>
     FReaders: TObjectList;
+    /// <summary>Returns the reader at the specified index.</summary>
     function GetReader(Index: Integer): TFileCacheReaderStream;
+    /// <summary>Returns the number of currently registered readers.</summary>
     function GetReaderCount: Integer;
   public
+    /// <summary>Custom allocator analogous to TFileCacheReaderStream.NewInstance.</summary>
     class function NewInstance: TObject; override;
+    /// <summary>Custom deallocator paired with NewInstance.</summary>
     procedure FreeInstance; override;
+    /// <summary>Loads the entire file into memory using a TInjectStream for BOM normalisation.</summary>
+    /// <param name="hFile">Open file handle.</param>
+    /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(hFile: THandle; AOrgStreamData: POrgStreamData = nil); overload;
+    /// <summary>Loads ASize bytes from the file (use -1 to read all).</summary>
+    /// <param name="hFile">Open file handle.</param>
+    /// <param name="ASize">Number of bytes to load, or -1 to read until end-of-file.</param>
+    /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(hFile: THandle; ASize: Integer; AOrgStreamData: POrgStreamData = nil); overload;
+    /// <summary>Copies the entire contents of AStream into the cache.</summary>
+    /// <param name="AStream">Source stream.</param>
     constructor Create(AStream: TStream); overload;
+    /// <summary>Frees the buffer and registered reader list.</summary>
     destructor Destroy; override;
 
+    /// <summary>Creates and registers a new reader stream over the cached contents.</summary>
+    /// <returns>The newly-created reader.</returns>
     function NewReader: TFileCacheReaderStream;
 
+    /// <summary>Length of the cached buffer in bytes.</summary>
     property Size: Integer read FSize;
+    /// <summary>Pointer to the cached buffer.</summary>
     property Buffer: PByteArray read FBuffer;
+    /// <summary>Number of currently registered readers.</summary>
     property ReaderCount: Integer read GetReaderCount;
+    /// <summary>Indexed accessor for registered readers.</summary>
     property Readers[Index: Integer]: TFileCacheReaderStream read GetReader; default;
   end;
 
+  /// <summary>Read-only stream view over a caller-supplied byte buffer (no ownership).</summary>
   TBufferStream = class(TStream)
   private
+    /// <summary>Caller-supplied buffer.</summary>
     FBuffer: PByteArray;
+    /// <summary>Length of FBuffer in bytes.</summary>
     FSize: Integer;
+    /// <summary>Current read position.</summary>
     FPosition: Integer;
   protected
+    /// <summary>Always raises; the stream is read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
+    /// <summary>Always raises; the stream is read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
   public
+    /// <summary>Wraps a buffer for reading.</summary>
+    /// <param name="ABuffer">Byte buffer.</param>
+    /// <param name="ASize">Number of valid bytes in ABuffer.</param>
     constructor Create(ABuffer: PByteArray; ASize: Integer);
+    /// <summary>Reads up to Count bytes from the buffer.</summary>
     function Read(var Buffer; Count: Longint): Longint; override;
+    /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
+    /// <summary>Repositions the read cursor within the buffer.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
   end;
 
+  /// <summary>TBufferStream that owns its underlying RawByteString contents for the lifetime of the stream.</summary>
   TRawByteStringStream = class(TBufferStream)
   private
+    /// <summary>Owned source data.</summary>
     FData: RawByteString;
   public
+    /// <summary>Wraps the supplied RawByteString.</summary>
+    /// <param name="AData">Source bytes; copied into FData and exposed via the inherited buffer.</param>
     constructor Create(const AData: RawByteString);
   end;
 
+  /// <summary>
+  /// File stream with an internal MaxReadPoolBufferSize buffer for fast sequential reads. Inherits
+  /// the underlying handle from TFileStream but bypasses TFileStream.Seek/Read for buffered I/O.
+  /// </summary>
   TBufferedReadStream = class(TFileStream)
   private
+    /// <summary>FBufSize: bytes valid in FBuffer; FBufPos: current position within FBuffer.</summary>
     FBufSize, FBufPos: Integer;
+    /// <summary>Pooled read buffer.</summary>
     FBuffer: PByteArray;
+    /// <summary>Logical file position.</summary>
     FPosition: Int64;
+    /// <summary>Cached file size; -1 until first computed.</summary>
     FSize: Int64;
+    /// <summary>True when the logical position has reached or passed end-of-file.</summary>
     function GetEof: Boolean;
   protected
+    /// <summary>Always raises; the stream is read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
+    /// <summary>Always raises; the stream is read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
   public
+    /// <summary>Opens Filename for shared reading.</summary>
+    /// <param name="Filename">Path to open.</param>
     constructor Create(const Filename: string);
+    /// <summary>Releases the pooled buffer and closes the underlying file.</summary>
     destructor Destroy; override;
+    /// <summary>Reads up to Count bytes, refilling the internal buffer as needed.</summary>
     function Read(var Buffer; Count: Longint): Longint; override;
+    /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
+    /// <summary>Repositions the cursor; the buffer is invalidated unless the seek stays within it.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+    /// <summary>Always raises; the stream is read-only.</summary>
     procedure Flush;
 
+    /// <summary>Current logical file position.</summary>
     property FilePos: Int64 read FPosition;
+    /// <summary>True when the cursor is at end-of-file.</summary>
     property Eof: Boolean read GetEof;
   end;
 
 var
+  /// <summary>Process-wide buffer pool used by TBufferedWriteStream and TBufferedReadStream when assigned.</summary>
   BufferPool: TBufferPool;
 
+/// <summary>Reads up to four bytes from Stream and identifies the byte-order mark, if any.</summary>
+/// <param name="Stream">Source stream.</param>
+/// <param name="BOMLen">Receives the number of BOM bytes consumed.</param>
+/// <param name="BOM">Receives the captured bytes (always four entries).</param>
+/// <returns>Detected BOM type (bomAnsi when no BOM was found).</returns>
 function ReadBOM(Stream: TStream; out BOMLen: Integer; var BOM: TBOMArray): TBOMType;
+/// <summary>Reads the remainder of Stream as UCS-2, swapping bytes when BOMType is big-endian, and prepends ExtraData.</summary>
+/// <param name="Stream">Source stream positioned after the BOM.</param>
+/// <param name="BOMType">BOM type returned from ReadBOM.</param>
+/// <param name="ExtraData">Bytes to prepend to the result.</param>
+/// <returns>Decoded text.</returns>
 function ReadAllFileUcs2(Stream: TStream; BOMType: TBOMType; ExtraData: string): string;
+/// <summary>Reads the remainder of Stream as UCS-4, swapping bytes when BOMType is big-endian.</summary>
+/// <param name="Stream">Source stream positioned after the BOM.</param>
+/// <param name="BOMType">BOM type returned from ReadBOM.</param>
+/// <returns>Decoded UCS4 string.</returns>
 function ReadAllFileUcs4(Stream: TStream; BOMType: TBOMType): UCS4String;
 
 implementation

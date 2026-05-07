@@ -10,6 +10,12 @@
 
 unit FrmUsesClauseManager;
 
+/// <summary>
+/// Non-modal main form of the Uses Clause Manager plugin. Lets the user build the
+/// project-wide exports database, analyse the active editor's source, review per-unit
+/// placement recommendations, and apply selected (or all) reorganisations.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,58 +26,105 @@ uses
   Generics.Defaults, FrmBase, UsesClauseManager, ToolsAPI;
 
 type
+  /// <summary>Main viewer form for the Uses Clause Manager plugin.</summary>
   TFormUsesClauseManager = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting buttons and progress label.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Analyses the unit currently open in the editor.</summary>
     btnAnalyze: TButton;
+    /// <summary>Applies all recommended moves to the open editor.</summary>
     btnApply: TButton;
+    /// <summary>List of per-unit placement results.</summary>
     ListView: TListView;
+    /// <summary>Progress / status label.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu for the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Menu item: move only the selected units to their recommended sections.</summary>
     mnuMoveUnit: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N2: TMenuItem;
+    /// <summary>Menu item: copy the displayed rows to the clipboard.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Menu item: re-open the analysed source file in the editor.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports the analysis result as CSV.</summary>
     btnExport: TButton;
+    /// <summary>Save dialog used by the export button.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Summary line shown above or below the list.</summary>
     lblSummary: TLabel;
+    /// <summary>Bottom panel hosting the details memo for the selected row.</summary>
     pnlDetails: TPanel;
+    /// <summary>Splitter between the list and the details panel.</summary>
     Splitter: TSplitter;
+    /// <summary>Detailed information for the currently selected placement.</summary>
     memoDetails: TMemo;
+    /// <summary>Label for the details memo.</summary>
     lblDetails: TLabel;
+    /// <summary>Builds (or rebuilds) the project-wide exports database.</summary>
     btnBuildDB: TButton;
+    /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Runs the analyser on the currently active editor source.</summary>
     procedure btnAnalyzeClick( Sender: TObject );
+    /// <summary>Applies all recommended placement changes to the active editor.</summary>
     procedure btnApplyClick( Sender: TObject );
+    /// <summary>Builds the exports database from the active project's search path.</summary>
     procedure btnBuildDBClick( Sender: TObject );
+    /// <summary>Frees per-placement string lists and releases the singleton form.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Form OnCreate handler: initialises sort and current-file state.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Form OnDestroy handler: frees placement string lists.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Re-opens the source file when a row is double-clicked.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Updates the details memo when the selection changes.</summary>
     procedure ListViewSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
+    /// <summary>Copies selected rows (or all rows) to the clipboard as TSV.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
+    /// <summary>Moves only the selected units to their recommended sections.</summary>
     procedure mnuMoveUnitClick( Sender: TObject );
+    /// <summary>Re-opens the source file in the editor.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
+    /// <summary>Exports the placement table to a CSV file.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Toggles or switches the active sort column.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom-column comparer used by AlphaSort.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
   private
+    /// <summary>Most recent analysis result.</summary>
     FPlacements: TArray<TUnitPlacement>;
+    /// <summary>Index of the currently active sort column.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Path of the file most recently analysed.</summary>
     FCurrentFileName: string;
+    /// <summary>Refreshes the list view from <see cref="FPlacements"/>.</summary>
     procedure PopulateList;
+    /// <summary>Database OnProgress callback that updates the progress label.</summary>
     procedure DBProgress( Sender: TObject );
+    /// <summary>Renders the supplied placement's identifiers and reason into the details memo.</summary>
     procedure ShowDetails( const Placement: TUnitPlacement );
+    /// <summary>Re-opens <see cref="FCurrentFileName"/> in the IDE editor.</summary>
     procedure OpenSelectedFile;
   public
+    /// <summary>Shows or focuses the singleton manager form.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton manager form instance (nil when the form is not open).</summary>
   FormInstance: TFormUsesClauseManager = nil;
 
 implementation

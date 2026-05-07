@@ -10,6 +10,11 @@
 
 unit FrmeOptionPageUnusedUnitDetector;
 
+/// <summary>
+/// IDE Tools options page frame for the Unused Unit Detector plugin. Exposes the
+/// Enabled flag and an editable ignore list (one unit name per line).
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,19 +24,31 @@ uses
   Dialogs, StdCtrls, FrmeBase, FrmTreePages, UnusedUnitDetector;
 
 type
+  /// <summary>Options page frame shown inside the IDE Tools dialog for the Unused Unit Detector plugin.</summary>
   TFrameOptionPageUnusedUnitDetector = class( TFrameBase, ITreePageComponent )
+    /// <summary>Toggles whether the plugin is enabled.</summary>
     chkEnabled: TCheckBox;
+    /// <summary>Label for the ignore-list memo.</summary>
     lblIgnoreList: TLabel;
+    /// <summary>Multi-line editor for the ignore list (one unit name per line).</summary>
     memoIgnoreList: TMemo;
   private
+    /// <summary>The plugin instance whose settings are being edited.</summary>
     FPlugin: TUnusedUnitDetectorPlugin;
   public
+    /// <summary>Creates the frame; required override of the base constructor.</summary>
     constructor Create( AOwner: TComponent ); override;
 
+    /// <summary>Loads current plugin settings into the frame's controls.</summary>
     procedure LoadData;
+    /// <summary>Writes the controls' values back to the plugin and persists them.</summary>
     procedure SaveData;
+    /// <summary>Called when this options page becomes visible (no-op).</summary>
     procedure Selected;
+    /// <summary>Called when this options page becomes hidden (no-op).</summary>
     procedure Unselected;
+    /// <summary>Receives the plugin instance from the options host.</summary>
+    /// <param name="UserData">The associated <see cref="TUnusedUnitDetectorPlugin"/> instance.</param>
     procedure SetUserData( UserData: TObject );
   end;
 

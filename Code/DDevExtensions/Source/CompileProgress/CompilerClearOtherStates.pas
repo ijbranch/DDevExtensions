@@ -1,11 +1,24 @@
 unit CompilerClearOtherStates;
 
+/// <summary>
+/// Hooks the Delphi IDE compiler so that the cached compilation state ( CompState ) of
+/// projects other than the one being compiled is released. This frees memory held by the
+/// compiler DLLs ( dcc32, dcc64, etc. ) for each supported platform and helps avoid
+/// out-of-memory situations when a project group contains many projects.
+/// </summary>
+
 {
    Clears the CompStates of the other Delphi projects when a project is compiled
 }
 
 interface
 
+/// <summary>
+/// Enables or disables the hook that clears the compiler unit cache of other projects.
+/// </summary>
+/// <param name="Enabled">When True, install the hook; when False, restore the original compiler call.</param>
+/// <param name="OnlyHighUsge">When True the cache is only released if the IDE process is using a large amount of memory;
+/// when False it is always released.</param>
 procedure SetClearCompilerUnitCacheOtherStates(Enabled, OnlyHighUsge: Boolean);
 
 implementation

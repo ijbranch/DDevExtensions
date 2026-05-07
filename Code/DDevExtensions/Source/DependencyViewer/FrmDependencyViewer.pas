@@ -10,6 +10,12 @@
 
 unit FrmDependencyViewer;
 
+/// <summary>
+/// Non-modal main form of the Dependency Viewer plugin. Hosts the dependency tree,
+/// circular-reference list, impact-analysis summary, layer-violation list and the
+/// Graphviz export action.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,90 +26,170 @@ uses
   Generics.Defaults, FrmBase, DependencyViewer, ToolsAPI;
 
 type
+  /// <summary>Direction in which the tree displays dependencies: outgoing (vmUses) or incoming (vmUsedBy).</summary>
   TViewMode = ( vmUses, vmUsedBy );
 
+  /// <summary>
+  /// Main viewer form. Owns its own <see cref="TDependencyScanner"/> and <see cref="TLayerConfig"/>
+  /// instances so that scan results survive across user interactions.
+  /// </summary>
   TFormDependencyViewer = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom grid panel hosting the buttons and progress label.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Scans the active IDE project.</summary>
     btnScanProject: TButton;
+    /// <summary>Tree of units and their dependencies (or dependents) for the chosen view mode.</summary>
     TreeView: TTreeView;
+    /// <summary>Splitter between the tree and the right-hand details panel.</summary>
     Splitter: TSplitter;
+    /// <summary>Right-hand panel hosting the impact, circular-references and violations sections.</summary>
     pnlRight: TPanel;
+    /// <summary>Container panel for the impact-analysis summary.</summary>
     pnlImpact: TPanel;
+    /// <summary>"Impact analysis" header label.</summary>
     lblImpactHeader: TLabel;
+    /// <summary>Shows the currently selected unit name.</summary>
     lblImpactUnit: TLabel;
+    /// <summary>Shows the count of direct dependents.</summary>
     lblImpactDirect: TLabel;
+    /// <summary>Shows the count of all transitively affected units.</summary>
     lblImpactTransitive: TLabel;
+    /// <summary>Shows the textual risk level.</summary>
     lblImpactRisk: TLabel;
+    /// <summary>Coloured shape that visually indicates the risk level.</summary>
     shpRiskIndicator: TShape;
+    /// <summary>Header label for the circular-references list.</summary>
     lblCircularRefs: TLabel;
+    /// <summary>Exports the circular references to CSV or TXT.</summary>
     btnExportCircular: TButton;
+    /// <summary>Lists detected circular reference chains.</summary>
     ListBoxCircular: TListBox;
+    /// <summary>Save dialog used by the export buttons.</summary>
     SaveDialogExport: TSaveDialog;
+    /// <summary>Progress / status label during scanning.</summary>
     lblProgress: TLabel;
+    /// <summary>Selects the "Uses" tree view mode.</summary>
     rbUses: TRadioButton;
+    /// <summary>Selects the "Used By" tree view mode.</summary>
     rbUsedBy: TRadioButton;
+    /// <summary>Toggles inclusion of the depth indicator in node captions.</summary>
     chkShowDepth: TCheckBox;
+    /// <summary>Opens the layer configuration dialog.</summary>
     btnLayers: TButton;
+    /// <summary>Re-runs the layer-violation check using the current rules.</summary>
     btnCheckLayers: TButton;
+    /// <summary>Header label for the layer violations list.</summary>
     lblLayerViolations: TLabel;
+    /// <summary>Exports the layer violations to CSV or TXT.</summary>
     btnExportViolations: TButton;
+    /// <summary>Lists detected layer-rule violations.</summary>
     ListBoxViolations: TListBox;
+    /// <summary>Exports the dependency graph as a Graphviz DOT file (and renders to PNG when possible).</summary>
     btnExportGraph: TButton;
+    /// <summary>Save dialog used by the DOT/Graphviz export.</summary>
     SaveDialogGraph: TSaveDialog;
+    /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Scans the active project and populates the views.</summary>
     procedure btnScanProjectClick( Sender: TObject );
+    /// <summary>Releases the singleton form instance and frees the form on close.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Lazily populates a node's children when the user expands it.</summary>
     procedure TreeViewExpanding( Sender: TObject; Node: TTreeNode;
       var AllowExpansion: Boolean );
+    /// <summary>Highlights the cycle members for the selected circular reference.</summary>
     procedure ListBoxCircularClick( Sender: TObject );
+    /// <summary>Opens the source file of the first unit in the selected circular reference.</summary>
     procedure ListBoxCircularDblClick( Sender: TObject );
+    /// <summary>Exports the detected circular references to a chosen file.</summary>
     procedure btnExportCircularClick( Sender: TObject );
+    /// <summary>Form OnCreate handler: initialises owned resources.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Form OnDestroy handler: releases owned resources.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Updates view-mode and depth-display flags then re-populates the tree.</summary>
     procedure ViewModeChanged( Sender: TObject );
+    /// <summary>Custom-draws cycle-member nodes with a highlight background and bold red text.</summary>
     procedure TreeViewAdvancedCustomDrawItem( Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: Boolean );
+    /// <summary>Updates the impact summary panel for the newly selected node.</summary>
     procedure TreeViewChange( Sender: TObject; Node: TTreeNode );
+    /// <summary>Opens the layer configuration dialog and re-checks violations.</summary>
     procedure btnLayersClick( Sender: TObject );
+    /// <summary>Detects layer violations using the current configuration and displays them.</summary>
     procedure btnCheckLayersClick( Sender: TObject );
+    /// <summary>Exports the layer violations to a chosen file.</summary>
     procedure btnExportViolationsClick( Sender: TObject );
+    /// <summary>Opens the source file of the source unit of the double-clicked violation.</summary>
     procedure ListBoxViolationsDblClick( Sender: TObject );
+    /// <summary>Exports the dependency graph to DOT and renders it via Graphviz when available.</summary>
     procedure btnExportGraphClick( Sender: TObject );
   private
+    /// <summary>Scanner that holds the current project's dependency graph.</summary>
     FScanner: TDependencyScanner;
+    /// <summary>Layer configuration loaded from / saved to the user's app data directory.</summary>
     FLayerConfig: TLayerConfig;
+    /// <summary>Most recently detected layer violations.</summary>
     FLayerViolations: TArray<TLayerViolation>;
+    /// <summary>Currently selected tree view mode.</summary>
     FViewMode: TViewMode;
+    /// <summary>Whether to show the [depth] prefix in node captions.</summary>
     FShowDepth: Boolean;
+    /// <summary>Names of units currently highlighted (members of the selected cycle).</summary>
     FHighlightedUnits: TStringList;
+    /// <summary>All units that participate in any detected cycle (used to mark "(!)" in captions).</summary>
     FUnitsInAnyCycle: TStringList;
+    /// <summary>Builds the top-level tree and adds dummy children for lazy expansion.</summary>
     procedure PopulateTree;
+    /// <summary>Populates the circular-references list box and updates its header colour.</summary>
     procedure PopulateCircularRefs;
+    /// <summary>Builds <see cref="FUnitsInAnyCycle"/> from the scanner's circular references.</summary>
     procedure BuildUnitsInAnyCycleList;
+    /// <summary>Auto-sizes the tree panel based on the longest top-level node caption.</summary>
     procedure AutoSizeTreePanel;
+    /// <summary>Adds outgoing-dependency child nodes for a unit (vmUses mode).</summary>
     procedure AddDependencyNodes( ParentNode: TTreeNode; UnitInfo: TUnitInfo );
+    /// <summary>Adds reverse-dependency child nodes for a unit (vmUsedBy mode).</summary>
     procedure AddReverseDependencyNodes( ParentNode: TTreeNode; const UnitName: string );
+    /// <summary>Scanner OnProgress handler that updates the progress label.</summary>
     procedure ScannerProgress( Sender: TObject );
+    /// <summary>Formats a tree node caption with optional cycle marker and depth indicator.</summary>
     function FormatNodeCaption( const UnitName: string; Depth: Integer ): string;
+    /// <summary>Highlights all units that participate in the supplied circular reference.</summary>
     procedure HighlightCycleMembers( const CircRef: TCircularReference );
+    /// <summary>Removes any cycle highlight markers from the tree.</summary>
     procedure ClearHighlights;
+    /// <summary>Opens the source file for the named unit in the IDE editor.</summary>
     procedure OpenUnitFile( const UnitName: string );
+    /// <summary>Recalculates and displays the impact summary for the selected unit.</summary>
     procedure UpdateImpactSummary( const UnitName: string );
+    /// <summary>Resets the impact summary panel to its empty state.</summary>
     procedure ClearImpactSummary;
+    /// <summary>Writes the circular references to a CSV file.</summary>
     procedure ExportCircularRefsToCSV( const FileName: string );
+    /// <summary>Writes the circular references to a human-readable text file.</summary>
     procedure ExportCircularRefsToTXT( const FileName: string );
+    /// <summary>Populates the layer violations list and updates its header.</summary>
     procedure PopulateLayerViolations;
+    /// <summary>Writes layer violations to a CSV file.</summary>
     procedure ExportViolationsToCSV( const FileName: string );
+    /// <summary>Writes layer violations to a human-readable text file.</summary>
     procedure ExportViolationsToTXT( const FileName: string );
+    /// <summary>Writes the dependency graph as a Graphviz DOT file (with a legend).</summary>
     procedure ExportToDOT( const FileName: string );
+    /// <summary>Locates the Graphviz dot.exe executable, returning an empty string if not found.</summary>
     function FindGraphvizDot: string;
   public
+    /// <summary>Shows or focuses the singleton viewer form.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton viewer form instance (nil when the form is not open).</summary>
   FormInstance: TFormDependencyViewer = nil;
 
 implementation

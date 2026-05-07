@@ -10,6 +10,11 @@
 
 unit FrmProjectSettingsSetVersioninfo;
 
+/// <summary>
+/// Hosts the multi-page "Set Version Info" dialog used to view, set, increment and bulk-apply
+/// version-resource fields and the main icon across the projects of the active project group.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,139 +25,269 @@ uses
   ProjectResource;
 
 type
+  /// <summary>Open-array alias of IOTAProject used to pass several projects through "for in" loops.</summary>
   IOTAProjectArray = array of IOTAProject;
 
+  /// <summary>
+  /// Modal dialog used to view, set, increment and bulk-apply VersionInfo string and numeric fields
+  /// (and the main icon) across one or more projects.
+  /// </summary>
   TFormProjectSettingsSetVersioninfo = class(TFormBase)
+    /// <summary>Caption label for the Major file version field.</summary>
     lblFileVersionMajor: TLabel;
+    /// <summary>Caption label for the Minor file version field.</summary>
     lblFileVersionMinor: TLabel;
+    /// <summary>Caption label for the Release file version field.</summary>
     lblFileVersionRelease: TLabel;
+    /// <summary>Edit box bound to udMajor for the file version major component.</summary>
     edtMajor: TEdit;
+    /// <summary>Up/down spinner for the file version major component.</summary>
     udMajor: TUpDown;
+    /// <summary>Edit box bound to udMinor for the file version minor component.</summary>
     edtMinor: TEdit;
+    /// <summary>Up/down spinner for the file version minor component.</summary>
     udMinor: TUpDown;
+    /// <summary>Edit box bound to udRelease for the file version release component.</summary>
     edtRelease: TEdit;
+    /// <summary>Up/down spinner for the file version release component.</summary>
     udRelease: TUpDown;
+    /// <summary>Caption label for the Product Version field.</summary>
     lblProductVersion: TLabel;
+    /// <summary>Edit box for the free-text Product Version string.</summary>
     edtProductVersion: TEdit;
+    /// <summary>Caption label for the file version block.</summary>
     lblFileVersion: TLabel;
+    /// <summary>Container panel for the projects list.</summary>
     pnlProjects: TPanel;
+    /// <summary>Caption label for the projects list.</summary>
     lblProjects: TLabel;
+    /// <summary>List view of projects; checkbox column drives apply-to-selected behaviour.</summary>
     lvwProjects: TListView;
+    /// <summary>Applies the Product Version string to the eligible projects.</summary>
     btnApplyProductVersion: TButton;
+    /// <summary>Applies the Major/Minor/Release file version to the eligible projects.</summary>
     btnApplyFileVersion: TButton;
+    /// <summary>Caption label for the Product Name field.</summary>
     lblProductName: TLabel;
+    /// <summary>Edit box for the free-text Product Name string.</summary>
     edtProductName: TEdit;
+    /// <summary>Applies the Product Name string to the eligible projects.</summary>
     btnApplyProductName: TButton;
+    /// <summary>Caption label for the Build file version field.</summary>
     lblFileVersionBuild: TLabel;
+    /// <summary>Edit box bound to udBuild for the file version build component.</summary>
     edtBuild: TEdit;
+    /// <summary>Up/down spinner for the file version build component.</summary>
     udBuild: TUpDown;
+    /// <summary>Applies the Build file version to the eligible projects.</summary>
     btnApplyBuild: TButton;
+    /// <summary>Date picker for the project's build start date (used by btnDaysbetween).</summary>
     dtpStartDay: TDateTimePicker;
+    /// <summary>Computes the number of days between dtpStartDay and today.</summary>
     btnDaysbetween: TButton;
+    /// <summary>Read-only edit displaying the days-between result.</summary>
     edtDaysBetween: TEdit;
+    /// <summary>Timer that hides the "applied" notification label after a short delay.</summary>
     TimerAppliedHide: TTimer;
+    /// <summary>Caption label for dtpStartDay.</summary>
     lblStartDay: TLabel;
+    /// <summary>Page control hosting the Set, Increment and Main Icon tabs.</summary>
     pgcPages: TPageControl;
+    /// <summary>Tab page for the "Set Version Info" UI.</summary>
     tsSetVersionInfo: TTabSheet;
+    /// <summary>Left container panel hosting the projects list.</summary>
     pnlLeft: TPanel;
+    /// <summary>Bottom strip panel hosting the close button and applied notification.</summary>
     pnlBottom: TPanel;
+    /// <summary>Visual divider above the bottom strip.</summary>
     bvlDivider: TBevel;
+    /// <summary>Transient label that confirms an Apply has just succeeded.</summary>
     lblApplied: TLabel;
+    /// <summary>Close button for the dialog.</summary>
     btnClose: TButton;
+    /// <summary>Tab page for the "Increment Version Info" UI.</summary>
     tsIncrementVersionInfo: TTabSheet;
+    /// <summary>Main client panel for the Increment tab.</summary>
     pnlClient: TPanel;
+    /// <summary>Increment Major component on Execute.</summary>
     cbxIncMajor: TCheckBox;
+    /// <summary>Increment Minor component on Execute.</summary>
     cbxIncMinor: TCheckBox;
+    /// <summary>Increment Release component on Execute.</summary>
     cbxIncRelease: TCheckBox;
+    /// <summary>Increment Build component on Execute.</summary>
     cbxIncBuild: TCheckBox;
+    /// <summary>Reset Minor to zero when Major is incremented.</summary>
     cbxZeroMinor: TCheckBox;
+    /// <summary>Reset Release to zero when Major is incremented.</summary>
     cbxZeroRelease: TCheckBox;
+    /// <summary>Reset Release to zero when Minor is incremented.</summary>
     cbxZeroRelease2: TCheckBox;
+    /// <summary>Performs the configured version increment on the eligible projects.</summary>
     btnExecuteIncrement: TButton;
+    /// <summary>If checked, Apply only affects projects whose row is checked.</summary>
     cbxApplyToSelectedOnly: TCheckBox;
+    /// <summary>Edit box bound to udIncMajor (increment-by amount for Major).</summary>
     edtIncMajor: TEdit;
+    /// <summary>Up/down spinner for the increment-by amount for Major.</summary>
     udIncMajor: TUpDown;
+    /// <summary>Edit box bound to udIncMinor (increment-by amount for Minor).</summary>
     edtIncMinor: TEdit;
+    /// <summary>Up/down spinner for the increment-by amount for Minor.</summary>
     udIncMinor: TUpDown;
+    /// <summary>Edit box bound to udIncRelease (increment-by amount for Release).</summary>
     edtIncRelease: TEdit;
+    /// <summary>Up/down spinner for the increment-by amount for Release.</summary>
     udIncRelease: TUpDown;
+    /// <summary>Edit box bound to udIncBuild (increment-by amount for Build).</summary>
     edtIncBuild: TEdit;
+    /// <summary>Up/down spinner for the increment-by amount for Build.</summary>
     udIncBuild: TUpDown;
+    /// <summary>Caption label for the Company Name field.</summary>
     lblCompanyName: TLabel;
+    /// <summary>Edit box for the free-text Company Name string.</summary>
     edtCompanyName: TEdit;
+    /// <summary>Applies the Company Name string to the eligible projects.</summary>
     btnApplyCompanyName: TButton;
+    /// <summary>Caption label for the Legal Copyright field.</summary>
     lblLegalCopyright: TLabel;
+    /// <summary>Edit box for the free-text Legal Copyright string.</summary>
     edtLegalCopyright: TEdit;
+    /// <summary>Applies the Legal Copyright string to the eligible projects.</summary>
     btnApplyLegalCopyright: TButton;
+    /// <summary>Tab page for the "Main Icon" UI.</summary>
     tsMainIcon: TTabSheet;
+    /// <summary>Caption label for the icon images list.</summary>
     lblMainIcons: TLabel;
+    /// <summary>Saves the loaded icon to the eligible projects' main icon resource.</summary>
     btnApplyMainIcon: TButton;
+    /// <summary>Loads a new icon from a file into FIcon.</summary>
     btnLoadMainIcon: TBitBtn;
+    /// <summary>Common Open dialog used to pick an icon file.</summary>
     dlgOpenMainIcon: TOpenPictureDialog;
+    /// <summary>Paint box that previews the currently selected icon image.</summary>
     pbxMainIcon: TPaintBox;
+    /// <summary>List of images contained in the loaded icon (size/colour-depth).</summary>
     lbxMainIcons: TListBox;
+    /// <summary>Clears the loaded icon (FIcon).</summary>
     btnRemoveMainIcon: TBitBtn;
+    /// <summary>Help text describing how to change the main icon.</summary>
     lblChangeMainIcon: TLabel;
+    /// <summary>If checked, version writes apply to all build configurations/platforms.</summary>
     cbxApplyToAllPlatforms: TCheckBox;
+    /// <summary>Caption label for the Legal Trademarks field.</summary>
     lblLegalTrademarks: TLabel;
+    /// <summary>Edit box for the free-text Legal Trademarks string.</summary>
     edtLegalTrademarks: TEdit;
+    /// <summary>Applies the Legal Trademarks string to the eligible projects.</summary>
     btnApplyLegalTrademarks: TButton;
+    /// <summary>Caption label for the File Description field.</summary>
     LblFileDescription: TLabel;
+    /// <summary>Edit box for the free-text File Description string.</summary>
     edtFileDescription: TEdit;
+    /// <summary>Applies the File Description string to the eligible projects.</summary>
     btnApplyFileDescription: TButton;
+    /// <summary>Caption label for the Internal Name field.</summary>
     LblInternalName: TLabel;
+    /// <summary>Edit box for the free-text Internal Name string.</summary>
     edtInternalName: TEdit;
+    /// <summary>Applies the Internal Name string to the eligible projects.</summary>
     btnApplyInternalName: TButton;
+    /// <summary>Caption label for the Original Filename field.</summary>
     LblOriginalFilename: TLabel;
+    /// <summary>Edit box for the free-text Original Filename string.</summary>
     edtOriginalFilename: TEdit;
+    /// <summary>Applies the Original Filename string to the eligible projects.</summary>
     btnApplyOriginalFilename: TButton;
+    /// <summary>Caption label for the Comments field.</summary>
     LblComment: TLabel;
+    /// <summary>Edit box for the free-text Comments string.</summary>
     edtComments: TEdit;
+    /// <summary>Applies the Comments string to the eligible projects.</summary>
     btnApplyComments: TButton;
+    /// <summary>Sets each project's Original Filename to its target output file name.</summary>
     btnApplyAutoSetOriginalFilename: TButton;
+    /// <summary>Reflects the OnExit of an edit field into its corresponding TUpDown spinner.</summary>
     procedure edtFileVersionExit(Sender: TObject);
+    /// <summary>Loads the version-info fields for the newly selected project.</summary>
     procedure lvwProjectsSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
+    /// <summary>Greys out projects without a valid VersionInfo resource on non-icon tabs.</summary>
     procedure lvwProjectsCustomDrawItem(Sender: TCustomListView;
       Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
+    /// <summary>Generic Apply handler that writes the corresponding string field to the projects.</summary>
     procedure btnApplyStringClick(Sender: TObject);
+    /// <summary>Applies the file version triplet (Major/Minor/Release) to the projects.</summary>
     procedure btnApplyFileVersionClick(Sender: TObject);
+    /// <summary>Computes today minus the start day and writes the value to edtDaysBetween.</summary>
     procedure btnDaysbetweenClick(Sender: TObject);
+    /// <summary>Hides the "applied" notification when the timer elapses.</summary>
     procedure TimerAppliedHideTimer(Sender: TObject);
+    /// <summary>Applies the Build component of the file version to the projects.</summary>
     procedure btnApplyBuildClick(Sender: TObject);
+    /// <summary>Initialises FIcon, sets default tab and adjusts platform check visibility.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Enables/disables Major-related sub-options based on cbxIncMajor.</summary>
     procedure cbxIncMajorClick(Sender: TObject);
+    /// <summary>Enables/disables Minor-related sub-options based on cbxIncMinor.</summary>
     procedure cbxIncMinorClick(Sender: TObject);
+    /// <summary>Performs the configured version increment across the eligible projects.</summary>
     procedure btnExecuteIncrementClick(Sender: TObject);
+    /// <summary>Toggles the apply-to-selected-only mode and updates UI accordingly.</summary>
     procedure cbxApplyToSelectedOnlyClick(Sender: TObject);
+    /// <summary>Enables/disables Release-related sub-options based on cbxIncRelease.</summary>
     procedure cbxIncReleaseClick(Sender: TObject);
+    /// <summary>Enables/disables Build-related sub-options based on cbxIncBuild.</summary>
     procedure cbxIncBuildClick(Sender: TObject);
+    /// <summary>Loads a new icon from disk into FIcon.</summary>
     procedure btnLoadMainIconClick(Sender: TObject);
+    /// <summary>Writes the loaded icon to the eligible projects' main icon resource.</summary>
     procedure btnApplyMainIconClick(Sender: TObject);
+    /// <summary>Refreshes the icon preview when a different icon image is selected.</summary>
     procedure lbxMainIconsClick(Sender: TObject);
+    /// <summary>Frees FIcon when the form is destroyed.</summary>
     procedure FormDestroy(Sender: TObject);
+    /// <summary>Renders the currently selected icon image inside pbxMainIcon.</summary>
     procedure pbxMainIconPaint(Sender: TObject);
+    /// <summary>Clears the loaded icon and updates the preview.</summary>
     procedure btnRemoveMainIconClick(Sender: TObject);
+    /// <summary>Triggers a redraw of lvwProjects when the active page changes.</summary>
     procedure pgcPagesChange(Sender: TObject);
+    /// <summary>Sets each project's Original Filename to ExtractFileName(TargetName).</summary>
     procedure btnApplyAutoSetOriginalFilenameClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Working icon resource used by the Main Icon tab.</summary>
     FIcon: TIconResource;
+    /// <summary>Populates the projects list, runs the dialog and persists settings on close.</summary>
     function DoExecute(Projects: TInterfaceList): Boolean; virtual;
+    /// <summary>Returns the file creation date/time of the project's main file.</summary>
     function GetStartDateTimeOf(const Project: IOTAProject): TDateTime;
+    /// <summary>Loads persisted dialog settings (apply-to-selected and platform flags).</summary>
     procedure LoadSettings;
+    /// <summary>Saves persisted dialog settings (apply-to-selected and platform flags).</summary>
     procedure SaveSettings;
+    /// <summary>Returns the projects eligible for the current Apply (respecting the checkbox filter).</summary>
     function GetValidApplyProjects: IOTAProjectArray;
+    /// <summary>Returns True if at least one project is eligible for the current Apply.</summary>
     function HasValidProjects: Boolean;
+    /// <summary>Returns the currently selected project if it has a valid VersionInfo resource.</summary>
     function GetSelectedApplyProject: IOTAProject;
   protected
+    /// <summary>Refreshes the Main Icon preview and the icon-images list.</summary>
     procedure UpdateMainIconPreview;
+    /// <summary>Recomputes which Apply buttons are enabled based on the current state.</summary>
     procedure UpdateActions; override;
+    /// <summary>Shows the transient "applied" notification with the supplied (or default) text.</summary>
     procedure ApplyFinished(const Text: string = '');
   public
     { Public-Deklarationen }
+    /// <summary>Creates the form, runs the dialog over the supplied projects and frees the form.</summary>
+    /// <param name="Projects">Projects whose version info should be edited.</param>
+    /// <returns>True if the user confirmed with OK.</returns>
     class function Execute(Projects: TInterfaceList): Boolean;
   end;
 
+/// <summary>Plugin entry point that creates or frees the global TVersionInfoHandler.</summary>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

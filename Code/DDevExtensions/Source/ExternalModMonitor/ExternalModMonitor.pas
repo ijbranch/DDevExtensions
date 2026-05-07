@@ -12,6 +12,14 @@
 
 unit ExternalModMonitor;
 
+/// <summary>
+/// Real-time external file modification detector. Watches the directories of all open
+/// projects for changes to source files ( .pas, .inc, .dfm, .dpr, etc. ) and silently
+/// refreshes the corresponding modules in the IDE when an external editor saves them,
+/// while skipping changes that occur during compilation or the brief grace window after
+/// a project is loaded. Inspired by VSoft.ExternalModDetector.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -21,56 +29,110 @@ uses
   FrmTreePages, PluginConfig, IDENotifiers, FileWatcher;
 
 type
+  /// <summary>
+  /// Plug-in configuration object that owns the External Mod Monitor feature, the file
+  /// watcher and the IDE notifiers used to detect and apply external changes.
+  /// </summary>
   TExternalModMonitorConfig = class( TPluginConfig )
   private
+    /// <summary>Backing field for Active.</summary>
     FActive: Boolean;
+    /// <summary>Backing field for DebounceMs.</summary>
     FDebounceMs: Integer;
+    /// <summary>Backing field for ProjectLoadGraceMs.</summary>
     FProjectLoadGraceMs: Integer;
+    /// <summary>Backing field for MonitoredExtensions ( semicolon-separated list ).</summary>
     FMonitoredExtensions: string;
+    /// <summary>Backing field for ShowNotifications.</summary>
     FShowNotifications: Boolean;
+    /// <summary>IDE notifier delivering file and compile callbacks.</summary>
     FIDENotifier: TIDENotifier;
+    /// <summary>Underlying directory-change watcher.</summary>
     FFileWatcher: TFileWatcher;
+    /// <summary>Timer used to debounce a burst of file change notifications.</summary>
     FDebounceTimer: TTimer;
+    /// <summary>Timer used to remove the tray notification icon after a delay.</summary>
     FNotifyCleanupTimer: TTimer;
+    /// <summary>Native shell notify-icon record reused between notifications.</summary>
     FNotifyIconData: TNotifyIconData;
+    /// <summary>Set of file names queued for refresh once the debounce timer fires.</summary>
     FPendingReloads: TStringList;
+    /// <summary>True while a compile is in progress; suppresses refresh activity.</summary>
     FCompiling: Boolean;
+    /// <summary>GetTickCount64 value before which file changes are ignored ( project load grace period ).</summary>
     FGraceUntilTick: UInt64;
+    /// <summary>Lower-cased extensions parsed from MonitoredExtensions for fast lookup.</summary>
     FExtensionSet: TStringList;
 
+    /// <summary>Re-parses MonitoredExtensions into FExtensionSet.</summary>
     procedure RebuildExtensionSet;
+    /// <summary>Begins watching the directory of the supplied project file and starts the grace period.</summary>
+    /// <param name="ProjectFileName">Full path to the project file ( .dproj, .dpr, .dpk or .groupproj ).</param>
     procedure StartWatchingProject( const ProjectFileName: string );
+    /// <summary>Stops watching the directory associated with the supplied project file.</summary>
+    /// <param name="ProjectFileName">Full path to the project file being closed.</param>
     procedure StopWatchingProject( const ProjectFileName: string );
+    /// <summary>Scans the IDE module list and starts watching directories for projects already loaded.</summary>
     procedure ScanAndWatchOpenProjects;
 
+    /// <summary>IDE file-notification callback; tracks project open / close to add or remove watches.</summary>
+    /// <param name="NotifyCode">Type of file notification.</param>
+    /// <param name="FileName">File name the notification refers to.</param>
+    /// <param name="Cancel">May be set to True to cancel the action ( unused here ).</param>
     procedure HandleFileNotification( NotifyCode: TOTAFileNotification;
       const FileName: string; var Cancel: Boolean );
+    /// <summary>BeforeCompile callback; sets FCompiling to True so file changes are ignored during the build.</summary>
     procedure HandleBeforeCompile( const Project: IOTAProject;
       IsCodeInsight: Boolean; var Cancel: Boolean );
+    /// <summary>AfterCompile callback; clears FCompiling and discards any change events queued during the build.</summary>
     procedure HandleAfterCompile( const Project: IOTAProject;
       Succeeded: Boolean; IsCodeInsight: Boolean );
+    /// <summary>File-watcher callback ( on the main thread ); queues the file for refresh and resets the debounce timer.</summary>
+    /// <param name="FileName">File reported as changed.</param>
     procedure HandleFileChanged( const FileName: string );
+    /// <summary>Debounce-timer callback; refreshes all queued modules whose editor buffers have not been modified.</summary>
     procedure HandleDebounceTimer( Sender: TObject );
 
+    /// <summary>Returns True when FileName has an extension on the monitored list.</summary>
     function IsMonitoredExtension( const FileName: string ): Boolean;
+    /// <summary>Looks up the IOTAModule for FileName among the modules currently open in the IDE.</summary>
+    /// <returns>The matching module, or nil if it is not open.</returns>
     function FindOpenModule( const FileName: string ): IOTAModule;
+    /// <summary>Returns True when any source editor of Module has unsaved changes ( so it must not be refreshed ).</summary>
     function IsModuleModifiedInEditor( Module: IOTAModule ): Boolean;
+    /// <summary>Displays a Windows shell balloon listing the files that were refreshed.</summary>
+    /// <param name="RefreshedFiles">List of file names just refreshed.</param>
     procedure ShowBalloonNotification( RefreshedFiles: TStringList );
+    /// <summary>Removes the tray notification icon when the cleanup timer fires.</summary>
     procedure HandleNotifyCleanup( Sender: TObject );
   protected
+    /// <summary>Sets default values for newly created configurations.</summary>
     procedure Init; override;
+    /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     function GetOptionPages: TTreePage; override;
   public
+    /// <summary>Constructs the configuration, the file watcher, the timers and the IDE notifier.</summary>
     constructor Create;
+    /// <summary>Stops watching, removes any tray icon, releases timers and notifiers.</summary>
     destructor Destroy; override;
   published
+    /// <summary>Master switch that enables or disables external file monitoring.</summary>
     property Active: Boolean read FActive write FActive;
+    /// <summary>Debounce window in milliseconds; multiple changes within this period trigger a single refresh pass.</summary>
     property DebounceMs: Integer read FDebounceMs write FDebounceMs;
+    /// <summary>Semicolon-separated list of file extensions to monitor ( e.g. ".pas;.inc;.dfm" ).</summary>
     property MonitoredExtensions: string read FMonitoredExtensions write FMonitoredExtensions;
+    /// <summary>When True a tray balloon is shown listing the refreshed files.</summary>
     property ShowNotifications: Boolean read FShowNotifications write FShowNotifications;
+    /// <summary>Grace period in milliseconds after a project is loaded during which file changes are ignored.</summary>
     property ProjectLoadGraceMs: Integer read FProjectLoadGraceMs write FProjectLoadGraceMs;
   end;
 
+/// <summary>
+/// Initialises or shuts down the External Mod Monitor plug-in by creating or freeing
+/// the global TExternalModMonitorConfig instance.
+/// </summary>
+/// <param name="Unload">False to load the plug-in, True to unload it.</param>
 procedure InitPlugin( Unload: Boolean );
 
 implementation

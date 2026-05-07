@@ -1,22 +1,38 @@
 unit StartParameterManagerReg;
 
+/// <summary>
+/// Registers the Start Parameter toolbar and combo control with the IDE, and intercepts the
+/// debugger's GetRunParams call so that the user-selected start parameter is used in place of the
+/// project's stored "Run Parameters".
+/// </summary>
+
 interface
 
 uses
   Windows, SysUtils, Classes, ActnList, Controls, ComCtrls, ToolsAPI, StartParameterCtrl;
 
 type
+  /// <summary>
+  /// Plugin component that creates the Start Parameters toolbar, places the combo control on it and
+  /// installs the GetRunParams hook that redirects the debugger to use the selected parameters.
+  /// </summary>
   TStartParameterManager = class(TComponent)
   private
+    /// <summary>Action backing the "Customize start parameters" command (currently disabled).</summary>
     FActionCustomize: TAction;
   protected
+    /// <summary>OnExecute for FActionCustomize (currently a no-op placeholder).</summary>
     procedure StartParameterExecute(Sender: TObject);
+    /// <summary>OnUpdate for FActionCustomize that surfaces the current parameter as a hint.</summary>
     procedure StartParameterUpdate(Sender: TObject);
   public
+    /// <summary>Creates the toolbar and control and installs the GetRunParams hooks.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Removes the hooks and frees the toolbar before the DLL unloads.</summary>
     destructor Destroy; override;
   end;
 
+/// <summary>Plugin entry point that creates or frees the global TStartParameterManager.</summary>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

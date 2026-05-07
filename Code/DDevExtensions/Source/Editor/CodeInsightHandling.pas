@@ -1,5 +1,10 @@
 unit CodeInsightHandling;
 
+/// <summary>
+/// Hooks TIDEPopupListBox.EditorKey so that pressing TAB inside a Code Insight pop-up
+/// completes the suggestion in the same way ENTER does. Required IDE: Delphi 2009+.
+/// </summary>
+
 {
   IDE Version: 2009+
 
@@ -8,6 +13,11 @@ unit CodeInsightHandling;
 
 interface
 
+/// <summary>
+/// Plug-in entry point. Installs the TIDEPopupListBox.EditorKey redirect on initialisation
+/// and restores the original method on shutdown.
+/// </summary>
+/// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

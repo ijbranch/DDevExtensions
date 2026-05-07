@@ -1,5 +1,15 @@
 unit EditPopupCtrl;
 
+/// <summary>
+/// Drop-down edit primitives used by DDevExtensions search/selector UIs:
+/// a borderless popup panel, a borderless list box embedded in it, and a
+/// <c>TEdit</c> descendant that displays the panel just below the edit.
+/// </summary>
+/// <remarks>
+/// The popup uses <c>WS_POPUP</c>/<c>HWND_TOPMOST</c> so it floats over IDE
+/// tool windows without stealing focus from the underlying edit.
+/// </remarks>
+
 interface
 
 uses
@@ -7,91 +17,160 @@ uses
   StdCtrls, ExtCtrls, ComCtrls, ToolsAPI, ActnList, MultiMon, Menus, ImgList;
 
 const
+  /// <summary>Custom message posted to a <see cref="TDropDownEditBase"/> to open its drop-down.</summary>
   WM_DROPDOWN = WM_USER + 101;
 
 type
   TDropDownEditBase = class;
 
+  /// <summary>Borderless top-most panel that hosts the popup list box.</summary>
   TPopupPanel = class(TPanel)
   private
+    /// <summary>Owning edit control whose drop-down this panel implements.</summary>
     FEdit: TDropDownEditBase;
+    /// <summary>Suppresses focus activation when the user clicks the panel.</summary>
     procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
+    /// <summary>Closes the drop-down when the panel is deactivated.</summary>
     procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
   protected
+    /// <summary>Adds <c>WS_POPUP</c>/<c>WS_EX_TOOLWINDOW</c> style flags so the panel floats and saves bits.</summary>
     procedure CreateParams(var Params: TCreateParams); override;
+    /// <summary>Closes the drop-down on a left-mouse-up.</summary>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
   public
+    /// <summary>Marks the panel <c>csNoDesignVisible</c>/<c>csReplicatable</c>.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>The owning drop-down edit.</summary>
     property Edit: TDropDownEditBase read FEdit write FEdit;
   end;
 
+  /// <summary>Borderless list box rendered inside <see cref="TPopupPanel"/>.</summary>
   TPopupListBox = class(TListBox)
   private
+    /// <summary>Owning edit control.</summary>
     FEdit: TDropDownEditBase;
+    /// <summary>If True, a mouse click in the list executes the selected item rather than just selecting it.</summary>
     FAllowMouseExecute: Boolean;
+    /// <summary>Suppresses focus activation when the user clicks the list.</summary>
     procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
+    /// <summary>Closes the drop-down when the list loses activation.</summary>
     procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
   protected
+    /// <summary>Closes the drop-down on a left-mouse-up.</summary>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
   public
+    /// <summary>Releases the control without re-creating the window handle.</summary>
     destructor Destroy; override;
+    /// <summary>Clears the list contents.</summary>
     procedure ClearList;
+    /// <summary>The owning drop-down edit.</summary>
     property Edit: TDropDownEditBase read FEdit write FEdit;
+    /// <summary>Controls whether a mouse click executes the highlighted item.</summary>
     property AllowMouseExecute: Boolean read FAllowMouseExecute write FAllowMouseExecute;
   end;
 
+  /// <summary>
+  /// Base class for edit controls with a custom popup list. Manages the
+  /// <see cref="TPopupPanel"/>/<see cref="TPopupListBox"/> lifecycle, drop-down
+  /// positioning, focus juggling and key/mouse forwarding to the list.
+  /// </summary>
   TDropDownEditBase = class(TEdit)
   private
+    /// <summary>List box rendered inside <see cref="FPanel"/>.</summary>
     FListBox: TPopupListBox;
+    /// <summary>Floating popup panel that hosts the list box.</summary>
     FPanel: TPopupPanel;
+    /// <summary>True while the drop-down is showing.</summary>
     FListVisible: Boolean;
+    /// <summary>Fired immediately before the drop-down is shown so the host can populate the list.</summary>
     FOnBeforeDropDown: TNotifyEvent;
+    /// <summary>Alignment used to position the panel relative to the edit (left- or right-justify).</summary>
     FListAlignment: TAlignment;
+    /// <summary>If True, the drop-down may be shown even when the list has no items.</summary>
     FAllowEmptyList: Boolean;
+    /// <summary>Closes the drop-down when the IDE broadcasts a cancel-mode targeted outside the popup.</summary>
     procedure CMCancelMode(var Msg: TCMCancelMode); message CM_CANCELMODE;
+    /// <summary>Repaints when the edit gains focus.</summary>
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+    /// <summary>Closes the drop-down when focus moves outside the popup.</summary>
     procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
+    /// <summary>Handles <see cref="WM_DROPDOWN"/> by opening the popup if the edit is focused.</summary>
     procedure WMDropDown(var Msg: TMessage); message WM_DROPDOWN;
+    /// <summary>Paints the edit background (Delphi 2009+ no longer does this implicitly).</summary>
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
+    /// <summary>Returns the current drop-down panel height.</summary>
     function GetDropDownHeight: Integer;
+    /// <summary>Returns the current drop-down panel width.</summary>
     function GetDropDownWidth: Integer;
+    /// <summary>Sets the drop-down height and re-positions if visible.</summary>
     procedure SetDropDownHeight(const Value: Integer);
+    /// <summary>Sets the drop-down width and re-positions if visible.</summary>
     procedure SetDropDownWidth(const Value: Integer);
   protected
+    /// <summary>Routes navigation/character keys to the list box and opens the drop-down on first key.</summary>
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    /// <summary>Selects all text when the edit gains keyboard focus.</summary>
     procedure DoEnter; override;
+    /// <summary>Posts a <see cref="WM_DROPDOWN"/> when the user clicks the edit while the popup is hidden.</summary>
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    /// <summary>Suppresses the Beep when the user presses Esc.</summary>
     procedure KeyPress(var Key: Char); override;
   public
+    /// <summary>Creates the popup panel/list-box pair and applies default styles.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Hides the drop-down (no-op if already hidden).</summary>
     procedure CloseUp;
+    /// <summary>Displays the drop-down (raises <see cref="OnBeforeDropDown"/> first).</summary>
     procedure DropDown;
+    /// <summary>Width of the drop-down panel in pixels.</summary>
     property DropDownWidth: Integer read GetDropDownWidth write SetDropDownWidth;
+    /// <summary>Height of the drop-down panel in pixels.</summary>
     property DropDownHeight: Integer read GetDropDownHeight write SetDropDownHeight;
+    /// <summary>Embedded list box; populate this in <see cref="OnBeforeDropDown"/>.</summary>
     property ListBox: TPopupListBox read FListBox;
+    /// <summary>Hosting popup panel.</summary>
     property Panel: TPopupPanel read FPanel;
+    /// <summary>True while the drop-down is shown.</summary>
     property ListVisible: Boolean read FListVisible;
+    /// <summary>Alignment used when positioning the popup (left or right-justified to the edit).</summary>
     property ListAlignment: TAlignment read FListAlignment write FListAlignment;
 
+    /// <summary>Recomputes the popup panel's screen position and size.</summary>
     procedure UpdateDropDownBounds; virtual;
 
+    /// <summary>Fired immediately before the drop-down is shown so the host can populate the list.</summary>
     property OnBeforeDropDown: TNotifyEvent read FOnBeforeDropDown write FOnBeforeDropDown;
   end;
 
+  /// <summary>
+  /// Drop-down edit variant that paints a small image (typically a magnifying
+  /// glass) inside the left margin of the edit control.
+  /// </summary>
   TDropDownEditSearchBase = class(TDropDownEditBase)
   private
+    /// <summary>Source image list for the in-edit glyph.</summary>
     FImages: TCustomImageList;
+    /// <summary>Index in <see cref="FImages"/> of the glyph to draw.</summary>
     FImageIndex: Integer;
+    /// <summary>Sets <see cref="FImages"/> with appropriate free-notification wiring.</summary>
     procedure SetImages(const Value: TCustomImageList);
+    /// <summary>Updates the edit's left margin to make space for the glyph; returns True if a margin change was applied.</summary>
     function UpdateEditMargins: Boolean; reintroduce;
   protected
+    /// <summary>Draws the glyph after the standard edit paints itself.</summary>
     procedure WMPaint(var Msg: TWMPaint); message WM_PAINT;
+    /// <summary>Detaches the image list when it is being destroyed.</summary>
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    /// <summary>Applies edit margins after the window is created.</summary>
     procedure CreateWnd; override;
+    /// <summary>Handles theme/colour control messages and updates margins on resize.</summary>
     procedure WndProc(var Msg: TMessage); override;
   public
+    /// <summary>Detaches the image list and releases the control.</summary>
     destructor Destroy; override;
+    /// <summary>Image list providing the in-edit glyph.</summary>
     property Images: TCustomImageList read FImages write SetImages;
+    /// <summary>Index of the glyph in <see cref="Images"/>.</summary>
     property ImageIndex: Integer read FImageIndex write FImageIndex;
   end;
 

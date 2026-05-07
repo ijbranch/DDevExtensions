@@ -8,6 +8,12 @@
 
 unit FrmCodeStyleChecker;
 
+/// <summary>
+/// Results window for the Code Style Checker. Triggers project-wide scans, displays the
+/// violations in a sortable, filterable list view, and supports navigating to the offending
+/// source line as well as copying or exporting the data.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -18,55 +24,100 @@ uses
   Generics.Defaults, FrmBase, CodeStyleChecker, ToolsAPI;
 
 type
+  /// <summary>Singleton results form for the Code Style Checker.</summary>
   TFormCodeStyleChecker = class( TFormBase )
+    /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom action-button panel.</summary>
     pnlBottom: TGridPanel;
+    /// <summary>Closes the form.</summary>
     btnClose: TButton;
+    /// <summary>Initiates a project-wide scan.</summary>
     btnScan: TButton;
+    /// <summary>List view displaying violations.</summary>
     ListView: TListView;
+    /// <summary>Status text shown while a scan is in progress.</summary>
     lblProgress: TLabel;
+    /// <summary>Context menu attached to the list view.</summary>
     PopupMenu: TPopupMenu;
+    /// <summary>Copies the selected (or all) violations to the clipboard as TSV.</summary>
     mnuCopyToClipboard: TMenuItem;
+    /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
+    /// <summary>Navigates the IDE editor to the selected violation.</summary>
     mnuOpenFile: TMenuItem;
+    /// <summary>Exports all visible violations to CSV.</summary>
     btnExport: TButton;
+    /// <summary>File-save dialog used by <see cref="btnExport"/>.</summary>
     SaveDialog: TSaveDialog;
+    /// <summary>Result summary text displayed after a scan completes.</summary>
     lblSummary: TLabel;
+    /// <summary>Filter combo for the violation category.</summary>
     cboCategory: TComboBox;
+    /// <summary>Label for <see cref="cboCategory"/>.</summary>
     lblCategory: TLabel;
+    /// <summary>Filter combo for individual rules.</summary>
     cboRule: TComboBox;
+    /// <summary>Label for <see cref="cboRule"/>.</summary>
     lblRule: TLabel;
+    /// <summary>Filter combo for severity.</summary>
     cboSeverity: TComboBox;
+    /// <summary>Label for <see cref="cboSeverity"/>.</summary>
     lblSeverity: TLabel;
+    /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Releases the singleton instance when the form closes.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Creates the checker engine and populates the filter combos.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Frees the checker engine.</summary>
     procedure FormDestroy( Sender: TObject );
+    /// <summary>Opens the file represented by the double-clicked row.</summary>
     procedure ListViewDblClick( Sender: TObject );
+    /// <summary>Context-menu handler that copies violation data to the clipboard.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
+    /// <summary>Context-menu handler that opens the source file at the violation line.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
+    /// <summary>Exports the visible violations to a CSV file.</summary>
     procedure btnExportClick( Sender: TObject );
+    /// <summary>Cycles sort direction when a column header is clicked.</summary>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
+    /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
+    /// <summary>Re-applies filters when the category combo changes.</summary>
     procedure cboCategoryChange( Sender: TObject );
+    /// <summary>Re-applies filters when the rule combo changes.</summary>
     procedure cboRuleChange( Sender: TObject );
+    /// <summary>Re-applies filters when the severity combo changes.</summary>
     procedure cboSeverityChange( Sender: TObject );
   private
+    /// <summary>Engine performing the analysis.</summary>
     FChecker: TStyleChecker;
+    /// <summary>Latest scan results.</summary>
     FViolations: TArray<TStyleViolation>;
+    /// <summary>Index of the column currently being sorted.</summary>
     FSortColumn: Integer;
+    /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>Rebuilds the list view from <see cref="FViolations"/>, applying current filters.</summary>
     procedure PopulateList;
+    /// <summary>Progress callback invoked by <see cref="TStyleChecker"/> between files.</summary>
     procedure CheckerProgress( Sender: TObject );
+    /// <summary>Opens the file/line of the currently selected list item in the IDE.</summary>
     procedure OpenSelectedFile;
+    /// <summary>Returns <c>True</c> when the supplied violation matches all currently active filters.</summary>
+    /// <param name="Item">Violation under test.</param>
     function PassesFilter( const Item: TStyleViolation ): Boolean;
   public
+    /// <summary>Displays the singleton form, creating it if required.</summary>
     class procedure Execute;
   end;
 
 var
+  /// <summary>Singleton form reference; <c>nil</c> when the form is not visible.</summary>
   FormInstance: TFormCodeStyleChecker = nil;
 
 implementation

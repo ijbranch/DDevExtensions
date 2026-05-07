@@ -29,6 +29,13 @@ Known Issues:
 
 unit ComponentPanel;
 
+/// <summary>
+/// Provides the visual building blocks for the legacy ("Old Palette") component panel:
+/// a borderless speed button, a button glyph helper that supports disabled state and
+/// transparency, and the scrollable component panel itself with left/right navigators.
+/// Adapted from JEDI VCL's TJvComponentPanel.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -38,176 +45,332 @@ uses
   Classes, Controls, Buttons, Forms, ExtCtrls, Graphics;
 
 type
+  /// <summary>Click handler invoked with the index of the panel button that was activated.</summary>
   TButtonClick = procedure(Sender: TObject; Button: Integer) of object;
 
+  /// <summary>
+  /// Speed button extension that allows the caller to override the hint window class
+  /// used when the IDE's tooltip pops up.
+  /// </summary>
   TJvExSpeedButton = class(TSpeedButton)
   private
+    /// <summary>Hint window class used by this button's tooltips.</summary>
     FHintWindowClass: THintWindowClass;
+    /// <summary>Inserts <see cref="FHintWindowClass"/> into the hint info before display.</summary>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
   public
+    /// <summary>Hint window class used when the button shows a tooltip.</summary>
     property HintWindowClass: THintWindowClass read FHintWindowClass write FHintWindowClass;
   end;
 
 
+  /// <summary>
+  /// Helper that draws a button glyph with proper handling of up/down/disabled/exclusive
+  /// states, transparent backgrounds and BiDi text. Used by <see cref="TJvNoFrameButton"/>
+  /// to render its bitmap without forcing the glyph to live on the button itself.
+  /// </summary>
   { VCL Buttons unit does not publish TJvButtonGlyph class,
     so we do it for other programers (Delphi 3 version) }
   TJvButtonGlyph = class(TObject)
   private
+    /// <summary>Cached image list holding the rendered per-state glyphs.</summary>
     FGlyphList: TImageList;
+    /// <summary>Per-state index into <see cref="FGlyphList"/>.</summary>
     FIndexs: array [TButtonState] of Integer;
+    /// <summary>Colour treated as transparent in the source bitmap.</summary>
     FTransparentColor: TColor;
+    /// <summary>Number of glyph frames in the source bitmap.</summary>
     FNumGlyphs: TNumGlyphs;
+    /// <summary>Fired whenever the rendered glyph changes.</summary>
     FOnChange: TNotifyEvent;
+    /// <summary>Background colour used during disabled-state rendering.</summary>
     FColor: TColor;
+    /// <summary>Bidirectional text mode used when drawing captions.</summary>
     FBiDiMode: TBiDiMode; {o}
+    /// <summary>True when the button inherits its BiDi mode from its parent.</summary>
     FParentBiDiMode: Boolean;
+    /// <summary>Setter that invalidates cached glyphs when BiDi mode changes.</summary>
     procedure SetBiDiMode(Value: TBiDiMode);
+    /// <summary>Setter that invalidates cached glyphs when the parent BiDi flag changes.</summary>
     procedure SetParentBiDiMode(Value: Boolean);
+    /// <summary>Notification handler called when the source glyph bitmap changes.</summary>
     procedure GlyphChanged(Sender: TObject);
+    /// <summary>Setter that copies the new bitmap and infers the glyph count.</summary>
     procedure SetGlyph(Value: TBitmap);
+    /// <summary>Setter that updates the number of frames and invalidates caches.</summary>
     procedure SetNumGlyphs(Value: TNumGlyphs);
+    /// <summary>Setter that updates the background colour used for disabled rendering.</summary>
     procedure SetColor(Value: TColor);
+    /// <summary>Discards cached per-state bitmaps so they will be re-created on demand.</summary>
     procedure Invalidate;
+    /// <summary>Builds and caches the glyph for the requested state and returns its index.</summary>
     function CreateButtonGlyph(State: TButtonState): Integer;
+    /// <summary>Paints the cached glyph for <paramref name="State"/> at <paramref name="GlyphPos"/>.</summary>
     procedure DrawButtonGlyph(Canvas: TCanvas; const GlyphPos: TPoint;
       State: TButtonState; Transparent: Boolean);
+    /// <summary>Draws the caption text into <paramref name="TextBounds"/> respecting BiDi and disabled state.</summary>
     procedure DrawButtonText(Canvas: TCanvas; const Caption: string;
       TextBounds: TRect; State: TButtonState); virtual;
+    /// <summary>Calculates glyph and text positions for the supplied client rect, layout and margins.</summary>
     procedure CalcButtonLayout(Canvas: TCanvas; const Client: TRect;
       const Offset: TPoint; const Caption: string; Layout: TButtonLayout;
       Margin, Spacing: Integer; var GlyphPos: TPoint; var TextBounds: TRect);
   protected
+    /// <summary>Original (uncached) glyph bitmap supplied by the caller.</summary>
     FOriginal: TBitmap;
+    /// <summary>Calculates the bounding rectangle required to render <paramref name="Caption"/>.</summary>
     procedure CalcTextRect(Canvas: TCanvas; var TextRect: TRect; const Caption: string); virtual;
   public
+    /// <summary>Creates the helper and registers it with the shared glyph cache.</summary>
     constructor Create;
+    /// <summary>Releases the original bitmap and removes the helper from the glyph cache.</summary>
     destructor Destroy; override;
+    /// <summary>Renders glyph and caption for the supplied state and returns the text rectangle used.</summary>
+    /// <returns>The bounding rectangle of the rendered text.</returns>
     { return the text rectangle }
     function Draw(Canvas: TCanvas; const Client: TRect; const Offset: TPoint;
       const Caption: string; Layout: TButtonLayout; Margin, Spacing: Integer;
       State: TButtonState; Transparent: Boolean): TRect;
+    /// <summary>Draws an externally supplied bitmap rather than the held glyph.</summary>
+    /// <param name="AGlyph">Bitmap to render.</param>
+    /// <param name="ANumGlyphs">Number of frames in the bitmap.</param>
+    /// <param name="AColor">Background colour for disabled rendering.</param>
+    /// <param name="IgnoreOld">Skip restoring the original glyph for performance.</param>
+    /// <returns>The bounding rectangle of the rendered text.</returns>
     { DrawExternal draws any glyph (not glyph property) -
       if you don't needed to save previous glyph set IgnoreOld to True -
       this increases performance }
     function DrawExternal(AGlyph: TBitmap; ANumGlyphs: TNumGlyphs; AColor: TColor; IgnoreOld: Boolean;
       Canvas: TCanvas; const Client: TRect; const Offset: TPoint; const Caption: string;
       Layout: TButtonLayout; Margin, Spacing: Integer; State: TButtonState; Transparent: Boolean): TRect;
+    /// <summary>Bidirectional text mode used when drawing captions.</summary>
     property BiDiMode: TBiDiMode read FBiDiMode write SetBiDiMode;
+    /// <summary>True when BiDi mode is inherited from the parent control.</summary>
     property ParentBiDiMode: Boolean read FParentBiDiMode write SetParentBiDiMode;
+    /// <summary>Source glyph bitmap.</summary>
     property Glyph: TBitmap read FOriginal write SetGlyph;
+    /// <summary>Number of frames in the glyph bitmap (1, 2 or 4).</summary>
     property NumGlyphs: TNumGlyphs read FNumGlyphs write SetNumGlyphs;
+    /// <summary>Background colour used during disabled-state rendering.</summary>
     property Color: TColor read FColor write SetColor;
+    /// <summary>Fired whenever the rendered glyph changes.</summary>
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   end;
 
+  /// <summary>Custom button paint event with the live state passed to the handler.</summary>
   TPaintButtonEvent = procedure(Sender: TObject; IsDown, IsDefault: Boolean; State: TButtonState) of object;
-  
+
+  /// <summary>
+  /// Borderless speed button with optional repeated click behaviour, used by the
+  /// component panel for the left/right scroll arrows.
+  /// </summary>
   TJvNoFrameButton = class(TJvExSpeedButton)
   private
+    /// <summary>Glyph helper used to paint the button's bitmap.</summary>
     FGlyphDrawer: TJvButtonGlyph;
+    /// <summary>True when the button paints without an outer border.</summary>
     FNoBorder: Boolean;
+    /// <summary>Optional custom paint handler.</summary>
     FOnPaint: TPaintButtonEvent;
+    /// <summary>True when the button auto-repeats while held down.</summary>
     FRepeatedClick: Boolean;
+    /// <summary>Timer used to drive auto-repeat.</summary>
     FRepeatTimer: TTimer;
+    /// <summary>Initial delay (ms) before the first auto-repeat fires.</summary>
     FInitRepeatPause: Integer;
+    /// <summary>Delay (ms) between subsequent auto-repeats.</summary>
     FRepeatPause: Integer;
+    /// <summary>True after the auto-repeat has produced at least one click.</summary>
     FClicked: Boolean;
+    /// <summary>Setter for <see cref="NoBorder"/> that triggers a repaint.</summary>
     procedure SetNoBorder(Value: Boolean);
+    /// <summary>Timer tick handler implementing auto-repeat.</summary>
     procedure TimerExpired(Sender: TObject);
   protected
+    /// <summary>Custom paint method delegating to <see cref="DefaultDrawing"/>.</summary>
     procedure Paint; override;
+    /// <summary>Starts the auto-repeat timer when armed.</summary>
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X: Integer; Y: Integer); override;
+    /// <summary>Stops auto-repeat and ensures the synthetic click does not double-fire.</summary>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X: Integer; Y: Integer); override;
   public
+    /// <summary>Creates the button with default repeat timings.</summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases the repeat timer and glyph drawer.</summary>
     destructor Destroy; override;
+    /// <summary>Default paint routine used when no <see cref="OnPaint"/> handler is set.</summary>
     procedure DefaultDrawing(const IsDown: Boolean; const State: TButtonState);
+    /// <summary>Exposes the inherited canvas for custom painting.</summary>
     property Canvas;
   published
+    /// <summary>Background colour, exposed from the ancestor.</summary>
     property Color;
+    /// <summary>Inherits its background colour from the parent, exposed from the ancestor.</summary>
     property ParentColor;
+    /// <summary>True to render the button without an outer border.</summary>
     property NoBorder: Boolean read FNoBorder write SetNoBorder default True;
+    /// <summary>True to enable auto-repeat while the mouse is held down.</summary>
     property RepeatedClick: Boolean read FRepeatedClick write FRepeatedClick default False;
+    /// <summary>Initial delay (ms) before auto-repeat begins.</summary>
     property InitRepeatPause: Integer read FInitRepeatPause write FInitRepeatPause default 400;
+    /// <summary>Delay (ms) between auto-repeated clicks.</summary>
     property RepeatPause: Integer read FRepeatPause write FRepeatPause default 100;
+    /// <summary>Optional custom paint handler.</summary>
     property OnPaint: TPaintButtonEvent read FOnPaint write FOnPaint;
   end;
 
+  /// <summary>Event fired so callers can paint custom content into a panel rectangle.</summary>
   TJvPaintPanelContentEvent = procedure(Sender: TObject; Canvas: TCanvas; R: TRect) of object;
 
+  /// <summary>
+  /// Scrollable panel that hosts a series of speed buttons representing components.
+  /// Provides a fixed pointer button on the left, scroll arrows that page the visible
+  /// buttons, mouse-wheel paging and selection-state management.
+  /// </summary>
   TJvComponentPanel = class(TCustomPanel)
   private
+    /// <summary>Width of each component button in pixels.</summary>
     FButtonWidth: Integer;
+    /// <summary>Height of each component button in pixels.</summary>
     FButtonHeight: Integer;
+    /// <summary>List of component buttons displayed in the panel.</summary>
     FButtons: TList;
+    /// <summary>Click event raised when a button is clicked.</summary>
     FOnClick: TButtonClick;
+    /// <summary>Double-click event raised when a button is double-clicked.</summary>
     FOnDblClick: TButtonClick;
+    /// <summary>Fixed left-most "pointer" button used to deselect the palette.</summary>
     FButtonPointer: TJvExSpeedButton;
+    /// <summary>Left-pointing scroll arrow.</summary>
     FButtonLeft: TJvNoFrameButton;
+    /// <summary>Right-pointing scroll arrow.</summary>
     FButtonRight: TJvNoFrameButton;
+    /// <summary>Index of the first currently visible button.</summary>
     FFirstVisible: Integer;
+    /// <summary>Update lock counter for batched layout changes.</summary>
     FLockUpdate: Integer;
+    /// <summary>Currently selected button.</summary>
     FSelectButton: TJvExSpeedButton;
+    /// <summary>Hint window class propagated to child buttons.</summary>
     FHintWindowClass: THintWindowClass;
+    /// <summary>Optional callback invoked to paint the panel's content area.</summary>
     FOnPaintContent: TJvPaintPanelContentEvent;
+    /// <summary>Returns the button at <paramref name="Index"/> or nil when out of range.</summary>
     function GetButton(Index: Integer): TJvExSpeedButton;
+    /// <summary>Returns the number of buttons in the panel.</summary>
     function GetButtonCount: Integer;
+    /// <summary>Setter that grows or shrinks the button list to the requested count.</summary>
     procedure SetButtonCount(AButtonCount: Integer);
+    /// <summary>Setter that resizes all buttons horizontally.</summary>
     procedure SetButtonWidth(AButtonWidth: Integer);
+    /// <summary>Setter that resizes all buttons vertically.</summary>
     procedure SetButtonHeight(AButtonHeight: Integer);
+    /// <summary>Setter for <see cref="FirstVisible"/> with bounds checking.</summary>
     procedure SetFirstVisible(AButton: Integer);
+    /// <summary>Internal click dispatcher that raises <see cref="OnClick"/> with the button index.</summary>
     procedure BtnClick(Sender: TObject);
+    /// <summary>Internal double-click dispatcher that raises <see cref="OnDblClick"/>.</summary>
     procedure BtnDblClick(Sender: TObject);
+    /// <summary>Click handler for the left/right scroll arrows.</summary>
     procedure MoveClick(Sender: TObject);
+    /// <summary>Returns the maximum number of buttons currently fitting in the visible area.</summary>
     function GetVisibleCount: Integer;
+    /// <summary>Setter that selects the button at <paramref name="Value"/>.</summary>
     procedure SetSelectedButton(Value: Integer);
+    /// <summary>Returns the index of the currently selected button, or -1.</summary>
     function GetSelectedButton: Integer;
+    /// <summary>Suppresses Caption changes; the panel renders no caption.</summary>
     procedure WMSetText(var Msg: TWMSetText); message WM_SETTEXT;
+    /// <summary>Forwards the panel's hint window class to the displayed tooltip.</summary>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
   protected
+    /// <summary>Repositions all child buttons to honour the current sizes and scroll position.</summary>
     procedure Resize; override;
+    /// <summary>Translates mouse wheel events into left/right scrolling.</summary>
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
+    /// <summary>Paints the panel background and delegates content drawing to <see cref="PaintContent"/>.</summary>
     procedure Paint; override;
+    /// <summary>Calls <see cref="OnPaintContent"/> if assigned to allow custom content drawing.</summary>
     procedure PaintContent(const R: TRect);
   public
+    /// <summary>Creates the panel and its fixed pointer/arrow buttons.</summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases all owned buttons and the internal list.</summary>
     destructor Destroy; override;
+    /// <summary>Recreates every component button after resetting state.</summary>
     procedure RecreateButtons;
+    /// <summary>Selects the fixed pointer button.</summary>
     procedure SetMainButton;
+    /// <summary>Custom Invalidate that respects the update lock counter.</summary>
     procedure Invalidate; override;
+    /// <summary>Begins a batch of layout changes; pair with <see cref="EndUpdate"/>.</summary>
     procedure BeginUpdate;
+    /// <summary>Ends a batch begun by <see cref="BeginUpdate"/> and triggers re-layout.</summary>
     procedure EndUpdate;
+    /// <summary>Default indexed access to the component buttons.</summary>
     property Buttons[Index: Integer]: TJvExSpeedButton read GetButton; default;
+    /// <summary>Index of the first button currently visible in the scrolling area.</summary>
     property FirstVisible: Integer read FFirstVisible write SetFirstVisible;
+    /// <summary>Read-only access to the left scroll arrow.</summary>
     property ButtonLeft: TJvNoFrameButton read FButtonLeft;
+    /// <summary>Read-only access to the right scroll arrow.</summary>
     property ButtonRight: TJvNoFrameButton read FButtonRight;
+    /// <summary>Number of buttons currently visible in the scrolling area.</summary>
     property VisibleCount: Integer read GetVisibleCount;
+    /// <summary>Index of the currently selected button, or -1 when only the pointer is selected.</summary>
     property SelectedButton: Integer read GetSelectedButton write SetSelectedButton;
+    /// <summary>Hint window class propagated to child buttons' tooltips.</summary>
     property HintWindowClass: THintWindowClass read FHintWindowClass write FHintWindowClass;
   published
+    /// <summary>Alignment within the parent control.</summary>
     property Align;
+    /// <summary>Fired when one of the component buttons is clicked.</summary>
     property OnClick: TButtonClick read FOnClick write FOnClick;
+    /// <summary>Fired when one of the component buttons is double-clicked.</summary>
     property OnDblClick: TButtonClick read FOnDblClick write FOnDblClick;
+    /// <summary>Width of every component button in pixels.</summary>
     property ButtonWidth: Integer read FButtonWidth write SetButtonWidth default 28;
+    /// <summary>Height of every component button in pixels.</summary>
     property ButtonHeight: Integer read FButtonHeight write SetButtonHeight default 28;
+    /// <summary>Number of component buttons displayed in the panel.</summary>
     property ButtonCount: Integer read GetButtonCount write SetButtonCount default 0;
+    /// <summary>Anchors, exposed from the ancestor.</summary>
     property Anchors;
+    /// <summary>Size constraints, exposed from the ancestor.</summary>
     property Constraints;
+    /// <summary>AutoSize behaviour, exposed from the ancestor.</summary>
     property AutoSize;
+    /// <summary>Bidirectional mode, exposed from the ancestor.</summary>
     property BiDiMode;
+    /// <summary>Whether the panel acts as its own dock manager, exposed from the ancestor.</summary>
     property UseDockManager default True;
+    /// <summary>DockSite flag, exposed from the ancestor.</summary>
     property DockSite;
+    /// <summary>ParentBiDiMode, exposed from the ancestor.</summary>
     property ParentBiDiMode;
+    /// <summary>DragKind, exposed from the ancestor.</summary>
     property DragKind;
+    /// <summary>OnDockDrop, exposed from the ancestor.</summary>
     property OnDockDrop;
+    /// <summary>OnDockOver, exposed from the ancestor.</summary>
     property OnDockOver;
+    /// <summary>OnEndDock, exposed from the ancestor.</summary>
     property OnEndDock;
+    /// <summary>OnGetSiteInfo, exposed from the ancestor.</summary>
     property OnGetSiteInfo;
+    /// <summary>OnStartDock, exposed from the ancestor.</summary>
     property OnStartDock;
+    /// <summary>OnUnDock, exposed from the ancestor.</summary>
     property OnUnDock;
+    /// <summary>OnCanResize, exposed from the ancestor.</summary>
     property OnCanResize;
+    /// <summary>OnConstrainedResize, exposed from the ancestor.</summary>
     property OnConstrainedResize;
+    /// <summary>Optional callback invoked to paint custom content on the panel.</summary>
     property OnPaintContent: TJvPaintPanelContentEvent read FOnPaintContent write FOnPaintContent;
+    /// <summary>Popup menu, exposed from the ancestor.</summary>
     property PopupMenu;
   end;
 

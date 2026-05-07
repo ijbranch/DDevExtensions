@@ -1,7 +1,18 @@
 unit TestDfmParser;
 
+/// <summary>
+/// Console-driven smoke tests for <c>gllDelphiDFMParser</c>. Runs a small fixed set of
+/// in-memory parser tests followed by round-trip tests over every <c>.dfm</c> file in a
+/// <c>TestData</c> folder, writing results to standard output. Used as a quick parser
+/// sanity check independent of the DUnitX harness in <c>TestDfmParserDUnitX</c>.
+/// </summary>
+
 interface
 
+/// <summary>
+/// Runs every in-memory and file-round-trip test, writing PASS/FAIL/SKIP lines and a
+/// final summary to standard output. Updates the unit-internal pass/fail counters.
+/// </summary>
 procedure RunAllTests;
 
 implementation

@@ -10,28 +10,54 @@
 
 unit FrmeBase;
 
+/// <summary>
+/// Base frame for every DDevExtensions option page hosted on the
+/// <see cref="TFormDDevExtOptions"/> dialog. Provides the standard caption
+/// bar plus a description panel and implements <c>ITreePageComponentEx</c>
+/// so the tree-page host can manage layout.
+/// </summary>
+/// <remarks>
+/// The constructor temporarily redirects <c>TReader.NewInstance</c> via
+/// virtual-method patching so missing properties on legacy DFMs do not raise
+/// during loading.
+/// </remarks>
+
 {$I DelphiExtension.inc}
 
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, 
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ExtCtrls, StdCtrls, FrmTreePages;
 
 
 type
+  /// <summary>
+  /// Visual base class for option-page frames. Holds a client panel, a
+  /// description panel with caption/description labels and a splitter bevel.
+  /// </summary>
   TFrameBase = class(TFrame, ITreePageComponentEx)
+    /// <summary>Client panel that derived frames place their controls on.</summary>
     pnlClient: TPanel;
+    /// <summary>Top panel containing the caption and description labels.</summary>
     pnlDescription: TPanel;
+    /// <summary>Visual splitter between description and client area.</summary>
     bvlSplitter: TBevel;
+    /// <summary>Description label below the page caption.</summary>
     lblDescription: TLabel;
+    /// <summary>Page caption label.</summary>
     lblCaption: TLabel;
   private
     { Private-Deklarationen }
   protected
+    /// <summary>Sets the page caption shown at the top of the frame.</summary>
     procedure SetTitle(const ACaption: string);
   public
     { Public-Deklarationen }
+    /// <summary>
+    /// Constructs the frame, suppressing reader errors for unknown DFM
+    /// properties via temporary virtual-method patching of <c>TReader</c>.
+    /// </summary>
     constructor Create(AOwner: TComponent); override;
   end;
 

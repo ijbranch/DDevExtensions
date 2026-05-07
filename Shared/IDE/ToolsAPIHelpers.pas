@@ -11,6 +11,13 @@
 
 unit ToolsAPIHelpers;
 
+/// <summary>
+/// Higher-level helpers built on top of the open ToolsAPI: locating the active project,
+/// reading source out of edit buffers as UTF-8, querying the form-resource type of a unit,
+/// creating new IDE toolbars, navigating the component palette and resolving env-option paths
+/// for a particular platform/personality.
+/// </summary>
+
 interface
 
 uses
@@ -22,47 +29,91 @@ uses
   ExtCtrls, ComCtrls, Forms, ImgList, IDEHooks, TypInfo, Menus;
 
 type
+  /// <summary>Identifies whether a unit owns a TForm, TFrame or TDataModule resource.</summary>
   TFormResourceType = (ftForm, ftFrame, ftDataModule);
 
+/// <summary>Locates a TMenuItem on the IDE main form by component name.</summary>
 function FindMenuItem(const Name: string): TMenuItem;
+/// <summary>Makes a hidden IDE menu item (and its action) visible.</summary>
 procedure ShowMenuItem(const Name: string);
-  
+
+/// <summary>Returns the currently active IOTAProjectGroup, or nil when none is loaded.</summary>
 function GetActiveProjectGroup: IOTAProjectGroup;
+/// <summary>Returns the currently active IOTAProject (delegates to ToolsAPI.GetActiveProject).</summary>
 function GetActiveProject: IOTAProject;
+/// <summary>Returns the IOTAModuleInfo entry of Project that matches Filename, or nil.</summary>
 function FindModuleInfo(Project: IOTAProject; const Filename: string): IOTAModuleInfo;
 
+/// <summary>Reads the entire source from an IOTASourceEditor as UTF-8 bytes.</summary>
 function GetEditorSource(Editor: IOTASourceEditor): UTF8String; overload;
+/// <summary>Reads the entire source from an IOTAEditBuffer as UTF-8 bytes.</summary>
 function GetEditorSource(EditBuffer: IOTAEditBuffer): UTF8String; overload;
+/// <summary>Saves the editor source to Filename. A UTF-8 BOM is written for Delphi 2005 and later.</summary>
 procedure SaveEditorSourceTo(EditBuffer: IOTAEditBuffer; const Filename: string); overload; // UTF8 BOM is written for Delphi 2005+
+/// <summary>Saves the editor source to OutStream. A UTF-8 BOM is written for Delphi 2005 and later.</summary>
 procedure SaveEditorSourceTo(EditBuffer: IOTAEditBuffer; OutStream: TStream); overload; // UTF8 BOM is written for Delphi 2005+
+/// <summary>Persists the .dfm form resource owned by FormEditor to a file.</summary>
 procedure SaveFormResourceTo(FormEditor: IOTAFormEditor; const Filename: string); overload;
+/// <summary>Persists the .dfm form resource owned by FormEditor to a stream.</summary>
 procedure SaveFormResourceTo(FormEditor: IOTAFormEditor; OutStream: TStream); overload;
 
+/// <summary>
+/// Inspects a unit (.pas or .cpp/.h) for the class declaration matching FormName and returns
+/// whether it inherits from TForm, TFrame or TDataModule. Falls back to disk read when the file
+/// is not currently open in an editor.
+/// </summary>
+/// <param name="Filename">Path of the unit.</param>
+/// <param name="FormName">Form/class name (without the leading "T").</param>
+/// <param name="FormCaption">Reserved; reserved for future use.</param>
+/// <returns>The detected resource type.</returns>
 function GetFormResourceType(const Filename, FormName: string; out FormCaption: string): TFormResourceType;
+/// <summary>Returns the qualified unit name declared inside a .pas file by lexing the first 4 KB of the source.</summary>
 function GetUnitNameFromFile(const FileName: string): string;
 
+/// <summary>Creates and returns a new IDE-style TToolBar parented to the IDE's main ControlBar.</summary>
+/// <param name="AOwner">Component owner (typically Application.MainForm).</param>
+/// <param name="Name">Component name.</param>
+/// <param name="Caption">Toolbar caption.</param>
+/// <param name="Visible">Initial visibility.</param>
+/// <returns>The created toolbar.</returns>
+/// <exception cref="Exception">Raised when the IDE has no ControlBar1 component.</exception>
 function NewToolBar(AOwner: TComponent; const Name, Caption: string; Visible: Boolean = True): TToolBar;
 
+/// <summary>True when Project (or the active project when nil) is a C++Builder project.</summary>
 function IsCppPersonality(Project: IOTAProject): Boolean;
+/// <summary>True when Project (or the active project when nil) is a native Delphi project.</summary>
 function IsDelphiPersonality(Project: IOTAProject): Boolean;
+/// <summary>True when Project (or the active project when nil) is a Delphi.NET project.</summary>
 function IsDelphiNetPersonality(Project: IOTAProject): Boolean;
 
 
+/// <summary>Returns the TCategoryButtons control hosting the IDE component palette, or nil when not present.</summary>
 function GetComponentPalette: TCategoryButtons;
+/// <summary>Returns the Categories property of Palette using RTTI.</summary>
 function GetPaletteCategories(Palette: TCategoryButtons): TButtonCategories;
 
+/// <summary>Returns the IOTAEditor for the currently focused module's current editor view.</summary>
 function GetCurrentEditor: IOTAEditor;
+/// <summary>Programmatically clicks PalItem on the component palette and optionally triggers component creation.</summary>
+/// <param name="PalItem">Palette item to focus, or nil to revert to the selector tool.</param>
+/// <param name="ExecuteItem">When True, releases the selection so a click on the form designer drops the component.</param>
 procedure SelectComponentPalette(PalItem: TButtonItem; ExecuteItem: Boolean);
 
+/// <summary>Returns the value of an env-option path (such as Search Path or Browsing Path) for AProject's current platform.</summary>
 function GetProjectEnvOptionPaths(const AProject: IOTAProject; const AOptionName: string): string;
+/// <summary>Returns the value of an env-option path for the supplied platform/personality combination.</summary>
 function GetPlatformEnvOptionPaths(const APlatformName, APersonality, AOptionName: string): string;
 
 type
+  /// <summary>Stand-in for vclide's TPropField that exposes its Variant Value via imported symbols.</summary>
   TPropField = class(TComponent)
   private
+    /// <summary>Reads the field value via the IDE's TPropField.GetValue.</summary>
     function GetValue: Variant;
+    /// <summary>Writes the field value via the IDE's TPropField.SetValue.</summary>
     procedure SetValue(const Value: Variant);
   public
+    /// <summary>Variant value of the property field.</summary>
     property Value: Variant read GetValue write SetValue;
   end;
 

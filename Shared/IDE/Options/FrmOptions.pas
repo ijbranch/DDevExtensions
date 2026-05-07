@@ -9,6 +9,13 @@
 
 unit FrmOptions;
 
+/// <summary>
+/// Top-level "Options" dialog used by the plugin. Subclasses or callers register page
+/// providers (TOptionPagesEvent/TOptionPagesProc) which are queried whenever the dialog opens
+/// to build the tree on the left. Includes a clickable URL label that opens in the default
+/// browser.
+/// </summary>
+
 interface
 
 uses
@@ -16,25 +23,39 @@ uses
   Dialogs, FrmTreePages, StdCtrls, ExtCtrls, ComCtrls, ShellAPI;
 
 type
+  /// <summary>Method-typed callback that returns a TTreePage to display in the options dialog.</summary>
   TOptionPagesEvent = function: TTreePage of object;
+  /// <summary>Function-typed callback that returns a TTreePage to display in the options dialog.</summary>
   TOptionPagesProc = function: TTreePage;
 
+  /// <summary>Concrete options dialog. Maintains a class-level registry of page providers.</summary>
   TFormOptions = class(TFormTreePages)
+    /// <summary>Clickable URL label; the URL is taken from the label's Hint.</summary>
     lblURL: TLabel;
+    /// <summary>Static "Version:" caption.</summary>
     Label1: TLabel;
+    /// <summary>Plug-in version string displayed alongside Label1.</summary>
     lblVersion: TLabel;
+    /// <summary>Opens the URL stored in the label's Hint via ShellExecute.</summary>
     procedure lblURLClick(Sender: TObject);
   private
     { Private-Deklarationen }
   protected
+    /// <summary>Returns the global registry of page providers; overridable for subclassed dialogs.</summary>
     class function GetGlobalOptionPages: TObjectList; virtual;
+    /// <summary>Replaces the global registry of page providers.</summary>
     class procedure SetGlobalOptionPages(Value: TObjectList); virtual;
+    /// <summary>Invokes every registered page provider and adds the returned pages to Root.</summary>
     procedure PopulateRootPage(Root: TTreePage); override;
   public
     { Public-Deklarationen }
+    /// <summary>Registers a method-typed page provider so it is invoked the next time the dialog is opened.</summary>
     class procedure RegisterPages(const OptionPages: TOptionPagesEvent);
+    /// <summary>Removes a previously registered method-typed page provider.</summary>
     class procedure UnregisterPages(const OptionPages: TOptionPagesEvent);
+    /// <summary>Registers a function-typed page provider.</summary>
     class procedure RegisterPagesEx(const OptionPages: TOptionPagesProc);
+    /// <summary>Removes a previously registered function-typed page provider.</summary>
     class procedure UnregisterPagesEx(const OptionPages: TOptionPagesProc);
   end;
 

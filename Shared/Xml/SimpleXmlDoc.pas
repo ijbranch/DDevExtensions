@@ -6,6 +6,13 @@
 
 unit SimpleXmlDoc;
 
+/// <summary>
+/// Default implementation of the SimpleXmlIntf contract. Compiled either against the JEDI
+/// SimpleXML library (when JEDI_XML is defined) or against Delphi's MSXML-backed XMLDoc unit;
+/// callers see the same IXmlDocument interface either way. Provides LoadXmlDocument /
+/// NewXmlDocument factory functions used by SimpleXmlImport.
+/// </summary>
+
 interface
 
 uses
@@ -19,52 +26,84 @@ uses
 
 type
   {$IFDEF COMPILER5}
+  /// <summary>Pre-Delphi-6 alias; later compilers ship IInterface directly.</summary>
   IInterface = IUnknown;
   {$ENDIF COMPILER5}
 
+  /// <summary>Concrete IXmlDocument implementation; reference-counted via the supplied _AddRef/_Release.</summary>
   TXmlDocument = class(TComponent, IInterface, IXmlDocument)
   private
     {$IFDEF JEDI_XML}
+    /// <summary>Underlying JEDI SimpleXML document.</summary>
     FXml: TJclSimpleXML;
+    /// <summary>Whether the JEDI document is considered active.</summary>
     FActive: Boolean;
     {$ELSE}
+    /// <summary>Underlying MSXML document accessed via XMLIntf.</summary>
     FXml: XMLIntf.IXMLDocument;
     {$ENDIF JEDI_XML}
+    /// <summary>Manual reference count maintained by _AddRef / _Release.</summary>
     FRefCount: Integer;
   protected
+    /// <summary>IInterface AddRef using a manual InterlockedIncrement on FRefCount.</summary>
     function _AddRef: Integer; stdcall;
+    /// <summary>IInterface Release; frees the instance when FRefCount drops to zero.</summary>
     function _Release: Integer; stdcall;
   public
+    /// <summary>Creates the wrapper and the underlying backend document.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Releases the underlying backend document.</summary>
     destructor Destroy; override;
 
+    /// <summary>IXmlDocument: returns whether the backend document is active.</summary>
     function GetActive: Boolean;
+    /// <summary>IXmlDocument: activates or deactivates the backend document.</summary>
     procedure SetActive(Value: Boolean);
+    /// <summary>IXmlDocument: returns the XML version string.</summary>
     function GetVersion: string;
+    /// <summary>IXmlDocument: sets the XML version string.</summary>
     procedure SetVersion(const Value: string);
+    /// <summary>IXmlDocument: returns the document element.</summary>
     function GetDocumentElement: IXmlNode;
+    /// <summary>IXmlDocument: replaces the document element.</summary>
     procedure SetDocumentElement(Value: IXmlNode);
+    /// <summary>IXmlDocument: returns the synthetic root node.</summary>
     function GetRoot: IXmlNode;
+    /// <summary>IXmlDocument: returns the active document options.</summary>
     function GetOptions: TXmlDocOptions;
+    /// <summary>IXmlDocument: sets the active document options.</summary>
     procedure SetOptions(const Value: TXmlDocOptions);
+    /// <summary>IXmlDocument: returns the document's child-node collection.</summary>
     function GetChildNodes: IXmlChildNodes;
 
+    /// <summary>IXmlDocument: creates a new element with the supplied tag and namespace URI.</summary>
     function CreateElement(const Tag, NamespaceURI: string): IXmlNode;
+    /// <summary>IXmlDocument: creates a new node of the requested type.</summary>
     function CreateNode(const Name: string; NodeType: TNodeType = ntElement;
       const AddlData: string = ''): IXmlNode;
 
+    /// <summary>Loads the document from Filename via the backend.</summary>
     procedure LoadFromFile(const Filename: string);
+    /// <summary>Saves the document to Filename via the backend.</summary>
     procedure SaveToFile(const Filename: string);
 
+    /// <summary>Whether the document is parsed and ready for use.</summary>
     property Active: Boolean read GetActive write SetActive;
+    /// <summary>Synthetic root node wrapping the document element.</summary>
     property Root: IXmlNode read GetRoot;
+    /// <summary>Top-level document element.</summary>
     property DocumentElement: IXmlNode read GetDocumentElement write SetDocumentElement;
+    /// <summary>XML version string.</summary>
     property Version: string read GetVersion write SetVersion;
+    /// <summary>Document behaviour flags.</summary>
     property Options: TXmlDocOptions read GetOptions write SetOptions;
+    /// <summary>Document child-node collection.</summary>
     property ChildNodes: IXmlChildNodes read GetChildNodes;
   end;
 
+/// <summary>Loads an XML file from disk and returns it as an IXmlDocument.</summary>
 function LoadXmlDocument(const Filename: string): IXmlDocument;
+/// <summary>Creates an empty IXmlDocument with the supplied (optional) XML version string.</summary>
 function NewXmlDocument(const Version: string = ''): IXmlDocument;
 
 implementation

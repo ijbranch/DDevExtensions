@@ -1,5 +1,11 @@
 unit ImportHooking;
 
+/// <summary>
+/// Reduced JCL-derived helpers for inspecting and patching the PE import table of a loaded
+/// module. Provides TJclPeMapImgHooks for installing and undoing IAT redirections by name and
+/// utility routines for walking import descriptors and section headers.
+/// </summary>
+
 interface
 
 {**************************************************************************************************}
@@ -55,71 +61,177 @@ uses
   SysUtils;
 
 const
+  /// <summary>Sentinel handle representing the current process for VirtualProtectEx calls.</summary>
   CurProcess = Cardinal(-1);
 
 // API hooking classes
 type
   {$IF not declared(SIZE_T)}
+  /// <summary>Fallback SIZE_T declaration for older Windows.pas units.</summary>
   SIZE_T = DWORD;
   {$IFEND}
+  /// <summary>Pointer to a Pointer (Delphi 5 compatibility).</summary>
   PPointer = ^Pointer; // Delphi 5
 
+  /// <summary>
+  /// Records a single installed import-table hook so it can be reversed later. Each item knows
+  /// its base module, the imported DLL/function name and the original/new function pointers.
+  /// </summary>
   TJclPeMapImgHookItem = class(TObject)
   private
+    /// <summary>Module base address whose IAT was patched.</summary>
     FBaseAddress: Pointer;
+    /// <summary>Name of the imported function.</summary>
     FFunctionName: string;
+    /// <summary>Name of the imported DLL.</summary>
     FModuleName: string;
+    /// <summary>New function pointer that the IAT now references.</summary>
     FNewAddress: Pointer;
+    /// <summary>Original function pointer, used to restore the IAT entry.</summary>
     FOriginalAddress: Pointer;
+    /// <summary>Owning collection.</summary>
     FList: TObjectList;
   protected
+    /// <summary>Restores the IAT entry without removing the item from the parent list.</summary>
+    /// <returns>True on success or when the PE image is no longer mapped.</returns>
     function InternalUnhook: Boolean;
   public
+    /// <summary>Reverses the hook (when still applicable) and frees the item.</summary>
     destructor Destroy; override;
+    /// <summary>Reverses the hook and removes this item from the owning list.</summary>
+    /// <returns>True when the IAT entry was restored.</returns>
     function Unhook: Boolean;
+    /// <summary>Module base address whose IAT was patched.</summary>
     property BaseAddress: Pointer read FBaseAddress;
+    /// <summary>Name of the imported function.</summary>
     property FunctionName: string read FFunctionName;
+    /// <summary>Name of the imported DLL.</summary>
     property ModuleName: string read FModuleName;
+    /// <summary>Replacement function currently installed in the IAT.</summary>
     property NewAddress: Pointer read FNewAddress;
+    /// <summary>Original function the IAT pointed at before hooking.</summary>
     property OriginalAddress: Pointer read FOriginalAddress;
   end;
 
+  /// <summary>
+  /// Callback used by EnumImports. Called twice per descriptor: first with FromProc=nil to ask
+  /// whether the DLL should be processed, then once per imported function with the original
+  /// pointer in FromProc and ToProc set on input/output to install a replacement.
+  /// </summary>
+  /// <param name="ModuleName">Imported DLL name (ANSI).</param>
+  /// <param name="FromProc">Original imported function pointer, or nil during the DLL filter call.</param>
+  /// <param name="ToProc">In/out: the replacement pointer to install.</param>
+  /// <returns>True to process the DLL or to install ToProc for FromProc.</returns>
   TReplaceImportEvent = function(ModuleName: PAnsiChar; FromProc: Pointer; var ToProc: Pointer): Boolean;
 
+  /// <summary>Owning collection of TJclPeMapImgHookItem instances providing high-level hook/unhook APIs.</summary>
   TJclPeMapImgHooks = class(TObjectList)
   private
+    /// <summary>Strongly-typed indexer used by the Items default property.</summary>
+    /// <param name="Index">Zero-based index.</param>
+    /// <returns>The hook item at Index.</returns>
     function GetItems(Index: Integer): TJclPeMapImgHookItem;
+    /// <summary>Finds an item by its original IAT entry on a specific module.</summary>
+    /// <param name="BaseAddress">Module base.</param>
+    /// <param name="OriginalAddress">Original imported function pointer.</param>
+    /// <returns>Matching item, or nil.</returns>
     function GetItemFromOriginalAddress(BaseAddress, OriginalAddress: Pointer): TJclPeMapImgHookItem;
+    /// <summary>Finds an item by its current replacement function pointer.</summary>
+    /// <param name="NewAddress">Replacement function pointer.</param>
+    /// <returns>Matching item, or nil.</returns>
     function GetItemFromNewAddress(NewAddress: Pointer): TJclPeMapImgHookItem;
   public
+    /// <summary>Marks every tracked hook as no longer reversible without actually patching the IAT.</summary>
     procedure DiscardUnhookInfo;
+    /// <summary>Hooks an imported function, reporting the original address back to the caller.</summary>
+    /// <param name="Base">Module base whose IAT to patch.</param>
+    /// <param name="ModuleName">DLL name to match.</param>
+    /// <param name="FunctionName">Imported symbol to redirect.</param>
+    /// <param name="NewAddress">Replacement function.</param>
+    /// <param name="OriginalAddress">Receives the original function pointer.</param>
+    /// <returns>True on success.</returns>
     function HookImport(Base: Pointer; const ModuleName, FunctionName: string;
       NewAddress: Pointer; var OriginalAddress: Pointer): Boolean; overload;
+    /// <summary>Hooks an imported function without returning the original address.</summary>
+    /// <param name="Base">Module base whose IAT to patch.</param>
+    /// <param name="ModuleName">DLL name to match.</param>
+    /// <param name="FunctionName">Imported symbol to redirect.</param>
+    /// <param name="NewAddress">Replacement function.</param>
+    /// <returns>True on success.</returns>
     function HookImport(Base: Pointer; const ModuleName, FunctionName: string;
       NewAddress: Pointer): Boolean; overload;
+    /// <summary>Hooks an imported function using a pre-resolved module handle.</summary>
+    /// <param name="Base">Module base whose IAT to patch.</param>
+    /// <param name="ModuleHandle">Handle of the imported DLL (for GetProcAddress).</param>
+    /// <param name="ModuleName">DLL name used to match descriptors.</param>
+    /// <param name="FunctionName">Imported symbol to redirect.</param>
+    /// <param name="NewAddress">Replacement function.</param>
+    /// <param name="OriginalAddress">Receives the original function pointer.</param>
+    /// <returns>True on success.</returns>
     function HookImport(Base: Pointer; ModuleHandle: THandle;
       const ModuleName, FunctionName: string; NewAddress: Pointer;
       var OriginalAddress: Pointer): Boolean; overload;
+    /// <summary>Hooks an imported function using a pre-resolved module handle without returning the original address.</summary>
+    /// <param name="Base">Module base whose IAT to patch.</param>
+    /// <param name="ModuleHandle">Handle of the imported DLL.</param>
+    /// <param name="ModuleName">DLL name used to match descriptors.</param>
+    /// <param name="FunctionName">Imported symbol to redirect.</param>
+    /// <param name="NewAddress">Replacement function.</param>
+    /// <returns>True on success.</returns>
     function HookImport(Base: Pointer; ModuleHandle: THandle;
       const ModuleName, FunctionName: string; NewAddress: Pointer): Boolean; overload;
     //class function IsWin9xDebugThunk(P: Pointer): Boolean;
+    /// <summary>Patches every IAT entry of Base/ModuleName referencing FromProc to point at ToProc.</summary>
+    /// <param name="Base">Module base.</param>
+    /// <param name="ModuleName">DLL name to match.</param>
+    /// <param name="FromProc">Original imported function pointer.</param>
+    /// <param name="ToProc">Replacement function pointer.</param>
+    /// <returns>True when at least one entry was patched.</returns>
     class function ReplaceImport(Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer): Boolean;
+    /// <summary>Walks every IAT entry of Base, invoking EvReplaceImport so the caller can install replacements.</summary>
+    /// <param name="Base">Module base.</param>
+    /// <param name="EvReplaceImport">Caller-supplied callback.</param>
+    /// <returns>True when at least one replacement was installed.</returns>
     function EnumImports(Base: Pointer; EvReplaceImport: TReplaceImportEvent): Boolean;
     {class function SystemBase: Pointer;
     procedure UnhookAll;}
+    /// <summary>Returns the address of the IAT slot inside Base that resolves to FromProc on the named module.</summary>
+    /// <param name="Base">Module base.</param>
+    /// <param name="ModuleName">DLL name to match.</param>
+    /// <param name="FromProc">Imported function whose IAT slot to locate.</param>
+    /// <returns>Pointer to the IAT slot, or nil when not found.</returns>
     class function GetImportEntryPtr(Base: Pointer; const ModuleName: string; FromProc: Pointer): PPointer;
+    /// <summary>Reverses the hook whose replacement function pointer matches NewAddress.</summary>
+    /// <param name="NewAddress">Replacement function pointer used as a look-up key.</param>
+    /// <returns>True when an item was found and unhooked.</returns>
     function UnhookByNewAddress(NewAddress: Pointer): Boolean;
+    /// <summary>Reverses every hook installed against the supplied module base.</summary>
+    /// <param name="BaseAddress">Module base to scan.</param>
     procedure UnhookByBaseAddress(BaseAddress: Pointer);
+    /// <summary>Default indexed accessor for hook items.</summary>
     property Items[Index: Integer]: TJclPeMapImgHookItem read GetItems; default;
+    /// <summary>Indexed look-up by (module base, original function) pair.</summary>
     property ItemFromOriginalAddress[BaseAddress, OriginalAddress: Pointer]: TJclPeMapImgHookItem read GetItemFromOriginalAddress;
+    /// <summary>Indexed look-up by replacement function pointer.</summary>
     property ItemFromNewAddress[NewAddress: Pointer]: TJclPeMapImgHookItem read GetItemFromNewAddress;
   end;
 
+/// <summary>Returns True when the host operating system is Windows NT or later.</summary>
 function IsWinNT: Boolean;
+/// <summary>Returns the IMAGE_NT_HEADERS structure of a loaded PE image, or nil on failure.</summary>
+/// <param name="BaseAddress">Module base address.</param>
 function PeMapImgNtHeaders(const BaseAddress: Pointer): PImageNtHeaders;
+/// <summary>Returns a pointer to the first IMAGE_SECTION_HEADER following the optional header.</summary>
+/// <param name="NtHeaders">NT headers pointer obtained from PeMapImgNtHeaders.</param>
 function PeMapImgSections(NtHeaders: PImageNtHeaders): PImageSectionHeader;
+/// <summary>Returns the section header whose name matches SectionName, or nil when not present.</summary>
+/// <param name="NtHeaders">NT headers pointer.</param>
+/// <param name="SectionName">Eight-character section name (such as ".text").</param>
 function PeMapImgFindSection(NtHeaders: PImageNtHeaders;
   const SectionName: string): PImageSectionHeader;
+/// <summary>Builds a deduplicated TStringList containing the names of every imported DLL (regular and delay-loaded).</summary>
+/// <param name="MappedAddress">Base address of the mapped PE image.</param>
+/// <returns>Owned TStringList instance; the caller must free it.</returns>
 function CreateImportLibraryList(MappedAddress: PAnsiChar): TStrings;
 
 implementation

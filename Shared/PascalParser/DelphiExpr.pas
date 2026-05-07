@@ -8,36 +8,57 @@
 
 unit DelphiExpr;
 
+/// <summary>
+/// Expression-tree builder used by the preprocessor to evaluate $IF (...) expressions. Splits
+/// the parse into arithmetic IExprNode (returning Int/Float/String) and Boolean IBoolNode
+/// (returning True/False) trees so operator precedence and type-checking are straightforward.
+/// </summary>
+
 interface
 
 uses
   SysUtils, Classes, Contnrs, DelphiLexer;
 
 type
+  /// <summary>Discriminator for the runtime type of an evaluated TExprNode value.</summary>
   TValueKind = (vkIsInt, vkIsFloat, vkIsString{, vkIsSet});
 
+  /// <summary>Dynamic array of TToken values used for bool-function argument lists.</summary>
   TDynTokenArray = array of TToken;
 
+  /// <summary>Tagged union holding the result of evaluating an arithmetic IExprNode.</summary>
   TExprNodeValueRec = record
+    /// <summary>Active value kind.</summary>
     Typ: TValueKind;
+    /// <summary>Integer value (used when Typ = vkIsInt).</summary>
     ValueInt: Int64;
+    /// <summary>Floating-point value (used when Typ = vkIsFloat).</summary>
     ValueFloat: Double;
+    /// <summary>String value (used when Typ = vkIsString).</summary>
     ValueStr: string;
+    /// <summary>Non-empty when evaluation produced an error.</summary>
     Error: string;
   end;
 
+  /// <summary>Raised for unsupported operator combinations.</summary>
   EInvalidOp = class(Exception);
 
+  /// <summary>Common interface for arithmetic expression nodes.</summary>
   IExprNode = interface
+    /// <summary>Returns the source representation of the node.</summary>
     function ToString: string;
+    /// <summary>Evaluates the node into Value; returns False when an error occurred.</summary>
     function GetValue(out Value: TExprNodeValueRec): Boolean;
   end;
 
+  /// <summary>Abstract base class for arithmetic expression nodes.</summary>
   TExprNode = class(TInterfacedObject, IExprNode)
   public
+    /// <summary>Subclass-specific evaluation; returns False when an error occurred.</summary>
     function GetValue(out Value: TExprNodeValueRec): Boolean; virtual; abstract;
   end;
 
+  /// <summary>Unary "-" applied to FOperand.</summary>
   TExprNodeUnaryMinus = class(TExprNode)
   private
     FOperand: IExprNode;
@@ -47,6 +68,7 @@ type
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
+  /// <summary>Bitwise "not" applied to FOperand.</summary>
   TExprNodeBitOpNeg = class(TExprNode)
   private
     FOperand: IExprNode;
@@ -56,6 +78,7 @@ type
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
+  /// <summary>Binary arithmetic / bitwise operator (FOperation) applied to FOperand1 and FOperand2.</summary>
   TExprNodeBinOp = class(TExprNode)
   private
     FOperation: TTokenKind;
@@ -68,6 +91,7 @@ type
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
+  /// <summary>Literal constant node (integer, floating-point or string).</summary>
   TExprNodeConst = class(TExprNode)
   private
     FKind: TTokenKind;
@@ -78,16 +102,20 @@ type
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
+  /// <summary>Common interface for Boolean expression nodes.</summary>
   IBoolNode = interface
     function ToString: string;
     function GetValue(var Error: string): Boolean;
   end;
 
+  /// <summary>Abstract base class for Boolean expression nodes.</summary>
   TBoolNode = class(TInterfacedObject, IBoolNode)
   public
+    /// <summary>Subclass-specific evaluation; sets Error on failure.</summary>
     function GetValue(var Error: string): Boolean; virtual; abstract;
   end;
 
+  /// <summary>Boolean binary operator (and/or/xor) applied to FLeft and FRight.</summary>
   TBoolNodeOp = class(TBoolNode)
   private
     FOperation: TTokenKind;
@@ -100,6 +128,7 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;
 
+  /// <summary>Logical "not" applied to FNode.</summary>
   TBoolNodeNot = class(TBoolNode)
   private
     FNode: IBoolNode;
@@ -109,6 +138,7 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;
 
+  /// <summary>Boolean literal.</summary>
   TBoolNodeConst = class(TBoolNode)
   private
     FValue: Boolean;
@@ -128,6 +158,7 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;}
 
+  /// <summary>Adapter that exposes an arithmetic IExprNode as a Boolean node (non-zero = True).</summary>
   TBoolNodeExp = class(TBoolNode)
   private
     FExpr: IExprNode;
@@ -137,6 +168,7 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;
 
+  /// <summary>Relational operator (=, &lt;&gt;, &lt;=, &gt;=, &lt;, &gt;) applied to two arithmetic operands.</summary>
   TBoolNodeRelOp = class(TBoolNode)
   private
     FRelOperation: TTokenKind;
@@ -150,6 +182,7 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;
 
+  /// <summary>Boolean binary operator (and/or/xor) applied to two Boolean operands.</summary>
   TBoolNodeBoolOp = class(TBoolNode)
   private
     FOperation: TTokenKind;
@@ -162,8 +195,14 @@ type
     function GetValue(var Error: string): Boolean; override;
   end;
 
+  /// <summary>Discriminator passed to TExpressionParser.Match to control whether failure raises an exception.</summary>
   MatchFail = (mfYes, mfNo);
 
+  /// <summary>
+  /// Recursive-descent parser that consumes tokens from a TDelphiLexer and produces an IBoolNode
+  /// expression tree. Subclasses override the resolver hooks to plug in compile-time identifier
+  /// look-ups for $IF/$IFDEF style expressions.
+  /// </summary>
   TExpressionParser = class(TObject)
   private
     Look: TToken;
@@ -799,7 +838,7 @@ begin
 end;
 
 (*
-	<expression>  ::=  [ "+" | "-" | "not" | € ] <term> { [ "+" | "-" | "or" | "xor" ] <term> }*
+	<expression>  ::=  [ "+" | "-" | "not" | ï¿½ ] <term> { [ "+" | "-" | "or" | "xor" ] <term> }*
 
   <term>  ::=  <factor> { [ "*" | "/" | "mod" | "and" ] <factor> }*
 
@@ -901,7 +940,7 @@ end;
 
   <B-term>  ::=  <B-not-factor> { "and" <B-not-factor> }*
 
-  <B-not-factor>  ::=  [ "not" | € ] <B-factor>
+  <B-not-factor>  ::=  [ "not" | ï¿½ ] <B-factor>
 
   <relop>  ::=  "<" | "<=" | ">" | ">=" | "=" | "<>"
 

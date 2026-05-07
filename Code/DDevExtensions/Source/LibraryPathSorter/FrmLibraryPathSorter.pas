@@ -10,6 +10,12 @@
 
 unit FrmLibraryPathSorter;
 
+/// <summary>
+/// Hosts the IDE Path Sorter dialog: lets the user view, reorder, deduplicate, sort, validate and
+/// apply Library/Browsing/etc. paths per platform, with platform-category filtering and an
+/// integrated backup history view.
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -20,120 +26,230 @@ uses
   FrmBase, LibraryPathSorter;
 
 type
+  /// <summary>
+  /// Modeless dialog with two side-by-side panels (Original vs Working) that lets the user safely
+  /// edit the IDE's library paths for any installed platform and roll back via the backup history.
+  /// </summary>
   TFormLibraryPathSorter = class( TFormBase )
+    /// <summary>Top container panel hosting the path-type and platform pickers.</summary>
     pnlTop: TPanel;
+    /// <summary>Bottom strip panel hosting Apply/Close/status.</summary>
     pnlBottom: TPanel;
+    /// <summary>Main panel hosting the Original/Working split.</summary>
     pnlMain: TPanel;
+    /// <summary>Splitter between the main panel and the backups panel.</summary>
     Splitter: TSplitter;
+    /// <summary>Container panel for the Original (read-only) paths list.</summary>
     pnlCurrent: TPanel;
+    /// <summary>Splitter between the Original and Working panels.</summary>
     SplitterPanels: TSplitter;
+    /// <summary>Container panel for the editable Working paths list and its action bar.</summary>
     pnlWorking: TPanel;
+    /// <summary>Caption label for cboPathType.</summary>
     lblPathType: TLabel;
+    /// <summary>Path-type picker (Library, Browsing, Debug DCU, ...).</summary>
     cboPathType: TComboBox;
+    /// <summary>Caption label for cboPlatform.</summary>
     lblPlatform: TLabel;
+    /// <summary>Platform picker, filtered by the platform-category checkboxes.</summary>
     cboPlatform: TComboBox;
+    /// <summary>Caption label for lstCurrent (updated with item count and legend).</summary>
     lblCurrent: TLabel;
+    /// <summary>Read-only list of paths currently stored in the registry.</summary>
     lstCurrent: TListBox;
+    /// <summary>Caption label for lstWorking (updated with item count and legend).</summary>
     lblWorking: TLabel;
+    /// <summary>Editable working list of paths (drag-and-drop reorderable).</summary>
     lstWorking: TListBox;
+    /// <summary>Closes the dialog (warning the user when changes were applied).</summary>
     btnClose: TButton;
+    /// <summary>Writes the working list back to the registry (with verification and backup).</summary>
     btnApply: TButton;
+    /// <summary>Restores the selected backup snapshot into the registry.</summary>
     btnRestore: TButton;
+    /// <summary>Manually creates a backup snapshot of the current registry value.</summary>
     btnBackup: TButton;
+    /// <summary>Container panel for the backups history list.</summary>
     pnlBackups: TPanel;
+    /// <summary>Caption label for lvBackups.</summary>
     lblBackups: TLabel;
+    /// <summary>List view of available backup snapshots.</summary>
     lvBackups: TListView;
+    /// <summary>Splitter between the backups list and the panels above.</summary>
     SplitterBackups: TSplitter;
+    /// <summary>Deletes the selected backup snapshot.</summary>
     btnDeleteBackup: TButton;
+    /// <summary>Status label updated with operation outcomes.</summary>
     lblStatus: TLabel;
+    /// <summary>Label that surfaces the count of paths deleted from the working list.</summary>
     lblDeleted: TLabel;
+    /// <summary>Static caution label warning the user about path-order side effects.</summary>
     lblCaution: TLabel;
+    /// <summary>If checked, an automatic backup is created before each Apply.</summary>
     chkAutoBackup: TCheckBox;
+    /// <summary>Strip hosting the working-list reorder/sort/copy speed buttons.</summary>
     pnlWorkingButtons: TPanel;
+    /// <summary>Moves the selected working item up by one.</summary>
     btnWorkingUp: TSpeedButton;
+    /// <summary>Moves the selected working item down by one.</summary>
     btnWorkingDown: TSpeedButton;
+    /// <summary>Moves the selected working item to the top.</summary>
     btnWorkingTop: TSpeedButton;
+    /// <summary>Moves the selected working item to the bottom.</summary>
     btnWorkingBottom: TSpeedButton;
+    /// <summary>Copies the Original list into the Working list (resetting deletions).</summary>
     btnCopyToWorking: TSpeedButton;
+    /// <summary>Alphabetises the Working list (case-insensitive, duplicates preserved).</summary>
     btnSortAlpha: TSpeedButton;
+    /// <summary>Popup menu shown for the Working list.</summary>
     pmWorking: TPopupMenu;
+    /// <summary>Deletes the selected working list entries (multi-select).</summary>
     mnuDeleteEntry: TMenuItem;
+    /// <summary>Popup menu shown for the Original list.</summary>
     pmCurrent: TPopupMenu;
+    /// <summary>Reports paths in Original that are not in Working with diff hints.</summary>
     mnuShowMissing: TMenuItem;
+    /// <summary>Reports raw vs parsed counts and other diagnostics about the registry value.</summary>
     mnuShowDiagnostic: TMenuItem;
+    /// <summary>Strip panel hosting the dynamically created platform-category checkboxes.</summary>
     pnlPlatformFilter: TPanel;
+    /// <summary>Caption label for the platform-category filter strip.</summary>
     lblPlatformFilter: TLabel;
+    /// <summary>Closes the dialog.</summary>
     procedure btnCloseClick( Sender: TObject );
+    /// <summary>Shows raw vs parsed registry counts and other diagnostics.</summary>
     procedure mnuShowDiagnosticClick( Sender: TObject );
+    /// <summary>Shows paths from Original that are missing in Working (with diff hints).</summary>
     procedure mnuShowMissingClick( Sender: TObject );
+    /// <summary>Deletes the selected working entries after confirmation.</summary>
     procedure mnuDeleteEntryClick( Sender: TObject );
+    /// <summary>Validates the working list and writes it back to the registry.</summary>
     procedure btnApplyClick( Sender: TObject );
+    /// <summary>Restores the selected backup snapshot into the registry.</summary>
     procedure btnRestoreClick( Sender: TObject );
+    /// <summary>Creates a manual backup snapshot of the current registry value.</summary>
     procedure btnBackupClick( Sender: TObject );
+    /// <summary>Deletes the selected backup snapshot from the history.</summary>
     procedure btnDeleteBackupClick( Sender: TObject );
+    /// <summary>Saves the form layout and frees per-form data when the dialog closes.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>Initialises form fields, populates the pickers and loads paths.</summary>
     procedure FormCreate( Sender: TObject );
+    /// <summary>Reloads the path lists when the path type changes.</summary>
     procedure cboPathTypeChange( Sender: TObject );
+    /// <summary>Reloads the path lists when the platform changes.</summary>
     procedure cboPlatformChange( Sender: TObject );
+    /// <summary>Updates Restore/Delete button states for the selected backup.</summary>
     procedure lvBackupsSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
+    /// <summary>Moves the selected working entry up by one position.</summary>
     procedure btnWorkingUpClick( Sender: TObject );
+    /// <summary>Moves the selected working entry down by one position.</summary>
     procedure btnWorkingDownClick( Sender: TObject );
+    /// <summary>Moves the selected working entry to the top of the list.</summary>
     procedure btnWorkingTopClick( Sender: TObject );
+    /// <summary>Moves the selected working entry to the bottom of the list.</summary>
     procedure btnWorkingBottomClick( Sender: TObject );
+    /// <summary>Resets the working list to a copy of the original list.</summary>
     procedure btnCopyToWorkingClick( Sender: TObject );
+    /// <summary>Alphabetises the working list with safety checks against path loss.</summary>
     procedure btnSortAlphaClick( Sender: TObject );
+    /// <summary>Highlights matching items in the original list when working items are selected.</summary>
     procedure lstWorkingClick( Sender: TObject );
+    /// <summary>Drag-over handler: only accepts drags originating in the working list.</summary>
     procedure lstWorkingDragOver( Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean );
+    /// <summary>Drag-drop handler that reorders the working list to the drop position.</summary>
     procedure lstWorkingDragDrop( Sender, Source: TObject; X, Y: Integer );
+    /// <summary>Initiates an internal drag on plain left-click in the working list.</summary>
     procedure lstWorkingMouseDown( Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer );
+    /// <summary>Owner-draws working items, colouring duplicates red and invalid paths blue.</summary>
     procedure lstWorkingDrawItem( Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState );
+    /// <summary>Owner-draws original items, marking missing-in-working pink and invalid blue.</summary>
     procedure lstCurrentDrawItem( Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState );
   private
+    /// <summary>Index of the working item currently being dragged (-1 when idle).</summary>
     FDragIndex: Integer;
+    /// <summary>Snapshot of the original registry value used for diffing and backup.</summary>
     FOriginalPaths: string;
+    /// <summary>Number of entries explicitly deleted by the user from the working list.</summary>
     FDeletedCount: Integer;
+    /// <summary>True once a successful Apply has occurred (drives the close-time prompt).</summary>
     FChangesApplied: Boolean;
+    /// <summary>Cache of (lower-cased path) -&gt; validity to keep owner-draw fast.</summary>
     FPathValidityCache: TDictionary<string, Boolean>;
+    /// <summary>Full list of installed platforms (used to refill cboPlatform after filtering).</summary>
     FAllPlatforms: TStringList;
+    /// <summary>Maps platform category -&gt; list of platforms in that category.</summary>
     FPlatformCategories: TDictionary<string, TStringList>;
+    /// <summary>Dynamically created platform-category checkboxes (excluding the "All" one).</summary>
     FPlatformCheckboxes: TList<TCheckBox>;
+    /// <summary>Dynamically created "All" checkbox above the category checkboxes.</summary>
     FChkAll: TCheckBox;
+    /// <summary>Returns True if the path at Index appears elsewhere in the listbox (case-insensitive).</summary>
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
+    /// <summary>Returns True if APath also appears in the working listbox (trimmed compare).</summary>
     function IsPathInWorkingPanel( const APath: string ): Boolean;
+    /// <summary>Returns True if APath resolves to an existing directory (results are cached).</summary>
     function IsPathValid( const APath: string ): Boolean;
+    /// <summary>Clears FPathValidityCache (called on platform/path-type change).</summary>
     procedure InvalidatePathCache;
+    /// <summary>Expands $(PLATFORM) and $(BDS)-style macros in APath for validity checking.</summary>
     function ExpandPathMacros( const APath: string ): string;
+    /// <summary>Updates the panel-header captions with current counts and warning markers.</summary>
     procedure UpdatePanelLabels;
+    /// <summary>Populates cboPlatform from the path handler.</summary>
     procedure LoadPlatforms;
+    /// <summary>Populates cboPathType with the user-friendly path-type display names.</summary>
     procedure LoadPathTypes;
+    /// <summary>Reads the current path value from the registry into both the original and working lists.</summary>
     procedure LoadCurrentPaths;
+    /// <summary>Initialises the working list with a sorted copy of the original paths.</summary>
     procedure LoadWorkingPaths;
+    /// <summary>Refreshes lvBackups from the backup manager.</summary>
     procedure LoadBackupHistory;
+    /// <summary>Sets lblStatus.Caption.</summary>
     procedure UpdateStatus( const AMessage: string );
+    /// <summary>Recomputes the enabled state of the working-list and Apply buttons.</summary>
     procedure UpdateButtonStates;
+    /// <summary>Returns the path type currently selected in cboPathType.</summary>
     function GetSelectedPathType: TLibraryPathType;
+    /// <summary>Returns the platform currently selected in cboPlatform.</summary>
     function GetSelectedPlatform: string;
+    /// <summary>Moves the selected listbox item by Delta positions, clamped to the list.</summary>
     procedure MoveListItem( AListBox: TListBox; Delta: Integer );
+    /// <summary>Moves the selected listbox item to the top or the bottom.</summary>
     procedure MoveListItemToEnd( AListBox: TListBox; ToTop: Boolean );
+    /// <summary>Joins listbox items with semicolons (no quoting; matches Delphi's native format).</summary>
     function GetPathsFromListBox( AListBox: TListBox ): string;
+    /// <summary>Writes APaths to the registry, performs a read-back verification and reloads.</summary>
     procedure ApplyPaths( const APaths: string );
+    /// <summary>Restores the form geometry and split-pane sizes from the registry.</summary>
     procedure LoadFormSettings;
+    /// <summary>Persists the form geometry, split-pane sizes and category-checkbox states.</summary>
     procedure SaveFormSettings;
+    /// <summary>Returns the high-level category of APlatform (Windows, Android, iOS, ...).</summary>
     function CategorizePlatform( const APlatform: string ): string;
+    /// <summary>(Re)builds the FPlatformCategories dictionary from FAllPlatforms.</summary>
     procedure BuildPlatformCategories;
+    /// <summary>Creates the dynamic platform-category checkboxes on pnlPlatformFilter.</summary>
     procedure CreatePlatformCheckboxes;
+    /// <summary>OnClick for an individual category checkbox; refilters the platform dropdown.</summary>
     procedure PlatformCheckboxClick( Sender: TObject );
+    /// <summary>OnClick for the "All" checkbox; toggles the category checkboxes' enabled state.</summary>
     procedure AllCheckboxClick( Sender: TObject );
+    /// <summary>Synchronises the category checkboxes with the "All" checkbox state.</summary>
     procedure UpdateCategoryCheckboxes;
+    /// <summary>Refilters cboPlatform to only contain platforms in the checked categories.</summary>
     procedure FilterPlatformDropdown;
   public
+    /// <summary>Shows (or activates) the singleton sorter dialog.</summary>
     class procedure Execute;
   end;
 
+/// <summary>Singleton instance of the sorter dialog (nil while not shown).</summary>
 var
   FormLibraryPathSorterInstance: TFormLibraryPathSorter = nil;
 

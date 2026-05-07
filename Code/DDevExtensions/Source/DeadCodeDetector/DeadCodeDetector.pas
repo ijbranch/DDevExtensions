@@ -8,6 +8,17 @@
 
 unit DeadCodeDetector;
 
+/// <summary>
+/// Implements the Dead Code Detector DDevExtensions plugin: collects all declared
+/// procedures, functions and class fields across a project, then scans every unit's
+/// implementation section for references and reports symbols that appear to be unused.
+/// </summary>
+/// <remarks>
+/// Detection is heuristic. Published members, virtual / override / abstract methods,
+/// constructors / destructors and event-handler-shaped methods are ignored, as are
+/// symbols matching user-supplied wildcard patterns.
+/// </remarks>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -17,82 +28,155 @@ uses
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
+  /// <summary>One reported dead-code finding.</summary>
   TDeadCodeItem = record
+    /// <summary>Full path of the file containing the symbol.</summary>
     FileName: string;
+    /// <summary>Unit name (without extension).</summary>
     UnitName: string;
+    /// <summary>Source line of the declaration.</summary>
     Line: Integer;
-    ElementType: string;    // Procedure, Function, Field
+    /// <summary>Kind of symbol: "Procedure", "Function", "Constructor", "Destructor" or "Field".</summary>
+    ElementType: string;
+    /// <summary>Name of the symbol (qualified with the class name when applicable).</summary>
     ElementName: string;
-    Scope: string;          // private, protected, public, published, unit
+    /// <summary>Visibility / placement: "private", "protected", "public", "published", "unit" or "interface".</summary>
+    Scope: string;
+    /// <summary>Reason for reporting (currently always "Never referenced").</summary>
     Reason: string;
   end;
 
+  /// <summary>
+  /// Mutable record describing a single declared symbol gathered during phase 1
+  /// and updated during the reference-scanning phase.
+  /// </summary>
   TSymbolInfo = class
   public
+    /// <summary>Identifier name as declared in the source.</summary>
     Name: string;
+    /// <summary>Full path of the declaring file.</summary>
     FileName: string;
+    /// <summary>Unit name (without extension).</summary>
     UnitName: string;
+    /// <summary>Source line of the declaration.</summary>
     Line: Integer;
+    /// <summary>Kind of symbol (see <see cref="TDeadCodeItem.ElementType"/>).</summary>
     ElementType: string;
+    /// <summary>Visibility / placement (see <see cref="TDeadCodeItem.Scope"/>).</summary>
     Scope: string;
+    /// <summary>Set during the reference-scanning phase when at least one reference is found.</summary>
     IsReferenced: Boolean;
+    /// <summary>True when the method has the virtual directive.</summary>
     IsVirtual: Boolean;
+    /// <summary>True when the method has the override directive.</summary>
     IsOverride: Boolean;
+    /// <summary>True when the method has the abstract directive.</summary>
     IsAbstract: Boolean;
+    /// <summary>True when the symbol is in a published section (used by RTTI/DFM streaming).</summary>
     IsPublished: Boolean;
+    /// <summary>True when the symbol is a constructor.</summary>
     IsConstructor: Boolean;
+    /// <summary>True when the symbol is a destructor.</summary>
     IsDestructor: Boolean;
+    /// <summary>True when the parameter list resembles a VCL event handler (has Sender: TObject).</summary>
     IsEventHandler: Boolean;
-    ClassName: string;      // For methods, the class they belong to
+    /// <summary>For methods, the name of the owning class.</summary>
+    ClassName: string;
   end;
 
+  /// <summary>
+  /// Two-pass project analyser that collects symbols, then scans for references and
+  /// reports unreferenced (and non-ignored) ones as dead code.
+  /// </summary>
   TDeadCodeAnalyzer = class
   private
+    /// <summary>All symbols collected during phase 1 (owned).</summary>
     FSymbols: TObjectList<TSymbolInfo>;
+    /// <summary>Backing field for <see cref="ProgressFileName"/>.</summary>
     FProgressFileName: string;
+    /// <summary>User-supplied wildcard ignore patterns.</summary>
     FIgnorePatterns: TStringList;
+    /// <summary>Lexes the file and adds every declared procedure, function and qualifying field to <see cref="FSymbols"/>.</summary>
     procedure CollectSymbols( const FileName: string; const Content: UTF8String );
+    /// <summary>Lexes the file's implementation section and marks any matching symbols as referenced.</summary>
     procedure ScanForReferences( const FileName: string; const Content: UTF8String );
+    /// <summary>Returns True when the symbol should be excluded from the report (published, polymorphic, ignored pattern, ...).</summary>
     function ShouldIgnore( const Symbol: TSymbolInfo ): Boolean;
+    /// <summary>Returns True when the parameter text contains "Sender" and "TObject" - a heuristic for VCL event handlers.</summary>
     function IsEventHandlerSignature( const Params: string ): Boolean;
   public
+    /// <summary>Creates a new analyser with empty state.</summary>
     constructor Create;
+    /// <summary>Releases all owned resources.</summary>
     destructor Destroy; override;
+    /// <summary>Discards all collected symbols.</summary>
     procedure ClearSymbols;
+    /// <summary>Adds an ignore pattern. Patterns may use a leading or trailing '*' wildcard.</summary>
     procedure AddIgnorePattern( const Pattern: string );
+    /// <summary>Runs the full two-pass analysis on a project.</summary>
+    /// <param name="Project">The active project to analyse.</param>
+    /// <param name="DeadCode">Receives the list of unreferenced symbols.</param>
+    /// <param name="OnProgress">Optional progress callback (read <see cref="ProgressFileName"/> for the current step).</param>
+    /// <returns>True on success.</returns>
     function AnalyzeProject( const Project: IOTAProject; out DeadCode: TArray<TDeadCodeItem>;
       OnProgress: TNotifyEvent ): Boolean;
+    /// <summary>Description of the current step (e.g. "Collecting: Foo.pas").</summary>
     property ProgressFileName: string read FProgressFileName;
   end;
 
+  /// <summary>
+  /// Plugin host: registers the menu item and owns the persistent options including
+  /// the user-editable ignore list of name patterns.
+  /// </summary>
   TDeadCodeDetectorPlugin = class( TPluginConfig )
   private
+    /// <summary>Backing field for <see cref="Enabled"/>.</summary>
     FEnabled: Boolean;
+    /// <summary>Backing field for <see cref="CheckProcedures"/>.</summary>
     FCheckProcedures: Boolean;
+    /// <summary>Backing field for <see cref="CheckFields"/>.</summary>
     FCheckFields: Boolean;
+    /// <summary>Wildcard ignore patterns, applied to symbol names.</summary>
     FIgnoreList: TStringList;
+    /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
+    /// <summary>Menu click handler that opens the detector form.</summary>
     procedure MenuItemClick( Sender: TObject );
+    /// <summary>Property setter for the comma-text serialised ignore list.</summary>
     procedure SetIgnoreListText( const Value: string );
+    /// <summary>Property getter for the comma-text serialised ignore list.</summary>
     function GetIgnoreListText: string;
   protected
+    /// <summary>Returns the IDE Tools options page for this plugin.</summary>
     function GetOptionPages: TTreePage; override;
+    /// <summary>Initialises default option values and seeds the ignore list.</summary>
     procedure Init; override;
   public
+    /// <summary>Creates the plugin, the ignore list and the menu item.</summary>
     constructor Create;
+    /// <summary>Releases the menu item and the ignore list.</summary>
     destructor Destroy; override;
+    /// <summary>Opens (or focuses) the Dead Code Detector form.</summary>
     procedure ShowDetector;
+    /// <summary>Read-only access to the ignore list.</summary>
     property IgnoreList: TStringList read FIgnoreList;
   published
+    /// <summary>Whether the plugin's features are enabled.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
+    /// <summary>Whether the analyser inspects procedures, functions and methods.</summary>
     property CheckProcedures: Boolean read FCheckProcedures write FCheckProcedures;
+    /// <summary>Whether the analyser inspects private and protected fields.</summary>
     property CheckFields: Boolean read FCheckFields write FCheckFields;
+    /// <summary>Comma-text serialisation of the ignore list (used by the configuration storage).</summary>
     property IgnoreListText: string read GetIgnoreListText write SetIgnoreListText;
   end;
 
+/// <summary>Plugin entry point invoked by the IDE host to load or unload the plugin singleton.</summary>
+/// <param name="Unload">When True the plugin is unloaded; otherwise it is loaded.</param>
 procedure InitPlugin( Unload: Boolean );
 
 var
+  /// <summary>Singleton instance of the Dead Code Detector plugin.</summary>
   DeadCodeDetectorPlugin: TDeadCodeDetectorPlugin;
 
 implementation

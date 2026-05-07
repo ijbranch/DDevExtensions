@@ -1,5 +1,11 @@
 unit HtHint;
 
+/// <summary>
+/// Hint window descendant that renders simple inline mark-up (b, i, u, c:colour) inside hint
+/// text. Recognises HTML-like tags such as &lt;b&gt;...&lt;/b&gt;, &lt;i&gt;, &lt;u&gt; and &lt;c:Red&gt;
+/// for colour overrides; line breaks (#13/#10) start a new line.
+/// </summary>
+
 {$DEFINE VCL}
 
 {$A+,B-,C+,D+,E-,F-,G+,H+,I+,J-,K-,L+,M-,N+,O+,P+,Q-,R-,S-,T-,U-,V+,W-,X+,Y+,Z1}
@@ -17,14 +23,18 @@ uses
   Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls;
 
 type
+  /// <summary>THintWindow descendant that paints AHint via the inline mark-up parser used by ItemHtDraw.</summary>
   THtHintWindow = class(THintWindow)
   protected
+    /// <summary>Paints the hint contents using ItemHtDraw to interpret formatting tags.</summary>
     procedure Paint; override;
   public
     {$IFDEF VCL}
+    /// <summary>Computes the bounding rectangle required to render AHint with the inline mark-up taken into account.</summary>
     function CalcHintRect(MaxWidth: Integer; const AHint: string; AData: Pointer): TRect; override;
     {$ENDIF VCL}
     {$IFDEF VisualCLX}
+    /// <summary>VisualCLX overload of CalcHintRect.</summary>
     function CalcHintRect(MaxWidth: Integer; const AHint: WideString; AData: Pointer): TRect; override;
     {$ENDIF VisualCLX}
   end;

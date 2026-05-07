@@ -1,5 +1,11 @@
 unit StartParameterCtrl;
 
+/// <summary>
+/// Defines the toolbar combo-box control (TStartParameterControl) that lets the user pick a Start
+/// Parameter for the active project, plus the per-project bookkeeping object (TProjectParameters)
+/// that loads, saves and tracks the .params/.params.local files.
+/// </summary>
+
 interface
 
 uses
@@ -9,83 +15,148 @@ uses
 type
   TStartParameterControl = class;
 
+  /// <summary>
+  /// Bookkeeping object that loads/saves the .params and .params.local files for one IOTAProject and
+  /// hooks IDE notifiers to react to module rename and module destruction.
+  /// </summary>
   TProjectParameters = class(TInterfacedObject, IOTANotifier, IOTAModuleNotifier)
   private
+    /// <summary>Parsed parameters loaded from the project's .params file.</summary>
     FParameters: TStartParamList;
+    /// <summary>Owning toolbar control.</summary>
     FOwner: TStartParameterControl;
+    /// <summary>Project this object tracks.</summary>
     FProject: IOTAProject;
+    /// <summary>Cookie of the IOTAModuleNotifier registration (-1 once removed).</summary>
     FNotifier: Integer;
+    /// <summary>Returns the .local include list (creating the include entry on demand).</summary>
     function GetLocalParameters: TStartParamList;
   protected
     { IOTANotifier }
+    /// <summary>IOTANotifier callback (after save); no-op.</summary>
     procedure AfterSave;
+    /// <summary>IOTANotifier callback (before save); no-op.</summary>
     procedure BeforeSave;
+    /// <summary>IOTANotifier callback fired when the IDE destroys the module.</summary>
     procedure Destroyed;
+    /// <summary>IOTANotifier callback (modified); no-op.</summary>
     procedure Modified;
 
     { IOTAModuleNotifier }
+    /// <summary>IOTAModuleNotifier callback that authorises overwrite-on-save (always True).</summary>
     function CheckOverwrite: Boolean;
+    /// <summary>Renames the .params and .params.local files when the project is renamed.</summary>
     procedure ModuleRenamed(const NewName: string);
   public
+    /// <summary>Creates the bookkeeping object, registers the IDE notifier and creates an empty list.</summary>
     constructor Create(AOwner: TStartParameterControl; const AProject: IOTAProject);
+    /// <summary>Unregisters the IDE notifier and frees the parameter list.</summary>
     destructor Destroy; override;
+    /// <summary>Returns the .params (or .params.local) file path for the supplied project file.</summary>
     class function GetParamFileName(const AFileName: string; ALocal: Boolean): string;
 
+    /// <summary>Loads the project's parameters from disk (or clears them if the file is missing).</summary>
     procedure Load;
+    /// <summary>Saves the project's parameters and .local file (or deletes the .local if empty).</summary>
     procedure Save;
 
+    /// <summary>Parsed parameters loaded from the project's .params file.</summary>
     property Parameters: TStartParamList read FParameters;
+    /// <summary>Parameters from the .params.local include (created on demand).</summary>
     property LocalParameters: TStartParamList read GetLocalParameters;
+    /// <summary>Project this object tracks.</summary>
     property Project: IOTAProject read FProject;
   end;
 
+  /// <summary>
+  /// Combo-box control hosted on a custom IDE toolbar that displays the start parameters available
+  /// for the active project and feeds the selection into the IDE's Run command.
+  /// </summary>
   TStartParameterControl = class(TCustomComboBox, IOTANotifier, IOTAIDENotifier)
   private
+    /// <summary>Cookie of the IOTAServices notifier registration.</summary>
     FNotifier: Integer;
+    /// <summary>Owned list of TProjectParameters (one per loaded project).</summary>
     FProjectParams: TObjectList;
+    /// <summary>The TProjectParameters whose parameters are currently displayed.</summary>
     FActiveParams: TProjectParameters;
+    /// <summary>Returns the TProjectParameters tracking the supplied project, or nil.</summary>
     function FindProject(const AProject: IOTAProject): TProjectParameters;
+    /// <summary>Popup-menu handler that opens (or creates and opens) the clicked .params file.</summary>
     procedure DoEditFileClick(Sender: TObject);
   protected
+    /// <summary>Performs the initial parameter refresh once the window handle is available.</summary>
     procedure CreateWnd; override;
+    /// <summary>Persists the new active parameter when the selection changes.</summary>
     procedure Change; override;
+    /// <summary>Refreshes the parameter list when the control gains focus.</summary>
     procedure WMSetFocus(var Msg: TWMSetFocus); message WM_SETFOCUS;
+    /// <summary>Provides the resolved parameter string as the control's tooltip.</summary>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
+    /// <summary>Copies the active resolved parameter string to the clipboard on Ctrl+C.</summary>
     procedure WMCopy(var Msg: TWMCopy); message WM_COPY;
 
+    /// <summary>Builds the right-click popup menu listing the editable .params files.</summary>
     procedure DoPopup(Sender: TObject);
 
     { IOTANotifier }
+    /// <summary>IOTANotifier callback (after save); no-op.</summary>
     procedure AfterSave;
+    /// <summary>IOTANotifier callback (before save); no-op.</summary>
     procedure BeforeSave;
+    /// <summary>IOTANotifier callback fired when the IDE destroys the notifier.</summary>
     procedure Destroyed;
+    /// <summary>IOTANotifier callback (modified); no-op.</summary>
     procedure Modified;
 
     { IOTAIDENotifier }
+    /// <summary>Refreshes the parameter list when the active project changes.</summary>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
+    /// <summary>IOTAIDENotifier callback (before compile); no-op.</summary>
     procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); overload;
+    /// <summary>IOTAIDENotifier callback (after compile); no-op.</summary>
     procedure AfterCompile(Succeeded: Boolean); overload;
 
+    /// <summary>Forces the design-time width on load.</summary>
     procedure Loaded; override;
+    /// <summary>Reloads parameters and widens the dropdown to fit the longest item.</summary>
     procedure DropDown; override;
     {$IF CompilerVersion >= 33.0} // 10.3 Rio+
+    /// <summary>Owner-drawing implementation that mirrors the platforms combo's font/brush.</summary>
     procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
     {$IFEND}
   public
+    /// <summary>Creates the control and registers the IOTAServices notifier.</summary>
     constructor Create(AOwner: TComponent); override;
+    /// <summary>Unregisters the IOTAServices notifier and frees the project tracker list.</summary>
     destructor Destroy; override;
+    /// <summary>Refreshes the items from the active project's parameter list.</summary>
+    /// <param name="ADestroyingProject">If non-nil, treated as already destroyed and skipped.</param>
     procedure UpdateStartParameters(const ADestroyingProject: IOTAProject);
+    /// <summary>Reloads the active project's parameters from disk.</summary>
     procedure Reload;
 
+    /// <summary>Returns the resolved parameter string for the active selection.</summary>
+    /// <param name="Params">Receives the resolved parameter string.</param>
+    /// <param name="AllowReload">If True, the parameter list may be refreshed before reading.</param>
+    /// <returns>True when a non-default parameter is selected.</returns>
     class function GetActiveParams(var Params: string; AllowReload: Boolean): Boolean; static;
+    /// <summary>Returns True when no specific start parameter is selected.</summary>
     class function IsDefaultParams: Boolean; static;
   published
+    /// <summary>Inherited Enabled, republished for IDE persistence.</summary>
     property Enabled;
+    /// <summary>Inherited Visible, republished for IDE persistence.</summary>
     property Visible;
+    /// <summary>Inherited Action, republished for IDE persistence.</summary>
     property Action;
+    /// <summary>Inherited Left, republished for IDE persistence.</summary>
     property Left;
+    /// <summary>Inherited Top, republished for IDE persistence.</summary>
     property Top;
+    /// <summary>Inherited Width, republished for IDE persistence.</summary>
     property Width;
+    /// <summary>Inherited Height, republished for IDE persistence.</summary>
     property Height;
   end;
 

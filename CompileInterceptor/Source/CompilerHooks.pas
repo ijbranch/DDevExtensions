@@ -8,6 +8,14 @@
 
 unit CompilerHooks;
 
+/// <summary>
+/// Hooks the running Delphi IDE's Pascal compiler I/O callbacks so registered
+/// CompileInterceptor plug-ins can intercept file open/create/read/write/seek operations
+/// and compiler messages. <see cref="InitCompileInterceptor"/> patches the IDE's
+/// compiler callback table at startup; <see cref="FiniCompileInterceptor"/> tears it
+/// down at shutdown.
+/// </summary>
+
 {$I CompileInterceptor.inc}
 
 interface
@@ -16,23 +24,41 @@ uses
   Windows, SysUtils, Classes, Contnrs, FileStreams, Variants;
 
 var
+  /// <summary>When True, the C++ compiler write path uses a buffered write stream (legacy option, kept for symmetry).</summary>
   OptUseWriteCache: Boolean = True;
   //LogFile: TextFile;
 
 type
+  /// <summary>Pointer to a UTF-8 encoded null-terminated character buffer.</summary>
   PUtf8Char = PAnsiChar;
   {$IFNDEF UNICODE}
+  /// <summary>Pre-Unicode alias used so non-Unicode Delphi versions get a <c>RawByteString</c> type.</summary>
   RawByteString = AnsiString;
   {$ENDIF UNICODE}
 
+/// <summary>
+/// Resolves and patches the IDE's Pascal compiler callback table so subsequent file I/O
+/// and message calls flow through the interceptor. Idempotent.
+/// </summary>
 procedure InitCompileInterceptor;
+/// <summary>Releases interceptor resources and removes the IDE notifier registered by <see cref="InitCompileInterceptor"/>.</summary>
 procedure FiniCompileInterceptor;
 
 {function StrIsAscii(P: PAnsiChar): Boolean;
 function StrAnsiToUtf8(P: PAnsiChar): PUtf8Char;
 function StrUtf8ToAnsi(P: PUtf8Char): PAnsiChar;}
+/// <summary>
+/// Converts a null-terminated wide string to UTF-8 as a <c>RawByteString</c>.
+/// </summary>
+/// <param name="US">Source null-terminated UTF-16 string.</param>
+/// <returns>The UTF-8 encoded bytes as a <c>RawByteString</c> (empty when the input is empty).</returns>
 function UTF8Encode(US: PWideChar): RawByteString; overload;
 
+/// <summary>
+/// Reads <paramref name="Filename"/> through the IDE's original Pascal compiler open/read/close
+/// callbacks and returns its content as an in-memory stream.
+/// </summary>
+/// <returns>A new <see cref="TMemoryStream"/>, or <c>nil</c> if the file could not be opened.</returns>
 function ReadFileContent(const Filename: string): TMemoryStream;
 
 implementation

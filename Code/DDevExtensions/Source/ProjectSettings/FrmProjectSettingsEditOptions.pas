@@ -10,6 +10,11 @@
 
 unit FrmProjectSettingsEditOptions;
 
+/// <summary>
+/// Hosts the dialog that lets the user pick which individual options of a TProjectSetting preset
+/// are active (i.e. will be applied when the preset is assigned to a project).
+/// </summary>
+
 {$I ..\DelphiExtension.inc}
 
 interface
@@ -19,26 +24,50 @@ uses
   Dialogs, Grids, ProjectSettingsData, StdCtrls, CheckLst, FrmBase;
 
 type
+  /// <summary>
+  /// Modal dialog that displays the options of a TProjectSetting in a checklist box and lets the
+  /// user toggle which options are considered "active" for the preset.
+  /// </summary>
   TFormProjectSettingsEditOptions = class(TFormBase)
+    /// <summary>OK button that confirms changes and closes the dialog.</summary>
     btnOk: TButton;
+    /// <summary>Cancel button that aborts changes and closes the dialog.</summary>
     btnCancel: TButton;
+    /// <summary>Checklist of preset options; checked items are active.</summary>
     clbOptions: TCheckListBox;
+    /// <summary>Caption label displayed above the checklist.</summary>
     lblCaption: TLabel;
+    /// <summary>Checks every option in the list.</summary>
     btnCheckAll: TButton;
+    /// <summary>Unchecks every option in the list.</summary>
     btnUncheckAll: TButton;
+    /// <summary>Resets the active state of every option to the built-in defaults.</summary>
     btnDefault: TButton;
+    /// <summary>Toggles the checked state of every option.</summary>
     btnToggle: TButton;
+    /// <summary>Hooks the checklist's window procedure and configures anchors.</summary>
     procedure FormCreate(Sender: TObject);
+    /// <summary>Handles both Check All and Uncheck All buttons.</summary>
     procedure btnCheckAllClick(Sender: TObject);
+    /// <summary>Resets every option's active state to the built-in defaults.</summary>
     procedure btnDefaultClick(Sender: TObject);
+    /// <summary>Inverts the checked state of every option.</summary>
     procedure btnToggleClick(Sender: TObject);
   private
     { Private-Deklarationen }
+    /// <summary>Original window procedure of the checklist box (used for chaining).</summary>
     FOrgListBoxWndProc: TWndMethod;
+    /// <summary>Populates the checklist, runs the dialog and writes results back to ASettings.</summary>
+    /// <param name="ASettings">Setting whose option flags are being edited.</param>
+    /// <returns>True if the user confirmed with OK.</returns>
     function DoExecute(ASettings: TProjectSetting): Boolean;
+    /// <summary>Replacement window procedure that guards CN_DRAWITEM against an out-of-range item id.</summary>
     procedure ListBoxWndProc(var Msg: TMessage);
   public
     { Public-Deklarationen }
+    /// <summary>Creates the form, runs the dialog and frees the form.</summary>
+    /// <param name="ASettings">Setting whose option flags should be edited; nil short-circuits to False.</param>
+    /// <returns>True if the user confirmed with OK.</returns>
     class function Execute(ASettings: TProjectSetting): Boolean;
   end;
 
