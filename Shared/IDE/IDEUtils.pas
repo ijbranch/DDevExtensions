@@ -1976,18 +1976,18 @@ end;
 { TIDEEvent }
 
 procedure TIDEEvent.Add(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@Add$qqrynpqqrp14System@TObject$v' delayed;
+  external designide_bpl name '@Events@TEvent@Add$qqrynpqqrp14System@TObject$v';
 procedure TIDEEvent.ForceAdd(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@ForceAdd$qqrynpqqrp14System@TObject$v' delayed;
+  external designide_bpl name '@Events@TEvent@ForceAdd$qqrynpqqrp14System@TObject$v';
 procedure TIDEEvent.Remove(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@Remove$qqrynpqqrp14System@TObject$v' delayed;
+  external designide_bpl name '@Events@TEvent@Remove$qqrynpqqrp14System@TObject$v';
 
 function MainFormShown: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormShown$qqrv' delayed;
+  external coreide_bpl name '@Ideintf@MainFormShown$qqrv';
 function MainFormCreated: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormCreated$qqrv' delayed;
+  external coreide_bpl name '@Ideintf@MainFormCreated$qqrv';
 function MainFormDestroyed: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormDestroyed$qqrv' delayed;
+  external coreide_bpl name '@Ideintf@MainFormDestroyed$qqrv';
 
 procedure Init;
 var

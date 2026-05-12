@@ -243,13 +243,13 @@ var
 
 {$IF CompilerVersion <= 20.0}
 procedure TCustomEditControl_RepeatSearch(AEditControl: TWinControl);
-  external coreide_bpl name '@Editorcontrol@TCustomEditControl@RepeatSearch$qqrv' delayed;
+  external coreide_bpl name '@Editorcontrol@TCustomEditControl@RepeatSearch$qqrv';
 procedure EnvironmentOptionsAddr;
-  external coreide_bpl name '@Envoptions@EnvironmentOptions' delayed;
+  external coreide_bpl name '@Envoptions@EnvironmentOptions';
 {$IFEND}
 
 procedure EditorActionListsPtr;
-  external coreide_bpl name '@Editoractions@EditorActionLists' delayed;
+  external coreide_bpl name '@Editoractions@EditorActionLists';
 
 procedure InitPlugin(Unload: Boolean);
 begin

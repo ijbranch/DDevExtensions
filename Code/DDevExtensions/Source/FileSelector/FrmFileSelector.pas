@@ -72,10 +72,10 @@ type
   TInfoList = class(TObjectList)
   private
     /// <summary>Returns the <see cref="TInfo"/> at <paramref name="Index"/>.</summary>
-    function GetItem(Index: NativeInt): TInfo;
+    function GetItem(Index: Integer): TInfo;
   public
     /// <summary>Default indexed access to the contained items.</summary>
-    property Items[Index: NativeInt]: TInfo read GetItem; default;
+    property Items[Index: Integer]: TInfo read GetItem; default;
   end;
 
   TFormFileSelector = class;
@@ -391,7 +391,7 @@ end;
 
 { TInfoList }
 
-function TInfoList.GetItem(Index: NativeInt): TInfo;
+function TInfoList.GetItem(Index: Integer): TInfo;
 begin
   Result := TInfo(inherited Items[Index]);
 end;

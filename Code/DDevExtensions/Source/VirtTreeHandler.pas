@@ -416,15 +416,8 @@ begin
         begin
           TMethod(Pointer(INT_PTR(Self) + Field.Offset)^) := M;
           //Field.SetValue(Self, TValue.From<TMethod>(M));  => exception
-          {$IFNDEF CPUX64}
-          // x86: an unresolved IDE virtual-tree import is a hard error during init so
-          // developers see it immediately. On Win64 the vclide BPL uses a different C++
-          // name-mangling for these symbols, so every TreeImport would fail — silently
-          // accept @NotSupported and let it raise on actual call instead of blocking
-          // IDE startup.
           if M.Code = @NotSupported then
              NotSupportedMsg(Field.Name);
-          {$ENDIF CPUX64}
         end;
       end;
     end;

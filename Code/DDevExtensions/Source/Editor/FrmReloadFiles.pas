@@ -187,10 +187,10 @@ var
 
 {$IF CompilerVersion >= 22.0} // XE+
 procedure Docmodul_CheckFileDates(NoPrompt: Boolean);
-  external coreide_bpl name '@Docmodul@CheckFileDates$qqro' delayed;
+  external coreide_bpl name '@Docmodul@CheckFileDates$qqro';
 {$ELSE}
 procedure Docmodul_CheckFileDates;
-  external coreide_bpl name '@Docmodul@CheckFileDates$qqrv' delayed;
+  external coreide_bpl name '@Docmodul@CheckFileDates$qqrv';
 {$IFEND}
 
 {$IF CompilerVersion >= 23.0} // XE2+

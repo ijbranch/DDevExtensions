@@ -19,10 +19,6 @@ library CompileInterceptorW;
 {$RTTI EXPLICIT METHODS([]) PROPERTIES([]) FIELDS([])}
 {$IFEND}
 
-{$IFDEF WIN64}
-  {$LIBSUFFIX 'x64'}
-{$ENDIF}
-
 uses
   ShareMem,
   Windows,

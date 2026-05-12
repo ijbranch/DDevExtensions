@@ -254,7 +254,7 @@ var
   HookTToolForm_LoadPalette: TRedirectCode;
 
 procedure TToolForm_LoadPalette(Instance: TForm);
-  external coreide_bpl name '@Toolfrm@TToolForm@LoadPalette$qqrv' delayed;
+  external coreide_bpl name '@Toolfrm@TToolForm@LoadPalette$qqrv';
 
 procedure HookedTToolForm_LoadPalette(Instance: TForm);
 begin

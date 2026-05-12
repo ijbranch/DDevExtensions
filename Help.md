@@ -1,8 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.16.5 | Comprehensive Feature Reference
-
-> **64-bit IDE:** The Win64 build of DDevExtensions has been **built and tested on Delphi 13.1 Florence only**. Both bitnesses install side-by-side and share one `DDevExtensions37.xml` config. A handful of low-level features (Disable Alpha Sort Class Completion, the Reload-Files dialog's internal-reload path, AppBuilder caller-detect in Compile Progress, Project-Manager `Show File Project` column, and the Structure-View search box) are silently inactive on the 64-bit IDE — they depend on x86 inline assembly or 32-bit-only C++ ABI symbol lookups. Earlier Delphi versions (10.2-12.0) remain Win32-only.
+Version 3.15.5 | Comprehensive Feature Reference
 
 ---
 

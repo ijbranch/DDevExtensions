@@ -583,13 +583,8 @@ var
   OrgProjectGroupCompileActive, OrgCallProjectGroupCompileActive: function(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
   OrgAppBuilderCompile: Pointer;
 
-{$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
   forward;
-{$ELSE}
-function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
-  forward;
-{$ENDIF}
 
 function CallOrgProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
 begin
@@ -765,7 +760,6 @@ begin
 end;
 
 {$IF CompilerVersion >= 21.0} // Delphi 2010+
-{$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
 asm
   // Only show the dialog if we are called by TAppBuilder.Compile()
@@ -791,15 +785,6 @@ asm
   jb CompileActiveProject
   jmp CallOrgProjectGroupCompileActive
 end;
-{$ELSE}
-function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
-begin
-  // Win64: the x86 caller-detection trick (inspecting the return address against
-  // TAppBuilder.Compile via stack/eax) does not translate to x64 reliably, so always
-  // route through the enhanced compile-active-project handler.
-  Result := CompileActiveProject(Instance, CompileMode, Wait);
-end;
-{$ENDIF}
 
 procedure InitPlugin(Unload: Boolean);
 // We can't hook into bds.exe because the copy protection will catch us. So we need to go a different

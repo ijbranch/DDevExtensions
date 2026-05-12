@@ -113,27 +113,27 @@ type
   end;
 
 procedure TCompiler_Compile(Compiler: TObject; var BuildInfo: TProjectBuildInfo; const BuildControl: TBuildControl; const FileName: string);
-  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrr26Compintf@TProjectBuildInforx22Compintf@TBuildControlx20System@UnicodeString' delayed;
+  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrr26Compintf@TProjectBuildInforx22Compintf@TBuildControlx20System@UnicodeString';
 var
   Org_TCompiler_Compile: procedure(Compiler: TObject; var BuildInfo: TProjectBuildInfo; const BuildControl: TBuildControl; const FileName: string);
 {$ELSEIF CompilerVersion = 21.0} // 2010
 function TCompiler_Compile(Compiler: TObject; const FileName: string; const Project: ICustomProject; CompileMode: TCompileMode; Wait, ClearPackages, ClearMessages: Boolean; Configuration: string; FinishProc: TCompileFinishedProc): TCompileResult;
-  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrx20System@UnicodeStringx50System@%DelphiInterface$t22Codemgr@ICustomProject%21Compintf@TCompileModeooo20System@UnicodeStringynpqqr21Compintf@TCompileModex50System@%DelphiInterface$t22Codemgr@ICustomProject%o$v' delayed; // 2010
+  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrx20System@UnicodeStringx50System@%DelphiInterface$t22Codemgr@ICustomProject%21Compintf@TCompileModeooo20System@UnicodeStringynpqqr21Compintf@TCompileModex50System@%DelphiInterface$t22Codemgr@ICustomProject%o$v'; // 2010
 var
   Org_TCompiler_Compile: function(Compiler: TObject; const FileName: string; const Project: ICustomProject; CompileMode: TCompileMode; Wait, ClearPackages, ClearMessages: Boolean; Configuration: string; FinishProc: TCompileFinishedProc): TCompileResult;
 {$ELSE}
 function TCompiler_Compile(Compiler: TObject; const FileName: string; const Project: ICustomProject; CompileMode: TCompileMode; Wait, ClearPackages, ClearMessages: Boolean; FinishProc: TCompileFinishedProc): TCompileResult;
-  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrx20System@UnicodeStringx50System@%DelphiInterface$t22Codemgr@ICustomProject%21Compintf@TCompileModeoooynpqqr21Compintf@TCompileModex50System@%DelphiInterface$t22Codemgr@ICustomProject%o$v' delayed; // 2009
+  external delphicoreide_bpl name '@Basepascomintf@TCompiler@Compile$qqrx20System@UnicodeStringx50System@%DelphiInterface$t22Codemgr@ICustomProject%21Compintf@TCompileModeoooynpqqr21Compintf@TCompileModex50System@%DelphiInterface$t22Codemgr@ICustomProject%o$v'; // 2009
 var
   Org_TCompiler_Compile: function(Compiler: TObject; const FileName: string; const Project: ICustomProject; CompileMode: TCompileMode; Wait, ClearPackages, ClearMessages: Boolean; FinishProc: TCompileFinishedProc): TCompileResult;
 {$IFEND}
 
 {$IF CompilerVersion >= 23.0} // XE2+
 function TCustomCodeIProject_GetCompState(Project: TObject; const PlatformName: string): Integer;
-  external coreide_bpl name '@Projectmodule@TCustomCodeIProject@GetCompState$qqrx20System@UnicodeString' delayed;
+  external coreide_bpl name '@Projectmodule@TCustomCodeIProject@GetCompState$qqrx20System@UnicodeString';
 {$ELSE}
 function TCustomCodeIProject_GetCompState(Project: TObject): Integer;
-  external coreide_bpl name '@Projectmodule@TCustomCodeIProject@GetCompState$qqrv' delayed;
+  external coreide_bpl name '@Projectmodule@TCustomCodeIProject@GetCompState$qqrv';
 {$IFEND}
 
 procedure NopClearCompState(CompState: Integer); stdcall;
@@ -176,9 +176,7 @@ var
   Group: IOTAProjectGroup;
   I: Integer;
   PlatformName: string;
-  {$IFNDEF CPUX64}
   MemCounters: TProcessMemoryCounters;
-  {$ENDIF CPUX64}
   NeedReleaseMem: Boolean;
 begin
   if ClearOtherStatesEnabled then
