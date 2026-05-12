@@ -39,19 +39,25 @@ var
   CompilerInterceptorLib: THandle;
 
 function GetCompileInterceptorServices: ICompileInterceptorServices;
+const
+  {$IFDEF WIN64}
+  CompileInterceptorDll = 'CompileInterceptorWx64.dll';
+  {$ELSE}
+  CompileInterceptorDll = 'CompileInterceptorW.dll';
+  {$ENDIF}
 begin
   if not Assigned(_GetCompileInterceptorServices) then
   begin
-    CompilerInterceptorLib := SafeLoadLibrary(PChar(ExtractFilePath(GetModuleName(HInstance)) + 'CompileInterceptorW.dll'));
+    CompilerInterceptorLib := SafeLoadLibrary(PChar(ExtractFilePath(GetModuleName(HInstance)) + CompileInterceptorDll));
     if CompilerInterceptorLib = 0 then
-      CompilerInterceptorLib := SafeLoadLibrary('CompileInterceptorW.dll'); // search all PATHs
+      CompilerInterceptorLib := SafeLoadLibrary(CompileInterceptorDll); // search all PATHs
     if CompilerInterceptorLib <> 0 then
       _GetCompileInterceptorServices := GetProcAddress(CompilerInterceptorLib, 'GetCompileInterceptorServices');
   end;
   if Assigned(_GetCompileInterceptorServices) then
     Result := _GetCompileInterceptorServices()
   else
-    raise Exception.Create('Cannot find CompileInterceptorW.dll');
+    raise Exception.CreateFmt('Cannot find %s', [CompileInterceptorDll]);
 end;
 
 procedure UnloadCompilerInterceptorServices;

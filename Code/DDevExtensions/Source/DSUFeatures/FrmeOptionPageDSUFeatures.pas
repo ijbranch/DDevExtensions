@@ -371,7 +371,7 @@ type
   TOpenControl = class(TControl);
 
 procedure OrgLoadRuntimeDesktop(Instance: TObject);
-  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv';
+  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv' delayed;
 
 var
   HookDesktopLoadRuntimeDesktop: TRedirectCode;
@@ -737,7 +737,7 @@ const
   {$IFEND}
 
 function TProcess_stopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
-  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui';
+  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui' delayed;
 
 function DbgStopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
 begin
@@ -899,18 +899,18 @@ var
   OrgCallOpenModuleFile: procedure(const ModuleName, EditorFileName: string);
 
 procedure OpenModuleFile(const ModuleName, EditorFileName: string);
-  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1';
+  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1' delayed;
 
 {$IF CompilerVersion >= 22.0} // Delphi XE+
 function ExpandRootMacro(const InString: string; const AdditionalVars: TObject = nil): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash';
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash' delayed;
 {$ELSE}
 function ExpandRootMacro(const Name: string): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString';
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' delayed;
 {$IFEND}
 
 procedure VarBorlandIDE;
-  external coreide_bpl name '@Ideintf@BorlandIDE';
+  external coreide_bpl name '@Ideintf@BorlandIDE' delayed;
 
 procedure HookedOpenModuleFile(const ModuleName, EditorFileName: string);
 const
@@ -1291,10 +1291,10 @@ var
   TDelphiProjectModuleHandler_GetFormList: procedure(Instance: TObject; List: TStrings);
 
 procedure TPascalProjectUpdaterClass;
-  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@';
+  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@' delayed;
 procedure TPascalProjectUpdater_GetFormList(Instance: TObject; List: TStrings);
   external delphicoreide_bpl name
-    '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings;
+    '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings delayed;
 
 procedure HookedTDelphiProjectModuleHandler_GetFormList(Instance: TObject; List: TStrings);
 const
@@ -1356,7 +1356,7 @@ end;
 {----------------------------------------------------------------------------------}
 
 procedure TCustomEditControl_HelpKeyword(Editor: TControl);
-  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv';
+  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv' delayed;
 
 var
   OrgEditorHelpKeyword: procedure(Editor: TControl);
@@ -1464,6 +1464,15 @@ var
 begin
   if Value <> FShowFileProjectInPrjMgr then
   begin
+    {$IFDEF CPUX64}
+    // Win64: the IDE's Idevirtualtrees BPL exports use a different C++ name
+    // mangling, so VirtTreeHandler's TreeImport lookups all return @NotSupported
+    // and PMGetText's call to FPrjMgrTree.Text raises "Not Supported" every time
+    // the Project Manager paints. Keep the setting in XML for round-trip with the
+    // 32-bit IDE, but don't install the hook here.
+    FShowFileProjectInPrjMgr := Value;
+    Exit;
+    {$ELSE}
     { Find the tree and initialize the tree handler }
     if FPrjMgrTree = nil then
     begin
@@ -1489,6 +1498,7 @@ begin
       FPrjMgrTree.OnGetText := PMGetText;
 
     FPrjMgrTree.Invalidate;
+    {$ENDIF CPUX64}
   end;
 end;
 

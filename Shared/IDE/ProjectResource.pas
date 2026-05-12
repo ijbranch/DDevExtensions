@@ -435,25 +435,25 @@ type
   end;
 
 procedure TProjectVersionInfo.LoadFromExistingProject(ResFile: TResFile);
-  external coreide_bpl name '@Verinf@TVersionInfo@LoadFromExistingProject$qqrp17Resutils@TResFile';
+  external coreide_bpl name '@Verinf@TVersionInfo@LoadFromExistingProject$qqrp17Resutils@TResFile' delayed;
 
 procedure TResFile.SaveToStream(Stream: TStream);
-  external coreide_bpl name '@Resutils@TResFile@SaveToStream$qqrp' + System_Classes_TStream;
+  external coreide_bpl name '@Resutils@TResFile@SaveToStream$qqrp' + System_Classes_TStream delayed;
 procedure TResFile.LoadFromStream(Stream: TStream);
-  external coreide_bpl name '@Resutils@TResFile@LoadFromStream$qqrp' + System_Classes_TStream;
+  external coreide_bpl name '@Resutils@TResFile@LoadFromStream$qqrp' + System_Classes_TStream delayed;
 
 procedure TResFile.GetIco(Name: PChar; Stream: TStream);
   external coreide_bpl name
-  {$IFDEF UNICODE}'@Resutils@TResFile@GetIco$qqrpbp' + System_Classes_TStream;{$ELSE}'@Resutils@TResFile@GetIco$qqrpcp15Classes@TStream';{$ENDIF}
+  {$IFDEF UNICODE}'@Resutils@TResFile@GetIco$qqrpbp' + System_Classes_TStream delayed;{$ELSE}'@Resutils@TResFile@GetIco$qqrpcp15Classes@TStream';{$ENDIF}
 procedure TResFile.AddIco(Name: PChar; Stream: TStream);
   external coreide_bpl name
-  {$IFDEF UNICODE}'@Resutils@TResFile@AddIco$qqrpbp' + System_Classes_TStream;{$ELSE}'@Resutils@TResFile@AddIco$qqrpcp15Classes@TStream';{$ENDIF}
+  {$IFDEF UNICODE}'@Resutils@TResFile@AddIco$qqrpbp' + System_Classes_TStream delayed;{$ELSE}'@Resutils@TResFile@AddIco$qqrpcp15Classes@TStream';{$ENDIF}
 procedure TResFile.RemoveIco(Name: PChar);
   external coreide_bpl name
-  {$IFDEF UNICODE}'@Resutils@TResFile@RemoveIco$qqrpb';{$ELSE}'@Resutils@TResFile@RemoveIco$qqrpc';{$ENDIF}
+  {$IFDEF UNICODE}'@Resutils@TResFile@RemoveIco$qqrpb' delayed;{$ELSE}'@Resutils@TResFile@RemoveIco$qqrpc';{$ENDIF}
 function TResFile.Find(ResType, Name: PChar): Pointer;
   external coreide_bpl name
-  {$IFDEF UNICODE}'@Resutils@TResFile@Find$qqrpbt1';{$ELSE}'@Resutils@TResFile@Find$qqrpct1';{$ENDIF}
+  {$IFDEF UNICODE}'@Resutils@TResFile@Find$qqrpbt1' delayed;{$ELSE}'@Resutils@TResFile@Find$qqrpct1';{$ENDIF}
 
 function GetResFileFromResEntry(ResEntry: TOTAHandle): TResFile;
 begin
@@ -500,7 +500,7 @@ type
   end;
 
 function TDelphiProjectModuleHandler.GetResourceFile: TResFile;
-  external delphicoreide_bpl name '@Basedelphiproject@TDelphiProjectModuleHandler@GetResourceFile$qqrv';
+  external delphicoreide_bpl name '@Basedelphiproject@TDelphiProjectModuleHandler@GetResourceFile$qqrv' delayed;
 {$ENDIF COMPILER14_UP}
 
 const
@@ -511,7 +511,7 @@ const
   {$IFEND}
 
 function TOTAProjectResource_Create(ResFile: TResFile; Project: IProject): TInterfacedObject;
-  external coreide_bpl name '@Ideservices@TOTAProjectResource@$bctr$qqrp17Resutils@TResFile' + _IProject_;
+  external coreide_bpl name '@Ideservices@TOTAProjectResource@$bctr$qqrp17Resutils@TResFile' + _IProject_ delayed;
 
 {$ENDIF COMPILER9_UP}
 
@@ -1037,7 +1037,7 @@ end;}
 {$IF CompilerVersion >= 23.0} // Delphi XE2+
 
 function ExpandRootMacro(const InString: string; const AdditionalVars: TObject = nil): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash';
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash' delayed;
 
 procedure TIconResource.LoadFromProjectResource(AProject: IOTAProject);
 var

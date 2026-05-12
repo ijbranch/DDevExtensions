@@ -178,7 +178,7 @@ const
   {$IFEND}
 
 procedure ProgressFormPtr;
-  external coreide_bpl name '@Comprgrs@ProgressForm';
+  external coreide_bpl name '@Comprgrs@ProgressForm' delayed;
 
 var
   ProgressFormP: ^TForm;

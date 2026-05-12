@@ -1332,16 +1332,22 @@ begin
 end;
 
 function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
+{$IFDEF CPUX64}
+begin
+  // Win64: the x86 5-byte JMP rewrite trick this function performs cannot be applied
+  // in the 64-bit IDE (address space is too large for a 5-byte relative jump, and the
+  // mangled-name BPL imports the callers rely on don't exist with the same symbols).
+  // Returning nil short-circuits every caller of the "@OrgCallX := RedirectOrgCall(...)"
+  // pattern so the feature is silently disabled rather than crashing startup.
+  Result := nil;
+end;
+{$ELSE}
 var
   StartCodeSize: Integer;
   Buffer: array[0..63] of Byte;
   I: Integer;
   n: SIZE_T;
 begin
-  {$IFDEF CPUX64}
-  raise Exception.Create('RedirectOrgCall is not supported in x64 mode, yet');
-  {$ENDIF CPUX64}
-
   OrgProc := GetActualAddr(OrgProc);
   NewProc := GetActualAddr(NewProc);
   Result := CreateOrgCallMethodPtr(OrgProc);
@@ -1358,6 +1364,7 @@ begin
   if not WriteProcessMemory(GetCurrentProcess, OrgProc, @Buffer[0], StartCodeSize, n) then
     RaiseLastOSError;
 end;
+{$ENDIF CPUX64}
 
 procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
 var

@@ -77,15 +77,31 @@ del bin\DDevExtensionsReg.map bin\DDevExtensionsReg.drc
 echo.
 
 echo.
-echo === Delphi 13.0 ==============================
+echo === Delphi 13.0 (Win32) ======================
 call "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat"
 
 cd D_D130
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
+msbuild /nologo /t:Build /p:Config=Release /p:Platform=Win32 DDevExtensions.dproj
 if ERRORLEVEL 1 goto Error1
 cd ..
 if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD130.dll
 del bin\DDevExtensionsD130.map bin\DDevExtensions.drc
+echo.
+
+echo.
+echo === Delphi 13.0 (Win64) ======================
+:: Build the 64-bit CompileInterceptor helper first so the Win64 D130 PreBuildEvent can copy it.
+cd ..\..\CompileInterceptor\Source
+msbuild /nologo /t:Build /p:Config=Release /p:Platform=Win64 CompileInterceptorW.dproj
+if ERRORLEVEL 1 goto Error1
+cd ..\..\Code\DDevExtensions
+
+cd D_D130
+msbuild /nologo /t:Build /p:Config=Release /p:Platform=Win64 DDevExtensions.dproj
+if ERRORLEVEL 1 goto Error1
+cd ..
+if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD130x64.dll
+del bin\DDevExtensionsD130x64.map bin\DDevExtensions.drc 2>NUL
 echo.
 
 echo === Delphi 12.0 ==============================

@@ -28,6 +28,8 @@ procedure InstallDisableAlphaSortClassCompletion(Value: Boolean);
 
 implementation
 
+{$IFDEF CPUX86}
+
 uses
   Windows, SysUtils, Classes, TypInfo, Hooking, IDEHooks;
 
@@ -175,10 +177,10 @@ var
   CompleteMethodSymbolTableIteratorP: PByte;
 
 function TClassSymbol_MethodAddPos(Instance: TClassSymbol; const Name: string): Integer;
-  external delphicoreide_bpl name '@Pasmgr@TClassSymbol@MethodAddPos$qqrx20System@UnicodeString';
+  external delphicoreide_bpl name '@Pasmgr@TClassSymbol@MethodAddPos$qqrx20System@UnicodeString' delayed;
 
 procedure TPascalClassCompleter_Complete;
-  external delphicoreide_bpl name '@Completers@TPascalClassCompleter@Complete$qqrx20System@UnicodeString';
+  external delphicoreide_bpl name '@Completers@TPascalClassCompleter@Complete$qqrx20System@UnicodeString' delayed;
 
 function TClassSymbol_MethodAddPos_AlphSort(Instance: TClassSymbol; const Name: string): Integer;
 begin
@@ -482,5 +484,16 @@ begin
       ReplaceRelCallOffset(@CallAddrTSortedThingList_SetSortedP[CallOffsetSetSorted], OrgTSortedThingList_SetSorted);
   end;
 end;
+
+{$ELSE} // not CPUX86
+
+procedure InstallDisableAlphaSortClassCompletion(Value: Boolean);
+begin
+  // Win64: the IDE's class-completion routines live in 64-bit BPLs with a different
+  // binary layout, so the x86 byte-signature scanning and inline asm patches in this
+  // unit do not apply. The feature is a no-op on Win64.
+end;
+
+{$ENDIF}
 
 end.

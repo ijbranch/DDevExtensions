@@ -399,16 +399,62 @@ function IsEmbeddedDesigner: Boolean;
 
 implementation
 
+{$IFDEF CPUX86}
+
 {$IF CompilerVersion >= 21.0}
 uses
   Rtti;
 {$IFEND}
 
+{$ELSE} // not CPUX86 — provide compile-only stubs so the Reload-Files dialog still builds
+
+function IsEmbeddedDesigner: Boolean;
+begin
+  Result := True;
+end;
+
+function InitDocModuleHandler: Boolean;
+begin
+  Result := False;
+end;
+
+function TDocModule.IsDormant: Boolean;          begin Result := False; end;
+function TDocModule.CheckFileDate: Boolean;       begin Result := False; end;
+function TDocModule.CanReloadFile: Boolean;       begin Result := False; end;
+function TDocModule.GetModified: Boolean;         begin Result := False; end;
+procedure TDocModule.ReloadFile;                  begin end;
+function TDocModule.GetFileName: string;          begin Result := ''; end;
+function TDocModule.GetModuleName: string;        begin Result := ''; end;
+function TDocModule.GetFormName: string;          begin Result := ''; end;
+function TDocModule.HasForm: Boolean;             begin Result := False; end;
+function TDocModule.SwapSourceFormView: Boolean;  begin Result := False; end;
+function TDocModule.GetCanFree: Boolean;          begin Result := False; end;
+{$IF CompilerVersion >= 22.0}
+function TDocModule.CanFreeOrGoDormant(const DormantOk: Boolean): Boolean;
+                                                  begin Result := False; end;
+{$IFEND}
+procedure TDocModule.GetDependentModules(List: TList);   begin end;
+procedure TDocModule.GetModuleDependencies(List: TList); begin end;
+function TDocModule.GoDormant: Boolean;           begin Result := False; end;
+procedure TDocModule.ShowEditor(Activate: Boolean);             begin end;
+procedure TDocModule.ShowEditorName(const FileName: string; Activate: Boolean); begin end;
+procedure TDocModule.Activate(IsExternalViewer: Boolean);       begin end;
+procedure TDocModule.Modified;                                  begin end;
+function TDocModule.GetFileSystem: TVirtualFileSystem;          begin Result := nil; end;
+function TDocModule.GetCodeIDocModule: TInterfacedObject;       begin Result := nil; end;
+
+procedure TPascalCodeMgrModHandler.ResurrectForm;                begin end;
+procedure TPascalCodeMgrModHandler.ReloadFile;                   begin end;
+
+{$ENDIF}
+
+{$IFDEF CPUX86}
+
 var
   DocModuleIsDormantOffset: Integer;
 
 procedure Docmodul_ModuleListAddr;
-  external coreide_bpl name '@Docmodul@ModuleList';
+  external coreide_bpl name '@Docmodul@ModuleList' delayed;
 
 {$IF CompilerVersion >= 25.0} // XE4+
 function IsEmbeddedDesigner: Boolean;
@@ -417,7 +463,7 @@ begin
 end;
 {$ELSE}
 procedure EnvironmentOptionsAddr;
-  external coreide_bpl name '@Envoptions@EnvironmentOptions';
+  external coreide_bpl name '@Envoptions@EnvironmentOptions' delayed;
 
 function IsEmbeddedDesigner: Boolean;
 const
@@ -493,32 +539,32 @@ const
 { TPascalCodeMgrModHandler }
 
 procedure ClassTPascalCodeMgrModHandler;
-  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@';
+  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@' delayed;
 
 procedure TPascalCodeMgrModHandler.ResurrectForm;
-  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@ResurrectForm$qqrv';
+  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@ResurrectForm$qqrv' delayed;
 
 procedure TPascalCodeMgrModHandler.ReloadFile;
-  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@ReloadFile$qqrv';
+  external delphicoreide_bpl name '@Delphimodule@TPascalCodeMgrModHandler@ReloadFile$qqrv' delayed;
 
 { TDocModule }
 
 procedure ClassTDocModule;
-  external coreide_bpl name '@Docmodul@TDocModule@';
+  external coreide_bpl name '@Docmodul@TDocModule@' delayed;
 
 procedure TDocModule_GoDormant;
-  external coreide_bpl name '@Docmodul@TDocModule@GoDormant$qqrv';
+  external coreide_bpl name '@Docmodul@TDocModule@GoDormant$qqrv' delayed;
 
 function TDocModule.GetCanFree: Boolean;
-  external coreide_bpl name '@Docmodul@TDocModule@GetCanFree$qqrv';
+  external coreide_bpl name '@Docmodul@TDocModule@GetCanFree$qqrv' delayed;
 
 {$IF CompilerVersion >= 22.0} // XE+
 function TDocModule.CanFreeOrGoDormant(const DormantOk: Boolean): Boolean;
-  external coreide_bpl name '@Docmodul@TDocModule@CanFreeOrGoDormant$qqrxo';
+  external coreide_bpl name '@Docmodul@TDocModule@CanFreeOrGoDormant$qqrxo' delayed;
 {$IFEND}
 
 function TDocModule.GetCodeIDocModule: TInterfacedObject;
-  external coreide_bpl name '@Docmodul@TDocModule@GetCodeIDocModule$qqrv';
+  external coreide_bpl name '@Docmodul@TDocModule@GetCodeIDocModule$qqrv' delayed;
 
 function TDocModule.IsDormant: Boolean;
 begin
@@ -754,5 +800,7 @@ begin
 
   Result := True;
 end;
+
+{$ENDIF}
 
 end.

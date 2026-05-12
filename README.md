@@ -100,24 +100,24 @@ Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "E
 
 Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
 
+Version 3.16.5 adds a **64-bit IDE build** for **Delphi 13.1 Florence** (`bin64\bds.exe`). The build is published alongside the existing 32-bit DLL — both bitnesses install side-by-side via the existing installer, registered under the correct registry subkey for each host (`Experts` for the 32-bit IDE, `Experts x64` for the 64-bit IDE per Embarcadero's convention). The two DLLs share one config file (`%APPDATA%\DDevExtensions\DDevExtensions37.xml`), so options round-trip between bitnesses. A small number of features that rely on x86 inline assembly or 32-bit-only C++ ABI symbol lookups are silently inactive on the 64-bit IDE (`Disable Alpha Sort Class Completion`, `Reload Files` dialog reload-via-internals path, AppBuilder caller-detect in Compile Progress, Project-Manager `Show File Project` column, and the Structure-View search box); every other feature works on both bitnesses.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
 - **Second digit** - Feature change (Add/Modify/Delete)
 - **Third digit** - Bug fixes
 
-> **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
->
-> A 64-bit version was attempted but proved too daunting for Claude and myself.
+> **64-bit IDE support:** The Win64 build has been **built and tested on Delphi 13.1 Florence only**. No guarantee is offered for earlier Delphi versions — `D_D102` through `D_D120` remain Win32-only by design (their `.dproj` files still force `DCC32`), so attempting a Win64 build on those will fail or behave unexpectedly. Use the 64-bit DLL only against `Studio\37.0\bin64\bds.exe`.
 
 ## Supported Delphi Versions
 
-- Delphi 10.2 Tokyo
-- Delphi 10.3 Rio
-- Delphi 10.4 Sydney
-- Delphi 11.0 Alexandria
-- Delphi 12.0 Athens
-- Delphi 13.0 Florence
+- Delphi 10.2 Tokyo                  *(32-bit IDE only)*
+- Delphi 10.3 Rio                    *(32-bit IDE only)*
+- Delphi 10.4 Sydney                 *(32-bit IDE only)*
+- Delphi 11.0 Alexandria             *(32-bit IDE only)*
+- Delphi 12.0 Athens                 *(32-bit IDE only)*
+- Delphi 13.0 / 13.1 Florence        *(32-bit IDE **and** 64-bit IDE — 13.1 tested)*
 
 For older Delphi versions (2009-10.1), see the original repository or DelphiPraxis fork.
 
@@ -136,6 +136,17 @@ The project group includes:
 1. **CompileInterceptorW** - Compiler interceptor library (built first automatically)
 2. **DDevExtensions** - Main extension DLL
 3. **DDevExtensionsReg** - Installer application
+
+### Win64 build (Delphi 13.1 only)
+
+In `D_D130`, set the active target platform to **Win64** and build. Both projects (`CompileInterceptorW` and `DDevExtensions`) must be built for Win64 — the build emits:
+
+- `..\Bin\CompileInterceptorWx64.dll`
+- `..\Bin\DDevExtensionsD130x64.dll`
+
+The Win32 outputs (`CompileInterceptorW.dll` and `DDevExtensionsD130.dll`) are produced by the standard Win32 build and coexist with the Win64 outputs in the same folder. `build.bat` runs both passes.
+
+Older `D_D102` … `D_D120` projects are Win32-only.
 
 
 ## How to install
@@ -168,11 +179,13 @@ DDevExtensions/
 │   ├── version.bat                # Version script
 │   ├── Version.rc/.res            # Version resource
 │   │
-│   ├── Bin/                       # Build output
-│   │   ├── DDevExtensionsD130.dll # Extension DLL
-│   │   ├── DDevExtensionsReg.exe  # Installer
-│   │   ├── CompileInterceptorW.dll
-│   │   └── Changes.txt            # Version history
+│   ├── Bin/                          # Build output
+│   │   ├── DDevExtensionsD130.dll    # Extension DLL — 32-bit IDE
+│   │   ├── DDevExtensionsD130x64.dll # Extension DLL — 64-bit IDE (D13.1)
+│   │   ├── DDevExtensionsReg.exe     # Installer
+│   │   ├── CompileInterceptorW.dll     # Helper — 32-bit IDE
+│   │   ├── CompileInterceptorWx64.dll  # Helper — 64-bit IDE (D13.1)
+│   │   └── Changes.txt               # Version history
 │   │
 │   ├── D_D102/                    # Delphi 10.2 Tokyo project
 │   ├── D_D103/                    # Delphi 10.3 Rio project

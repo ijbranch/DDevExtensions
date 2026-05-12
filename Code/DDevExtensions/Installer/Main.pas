@@ -23,14 +23,17 @@ type
               ekDelphiXE, ekDelphiXE2, ekDelphiXE3, ekDelphiXE4, ekDelphiXE5,
               ekDelphiXE6, ekDelphiXE7, ekDelphiXE8, ekDelphi10Seattle,
               ekDelphi101Berlin, ekDelphi102, ekDelphi103, ekDelphi104,
-              ekDelphi110, ekDelphi120, ekDelphi130);
+              ekDelphi110, ekDelphi120, ekDelphi130, ekDelphi130x64);
 
   TEnvKinds = set of TEnvKind;
 
   TEnvData = record
-    Version: string;
-    IDEName: string;
-    Key: string;
+    Version: string;        // file-name suffix (e.g. 'D130', 'D130x64')
+    IDEName: string;        // human-readable name shown in the installer list
+    Key: string;            // registry product key under HKLM\Software\
+    ExpertsSubKey: string;  // 'Experts' for 32-bit IDE host, 'Experts64' for 64-bit IDE host
+    HostExeRelPath: string; // host executable relative to RootDir ('bin\bds.exe' or 'bin64\bds.exe')
+    CompInterceptorDll: string; // CompileInterceptor helper DLL to copy alongside the plugin
   end;
 
 const
@@ -49,24 +52,25 @@ const
     (Version:  '9'; IDEName: 'Delphi 2005'; Key: 'Borland\BDS\3.0'),
     (Version: '10'; IDEName: 'Borland Developer Studio 2006'; Key: 'Borland\BDS\4.0'),
     (Version: '105'; IDEName: 'CodeGear Delphi 2007'; Key: 'Borland\BDS\5.0'),}
-    (Version: '2009'; IDEName: 'CodeGear RAD Studio 2009'; Key: 'CodeGear\BDS\6.0'),
-    (Version: '2010'; IDEName: 'Embarcadero RAD Studio 2010'; Key: 'CodeGear\BDS\7.0'),
-    (Version: 'XE'; IDEName: 'Embarcadero RAD Studio XE'; Key: 'Embarcadero\BDS\8.0'),
-    (Version: 'XE2'; IDEName: 'Embarcadero RAD Studio XE2'; Key: 'Embarcadero\BDS\9.0'),
-    (Version: 'XE3'; IDEName: 'RAD Studio XE3'; Key: 'Embarcadero\BDS\10.0'),
-    (Version: 'XE4'; IDEName: 'RAD Studio XE4'; Key: 'Embarcadero\BDS\11.0'),
-    (Version: 'XE5'; IDEName: 'RAD Studio XE5'; Key: 'Embarcadero\BDS\12.0'),
-    (Version: 'XE6'; IDEName: 'RAD Studio XE6'; Key: 'Embarcadero\BDS\14.0'),
-    (Version: 'XE7'; IDEName: 'RAD Studio XE7'; Key: 'Embarcadero\BDS\15.0'),
-    (Version: 'XE8'; IDEName: 'RAD Studio XE8'; Key: 'Embarcadero\BDS\16.0'),
-    (Version: 'D10'; IDEName: 'RAD Studio 10 Seattle'; Key: 'Embarcadero\BDS\17.0'),
-    (Version: 'D101'; IDEName: 'RAD Studio 10.1 Berlin'; Key: 'Embarcadero\BDS\18.0'),
-    (Version: 'D102'; IDEName: 'RAD Studio 10.2'; Key: 'Embarcadero\BDS\19.0'),
-    (Version: 'D103'; IDEName: 'RAD Studio 10.3'; Key: 'Embarcadero\BDS\20.0'),
-    (Version: 'D104'; IDEName: 'RAD Studio 10.4'; Key: 'Embarcadero\BDS\21.0'),
-    (Version: 'D110'; IDEName: 'RAD Studio 11.0'; Key: 'Embarcadero\BDS\22.0'),
-    (Version: 'D120'; IDEName: 'RAD Studio 12.0'; Key: 'Embarcadero\BDS\23.0'),
-    (Version: 'D130'; IDEName: 'RAD Studio 13.0'; Key: 'Embarcadero\BDS\37.0')
+    (Version: '2009'; IDEName: 'CodeGear RAD Studio 2009';     Key: 'CodeGear\BDS\6.0';     ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: '2010'; IDEName: 'Embarcadero RAD Studio 2010';  Key: 'CodeGear\BDS\7.0';     ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE';   IDEName: 'Embarcadero RAD Studio XE';    Key: 'Embarcadero\BDS\8.0';  ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE2';  IDEName: 'Embarcadero RAD Studio XE2';   Key: 'Embarcadero\BDS\9.0';  ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE3';  IDEName: 'RAD Studio XE3';               Key: 'Embarcadero\BDS\10.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE4';  IDEName: 'RAD Studio XE4';               Key: 'Embarcadero\BDS\11.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE5';  IDEName: 'RAD Studio XE5';               Key: 'Embarcadero\BDS\12.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE6';  IDEName: 'RAD Studio XE6';               Key: 'Embarcadero\BDS\14.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE7';  IDEName: 'RAD Studio XE7';               Key: 'Embarcadero\BDS\15.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'XE8';  IDEName: 'RAD Studio XE8';               Key: 'Embarcadero\BDS\16.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D10';  IDEName: 'RAD Studio 10 Seattle';        Key: 'Embarcadero\BDS\17.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D101'; IDEName: 'RAD Studio 10.1 Berlin';       Key: 'Embarcadero\BDS\18.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D102'; IDEName: 'RAD Studio 10.2';              Key: 'Embarcadero\BDS\19.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D103'; IDEName: 'RAD Studio 10.3';              Key: 'Embarcadero\BDS\20.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D104'; IDEName: 'RAD Studio 10.4';              Key: 'Embarcadero\BDS\21.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D110'; IDEName: 'RAD Studio 11.0';              Key: 'Embarcadero\BDS\22.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D120'; IDEName: 'RAD Studio 12.0';              Key: 'Embarcadero\BDS\23.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D130'; IDEName: 'RAD Studio 13.0 (32-bit IDE)'; Key: 'Embarcadero\BDS\37.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D130x64'; IDEName: 'RAD Studio 13.0 (64-bit IDE)'; Key: 'Embarcadero\BDS\37.0'; ExpertsSubKey: 'Experts x64'; HostExeRelPath: 'bin64\bds.exe'; CompInterceptorDll: 'CompileInterceptorWx64.dll')
   );
 
 type
@@ -247,8 +251,7 @@ begin
   begin
     // check modules
     RootDir := GetRootDir(EnvDatas[ek]);
-    if {FileExists(RootDir + '\bin\delphi32.exe') or }FileExists(RootDir + '\bin\bds.exe') {or
-       FileExists(RootDir + '\bin\bcb.exe') }then
+    if FileExists(RootDir + '\' + EnvDatas[ek].HostExeRelPath) then
     begin
       if FileExists(Format('%s\DDevExtensions%s.dll', [ExtractFileDir(ParamStr(0)), EnvDatas[ek].Version])) then
         cbxEnvs.AddItem(EnvDatas[ek].IDEName, Pointer(ek));
@@ -302,7 +305,7 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKey('\Software\' + EnvData.Key + '\Experts', True) then
+    if Reg.OpenKey('\Software\' + EnvData.Key + '\' + EnvData.ExpertsSubKey, True) then
       Reg.WriteString(Name, Filename)
     else
       raise Exception.CreateFmt('Cannot register expert "%s"', [Name]);
@@ -331,7 +334,7 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKey('\Software\' + EnvData.Key + '\Experts', False) then
+    if Reg.OpenKey('\Software\' + EnvData.Key + '\' + EnvData.ExpertsSubKey, False) then
       if Reg.ValueExists(Name) then
         Reg.DeleteValue(Name);
   finally
@@ -347,7 +350,7 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKeyReadOnly('\Software\' + EnvData.Key + '\Experts') then
+    if Reg.OpenKeyReadOnly('\Software\' + EnvData.Key + '\' + EnvData.ExpertsSubKey) then
       Result := Reg.ValueExists(Name)
     else
       Result := False;
@@ -368,7 +371,7 @@ begin
 
   InstallFile(InstallDir, Format('DDevExtensions%s.dll', [EnvData.Version]));
   InstallFile(InstallDir, Format('DDevExtensions%s.map', [EnvData.Version]), False);
-  InstallFile(InstallDir, 'CompileInterceptorW.dll', False);
+  InstallFile(InstallDir, EnvData.CompInterceptorDll, False);
   RegisterExpert(EnvData, 'DDevExtensions', InstallDir + PathDelim + Format('DDevExtensions%s.dll', [EnvData.Version]));
 end;
 
@@ -381,7 +384,7 @@ begin
   begin
     UninstallFile(InstallDir, Format('DDevExtensions%s.dll', [EnvData.Version]));
     UninstallFile(InstallDir, Format('DDevExtensions%s.map', [EnvData.Version]));
-    UninstallFile(InstallDir, 'CompileInterceptorW.dll');
+    UninstallFile(InstallDir, EnvData.CompInterceptorDll);
     UnregisterExpert(EnvData, 'DDevExtensions');
 
     RemoveDir(InstallDir); // try to delete the directory
