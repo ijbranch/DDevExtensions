@@ -96,6 +96,7 @@ type
   private
     /// <summary>Engine performing the analysis.</summary>
     FChecker: TStyleChecker;
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan (the scan pumps the message queue, so an unguarded close would free the form and FChecker underneath it).</summary>
     FScanning: Boolean;
     /// <summary>Latest scan results.</summary>
     FViolations: TArray<TStyleViolation>;

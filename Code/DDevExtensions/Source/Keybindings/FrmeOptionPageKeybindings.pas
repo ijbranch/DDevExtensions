@@ -67,7 +67,9 @@ type
     FMoveLineBlockDownKey: TShortCut;
     /// <summary>Updates FActive and (un)registers the keyboard binding with the IDE.</summary>
     procedure SetActive(const Value: Boolean);
-    /// <summary>Implements the Section Toggle, jumping between interface and implementation.</summary>
+    /// <summary>Moves the caret to the interface or implementation section header.</summary>
+    /// <param name="EditBuffer">The active editor buffer to navigate.</param>
+    /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section (so the Up/Down shortcuts are directional).</param>
     procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
     /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
@@ -85,6 +87,8 @@ type
     /// <param name="Down">True to move down, False to move up.</param>
     procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
     /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
+    /// <param name="EditBuffer">The active editor buffer (resolution itself uses the IDE's active control).</param>
+    /// <returns>True if the Find Declaration action was located and executed; False if it could not be resolved, so the caller leaves the keystroke unhandled for the IDE's own handler.</returns>
     function FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
     //procedure ReturnPressed(EditBuffer: IOTAEditBuffer);
   protected

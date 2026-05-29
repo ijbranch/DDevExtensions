@@ -95,6 +95,7 @@ type
   private
     /// <summary>Owned analyser used to perform the analysis.</summary>
     FAnalyzer: TDeadCodeAnalyzer;
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
     /// <summary>Most recent analysis result.</summary>
     FDeadCode: TArray<TDeadCodeItem>;

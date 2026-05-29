@@ -92,6 +92,7 @@ type
   private
     /// <summary>Owned scanner that performs the TODO extraction.</summary>
     FScanner: TTodoScanner;
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
     /// <summary>Cached results from the last scan.</summary>
     FTodoItems: TArray<TTodoItem>;

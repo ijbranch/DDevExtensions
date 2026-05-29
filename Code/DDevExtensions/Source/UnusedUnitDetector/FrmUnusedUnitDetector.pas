@@ -84,6 +84,7 @@ type
   private
     /// <summary>Owned analyser used to perform the scan.</summary>
     FAnalyzer: TUnitAnalyzer;
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
     /// <summary>Most recent scan result.</summary>
     FUnusedUnits: TArray<TUnusedUnitInfo>;

@@ -110,6 +110,7 @@ type
     FSortAscending: Boolean;
     /// <summary>Path of the file most recently analysed.</summary>
     FCurrentFileName: string;
+    /// <summary>True while the exports-database build is running; used to veto closing the form mid-build (the build pumps the message queue via DBProgress).</summary>
     FBusy: Boolean;
     /// <summary>Refreshes the list view from <see cref="FPlacements"/>.</summary>
     procedure PopulateList;
