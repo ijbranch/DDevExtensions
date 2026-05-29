@@ -92,6 +92,7 @@ type
   private
     /// <summary>Owned scanner that performs the TODO extraction.</summary>
     FScanner: TTodoScanner;
+    FScanning: Boolean;
     /// <summary>Cached results from the last scan.</summary>
     FTodoItems: TArray<TTodoItem>;
     /// <summary>Index of the column the list is currently sorted by.</summary>
@@ -151,6 +152,15 @@ end;
 
 procedure TFormTodoAggregator.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+
+  // ScannerProgress pumps the message queue, so the user can trigger a close
+  // mid-scan. Veto it while scanning, otherwise the form and FScanner are freed
+  // while ScanProject is still on the stack (use-after-free).
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
 
   FormInstance := nil;
   Action       := caFree;
@@ -226,6 +236,7 @@ begin
 
   Screen.Cursor    := crHourGlass;
   btnScan.Enabled  := False;
+  FScanning        := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -240,6 +251,7 @@ begin
     lblSummary.Caption  := Format( 'Found %d TODO items', [ Length( FTodoItems ) ] );
     lblSummary.Visible  := True;
   finally
+    FScanning       := False;
     btnScan.Enabled := True;
     Screen.Cursor   := crDefault;
   end;

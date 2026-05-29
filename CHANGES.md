@@ -4,6 +4,44 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-05-30 - v3.17.7 - UI workflow audit: remaining High-severity fixes
+
+Resolves the 18 confirmed High-severity findings from the UI workflow audit (the
+two Project Settings pointer-truncation issues shipped in v3.17.6). All changes
+build clean on both Win32 and Win64 (D_D130, Release). Priorities throughout:
+integrity (no corrupt state or wrong results), reliability (no unhandled
+exceptions or use-after-free), and performance (single-pass scanning preserved).
+
+### Fixed
+
+- **Code Quality Analyzer try/finally detector silently disarmed; non-try `end`s corrupted state.** A single `TryDepth` counter plus an `InExceptBlock` flag drove every `end`. `try/finally` never decremented the counter (so after the first one the missing-try/finally check stopped working and treated all later `Create`s as protected), and any `end` from a record/class/case/begin was mis-counted as a try-end, drifting the except state. Replaced with a structural block stack that matches each `end` to the construct it closes, tracks per-try except/finally sections, and resets at `implementation`. (2026-05-30) — `Code/DDevExtensions/Source/CodeQualityAnalyzer/CodeQualityAnalyzer.pas`
+- **Code Style Checker reported a flood of bogus UnitScopePrefix violations.** The unit-scope lookahead consumed the terminating semicolon of a uses clause, which was never re-tested, so `InUsesClause` never cleared and every later identifier was checked as if still in the uses list. Re-apply the termination test to the peeked token. (2026-05-30) — `Code/DDevExtensions/Source/CodeStyleChecker/CodeStyleChecker.pas`
+- **Compiler Enhancements promoted exactly the wrong warnings to errors.** The ExceptWarnings membership test was inverted (`IndexOf <> -1`), so only the codes the user listed to keep as warnings were promoted, and a special-case made an empty list promote everything. Now promotes every warning except those listed. (2026-05-30) — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
+- **Editor "Select modified / unmodified files" menu items were labelled with each other's caption.** Swapped the two resource-string assignments in `FormCreate`. (2026-05-30) — `Code/DDevExtensions/Source/Editor/FrmReloadFiles.pas`
+- **Unused Unit Detector: every unit reported the line of the `uses` keyword, and used units could be reported as unused.** Track each unit token's own start position for its line number, and scan every occurrence of a known identifier (not just the first) when deciding whether a unit is referenced. (2026-05-30) — `Code/DDevExtensions/Source/UnusedUnitDetector/UnusedUnitDetector.pas`
+- **Unreachable Code Detector opened the wrong source location after sorting.** Double-click resolved the row by re-walking the items in scan order, but column sort (`AlphaSort`) reorders the rows. Resolve through the original index stored in the item's `Data` instead. (2026-05-30) — `Code/DDevExtensions/Source/UnreachableCodeDetector/FrmUnreachableCodeDetector.pas`
+- **Uses Clause Manager recorded reserved words as identifiers.** `Token.Kind >= tkIdent` swept in every keyword (begin, class, if, ...), polluting the interface-vs-implementation placement analysis. Changed all six predicates to `Token.Kind = tkIdent`. (2026-05-30) — `Code/DDevExtensions/Source/UsesClauseManager/UsesClauseManager.pas`
+
+### Fixed — error handling / lifetime
+
+- **Use-after-free when closing Code Style Checker, TODO Aggregator or Unused Unit Detector during a scan.** Each scan pumps the message queue, so the user could close the form while the scanner was still on the stack, freeing the form and its worker. Added an `FScanning` guard that vetoes the close (`Action := caNone`) while a scan is running. (2026-05-30) — `Code/DDevExtensions/Source/CodeStyleChecker/FrmCodeStyleChecker.pas`, `Code/DDevExtensions/Source/TodoAggregator/FrmTodoAggregator.pas`, `Code/DDevExtensions/Source/UnusedUnitDetector/FrmUnusedUnitDetector.pas`
+- **Enabling Compiler Enhancements with a missing interceptor DLL threw a raw exception into the options dialog and left `FActive` inconsistent.** Wrapped (un)registration in try/except, roll `FActive` back on failure, and show a friendly message. (2026-05-30) — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
+- **DSU Features: `FPrjMgrTree.Invalidate` dereferenced a nil tree** when the project manager form was not found (common at IDE-load when the setter first runs). Guarded with a nil check. (2026-05-30) — `Code/DDevExtensions/Source/DSUFeatures/FrmeOptionPageDSUFeatures.pas`
+- **DSU Features: package-load hook blanked or AV'd the main-form caption** in its `finally` when `MainForm` was nil/hidden during early startup. Only restore the caption when it was actually changed. (2026-05-30) — `Code/DDevExtensions/Source/DSUFeatures/DSUFeatures.pas`
+- **IDE Path Sorter: a failed backup save raised instead of returning False,** so the "Failed to create backup. Continue anyway?" path was unreachable. `CreateBackup` now traps the save failure, returns False, and reloads from disk to stay consistent. (2026-05-30) — `Code/DDevExtensions/Source/LibraryPathSorter/LibraryPathSorter.pas`
+
+### Fixed — Win64 platform safety
+
+- **Keybindings Move-Line/Block corrupted memory on Win64.** It hand-cast `IOTAEditWriter` to a replica record with fixed 32-bit field offsets and poked IDE-internal structures. Gated the struct manipulation behind `{$IFNDEF CPUX64}`; the block move now uses only the documented `IOTAEditWriter` API on Win64 (undo grouping / persistent-block restoration degraded but safe). (2026-05-30) — `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.pas`
+- **Form Designer DFM cleaners were inert on Win64 but presented as active.** RemoveExplicit/PixelsPerInch/TextHeight install via `CodeRedirect`, a no-op on Win64. The three check boxes are now disabled with a "Not available on the 64-bit IDE" hint, and the hook installs are gated so the intent is explicit. LabelMargin (ReplaceVmtField) still works and stays enabled. (2026-05-30) — `Code/DDevExtensions/Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`
+
+### Changed
+
+- Version bumped 3.17.6 → 3.17.7 (`Release` 6→7, `FileVersion` `3.17.7.x`; `MinorVer`/`ProductVersion` unchanged). (2026-05-30) — `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
+- Added the missing `<VerInfo_Release>` element (=7) to the older project files and the Installer, which previously carried the release digit only in the `FileVersion` string. Their discrete `MajorVer`/`MinorVer`/`Release` fields now match `D_D130`. **Why:** version-info consistency across all personalities; these projects target Delphi 10.2–12 and are not built in the current Delphi 13 environment. (2026-05-30) — `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
+
+---
+
 ## 2026-05-30 - v3.17.6 - Win64 pointer-truncation fixes (Project Settings)
 
 ### Fixed

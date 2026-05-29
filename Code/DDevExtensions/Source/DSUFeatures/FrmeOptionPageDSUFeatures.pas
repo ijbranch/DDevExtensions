@@ -1497,7 +1497,8 @@ begin
     if (FPrjMgrTree <> nil) and FShowFileProjectInPrjMgr then
       FPrjMgrTree.OnGetText := PMGetText;
 
-    FPrjMgrTree.Invalidate;
+    if FPrjMgrTree <> nil then
+      FPrjMgrTree.Invalidate;
     {$ENDIF}
   end;
 end;

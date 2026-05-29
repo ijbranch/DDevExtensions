@@ -219,14 +219,17 @@ var
   LastCursor: TCursor;
   MainCaption: string;
   CursorChanged: Boolean;
+  CaptionChanged: Boolean;
 begin
   LastCursor := crDefault;
   CursorChanged := False;
+  CaptionChanged := False;
   if (Application <> nil) and (Application.MainForm <> nil) and
      Application.MainForm.Visible then
   begin
     MainCaption := Application.MainForm.Caption;
     Application.MainForm.Caption  := Format('%s  [Loading %s]', [MainCaption, ExtractFileName(Name)]);
+    CaptionChanged := True;
     { Change mouse cursor only when mainform is visible }
     LastCursor := Screen.Cursor;
     if LastCursor = crDefault then
@@ -239,7 +242,12 @@ begin
   try
     Result := LoadPackage(Name, AValidatePackage);
   finally
-    Application.MainForm.Caption := MainCaption;
+    { Only restore the caption if we actually changed it. During early IDE
+      startup (when many packages load) MainForm may be nil or hidden, so
+      MainCaption was never captured and touching Application.MainForm.Caption
+      here would blank the caption or AV in the finally. }
+    if CaptionChanged and (Application <> nil) and (Application.MainForm <> nil) then
+      Application.MainForm.Caption := MainCaption;
     if CursorChanged and (Screen.Cursor = crAppStart) then
       Screen.Cursor := LastCursor;
   end;

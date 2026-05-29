@@ -96,6 +96,7 @@ type
   private
     /// <summary>Engine performing the analysis.</summary>
     FChecker: TStyleChecker;
+    FScanning: Boolean;
     /// <summary>Latest scan results.</summary>
     FViolations: TArray<TStyleViolation>;
     /// <summary>Index of the column currently being sorted.</summary>
@@ -220,6 +221,15 @@ end;
 procedure TFormCodeStyleChecker.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
+  // A scan pumps the message queue (ProcessMessages in CheckerProgress), so the
+  // user can trigger a close mid-scan. Veto it while scanning, otherwise the
+  // form and FChecker are freed while CheckProject is still on the stack.
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
+
   FormInstance := nil;
   Action       := caFree;
 
@@ -240,6 +250,7 @@ begin
 
   Screen.Cursor    := crHourGlass;
   btnScan.Enabled  := False;
+  FScanning        := True;
 
   try
     lblProgress.Caption := 'Checking project...';
@@ -254,6 +265,7 @@ begin
     lblSummary.Caption  := Format( 'Found %d style violations', [ Length( FViolations ) ] );
     lblSummary.Visible  := True;
   finally
+    FScanning       := False;
     btnScan.Enabled := True;
     Screen.Cursor   := crDefault;
   end;

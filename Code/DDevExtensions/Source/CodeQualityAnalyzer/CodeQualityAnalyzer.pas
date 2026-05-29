@@ -350,6 +350,20 @@ begin
   end;
 end;
 
+type
+  TQABlockKind = ( qabOther, qabTry );
+
+  // One entry per open structural block (begin/case/record/class/asm/try...),
+  // so each 'end' can be matched to the construct it actually closes.
+  TQABlock = record
+    Kind: TQABlockKind;
+    HadExcept: Boolean;            // this try block has an 'except' section
+    InExcept: Boolean;             // currently inside the except (not finally) section
+    ExceptStartLine: Integer;
+    ExceptHasStatements: Boolean;
+    ExceptHasOnClause: Boolean;
+  end;
+
 class function TCodeQualityAnalyzerPlugin.AnalyzeUnit( const Source: UTF8String;
   const FileName: string; Plugin: TCodeQualityAnalyzerPlugin ): TArray<TCodeQualityIssue>;
 var
@@ -360,12 +374,11 @@ var
   InImplementation: Boolean;
   InConstSection: Boolean;
   InResourceString: Boolean;
-  InTryBlock: Boolean;
-  InExceptBlock: Boolean;
-  TryDepth: Integer;
-  ExceptStartLine: Integer;
-  ExceptHasStatements: Boolean;
-  ExceptHasOnClause: Boolean;
+  Blocks: TArray<TQABlock>;       // structural block stack for matching 'end's
+  BlockCount: Integer;            // number of open blocks on the stack
+  OpenTryCount: Integer;          // how many of those open blocks are try blocks
+  LastClosedBlock: TQABlock;      // the block most recently popped by an 'end'
+  ClassObjPending: Boolean;       // a class/object opener awaiting body confirmation
   UnitName: string;
   Whitelist: TArray<string>;
   I: Integer;
@@ -472,6 +485,41 @@ var
       Inc( Result, 2 );
   end;
 
+  procedure PushBlock( AKind: TQABlockKind );
+  begin
+
+    // A nested construct opening inside an except section is itself content,
+    // so the enclosing handler is not considered empty.
+    if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
+       Blocks[ BlockCount - 1 ].InExcept then
+      Blocks[ BlockCount - 1 ].ExceptHasStatements := True;
+
+    if BlockCount >= Length( Blocks ) then
+      SetLength( Blocks, BlockCount + 16 );
+
+    Blocks[ BlockCount ] := Default( TQABlock );
+    Blocks[ BlockCount ].Kind := AKind;
+    Inc( BlockCount );
+
+    if AKind = qabTry then
+      Inc( OpenTryCount );
+
+  end;
+
+  procedure PopBlock;
+  begin
+
+    if BlockCount = 0 then
+      Exit;
+
+    Dec( BlockCount );
+    LastClosedBlock := Blocks[ BlockCount ];
+
+    if ( LastClosedBlock.Kind = qabTry ) and ( OpenTryCount > 0 ) then
+      Dec( OpenTryCount );
+
+  end;
+
 begin
   Results := TList<TCodeQualityIssue>.Create;
   PendingCreates := TList<TPair<string, Integer>>.Create;
@@ -484,12 +532,9 @@ begin
       InImplementation := False;
       InConstSection := False;
       InResourceString := False;
-      InTryBlock := False;
-      InExceptBlock := False;
-      TryDepth := 0;
-      ExceptStartLine := 0;
-      ExceptHasStatements := False;
-      ExceptHasOnClause := False;
+      BlockCount := 0;
+      OpenTryCount := 0;
+      ClassObjPending := False;
       LastAssignedVar := '';
       LastAssignedLine := 0;
 
@@ -503,6 +548,11 @@ begin
           InImplementation := True;
           InConstSection := False;
           InResourceString := False;
+          // Reset the structural stack so any imbalance from interface-section
+          // type declarations cannot leak into the implementation analysis.
+          BlockCount := 0;
+          OpenTryCount := 0;
+          ClassObjPending := False;
           PrevToken := Token;
           Continue;
         end;
@@ -629,71 +679,103 @@ begin
         // =====================================================================
         // Exception Handler Analysis
         // =====================================================================
-        if Token.Kind = tkI_try then
+        if ClassObjPending then
         begin
-          Inc( TryDepth );
-          InTryBlock := True;
+          // A class/object opener was pushed speculatively on the previous
+          // token. 'class of X' (metaclass) and a forward 'class;' open no body,
+          // so undo that push when the following token proves it is not a body.
+          if Token.Kind in [ tkI_of, tkSemicolon ] then
+            PopBlock;
+          ClassObjPending := False;
+        end;
+
+        if Token.Kind = tkI_try then
+          PushBlock( qabTry )
+        else if Token.Kind in [ tkI_begin, tkI_case, tkI_asm ] then
+          PushBlock( qabOther )
+        else if ( Token.Kind in [ tkI_record, tkI_class, tkI_object,
+                                  tkI_interface, tkI_dispinterface ] ) and
+                ( PrevToken <> nil ) and ( PrevToken.Kind in [ tkEqual, tkI_packed ] ) then
+        begin
+          // A type body: TFoo = class/record/object/interface ... end.
+          PushBlock( qabOther );
+          ClassObjPending := Token.Kind in [ tkI_class, tkI_object ];
         end
         else if Token.Kind = tkI_except then
         begin
-          InExceptBlock := True;
-          ExceptStartLine := Token.Line + 1;
-          ExceptHasStatements := False;
-          ExceptHasOnClause := False;
+          if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) then
+          begin
+            Blocks[ BlockCount - 1 ].HadExcept := True;
+            Blocks[ BlockCount - 1 ].InExcept := True;
+            Blocks[ BlockCount - 1 ].ExceptStartLine := Token.Line + 1;
+            Blocks[ BlockCount - 1 ].ExceptHasStatements := False;
+            Blocks[ BlockCount - 1 ].ExceptHasOnClause := False;
+          end;
         end
         else if Token.Kind = tkI_finally then
         begin
-          InExceptBlock := False;
+          if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) then
+            Blocks[ BlockCount - 1 ].InExcept := False;
         end
         else if Token.Kind = tkI_on then
         begin
-          if InExceptBlock then
-            ExceptHasOnClause := True;
+          if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
+             Blocks[ BlockCount - 1 ].InExcept then
+            Blocks[ BlockCount - 1 ].ExceptHasOnClause := True;
         end
-        else if ( Token.Kind = tkI_end ) and InExceptBlock then
+        else if Token.Kind = tkI_end then
         begin
-          // Check for empty except block
-          if Plugin.CheckEmptyExcept and not ExceptHasStatements and not ExceptHasOnClause then
+          if BlockCount > 0 then
           begin
-            Issue := Default( TCodeQualityIssue );
-            Issue.FileName := FileName;
-            Issue.UnitName := UnitName;
-            Issue.Line := ExceptStartLine;
-            Issue.Column := 1;
-            Issue.Category := icEmptyExcept;
-            Issue.Severity := isWarning;
-            Issue.Description := 'Empty except block - exceptions are silently swallowed';
-            Issue.CodePreview := 'except ... end';
-            Results.Add( Issue );
-          end
-          // Check for catch-all without specific handler
-          else if Plugin.CheckCatchAllException and ExceptHasStatements and not ExceptHasOnClause then
-          begin
-            Issue := Default( TCodeQualityIssue );
-            Issue.FileName := FileName;
-            Issue.UnitName := UnitName;
-            Issue.Line := ExceptStartLine;
-            Issue.Column := 1;
-            Issue.Category := icCatchAllException;
-            Issue.Severity := isInfo;
-            Issue.Description := 'Catch-all exception handler without specific "on E:" clause';
-            Issue.CodePreview := 'except ... end';
-            Results.Add( Issue );
-          end;
-
-          InExceptBlock := False;
-          Dec( TryDepth );
-          if TryDepth <= 0 then
-          begin
-            InTryBlock := False;
-            TryDepth := 0;
+            PopBlock;
+            // Only a try..except that closed while still in its except section
+            // (no trailing finally) is a candidate for the empty / catch-all
+            // checks. A token-level scan now matches this 'end' to the exact
+            // construct it closes, so try/finally no longer leaks the depth and
+            // a record/class/case 'end' no longer corrupts the try state.
+            if ( LastClosedBlock.Kind = qabTry ) and
+               LastClosedBlock.HadExcept and LastClosedBlock.InExcept then
+            begin
+              if Plugin.CheckEmptyExcept and
+                 not LastClosedBlock.ExceptHasStatements and
+                 not LastClosedBlock.ExceptHasOnClause then
+              begin
+                Issue := Default( TCodeQualityIssue );
+                Issue.FileName := FileName;
+                Issue.UnitName := UnitName;
+                Issue.Line := LastClosedBlock.ExceptStartLine;
+                Issue.Column := 1;
+                Issue.Category := icEmptyExcept;
+                Issue.Severity := isWarning;
+                Issue.Description := 'Empty except block - exceptions are silently swallowed';
+                Issue.CodePreview := 'except ... end';
+                Results.Add( Issue );
+              end
+              else if Plugin.CheckCatchAllException and
+                      LastClosedBlock.ExceptHasStatements and
+                      not LastClosedBlock.ExceptHasOnClause then
+              begin
+                Issue := Default( TCodeQualityIssue );
+                Issue.FileName := FileName;
+                Issue.UnitName := UnitName;
+                Issue.Line := LastClosedBlock.ExceptStartLine;
+                Issue.Column := 1;
+                Issue.Category := icCatchAllException;
+                Issue.Severity := isInfo;
+                Issue.Description := 'Catch-all exception handler without specific "on E:" clause';
+                Issue.CodePreview := 'except ... end';
+                Results.Add( Issue );
+              end;
+            end;
           end;
         end
-        else if InExceptBlock and ( Token.Kind >= tkIdent ) and
+        else if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
+                Blocks[ BlockCount - 1 ].InExcept and
+                ( Token.Kind >= tkIdent ) and
                 not ( Token.Kind in [ tkI_end, tkI_on, tkI_else ] ) then
         begin
-          // Any identifier or statement in except block counts as having statements
-          ExceptHasStatements := True;
+          // Any identifier or statement in the except section counts as content.
+          Blocks[ BlockCount - 1 ].ExceptHasStatements := True;
         end;
 
         // =====================================================================
@@ -714,7 +796,7 @@ begin
                   ( LastAssignedVar <> '' ) then
           begin
             // Check if we're already in a try block
-            if not InTryBlock then
+            if OpenTryCount = 0 then
             begin
               PendingCreates.Add( TPair<string, Integer>.Create( LastAssignedVar, LastAssignedLine ) );
             end;
@@ -725,8 +807,10 @@ begin
           begin
             PendingCreates.Clear;
           end
-          // Check for method end - report unprotected creates
-          else if ( Token.Kind = tkI_end ) and ( TryDepth = 0 ) and
+          // Check for method end - report unprotected creates. The block stack
+          // is already updated for this 'end' above, so BlockCount = 0 means we
+          // have returned to top level (end of the routine body).
+          else if ( Token.Kind = tkI_end ) and ( BlockCount = 0 ) and
                   ( PendingCreates.Count > 0 ) then
           begin
             for I := 0 to PendingCreates.Count - 1 do

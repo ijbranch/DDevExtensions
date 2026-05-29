@@ -297,7 +297,7 @@ var
   Token: string;
   Ch: Char;
   UnitInfo: TUsedUnitInfo;
-  CurrentLineStart: Integer;
+  TokenStartPos: Integer;
 
   function CountLines( const S: string; FromPos, ToPos: Integer ): Integer;
   var
@@ -334,15 +334,17 @@ var
       end
       else if SameText( Token, 'uses' ) then
       begin
-        InUses           := True;
-        CurrentLineStart := I;
+        InUses := True;
       end
       else if InUses and ( not SameText( Token, 'in' ) ) then
       begin
         UnitInfo.UnitName    := Token;
         UnitInfo.FileName    := '';
         UnitInfo.IsInterface := InInterface and ( not InImplementation );
-        UnitInfo.LineNumber  := CountLines( Content, 1, CurrentLineStart );
+        // Use the position where THIS unit token started, not the position of
+        // the 'uses' keyword, so each entry in a multi-line uses clause reports
+        // its own line.
+        UnitInfo.LineNumber  := CountLines( Content, 1, TokenStartPos );
 
         if InInterface and ( not InImplementation ) then
           InterfaceUnits.Add( UnitInfo )
@@ -370,7 +372,7 @@ begin
   InLineComment    := False;
   BraceDepth       := 0;
   Token            := '';
-  CurrentLineStart := 1;
+  TokenStartPos    := 1;
 
   while I <= Len do
   begin
@@ -459,7 +461,11 @@ begin
 
     // Parse tokens
     if CharInSet( Ch, [ 'A'..'Z', 'a'..'z', '_', '0'..'9', '.' ] ) then
-      Token := Token + Ch
+    begin
+      if Token = '' then
+        TokenStartPos := I;
+      Token := Token + Ch;
+    end
     else
     begin
       AddToken;
@@ -504,6 +510,9 @@ begin
   if Pos( LowerCase( UnitPrefix ), LowerCase( SearchContent ) ) > 0 then
     Exit( True );
 
+  // Precompute lowercase content once for whole-word identifier scanning.
+  LowerSearchContent := LowerCase( SearchContent );
+
   // Check for known identifiers from this unit
   KnownIds := GetUnitExports( UnitName );
 
@@ -512,27 +521,30 @@ begin
 
     for I := 0 to KnownIds.Count - 1 do
     begin
-      Id   := KnownIds[ I ];
-      // Look for the identifier as a whole word
-      Pos1 := Pos( LowerCase( Id ), LowerCase( SearchContent ) );
+      Id := LowerCase( KnownIds[ I ] );
+      // Scan EVERY occurrence as a whole word: the first hit may be a substring
+      // of a larger identifier, and stopping there would wrongly report a used
+      // unit as unused.
+      SearchOffset := 1;
 
-      if Pos1 > 0 then
-      begin
-        // Verify it's a whole word (not part of another identifier)
-        if ( Pos1 = 1 ) or ( not CharInSet( SearchContent[ Pos1 - 1 ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) then
-        begin
+      repeat
+        Pos1 := Pos( Id, LowerSearchContent, SearchOffset );
 
-          if ( Pos1 + Length( Id ) > Length( SearchContent ) ) or
-             ( not CharInSet( SearchContent[ Pos1 + Length( Id ) ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) then
-            Exit( True );
-        end;
-      end;
+        if Pos1 = 0 then
+          Break;
+
+        if ( ( Pos1 = 1 ) or ( not CharInSet( SearchContent[ Pos1 - 1 ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) ) and
+           ( ( Pos1 + Length( Id ) > Length( SearchContent ) ) or
+             ( not CharInSet( SearchContent[ Pos1 + Length( Id ) ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) ) then
+          Exit( True );
+
+        SearchOffset := Pos1 + 1;
+      until SearchOffset > Length( LowerSearchContent );
     end;
   end;
 
   // Heuristic: if unit name appears anywhere as identifier, consider it used
   // This catches cases like type names matching unit names
-  LowerSearchContent := LowerCase( SearchContent );
   LowerUnitName      := LowerCase( UnitName );
   Pos1               := Pos( LowerUnitName, LowerSearchContent );
 

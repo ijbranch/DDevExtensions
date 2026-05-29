@@ -84,6 +84,7 @@ type
   private
     /// <summary>Owned analyser used to perform the scan.</summary>
     FAnalyzer: TUnitAnalyzer;
+    FScanning: Boolean;
     /// <summary>Most recent scan result.</summary>
     FUnusedUnits: TArray<TUnusedUnitInfo>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -140,6 +141,15 @@ end;
 procedure TFormUnusedUnitDetector.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
+  // AnalyzerProgress pumps the message queue, so the user can trigger a close
+  // mid-scan. Veto it while scanning, otherwise the form and FAnalyzer are freed
+  // while AnalyzeProject is still on the stack (use-after-free).
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
+
   FormInstance := nil;
   Action       := caFree;
 
@@ -193,6 +203,7 @@ begin
 
   Screen.Cursor    := crHourGlass;
   btnScan.Enabled  := False;
+  FScanning        := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -207,6 +218,7 @@ begin
     lblSummary.Caption  := Format( 'Found %d potentially unused unit references', [ Length( FUnusedUnits ) ] );
     lblSummary.Visible  := True;
   finally
+    FScanning       := False;
     btnScan.Enabled := True;
     Screen.Cursor   := crDefault;
   end;

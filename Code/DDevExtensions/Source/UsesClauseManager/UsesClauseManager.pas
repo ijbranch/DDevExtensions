@@ -396,7 +396,7 @@ begin
         Continue;
 
       // Collect exports based on current section
-      if Token.Kind >= tkIdent then  // Identifier tokens
+      if Token.Kind = tkIdent then  // Identifier tokens
       begin
         if InType then
         begin
@@ -421,7 +421,7 @@ begin
       // Procedures and functions
       if Token.Kind = tkI_procedure then
       begin
-        if Lexer.NextToken( Token ) and ( Token.Kind >= tkIdent ) then
+        if Lexer.NextToken( Token ) and ( Token.Kind = tkIdent ) then
         begin
           Export.Identifier := Token.Value;
           Export.Kind := ekProcedure;
@@ -430,7 +430,7 @@ begin
       end
       else if Token.Kind = tkI_function then
       begin
-        if Lexer.NextToken( Token ) and ( Token.Kind >= tkIdent ) then
+        if Lexer.NextToken( Token ) and ( Token.Kind = tkIdent ) then
         begin
           Export.Identifier := Token.Value;
           Export.Kind := ekFunction;
@@ -697,7 +697,7 @@ begin
         end;
 
         // Collect unit names in uses clause
-        if ( Token.Kind >= tkIdent ) and ( CurrentUnitList <> nil ) then
+        if ( Token.Kind = tkIdent ) and ( CurrentUnitList <> nil ) then
         begin
           UsedUnit.UnitName := Token.Value;
 
@@ -722,7 +722,7 @@ begin
       end;
 
       // Collect identifiers outside of uses clauses
-      if ( CurrentIdentList <> nil ) and ( Token.Kind >= tkIdent ) then
+      if ( CurrentIdentList <> nil ) and ( Token.Kind = tkIdent ) then
       begin
         // Check for qualified reference: Identifier.Something
         if ( I + 1 < TokenList.Count ) and ( TokenList[ I + 1 ].Kind = tkDot ) then
@@ -732,7 +732,7 @@ begin
           if I + 2 < TokenList.Count then
           begin
             NextToken := TokenList[ I + 2 ];
-            if NextToken.Kind >= tkIdent then
+            if NextToken.Kind = tkIdent then
             begin
               // Record: NextToken.Value came from Token.Value unit
               FQualifiedReferences.AddOrSetValue( LowerCase( NextToken.Value ), Token.Value );

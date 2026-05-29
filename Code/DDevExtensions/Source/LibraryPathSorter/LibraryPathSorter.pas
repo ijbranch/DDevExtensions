@@ -348,8 +348,18 @@ begin
       DeleteBackup( ExistingBackups[I] );
   end;
 
-  SaveBackups;
-  Result := True;
+  try
+    SaveBackups;
+    Result := True;
+  except
+    // Persisting the backup failed (read-only %AppData%, disk full, locked
+    // file). Convert to a False return so callers such as ApplyPaths can offer
+    // "Failed to create backup. Continue anyway?" instead of letting the
+    // exception escape, and reload from disk so the in-memory list matches what
+    // was actually persisted.
+    Result := False;
+    LoadBackups;
+  end;
 end;
 
 function TLibraryPathBackupManager.GetBackups( PathType: TLibraryPathType;

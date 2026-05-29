@@ -810,9 +810,11 @@ var
   S: UTF8String;
   LastUnchangedRow: Integer;
   Block: TBlock;
+  {$IFNDEF CPUX64}
   EkView: PEkView;
   RestoreFlags: Int64;
   EditWriter: TEditWriter;
+  {$ENDIF}
 begin
   EditPosition := EditBuffer.EditPosition;
   EditBlock := EditBuffer.EditBlock;
@@ -889,10 +891,18 @@ begin
     SetString(S, BlockStart, BlockEnd - BlockStart);
 
     Writer := EditBuffer.CreateUndoableWriter;
+    {$IFNDEF CPUX64}
+    // Acquire the IDE-internal EkView by hand-casting the IOTAEditWriter to the
+    // replica TEditWriter, whose fields sit at fixed 32-bit offsets. On Win64 the
+    // 8-byte pointer fields shift every offset, so this cast and the EdModes
+    // poking below are skipped; the block move itself uses only the documented
+    // IOTAEditWriter API and stays correct (only undo grouping / persistent-block
+    // restoration is degraded on x64).
     EditWriter := TEditWriter(DelphiInterfaceToObject(Writer));
     if not EditWriter.ClassNameIs('TEditWriter') then
       raise Exception.CreateFmt('EditBuffer (%s) is not of type TEditWriter', [EditWriter.ClassName]);
     EkView := EditWriter.EkView;
+    {$ENDIF}
 
     // Copy unaffected part
     Writer.CopyTo(UnchangedP - Start);
@@ -923,8 +933,10 @@ begin
     else
       RowOffset := -1;
 
+    {$IFNDEF CPUX64}
     RestoreFlags := SetEkViewEdModes(EkView, emDisableUndo or emPersistentBlocks, 0);
     try
+    {$ENDIF}
       if BlockSize = 0 then
         EditPosition.Move(Block.Row + RowOffset, 0)
       else
@@ -948,9 +960,11 @@ begin
           //EditBuffer.BufferOptions.PersistentBlocks := PersistentBlocks;
         end;
       end;
+    {$IFNDEF CPUX64}
     finally
       RestoreEkViewEdModes(EkView, RestoreFlags);
     end;
+    {$ENDIF}
   end;
 end;
 

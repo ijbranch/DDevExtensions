@@ -248,13 +248,29 @@ end;
 
 procedure TCompilerEnhancements.SetActive(const Value: Boolean);
 begin
-  if Value <> FActive then
-  begin
-    FActive := Value;
-    if FActive then
+  if Value = FActive then
+    Exit;
+
+  // GetCompileInterceptorServices raises when the interceptor DLL cannot be
+  // loaded (missing, locked, or wrong bitness). Guard the (un)registration so
+  // a load failure surfaces a friendly message instead of escaping into the
+  // options dialog, and so FActive is only flipped once the call succeeds.
+  try
+    if Value then
       FCompileInterceptorId := GetCompileInterceptorServices.RegisterInterceptor(Self)
     else
       GetCompileInterceptorServices.UnregisterInterceptor(FCompileInterceptorId);
+
+    FActive := Value;
+  except
+    on E: Exception do
+    begin
+      FActive := False;
+      if Value then
+        ShowMessage('Compiler Enhancements could not be enabled:'#13#10 + E.Message)
+      else
+        ShowMessage('Compiler Enhancements could not be disabled:'#13#10 + E.Message);
+    end;
   end;
 end;
 
@@ -286,8 +302,11 @@ begin
   Result := False;
   if TreatWarningsAsErrors then
   begin
+    // Promote every warning to an error EXCEPT those whose code is listed in
+    // ExceptWarnings (the codes the user chose to keep as warnings). An empty
+    // list yields IndexOf = -1 for every code, i.e. promote all.
     if (MsgKind = mkWarning) and
-       ((ExceptWarnings.Count = 0) or (ExceptWarnings.IndexOf('W' + IntToStr(Code)) <> -1)) then
+       (ExceptWarnings.IndexOf('W' + IntToStr(Code)) = -1) then
     begin
       MsgKind := mkError;
       Result := True;

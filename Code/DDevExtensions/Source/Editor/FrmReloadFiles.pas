@@ -596,8 +596,8 @@ begin
   btnCancel.Caption := SCancelButton;
   btnOk.Caption := sReloadButton;
 
-  mniSelectOnlyModifiedFiles.Caption := sReloadSelectOnlyUnmodifiedField;
-  mniSelectOnlyUnmodifiedField.Caption := sReloadSelectOnlyModifiedFiles;
+  mniSelectOnlyModifiedFiles.Caption := sReloadSelectOnlyModifiedFiles;
+  mniSelectOnlyUnmodifiedField.Caption := sReloadSelectOnlyUnmodifiedField;
   mniSelectAll.Caption := sReloadSelectAll;
   mniDeselectAll.Caption := sReloadDeselectAll;
   mniInvertSelection.Caption := sReloadInvertSelection;

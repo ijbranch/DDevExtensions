@@ -198,6 +198,7 @@ var
   ListItem: TListItem;
   FilterIdx: Integer;
   VisibleCount: Integer;
+  OrigIdx: Integer;
 begin
 
   ListView.Items.BeginUpdate;
@@ -207,8 +208,9 @@ begin
     FilterIdx    := cmbFilter.ItemIndex;
     VisibleCount := 0;
 
-    for Item in FItems do
+    for OrigIdx := 0 to High( FItems ) do
     begin
+      Item := FItems[ OrigIdx ];
       // Apply filter
       if FilterIdx > 0 then
       begin
@@ -222,7 +224,10 @@ begin
       ListItem.SubItems.Add( IntToStr( Item.Line ) );
       ListItem.SubItems.Add( Item.ReasonText );
       ListItem.SubItems.Add( Item.CodePreview );
-      ListItem.Data := Pointer( NativeInt( VisibleCount ) );
+      // Store the original FItems index so double-click resolves the correct
+      // item regardless of column sorting (ListViewColumnClick calls AlphaSort,
+      // which reorders the visual rows).
+      ListItem.Data := Pointer( NativeInt( OrigIdx ) );
 
       Inc( VisibleCount );
     end;
@@ -243,35 +248,19 @@ end;
 
 procedure TFormUnreachableCodeDetector.ListViewDblClick( Sender: TObject );
 var
-  FilterIdx: Integer;
-  I, VisibleIdx: Integer;
+  OrigIdx: NativeInt;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  // Find the actual item
-  FilterIdx  := cmbFilter.ItemIndex;
-  VisibleIdx := 0;
+  // PopulateList stores the original FItems index in the item's Data. Resolve
+  // through it rather than the visual row position, which no longer matches the
+  // scan order once the user has sorted a column (AlphaSort).
+  OrigIdx := NativeInt( ListView.Selected.Data );
 
-  for I := 0 to High( FItems ) do
-  begin
-
-    if FilterIdx > 0 then
-    begin
-
-      if Ord( FItems[ I ].Reason ) <> ( FilterIdx - 1 ) then
-        Continue;
-    end;
-
-    if VisibleIdx = ListView.Selected.Index then
-    begin
-      OpenItem( FItems[ I ] );
-      Exit;
-    end;
-
-    Inc( VisibleIdx );
-  end;
+  if ( OrigIdx >= 0 ) and ( OrigIdx <= High( FItems ) ) then
+    OpenItem( FItems[ OrigIdx ] );
 
 end;
 

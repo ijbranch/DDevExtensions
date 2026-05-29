@@ -760,6 +760,14 @@ begin
             // Note: Token was consumed by peek, continue with it in the loop
             // We need to handle this token, so continue with current token checks
           end;
+
+          // The peek above consumed the next token, bypassing the top-of-loop
+          // uses-clause termination test. Re-apply it here: if the consumed
+          // token is the terminating semicolon, end the uses clause. Otherwise
+          // InUsesClause stays true and every later identifier is wrongly tested
+          // for a unit-scope prefix, flooding the report with false positives.
+          if InUsesClause and ( Token.Kind = tkSemicolon ) then
+            InUsesClause := False;
         end;
 
         // Track type section
