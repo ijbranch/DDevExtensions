@@ -140,11 +140,18 @@ end;
 
 procedure TFrameOptionPageCompileBackup.SetUserData(UserData: TObject);
 begin
-  FCompileBackupConfig := UserData as TCompileBackupConfig;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if not (UserData is TCompileBackupConfig) then
+    FCompileBackupConfig := nil
+  else
+    FCompileBackupConfig := TCompileBackupConfig(UserData);
 end;
 
 procedure TFrameOptionPageCompileBackup.LoadData;
 begin
+  if not Assigned(FCompileBackupConfig) then
+    Exit;
+
   cbxActive.Checked := FCompileBackupConfig.Active;
   cbxDeleteBackupAfterClose.Checked := FCompileBackupConfig.DeleteBackupAfterClose;
   cbxActiveClick(cbxActive);
@@ -161,6 +168,9 @@ end;
 
 procedure TFrameOptionPageCompileBackup.SaveData;
 begin
+  if not Assigned(FCompileBackupConfig) then
+    Exit;
+
   FCompileBackupConfig.Active := cbxActive.Checked;
   FCompileBackupConfig.DeleteBackupAfterClose := cbxDeleteBackupAfterClose.Checked;
   try

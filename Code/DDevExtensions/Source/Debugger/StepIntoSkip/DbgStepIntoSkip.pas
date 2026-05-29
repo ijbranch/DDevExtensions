@@ -171,16 +171,36 @@ var
   LibDcc32: THandle;
   P: PByte;
 begin
-  LibDcc32 := LoadLibrary(dcc32_dll);
+  // dcc32.dll is loaded by the IDE for the lifetime of the process; use
+  // GetModuleHandle (no refcount to release) rather than LoadLibrary, which
+  // would leak a handle on a DLL we can never safely unload while hooked.
+  LibDcc32 := GetModuleHandle(dcc32_dll);
+  if LibDcc32 = 0 then
+  begin
+    OutputDebugString(PChar('DbgStepIntoSkip: ' + dcc32_dll + ' not loaded; step-into-skip not installed.'));
+    Exit;
+  end;
+
   @OrgFindSourceLine32 := GetProcAddress(LibDcc32, 'FindSourceLine');
   @OrgGetCodeRanges32 := GetProcAddress(LibDcc32, 'GetCodeRanges');
 
-  P := FindMethodPtr(THandle(@OrgFindSourceLine32), FindSourceLineBytes, $1000);
-  if P <> nil then
+  if (@OrgFindSourceLine32 = nil) or (@OrgGetCodeRanges32 = nil) then
   begin
-    @FindUnitByLoad := PByte(PByte(@P[5]) + 5 + PInteger(@P[5 + 1])^);
-    @FindProcByLoad := PByte(PByte(@P[57]) + 5 + PInteger(@P[57 + 1])^);
+    OutputDebugString(PChar('DbgStepIntoSkip: required dcc32 exports not resolved; step-into-skip not installed.'));
+    Exit;
   end;
+
+  P := FindMethodPtr(THandle(@OrgFindSourceLine32), FindSourceLineBytes, $1000);
+  if P = nil then
+  begin
+    // Without the byte-signature match the dependency thunks stay nil, so the
+    // hook must not be installed (it would call nil and AV inside the debugger).
+    OutputDebugString(PChar('DbgStepIntoSkip: FindSourceLine signature not matched; step-into-skip not installed.'));
+    Exit;
+  end;
+
+  @FindUnitByLoad := PByte(PByte(@P[5]) + 5 + PInteger(@P[5 + 1])^);
+  @FindProcByLoad := PByte(PByte(@P[57]) + 5 + PInteger(@P[57 + 1])^);
 
   @OrgFindSourceLine32 := RedirectOrgCall(@OrgFindSourceLine32, @FindSourceLine32);
 //  @OrgGetCodeRanges32 := RedirectOrgCall(@OrgGetCodeRanges32, @GetCodeRanges32);

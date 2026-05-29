@@ -35,7 +35,7 @@ type
     UnitName: string;
     /// <summary>1-based line number of the comment.</summary>
     Line: Integer;
-    /// <summary>0-based column where the comment starts.</summary>
+    /// <summary>1-based column where the comment starts (matches TToken.Column and IOTAEditView.Center).</summary>
     Column: Integer;
     /// <summary>Matched category keyword (e.g. TODO, FIXME, HACK, BUG, NOTE, XXX).</summary>
     Category: string;      // TODO, FIXME, HACK, BUG, NOTE, XXX

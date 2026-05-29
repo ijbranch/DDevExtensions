@@ -792,9 +792,14 @@ begin
         else
           actnFormatSource.ShortCut := FFormatSourceOrgShortCut;
 
-        MenuItem := TMenuItem(Application.MainForm.FindComponent('mnuFormatSource'));
-        if (MenuItem <> nil) and (MenuItem.Action <> nil) then
-          TAction(MenuItem.Action).ShortCut := actnFormatSource.ShortCut;
+        // Application.MainForm can be nil if this applies before the IDE main
+        // form is fully created; guard the dereference.
+        if Application.MainForm <> nil then
+        begin
+          MenuItem := TMenuItem(Application.MainForm.FindComponent('mnuFormatSource'));
+          if (MenuItem <> nil) and (MenuItem.Action <> nil) then
+            TAction(MenuItem.Action).ShortCut := actnFormatSource.ShortCut;
+        end;
       end;
     end;
   end;

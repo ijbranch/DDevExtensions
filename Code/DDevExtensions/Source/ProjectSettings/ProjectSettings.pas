@@ -334,7 +334,8 @@ begin
 
     if Assigned(Data) then
     begin
-      if FMenuItemProjectSettings.Items[FMenuItemProjectSettings.Count - 1].Caption <> '-' then
+      if (FMenuItemProjectSettings.Count > 0) and
+         (FMenuItemProjectSettings.Items[FMenuItemProjectSettings.Count - 1].Caption <> '-') then
         FMenuItemProjectSettings.Add(NewLine);
       FGlobalSettings.Sort;
       for i := 0 to FGlobalSettings.Count - 1 do
@@ -385,6 +386,9 @@ begin
   Group := GetActiveProjectGroup;
   FActionSetVersionInfo.Enabled := (Group <> nil) and (Group.ProjectCount > 0)
     {$IFDEF COMPILER9_UP}
+    // A non-empty group can transiently have no active project (group load/close);
+    // guard GetActiveProject before GetPersonality (matches TVersionInfoHandler).
+    and (GetActiveProject <> nil)
     and ((GetActiveProject.GetPersonality = sDelphiPersonality) or
          (GetActiveProject.GetPersonality = sCBuilderPersonality))
     {$ENDIF COMPILER9_UP}

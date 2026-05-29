@@ -37,7 +37,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  IDEUtils;
+  Winapi.Windows, IDEUtils;
 
 var
   LoadDesktopHook: TRedirectCode;
@@ -79,8 +79,14 @@ procedure InitPlugin(Unload: Boolean);
 begin
   {$IFNDEF CPUX64}
   if not Unload then
+  begin
     HookFunction(coreide_bpl, '@Desktop@TDesktopStates@LoadDesktop$qqrp21Desktop@TDesktopState',
-      @Hook_LoadDesktop, LoadDesktopHook)
+      @Hook_LoadDesktop, LoadDesktopHook);
+    // If the mangled symbol no longer resolves in a future IDE build, RealProc
+    // is left nil and the feature silently dies; surface that during testing.
+    if not Assigned(LoadDesktopHook.RealProc) then
+      OutputDebugString('FocusEditor: LoadDesktop hook not installed (symbol unresolved or BPL not loaded).');
+  end
   else
     UnhookFunction(LoadDesktopHook);
   {$ELSE}

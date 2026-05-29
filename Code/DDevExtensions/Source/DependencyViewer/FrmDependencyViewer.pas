@@ -23,7 +23,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, DependencyViewer, ToolsAPI;
+  System.Generics.Defaults, System.Math, FrmBase, DependencyViewer, ToolsAPI;
 
 type
   /// <summary>Direction in which the tree displays dependencies: outgoing (vmUses) or incoming (vmUsedBy).</summary>
@@ -143,6 +143,8 @@ type
     FHighlightedUnits: TStringList;
     /// <summary>All units that participate in any detected cycle (used to mark "(!)" in captions).</summary>
     FUnitsInAnyCycle: TStringList;
+    /// <summary>True while a scan is running; guards against re-entrant scan / close (ScannerProgress pumps messages).</summary>
+    FScanning: Boolean;
     /// <summary>Builds the top-level tree and adds dummy children for lazy expansion.</summary>
     procedure PopulateTree;
     /// <summary>Populates the circular-references list box and updates its header colour.</summary>
@@ -204,6 +206,9 @@ begin
 
   if FormInstance <> nil then
   begin
+    // Re-evaluate Graphviz availability: it may have been installed since the
+    // singleton form was first created.
+    FormInstance.btnExportGraph.Visible := FormInstance.FindGraphvizDot <> '';
     FormInstance.Show;
     FormInstance.BringToFront;
     Exit;
@@ -216,6 +221,14 @@ end;
 
 procedure TFormDependencyViewer.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+
+  // Veto the close while a scan is on the stack (ScannerProgress pumps messages),
+  // otherwise FScanner is freed while ScanProject is still running.
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
 
   FormInstance := nil;
   Action       := caFree;
@@ -277,6 +290,12 @@ var
   Project: IOTAProject;
 begin
 
+  // ScannerProgress pumps the message queue, so the user could click Scan again
+  // (clearing the scanner mid-scan) or close the form (freeing FScanner) while
+  // ScanProject is still on the stack. Refuse re-entry while a scan runs.
+  if FScanning then
+    Exit;
+
   Project := GetActiveProject;
 
   if Project = nil then
@@ -286,6 +305,7 @@ begin
   end;
 
   Screen.Cursor := crHourGlass;
+  FScanning     := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -301,6 +321,7 @@ begin
 
     lblProgress.Caption := Format( 'Scanned %d units.', [ Length( FScanner.GetAllUnits ) ] );
   finally
+    FScanning     := False;
     Screen.Cursor := crDefault;
   end;
 
@@ -904,8 +925,11 @@ begin
         MaxSteps := Length( CircRef.Steps );
     end;
 
-    // Build header row
-    Line := 'Index,StepCount';
+    // Build header row. UnitCount is the number of distinct units in the cycle
+    // (Steps closes back on the first unit, so distinct units = Length - 1),
+    // matching the count reported by the TXT export and avoiding two exports
+    // disagreeing on the same data.
+    Line := 'Index,UnitCount';
 
     for I := 1 to MaxSteps do
       Line := Line + Format( ',Unit%d,UsesType%d', [ I, I ] );
@@ -918,7 +942,7 @@ begin
     for CircRef in FScanner.CircularReferences do
     begin
       Inc( StepCount );
-      Line := Format( '%d,%d', [ StepCount, Length( CircRef.Steps ) ] );
+      Line := Format( '%d,%d', [ StepCount, Max( 0, Length( CircRef.Steps ) - 1 ) ] );
 
       for I := 0 to High( CircRef.Steps ) do
       begin
@@ -968,7 +992,7 @@ begin
     for CircRef in FScanner.CircularReferences do
     begin
       Inc( RefNum );
-      SL.Add( Format( '--- Circular Reference #%d (%d units) ---', [ RefNum, Length( CircRef.Steps ) - 1 ] ) );
+      SL.Add( Format( '--- Circular Reference #%d (%d units) ---', [ RefNum, Max( 0, Length( CircRef.Steps ) - 1 ) ] ) );
       SL.Add( '' );
 
       // Build the chain representation
@@ -1244,7 +1268,15 @@ begin
 
   for Dir in Dirs do
   begin
-    Candidate := IncludeTrailingPathDelimiter( Dir ) + 'dot.exe';
+    // Skip empty entries (consecutive/trailing ';') and strip surrounding
+    // quotes, otherwise IncludeTrailingPathDelimiter('') probes '\dot.exe' at
+    // the drive root and quoted entries build invalid paths.
+    var CleanDir := AnsiDequotedStr( Trim( Dir ), '"' );
+
+    if CleanDir = '' then
+      Continue;
+
+    Candidate := IncludeTrailingPathDelimiter( CleanDir ) + 'dot.exe';
 
     if FileExists( Candidate ) then
     begin

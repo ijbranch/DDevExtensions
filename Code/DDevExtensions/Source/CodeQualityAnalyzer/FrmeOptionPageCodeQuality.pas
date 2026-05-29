@@ -143,6 +143,11 @@ begin
   chkMissingTryFinally.Checked := FPlugin.CheckMissingTryFinally;
   chkMemoryLeaks.Checked := FPlugin.CheckMemoryLeaks;
   edtIgnorePatterns.Text := FPlugin.MemoryLeakIgnorePatterns;
+
+  // The leak detector is not yet implemented; disable its controls so the page
+  // does not advertise a check that produces no results.
+  chkMemoryLeaks.Enabled := False;
+  edtIgnorePatterns.Enabled := False;
 end;
 
 procedure TFrameOptionPageCodeQuality.SaveData;

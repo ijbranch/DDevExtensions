@@ -315,6 +315,11 @@ begin
     end;
   end;
   FComponentClasses.Pack;
+  // FComponents.Delete shifts indices immediately while FComponentClasses[i] is
+  // only niled and packed afterwards; this stays correct only while the two
+  // lists are index-parallel. Catch any future drift here rather than later.
+  Assert(FComponents.Count = FComponentClasses.Count,
+    'DeletePackageComponents: FComponents/FComponentClasses count drift');
   ComponentsChanged;
 end;
 

@@ -165,15 +165,18 @@ begin
 end;
 
 procedure TFormOptions.lblURLClick(Sender: TObject);
+var
+  oLabel: TLabel;
 begin
-  with TLabel(Sender) do
+  oLabel := TLabel(Sender);
+  if ShellExecute(Handle, 'open', PChar(oLabel.Hint), nil, nil, SW_SHOWMAXIMIZED) < 32 then
   begin
-    if ShellExecute(Handle, 'open', PChar(Hint), nil, nil, SW_SHOWMAXIMIZED) < 32 then
-    begin
-      Font.Color := clWindowText;
-      Font.Style := [];
-      OnClick := nil;
-    end;
+    // Tell the user the link could not be opened (e.g. no default handler)
+    // rather than silently grey out the label with no explanation.
+    ShowMessage('Could not open:'#13#10 + oLabel.Hint);
+    oLabel.Font.Color := clWindowText;
+    oLabel.Font.Style := [];
+    oLabel.OnClick := nil;
   end;
 end;
 

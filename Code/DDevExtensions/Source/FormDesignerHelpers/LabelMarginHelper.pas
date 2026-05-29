@@ -19,7 +19,7 @@ unit LabelMarginHelper;
 interface
 
 uses
-  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking, Vcl.StdCtrls;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking, Vcl.StdCtrls;
 
 /// <summary>
 /// Activates or deactivates the TLabel margin override by replacing the VMT entry for
@@ -66,14 +66,22 @@ var
   IsActive: Boolean;
 
 procedure SetLabelMarginActive(Active: Boolean);
+var
+  Patched: Boolean;
 begin
   if Active <> IsActive then
   begin
     IsActive := Active;
     if Active then
-      ReplaceVmtField(TLabel, @TLabel.AfterConstruction, @Label_AfterConstruction)
+      Patched := ReplaceVmtField(TLabel, @TLabel.AfterConstruction, @Label_AfterConstruction)
     else
-      ReplaceVmtField(TLabel, @Label_AfterConstruction, @TLabel.AfterConstruction);
+      Patched := ReplaceVmtField(TLabel, @Label_AfterConstruction, @TLabel.AfterConstruction);
+
+    // ReplaceVmtField returns False when the VMT slot is not found (e.g. an RTL
+    // layout change). Log so a silently failed patch surfaces in testing rather
+    // than presenting as a working option.
+    if not Patched then
+      OutputDebugString('LabelMarginHelper: ReplaceVmtField(TLabel.AfterConstruction) failed.');
   end;
 end;
 

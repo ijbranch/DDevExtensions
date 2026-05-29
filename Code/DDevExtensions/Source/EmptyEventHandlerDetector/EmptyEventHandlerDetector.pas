@@ -230,12 +230,16 @@ begin
         // Look for procedure/function definitions
         if not InMethodBody and (Token.Kind in [tkI_procedure, tkI_function]) then
         begin
+          // Record the line of the procedure/function keyword itself so navigation
+          // lands on the declaration's first line even when the name wraps onto a
+          // following line (Token.Line is 0-based, convert to 1-based).
+          MethodStartLine := Token.Line + 1;
+
           // Get the method name (might be ClassName.MethodName)
           if Lexer.NextToken(Token) and (Token.Kind >= tkIdent) then
           begin
             CurrentClassName := '';
             CurrentMethodName := string(Token.Value);
-            MethodStartLine := Token.Line + 1;  // Token.Line is 0-based, convert to 1-based
 
             // Check for ClassName.MethodName pattern
             if Lexer.NextToken(Token) then

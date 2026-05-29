@@ -297,7 +297,9 @@ begin
 
   // Memory Management - defaults
   FCheckMissingTryFinally := True;
-  FCheckMemoryLeaks := True;
+  // Leak detection is not yet implemented; default off so persisted settings do
+  // not imply a check is running.
+  FCheckMemoryLeaks := False;
   FMemoryLeakIgnorePatterns := '';
 end;
 
@@ -380,6 +382,7 @@ var
   LastClosedBlock: TQABlock;      // the block most recently popped by an 'end'
   ClassObjPending: Boolean;       // a class/object opener awaiting body confirmation
   ParenDepth: Integer;            // parenthesis nesting (to ignore 'const' parameter modifiers)
+  BracketDepth: Integer;          // [] nesting (literals inside an index are treated as array indices)
   UnitName: string;
   Whitelist: TArray<string>;
   I: Integer;
@@ -540,6 +543,7 @@ begin
       OpenTryCount := 0;
       ClassObjPending := False;
       ParenDepth := 0;
+      BracketDepth := 0;
       LastAssignedVar := '';
       LastAssignedLine := 0;
 
@@ -563,13 +567,22 @@ begin
         end;
 
         // Track parenthesis depth so a 'const' parameter modifier
-        // (procedure Foo(const X: ...)) is not mistaken for a const section.
+        // (procedure Foo(const X: ...)) is not mistaken for a const section, and
+        // bracket depth so any literal inside [ ... ] counts as an array index
+        // when AllowMagicInArrayIndex is on (not only the token right after '[').
         if Token.Kind = tkLParan then
           Inc( ParenDepth )
         else if Token.Kind = tkRParan then
         begin
           if ParenDepth > 0 then
             Dec( ParenDepth );
+        end
+        else if Token.Kind = tkLBracket then
+          Inc( BracketDepth )
+        else if Token.Kind = tkRBracket then
+        begin
+          if BracketDepth > 0 then
+            Dec( BracketDepth );
         end;
 
         // Track const/resourcestring sections
@@ -600,12 +613,16 @@ begin
           // Check if it's in the whitelist
           if not IsInWhitelist( string( Token.Value ) ) then
           begin
-            // Check if it's an array index and we should allow it
-            if not ( Plugin.AllowMagicInArrayIndex and ( PrevToken <> nil ) and ( PrevToken.Kind = tkLBracket ) ) then
+            // Check if it's an array index and we should allow it. Any literal
+            // nested inside [ ... ] is treated as an index, not just the token
+            // immediately after '[' (covers A[ I + 5 ] and multi-dim indices).
+            if not ( Plugin.AllowMagicInArrayIndex and ( BracketDepth > 0 ) ) then
             begin
               Issue := Default( TCodeQualityIssue );
               Issue.FileName := FileName;
               Issue.UnitName := UnitName;
+              // TToken.Line is 0-based (see DelphiLexer); +1 yields the 1-based
+              // editor line used by IOTAEditView navigation.
               Issue.Line := Token.Line + 1;
               Issue.Column := Token.Column;
               Issue.Category := icMagicNumber;

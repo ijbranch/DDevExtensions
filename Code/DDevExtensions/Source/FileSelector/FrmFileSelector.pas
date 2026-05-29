@@ -578,6 +578,10 @@ end;
 { TFormFileSelector }
 
 constructor TFormFileSelector.Create(AOwner: TComponent);
+const
+  // The first combo entry is RsFilterAllFields; default the filter to it rather
+  // than coupling the index to an unrelated image-list constant.
+  cFilterAllFields = 0;
 var
   i: Integer;
 begin
@@ -591,7 +595,7 @@ begin
   for i := 0 to ListView.Columns.Count - 1 do
     if ListView.Columns[i].Tag = 0 then
       cbxFilterField.Items.Add(ListView.Columns[i].Caption);
-  cbxFilterField.ItemIndex := imgModuleUnit;
+  cbxFilterField.ItemIndex := cFilterAllFields;
 end;
 
 destructor TFormFileSelector.Destroy;
@@ -1189,7 +1193,7 @@ begin
           btnUseUnit.Enabled := False;
       if FEditor <> nil then
         if SameText(TInfo(ListView.Selected.Data).Name, ChangeFileExt(ExtractFileName(FEditor.FileName), '')) then
-          btnUseUnit.Enabled := False;;
+          btnUseUnit.Enabled := False;
     end;
   end;
   mniOpenFile.Enabled := btnOpen.Enabled;

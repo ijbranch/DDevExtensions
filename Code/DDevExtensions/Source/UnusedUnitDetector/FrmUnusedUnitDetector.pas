@@ -101,6 +101,8 @@ type
   public
     /// <summary>Shows or focuses the singleton detector form.</summary>
     class procedure Execute;
+    /// <summary>Force-closes the singleton form, if open, so it cannot outlive the owning plugin on unload.</summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -124,6 +126,14 @@ begin
 
 end;
 
+/// <summary>Escapes a value for an RFC 4180 quoted CSV field by doubling any embedded double-quotes.</summary>
+function CsvField( const Value: string ): string;
+begin
+
+  Result := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
+
+end;
+
 class procedure TFormUnusedUnitDetector.Execute;
 begin
 
@@ -136,6 +146,14 @@ begin
 
   FormInstance := TFormUnusedUnitDetector.Create( Application );
   FormInstance.Show;
+
+end;
+
+class procedure TFormUnusedUnitDetector.CloseInstance;
+begin
+
+  if FormInstance <> nil then
+    FreeAndNil( FormInstance );
 
 end;
 
@@ -452,10 +470,10 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 )
+          CsvField( Item.Caption ),
+          CsvField( SafeGetSubItem( Item, 0 ) ),
+          CsvField( SafeGetSubItem( Item, 1 ) ),
+          CsvField( SafeGetSubItem( Item, 2 ) )
         ] ) );
       end;
 

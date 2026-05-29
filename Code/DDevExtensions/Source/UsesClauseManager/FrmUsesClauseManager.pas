@@ -389,6 +389,16 @@ begin
     Exit;
   end;
 
+  // The active module may have changed since Analyze ran; refuse to rewrite a
+  // file other than the one that was analysed.
+  if ( FCurrentFileName <> '' ) and not SameText( SourceEditor.FileName, FCurrentFileName ) then
+  begin
+    ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
+      'Please re-analyse before applying changes.',
+      [ ExtractFileName( FCurrentFileName ), ExtractFileName( SourceEditor.FileName ) ] ) );
+    Exit;
+  end;
+
   Screen.Cursor := crHourGlass;
   btnApply.Enabled := False;
   try
@@ -664,6 +674,15 @@ begin
     if SourceEditor = nil then
     begin
       ShowMessage( 'No source editor found.' );
+      Exit;
+    end;
+
+    // Refuse to rewrite a file other than the one that was analysed.
+    if ( FCurrentFileName <> '' ) and not SameText( SourceEditor.FileName, FCurrentFileName ) then
+    begin
+      ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
+        'Please re-analyse before moving units.',
+        [ ExtractFileName( FCurrentFileName ), ExtractFileName( SourceEditor.FileName ) ] ) );
       Exit;
     end;
 

@@ -245,6 +245,9 @@ begin
     lblSummary.Visible  := False;
     Application.ProcessMessages;
 
+    // Re-apply patterns here, not just in FormCreate: this is a persistent
+    // singleton, so Options edits made while it stays open must take effect.
+    FScanner.SetPatterns( TodoAggregatorPlugin.Patterns );
     FScanner.ScanProject( Project, FTodoItems, ScannerProgress );
     PopulateList;
 
@@ -351,6 +354,21 @@ begin
 
 end;
 
+/// <summary>Maps a priority string (High/Normal/Low) to a sortable rank; unknown values rank last.</summary>
+function PriorityRank( const Priority: string ): Integer;
+begin
+
+  if SameText( Priority, 'High' ) then
+    Result := 1
+  else if SameText( Priority, 'Normal' ) then
+    Result := 2
+  else if SameText( Priority, 'Low' ) then
+    Result := 3
+  else
+    Result := High( Integer );
+
+end;
+
 procedure TFormTodoAggregator.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
@@ -382,18 +400,9 @@ begin
   if FSortColumn = 3 then
     Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else if FSortColumn = 2 then
-  begin
-    // Priority sorting: High > Normal > Low
-    if SameText( S1, 'High' ) then S1 := '1'
-    else if SameText( S1, 'Normal' ) then S1 := '2'
-    else if SameText( S1, 'Low' ) then S1 := '3';
-
-    if SameText( S2, 'High' ) then S2 := '1'
-    else if SameText( S2, 'Normal' ) then S2 := '2'
-    else if SameText( S2, 'Low' ) then S2 := '3';
-
-    Compare := CompareText( S1, S2 );
-  end
+    // Priority sorting: High > Normal > Low; map to integer ranks and compare
+    // numerically so any unexpected priority string sorts deterministically last.
+    Compare := PriorityRank( S1 ) - PriorityRank( S2 )
   else
     Compare := CompareText( S1, S2 );
 
@@ -490,7 +499,14 @@ begin
         ] ) );
     end;
 
-    Clipboard.AsText := SL.Text;
+    // The clipboard can be transiently locked by another process; show a concise
+    // message instead of letting a raw EClipboardException reach the user.
+    try
+      Clipboard.AsText := SL.Text;
+    except
+      on E: Exception do
+        ShowMessage( 'Could not copy to clipboard:'#13#10 + E.Message );
+    end;
   finally
     SL.Free;
   end;

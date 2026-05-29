@@ -125,7 +125,7 @@ begin
         end;
         if Assigned(ProgressBar) and (Items.Count > 0) and (i mod 25 = 0) then
         begin
-          ProgressBar.Position := i * 100 div Items.Count;
+          ProgressBar.Position := Int64(i) * 100 div Items.Count;
           Application.ProcessMessages;
         end;
       end;

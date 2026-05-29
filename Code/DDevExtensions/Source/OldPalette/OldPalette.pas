@@ -864,8 +864,13 @@ begin
     Palette.Buttons[i].Hint := Hint;
 
     IsDefaultImage := False;
-    if IsWin32Personality and FIsFormDesigner then
-      Palette.Buttons[i].Glyph.Handle := LoadComponentBitmap(TComponentClass(GetClass(Item.Name)), @IsDefaultImage);
+    // Item.Name is a palette caption, not guaranteed to be a registered class
+    // name; GetClass returns nil for unknown classes, so fall straight through
+    // to the default-image path rather than hard-casting nil.
+    if IsWin32Personality and FIsFormDesigner and (GetClass(Item.Name) <> nil) then
+      Palette.Buttons[i].Glyph.Handle := LoadComponentBitmap(TComponentClass(GetClass(Item.Name)), @IsDefaultImage)
+    else
+      IsDefaultImage := True;
     if IsDefaultImage then
     begin
       { we do not have a package for this item }

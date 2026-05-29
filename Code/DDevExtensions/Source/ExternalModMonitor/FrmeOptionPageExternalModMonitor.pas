@@ -98,12 +98,20 @@ end;
 procedure TFrameOptionPageExternalModMonitor.SaveData;
 var
   Val: Integer;
+  Config: TExternalModMonitorConfig;
+  WasActive: Boolean;
 begin
 
   if not ( FConfig is TExternalModMonitorConfig ) then
     Exit;
 
-  ( FConfig as TExternalModMonitorConfig ).Active := cbxActive.Checked;
+  Config := FConfig as TExternalModMonitorConfig;
+
+  // Detect an Active transition so the live watch set is brought in sync rather
+  // than only flipping the flag (which left the watch thread running on disable
+  // and never picked up open projects on enable until an IDE restart).
+  WasActive := Config.Active;
+  Config.Active := cbxActive.Checked;
 
   if TryStrToInt( edtDebounceMs.Text, Val ) and ( Val >= 50 ) then
     ( FConfig as TExternalModMonitorConfig ).DebounceMs := Val
@@ -118,7 +126,10 @@ begin
   else
     ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs := 3000;
 
-  ( FConfig as TExternalModMonitorConfig ).Save;
+  Config.Save;
+
+  if Config.Active <> WasActive then
+    Config.ApplyActiveState;
 
 end;
 

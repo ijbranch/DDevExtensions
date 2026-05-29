@@ -449,10 +449,13 @@ begin
         if FEdit.Text <> '' then
         begin
           EditTextLen := Length(FEdit.Text);
-          MinLenDiff := Length(List[0]) - EditTextLen;
+          // Pick the entry whose length is closest to the typed text. The
+          // difference must be absolute, otherwise an entry shorter than the
+          // text always wins regardless of how poorly it matches.
+          MinLenDiff := Abs(Length(List[0]) - EditTextLen);
           for i := 1 to List.Count - 1 do
           begin
-            Len := Length(List[i]) - EditTextLen;
+            Len := Abs(Length(List[i]) - EditTextLen);
             if Len < MinLenDiff then
             begin
               MinLenDiff := Len;
@@ -618,21 +621,28 @@ begin
       end;
     end;}
 
-    if Reg.OpenKeyReadOnly('\Software\DelphiTools\DDevExtensions\' + DelphiVersion + '\ComponentSelector') then
-    begin
-      if Reg.ValueExists('Toolbar') and (Reg.GetDataSize('Toolbar') = SizeOf(TToolbarInfo)) then
+    // A locked/corrupt HKCU subtree must not propagate ERegistryException; the
+    // settings simply fall back to their defaults.
+    try
+      if Reg.OpenKeyReadOnly('\Software\DelphiTools\DDevExtensions\' + DelphiVersion + '\ComponentSelector') then
       begin
-        Reg.ReadBinaryData('Toolbar', ToolbarInfo, SizeOf(TToolbarInfo));
-        FToolBar.Left := ToolbarInfo.Left;
-        FToolBar.Top := ToolbarInfo.Top;
-        FToolBar.Visible := ToolbarInfo.Visible;
+        if Reg.ValueExists('Toolbar') and (Reg.GetDataSize('Toolbar') = SizeOf(TToolbarInfo)) then
+        begin
+          Reg.ReadBinaryData('Toolbar', ToolbarInfo, SizeOf(TToolbarInfo));
+          FToolBar.Left := ToolbarInfo.Left;
+          FToolBar.Top := ToolbarInfo.Top;
+          FToolBar.Visible := ToolbarInfo.Visible;
+        end;
+        if Reg.ValueExists('SimpleSearch') then
+          FEdit.CheckBoxSimpleSearch.Checked := Reg.ReadInteger('SimpleSearch') <> 0;
+        if Reg.ValueExists('SortByPalette') then
+          FEdit.CheckBoxPaletteSort.Checked := Reg.ReadInteger('SortByPalette') <> 0;
+        if Reg.ValueExists('Hotkey') then
+          SetHotkey( Reg.ReadInteger('Hotkey') );
       end;
-      if Reg.ValueExists('SimpleSearch') then
-        FEdit.CheckBoxSimpleSearch.Checked := Reg.ReadInteger('SimpleSearch') <> 0;
-      if Reg.ValueExists('SortByPalette') then
-        FEdit.CheckBoxPaletteSort.Checked := Reg.ReadInteger('SortByPalette') <> 0;
-      if Reg.ValueExists('Hotkey') then
-        SetHotkey( Reg.ReadInteger('Hotkey') );
+    except
+      on E: Exception do
+        OutputDebugString( PChar( 'ComponentSelector.LoadToolbarConfig failed: ' + E.ClassName + ': ' + E.Message ) );
     end;
   finally
     Reg.Free;
@@ -647,16 +657,23 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKey('\Software\DelphiTools\DDevExtensions\' + DelphiVersion + '\ComponentSelector', True) then
-    begin
-      ToolbarInfo.Left := FToolBar.Left;
-      ToolbarInfo.Top := FToolBar.Top;
-      ToolbarInfo.Visible := FToolBar.Visible;
-      Reg.WriteBinaryData('Toolbar', ToolbarInfo, SizeOf(TToolbarInfo));
+    // SaveToolbarConfig also runs from Destroy: a registry failure must never
+    // re-raise out of the destructor, so swallow and log.
+    try
+      if Reg.OpenKey('\Software\DelphiTools\DDevExtensions\' + DelphiVersion + '\ComponentSelector', True) then
+      begin
+        ToolbarInfo.Left := FToolBar.Left;
+        ToolbarInfo.Top := FToolBar.Top;
+        ToolbarInfo.Visible := FToolBar.Visible;
+        Reg.WriteBinaryData('Toolbar', ToolbarInfo, SizeOf(TToolbarInfo));
 
-      Reg.WriteBool('SimpleSearch', FEdit.CheckBoxSimpleSearch.Checked);
-      Reg.WriteBool('SortByPalette', FEdit.CheckBoxPaletteSort.Checked);
-      Reg.WriteInteger('Hotkey', GetHotkey);
+        Reg.WriteBool('SimpleSearch', FEdit.CheckBoxSimpleSearch.Checked);
+        Reg.WriteBool('SortByPalette', FEdit.CheckBoxPaletteSort.Checked);
+        Reg.WriteInteger('Hotkey', GetHotkey);
+      end;
+    except
+      on E: Exception do
+        OutputDebugString( PChar( 'ComponentSelector.SaveToolbarConfig failed: ' + E.ClassName + ': ' + E.Message ) );
     end;
     {if Reg.OpenKey('\Software\DelphiTools\DelphiSpeedUp\' + DelphiVersion, False) then
     begin

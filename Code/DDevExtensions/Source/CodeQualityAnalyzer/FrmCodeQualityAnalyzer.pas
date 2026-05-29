@@ -260,12 +260,12 @@ begin
           // If no editor source, try to read from file
           if ( Source = '' ) and FileExists( ModuleInfo.FileName ) then
           begin
-            with TStringList.Create do
+            var Sl := TStringList.Create;
             try
-              LoadFromFile( ModuleInfo.FileName );
-              Source := UTF8String( Text );
+              Sl.LoadFromFile( ModuleInfo.FileName );
+              Source := UTF8String( Sl.Text );
             finally
-              Free;
+              Sl.Free;
             end;
           end;
 
@@ -529,13 +529,15 @@ begin
 
       for Item in ListView.Items do
       begin
+        // Double embedded quotes per RFC 4180 so descriptions / previews
+        // containing quotes or commas cannot break the CSV column alignment.
         SL.Add( Format( '"%s","%s","%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 )
+          StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 2 ), '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 4 ), '"', '""', [ rfReplaceAll ] )
         ] ) );
       end;
 

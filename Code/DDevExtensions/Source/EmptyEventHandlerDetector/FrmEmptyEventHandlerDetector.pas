@@ -108,6 +108,12 @@ begin
     Result := '';
 end;
 
+/// <summary>Escapes a value for an RFC 4180 quoted CSV field by doubling any embedded double-quotes.</summary>
+function CsvField(const Value: string): string;
+begin
+  Result := System.SysUtils.StringReplace(Value, '"', '""', [rfReplaceAll]);
+end;
+
 var
   FormEmptyEventHandlerDetectorInstance: TFormEmptyEventHandlerDetector = nil;
 
@@ -364,12 +370,17 @@ begin
         if Supports(Module.ModuleFileEditors[I], IOTASourceEditor, SourceEditor) then
         begin
           SourceEditor.Show;
-          EditView := SourceEditor.EditViews[0];
-          if EditView <> nil then
+          // A freshly opened editor can momentarily report zero edit views;
+          // guard the index rather than risk an out-of-range access.
+          if SourceEditor.EditViewCount > 0 then
           begin
-            EditView.Position.Move(LineNum, 1);
-            EditView.MoveViewToCursor;
-            EditView.Paint;
+            EditView := SourceEditor.EditViews[0];
+            if EditView <> nil then
+            begin
+              EditView.Position.Move(LineNum, 1);
+              EditView.MoveViewToCursor;
+              EditView.Paint;
+            end;
           end;
           Break;
         end;
@@ -429,10 +440,10 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add(Format('"%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem(Item, 0),
-          SafeGetSubItem(Item, 1),
-          SafeGetSubItem(Item, 2)
+          CsvField(Item.Caption),
+          CsvField(SafeGetSubItem(Item, 0)),
+          CsvField(SafeGetSubItem(Item, 1)),
+          CsvField(SafeGetSubItem(Item, 2))
         ]));
       end;
 

@@ -250,7 +250,14 @@ begin
   if AppDataDirectory = '' then
     AppDataDirectory := ExtractFileDir(ExtractFileDir((ParamStr(0))));
   AppDataDirectory := AppDataDirectory + '\DDevExtensions';
-  ForceDirectories(AppDataDirectory);
+  // If the AppData directory cannot be created (locked-down / redirected APPDATA),
+  // fall back beside the executable so later config saves are not silently lost.
+  if not ForceDirectories(AppDataDirectory) then
+  begin
+    OutputDebugString(PChar('DDevExtensions: cannot create ' + AppDataDirectory +
+      '; falling back to the executable directory.'));
+    AppDataDirectory := ExtractFileDir(ParamStr(0));
+  end;
 end;
 
 procedure InstallHooks;

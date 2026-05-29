@@ -421,6 +421,10 @@ begin
 end;
 
 procedure TWatchThread.ProcessNotifications( Watch: PDirectoryWatch );
+const
+  // Offset of the FileName field within FILE_NOTIFY_INFORMATION
+  // (NextEntryOffset + Action + FileNameLength, each a DWORD).
+  cHeaderSize = 3 * SizeOf( DWORD );
 var
   Info: PFileNotifyInformation;
   Offset: DWORD;
@@ -430,9 +434,16 @@ begin
 
   Offset := 0;
   repeat
+    // A busy directory can overflow the fixed buffer; ReadDirectoryChangesW then
+    // truncates and a final record can claim a length running past the buffer
+    // end. Validate every record stays in bounds before reading or Moving it.
+    if Offset + cHeaderSize > SizeOf( Watch.Buffer ) then
+      Break;
+
     Info := PFileNotifyInformation( @Watch.Buffer[Offset] );
 
-    if Info.Action = FILE_ACTION_MODIFIED then
+    if ( Info.Action = FILE_ACTION_MODIFIED ) and
+       ( Offset + cHeaderSize + Info.FileNameLength <= SizeOf( Watch.Buffer ) ) then
     begin
       SetLength( FileName, Info.FileNameLength div SizeOf( WChar ) );
       Move( Info.FileName[0], FileName[1], Info.FileNameLength );

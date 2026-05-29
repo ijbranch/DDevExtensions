@@ -1021,9 +1021,11 @@ begin
     begin
       FBuildStatistics.FinalizeBuild( Succeeded );
 
-      // Run style checker if enabled and build succeeded
+      // Run style checker if enabled and build succeeded. AfterCompile is an
+      // IOTAIDENotifier callback, so a checker/parse failure must never escape
+      // into the IDE's post-compile pipeline; log and swallow instead.
       if Succeeded and FRunStyleCheckAfterCompile and ( Project <> nil ) then
-      begin
+      try
         StyleChecker := TStyleChecker.Create;
         try
           if StyleChecker.CheckProject( Project, CheckerViolations, nil ) then
@@ -1047,6 +1049,10 @@ begin
         finally
           StyleChecker.Free;
         end;
+      except
+        on E: Exception do
+          OutputDebugString( PChar( 'CompileProgress.AfterCompile style-check failed: ' +
+            E.ClassName + ': ' + E.Message ) );
       end;
 
       if FShowBuildStatisticsAfterCompile and ( FBuildStatistics.UnitCount > 0 ) then

@@ -115,6 +115,8 @@ type
     constructor Create;
     /// <summary>Stops watching, removes any tray icon, releases timers and notifiers.</summary>
     destructor Destroy; override;
+    /// <summary>Syncs the runtime watch set to the current <see cref="Active"/> flag; call after toggling Active at runtime.</summary>
+    procedure ApplyActiveState;
   published
     /// <summary>Master switch that enables or disables external file monitoring.</summary>
     property Active: Boolean read FActive write FActive;
@@ -281,6 +283,22 @@ begin
 
 end;
 
+procedure TExternalModMonitorConfig.ApplyActiveState;
+begin
+
+  // Keep the live watch set in step with the persisted Active flag: on enable,
+  // pick up projects already open; on disable, drop all watches and the tray icon
+  // (otherwise the background thread and directory handles linger until restart).
+  if FActive then
+    ScanAndWatchOpenProjects
+  else
+  begin
+    FFileWatcher.ClearWatches;
+    Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
+  end;
+
+end;
+
 procedure TExternalModMonitorConfig.ScanAndWatchOpenProjects;
 var
   ProjectGroup: IOTAProjectGroup;
@@ -295,9 +313,11 @@ begin
   begin
     if Supports( ModuleServices.Modules[I], IOTAProjectGroup, ProjectGroup ) then
     begin
-      // Watch each project in the group
-      // Projects fire their own ofnProjectDesktopLoad so this handles
-      // the case where the plugin loads after projects are already open
+      // Watch every project in the group explicitly. Relying on each project's
+      // ofnProjectDesktopLoad is not enough: that notifier may not fire for
+      // projects already open at plugin load (and is unregistered on Win64).
+      for var K := 0 to ProjectGroup.ProjectCount - 1 do
+        StartWatchingProject( ProjectGroup.Projects[K].FileName );
     end;
 
     if Supports( ModuleServices.Modules[I], IOTAProject ) then

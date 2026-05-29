@@ -394,8 +394,6 @@ begin
       TProjectSettingList.FillOptionNames(List);
       for i := 0 to High(Names) do
       begin
-        if Names[i].Name = 'Defines' then
-          Write;
         if Names[i].Kind in [tkClass, tkInterface, tkArray, tkRecord, tkDynArray] then
           Continue;
 

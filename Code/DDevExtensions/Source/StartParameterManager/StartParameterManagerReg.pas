@@ -231,6 +231,11 @@ procedure TStartParameterManager.StartParameterUpdate(Sender: TObject);
 var
   S: string;
 begin
+  // FActionCustomize is dead scaffolding (its creation is commented out); guard
+  // the dereference so this OnUpdate cannot AV if the action is ever re-wired.
+  if not Assigned(FActionCustomize) then
+    Exit;
+
   FActionCustomize.Enabled := GetActiveProject <> nil;
   if TStartParameterControl.GetActiveParams(S, False) then
     FActionCustomize.Hint := S

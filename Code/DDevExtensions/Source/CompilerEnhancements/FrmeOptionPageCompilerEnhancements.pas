@@ -160,7 +160,11 @@ end;
 
 procedure TFrameOptionPageCompilerEnhancements.SetUserData(UserData: TObject);
 begin
-  FCompilerEnhancements := UserData as TCompilerEnhancements;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if not (UserData is TCompilerEnhancements) then
+    FCompilerEnhancements := nil
+  else
+    FCompilerEnhancements := TCompilerEnhancements(UserData);
 end;
 
 procedure TFrameOptionPageCompilerEnhancements.cbxTreatWarningsAsErrorsClick(
@@ -176,6 +180,9 @@ end;
 
 procedure TFrameOptionPageCompilerEnhancements.LoadData;
 begin
+  if not Assigned(FCompilerEnhancements) then
+    Exit;
+
   cbxActive.Checked := FCompilerEnhancements.Active;
   cbxTreatWarningsAsErrors.Checked := FCompilerEnhancements.TreatWarningsAsErrors;
   mnoExceptWarnings.Lines.Text := FCompilerEnhancements.ExceptWarnings.CommaText;
@@ -185,6 +192,9 @@ end;
 
 procedure TFrameOptionPageCompilerEnhancements.SaveData;
 begin
+  if not Assigned(FCompilerEnhancements) then
+    Exit;
+
   FCompilerEnhancements.TreatWarningsAsErrors := cbxTreatWarningsAsErrors.Checked;
   FCompilerEnhancements.ExceptWarnings.CommaText := mnoExceptWarnings.Lines.Text;
   FCompilerEnhancements.UpdateExceptWarnings;
@@ -284,12 +294,10 @@ begin
 end;
 
 procedure TCompilerEnhancements.UpdateExceptWarnings;
-var
-  i: Integer;
 begin
   TStringList(ExceptWarnings).Sorted := False;
-  for i := 0 to ExceptWarnings.Count - 1 do
-    ExceptWarnings[i] := Trim(DequoteStr(ExceptWarnings[i]));
+  for var iI := 0 to ExceptWarnings.Count - 1 do
+    ExceptWarnings[iI] := Trim(DequoteStr(ExceptWarnings[iI]));
   TStringList(ExceptWarnings).Sorted := True;
 end;
 

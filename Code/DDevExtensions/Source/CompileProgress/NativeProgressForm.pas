@@ -516,7 +516,10 @@ begin
     Lbl.Caption := '';
     Lbl.Left := Form.ClientWidth - 8 - Lbl.Width;
     SetMaxFiles(FMaxFiles);
-    Lbl.Top := FProgressBar.BoundsRect.Bottom + 4;
+    // SetMaxFiles leaves FProgressBar nil when FMaxFiles <= 0; fall back to the
+    // label's current top rather than dereferencing a nil progress bar.
+    if Assigned(FProgressBar) then
+      Lbl.Top := FProgressBar.BoundsRect.Bottom + 4;
     Lbl.Parent := Form;
   end;
 

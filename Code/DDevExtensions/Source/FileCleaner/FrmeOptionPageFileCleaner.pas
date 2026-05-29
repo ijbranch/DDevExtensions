@@ -134,11 +134,18 @@ end;
 
 procedure TFrameOptionPageFileCleaner.SetUserData(UserData: TObject);
 begin
-  FFileCleaner := UserData as TFileCleaner;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if not (UserData is TFileCleaner) then
+    FFileCleaner := nil
+  else
+    FFileCleaner := TFileCleaner(UserData);
 end;
 
 procedure TFrameOptionPageFileCleaner.LoadData;
 begin
+  if not Assigned(FFileCleaner) then
+    Exit;
+
   cbxActive.Checked := FFileCleaner.Active;
   cbxDeleteDdp.Checked := FFileCleaner.DeleteDdp;
   cbxRemoveEmptyModel.Checked := FFileCleaner.RemoveEmptyModel;
@@ -155,6 +162,9 @@ end;
 
 procedure TFrameOptionPageFileCleaner.SaveData;
 begin
+  if not Assigned(FFileCleaner) then
+    Exit;
+
   FFileCleaner.DeleteDdp := cbxDeleteDdp.Checked;
   FFileCleaner.RemoveEmptyHistory := cbxRemoveEmptyHistory.Checked;
   FFileCleaner.RemoveEmptyModel := cbxRemoveEmptyModel.Checked;
@@ -183,8 +193,10 @@ end;
 
 destructor TFileCleaner.Destroy;
 begin
-  FModuleNotifier.Free;
+  // Stop AfterSave processing before tearing down the notifier (the old
+  // Active := False after the Free was a no-op on an object being destroyed).
   Active := False;
+  FreeAndNil(FModuleNotifier);
   inherited Destroy;
 end;
 
@@ -211,7 +223,9 @@ begin
   if Active then
   begin
     Filename := Data.Module.FileName;
-    Ext := AnsiLowerCase(ExtractFileExt(FileName));
+    // Use the Unicode-safe LowerCase rather than the legacy ANSI round-trip,
+    // which can corrupt non-ASCII path characters on non-Latin code pages.
+    Ext := LowerCase(ExtractFileExt(FileName));
     IsProjectExt := (Ext = '.dpr') or (Ext = '.dpk') or (Ext = '.bpr') or (Ext = '.bpk') or (Ext = '.bdsproj');
     if (Ext = '.pas') or (Ext = '.cpp') or (Ext = '.dfm') or (Ext = '.nfm') or (Ext = '.xfm') or (Ext = '.h') or
        IsProjectExt then

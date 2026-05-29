@@ -413,7 +413,10 @@ begin
       try
         FTree.Tree.SetFocus;
       except
-        on EInvalidOperation do ;
+        // The tree may not be focusable (e.g. not currently shown); this is a
+        // best-effort focus, so log and continue rather than failing the search.
+        on E: EInvalidOperation do
+          OutputDebugString( PChar( 'StrucViewSearch: SetFocus skipped - ' + E.Message ) );
       end;
       if (BorlandIDEServices as IOTAStructureView).GetStructureContext.StructureType = SourceCodeStructureType then
         FTree.DblClick;

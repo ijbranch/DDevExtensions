@@ -320,7 +320,14 @@ begin
   try
     Source := LoadTextFileToUtf8String( UnitPath, 0 );
   except
-    Exit;
+    on E: Exception do
+    begin
+      // Do not swallow silently: a file that fails to load is dropped from the
+      // export database and degrades later placement analysis, so log it.
+      OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - %s: %s',
+        [ UnitPath, E.ClassName, E.Message ] ) ) );
+      Exit;
+    end;
   end;
 
   UnitName := ChangeFileExt( ExtractFileName( UnitPath ), '' );

@@ -127,7 +127,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers;
+  System.Math, ToolsAPIHelpers;
 
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
@@ -491,7 +491,9 @@ begin
         begin
           EditView := SourceEditor.EditViews[ 0 ];
           EditView.SetTopLeft( Violation.Line, 1 );
-          EditView.Center( Violation.Line, Violation.Column );
+          // Synthetic violations (LongMethod, EmptyFinally) carry Column 0;
+          // IOTAEditView positions are 1-based, so clamp to a sensible caret.
+          EditView.Center( Violation.Line, Max( 1, Violation.Column ) );
         end;
 
         Break;

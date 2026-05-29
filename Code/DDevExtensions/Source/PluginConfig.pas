@@ -133,7 +133,7 @@ function Configuration: TConfiguration;
 implementation
 
 uses
-  FrmDDevExtOptions, IDEUtils, IDEHooks, Main;
+  Winapi.Windows, FrmDDevExtOptions, IDEUtils, IDEHooks, Main;
 
 var
   GlobalConfiguration: TConfiguration;
@@ -169,8 +169,13 @@ begin
   try
     LoadFromFile(FFilename);
     Save; // save to Configuration
-    DeleteFile(FFilename);
+    System.SysUtils.DeleteFile(FFilename);
   except
+    on E: Exception do
+      // Do not swallow silently: a corrupt legacy file leaves migration half-done
+      // and the stale file undeleted on every start, so record why.
+      OutputDebugString(PChar('PluginConfig: legacy settings migration failed for ' +
+        FFilename + ' - ' + E.ClassName + ': ' + E.Message));
   end;
 
   RegisterOptionPages;

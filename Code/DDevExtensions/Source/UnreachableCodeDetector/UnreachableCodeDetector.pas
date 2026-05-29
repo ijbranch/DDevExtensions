@@ -483,6 +483,7 @@ end;
 function TUnreachableCodeScanner.GetCodePreview( const Source: string; StartPos: Integer ): string;
 var
   EndPos, I: Integer;
+  Truncated: Boolean;
 begin
 
   // Get up to 50 characters of the code for preview
@@ -499,9 +500,14 @@ begin
     Inc( I );
   end;
 
+  // Truncated only when the 50-char cap was hit with more non-EOL content
+  // remaining; whitespace trimming must not influence the indicator.
+  Truncated := ( I >= 50 ) and ( EndPos <= Length( Source ) ) and
+               not CharInSet( Source[ EndPos ], [ #10, #13 ] );
+
   Result := Trim( Copy( Source, StartPos, EndPos - StartPos ) );
 
-  if Length( Result ) >= 50 then
+  if Truncated then
     Result := Result + '...';
 
 end;

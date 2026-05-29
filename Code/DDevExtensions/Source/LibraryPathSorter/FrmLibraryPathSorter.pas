@@ -269,7 +269,12 @@ begin
     Exit;
   end;
 
-  FormLibraryPathSorterInstance := TFormLibraryPathSorter.Create( Application );
+  // Create into a local first: FormCreate does substantial work (registry reads,
+  // dictionary builds) that can raise. The VCL frees the form on a constructor
+  // exception, so assigning the global only after success avoids leaving it as a
+  // dangling non-nil pointer that a later Execute would Show on freed memory.
+  var Instance := TFormLibraryPathSorter.Create( Application );
+  FormLibraryPathSorterInstance := Instance;
   FormLibraryPathSorterInstance.Show;
 end;
 
@@ -488,7 +493,9 @@ begin
     Item.SubItems.Add( Backup.PathType.ToDisplayName );
     Item.SubItems.Add( Backup.Platform );
     Item.SubItems.Add( Backup.Description );
-    Item.Data := Pointer( NativeInt( Ord( Backup.PathType ) ) );
+    // (Item.Data is intentionally not used: Restore/Delete resolve the backup by
+    // ListView index into GetAllBackups, so storing a tag here would be dead and
+    // misleading.)
   end;
 
   btnRestore.Enabled := False;
@@ -1285,7 +1292,11 @@ begin
     Exit;
   end;
 
-  Description := InputBox( 'Backup Description', 'Enter a description for this backup:', 'Manual backup' );
+  // InputQuery returns False on Cancel (InputBox cannot distinguish Cancel from
+  // an unedited default), so a cancelled dialog no longer creates a backup.
+  Description := 'Manual backup';
+  if not InputQuery( 'Backup Description', 'Enter a description for this backup:', Description ) then
+    Exit;
 
   if LibraryPathSorterPlugin.BackupManager.CreateBackup(
        GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, Description ) then

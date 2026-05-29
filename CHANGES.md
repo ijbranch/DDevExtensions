@@ -4,6 +4,82 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-05-30 - v3.19.9 - UI workflow audit: Low-severity fixes
+
+Addresses the 96 Low-severity findings from the UI workflow audit across the
+feature modules. Builds clean on Win32 and Win64 (D_D130, Release). Same
+priorities throughout: integrity (no wrong results / corrupt state), reliability
+(no unhandled exceptions, use-after-free or silent failures), performance
+(scanning stays single-pass). Substantive items were fixed; cosmetic items, or
+ones already resolved by earlier refactors, or where a fix would be a large
+speculative rewrite, are recorded as documented notes at the end.
+
+### Fixed - reliability (crashes / exceptions / lifetime)
+
+- **Option-page frames no longer trust the framework blindly.** `SetUserData` now validates the cast (`is` test, nil on mismatch) and `LoadData`/`SaveData` early-exit when the config is not assigned, in Compile Backup, Compiler Enhancements and File Cleaner — a wrong/nil `UserData` can no longer AV or raise `EInvalidCast` during page setup. (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageCompilerEnhancements.pas`, `FrmeOptionPageFileCleaner.pas`
+- **`AfterCompile` style-check wrapped in try/except** so a checker/parse failure can no longer escape into the IDE's post-compile notifier pipeline. (2026-05-30) — `CompileProgress.pas`
+- **Native progress label** no longer dereferences a nil `FProgressBar` when `SetMaxFiles` left it unset (`FMaxFiles <= 0`). (2026-05-30) — `NativeProgressForm.pas`
+- **Debugger step-into-skip** validates the dcc32 module handle and both exports, uses `GetModuleHandle` instead of leaking a `LoadLibrary` handle, and only installs the `FindSourceLine` redirect once the byte-signature match and dependency thunks resolved (otherwise the hook could call nil). (2026-05-30) — `DbgStepIntoSkip.pas`
+- **Dependency Viewer close-during-scan** guarded with an `FScanning` re-entrancy/close veto (`ScannerProgress` pumps the message queue). (2026-05-30) — `FrmDependencyViewer.pas`
+- **Keybindings `SetActive`** uses `Supports(BorlandIDEServices, IOTAKeyboardServices)` instead of a hard `as` cast, so the destructor-time disable cannot raise `EIntfCastError` during (Win64) shutdown. (2026-05-30) — `FrmeOptionPageKeybindings.pas`
+- **IDE Path Sorter** singleton creates into a local and only assigns the global after a successful constructor (a `FormCreate` exception no longer leaves a dangling non-nil instance), and `Create Backup` uses `InputQuery` so Cancel no longer creates a backup. (2026-05-30) — `FrmLibraryPathSorter.pas`
+- **Project Settings**: `Set Versioninfo` enable test guards `GetActiveProject <> nil` before `GetPersonality`; the settings submenu guards `Items[Count-1]`; the Versioninfo dialog wraps `LoadFromIconFile` in try/except and replaces an `Assert`-only control lookup with a release-safe runtime guard. (2026-05-30) — `ProjectSettings.pas`, `FrmProjectSettingsSetVersioninfo.pas`
+- **Unused Unit Detector** unload closes any open detector form (new `CloseInstance`) and frees the plugin under an `Assigned` guard, so a stale form cannot reference freed plugin state. (2026-05-30) — `UnusedUnitDetector.pas`, `FrmUnusedUnitDetector.pas`
+- **External Mod Monitor**: toggling `Active` in the options page now syncs the live watch set (`ApplyActiveState` — clears watches + tray icon on disable, scans open projects on enable) instead of only flipping the flag; the project-group branch now watches each member project; `ProcessNotifications` validates every `FILE_NOTIFY_INFORMATION` record stays within the 4 KB buffer before `Move` (truncated final record can no longer read out of bounds). (2026-05-30) — `ExternalModMonitor.pas`, `FrmeOptionPageExternalModMonitor.pas`, `FileWatcher.pas`
+- **TODO Aggregator** clipboard copy wrapped in try/except (transient clipboard lock no longer surfaces a raw `EClipboardException`). (2026-05-30) — `FrmTodoAggregator.pas`
+- **`Application.MainForm` nil-guarded** before `FindComponent('mnuFormatSource')` in the DSU source-formatter-hotkey setter. (2026-05-30) — `FrmeOptionPageDSUFeatures.pas`
+- **Core**: `TPluginConfig` legacy-migration and `ComponentSelector` registry load/save no longer swallow exceptions silently (logged via `OutputDebugString`; the registry paths never re-raise out of `Destroy`); `InitAppDataDirectory` checks `ForceDirectories` and falls back beside the executable; `DeletePackageComponents` asserts list-count parity after `Pack`. (2026-05-30) — `PluginConfig.pas`, `ComponentSelector.pas`, `Main.pas`, `ComponentManager.pas`
+- **`StartParameterUpdate`** guards the dead `FActionCustomize` dereference so re-wiring the (currently commented-out) action cannot AV. (2026-05-30) — `StartParameterManagerReg.pas`
+
+### Fixed - correctness (wrong results)
+
+- **Code Quality Analyzer**: the `AllowMagicInArrayIndex` exemption now tracks bracket-nesting depth, so any literal inside `[ ... ]` (e.g. `A[ I + 5 ]`) is treated as an array index, not just the token directly after `[`. The unimplemented memory-leak check defaults off and its option-page controls are disabled so it cannot advertise a check that does nothing. Line/Column base documented. (2026-05-30) — `CodeQualityAnalyzer.pas`, `FrmeOptionPageCodeQuality.pas`
+- **Code Style navigation** clamps the caret column to a minimum of 1 (`Max(1, Column)`) so synthetic `Column 0` violations still position sensibly. (2026-05-30) — `FrmCodeStyleChecker.pas`
+- **Component Selector** best-fit selection uses the **absolute** length difference, so it no longer always biases toward the shortest entry. (2026-05-30) — `ComponentSelector.pas`
+- **Dependency Viewer** reports a consistent cycle "unit count" (distinct units = `Length(Steps) - 1`) across the listbox, CSV and TXT exports, and the `dot.exe` PATH search skips empty entries and strips surrounding quotes. (2026-05-30) — `FrmDependencyViewer.pas`
+- **Empty Event Handler Detector** records the declaration line from the `procedure`/`function` keyword token, so navigation lands on the declaration's first line even when the name wraps. (2026-05-30) — `EmptyEventHandlerDetector.pas`
+- **Unreachable Code** preview ellipsis is now driven by a real truncation flag (50-char cap hit with more non-EOL content) rather than the post-trim length. (2026-05-30) — `UnreachableCodeDetector.pas`
+- **TODO Aggregator** priority sort maps High/Normal/Low to integer ranks (unknown values rank last) and compares numerically; the `Column` field doc corrected to 1-based. (2026-05-30) — `FrmTodoAggregator.pas`, `TodoAggregator.pas`
+- **Old Palette** only calls `LoadComponentBitmap` when `GetClass(Item.Name) <> nil`, otherwise goes straight to the default-image path. (2026-05-30) — `OldPalette.pas`
+- **File Cleaner** uses Unicode-safe `LowerCase` for the saved-file extension instead of the legacy `AnsiLowerCase` round-trip; the destructor stops processing (`Active := False`) before freeing the notifier (`FreeAndNil`). (2026-05-30) — `FrmeOptionPageFileCleaner.pas`
+- **File Selector** default filter-field index uses an intention-revealing constant instead of an unrelated image-list constant; stray double semicolon removed. (2026-05-30) — `FrmFileSelector.pas`
+- **Uses Clause Manager** Apply/Move verify the active editor's `FileName` still equals the analysed file before rewriting, and `ScanUnit` logs (rather than silently swallows) a file-load failure. (2026-05-30) — `FrmUsesClauseManager.pas`, `UsesClauseManager.pas`
+- **Focus Editor** (Editor variant) keeps scanning the remaining `TEditWindow` forms when an edit window has no focusable `Editor` child, only stopping after a successful `SetFocus`. (2026-05-30) — `Editor\FocusEditor.pas`
+- **Excel export** progress uses `Int64(i) * 100` to avoid integer overflow on very large lists. (2026-05-30) — `FrmExcelExport.pas`
+- **CSV exports** now RFC 4180-escape embedded double-quotes (Code Quality, Dead Code, DFM/PAS Consistency, Empty Event Handler, Unused Unit). (2026-05-30) — `FrmCodeQualityAnalyzer.pas`, `FrmDeadCodeDetector.pas`, `FrmDfmPasConsistency.pas`, `FrmEmptyEventHandlerDetector.pas`, `FrmUnusedUnitDetector.pas`
+
+### Fixed - diagnosability / standards
+
+- **Silently-failing hooks now log** when an install fails: Focus Editor (LoadDesktop symbol unresolved), Form Designer `ReplaceVmtField`, and the DSU structure-view `SetFocus` empty `except`. (2026-05-30) — `FocusEditor\FocusEditor.pas`, `LabelMarginHelper.pas`, `StrucViewSearch.pas`
+- **Reload-hook exception** passes the actual exception object (and logs) instead of `nil` to the application handler. (2026-05-30) — `FrmReloadFiles.pas`
+- **IDE menu handler** re-resolves the Project menu each `ActionUpdate` tick rather than trusting a cached `TMenuItem` that the IDE may have freed during a personality switch. (2026-05-30) — `IDEMenuHandler.pas`
+- **Options URL label** shows a message when the link cannot be opened instead of silently greying itself out. (2026-05-30) — `Shared\IDE\Options\FrmOptions.pas`
+- **Stray debug `Write;`** removed from the Project-Settings `CopyTo` option loop; `UpdateExceptWarnings` uses an inline `for var iI` loop counter per GITLAK. (2026-05-30) — `ProjectSettingsData.pas`, `FrmeOptionPageCompilerEnhancements.pas`
+- **IDE Path Sorter** dead `Item.Data` tag removed (Restore/Delete resolve by index). (2026-05-30) — `FrmLibraryPathSorter.pas`
+
+### Documented (no code change)
+
+The following Low findings were left as-is with a rationale rather than changed,
+because the behaviour is acceptable, already mitigated, or a fix would be a large
+speculative rewrite: Code Style / Empty-Event-Handler / DFM-Consistency popup
+`OnPopup` enable-state and export-honours-selection (minor UX); UnitMetrics `+100`
+over-allocation and `SetAskCompileFromDiffProject` field-only setter
+(Compile Progress); Component Selector `with`-over-`TListBox` and packed-record
+registry persistence; DFM/PAS sort-column magic indices, dead `ExtractFormClassName`
+and substring collection-depth heuristic; Editor `btnDiff` index-vs-module race
+(modal, low likelihood); Focus Editor / Old Palette hardcoded IDE child names;
+File Cleaner DFM `Visible=False` legacy compiler gate; IDE-menu dead build-config
+stub; Keybindings `Ctrl+Left/Right` ASCII-identifier assumption; Library Path
+Sorter `'Build'` caption-substring menu insertion; Old Palette / Uses Clause
+Manager `NativeInt` tag round-trips (correct on Win64) and the unused highlight
+marker; Unit Selector `IsDelphiNetPersonality` dead branch; Unreachable Code
+`Pos('implementation')` whole-word edge and per-config/implicit project defines;
+Start Parameter Manager `TProjectParameters` dual lifetime; Start-Parameter-Team
+`DoModuleRenamed` dead hook; and the intentional Win64 `UninstallHooks` swallow
+(attribution tracked by its existing TODO). The Start-Parameter-Team `StrLComp`
+length bug and the Form-Designer master-checkbox gating noted in the audit were
+already resolved by earlier refactors.
+
 ## 2026-05-30 - v3.18.8 - UI workflow audit: Medium-severity fixes
 
 Addresses the 145 Medium-severity findings from the UI workflow audit across 32

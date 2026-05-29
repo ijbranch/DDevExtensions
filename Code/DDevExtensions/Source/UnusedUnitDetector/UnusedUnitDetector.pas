@@ -842,8 +842,12 @@ begin
     UnusedUnitDetectorPlugin := TUnusedUnitDetectorPlugin.Create
   else
   begin
-    UnusedUnitDetectorPlugin.Free;
-    UnusedUnitDetectorPlugin := nil;
+    // Close any open detector form first so it cannot reference freed plugin
+    // state, then free the plugin defensively (Assigned guards a failed load).
+    TFormUnusedUnitDetector.CloseInstance;
+
+    if Assigned( UnusedUnitDetectorPlugin ) then
+      FreeAndNil( UnusedUnitDetectorPlugin );
   end;
 
 end;

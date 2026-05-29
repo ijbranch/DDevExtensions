@@ -1425,20 +1425,34 @@ begin
 end;
 
 procedure TKeybindings.SetActive(const Value: Boolean);
+var
+  KS: IOTAKeyboardServices;
 begin
   if Value <> FActive then
   begin
+    // The keyboard service can be unavailable during early load or teardown
+    // (Destroy sets Active := False). A hard 'as' cast would raise EIntfCastError
+    // inside the destructor on Win64 shutdown; Supports lets us skip safely.
+    if not Supports(BorlandIDEServices, IOTAKeyboardServices, KS) then
+    begin
+      // Reflect intent even when the service is gone, so state stays consistent.
+      if FActive and (Value = False) then
+        FNotifierIndex := -1;
+      FActive := Value;
+      Exit;
+    end;
+
     if FActive then
     begin
       if FNotifierIndex >= 0 then
-        (BorlandIDEServices as IOTAKeyboardServices).RemoveKeyboardBinding(FNotifierIndex);
+        KS.RemoveKeyboardBinding(FNotifierIndex);
       FNotifierIndex := -1;
     end;
     FActive := Value;
     if FActive then
-      FNotifierIndex := (BorlandIDEServices as IOTAKeyboardServices).AddKeyboardBinding(Self);
+      FNotifierIndex := KS.AddKeyboardBinding(Self);
     if not Application.Terminated then
-      (BorlandIDEServices as IOTAKeyboardServices).RestartKeyboardServices;
+      KS.RestartKeyboardServices;
   end;
 end;
 

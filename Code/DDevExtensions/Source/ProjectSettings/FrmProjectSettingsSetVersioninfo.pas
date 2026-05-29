@@ -714,7 +714,10 @@ var
 begin
   EditName := 'edt' + Copy((Sender as TComponent).Name, Length('btnApply') + 1, MaxInt);
   Edit := FindComponent(EditName) as TEdit;
-  Assert( Edit <> nil, 'Edit "' + EditName + '" not found' );
+  // Assertions are off in release builds; without a runtime guard a naming
+  // mismatch would AV on Edit.Text below.
+  if Edit = nil then
+    Exit;
 
   Value := Trim(Edit.Text);
   if Sender = btnApplyOriginalFilename then // Apply to this
@@ -748,7 +751,17 @@ procedure TFormProjectSettingsSetVersioninfo.btnLoadMainIconClick(Sender: TObjec
 begin
   if dlgOpenMainIcon.Execute then
   begin
-    FIcon.LoadFromIconFile(dlgOpenMainIcon.FileName);
+    // The file dialog filter does not guarantee a valid .ico; guard the load so a
+    // corrupt file shows a friendly message and leaves FIcon unchanged.
+    try
+      FIcon.LoadFromIconFile(dlgOpenMainIcon.FileName);
+    except
+      on E: Exception do
+      begin
+        ShowMessage('Could not load icon:'#13#10 + E.Message);
+        Exit;
+      end;
+    end;
     UpdateMainIconPreview;
   end;
 end;

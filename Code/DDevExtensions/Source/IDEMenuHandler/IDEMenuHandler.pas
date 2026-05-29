@@ -266,6 +266,10 @@ begin
   {$IFDEF DELPHI2007_UP}
   { The ProjectBuildConfigsItem is created by the CBuilder-Personality and that
     is too late for the PluginInit code. So we create the menu item here. }
+  // Re-resolve the Project menu each tick: the cached pointer can be freed when
+  // the IDE rebuilds the menu (personality switch / project-group reload), and
+  // Assigned() would still see a stale non-nil pointer (AV risk on the loop).
+  FMenuProject := FindMenuItem('ProjectMenu');
   if Assigned(FMenuProject) and not Assigned(FActionSetActiveBuildConfiguration) then
   begin
     MenuProjectBuildConfigsItem := nil;

@@ -37,7 +37,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  IDEUtils;
+  Winapi.Windows, IDEUtils;
 
 var
   LoadDesktopHook: TRedirectCode;
@@ -62,8 +62,15 @@ begin
         begin
           Editor := Screen.Forms[I].FindComponent('Editor');
           if (Editor is TWinControl) and TWinControl(Editor).CanFocus then
+          begin
+            // Only stop once we have actually focused an editor; if this edit
+            // window has no focusable 'Editor' child (e.g. an IDE rename),
+            // keep scanning the remaining edit windows rather than giving up.
             TWinControl(Editor).SetFocus;
-          Break;
+            Break;
+          end
+          else
+            OutputDebugString('FocusEditor: TEditWindow has no focusable ''Editor'' child; trying next.');
         end;
       end;
     end;

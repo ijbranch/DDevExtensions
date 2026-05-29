@@ -132,6 +132,12 @@ begin
     Result := '';
 end;
 
+/// <summary>Escapes a value for an RFC 4180 quoted CSV field by doubling any embedded double-quotes.</summary>
+function CsvField(const Value: string): string;
+begin
+  Result := System.SysUtils.StringReplace(Value, '"', '""', [rfReplaceAll]);
+end;
+
 function InconsistencyTypeToStr(IT: TInconsistencyType): string;
 begin
   case IT of
@@ -674,14 +680,14 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add(Format('"%s","%s","%s","%s","%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem(Item, 0),
-          SafeGetSubItem(Item, 1),
-          SafeGetSubItem(Item, 2),
-          SafeGetSubItem(Item, 3),
-          SafeGetSubItem(Item, 4),
-          SafeGetSubItem(Item, 5),
-          SafeGetSubItem(Item, 6)
+          CsvField(Item.Caption),
+          CsvField(SafeGetSubItem(Item, 0)),
+          CsvField(SafeGetSubItem(Item, 1)),
+          CsvField(SafeGetSubItem(Item, 2)),
+          CsvField(SafeGetSubItem(Item, 3)),
+          CsvField(SafeGetSubItem(Item, 4)),
+          CsvField(SafeGetSubItem(Item, 5)),
+          CsvField(SafeGetSubItem(Item, 6))
         ]));
       end;
 

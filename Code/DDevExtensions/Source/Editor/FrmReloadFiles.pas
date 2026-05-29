@@ -325,10 +325,16 @@ begin
       ReloadModules.Free;
     end;
   except
-    if Assigned(ApplicationHandleException) then
-      ApplicationHandleException(nil)
-    else
-      Application.HandleException(nil);
+    on E: Exception do
+    begin
+      // This is a hooked IDE function: handle (do not re-raise into the IDE), but
+      // pass the actual exception and log it so silent failures are diagnosable.
+      OutputDebugString(PChar('FrmReloadFiles.CheckFileDates: ' + E.ClassName + ': ' + E.Message));
+      if Assigned(ApplicationHandleException) then
+        ApplicationHandleException(E)
+      else
+        Application.HandleException(E);
+    end;
   end;
 end;
 
