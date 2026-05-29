@@ -189,15 +189,15 @@ begin
   while (Result = 0) and (c <> nil) and (c <> TComponent) and (c <> TControl) do
   begin
     ClsName := string(c.ClassName);
-    Result := Winapi.Windows.LoadBitmap(RegisteredComponents.FindModule(TComponentClass(c)), PChar(ClsName));
+    Result := LoadBitmap(RegisteredComponents.FindModule(TComponentClass(c)), PChar(ClsName));
     if Result = 0 then
-      Result := Winapi.Windows.LoadBitmap(ModuleFromAddr(c.ClassInfo), PChar(ClsName));
+      Result := LoadBitmap(ModuleFromAddr(c.ClassInfo), PChar(ClsName));
 
     c := c.ClassParent;
   end;
   if Result = 0 then
   begin
-    Result := Winapi.Windows.LoadBitmap(GetModuleHandle(delphicoreide_bpl), 'DEFAULT');
+    Result := LoadBitmap(GetModuleHandle(delphicoreide_bpl), 'DEFAULT');
     if IsDefault <> nil then
       IsDefault^ := True;
   end

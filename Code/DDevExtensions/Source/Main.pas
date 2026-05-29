@@ -258,7 +258,7 @@ begin
   InitAppDataDirectory;
   DataModuleImages := TDataModuleImages.Create(nil);
 
-  OrgFinalizePackage := @System.SysUtils.FinalizePackage;
+  OrgFinalizePackage := @FinalizePackage;
   if Assigned(OrgFinalizePackage) then
     CodeRedirect(OrgFinalizePackage, @HookedFinalizePackage, HookFinalizePackage);
 
