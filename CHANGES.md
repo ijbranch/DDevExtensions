@@ -57,6 +57,10 @@ speculative rewrite, are recorded as documented notes at the end.
 - **Stray debug `Write;`** removed from the Project-Settings `CopyTo` option loop; `UpdateExceptWarnings` uses an inline `for var iI` loop counter per GITLAK. (2026-05-30) — `ProjectSettingsData.pas`, `FrmeOptionPageCompilerEnhancements.pas`
 - **IDE Path Sorter** dead `Item.Data` tag removed (Restore/Delete resolve by index). (2026-05-30) — `FrmLibraryPathSorter.pas`
 
+### Fixed - build / release
+
+- **Extension DLL version resource corrected to 3.19.9.** `DDevExtensionsD130.dll` / `…x64.dll` had reported FileVersion/ProductVersion `2.87` because the `.dpr` links a pre-compiled `{$R ..\Version.res}` that Delphi does not regenerate from `Version.rc` during a normal `.dproj` build — so every prior `version.h`/`.dproj` bump bypassed the DLL's own version resource (the user-facing splash was always correct, sourced from `version.inc`). Recompiled `Version.res` with `brcc32` (`Version.rc` `#include`s `version.h` = 3.19.9) and rebuilt; the DLLs now report FileVersion 3.19.9. **Note for future releases:** `brcc32 Version.rc` must be part of the version-bump routine, otherwise the DLL resource silently lags. (2026-05-30) — `Code/DDevExtensions/Version.res`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/Version.rc`
+
 ### Documented (no code change)
 
 The following Low findings were left as-is with a rationale rather than changed,
