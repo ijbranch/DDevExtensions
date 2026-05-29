@@ -104,6 +104,20 @@ Version 3.16.5 adds **Delphi 13.1 Win64 IDE build support**. The same source tre
 
 > **Note:** v3.16.5 has been built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Earlier Delphi releases (10.2 – 12) do not ship a 64-bit IDE host, so they keep the existing 32-bit build only.
 
+Version 3.17.6 **re-lands the Delphi 13.1 Win64 IDE build support on a clean baseline.** The initial v3.16.5 Win64 attempt was reverted because it destabilised the RAD Studio personality; v3.17.6 rebuilds the support incrementally with three root-cause access-violation fixes — IDE-notifier registration, compile-interceptor unregister, and native progress-form teardown — all gated or made symmetric for the 64-bit host. The `%APPDATA%\DDevExtensions\Win64Shutdown.log` diagnostic attributes any teardown exception to the responsible step (silent on clean shutdown). v3.17.6 also begins the **UI workflow audit** remediation, fixing the one Critical and the first High-severity finding (Win64 pointer-truncation AVs from `Integer(...)` tag round-trips, corrected to `NativeInt`).
+
+Versions 3.17.7, 3.18.8 and 3.19.9 complete the **UI workflow audit** remediation — a systematic pass over every button and menu action across all feature modules for reliability, correctness and GITLAK coding-standards compliance. v3.17.7 addresses the High-severity findings, v3.18.8 the Medium, and v3.19.9 the Low. Highlights across the sweep:
+
+- Project scans no longer abort on a single unreadable/malformed unit (per-module `try/except` isolation; a skipped-file count is surfaced).
+- Editor navigation is hardened everywhere (`OpenModule` wrapped, `EditViewCount > 0` guards, `FileExists` checks, friendly "could not open" messages).
+- Close-during-scan use-after-free is vetoed (`FScanning` guard) in every scanner that pumps the message queue.
+- Option-page frames validate their `UserData` cast and nil-guard Load/Save.
+- All CSV exports are RFC 4180-escaped; the Excel exporter avoids integer-overflow progress and never orphans a hidden Excel process.
+- ToolsAPI access is nil/`Supports`-guarded rather than hard-cast (safer Win64 teardown); silently-swallowed exceptions now log via `OutputDebugString`.
+- Correctness fixes including array-index magic-number detection, consistent dependency-cycle counts, deterministic priority/numeric sorts, Unicode-safe path handling, and accurate result-line navigation.
+
+See `CHANGES.md` for the authoritative per-release detail.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
@@ -813,4 +827,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.15.5 – 23 April 2026*
+*Version: 3.19.9 – 30 May 2026*
