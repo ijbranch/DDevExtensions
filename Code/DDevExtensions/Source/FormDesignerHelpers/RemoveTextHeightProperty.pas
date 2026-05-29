@@ -23,7 +23,7 @@ interface
 {$IFDEF DELPHI28_UP}
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
 /// <summary>
 /// Activates or deactivates the TCustomForm.DefineProperties redirection that suppresses

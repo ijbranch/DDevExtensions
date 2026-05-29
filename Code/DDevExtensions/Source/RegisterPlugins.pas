@@ -34,7 +34,7 @@ procedure RegisterIDEPlugins;
 implementation
 
 uses
-  SysUtils, Classes, Main,
+  System.SysUtils, System.Classes, Main,
   {$IF CompilerVersion < 21.0} // Delphi 2009
   ProjectMgrShortCuts,
   {$IFEND}

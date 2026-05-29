@@ -23,7 +23,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Windows, Hooking, IDEHooks;
+  Winapi.Windows, Hooking, IDEHooks;
 
 procedure TIDEPopupListBox_EditorKey(Instance: TObject; Sender: TObject; var Key: Char);
   external coreide_bpl name '@Idepopuplistbox@TIDEPopupListBox@EditorKey$qqrp14System@TObjectrb' {$IFDEF WIN64} delayed {$ENDIF};

@@ -20,8 +20,8 @@ unit FrmeOptionPageUsesClause;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmeBase, FrmTreePages, UsesClauseManager;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmeBase, FrmTreePages, UsesClauseManager;
 
 type
   /// <summary>Options page frame shown inside the IDE Tools dialog for the Uses Clause Manager plugin.</summary>

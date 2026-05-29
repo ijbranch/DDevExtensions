@@ -20,8 +20,8 @@ unit FrmeOptionPageDependencyViewer;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, FrmeBase, StdCtrls, ExtCtrls,
-  Dialogs, FrmTreePages, DependencyViewer;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, FrmeBase, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.Dialogs, FrmTreePages, DependencyViewer;
 
 type
   /// <summary>

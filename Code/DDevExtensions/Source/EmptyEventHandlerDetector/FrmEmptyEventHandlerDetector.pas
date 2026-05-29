@@ -20,8 +20,8 @@ unit FrmEmptyEventHandlerDetector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
   FrmBase, EmptyEventHandlerDetector, ToolsAPI;
 
 type
@@ -194,42 +194,45 @@ begin
         lblProgress.Caption := 'Scanning: ' + ExtractFileName(ModuleInfo.FileName);
         Application.ProcessMessages;
 
-        // Try to get source from open editor first
-        Module := ModuleInfo.OpenModule;
-        if Module <> nil then
-        begin
-          SourceEditor := nil;
-          for J := 0 to Module.ModuleFileCount - 1 do
+        Source := '';
+        try
+          // Try to get source from open editor first
+          Module := ModuleInfo.OpenModule;
+          if Module <> nil then
           begin
-            if Supports(Module.ModuleFileEditors[J], IOTASourceEditor, SourceEditor) then
-              Break;
+            SourceEditor := nil;
+            for J := 0 to Module.ModuleFileCount - 1 do
+            begin
+              if Supports(Module.ModuleFileEditors[J], IOTASourceEditor, SourceEditor) then
+                Break;
+            end;
+
+            if SourceEditor <> nil then
+              Source := GetEditorSource(SourceEditor);
           end;
 
-          if SourceEditor <> nil then
-            Source := GetEditorSource(SourceEditor)
-          else
-            Source := '';
-        end
-        else
-          Source := '';
-
-        // If no editor source, try to read from file
-        if (Source = '') and FileExists(ModuleInfo.FileName) then
-        begin
-          with TStringList.Create do
-          try
-            LoadFromFile(ModuleInfo.FileName);
-            Source := UTF8String(Text);
-          finally
-            Free;
+          // If no editor source, try to read from file
+          if (Source = '') and FileExists(ModuleInfo.FileName) then
+          begin
+            with TStringList.Create do
+            try
+              LoadFromFile(ModuleInfo.FileName);
+              Source := UTF8String(Text);
+            finally
+              Free;
+            end;
           end;
-        end;
 
-        if Source <> '' then
-        begin
-          UnitResults := TEmptyEventHandlerDetectorPlugin.AnalyzeUnit(Source, ModuleInfo.FileName);
-          for J := 0 to Length(UnitResults) - 1 do
-            AllResults.Add(UnitResults[J]);
+          if Source <> '' then
+          begin
+            UnitResults := TEmptyEventHandlerDetectorPlugin.AnalyzeUnit(Source, ModuleInfo.FileName);
+            for J := 0 to Length(UnitResults) - 1 do
+              AllResults.Add(UnitResults[J]);
+          end;
+        except
+          // One unreadable or malformed module must not abort the whole scan.
+          on E: Exception do
+            Continue;
         end;
       end;
 

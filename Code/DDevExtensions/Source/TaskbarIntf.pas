@@ -15,7 +15,7 @@ unit TaskbarIntf;
 interface
 
 uses
-  Windows, CommCtrl, ComObj, ActiveX;
+  Winapi.Windows, Winapi.CommCtrl, System.Win.ComObj, Winapi.ActiveX;
 
 const
   /// <summary>COM class ID of the Shell Taskbar List object.</summary>

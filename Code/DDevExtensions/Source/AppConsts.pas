@@ -247,7 +247,7 @@ function _(const S: WideString): string;
 implementation
 
 uses
-  Windows, SysUtils;
+  Winapi.Windows, System.SysUtils;
 
 var
   Lang: Cardinal = Cardinal(-1);

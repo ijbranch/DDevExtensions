@@ -24,7 +24,7 @@ unit DeadCodeDetector;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -182,7 +182,7 @@ var
 implementation
 
 uses
-  Forms, Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
   FrmDeadCodeDetector, FrmeOptionPageDeadCode;
 
 { TDeadCodeAnalyzer }
@@ -597,25 +597,22 @@ begin
 
           if not Symbol.IsReferenced and SameText( Symbol.Name, TokenValue ) then
           begin
-            // Don't count the declaration itself
+            // Don't count the declaration token itself.
             if ( Symbol.FileName <> FileName ) or ( Symbol.Line <> Token.Line ) then
             begin
-              // Check for qualified reference (ClassName.MethodName or Self.FieldName)
-              if ( PrevTokenKind = tkQualifier ) or
-                 ( ( Symbol.ElementType <> 'Field' ) and ( Symbol.Scope = 'unit' ) ) then
+              // Unit-scoped and class private/protected symbols are only visible
+              // within their own unit, so only a reference in the SAME file is a
+              // real use. Public/interface symbols may be referenced from any
+              // unit. (Previously every branch set IsReferenced regardless, so a
+              // same-named symbol in another unit masked genuinely dead code.)
+              if ( Symbol.Scope = 'unit' ) or ( Symbol.Scope = 'private' ) or
+                 ( Symbol.Scope = 'protected' ) then
               begin
-                Symbol.IsReferenced := True;
-              end
-              else if Symbol.ElementType = 'Field' then
-              begin
-                // For fields, we're more lenient - any matching identifier counts
-                Symbol.IsReferenced := True;
+                if SameText( Symbol.FileName, FileName ) then
+                  Symbol.IsReferenced := True;
               end
               else
-              begin
-                // For procedures/functions in interface, they must be called
                 Symbol.IsReferenced := True;
-              end;
             end;
           end;
         end;
@@ -656,7 +653,9 @@ begin
     for I := 0 to Project.GetModuleCount - 1 do
     begin
       ModuleInfo := Project.GetModule( I );
-      FileName   := ModuleInfo.FileName;
+      if ModuleInfo = nil then
+        Continue;
+      FileName := ModuleInfo.FileName;
 
       if SameText( ExtractFileExt( FileName ), '.pas' ) then
       begin
@@ -681,7 +680,9 @@ begin
     for I := 0 to Project.GetModuleCount - 1 do
     begin
       ModuleInfo := Project.GetModule( I );
-      FileName   := ModuleInfo.FileName;
+      if ModuleInfo = nil then
+        Continue;
+      FileName := ModuleInfo.FileName;
 
       if FileContents.TryGetValue( FileName, Content ) then
       begin
@@ -755,7 +756,15 @@ end;
 destructor TDeadCodeDetectorPlugin.Destroy;
 begin
 
-  FreeAndNil( FMenuItem );
+  // Remove the item from its parent menu before freeing it, otherwise (when the
+  // plugin is torn down before the menu) the menu is left holding a reference to
+  // a freed item and double-frees it at its own destruction.
+  if FMenuItem <> nil then
+  begin
+    if DDevExtensionsMenu <> nil then
+      DDevExtensionsMenu.Remove( FMenuItem );
+    FreeAndNil( FMenuItem );
+  end;
   FreeAndNil( FIgnoreList );
   inherited Destroy;
 

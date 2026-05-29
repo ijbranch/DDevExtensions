@@ -41,8 +41,8 @@ unit ComponentPanel;
 interface
 
 uses
-  Windows, Messages,
-  Classes, Controls, Buttons, Forms, ExtCtrls, Graphics;
+  Winapi.Windows, Winapi.Messages,
+  System.Classes, Vcl.Controls, Vcl.Buttons, Vcl.Forms, Vcl.ExtCtrls, Vcl.Graphics;
 
 type
   /// <summary>Click handler invoked with the index of the panel button that was activated.</summary>
@@ -377,7 +377,7 @@ type
 implementation
 
 uses
-  CommCtrl, SysUtils;
+  Winapi.CommCtrl, System.SysUtils;
 
 {$R ComponentPanel.res}
 

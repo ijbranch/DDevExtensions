@@ -19,8 +19,8 @@ unit FrmeOptionPageCompilerProgress;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, FrmeBase, StdCtrls, ExtCtrls,
-  Dialogs, FrmTreePages, CompileProgress;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, FrmeBase, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.Dialogs, FrmTreePages, CompileProgress;
 
 type
   /// <summary>

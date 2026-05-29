@@ -21,8 +21,8 @@ unit CodeQualityAnalyzer;
 interface
 
 uses
-  SysUtils, Classes, Menus, ToolsAPI, PluginConfig, FrmTreePages,
-  Generics.Collections;
+  System.SysUtils, System.Classes, Vcl.Menus, ToolsAPI, PluginConfig, FrmTreePages,
+  System.Generics.Collections;
 
 type
   /// <summary>Category of code-quality issue produced by the analyser.</summary>
@@ -206,7 +206,7 @@ procedure InitPlugin( Unload: Boolean );
 implementation
 
 uses
-  Windows, Forms, Dialogs, Main, IDENotifiers, ToolsAPIHelpers, DelphiLexer,
+  Winapi.Windows, Vcl.Forms, Vcl.Dialogs, Main, IDENotifiers, ToolsAPIHelpers, DelphiLexer,
   FrmCodeQualityAnalyzer, FrmeOptionPageCodeQuality;
 
 function IssueCategoryToString( Category: TIssueCategory ): string;
@@ -379,6 +379,7 @@ var
   OpenTryCount: Integer;          // how many of those open blocks are try blocks
   LastClosedBlock: TQABlock;      // the block most recently popped by an 'end'
   ClassObjPending: Boolean;       // a class/object opener awaiting body confirmation
+  ParenDepth: Integer;            // parenthesis nesting (to ignore 'const' parameter modifiers)
   UnitName: string;
   Whitelist: TArray<string>;
   I: Integer;
@@ -521,6 +522,9 @@ var
   end;
 
 begin
+  if Plugin = nil then
+    Exit( nil );
+
   Results := TList<TCodeQualityIssue>.Create;
   PendingCreates := TList<TPair<string, Integer>>.Create;
   try
@@ -535,6 +539,7 @@ begin
       BlockCount := 0;
       OpenTryCount := 0;
       ClassObjPending := False;
+      ParenDepth := 0;
       LastAssignedVar := '';
       LastAssignedLine := 0;
 
@@ -557,8 +562,18 @@ begin
           Continue;
         end;
 
+        // Track parenthesis depth so a 'const' parameter modifier
+        // (procedure Foo(const X: ...)) is not mistaken for a const section.
+        if Token.Kind = tkLParan then
+          Inc( ParenDepth )
+        else if Token.Kind = tkRParan then
+        begin
+          if ParenDepth > 0 then
+            Dec( ParenDepth );
+        end;
+
         // Track const/resourcestring sections
-        if Token.Kind = tkI_const then
+        if ( Token.Kind = tkI_const ) and ( ParenDepth = 0 ) then
         begin
           InConstSection := True;
           InResourceString := False;
@@ -611,11 +626,16 @@ begin
         begin
           StringValue := string( Token.Value );
 
-          // Remove surrounding quotes if present
+          // Only measure simple single-quoted literals. Tokens with #nn char
+          // codes (#13#10, 'a'#9'b') are not plain text - blank them so the
+          // length check below skips them; un-double embedded '' for the rest.
           if ( Length( StringValue ) >= 2 ) and
              ( StringValue[ 1 ] = '''' ) and
              ( StringValue[ Length( StringValue ) ] = '''' ) then
-            StringValue := Copy( StringValue, 2, Length( StringValue ) - 2 );
+            StringValue := StringReplace( Copy( StringValue, 2, Length( StringValue ) - 2 ),
+              '''''', '''', [ rfReplaceAll ] )
+          else
+            StringValue := '';
 
           if Length( StringValue ) >= Plugin.MinStringLength then
           begin

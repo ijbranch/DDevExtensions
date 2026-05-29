@@ -9,8 +9,8 @@ unit StartParameterCtrl;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Contnrs, Graphics, Controls, StdCtrls, ToolsAPI,
-  StartParameterClasses, Menus;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.StdCtrls, ToolsAPI,
+  StartParameterClasses, Vcl.Menus;
 
 type
   TStartParameterControl = class;
@@ -163,7 +163,7 @@ type
 implementation
 
 uses
-  Forms, Clipbrd;
+  Vcl.Forms, Vcl.Clipbrd, Vcl.Dialogs;
 
 const
   sLocalIncludeParamFileName = '$(ParamFileName).local';
@@ -337,7 +337,18 @@ begin
   begin
     if AllowReload then
       GlobalStartParameterControl.UpdateStartParameters(nil);
-    Params := (GlobalStartParameterControl.Items.Objects[GlobalStartParameterControl.ItemIndex] as TStartParam).ResolvedValue;
+    // UpdateStartParameters can rebuild the list and reset ItemIndex, so
+    // re-validate before casting the selected object.
+    if (GlobalStartParameterControl <> nil) and (GlobalStartParameterControl.ItemIndex > 0) then
+    begin
+      var Obj := GlobalStartParameterControl.Items.Objects[GlobalStartParameterControl.ItemIndex];
+      if Obj is TStartParam then
+        Params := TStartParam(Obj).ResolvedValue
+      else
+        Result := False;
+    end
+    else
+      Result := False;
   end;
 end;
 
@@ -473,13 +484,28 @@ begin
       end;
       Lines.Add('</StartParameters>');
 
-      Lines.SaveToFile(FileName, TEncoding.UTF8);
+      try
+        Lines.SaveToFile(FileName, TEncoding.UTF8);
+      except
+        on E: Exception do
+        begin
+          ShowMessage('Could not create the parameters file:'#13#10 + FileName + #13#10 + E.Message);
+          Exit;
+        end;
+      end;
     finally
       Lines.Free;
     end;
   end;
 
-  (BorlandIDEServices as IOTAActionServices).OpenFile(FileName)
+  var ActionSvc: IOTAActionServices;
+  if Supports(BorlandIDEServices, IOTAActionServices, ActionSvc) then
+    try
+      ActionSvc.OpenFile(FileName);
+    except
+      on E: Exception do
+        ShowMessage('Could not open the parameters file:'#13#10 + FileName + #13#10 + E.Message);
+    end;
 end;
 
 procedure TStartParameterControl.DoPopup(Sender: TObject);
@@ -514,7 +540,9 @@ begin
   if (FActiveParams <> nil) and (FActiveParams.Project <> nil) then
   begin
     ProjectBaseDir := FActiveParams.Project.FileName;
-    FileName := TProjectParameters.GetParamFileName(GetActiveProject.FileName, False);
+    // Use the already-validated FActiveParams.Project rather than a fresh
+    // GetActiveProject call, which could return nil/a different project here.
+    FileName := TProjectParameters.GetParamFileName(FActiveParams.Project.FileName, False);
     AddFiles(FileName, FActiveParams.Parameters);
   end
   else
@@ -702,10 +730,9 @@ end;
 procedure TStartParameterControl.WMSetFocus(var Msg: TWMSetFocus);
 begin
   inherited;
-  try
-    UpdateStartParameters(nil);
-  except
-  end;
+  // UpdateStartParameters already guards its core with Application.HandleException;
+  // a bare except here would only mask genuine faults.
+  UpdateStartParameters(nil);
 end;
 
 procedure TStartParameterControl.CMHintShow(var Msg: TCMHintShow);

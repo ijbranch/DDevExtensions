@@ -22,7 +22,7 @@ unit NativeProgressForm;
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls, TaskbarIntf;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, TaskbarIntf;
 
 type
   /// <summary>
@@ -168,7 +168,7 @@ var
 implementation
 
 uses
-  Themes, AppConsts, Hooking, IDEHooks
+  Vcl.Themes, AppConsts, Hooking, IDEHooks
   {$IFDEF CPUX64}, Main {$ENDIF};
 
 const

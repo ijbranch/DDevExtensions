@@ -21,7 +21,7 @@ unit LibraryPathSorter;
 interface
 
 uses
-  Windows, SysUtils, Classes, Menus, Registry, Generics.Collections, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Menus, System.Win.Registry, System.Generics.Collections, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main, SimpleXmlIntf, SimpleXmlImport,
   IDEUtils, IDEHooks, ToolsAPIHelpers;
 
@@ -177,7 +177,7 @@ var
 implementation
 
 uses
-  Forms, Controls, FrmLibraryPathSorter;
+  Vcl.Forms, Vcl.Controls, FrmLibraryPathSorter;
 
 const
   PathTypeRegistryNames: array[TLibraryPathType] of string = (

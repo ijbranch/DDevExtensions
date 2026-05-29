@@ -21,9 +21,9 @@ unit FrmeOptionPageCompilerEnhancements;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI, FrmTreePages, FrmOptions, PluginConfig, StdCtrls,
-  ModuleData, InterceptIntf, FrmeBase, ExtCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI, FrmTreePages, FrmOptions, PluginConfig, Vcl.StdCtrls,
+  ModuleData, InterceptIntf, FrmeBase, Vcl.ExtCtrls;
 
 type
   /// <summary>
@@ -152,7 +152,10 @@ end;
 procedure TFrameOptionPageCompilerEnhancements.cbxActiveClick(Sender: TObject);
 begin
   cbxTreatWarningsAsErrors.Enabled := cbxActive.Checked;
-  cbxTreatWarningsAsErrors.OnClick(cbxTreatWarningsAsErrors);
+  // Guard against the DFM event link having been cleared at runtime - calling a
+  // nil method pointer would AV. cbxActiveClick also runs from LoadData.
+  if Assigned( cbxTreatWarningsAsErrors.OnClick ) then
+    cbxTreatWarningsAsErrors.OnClick(cbxTreatWarningsAsErrors);
 end;
 
 procedure TFrameOptionPageCompilerEnhancements.SetUserData(UserData: TObject);

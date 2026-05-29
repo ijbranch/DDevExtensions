@@ -22,7 +22,7 @@ interface
                 FIELDS([vcPrivate, vcProtected, vcPublic, vcPublished])}
 
 uses
-  Windows, Messages, SysUtils, Classes, Controls, ImgList, Rtti, IDEHooks;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Controls, Vcl.ImgList, System.Rtti, IDEHooks;
 
 type
   /// <summary>Opaque pointer alias for the IDE Virtual Tree's <c>PVirtualNode</c>.</summary>
@@ -189,7 +189,7 @@ type
 implementation
 
 uses
-  TypInfo;
+  System.TypInfo;
 
 type
   TOpenControl = class(TControl);

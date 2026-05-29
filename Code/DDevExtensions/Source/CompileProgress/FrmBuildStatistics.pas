@@ -22,8 +22,8 @@ unit FrmBuildStatistics;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Clipbrd, Menus, Math,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Clipbrd, Vcl.Menus, System.Math,
   ToolsAPI, FrmBase, CompileProgress, UnitMetrics;
 
 type
@@ -382,8 +382,10 @@ begin
         Item := ListView.Items[ I ];
 
         if Item.SubItems.Count >= 4 then
-          SL.Add( Format( '"%s",%d,%s,%s,"%s"',
-            [ Item.Caption, Int64( Item.Data ), Item.SubItems[ 1 ],
+          // Export the Duration value shown in the grid (SubItems[0]) rather than
+          // the raw Int64 in Item.Data, so the CSV matches what the user sees.
+          SL.Add( Format( '"%s","%s",%s,%s,"%s"',
+            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
               Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
       end;
 
@@ -708,31 +710,52 @@ var
   I: Integer;
 begin
 
+  if not FileExists( Violation.FileName ) then
+  begin
+    ShowMessage( 'Source file not found: ' + Violation.FileName );
+    Exit;
+  end;
+
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( Violation.FileName );
-
-    if Module <> nil then
-    begin
-
-      for I := 0 to Module.ModuleFileCount - 1 do
+    try
+      Module := ModuleServices.OpenModule( Violation.FileName );
+    except
+      on E: Exception do
       begin
-
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-
-          if SourceEditor.EditViewCount > 0 then
-          begin
-            EditView := SourceEditor.EditViews[ 0 ];
-            EditView.SetTopLeft( Violation.Line, 1 );
-            EditView.Center( Violation.Line, Violation.Column );
-          end;
-
-          Break;
-        end;
+        ShowMessage( Format( 'Could not open %s'#13#10'%s', [ Violation.FileName, E.Message ] ) );
+        Exit;
       end;
     end;
+
+    if Module = nil then
+    begin
+      ShowMessage( 'Could not open ' + Violation.FileName );
+      Exit;
+    end;
+
+    SourceEditor := nil;
+
+    for I := 0 to Module.ModuleFileCount - 1 do
+    begin
+
+      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
+      begin
+        SourceEditor.Show;
+
+        if ( SourceEditor.EditViewCount > 0 ) and ( Violation.Line > 0 ) then
+        begin
+          EditView := SourceEditor.EditViews[ 0 ];
+          EditView.SetTopLeft( Violation.Line, 1 );
+          EditView.Center( Violation.Line, Violation.Column );
+        end;
+
+        Break;
+      end;
+    end;
+
+    if SourceEditor = nil then
+      ShowMessage( 'No source editor available for ' + ExtractFileName( Violation.FileName ) );
   end;
 
 end;

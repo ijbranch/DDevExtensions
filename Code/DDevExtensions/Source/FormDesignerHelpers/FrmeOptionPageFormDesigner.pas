@@ -20,9 +20,9 @@ unit FrmeOptionPageFormDesigner;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI, FrmTreePages, PluginConfig, StdCtrls,
-  ModuleData, FrmeBase, ExtCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI, FrmTreePages, PluginConfig, Vcl.StdCtrls,
+  ModuleData, FrmeBase, Vcl.ExtCtrls;
 
 type
   /// <summary>
@@ -182,13 +182,21 @@ procedure TFrameOptionPageFormDesigner.cbxActiveClick(Sender: TObject);
 begin
   cbxLabelMargin.Enabled := cbxActive.Checked;
   {$IFNDEF CPUX64}
-  // On Win64 chkRemoveExplicitProperties is force-disabled in Create and must
-  // stay that way, so the enable-with-Active logic is gated out here.
+  // On Win64 these three are force-disabled in Create and must stay that way, so
+  // the enable-with-Active logic is gated out. On Win32 every dependent box's
+  // Enabled state follows Active (and its compiler-version availability).
   {$IFDEF COMPILER110_UP}
   chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
+  chkRemovePixelsPerInchProperty.Enabled := cbxActive.Checked;
   {$ELSE}
   chkRemoveExplicitProperties.Enabled := False;
+  chkRemovePixelsPerInchProperty.Enabled := False;
   {$ENDIF COMPILER110_UP}
+  {$IFDEF DELPHI28_UP}
+  chkRemoveTextHeightProperty.Enabled := cbxActive.Checked;
+  {$ELSE}
+  chkRemoveTextHeightProperty.Enabled := False;
+  {$ENDIF}
   {$ENDIF CPUX64}
 end;
 
@@ -204,13 +212,7 @@ begin
   chkRemoveExplicitProperties.Checked := FFormDesigner.RemoveExplicitProperty;
   chkRemovePixelsPerInchProperty.Checked := FFormDesigner.RemovePixelsPerInchProperty;
   chkRemoveTextHeightProperty.Checked := FFormDesigner.RemoveTextHeightProperty;
-{$IFNDEF CPUX64}
-{$IFDEF COMPILER110_UP}
-    chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
-{$ELSE}
-    chkRemoveExplicitProperties.Enabled := False;
-{$ENDIF COMPILER110_UP}
-{$ENDIF CPUX64}
+  // cbxActiveClick synchronises every dependent check box's Enabled state.
   cbxActiveClick(cbxActive);
 end;
 

@@ -31,7 +31,7 @@ implementation
 {$IFDEF CPUX86}
 
 uses
-  Windows, SysUtils, Classes, TypInfo, Hooking, IDEHooks;
+  Winapi.Windows, System.SysUtils, System.Classes, System.TypInfo, Hooking, IDEHooks;
 
 type
   /// <summary>

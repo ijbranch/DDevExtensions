@@ -21,13 +21,13 @@ unit FrmeOptionPageDSUFeatures;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI,
   {$IF CompilerVersion >= 23.0}
   PlatformAPI,
   {$IFEND}
-  DCCStrs, FrmTreePages, PluginConfig, StdCtrls,
-  ModuleData, FrmeBase, ExtCtrls, ActnList, Menus, VirtTreeHandler, ComCtrls;
+  DCCStrs, FrmTreePages, PluginConfig, Vcl.StdCtrls,
+  ModuleData, FrmeBase, Vcl.ExtCtrls, Vcl.ActnList, Vcl.Menus, VirtTreeHandler, Vcl.ComCtrls;
 
 type
   /// <summary>
@@ -268,7 +268,7 @@ var
 implementation
 
 uses
-  Main, DSUFeatures, StrUtils, IDEHooks, Hooking, IDEUtils, StrucViewSearch, ToolsAPIHelpers,
+  Main, DSUFeatures, System.StrUtils, IDEHooks, Hooking, IDEUtils, StrucViewSearch, ToolsAPIHelpers,
   AppConsts, DisableAlphaSortClassCompletion;
 
 {$R *.dfm}
@@ -461,10 +461,16 @@ procedure TDSUFeaturesConfig.UpdateEditorDblClickAction;
 const
   ZoomModes: array[TEditorDblClickAction] of Byte = (0, 2, 3);
 var
+  {$IFNDEF CPUX64}
   LibHandle: THandle;
   DblClick: PTabControlDblClickRec;
+  {$ENDIF}
   EditWindow: TCustomForm;
 begin
+  {$IFNDEF CPUX64}
+  // The zoom-mode field offset is discovered by matching a 32-bit x86 prologue
+  // signature in coreide. On Win64 those opcodes do not exist, so the scan is
+  // skipped and the feature stays inert (FZoomModeOffset remains 0).
   if FZoomModeOffset = 0 then
   begin
     LibHandle := GetModuleHandle(coreide_bpl);
@@ -488,6 +494,7 @@ begin
       end;
     end;
   end;
+  {$ENDIF}
 
   { Only for the main editor window }
   if FZoomModeOffset <> 0 then
@@ -1425,7 +1432,10 @@ var
   Data: PNodeData;
   Obj: TObject;
 begin
-  FOrgPMGetTextEvent(Sender, Node, Column, TextType, CellText);
+  // The captured original handler may be nil (the IDE tree had no OnGetText);
+  // calling through a nil method pointer would AV on every paint.
+  if Assigned(FOrgPMGetTextEvent) then
+    FOrgPMGetTextEvent(Sender, Node, Column, TextType, CellText);
   if FPrjMgrTree.Selected[Node] and (FPrjMgrTree.GetNodeLevel(Node) > 1) then
   begin
     if FPrjMgrTree.GetNextSelected(FPrjMgrTree.GetFirstSelected) = nil then // only one node is selected
@@ -1489,13 +1499,18 @@ begin
     end;
 
 
-    if (FPrjMgrTree <> nil) and FShowFileProjectInPrjMgr then
-      FPrjMgrTree.OnGetText := FOrgPMGetTextEvent;
+    // Install or restore the OnGetText handler explicitly based on the new Value.
+    // Previously both branches keyed off the stale field, which only worked by
+    // accident and skipped the restore on re-entry.
+    if FPrjMgrTree <> nil then
+    begin
+      if Value then
+        FPrjMgrTree.OnGetText := PMGetText
+      else
+        FPrjMgrTree.OnGetText := FOrgPMGetTextEvent;
+    end;
 
     FShowFileProjectInPrjMgr := Value;
-
-    if (FPrjMgrTree <> nil) and FShowFileProjectInPrjMgr then
-      FPrjMgrTree.OnGetText := PMGetText;
 
     if FPrjMgrTree <> nil then
       FPrjMgrTree.Invalidate;
@@ -1546,12 +1561,26 @@ begin
         FParseThread := TThread(Pointer(FParseThread)^);
     end;
     if FParseThread <> nil then
-      Result := PBoolean(DWORD_PTR(FParseThread) + DWORD(TThread.InstanceSize) + $28)^
+    begin
+      {$IFDEF CPUX64}
+      // The hard-coded +$28 field offset is a 32-bit layout assumption; the
+      // 64-bit parser-thread layout differs, so do not read it on Win64.
+      Result := False;
+      {$ELSE}
+      Result := PBoolean(DWORD_PTR(FParseThread) + DWORD(TThread.InstanceSize) + $28)^;
+      {$ENDIF}
+    end
     else
       Result := False;
   except
-    FTimerStructureView.Enabled := False;
-    Result := False;
+    on E: Exception do
+    begin
+      // Disable the polling timer (a layout change can fault repeatedly) but log
+      // it so a genuine IDE-layout change is diagnosable rather than silent.
+      FTimerStructureView.Enabled := False;
+      OutputDebugString(PChar('DDevExtensions IsBackgroundParsing: ' + E.Message));
+      Result := False;
+    end;
   end;
 end;
 

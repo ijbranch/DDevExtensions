@@ -13,8 +13,8 @@ unit EditPopupCtrl;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Contnrs, Graphics, Controls, Forms,
-  StdCtrls, ExtCtrls, ComCtrls, ToolsAPI, ActnList, MultiMon, Menus, ImgList;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, ToolsAPI, Vcl.ActnList, Winapi.MultiMon, Vcl.Menus, Vcl.ImgList;
 
 const
   /// <summary>Custom message posted to a <see cref="TDropDownEditBase"/> to open its drop-down.</summary>
@@ -177,7 +177,7 @@ type
 implementation
 
 uses
-  CommCtrl, Themes;
+  Winapi.CommCtrl, Vcl.Themes;
 
 { TPopupPanel }
 

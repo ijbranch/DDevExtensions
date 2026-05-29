@@ -22,8 +22,8 @@ unit FrmExcelExport;
 interface
 
 uses
-  Variants, Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, StdCtrls, ComObj;
+  System.Variants, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, System.Win.ComObj;
 
 type
   /// <summary>
@@ -78,7 +78,6 @@ var
   Workbook: Variant;
   Sheet: Variant;
   i: Integer;
-  Cell: string;
   k: Integer;
 begin
   if Assigned(ProgressBar) then
@@ -87,43 +86,44 @@ begin
     ProgressBar.Max := 100;
   end;
 
-  if Filename <> '' then
-    ExcelApp := CreateOleObject('Excel.Application')
-  else
-  begin
-    ExcelApp := CreateOleObject('Excel.Application');
-{    try
-      ExcelApp := GetActiveOleObject('Excel.Application');
-    except
-      ExcelApp := CreateOleObject('Excel.Application');
-    end;}
-  end;
-  ExcelApp.ScreenUpdating := False;
   try
+    ExcelApp := CreateOleObject('Excel.Application');
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Microsoft Excel is not installed or could not be started:'#13#10 + E.Message);
+      Exit;
+    end;
+  end;
+
+  Workbook := Unassigned;
+  Sheet := Unassigned;
+  try
+    ExcelApp.ScreenUpdating := False;
     Workbook := ExcelApp.Workbooks.Add;
     Sheet := Workbook.Sheets.Add;
     Sheet.Name := Name;
 
     with ListView do
     begin
+      // Address cells by numeric (row, col) so any number of columns works;
+      // letter arithmetic ( Char( Ord( 'A' ) + i ) ) breaks past column Z.
       for i := 0 to Columns.Count - 1 do
       begin
-        Cell := Char(Ord('A') + i) + '1';
-        Sheet.Range[Cell + ':' + Cell].Formula := Columns[i].Caption;
-        Sheet.Range[Cell + ':' + Cell].Font.Bold := True;
-        Sheet.Range[Cell + ':' + Cell].ColumnWidth := Columns[i].Width / 6;
+        Sheet.Cells[1, i + 1].Formula := Columns[i].Caption;
+        Sheet.Cells[1, i + 1].Font.Bold := True;
+        Sheet.Cells[1, i + 1].ColumnWidth := Columns[i].Width / 6;
       end;
       for i := 0 to Items.Count - 1 do
       begin
         for k := 0 to Columns.Count - 1 do
         begin
-          Cell := Char(Ord('A') + k) + IntToStr(1 + i + 1);
           if k = 0 then
-            Sheet.Range[Cell + ':' + Cell].Formula := Items[i].Caption
+            Sheet.Cells[2 + i, k + 1].Formula := Items[i].Caption
           else
-            Sheet.Range[Cell + ':' + Cell].Formula := Items[i].SubItems[k - 1];
+            Sheet.Cells[2 + i, k + 1].Formula := Items[i].SubItems[k - 1];
         end;
-        if Assigned(ProgressBar) and (i mod 25 = 0) then
+        if Assigned(ProgressBar) and (Items.Count > 0) and (i mod 25 = 0) then
         begin
           ProgressBar.Position := i * 100 div Items.Count;
           Application.ProcessMessages;
@@ -132,20 +132,29 @@ begin
     end;
     if Assigned(ProgressBar) then
       ProgressBar.Position := ProgressBar.Max;
-  finally
+
+    if Filename <> '' then
+      Workbook.SaveAs(Filename);
+  except
+    on E: Exception do
+      ShowMessage('Excel export failed:'#13#10 + E.Message);
+  end;
+
+  // Best-effort cleanup: restore the UI and either quit (headless save) or show
+  // Excel. Wrapped so a cleanup failure cannot orphan a hidden Excel process.
+  try
     ExcelApp.ScreenUpdating := True;
     if Filename <> '' then
-    begin
-      Workbook.SaveAs(Filename);
-      ExcelApp.Quit;
-    end
+      ExcelApp.Quit
     else
       ExcelApp.Visible := True;
-
-    Sheet := Unassigned;
-    Workbook := Unassigned;
-    ExcelApp := Unassigned;
+  except
+    // ignore - best effort
   end;
+
+  Sheet := Unassigned;
+  Workbook := Unassigned;
+  ExcelApp := Unassigned;
 end;
 
 

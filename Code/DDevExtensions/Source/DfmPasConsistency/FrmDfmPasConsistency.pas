@@ -20,8 +20,8 @@ unit FrmDfmPasConsistency;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
   FrmBase, DfmPasConsistency, ToolsAPI;
 
 type
@@ -287,6 +287,7 @@ begin
         lblProgress.Caption := 'Scanning: ' + ExtractFileName(ModuleInfo.FileName);
         Application.ProcessMessages;
 
+        try
         // Get PAS source
         Module := ModuleInfo.OpenModule;
         if Module <> nil then
@@ -336,6 +337,11 @@ begin
           UnitResults := TDfmPasConsistencyPlugin.AnalyzeUnit(PasSource, DfmSource, ModuleInfo.FileName);
           for J := 0 to Length(UnitResults) - 1 do
             AllResults.Add(UnitResults[J]);
+        end;
+        except
+          // One unreadable or malformed module must not abort the whole scan.
+          on E: Exception do
+            Continue;
         end;
       end;
 
@@ -407,17 +413,21 @@ begin
       Item.SubItems.Add(DfmLine);
       // Store DFM filename for navigation (DFM is primary for Missing in PAS)
       Item.SubItems.Add(Info.DfmFileName);
-      // Store PAS filename in Data for alternative navigation
-      Item.Data := PChar(Info.PasFileName);
+      // Store PAS filename as a hidden subitem (index 7). Previously a PChar into
+      // the managed string held by FResults was stashed in Item.Data, which
+      // dangles if FResults is ever reassigned - store the value instead.
+      Item.SubItems.Add(Info.PasFileName);
     end;
   finally
     ListView.Items.EndUpdate;
   end;
 
-  // Update summary to show filtered count
+  // Update summary to show the filtered count, restoring the full count for 'All'.
   if FFilterMode <> fmAll then
     lblSummary.Caption := Format('Showing %d of %d inconsistency(ies)',
-      [DisplayCount, Length(FResults)]);
+      [DisplayCount, Length(FResults)])
+  else
+    lblSummary.Caption := Format('Found %d inconsistency(ies)', [Length(FResults)]);
 end;
 
 procedure TFormDfmPasConsistency.ListViewColumnClick(Sender: TObject;
@@ -494,8 +504,7 @@ begin
   if Item = nil then
     Exit;
 
-  // SubItems: 0=Component, 1=Issue, 2=PasType, 3=PasLine, 4=DfmType, 5=DfmLine, 6=DfmFileName
-  // Item.Data = PasFileName
+  // SubItems: 0=Component, 1=Issue, 2=PasType, 3=PasLine, 4=DfmType, 5=DfmLine, 6=DfmFileName, 7=PasFileName
   PasLine := SafeGetSubItem(Item, 3);
   ComponentName := SafeGetSubItem(Item, 0);
   DfmFileName := SafeGetSubItem(Item, 6);
@@ -503,15 +512,15 @@ begin
   // If PAS line exists, open PAS file at that line
   if (PasLine <> '') and (PasLine <> '-') then
   begin
-    FileName := string(PChar(Item.Data));
-    LineNum := StrToIntDef(PasLine, 1);
+    FileName := SafeGetSubItem(Item, 7);
+    LineNum := StrToIntDef(PasLine, 0);
     FormSelected := False;
   end
   else
   begin
     // For "Missing in PAS" - try to open form designer and select component
-    FileName := string(PChar(Item.Data)); // PAS file to load form
-    LineNum := StrToIntDef(SafeGetSubItem(Item, 5), 1);
+    FileName := SafeGetSubItem(Item, 7); // PAS file to load form
+    LineNum := StrToIntDef(SafeGetSubItem(Item, 5), 0);
     FormSelected := False;
 
     try
@@ -566,7 +575,13 @@ begin
     Exit;
 
   // Fall back to opening file as text
-  if (FileName = '') or not FileExists(FileName) then
+  if FileName = '' then
+  begin
+    ShowMessage('No source file is associated with this entry.');
+    Exit;
+  end;
+
+  if not FileExists(FileName) then
   begin
     ShowMessage('File not found: ' + FileName);
     Exit;
@@ -587,8 +602,13 @@ begin
             EditView := SourceEditor.EditViews[0];
             if EditView <> nil then
             begin
-              EditView.Position.Move(LineNum, 1);
-              EditView.MoveViewToCursor;
+              // Only move the caret when a real source line is known; otherwise
+              // just open the file rather than jumping to a misleading line 1.
+              if LineNum > 0 then
+              begin
+                EditView.Position.Move(LineNum, 1);
+                EditView.MoveViewToCursor;
+              end;
               EditView.Paint;
             end;
           end;

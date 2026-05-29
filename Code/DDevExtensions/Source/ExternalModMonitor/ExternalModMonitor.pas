@@ -25,7 +25,7 @@ unit ExternalModMonitor;
 interface
 
 uses
-  Windows, SysUtils, Classes, ExtCtrls, ShellAPI, ToolsAPI,
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.ExtCtrls, Winapi.ShellAPI, ToolsAPI,
   FrmTreePages, PluginConfig, IDENotifiers, FileWatcher;
 
 type
@@ -138,7 +138,7 @@ procedure InitPlugin( Unload: Boolean );
 implementation
 
 uses
-  Forms, Main, FrmeOptionPageExternalModMonitor;
+  Vcl.Forms, Main, FrmeOptionPageExternalModMonitor;
 
 var
   ExternalModMonitorConfig: TExternalModMonitorConfig;
@@ -428,7 +428,9 @@ begin
         Module.Refresh( False );
         RefreshedFiles.Add( FileName );
       except
-        { Silently ignore refresh failures }
+        on E: Exception do
+          // Don't trust a stale buffer silently: log the failed refresh.
+          OutputDebugString( PChar( 'DDevExtensions ExternalModMonitor refresh: ' + FileName + ' - ' + E.Message ) );
       end;
     end;
 
@@ -463,10 +465,20 @@ begin
 
   for I := 0 to Module.ModuleFileCount - 1 do
   begin
-    Editor := Module.ModuleFileEditors[I];
-    if Supports( Editor, IOTASourceEditor, SourceEditor ) then
-    begin
-      if SourceEditor.Modified then
+    try
+      Editor := Module.ModuleFileEditors[I];
+      if Supports( Editor, IOTASourceEditor, SourceEditor ) then
+      begin
+        if SourceEditor.Modified then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    except
+      // A transient ToolsAPI fault on one editor: conservatively treat the module
+      // as modified so we never overwrite possibly-unsaved work.
+      on E: Exception do
       begin
         Result := True;
         Exit;

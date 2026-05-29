@@ -21,9 +21,9 @@ unit FrmeOptionPageKeybindings;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmTreePages, ToolsAPI, PluginConfig, SimpleXmlIntf, Menus,
-  ActnList, FrmeBase, ExtCtrls, ComCtrls, AnsiStrings;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmTreePages, ToolsAPI, PluginConfig, SimpleXmlIntf, Vcl.Menus,
+  Vcl.ActnList, FrmeBase, Vcl.ExtCtrls, Vcl.ComCtrls, System.AnsiStrings;
 
 type
   /// <summary>
@@ -68,7 +68,7 @@ type
     /// <summary>Updates FActive and (un)registers the keyboard binding with the IDE.</summary>
     procedure SetActive(const Value: Boolean);
     /// <summary>Implements the Section Toggle, jumping between interface and implementation.</summary>
-    procedure ToggleSection(EditBuffer: IOTAEditBuffer);
+    procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
     /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
     /// <param name="KeyCode">The shortcut that was pressed.</param>
@@ -85,7 +85,7 @@ type
     /// <param name="Down">True to move down, False to move up.</param>
     procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
     /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
-    procedure FindDeclaration(EditBuffer: IOTAEditBuffer);
+    function FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
     //procedure ReturnPressed(EditBuffer: IOTAEditBuffer);
   protected
     /// <summary>Returns the option-page descriptor for the IDE Tools > Options dialog.</summary>
@@ -1047,6 +1047,12 @@ begin
   if EditBuffer <> nil then
   begin
     EditPosition := EditBuffer.EditPosition;
+    if EditPosition = nil then
+    begin
+      // Non-text / read-only buffer (e.g. a designer surface): nothing to do.
+      BindingResult := krUnhandled;
+      Exit;
+    end;
     if Active then
     begin
       EditBlock := EditBuffer.EditBlock;
@@ -1124,18 +1130,20 @@ begin
 
         else if KeyCode = ShortCut(VK_PRIOR, [ssCtrl, ssAlt]) then
         begin
-          FindDeclaration(EditBuffer);
-          BindingResult := krHandled;
+          // Only consume the keystroke if Find Declaration actually ran; else
+          // leave it krUnhandled so the IDE's own handler can still act.
+          if FindDeclaration(EditBuffer) then
+            BindingResult := krHandled;
         end
 
         else if SectionToggle and (FSectionToggleUpKey <> scNone) and (KeyCode = FSectionToggleUpKey) then
         begin
-          ToggleSection(EditBuffer);
+          ToggleSection(EditBuffer, False);   // Up -> jump to the interface section
           BindingResult := krHandled;
         end
         else if SectionToggle and (FSectionToggleDownKey <> scNone) and (KeyCode = FSectionToggleDownKey) then
         begin
-          ToggleSection(EditBuffer);
+          ToggleSection(EditBuffer, True);    // Down -> jump to the implementation section
           BindingResult := krHandled;
         end;
 
@@ -1214,12 +1222,13 @@ begin
   end;
 end;
 
-procedure TKeybindings.FindDeclaration(EditBuffer: IOTAEditBuffer);
+function TKeybindings.FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
 var
   DataModule: TDataModule;
   FindDecl: TComponent;
   EditCtrl: TWinControl;
 begin
+  Result := False;
   DataModule := TDataModule(GetActualAddr(@EditorActionListsPtr)^);
   if DataModule <> nil then
   begin
@@ -1231,20 +1240,19 @@ begin
       begin
         TAction(FindDecl).ActionList.Tag := NativeInt(EditCtrl);
         TAction(FindDecl).Execute;
+        Result := True;
       end;
     end;
   end;
 end;
 
-procedure TKeybindings.ToggleSection(EditBuffer: IOTAEditBuffer);
+procedure TKeybindings.ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
 var
   Source: UTF8String;
   EditPosition: IOTAEditPosition;
-  CurrentRow: Integer;
   InterfaceRow, ImplementationRow: Integer;
   P: PAnsiChar;
   LineNum: Integer;
-  InInterface: Boolean;
   TargetRow: Integer;
 
   function SkipWhitespace(P: PAnsiChar): PAnsiChar;
@@ -1259,7 +1267,7 @@ var
     Len: Integer;
   begin
     Len := Length(Keyword);
-    Result := (AnsiStrings.StrLIComp(P, PAnsiChar(Keyword), Len) = 0) and
+    Result := (System.AnsiStrings.StrLIComp(P, PAnsiChar(Keyword), Len) = 0) and
               not (P[Len] in ['A'..'Z', 'a'..'z', '0'..'9', '_']);
   end;
 
@@ -1272,7 +1280,8 @@ begin
     Exit;
 
   EditPosition := EditBuffer.EditPosition;
-  CurrentRow := EditPosition.Row;
+  if EditPosition = nil then
+    Exit;
 
   // Find interface and implementation line numbers
   InterfaceRow := 0;
@@ -1312,15 +1321,17 @@ begin
   if (InterfaceRow = 0) or (ImplementationRow = 0) then
     Exit;
 
-  // Determine current section and target
-  InInterface := CurrentRow < ImplementationRow;
-
-  if InInterface then
-    TargetRow := ImplementationRow + 1  // Jump to implementation
+  // The Up shortcut always lands on the interface section, the Down shortcut on
+  // the implementation section, regardless of the current caret position.
+  if GoToImplementation then
+    TargetRow := ImplementationRow + 1
   else
-    TargetRow := InterfaceRow + 1;      // Jump to interface
+    TargetRow := InterfaceRow + 1;
 
-  // Move cursor
+  // Clamp to the buffer so we never move past the last line.
+  if TargetRow > EditBuffer.GetLinesInBuffer then
+    TargetRow := EditBuffer.GetLinesInBuffer;
+
   EditPosition.Move(TargetRow, 1);
   EditBuffer.TopView.MoveViewToCursor;
 end;

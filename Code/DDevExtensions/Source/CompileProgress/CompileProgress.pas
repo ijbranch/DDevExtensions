@@ -22,12 +22,12 @@ unit CompileProgress;
 interface
 
 uses
-  Windows, SysUtils, Classes, SyncObjs, Menus, Hooking, IDEHooks, ToolsAPI, Controls, Forms,
-  Registry, FrmTreePages, IDENotifiers, InterceptIntf, InterceptLoader,
+  Winapi.Windows, System.SysUtils, System.Classes, System.SyncObjs, Vcl.Menus, Hooking, IDEHooks, ToolsAPI, Vcl.Controls, Vcl.Forms,
+  System.Win.Registry, FrmTreePages, IDENotifiers, InterceptIntf, InterceptLoader,
   {$IF CompilerVersion >= 21.0} // Delphi 2010+
-  Rtti,
+  System.Rtti,
   {$IFEND}
-  PluginConfig, Dialogs;
+  PluginConfig, Vcl.Dialogs;
 
 type
   /// <summary>
@@ -710,30 +710,36 @@ begin
                 begin
                   ModuleServices.GetMainProjectGroup.ActiveProject := Project;
 
-                  AutoClose := Boolean(Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg]);
-                  { Compile/Build/Check/... the module's project }
-                  {$IF CompilerVersion >= 21.0} // Delphi 2010+
+                  // Variant -> Boolean via a value comparison; a hard Boolean()
+                  // cast can read the wrong value depending on the variant type.
+                  AutoClose := Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] = True;
+                  { Compile/Build/Check/... the module's project. The active-project
+                    restore is in an outer finally so a compile that raises cannot
+                    leave the IDE pointing at the wrong active project. }
                   try
-                    if not AutoClose then
-                      Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
-                    Result := OrgCallProjectGroupCompileActive(Instance, CompileMode, Wait);
+                    {$IF CompilerVersion >= 21.0} // Delphi 2010+
+                    try
+                      if not AutoClose then
+                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
+                      Result := OrgCallProjectGroupCompileActive(Instance, CompileMode, Wait);
+                    finally
+                      if not AutoClose then
+                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
+                    end;
+                    {$ELSE}
+                    try
+                      if not AutoClose then
+                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
+                      Result := OrgCallCompileActiveProject(Instance, CompileMode, Wait);
+                    finally
+                      if not AutoClose then
+                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
+                    end;
+                    {$IFEND}
                   finally
-                    if not AutoClose then
-                      Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
+                    { Restore the last active project so it is also compiled }
+                    ModuleServices.GetMainProjectGroup.ActiveProject := ActiveProject;
                   end;
-                  {$ELSE}
-                  try
-                    if not AutoClose then
-                      Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
-                    Result := OrgCallCompileActiveProject(Instance, CompileMode, Wait);
-                  finally
-                    if not AutoClose then
-                      Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
-                  end;
-                  {$IFEND}
-
-                  { Restore the last active project so it is also compiled }
-                  ModuleServices.GetMainProjectGroup.ActiveProject := ActiveProject;
 
                   if not GlobalCompileProgress.AskCompileFromDiffProjectTemporary then
                   begin
@@ -948,7 +954,11 @@ begin
   // Win64 shutdown: each step is independently swallowed + logged so that one
   // failure (typically a partially-torn-down ToolsAPI dispatch into rtl370.bpl)
   // doesn't abort the rest of the destructor.
-  try FreeAndNil( FBuildStatsMenuItem );                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatsMenuItem.Free', E); end;
+  try
+    if ( FBuildStatsMenuItem <> nil ) and ( FBuildStatsMenuItem.Parent <> nil ) then
+      FBuildStatsMenuItem.Parent.Remove( FBuildStatsMenuItem );
+    FreeAndNil( FBuildStatsMenuItem );
+  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatsMenuItem.Free', E); end;
   // RegisterInterceptor was never called on Win64 — see TCompileProgress.Create.
   try FIDENotifier.Free;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FIDENotifier.Free', E); end;
   try FormNativeProgress.Free;                            except on E: Exception do LogWin64UnloadStep('TCompileProgress.FormNativeProgress.Free', E); end;
@@ -957,6 +967,10 @@ begin
   try FPasFiles.Free;                                     except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFiles.Free', E); end;
   try inherited Destroy;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.inherited Destroy', E); end;
   {$ELSE}
+  // Remove from the IDE Tools menu before freeing so the menu (which owns it)
+  // cannot double-free it during its own teardown.
+  if ( FBuildStatsMenuItem <> nil ) and ( FBuildStatsMenuItem.Parent <> nil ) then
+    FBuildStatsMenuItem.Parent.Remove( FBuildStatsMenuItem );
   FreeAndNil( FBuildStatsMenuItem );
   GetCompileInterceptorServices.UnregisterInterceptor( FCompileInterceptorId );
   FIDENotifier.Free;

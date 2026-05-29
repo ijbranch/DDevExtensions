@@ -26,7 +26,7 @@ unit DependencyViewer;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -313,7 +313,7 @@ var
 implementation
 
 uses
-  Forms, Controls, ToolsAPIHelpers, AppConsts,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts,
   FrmDependencyViewer, FrmeOptionPageDependencyViewer;
 
 { TUnitInfo }
@@ -1015,14 +1015,24 @@ begin
     SL := TStringList.Create;
 
     try
-      SL.LoadFromFile( FileName );
-      Content := SL.Text;
+      try
+        SL.LoadFromFile( FileName );
+        Content := SL.Text;
+      except
+        // Locked / unreadable / encoding-rejected file: skip it rather than
+        // aborting the whole project scan with an unhandled exception.
+        on E: Exception do
+          Content := '';
+      end;
     finally
       SL.Free;
     end;
 
-    ParseUsesClause( Content, UnitInfo );
-    UnitInfo.Parsed := True;
+    if Content <> '' then
+    begin
+      ParseUsesClause( Content, UnitInfo );
+      UnitInfo.Parsed := True;
+    end;
 
     // Recursively scan dependencies
     // (Disabled for performance - only scan on demand)
@@ -1104,7 +1114,9 @@ begin
   for I := 0 to Project.GetModuleCount - 1 do
   begin
     ModuleInfo := Project.GetModule( I );
-    FileName   := ModuleInfo.FileName;
+    if ModuleInfo = nil then
+      Continue;
+    FileName := ModuleInfo.FileName;
 
     if SameText( ExtractFileExt( FileName ), '.pas' ) then
     begin

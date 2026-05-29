@@ -21,8 +21,8 @@ unit FrmeOptionPageExternalModMonitor;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmTreePages, FrmeBase;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmTreePages, FrmeBase;
 
 type
   /// <summary>
@@ -83,6 +83,9 @@ end;
 procedure TFrameOptionPageExternalModMonitor.LoadData;
 begin
 
+  if not ( FConfig is TExternalModMonitorConfig ) then
+    Exit;
+
   cbxActive.Checked := ( FConfig as TExternalModMonitorConfig ).Active;
   edtDebounceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).DebounceMs );
   edtExtensions.Text := ( FConfig as TExternalModMonitorConfig ).MonitoredExtensions;
@@ -96,6 +99,9 @@ procedure TFrameOptionPageExternalModMonitor.SaveData;
 var
   Val: Integer;
 begin
+
+  if not ( FConfig is TExternalModMonitorConfig ) then
+    Exit;
 
   ( FConfig as TExternalModMonitorConfig ).Active := cbxActive.Checked;
 

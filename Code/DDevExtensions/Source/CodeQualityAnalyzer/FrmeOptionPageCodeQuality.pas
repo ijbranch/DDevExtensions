@@ -20,8 +20,8 @@ unit FrmeOptionPageCodeQuality;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, FrmeBase, FrmTreePages, StdCtrls, ExtCtrls, ComCtrls,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, FrmeBase, FrmTreePages, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls,
   CodeQualityAnalyzer;
 
 type

@@ -26,7 +26,7 @@ unit UnusedUnitDetector;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -151,7 +151,7 @@ var
 implementation
 
 uses
-  Forms, Controls, ToolsAPIHelpers, AppConsts,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts,
   FrmUnusedUnitDetector, FrmeOptionPageUnusedUnitDetector;
 
 { TUnitAnalyzer }
@@ -443,6 +443,10 @@ begin
       Continue;
     end;
 
+    // NOTE: braces are treated as comments, so compiler directives written as
+    // {$IFDEF}...{$ENDIF} - and any unit listed only inside such a directive in a
+    // uses clause - are not analysed. Conditional uses entries are out of scope
+    // for this heuristic; results are advisory when directives are present.
     if Ch = '{' then
     begin
       AddToken;
@@ -595,7 +599,14 @@ begin
   SL := TStringList.Create;
 
   try
-    SL.LoadFromFile( FileName );
+    try
+      SL.LoadFromFile( FileName );
+    except
+      // Locked / in-use / permission-denied file: skip it rather than aborting
+      // the whole project scan with an unhandled exception.
+      on E: Exception do
+        Exit;
+    end;
     Content := SL.Text;
   finally
     SL.Free;

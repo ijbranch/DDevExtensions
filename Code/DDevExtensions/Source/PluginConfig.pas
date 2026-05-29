@@ -28,7 +28,7 @@ unit PluginConfig;
 interface
 
 uses
-  Variants, SysUtils, Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, TypInfo;
+  System.Variants, System.SysUtils, System.Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, System.TypInfo;
 
 type
   /// <summary>

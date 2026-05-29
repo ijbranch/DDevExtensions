@@ -22,9 +22,9 @@ unit FrmeOptionPageCompileBackup;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmTreePages, PluginConfig, IDENotifiers, ModuleData,
-  ToolsAPI, ExtCtrls, FrmeBase;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmTreePages, PluginConfig, IDENotifiers, ModuleData,
+  ToolsAPI, Vcl.ExtCtrls, FrmeBase;
 
 type
   /// <summary>
@@ -148,13 +148,27 @@ begin
   cbxActive.Checked := FCompileBackupConfig.Active;
   cbxDeleteBackupAfterClose.Checked := FCompileBackupConfig.DeleteBackupAfterClose;
   cbxActiveClick(cbxActive);
+  {$IFDEF CPUX64}
+  // The compile-backup notifier is not registered on the 64-bit IDE (TIDENotifier
+  // registration is gated off to avoid an AV), so backups would never be written.
+  // Make that explicit rather than letting the user rely on a backup that never runs.
+  cbxActive.Enabled := False;
+  cbxActive.Hint := 'Not available on the 64-bit IDE';
+  cbxActive.ShowHint := True;
+  cbxDeleteBackupAfterClose.Enabled := False;
+  {$ENDIF}
 end;
 
 procedure TFrameOptionPageCompileBackup.SaveData;
 begin
   FCompileBackupConfig.Active := cbxActive.Checked;
   FCompileBackupConfig.DeleteBackupAfterClose := cbxDeleteBackupAfterClose.Checked;
-  FCompileBackupConfig.Save;
+  try
+    FCompileBackupConfig.Save;
+  except
+    on E: Exception do
+      ShowMessage( 'Could not save Compile Backup settings:'#13#10 + E.Message );
+  end;
 end;
 
 procedure TFrameOptionPageCompileBackup.Selected;
@@ -258,6 +272,8 @@ begin
             FileEditor := Module.GetModuleFileEditor(k);
             if Supports(FileEditor, IOTAEditBuffer, SourceEditor) then
             begin
+              // Only modified buffers that already have an on-disk file are backed
+              // up; never-saved new buffers (no file yet) are intentionally skipped.
               if SourceEditor.Modified and FastFileExists(SourceEditor.FileName) then
               begin
                 BackupFilename := GetCompileBackupFilename(SourceEditor.FileName);
@@ -284,7 +300,11 @@ begin
             BackupedFiles := TStringList.Create;
           end;
         except
-          // ignore Delphi 5 exceptions
+          on E: Exception do
+            // Legacy guard for old-IDE quirks; log write failures (disk full,
+            // read-only target, locked file) so a missing backup is diagnosable
+            // instead of being silently swallowed.
+            OutputDebugString( PChar( 'CompileBackup: ' + Module.FileName + ' - ' + E.Message ) );
         end;
       end;
     finally

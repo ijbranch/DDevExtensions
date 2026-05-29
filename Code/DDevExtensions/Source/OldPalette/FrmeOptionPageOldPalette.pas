@@ -20,8 +20,8 @@ unit FrmeOptionPageOldPalette;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmTreePages, PluginConfig, ExtCtrls, ComCtrls,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmTreePages, PluginConfig, Vcl.ExtCtrls, Vcl.ComCtrls,
   SimpleXmlIntf, FrmeBase;
 
 type
@@ -268,7 +268,10 @@ begin
     FActive := Value;
     if FLoading then
       Exit;
-    ControlBar := TControlBar(Application.MainForm.FindComponent('ControlBar1'));
+    if Application.MainForm <> nil then
+      ControlBar := TControlBar(Application.MainForm.FindComponent('ControlBar1'))
+    else
+      ControlBar := nil;
     if not Active then
     begin
       if ControlBar <> nil then

@@ -25,7 +25,7 @@ interface
 }
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
 /// <summary>
 /// Plug-in entry point. Installs the LoadDesktop hook on initialisation and removes it on
@@ -52,7 +52,10 @@ begin
   UnhookFunction(LoadDesktopHook);
   try
     try
-      TLoadDesktopProc(LoadDesktopHook.RealProc)(Instance, Desktop);
+      // RealProc is nil when the prologue was never patched (a failed or no-op
+      // install, e.g. on Win64); calling through it would AV.
+      if Assigned(LoadDesktopHook.RealProc) then
+        TLoadDesktopProc(LoadDesktopHook.RealProc)(Instance, Desktop);
     finally
       for I := 0 to Screen.FormCount - 1 do
       begin
@@ -74,11 +77,16 @@ end;
 
 procedure InitPlugin(Unload: Boolean);
 begin
+  {$IFNDEF CPUX64}
   if not Unload then
     HookFunction(coreide_bpl, '@Desktop@TDesktopStates@LoadDesktop$qqrp21Desktop@TDesktopState',
       @Hook_LoadDesktop, LoadDesktopHook)
   else
     UnhookFunction(LoadDesktopHook);
+  {$ELSE}
+  // The focus-editor hook relies on Hooking.HookFunction/CodeRedirect, which is a
+  // no-op on Win64; the feature is intentionally inactive on the 64-bit IDE.
+  {$ENDIF}
 end;
 
 end.

@@ -28,11 +28,11 @@ unit ComponentManager;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs, Controls, IDEHooks, ToolsAPI,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, Vcl.Controls, IDEHooks, ToolsAPI,
   {$IFDEF COMPILER5}
-  Consts,
+  Vcl.Consts,
   {$ELSE}
-  RTLConsts,
+  System.RTLConsts,
   {$ENDIF COMPILER5}
   Hooking;
 
@@ -189,15 +189,15 @@ begin
   while (Result = 0) and (c <> nil) and (c <> TComponent) and (c <> TControl) do
   begin
     ClsName := string(c.ClassName);
-    Result := Windows.LoadBitmap(RegisteredComponents.FindModule(TComponentClass(c)), PChar(ClsName));
+    Result := Winapi.Windows.LoadBitmap(RegisteredComponents.FindModule(TComponentClass(c)), PChar(ClsName));
     if Result = 0 then
-      Result := Windows.LoadBitmap(ModuleFromAddr(c.ClassInfo), PChar(ClsName));
+      Result := Winapi.Windows.LoadBitmap(ModuleFromAddr(c.ClassInfo), PChar(ClsName));
 
     c := c.ClassParent;
   end;
   if Result = 0 then
   begin
-    Result := Windows.LoadBitmap(GetModuleHandle(delphicoreide_bpl), 'DEFAULT');
+    Result := Winapi.Windows.LoadBitmap(GetModuleHandle(delphicoreide_bpl), 'DEFAULT');
     if IsDefault <> nil then
       IsDefault^ := True;
   end
@@ -457,6 +457,10 @@ begin
   try
     RegisteredComponents.RegisterComponents(Page, ComponentClasses);
   except
+    on E: Exception do
+      // Do not abort the IDE's registration, but do not swallow silently either:
+      // a divergent component view should at least be diagnosable.
+      OutputDebugString(PChar('DDevExtensions ComponentManager: ' + E.Message));
   end;
   if Assigned(RegisterComponentsProc) then
     RegisterComponentsProc(Page, ComponentClasses)

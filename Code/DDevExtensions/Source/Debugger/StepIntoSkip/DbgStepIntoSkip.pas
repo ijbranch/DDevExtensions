@@ -14,8 +14,16 @@ interface
 
 implementation
 
+{$IFNDEF CPUX64}
+// Experimental: this unit hooks 32-bit dcc32 internals via hand-coded x86 byte
+// signatures and 32-bit (LongWord) address arithmetic, so it is excluded from the
+// 64-bit IDE personality where those signatures and pointer sizes do not apply.
+// It is also currently inactive (the Init call in the initialization section is
+// commented out) and is not referenced by any project / .dpk / .dpr - retained as
+// unsupported, experimental code only.
+
 uses
-  Windows, SysUtils, Hooking, IDEHooks;
+  Winapi.Windows, System.SysUtils, Hooking, IDEHooks;
 
 type
   TCodePos = record
@@ -180,5 +188,6 @@ end;
 
 initialization
 //  Init;
+{$ENDIF CPUX64}
 
 end.

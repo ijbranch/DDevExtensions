@@ -25,7 +25,7 @@ interface
 }
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
 /// <summary>
 /// Plug-in entry point. Installs the LoadDesktop hook on initialisation and removes it on

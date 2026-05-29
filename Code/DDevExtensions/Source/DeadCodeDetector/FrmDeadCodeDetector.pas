@@ -20,9 +20,9 @@ unit FrmDeadCodeDetector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
-  Generics.Defaults, FrmBase, DeadCodeDetector, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, DeadCodeDetector, ToolsAPI;
 
 type
   /// <summary>Main detector form for the Dead Code Detector plugin.</summary>
@@ -95,6 +95,7 @@ type
   private
     /// <summary>Owned analyser used to perform the analysis.</summary>
     FAnalyzer: TDeadCodeAnalyzer;
+    FScanning: Boolean;
     /// <summary>Most recent analysis result.</summary>
     FDeadCode: TArray<TDeadCodeItem>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -152,6 +153,15 @@ end;
 
 procedure TFormDeadCodeDetector.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+
+  // AnalyzerProgress pumps the message queue, so the user can trigger a close
+  // mid-scan. Veto it while scanning, otherwise the form and FAnalyzer are freed
+  // while AnalyzeProject is still on the stack (use-after-free).
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
 
   FormInstance := nil;
   Action       := caFree;
@@ -228,8 +238,10 @@ begin
     Exit;
   end;
 
-  Screen.Cursor    := crHourGlass;
-  btnScan.Enabled  := False;
+  Screen.Cursor     := crHourGlass;
+  btnScan.Enabled   := False;
+  FScanning         := True;
+  ListView.Selected := nil;   // drop any stale selection before re-scan
 
   try
     lblProgress.Caption := 'Analysing project...';
@@ -244,6 +256,7 @@ begin
     lblSummary.Caption  := Format( 'Found %d potentially dead code items', [ Length( FDeadCode ) ] );
     lblSummary.Visible  := True;
   finally
+    FScanning       := False;
     btnScan.Enabled := True;
     Screen.Cursor   := crDefault;
   end;
@@ -409,31 +422,52 @@ begin
 
   DeadItem := FDeadCode[ Idx ];
 
+  if not FileExists( DeadItem.FileName ) then
+  begin
+    ShowMessage( 'Source file not found: ' + DeadItem.FileName );
+    Exit;
+  end;
+
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( DeadItem.FileName );
-
-    if Module <> nil then
-    begin
-
-      for I := 0 to Module.ModuleFileCount - 1 do
+    try
+      Module := ModuleServices.OpenModule( DeadItem.FileName );
+    except
+      on E: Exception do
       begin
-
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-
-          if SourceEditor.EditViewCount > 0 then
-          begin
-            EditView := SourceEditor.EditViews[ 0 ];
-            EditView.SetTopLeft( DeadItem.Line, 1 );
-            EditView.Center( DeadItem.Line, 1 );
-          end;
-
-          Break;
-        end;
+        ShowMessage( Format( 'Could not open %s'#13#10'%s', [ DeadItem.FileName, E.Message ] ) );
+        Exit;
       end;
     end;
+
+    if Module = nil then
+    begin
+      ShowMessage( 'Could not open ' + DeadItem.FileName );
+      Exit;
+    end;
+
+    SourceEditor := nil;
+
+    for I := 0 to Module.ModuleFileCount - 1 do
+    begin
+
+      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
+      begin
+        SourceEditor.Show;
+
+        if SourceEditor.EditViewCount > 0 then
+        begin
+          EditView := SourceEditor.EditViews[ 0 ];
+          EditView.SetTopLeft( DeadItem.Line, 1 );
+          EditView.Center( DeadItem.Line, 1 );
+        end;
+
+        Break;
+      end;
+    end;
+
+    if SourceEditor = nil then
+      ShowMessage( 'No source editor available for ' + ExtractFileName( DeadItem.FileName ) );
   end;
 
 end;

@@ -21,8 +21,8 @@ unit FrmLibraryPathSorter;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Types, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Buttons, Generics.Collections,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Types, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
   FrmBase, LibraryPathSorter;
 
 type
@@ -258,7 +258,7 @@ implementation
 {$R *.dfm}
 
 uses
-  Registry, IDEUtils, Main;
+  System.Win.Registry, IDEUtils, Main;
 
 class procedure TFormLibraryPathSorter.Execute;
 begin
@@ -576,22 +576,39 @@ end;
 procedure TFormLibraryPathSorter.ApplyPaths( const APaths: string );
 var
   VerifyPaths: string;
-  OriginalSemicolons, NewSemicolons, VerifySemicolons, I: Integer;
+
+  function SamePathContent( const A, B: string ): Boolean;
+  var
+    LA, LB: TStringList;
+    K: Integer;
+  begin
+    LA := TStringList.Create;
+    LB := TStringList.Create;
+    try
+      LA.Delimiter := ';';  LA.StrictDelimiter := True;  LA.DelimitedText := A;
+      LB.Delimiter := ';';  LB.StrictDelimiter := True;  LB.DelimitedText := B;
+      // Trim each entry and drop empty (trailing-semicolon) ones before comparing.
+      for K := LA.Count - 1 downto 0 do
+        if Trim( LA[K] ) = '' then LA.Delete( K ) else LA[K] := Trim( LA[K] );
+      for K := LB.Count - 1 downto 0 do
+        if Trim( LB[K] ) = '' then LB.Delete( K ) else LB[K] := Trim( LB[K] );
+      Result := LA.Count = LB.Count;
+      if Result then
+        for K := 0 to LA.Count - 1 do
+          if not SameText( LA[K], LB[K] ) then
+          begin
+            Result := False;
+            Break;
+          end;
+    finally
+      LA.Free;
+      LB.Free;
+    end;
+  end;
+
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
-
-  // Count semicolons in what we're about to write
-  NewSemicolons := 0;
-  for I := 1 to Length( APaths ) do
-    if APaths[I] = ';' then
-      Inc( NewSemicolons );
-
-  // Count semicolons in original
-  OriginalSemicolons := 0;
-  for I := 1 to Length( FOriginalPaths ) do
-    if FOriginalPaths[I] = ';' then
-      Inc( OriginalSemicolons );
 
   // Create backup if auto-backup is enabled
   if chkAutoBackup.Checked and ( FOriginalPaths <> '' ) then
@@ -604,32 +621,31 @@ begin
     end;
   end;
 
-  // Apply the paths
-  LibraryPathSorterPlugin.PathHandler.WritePaths(
-    GetSelectedPathType, GetSelectedPlatform, APaths );
-
-  // VERIFY: Read back and compare
-  VerifyPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
-    GetSelectedPathType, GetSelectedPlatform );
-
-  VerifySemicolons := 0;
-  for I := 1 to Length( VerifyPaths ) do
-    if VerifyPaths[I] = ';' then
-      Inc( VerifySemicolons );
-
-  // Check for data loss
-  if VerifySemicolons <> NewSemicolons then
-  begin
-    ShowMessage( Format(
-      'WARNING: Registry verification failed!' + #13#10#13#10 +
-      'Original paths: %d (semicolons: %d)' + #13#10 +
-      'Attempted to write: %d paths (semicolons: %d)' + #13#10 +
-      'Registry now contains: %d paths (semicolons: %d)' + #13#10#13#10 +
-      'DATA MAY HAVE BEEN LOST! Check your backup.',
-      [OriginalSemicolons + 1, OriginalSemicolons,
-       NewSemicolons + 1, NewSemicolons,
-       VerifySemicolons + 1, VerifySemicolons] ) );
+  // Apply the paths. The registry write is the most destructive step; guard it so
+  // a failure (permissions, locked hive) reports cleanly and resyncs the UI with
+  // the actual registry contents instead of leaving stale, half-applied state.
+  try
+    LibraryPathSorterPlugin.PathHandler.WritePaths(
+      GetSelectedPathType, GetSelectedPlatform, APaths );
+    VerifyPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+      GetSelectedPathType, GetSelectedPlatform );
+  except
+    on E: Exception do
+    begin
+      ShowMessage( 'Failed to write the library paths to the registry:'#13#10 + E.Message );
+      LoadCurrentPaths;   // resync the Original panel with what is really stored
+      UpdateStatus( 'Save failed - paths reloaded from registry' );
+      Exit;
+    end;
   end;
+
+  // VERIFY: compare the actual path content read back, not just the delimiter
+  // count (a count-only check misses truncation, reordering or quoting changes).
+  if not SamePathContent( APaths, VerifyPaths ) then
+    ShowMessage(
+      'WARNING: Registry verification failed!' + #13#10#13#10 +
+      'The paths read back from the registry do not match what was written.' + #13#10 +
+      'DATA MAY HAVE BEEN LOST OR ALTERED - check your backup.' );
 
   // Reload
   LoadCurrentPaths;
@@ -755,7 +771,9 @@ begin
     if odFocused in State then
       ListBox.Canvas.DrawFocusRect( Rect );
   except
-    // Silently ignore drawing errors to prevent cascading failures
+    on E: Exception do
+      // Avoid cascading paint failures, but log so a genuine bug is diagnosable.
+      OutputDebugString( PChar( 'DDevExtensions LibraryPathSorter draw: ' + E.Message ) );
   end;
 end;
 
@@ -917,7 +935,9 @@ begin
     if odFocused in State then
       ListBox.Canvas.DrawFocusRect( Rect );
   except
-    // Silently ignore drawing errors to prevent cascading failures
+    on E: Exception do
+      // Avoid cascading paint failures, but log so a genuine bug is diagnosable.
+      OutputDebugString( PChar( 'DDevExtensions LibraryPathSorter draw: ' + E.Message ) );
   end;
 end;
 
@@ -1398,6 +1418,11 @@ begin
     // Update UI to show the restored path type/platform
     cboPathType.ItemIndex := Ord( Backup.PathType );
     cboPlatform.ItemIndex := cboPlatform.Items.IndexOf( Backup.Platform );
+    if cboPlatform.ItemIndex = -1 then
+      // The restored platform isn't currently shown (filtered out or not
+      // installed); warn rather than silently displaying a different platform.
+      ShowMessage( Format( 'Restored the %s paths, but that platform is not currently shown, ' +
+        'so the list below may display a different platform.', [ Backup.Platform ] ) );
 
     LoadCurrentPaths;
     UpdateStatus( 'Backup restored successfully' );

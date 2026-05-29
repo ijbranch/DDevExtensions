@@ -18,8 +18,8 @@ unit FrmeOptionPageUnreachableCode;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmeBase, FrmTreePages, UnreachableCodeDetector;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmeBase, FrmTreePages, UnreachableCodeDetector;
 
 type
   /// <summary>Options page frame shown inside the IDE Tools dialog for the Unreachable Code Detector plugin.</summary>

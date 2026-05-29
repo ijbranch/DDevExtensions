@@ -19,8 +19,8 @@ unit FrmeOptionPageDfmPas;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmTreePages, FrmeBase, ExtCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmTreePages, FrmeBase, Vcl.ExtCtrls;
 
 type
   /// <summary>Options frame for the DFM/PAS Consistency plugin.</summary>

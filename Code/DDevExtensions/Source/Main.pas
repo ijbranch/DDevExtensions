@@ -33,9 +33,9 @@ unit Main;
 interface
 
 uses
-  Windows, SysUtils, Classes, Hooking, IDEUtils, Splash, Registry, Forms, Menus,
-  Graphics, Controls, ExtCtrls, ActnList, AppConsts, ToolsAPI, Dialogs,
-  StdCtrls, ComCtrls, ActiveX, ShlObj, ImportHooking;
+  Winapi.Windows, System.SysUtils, System.Classes, Hooking, IDEUtils, Splash, System.Win.Registry, Vcl.Forms, Vcl.Menus,
+  Vcl.Graphics, Vcl.Controls, Vcl.ExtCtrls, Vcl.ActnList, AppConsts, ToolsAPI, Vcl.Dialogs,
+  Vcl.StdCtrls, Vcl.ComCtrls, Winapi.ActiveX, Winapi.ShlObj, ImportHooking;
 
 type
   /// <summary>
@@ -97,7 +97,7 @@ var
 implementation
 
 uses
-  SysConst, IDEHooks, ComponentManager, DtmImages, FrmDDevExtOptions, RegisterPlugins,
+  System.SysConst, IDEHooks, ComponentManager, DtmImages, FrmDDevExtOptions, RegisterPlugins,
   ToolsAPIHelpers, PluginConfig;
 
 var
@@ -258,7 +258,7 @@ begin
   InitAppDataDirectory;
   DataModuleImages := TDataModuleImages.Create(nil);
 
-  OrgFinalizePackage := @SysUtils.FinalizePackage;
+  OrgFinalizePackage := @System.SysUtils.FinalizePackage;
   if Assigned(OrgFinalizePackage) then
     CodeRedirect(OrgFinalizePackage, @HookedFinalizePackage, HookFinalizePackage);
 
@@ -297,8 +297,15 @@ end;
 procedure IDELoaded;
 var
   I, Index: Integer;
-  Item, SeparatorItem: TMenuItem;
+  Item, SeparatorItem, AnchorItem: TMenuItem;
 begin
+  // IDELoaded is reached from both the splash poll timer and the splash
+  // component's destructor; run it exactly once. Otherwise the submenu and every
+  // late loader (notifiers, hooks) would be created twice and the previous
+  // DDevExtensionsMenu would leak.
+  if Assigned(DDevExtensionsMenu) then
+    Exit;
+
   // Create main DDevExtensions submenu
   DDevExtensionsMenu := TMenuItem.Create(nil);
   DDevExtensionsMenu.Caption := 'DDevExtensions';
@@ -318,11 +325,21 @@ begin
   Item := FindMenuItem('ToolsMenu');
   if Item <> nil then
   begin
-    Index := Item.IndexOf(FindMenuItem('ToolsDebuggerOptionsItem'));
-    if Index = -1 then
-      Index := Item.IndexOf(FindMenuItem('ToolsToolsItem')) - 1;
-    if Index >= 0 then
-      Item.Insert(Index + 1, DDevExtensionsMenu)
+    // Resolve a known anchor and compute the insert position from it. Resolving
+    // the anchor first avoids the -2 magic intermediate (IndexOf(nil) - 1) when
+    // neither anchor exists on this personality, in which case we insert near top.
+    Index := -1;
+    AnchorItem := FindMenuItem('ToolsDebuggerOptionsItem');
+    if AnchorItem <> nil then
+      Index := Item.IndexOf(AnchorItem) + 1   // insert after the Debugger Options item
+    else
+    begin
+      AnchorItem := FindMenuItem('ToolsToolsItem');
+      if AnchorItem <> nil then
+        Index := Item.IndexOf(AnchorItem);     // insert before the Tools item
+    end;
+    if Index >= 1 then
+      Item.Insert(Index, DDevExtensionsMenu)
     else
       Item.Insert(1, DDevExtensionsMenu);
   end;

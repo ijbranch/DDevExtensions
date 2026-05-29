@@ -20,8 +20,8 @@ unit FrmProjectSettingsSetVersioninfo;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI, ComCtrls, StdCtrls, ExtCtrls, FrmBase, Buttons, ExtDlgs,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls, FrmBase, Vcl.Buttons, Vcl.ExtDlgs,
   ProjectResource;
 
 type
@@ -294,7 +294,7 @@ implementation
 
 uses
   IDEUtils, IDEHooks, Hooking, DtmImages,
-  ActnList, Menus, AppConsts, ToolsAPIHelpers, DateUtils, Math, PluginConfig, SimpleXmlIntf;
+  Vcl.ActnList, Vcl.Menus, AppConsts, ToolsAPIHelpers, System.DateUtils, System.Math, PluginConfig, SimpleXmlIntf;
 
 {$R *.dfm}
 
@@ -544,7 +544,7 @@ begin
     sh := FindFirstFile(PChar(Project.FileName), Data);
     if sh <> INVALID_HANDLE_VALUE then
     begin
-      Windows.FindClose(sh);
+      Winapi.Windows.FindClose(sh);
       FileTimeToLocalFileTime(Data.ftCreationTime, LocalFileTime);
       FileTimeToSystemTime(LocalFileTime, SystemTime);
       with SystemTime do
@@ -700,7 +700,7 @@ procedure TFormProjectSettingsSetVersioninfo.btnApplyStringClick(Sender: TObject
       Result := @Version.OriginalFilename
 
     else
-      raise Exception.Create('Fehlermeldung');
+      raise Exception.CreateFmt('Unhandled Apply button: %s', [(Sender as TComponent).Name]);
   end;
 
 var

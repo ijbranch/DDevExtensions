@@ -24,7 +24,7 @@ unit DtmImages;
 interface
 
 uses
-  SysUtils, Classes, ImgList, Controls, Forms;
+  System.SysUtils, System.Classes, Vcl.ImgList, Vcl.Controls, Vcl.Forms;
 
 type
   /// <summary>Container for the four image lists shared across DDevExtensions UI.</summary>

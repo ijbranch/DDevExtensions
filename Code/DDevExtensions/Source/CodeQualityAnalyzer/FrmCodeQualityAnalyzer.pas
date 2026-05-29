@@ -20,8 +20,8 @@ unit FrmCodeQualityAnalyzer;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
   FrmBase, CodeQualityAnalyzer, ToolsAPI;
 
 type
@@ -194,11 +194,18 @@ var
   UnitResults: TArray<TCodeQualityIssue>;
   AllResults: TList<TCodeQualityIssue>;
   ProjectName: string;
+  SkippedCount: Integer;
 begin
   Project := GetActiveProject;
   if Project = nil then
   begin
     ShowMessage( 'No active project.' );
+    Exit;
+  end;
+
+  if CodeQualityAnalyzerPlugin = nil then
+  begin
+    ShowMessage( 'Code Quality Analyzer is not available.' );
     Exit;
   end;
 
@@ -218,6 +225,7 @@ begin
       lblSummary.Visible := False;
       Application.ProcessMessages;
 
+      SkippedCount := 0;
       for I := 0 to Project.GetModuleCount - 1 do
       begin
         ModuleInfo := Project.GetModule( I );
@@ -232,43 +240,49 @@ begin
         lblProgress.Caption := 'Scanning: ' + ExtractFileName( ModuleInfo.FileName );
         Application.ProcessMessages;
 
-        // Try to get source from open editor first
-        Module := ModuleInfo.OpenModule;
-        if Module <> nil then
-        begin
-          SourceEditor := nil;
-          for J := 0 to Module.ModuleFileCount - 1 do
+        Source := '';
+        try
+          // Try to get source from open editor first
+          Module := ModuleInfo.OpenModule;
+          if Module <> nil then
           begin
-            if Supports( Module.ModuleFileEditors[ J ], IOTASourceEditor, SourceEditor ) then
-              Break;
+            SourceEditor := nil;
+            for J := 0 to Module.ModuleFileCount - 1 do
+            begin
+              if Supports( Module.ModuleFileEditors[ J ], IOTASourceEditor, SourceEditor ) then
+                Break;
+            end;
+
+            if SourceEditor <> nil then
+              Source := GetEditorSource( SourceEditor );
           end;
 
-          if SourceEditor <> nil then
-            Source := GetEditorSource( SourceEditor )
+          // If no editor source, try to read from file
+          if ( Source = '' ) and FileExists( ModuleInfo.FileName ) then
+          begin
+            with TStringList.Create do
+            try
+              LoadFromFile( ModuleInfo.FileName );
+              Source := UTF8String( Text );
+            finally
+              Free;
+            end;
+          end;
+
+          if Source <> '' then
+          begin
+            UnitResults := TCodeQualityAnalyzerPlugin.AnalyzeUnit( Source, ModuleInfo.FileName,
+              CodeQualityAnalyzerPlugin );
+            for J := 0 to Length( UnitResults ) - 1 do
+              AllResults.Add( UnitResults[ J ] );
+          end
           else
-            Source := '';
-        end
-        else
-          Source := '';
-
-        // If no editor source, try to read from file
-        if ( Source = '' ) and FileExists( ModuleInfo.FileName ) then
-        begin
-          with TStringList.Create do
-          try
-            LoadFromFile( ModuleInfo.FileName );
-            Source := UTF8String( Text );
-          finally
-            Free;
-          end;
-        end;
-
-        if Source <> '' then
-        begin
-          UnitResults := TCodeQualityAnalyzerPlugin.AnalyzeUnit( Source, ModuleInfo.FileName,
-            CodeQualityAnalyzerPlugin );
-          for J := 0 to Length( UnitResults ) - 1 do
-            AllResults.Add( UnitResults[ J ] );
+            Inc( SkippedCount );
+        except
+          // One unreadable or malformed unit must not abort the whole project
+          // scan - record it and carry on so the rest of the project is scanned.
+          on E: Exception do
+            Inc( SkippedCount );
         end;
       end;
 
@@ -276,8 +290,12 @@ begin
       PopulateList;
 
       lblProgress.Visible := False;
-      lblSummary.Caption := Format( 'Found %d issue(s) in %s',
-        [ Length( FResults ), ProjectName ] );
+      if SkippedCount > 0 then
+        lblSummary.Caption := Format( 'Found %d issue(s) in %s; %d file(s) could not be read',
+          [ Length( FResults ), ProjectName, SkippedCount ] )
+      else
+        lblSummary.Caption := Format( 'Found %d issue(s) in %s',
+          [ Length( FResults ), ProjectName ] );
       lblSummary.Visible := True;
     finally
       btnScan.Enabled := True;
@@ -442,12 +460,15 @@ begin
         if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
         begin
           SourceEditor.Show;
-          EditView := SourceEditor.EditViews[ 0 ];
-          if EditView <> nil then
+          if SourceEditor.EditViewCount > 0 then
           begin
-            EditView.Position.Move( LineNum, 1 );
-            EditView.MoveViewToCursor;
-            EditView.Paint;
+            EditView := SourceEditor.EditViews[ 0 ];
+            if EditView <> nil then
+            begin
+              EditView.Position.Move( LineNum, 1 );
+              EditView.MoveViewToCursor;
+              EditView.Paint;
+            end;
           end;
           Break;
         end;

@@ -21,8 +21,8 @@ unit ProjectSettingsData;
 interface
 
 uses
-  Variants, Windows, SysUtils, Classes, Contnrs, ToolsAPI, SimpleXmlImport, SimpleXmlIntf,
-  TypInfo, Utils;
+  System.Variants, Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, SimpleXmlImport, SimpleXmlIntf,
+  System.TypInfo, Utils;
 
 type
   /// <summary>Controls how option values are copied between a TProjectSetting and an IOTAProject.</summary>
@@ -347,8 +347,14 @@ begin
               else
                 Item.Value := Project.ProjectOptions.Values[Names[i].Name];
             except
-              Item.Free;
-              Item := nil;
+              on E: Exception do
+              begin
+                // Option could not be read via ToolsAPI; drop it but record which
+                // one so a silently-omitted preset option is diagnosable.
+                OutputDebugString(PChar('DDevExtensions ProjectSettings.CopyFrom: ' + Names[i].Name + ' - ' + E.Message));
+                Item.Free;
+                Item := nil;
+              end;
             end;
 
             if Item <> nil then

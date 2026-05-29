@@ -22,10 +22,10 @@ unit ComponentSelector;
 interface
 
 uses
-  CategoryButtons, PaletteAPI,
-  Windows, Messages, SysUtils, Classes, Contnrs, Graphics, Controls, Forms,
-  StdCtrls, ExtCtrls, ComCtrls, ToolsAPI, ActnList, Registry, FrmTreePages,
-  MultiMon, Menus, ImgList, ToolsAPIHelpers, EditPopupCtrl;
+  Vcl.CategoryButtons, PaletteAPI,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, ToolsAPI, Vcl.ActnList, System.Win.Registry, FrmTreePages,
+  Winapi.MultiMon, Vcl.Menus, Vcl.ImgList, ToolsAPIHelpers, EditPopupCtrl;
 
 type
   /// <summary>
@@ -239,7 +239,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  ComponentManager, IDEUtils, IDEHooks, Math, AppConsts, TypInfo,
+  ComponentManager, IDEUtils, IDEHooks, System.Math, AppConsts, System.TypInfo,
   FrmeOptionPageComponentSelector, FrmOptions, DtmImages;
 
 procedure InitPlugin(Unload: Boolean);
@@ -320,8 +320,8 @@ begin
   ControlBar := TControlBar(Application.MainForm.FindComponent('ControlBar1'));
   if ControlBar <> nil then
   begin
-    Supports(BorlandIDEServices, INTAServices, Services);
-    FHotkeyAction.ActionList := Services.ActionList;
+    if Supports(BorlandIDEServices, INTAServices, Services) then
+      FHotkeyAction.ActionList := Services.ActionList;
     FToolBar := NewToolBar(Self, 'ToolBarDDevExtensionsComponentSelector', 'ComponentSelector', False);
 
     FEdit := TDropDownEdit.Create(Self);
@@ -584,7 +584,8 @@ begin
     if ItemIndex <> -1 then
     begin
       Item := TCompItem(Items.Objects[ItemIndex]);
-      SelectComponentPalette(TPaletteItemHolder(Item.Data).Item, ExecuteItem);
+      if (Item <> nil) and (Item.Data <> nil) then
+        SelectComponentPalette(TPaletteItemHolder(Item.Data).Item, ExecuteItem);
     end;
   end;
 end;
@@ -686,6 +687,11 @@ end;
 
 procedure TComponentSelector.ExecuteHotkeyAction(Sender: TObject);
 begin
+  // The toolbar/edit are only created when a ControlBar was found at construction;
+  // guard so a fired hotkey cannot dereference them when they were never built.
+  if (FToolBar = nil) or (FEdit = nil) then
+    Exit;
+
   if FToolBar.Visible and not (FEdit.Focused or FEdit.ListVisible) then
   begin
     FEdit.SetFocus;
@@ -812,7 +818,7 @@ end;
 procedure TDropDownEdit.LooseFocus(Sender: TObject);
 begin
   if ListVisible then
-    Windows.SetFocus(Panel.Handle);
+    Winapi.Windows.SetFocus(Panel.Handle);
 end;
 
 end.

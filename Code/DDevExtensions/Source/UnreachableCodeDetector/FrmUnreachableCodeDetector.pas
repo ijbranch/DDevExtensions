@@ -19,8 +19,8 @@ unit FrmUnreachableCodeDetector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Generics.Collections,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
   FrmBase, UnreachableCodeDetector, ToolsAPI;
 
 type
@@ -72,6 +72,7 @@ type
   private
     /// <summary>Owned scanner used to perform the analysis.</summary>
     FScanner: TUnreachableCodeScanner;
+    FScanning: Boolean;
     /// <summary>Most recent scan result.</summary>
     FItems: TArray<TUnreachableCodeItem>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -95,7 +96,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers, Clipbrd;
+  ToolsAPIHelpers, Vcl.Clipbrd;
 
 class function TFormUnreachableCodeDetector.Execute: Boolean;
 var
@@ -129,6 +130,15 @@ end;
 
 procedure TFormUnreachableCodeDetector.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+
+  // ScannerProgress pumps the message queue, so the user can close the form
+  // mid-scan. Veto it while scanning, otherwise the form and FScanner are freed
+  // while ScanProject is still on the stack (use-after-free).
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
 
   Action := caFree;  // Free the form when closed (non-modal)
 
@@ -173,7 +183,11 @@ begin
   ProjectName := ChangeFileExt( ExtractFileName( Project.FileName ), '' );
   lblProject.Caption := 'Project: ' + ProjectName;
 
+  if FScanning then
+    Exit;
+
   Screen.Cursor := crHourGlass;
+  FScanning     := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -187,6 +201,7 @@ begin
 
     lblProgress.Caption := Format( 'Scan complete. Found %d unreachable code blocks.', [ Length( FItems ) ] );
   finally
+    FScanning     := False;
     Screen.Cursor := crDefault;
   end;
 
@@ -274,21 +289,40 @@ var
 begin
 
   if not FileExists( Item.FileName ) then
+  begin
+    ShowMessage( 'Source file not found: ' + Item.FileName );
     Exit;
+  end;
 
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( Item.FileName );
+    try
+      Module := ModuleServices.OpenModule( Item.FileName );
+    except
+      on E: Exception do
+      begin
+        ShowMessage( Format( 'Could not open %s'#13#10'%s', [ Item.FileName, E.Message ] ) );
+        Exit;
+      end;
+    end;
 
-    if Module <> nil then
+    if Module = nil then
+    begin
+      ShowMessage( 'Could not open ' + Item.FileName );
+      Exit;
+    end;
+
+    SourceEditor := nil;
+
+    for I := 0 to Module.ModuleFileCount - 1 do
     begin
 
-      for I := 0 to Module.ModuleFileCount - 1 do
+      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
       begin
+        SourceEditor.Show;
 
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
+        if SourceEditor.EditViewCount > 0 then
         begin
-          SourceEditor.Show;
           EditView := SourceEditor.EditViews[ 0 ];
 
           if EditView <> nil then
@@ -296,11 +330,14 @@ begin
             EditView.Position.GotoLine( Item.Line );
             EditView.Center( Item.Line, 1 );
           end;
-
-          Break;
         end;
+
+        Break;
       end;
     end;
+
+    if SourceEditor = nil then
+      ShowMessage( 'No source editor available for ' + ExtractFileName( Item.FileName ) );
   end;
 
 end;
@@ -342,8 +379,13 @@ begin
               Item.FileName ] ) );
         end;
 
-        SL.SaveToFile( SaveDlg.FileName );
-        ShowMessage( Format( 'Exported %d items to %s', [ Length( FItems ), SaveDlg.FileName ] ) );
+        try
+          SL.SaveToFile( SaveDlg.FileName );
+          ShowMessage( Format( 'Exported %d items to %s', [ Length( FItems ), SaveDlg.FileName ] ) );
+        except
+          on E: Exception do
+            ShowMessage( 'Could not write file: ' + E.Message );
+        end;
       finally
         SL.Free;
       end;

@@ -21,9 +21,9 @@ unit FrmDependencyViewer;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Generics.Collections,
-  Generics.Defaults, FrmBase, DependencyViewer, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, DependencyViewer, ToolsAPI;
 
 type
   /// <summary>Direction in which the tree displays dependencies: outgoing (vmUses) or incoming (vmUsedBy).</summary>
@@ -197,7 +197,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers, Main, FrmLayerConfig, ShellAPI;
+  ToolsAPIHelpers, Main, FrmLayerConfig, Winapi.ShellAPI;
 
 class procedure TFormDependencyViewer.Execute;
 begin
@@ -667,11 +667,9 @@ end;
 procedure TFormDependencyViewer.HighlightCycleMembers( const CircRef: TCircularReference );
 var
   I: Integer;
-  Node: TTreeNode;
-  UnitInfo: TUnitInfo;
 begin
 
-  // First, clear any previous highlights by removing markers
+  // First, clear any previous highlights
   ClearHighlights;
 
   FHighlightedUnits.Clear;
@@ -680,21 +678,9 @@ begin
   for I := 0 to High( CircRef.Steps ) - 1 do
     FHighlightedUnits.Add( CircRef.Steps[ I ].UnitName );
 
-  // Add visual marker to highlighted nodes (works regardless of themes)
-  for Node in TreeView.Items do
-  begin
-    if Node.Level = 0 then
-    begin
-      UnitInfo := TUnitInfo( Node.Data );
-
-      if ( UnitInfo <> nil ) and ( FHighlightedUnits.IndexOf( UnitInfo.UnitName ) >= 0 ) then
-      begin
-        if Pos( '>>> ', Node.Text ) = 0 then
-          Node.Text := '>>> ' + Node.Text + ' <<<';
-      end;
-    end;
-  end;
-
+  // Highlighting is rendered by TreeViewAdvancedCustomDrawItem from
+  // FHighlightedUnits. Do NOT mutate Node.Text with '>>>'/'<<<' markers - that
+  // corrupted captions and made AutoSize measure the decorated text.
   TreeView.Invalidate;
 
 end;
@@ -873,17 +859,25 @@ begin
     Exit;
   end;
 
+  // Set the title explicitly: the dialog is shared and btnExportViolationsClick
+  // changes it, so it must be reset here too or it shows the wrong caption.
+  SaveDialogExport.Title := 'Export Circular References';
   if SaveDialogExport.Execute then
   begin
     Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
 
-    if Ext = '.csv' then
-      ExportCircularRefsToCSV( SaveDialogExport.FileName )
-    else
-      ExportCircularRefsToTXT( SaveDialogExport.FileName );
+    try
+      if Ext = '.csv' then
+        ExportCircularRefsToCSV( SaveDialogExport.FileName )
+      else
+        ExportCircularRefsToTXT( SaveDialogExport.FileName );
 
-    ShowMessage( Format( 'Exported %d circular references to %s',
-      [ FScanner.CircularReferences.Count, SaveDialogExport.FileName ] ) );
+      ShowMessage( Format( 'Exported %d circular references to %s',
+        [ FScanner.CircularReferences.Count, SaveDialogExport.FileName ] ) );
+    except
+      on E: Exception do
+        ShowMessage( 'Could not write file:'#13#10 + E.Message );
+    end;
   end;
 
 end;
@@ -1135,13 +1129,18 @@ begin
   begin
     Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
 
-    if Ext = '.csv' then
-      ExportViolationsToCSV( SaveDialogExport.FileName )
-    else
-      ExportViolationsToTXT( SaveDialogExport.FileName );
+    try
+      if Ext = '.csv' then
+        ExportViolationsToCSV( SaveDialogExport.FileName )
+      else
+        ExportViolationsToTXT( SaveDialogExport.FileName );
 
-    ShowMessage( Format( 'Exported %d layer violations to %s',
-      [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
+      ShowMessage( Format( 'Exported %d layer violations to %s',
+        [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
+    except
+      on E: Exception do
+        ShowMessage( 'Could not write file:'#13#10 + E.Message );
+    end;
   end;
 
 end;

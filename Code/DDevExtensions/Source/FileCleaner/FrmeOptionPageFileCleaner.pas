@@ -21,9 +21,9 @@ unit FrmeOptionPageFileCleaner;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI, FrmTreePages, PluginConfig, StdCtrls,
-  ModuleData, FrmeBase, ExtCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI, FrmTreePages, PluginConfig, Vcl.StdCtrls,
+  ModuleData, FrmeBase, Vcl.ExtCtrls;
 
 type
   /// <summary>
@@ -216,19 +216,25 @@ begin
     if (Ext = '.pas') or (Ext = '.cpp') or (Ext = '.dfm') or (Ext = '.nfm') or (Ext = '.xfm') or (Ext = '.h') or
        IsProjectExt then
     begin
-      if DeleteDdp and not IsProjectExt then
-        DeleteFile(ChangeFileExt(FileName, '.ddp'));
-      {$IFDEF COMPILER9_UP}
-      if RemoveEmptyModel then
-      begin
-        RemoveDir(ExtractFilePath(FileName) + 'Modell');
-        RemoveDir(ExtractFilePath(FileName) + 'Model');
+      try
+        if DeleteDdp and not IsProjectExt then
+          DeleteFile(ChangeFileExt(FileName, '.ddp'));
+        {$IFDEF COMPILER9_UP}
+        if RemoveEmptyModel then
+        begin
+          RemoveDir(ExtractFilePath(FileName) + 'Modell');
+          RemoveDir(ExtractFilePath(FileName) + 'Model');
+        end;
+        {$ENDIF COMPILER9_UP}
+        {$IFDEF COMPILER10_UP}
+        if RemoveEmptyHistory then
+          RemoveDir(ExtractFilePath(FileName) + '__history');
+        {$ENDIF COMPILER10_UP}
+      except
+        on E: Exception do
+          // Best-effort cleanup must never disrupt the IDE save pipeline; log and continue.
+          OutputDebugString(PChar('DDevExtensions FileCleaner: ' + FileName + ' - ' + E.Message));
       end;
-      {$ENDIF COMPILER9_UP}
-      {$IFDEF COMPILER10_UP}
-      if RemoveEmptyHistory then
-        RemoveDir(ExtractFilePath(FileName) + '__history');
-      {$ENDIF COMPILER10_UP}
     end;
   end;
 end;

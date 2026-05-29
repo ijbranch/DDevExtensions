@@ -20,8 +20,8 @@ unit DfmPasConsistency;
 interface
 
 uses
-  SysUtils, Classes, Menus, ToolsAPI, PluginConfig, FrmTreePages,
-  FrmeOptionPageDfmPas, Generics.Collections;
+  System.SysUtils, System.Classes, Vcl.Menus, ToolsAPI, PluginConfig, FrmTreePages,
+  FrmeOptionPageDfmPas, System.Generics.Collections;
 
 type
   /// <summary>Classification of a DFM/PAS inconsistency.</summary>
@@ -107,7 +107,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Windows, Forms, Dialogs, Main, IDENotifiers, ToolsAPIHelpers, DelphiLexer,
+  Winapi.Windows, Vcl.Forms, Vcl.Dialogs, Main, IDENotifiers, ToolsAPIHelpers, DelphiLexer,
   FrmDfmPasConsistency;
 
 type
@@ -248,6 +248,9 @@ var
   var
     UpperType: string;
   begin
+    if TypeName = '' then
+      Exit(False);
+
     // Filter out common non-component types that are often declared as form fields
     // but are not visual/non-visual components placed on forms
     UpperType := UpperCase(TypeName);

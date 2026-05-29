@@ -19,9 +19,9 @@ unit FrmCodeStyleChecker;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
-  Generics.Defaults, FrmBase, CodeStyleChecker, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, CodeStyleChecker, ToolsAPI;
 
 type
   /// <summary>Singleton results form for the Code Style Checker.</summary>
@@ -453,31 +453,52 @@ begin
 
   Violation := FViolations[ Idx ];
 
+  if not FileExists( Violation.FileName ) then
+  begin
+    ShowMessage( 'Source file not found: ' + Violation.FileName );
+    Exit;
+  end;
+
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( Violation.FileName );
-
-    if Module <> nil then
-    begin
-
-      for I := 0 to Module.ModuleFileCount - 1 do
+    try
+      Module := ModuleServices.OpenModule( Violation.FileName );
+    except
+      on E: Exception do
       begin
-
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-
-          if SourceEditor.EditViewCount > 0 then
-          begin
-            EditView := SourceEditor.EditViews[ 0 ];
-            EditView.SetTopLeft( Violation.Line, 1 );
-            EditView.Center( Violation.Line, Violation.Column );
-          end;
-
-          Break;
-        end;
+        ShowMessage( Format( 'Could not open %s'#13#10'%s', [ Violation.FileName, E.Message ] ) );
+        Exit;
       end;
     end;
+
+    if Module = nil then
+    begin
+      ShowMessage( 'Could not open ' + Violation.FileName );
+      Exit;
+    end;
+
+    SourceEditor := nil;
+
+    for I := 0 to Module.ModuleFileCount - 1 do
+    begin
+
+      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
+      begin
+        SourceEditor.Show;
+
+        if SourceEditor.EditViewCount > 0 then
+        begin
+          EditView := SourceEditor.EditViews[ 0 ];
+          EditView.SetTopLeft( Violation.Line, 1 );
+          EditView.Center( Violation.Line, Violation.Column );
+        end;
+
+        Break;
+      end;
+    end;
+
+    if SourceEditor = nil then
+      ShowMessage( 'No source editor available for ' + ExtractFileName( Violation.FileName ) );
   end;
 
 end;
@@ -523,6 +544,14 @@ begin
 end;
 
 procedure TFormCodeStyleChecker.btnExportClick( Sender: TObject );
+
+  function CsvField( const S: string ): string;
+  begin
+    // RFC 4180: wrap in quotes and double any embedded quote so commas,
+    // parentheses and quotes in the rule text cannot corrupt the CSV.
+    Result := '"' + StringReplace( S, '"', '""', [ rfReplaceAll ] ) + '"';
+  end;
+
 var
   SL: TStringList;
   Item: TListItem;
@@ -543,15 +572,14 @@ begin
 
       for Item in ListView.Items do
       begin
-        SL.Add( Format( '"%s","%s","%s","%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 ),
-          SafeGetSubItem( Item, 5 )
-        ] ) );
+        SL.Add(
+          CsvField( Item.Caption ) + ',' +
+          CsvField( SafeGetSubItem( Item, 0 ) ) + ',' +
+          CsvField( SafeGetSubItem( Item, 1 ) ) + ',' +
+          CsvField( SafeGetSubItem( Item, 2 ) ) + ',' +
+          CsvField( SafeGetSubItem( Item, 3 ) ) + ',' +
+          CsvField( SafeGetSubItem( Item, 4 ) ) + ',' +
+          CsvField( SafeGetSubItem( Item, 5 ) ) );
       end;
 
       try

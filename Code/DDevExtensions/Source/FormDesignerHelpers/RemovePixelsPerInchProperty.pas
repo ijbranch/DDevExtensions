@@ -14,7 +14,7 @@ unit RemovePixelsPerInchProperty;
 interface
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
 
 /// <summary>
@@ -136,7 +136,7 @@ begin
   end;
 
 {$IF CompilerVersion > 37}
-  Check if anything changed in System.Classes.TDataModule.DefineProperties
+  {$MESSAGE WARN 'Re-verify TDataModule.DefineProperties against the RTL for this compiler version'}
 {$IFEND}
 end;
 

@@ -20,7 +20,7 @@ unit CodeStyleChecker;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -262,7 +262,7 @@ var
 implementation
 
 uses
-  Forms, Controls, StrUtils, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, System.StrUtils, ToolsAPIHelpers, AppConsts, DelphiLexer,
   FrmCodeStyleChecker, FrmeOptionPageCodeStyle;
 
 type
@@ -1392,7 +1392,9 @@ begin
     for I := 0 to Project.GetModuleCount - 1 do
     begin
       ModuleInfo := Project.GetModule( I );
-      FileName   := ModuleInfo.FileName;
+      if ModuleInfo = nil then
+        Continue;
+      FileName := ModuleInfo.FileName;
 
       if SameText( ExtractFileExt( FileName ), '.pas' ) then
       begin
@@ -1403,11 +1405,17 @@ begin
           OnProgress( Self );
         end;
 
-        if CheckFile( FileName, Violations ) then
-        begin
+        try
+          if CheckFile( FileName, Violations ) then
+          begin
 
-          for Violation in Violations do
-            AllViolationList.Add( Violation );
+            for Violation in Violations do
+              AllViolationList.Add( Violation );
+          end;
+        except
+          // One unreadable or malformed unit must not abort the whole scan.
+          on E: Exception do
+            Continue;
         end;
       end;
     end;

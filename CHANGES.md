@@ -4,6 +4,62 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-05-30 - v3.18.8 - UI workflow audit: Medium-severity fixes
+
+Addresses the 145 Medium-severity findings from the UI workflow audit across 32
+feature modules. Builds clean on Win32 and Win64 (D_D130, Release). Priorities
+throughout: integrity (no wrong results / corrupt state), reliability (no
+unhandled exceptions, use-after-free or silent failures), performance (scanning
+remains single-pass). A small number of findings were deliberately scoped to a
+documented note rather than a code change (see end) where a fix would have been a
+large speculative rewrite or the issue was already mitigated by existing gating.
+
+### Fixed - reliability (crashes / exceptions / lifetime)
+
+- **Project scans no longer abort on one bad file.** The per-module loops in the Code Quality, Code Style, Empty-Event-Handler, Dead Code, DFM/PAS Consistency, Dependency Viewer and Unused Unit scanners now isolate each module in try/except (and the engines guard `LoadFromFile`), so a single locked/unreadable/malformed unit is skipped instead of aborting the whole project scan. Code Quality also surfaces a skipped-file count. (2026-05-30) — `CodeQualityAnalyzer.pas`, `FrmCodeQualityAnalyzer.pas`, `CodeStyleChecker.pas`, `FrmEmptyEventHandlerDetector.pas`, `DeadCodeDetector.pas`, `DfmPasConsistency`/`FrmDfmPasConsistency.pas`, `DependencyViewer.pas`, `UnusedUnitDetector.pas`
+- **`EditViews[0]` / `OpenModule` navigation hardened.** Open-file/double-click handlers across Code Quality, Code Style, Dead Code, Unreachable Code and Build Statistics now check `FileExists`, wrap `OpenModule` in try/except, guard `EditViewCount > 0`, and report "could not open" / "no source editor" instead of doing nothing or AV-ing. (2026-05-30) — `FrmCodeQualityAnalyzer.pas`, `FrmCodeStyleChecker.pas`, `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`, `FrmBuildStatistics.pas`
+- **Close-during-scan use-after-free** guarded in Dead Code and Unreachable Code (re-entrancy/`FScanning` veto), matching the v3.17.7 fix to the other scanners. (2026-05-30) — `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`
+- **CSV/file exports guarded.** Export handlers (Code Style, Unreachable Code, Dependency Viewer circular/violations) wrap `SaveToFile` in try/except; Code Style now escapes CSV fields (RFC 4180). (2026-05-30) — `FrmCodeStyleChecker.pas`, `FrmUnreachableCodeDetector.pas`, `FrmDependencyViewer.pas`
+- **Excel export rewritten** to wrap all OLE automation in try/except, address cells by numeric `Cells[r,c]` (fixes >26-column corruption), and never orphan a hidden Excel process on failure. (2026-05-30) — `FrmExcelExport.pas`
+- **Unguarded file IO surfaced** with friendly messages instead of raw exceptions: Compiler-Backup save, Start Parameter `.params` create/open, Start-Parameter-Team `.dproj` rewrite, IDE Path Sorter registry write (with resync), File Cleaner deletions (isolated from the IDE save pipeline). (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `StartParameterCtrl.pas`, `FrmeOptionPageStartParameterTeam.pas`, `FrmLibraryPathSorter.pas`, `FrmeOptionPageFileCleaner.pas`
+- **ToolsAPI / nil dereferences guarded** per the GITLAK nil-check rule: Splash services, Component Selector construction/hotkey/click, Old Palette (`MainForm`/`GetComponentPalette`), DSU structure-view action and project-tree `OnGetText`, Editor reload, Reload "Show in Explorer", Project Settings `ProjectDestroying`/`ActionExecute`, Start Parameter `GetActiveParams`/`DoPopup`, Start-Parameter-Team `FileNotification`, External Mod Monitor config casts and per-editor inspection, Keybindings `EditPosition`. (2026-05-30) — multiple units
+- **Win64 teardown safety:** Build-Statistics, Dead Code and IDE-menu-handler menu items are detached from their parent before being freed (avoids double-free during IDE teardown); Compile-Active project-restore moved into a `finally`; Start-Parameter-Team destructor disables before freeing notifiers. (2026-05-30) — `CompileProgress.pas`, `DeadCodeDetector.pas`, `IDEMenuHandler.pas`, `FrmeOptionPageStartParameterTeam.pas`
+- **Silently-swallowed exceptions now logged** (`OutputDebugString`) rather than discarded: Component Manager registration, Compile-Backup write, DSU background-parsing probe, Reload `CanReloadFile`, Project-Settings option capture, TODO/External-Mod-Monitor file handling, IDE-Path-Sorter owner-draw, Start-Parameter `WMSetFocus` bare except removed. (2026-05-30) — multiple units
+
+### Fixed - correctness (wrong results)
+
+- **Code Quality Analyzer**: `const` parameter modifiers no longer mistaken for a const section (paren-depth tracking); hardcoded-string detection decodes `''`/skips `#nn` tokens; nil-Plugin guard; the nested-`except` mis-analysis was already resolved by the v3.17.7 block-stack rewrite. (2026-05-30) — `CodeQualityAnalyzer.pas`
+- **Dead Code Detector**: reference matching now scopes unit/private/protected symbols to their own file (the previous identical if/else branches marked any same-named identifier as a use, masking dead code). (2026-05-30) — `DeadCodeDetector.pas`
+- **Empty Event Handler Detector**: requires a `Sender` parameter (cuts false positives on methods merely ending in a common word) and counts statements at any nesting depth (no longer reports handlers whose work is in a nested block). (2026-05-30) — `EmptyEventHandlerDetector.pas`
+- **Uses Clause Manager**: priority match compares unqualified leaf names (dotted vs bare), and Apply never auto-moves units the analyser could not classify. (2026-05-30) — `UsesClauseManager.pas`, `FrmUsesClauseManager.pas`
+- **CtrlUtils list sort**: ragged rows (items with fewer subitems) treat a missing subitem as empty rather than returning "equal" and corrupting the order. (2026-05-30) — `CtrlUtils.pas`
+- **Keybindings**: the Section-Toggle Up/Down shortcuts now go to interface / implementation respectively (were identical); target row clamped to the buffer. (2026-05-30) — `FrmeOptionPageKeybindings.pas`
+- **Dependency Viewer**: cycle highlighting no longer mutates node captions (relies on custom draw), per-layer pattern lists freed on dialog close, layer-name input trimmed and `=`/`,` rejected (protects the config round-trip), and the shared export dialog title is reset. (2026-05-30) — `FrmDependencyViewer.pas`, `FrmLayerConfig.pas`
+- **DFM/PAS Consistency**: replaced a dangling-`PChar`-in-`Item.Data` with a hidden subitem, restored the summary on returning to the "All" filter, and guard empty filename / unknown line on navigate. (2026-05-30) — `FrmDfmPasConsistency.pas`, `DfmPasConsistency.pas`
+- **Unreachable Code / Old Palette / Compile-Progress** logic tidy-ups (sort-safe selection clear, dead editor-context branch removed, `Boolean(Variant)` replaced with a value comparison, switch-project combo ordering). (2026-05-30) — `FrmDeadCodeDetector.pas`, `OldPalette.pas`, `CompileProgress.pas`, `FrmSwitchToModuleProject.pas`
+- **IDE Path Sorter** Apply verification compares actual path content element-by-element (was semicolon-count only). (2026-05-30) — `FrmLibraryPathSorter.pas`
+
+### Fixed - Win64 / fragility / standards
+
+- Win64-inert features now disable their controls or are explicitly gated with a comment: Compile Backup option page, DSU editor-double-click zoom signature, IDE-internal parser-thread offset, Focus Editor hook. (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageDSUFeatures.pas`, `FocusEditor.pas`
+- The experimental, unreferenced `DbgStepIntoSkip` debugger unit gated `{$IFNDEF CPUX64}` and documented as unsupported/inactive. (2026-05-30) — `DbgStepIntoSkip.pas`
+- A bare English sentence inside an active-able `{$IF CompilerVersion > 37}` block (a compile time-bomb on the next compiler) replaced with `{$MESSAGE WARN}`; German placeholder exception text replaced with English. (2026-05-30) — `RemovePixelsPerInchProperty.pas`, `FrmProjectSettingsSetVersioninfo.pas`
+- `with TForm.Create do try..finally Free` rewritten to a named local; `Utf8Encode(...)`→`PAnsiChar` temporary captured in a named local for Win64 safety; Code-Style rule edits and Form-Designer dependent-checkbox states persisted/synchronised correctly. (2026-05-30) — `FrmSwitchToModuleProject.pas`, `FrmFileSelector.pas`, `FrmeOptionPageCodeStyle.pas`, `FrmeOptionPageFormDesigner.pas`
+- File Selector: `FParser` leak freed in the destructor; single-remaining-unit uses-clause removal no longer indexes out of bounds. (2026-05-30) — `FrmFileSelector.pas`
+
+### Changed
+
+- Version bumped 3.17.7 → 3.18.8 (`MinorVer` 17→18, `Release` 7→8, `FileVersion` `3.18.8.x`, `ProductVersion` 3.18) across `version.inc`, `version.h`, all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj`. (2026-05-30)
+- **Fully-qualified all RTL/VCL unit-scope names in uses clauses** across every `.pas` under `Code/DDevExtensions/Source` (93 files, 921 entries): `Windows`→`Winapi.Windows`, `Classes`→`System.Classes`, `Forms`→`Vcl.Forms`, `Registry`→`System.Win.Registry`, `XMLDoc`→`Xml.XMLDoc`, etc. Project, IDE/ToolsAPI and third-party (JVCL) units are left unprefixed. A handful of short unit qualifiers in code (`Windows.LoadBitmap`, `ComCtrls.dsGradient`, `TypInfo.GetPropInfo`, `System.SysUtils.FinalizePackage`, ...) were also fully qualified so they still resolve once the uses entries are namespaced. Builds clean on Win32 and Win64. (2026-05-30) — all Source units
+
+### Notes (findings scoped to documentation rather than a code change)
+
+- VirtTreeHandler `@NotSupported` accessors on Win64: already unreachable because the tree handler is creation-gated `{$IFNDEF CPUX64}`.
+- External Mod Monitor: option changes still take effect on next IDE restart, and auto-refresh during a compile is unguarded on Win64 (the IDE notifier is gated off there) — both documented.
+- IDE Path Sorter restore-by-list-index and construction double-load, Reload-Files window-proc restore, Project-Settings default-preset auto-assign, and the TODO multi-keyword-per-comment limit: left as-is (correct for current usage) and noted.
+
+---
+
 ## 2026-05-30 - v3.17.7 - UI workflow audit: remaining High-severity fixes
 
 Resolves the 18 confirmed High-severity findings from the UI workflow audit (the

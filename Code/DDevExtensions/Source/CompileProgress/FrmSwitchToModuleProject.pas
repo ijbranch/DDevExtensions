@@ -9,8 +9,8 @@ unit FrmSwitchToModuleProject;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, FrmBase, StdCtrls, ExtCtrls, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, FrmBase, Vcl.StdCtrls, Vcl.ExtCtrls, ToolsAPI;
 
 type
   /// <summary>
@@ -79,7 +79,7 @@ type
 implementation
 
 uses
-  Consts, AppConsts;
+  Vcl.Consts, AppConsts;
 
 {$R *.dfm}
 
@@ -88,11 +88,11 @@ class function TFormSwitchToModuleProject.ShowDialog(AModule: IOTAModule;
 begin
   if AModule.OwnerCount > 0 then
   begin
-    with TFormSwitchToModuleProject.Create(nil) do
+    var Dlg := TFormSwitchToModuleProject.Create(nil);
     try
-      Result := InternShowDialog(AModule, AProject, ADontShowAgain, SwitchTemporary)
+      Result := Dlg.InternShowDialog(AModule, AProject, ADontShowAgain, SwitchTemporary);
     finally
-      Free;
+      Dlg.Free;
     end;
   end
   else
@@ -104,6 +104,9 @@ function TFormSwitchToModuleProject.InternShowDialog(AModule: IOTAModule;
 var
   I: Integer;
 begin
+  // Keep the visible order aligned with the owner index so ItemIndex 0 is
+  // Owners[0]; the selection is still resolved via Items.Objects[] below.
+  ComboBoxProjects.Sorted := False;
   for I := 0 to AModule.OwnerCount - 1 do
     ComboBoxProjects.Items.AddObject(GetProjectName(AModule.Owners[I]), TObject(I));
   ComboBoxProjects.ItemIndex := 0;

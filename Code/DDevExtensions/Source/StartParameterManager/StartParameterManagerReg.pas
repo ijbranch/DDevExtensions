@@ -9,7 +9,7 @@ unit StartParameterManagerReg;
 interface
 
 uses
-  Windows, SysUtils, Classes, ActnList, Controls, ComCtrls, ToolsAPI, StartParameterCtrl;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.ActnList, Vcl.Controls, Vcl.ComCtrls, ToolsAPI, StartParameterCtrl;
 
 type
   /// <summary>
@@ -38,8 +38,8 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  TypInfo, // XE
-  Forms, IDEHooks, Hooking;
+  System.TypInfo, // XE
+  Vcl.Forms, IDEHooks, Hooking;
 
 var
   GStartParameterManager: TStartParameterManager;
@@ -185,17 +185,25 @@ begin
   {$ELSE}
   @TDebugProjectOption_GetRunParams := GetTDebugProjectOption_GetRunParams;
   {$IFEND}
-  @OrgTDebugger_Run := RedirectOrgCall(@TDebugger_Run, @HookedTDebugger_Run);
+  // RedirectOrgCall forces resolution of the (Win64-delayed) debugger imports and
+  // patches them. If a mangled export does not exist on the target IDE bitness,
+  // degrade to the IDE's own stored Run Parameters instead of crashing plugin load.
+  try
+    @OrgTDebugger_Run := RedirectOrgCall(@TDebugger_Run, @HookedTDebugger_Run);
 
-  @OrgTDebugProjectOption_GetRunParams := RedirectOrgCall(@TDebugProjectOption_GetRunParams, @HookedTDebugProjectOption_GetRunParams);
-  {$IF CompilerVersion <= 21.0} // Delphi 2009/2010
-  if GetModuleHandle(bcbide_bpl) <> 0 then
-  begin
-    @CppTProjectOptions_GetRunParams := DbgStrictGetProcAddress(GetModuleHandle(bcbide_bpl), PAnsiChar('@Msbprojopts@TProjectOptions@GetRunParams$qqrv'));
-    if Assigned(CppTProjectOptions_GetRunParams) then
-      @OrgCppTProjectOptions_GetRunParams := RedirectOrgCall(@CppTProjectOptions_GetRunParams, @HookedCppTProjectOptions_GetRunParams);
+    @OrgTDebugProjectOption_GetRunParams := RedirectOrgCall(@TDebugProjectOption_GetRunParams, @HookedTDebugProjectOption_GetRunParams);
+    {$IF CompilerVersion <= 21.0} // Delphi 2009/2010
+    if GetModuleHandle(bcbide_bpl) <> 0 then
+    begin
+      @CppTProjectOptions_GetRunParams := DbgStrictGetProcAddress(GetModuleHandle(bcbide_bpl), PAnsiChar('@Msbprojopts@TProjectOptions@GetRunParams$qqrv'));
+      if Assigned(CppTProjectOptions_GetRunParams) then
+        @OrgCppTProjectOptions_GetRunParams := RedirectOrgCall(@CppTProjectOptions_GetRunParams, @HookedCppTProjectOptions_GetRunParams);
+    end;
+    {$IFEND}
+  except
+    on E: Exception do
+      OutputDebugString(PChar('DDevExtensions StartParameterManager: run-param hook install failed - ' + E.Message));
   end;
-  {$IFEND}
 end;
 
 destructor TStartParameterManager.Destroy;

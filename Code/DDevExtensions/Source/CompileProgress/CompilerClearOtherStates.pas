@@ -24,7 +24,7 @@ procedure SetClearCompilerUnitCacheOtherStates(Enabled, OnlyHighUsge: Boolean);
 implementation
 
 uses
-  Windows, PsAPI, SysUtils, Hooking, IDEHooks, IDEUtils,
+  Winapi.Windows, Winapi.PsAPI, System.SysUtils, Hooking, IDEHooks, IDEUtils,
   {$IF CompilerVersion >= 23.0}
   PlatformAPI,
   {$IFEND}

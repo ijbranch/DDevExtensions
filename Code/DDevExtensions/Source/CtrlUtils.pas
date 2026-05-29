@@ -17,8 +17,8 @@ unit CtrlUtils;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Controls, Graphics, ComCtrls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, Hooking;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Controls, Vcl.Graphics, Vcl.ComCtrls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Hooking;
 
 type
   /// <summary>
@@ -310,11 +310,17 @@ begin
   end
   else
   begin
-    S1 := '';
-    if (Column > Item1.SubItems.Count) or (Column > Item2.SubItems.Count) then
-      Exit;
-    S1 := Item1.SubItems[Column - 1];
-    S2 := Item2.SubItems[Column - 1];
+    // Treat a missing subitem as an empty string so ragged rows (items with
+    // fewer subitems) sort stably, instead of Exiting with Result = 0 (equal)
+    // which silently corrupts the order.
+    if Column - 1 < Item1.SubItems.Count then
+      S1 := Item1.SubItems[Column - 1]
+    else
+      S1 := '';
+    if Column - 1 < Item2.SubItems.Count then
+      S2 := Item2.SubItems[Column - 1]
+    else
+      S2 := '';
   end;
 
   case Kind of

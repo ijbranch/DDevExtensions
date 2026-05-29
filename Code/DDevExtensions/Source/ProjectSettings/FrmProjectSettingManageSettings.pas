@@ -21,9 +21,9 @@ unit FrmProjectSettingManageSettings;
 interface
 
 uses
-  Variants, Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ToolWin, ExtCtrls, ComCtrls, ImgList, ActnList,
-  ProjectSettingsData, ToolsAPI, Menus, FrmBase;
+  System.Variants, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ToolWin, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.ImgList, Vcl.ActnList,
+  ProjectSettingsData, ToolsAPI, Vcl.Menus, FrmBase;
 
 type
   /// <summary>
@@ -231,7 +231,7 @@ var
 implementation
 
 uses
-  Consts, Utils, ToolsAPIHelpers, FrmProjectSettingsEditOptions, ProjectData,
+  Vcl.Consts, Utils, ToolsAPIHelpers, FrmProjectSettingsEditOptions, ProjectData,
   ProjectSettings, FrmProjectSettingsSetVersioninfo, DtmImages, AppConsts;
 
 {$R *.dfm}
@@ -328,9 +328,9 @@ begin
   Constraints.MinWidth := 240;
   Constraints.MinHeight := 100;
   {$IFDEF COMPILER10_UP}
-  tbToolbarLocal.DrawingStyle := ComCtrls.dsGradient;
-  tbToolbarGlobal.DrawingStyle := ComCtrls.dsGradient;
-  tbToolbarProjects.DrawingStyle := ComCtrls.dsGradient;
+  tbToolbarLocal.DrawingStyle := Vcl.ComCtrls.dsGradient;
+  tbToolbarGlobal.DrawingStyle := Vcl.ComCtrls.dsGradient;
+  tbToolbarProjects.DrawingStyle := Vcl.ComCtrls.dsGradient;
   {$ENDIF COMPILER10_UP}
 
   tbToolbarLocal.Images := DataModuleImages.imlIcons;
@@ -482,14 +482,20 @@ begin
     begin
       Selected := True;
 
-      Backup := TProjectSetting.Create;
-      try
-        Backup.CopyFrom(GetActiveProject, scCopyAll);
-        GetActiveProject.ProjectOptions.EditOptions; // edit dialog
-        Options.CopyFrom(GetActiveProject);
-      finally
-        Backup.CopyTo(GetActiveProject, scCopyAll);
-        Backup.Free;
+      // Capture the active project once and nil-check it: it can change or close
+      // while the modal EditOptions dialog is open, and is dereferenced repeatedly.
+      var ProjNew := GetActiveProject;
+      if ProjNew <> nil then
+      begin
+        Backup := TProjectSetting.Create;
+        try
+          Backup.CopyFrom(ProjNew, scCopyAll);
+          ProjNew.ProjectOptions.EditOptions; // edit dialog
+          Options.CopyFrom(ProjNew);
+        finally
+          Backup.CopyTo(ProjNew, scCopyAll);
+          Backup.Free;
+        end;
       end;
 
       ListView.Selected.EditCaption;
@@ -502,15 +508,21 @@ begin
     OrgOptions := TProjectSetting.Create;
     try
       OrgOptions.Assign(Options);
-      Backup := TProjectSetting.Create;
-      try
-        Backup.CopyFrom(GetActiveProject, scCopyAll);
-        Options.CopyTo(GetActiveProject);
-        GetActiveProject.ProjectOptions.EditOptions; // edit dialog
-        Options.CopyFrom(GetActiveProject);
-      finally
-        Backup.CopyTo(GetActiveProject, scCopyAll);
-        Backup.Free;
+      // Capture the active project once and nil-check it (it can change/close
+      // while the modal EditOptions dialog is open).
+      var ProjEdit := GetActiveProject;
+      if ProjEdit <> nil then
+      begin
+        Backup := TProjectSetting.Create;
+        try
+          Backup.CopyFrom(ProjEdit, scCopyAll);
+          Options.CopyTo(ProjEdit);
+          ProjEdit.ProjectOptions.EditOptions; // edit dialog
+          Options.CopyFrom(ProjEdit);
+        finally
+          Backup.CopyTo(ProjEdit, scCopyAll);
+          Backup.Free;
+        end;
       end;
 
       { Copy the changes to the projects that use the Settings. But first ask

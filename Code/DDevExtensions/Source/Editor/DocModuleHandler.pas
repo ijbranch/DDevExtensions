@@ -10,7 +10,7 @@ unit DocModuleHandler;
 interface
 
 uses
-  Windows, SysUtils, Classes, ToolsAPI, Dialogs, Hooking, IDEHooks, ToolsAPIHelpers;
+  Winapi.Windows, System.SysUtils, System.Classes, ToolsAPI, Vcl.Dialogs, Hooking, IDEHooks, ToolsAPIHelpers;
 
 type
   /// <summary>Opaque placeholder for the IDE's internal TVirtualStream type.</summary>
@@ -403,7 +403,7 @@ implementation
 
 {$IF CompilerVersion >= 21.0}
 uses
-  Rtti;
+  System.Rtti;
 {$IFEND}
 
 var

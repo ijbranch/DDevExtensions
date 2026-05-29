@@ -21,9 +21,9 @@ unit FrmUsesClauseManager;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
-  Generics.Defaults, FrmBase, UsesClauseManager, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, UsesClauseManager, ToolsAPI;
 
 type
   /// <summary>Main viewer form for the Uses Clause Manager plugin.</summary>
@@ -110,6 +110,7 @@ type
     FSortAscending: Boolean;
     /// <summary>Path of the file most recently analysed.</summary>
     FCurrentFileName: string;
+    FBusy: Boolean;
     /// <summary>Refreshes the list view from <see cref="FPlacements"/>.</summary>
     procedure PopulateList;
     /// <summary>Database OnProgress callback that updates the progress label.</summary>
@@ -160,6 +161,15 @@ end;
 procedure TFormUsesClauseManager.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
+  // The database build pumps the message queue (DBProgress), so the user can
+  // trigger a close mid-build. Veto it while busy, otherwise the form is freed
+  // while BuildFromSearchPath is still on the stack.
+  if FBusy then
+  begin
+    Action := caNone;
+    Exit;
+  end;
+
   FormInstance := nil;
   Action       := caFree;
 
@@ -193,6 +203,8 @@ end;
 
 procedure TFormUsesClauseManager.btnCloseClick( Sender: TObject );
 begin
+  if FBusy then
+    Exit;
   Close;
 end;
 
@@ -213,6 +225,7 @@ begin
   Screen.Cursor := crHourGlass;
   btnBuildDB.Enabled := False;
   btnAnalyze.Enabled := False;
+  FBusy := True;
   try
     lblProgress.Caption := 'Building exports database...';
     lblProgress.Visible := True;
@@ -226,6 +239,7 @@ begin
       [ UsesClauseManagerPlugin.ExportsDB.UnitCount ] );
     lblSummary.Visible := True;
   finally
+    FBusy := False;
     btnBuildDB.Enabled := True;
     btnAnalyze.Enabled := True;
     Screen.Cursor := crDefault;
@@ -242,6 +256,13 @@ var
 begin
   if UsesClauseManagerPlugin = nil then
     Exit;
+
+  if UsesClauseManagerPlugin.ExportsDB.UnitCount = 0 then
+  begin
+    ShowMessage( 'Build the exports database first (Build Database). Without it every '
+      + 'recommendation would be based on no data.' );
+    Exit;
+  end;
 
   // Get current editor
   Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
@@ -268,6 +289,7 @@ begin
 
   Screen.Cursor := crHourGlass;
   btnAnalyze.Enabled := False;
+  FBusy := True;
   try
     lblProgress.Caption := 'Analyzing ' + ExtractFileName( FCurrentFileName ) + '...';
     lblProgress.Visible := True;
@@ -289,6 +311,7 @@ begin
     lblSummary.Caption := Format( 'Found %d units to analyze', [ Length( FPlacements ) ] );
     lblSummary.Visible := True;
   finally
+    FBusy := False;
     btnAnalyze.Enabled := True;
     Screen.Cursor := crDefault;
   end;
@@ -303,7 +326,7 @@ var
   Refactorer: TUsesClauseRefactorer;
   EditWriter: IOTAEditWriter;
   ChangedCount: Integer;
-  Placement: TUnitPlacement;
+  MovedNames: string;
 begin
   if UsesClauseManagerPlugin = nil then
     Exit;
@@ -314,12 +337,23 @@ begin
     Exit;
   end;
 
-  // Count how many units will be moved
+  // Count how many units will be moved. Never auto-move a unit the analyser
+  // could not classify ('No direct usage detected - review manually'): leave it
+  // where it is, since moving an undetected dependency can break compilation.
   ChangedCount := 0;
-  for Placement in FPlacements do
+  MovedNames := '';
+  for I := 0 to High( FPlacements ) do
   begin
-    if Placement.CurrentSection <> Placement.RecommendedSection then
+    if Pos( 'No direct usage', FPlacements[ I ].Reason ) > 0 then
+      FPlacements[ I ].RecommendedSection := FPlacements[ I ].CurrentSection;
+
+    if FPlacements[ I ].CurrentSection <> FPlacements[ I ].RecommendedSection then
+    begin
       Inc( ChangedCount );
+      if MovedNames <> '' then
+        MovedNames := MovedNames + ', ';
+      MovedNames := MovedNames + FPlacements[ I ].UnitName;
+    end;
   end;
 
   if ChangedCount = 0 then
@@ -328,8 +362,8 @@ begin
     Exit;
   end;
 
-  if MessageDlg( Format( 'This will move %d unit(s) between uses clauses.'#13#10#13#10 +
-    'Do you want to continue?', [ ChangedCount ] ),
+  if MessageDlg( Format( 'This will move %d unit(s) between uses clauses:'#13#10#13#10 +
+    '%s'#13#10#13#10 + 'Do you want to continue?', [ ChangedCount, MovedNames ] ),
     mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 

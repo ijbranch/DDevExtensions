@@ -23,9 +23,9 @@ interface
 
 uses
   {$IFDEF COMPILER9_UP}
-  ActnMan, ActnPopup,
+  Vcl.ActnMan, Vcl.ActnPopup,
   {$ENDIF COMPILER9_UP}
-  Windows, Messages, SysUtils, Classes, Contnrs, Menus, ActnList, Forms, Controls,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Menus, Vcl.ActnList, Vcl.Forms, Vcl.Controls,
   ToolsAPI;
 
 type
@@ -190,6 +190,8 @@ begin
 end;
 
 destructor TIDEMenuHandler.Destroy;
+var
+  i: Integer;
 begin
   {$IFDEF COMPILER9_UP}
   if Assigned(FViewSwapSourceFormItem) and Assigned(FViewSwapSourceFormItem.Action) then
@@ -199,8 +201,27 @@ begin
   end;
   {$ENDIF COMPILER9_UP}
 
-  FMenuItems.Free;
-  FActionItems.Free;
+  // Detach injected menu items from their IDE parent before freeing, so the IDE
+  // menu does not hold a freed reference and double-free during its own teardown.
+  // Each teardown step is guarded so one shutdown fault cannot abort the rest.
+  try
+    if Assigned(FMenuItems) then
+      for i := 0 to FMenuItems.Count - 1 do
+        if TMenuItem(FMenuItems[i]).Parent <> nil then
+          TMenuItem(FMenuItems[i]).Parent.Remove(TMenuItem(FMenuItems[i]));
+  except
+    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy detach: ' + E.Message));
+  end;
+  try
+    FMenuItems.Free;
+  except
+    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy FMenuItems: ' + E.Message));
+  end;
+  try
+    FActionItems.Free;
+  except
+    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy FActionItems: ' + E.Message));
+  end;
   inherited Destroy;
 end;
 
@@ -335,8 +356,17 @@ begin
   FMenuItems.Add(MenuItem);
 
   {$IFDEF COMPILER9_UP}
-  NServices := BorlandIDEServices as INTAServices;
-  NServices.AddActionMenu(BaseItemName, Result, MenuItem, InsertAfter, InsertAsChild);
+  if Supports(BorlandIDEServices, INTAServices, NServices) then
+  begin
+    try
+      NServices.AddActionMenu(BaseItemName, Result, MenuItem, InsertAfter, InsertAsChild);
+    except
+      on E: Exception do
+        // A missing base menu item (personality-dependent) must be diagnosable,
+        // not silently abort the whole plug-in by escaping the constructor.
+        OutputDebugString(PChar('DDevExtensions IDEMenuHandler.AddMenuAction (' + BaseItemName + '): ' + E.Message));
+    end;
+  end;
   {$ELSE}
   Item := nil;
   for i := 0 to FMenuItems.Count - 1 do
@@ -398,13 +428,16 @@ begin
        Screen.Forms[i].ClassNameIs('TEditWindow') then
     begin
       EditorLocalMenu := TPopupActionBar(Screen.Forms[i].FindComponent('EditorLocalMenu'));
-      if EditorLocalMenu <> nil then
+      if (EditorLocalMenu <> nil) and (Sender is TAction) then
       begin
+        Msg := Default(TWMKey);   // zero-initialise; IsShortCut reads the whole record
         Msg.Msg := WM_KEYDOWN;
         ShortCutToKey(TAction(Sender).ShortCut, Msg.CharCode, Shift);
         if ssAlt in Shift then
           Msg.KeyData := AltMask;
-        EditorLocalMenu.IsShortCut(Msg);
+        // Skip dispatch when the action has no shortcut (CharCode 0).
+        if Msg.CharCode <> 0 then
+          EditorLocalMenu.IsShortCut(Msg);
       end;
       Break;
     end;

@@ -23,9 +23,9 @@ unit Splash;
 interface
 
 uses
-  Windows, SysUtils, Classes, Controls, Forms, Graphics, StdCtrls,
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Controls, Vcl.Forms, Vcl.Graphics, Vcl.StdCtrls,
   ToolsAPI,
-  ExtCtrls, AppConsts;
+  Vcl.ExtCtrls, AppConsts;
 
 /// <summary>Registers the DDevExtensions name/bitmap with the IDE splash screen and starts the IDE-loaded poll timer.</summary>
 procedure ShowOnSplashScreen;
@@ -90,7 +90,7 @@ var
   SplashScreenInit: Boolean;
 begin
   SplashScreenInit := False;
-  if BorlandIDEServices <> nil then
+  if (BorlandIDEServices <> nil) and Assigned(SplashScreenServices) then
   begin
     SplashScreenServices.StatusMessage(sPluginName);
     SplashScreenServices.AddPluginBitmap(sPluginName, LoadBitmap(Hinstance, 'DDEVEXTENSIONSLOGO'));

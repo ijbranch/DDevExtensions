@@ -20,7 +20,7 @@ unit TodoAggregator;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus, Variants,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -133,7 +133,7 @@ var
 implementation
 
 uses
-  Forms, Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
   FrmTodoAggregator, FrmeOptionPageTodoAggregator;
 
 { TTodoScanner }
@@ -283,7 +283,12 @@ begin
   try
     Content := LoadTextFileToUtf8String( FileName );
   except
-    Exit;
+    on E: Exception do
+    begin
+      // Skip this file but record why rather than swallowing silently.
+      OutputDebugString( PChar( 'DDevExtensions TodoAggregator: ' + FileName + ' - ' + E.Message ) );
+      Exit;
+    end;
   end;
 
   UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );

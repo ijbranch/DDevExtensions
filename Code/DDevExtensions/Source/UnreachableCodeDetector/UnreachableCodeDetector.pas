@@ -23,7 +23,7 @@ unit UnreachableCodeDetector;
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Menus,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -152,7 +152,7 @@ var
 implementation
 
 uses
-  Forms, Controls, Variants, ToolsAPIHelpers, AppConsts,
+  Vcl.Forms, Vcl.Controls, System.Variants, ToolsAPIHelpers, AppConsts,
   FrmUnreachableCodeDetector, FrmeOptionPageUnreachableCode;
 
 const

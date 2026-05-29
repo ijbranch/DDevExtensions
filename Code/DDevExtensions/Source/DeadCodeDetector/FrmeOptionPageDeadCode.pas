@@ -18,8 +18,8 @@ unit FrmeOptionPageDeadCode;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmeBase, FrmTreePages, DeadCodeDetector;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmeBase, FrmTreePages, DeadCodeDetector;
 
 type
   /// <summary>Options page frame shown inside the IDE Tools dialog for the Dead Code Detector plugin.</summary>

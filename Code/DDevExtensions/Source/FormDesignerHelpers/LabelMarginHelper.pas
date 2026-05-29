@@ -19,7 +19,7 @@ unit LabelMarginHelper;
 interface
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking, StdCtrls;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking, Vcl.StdCtrls;
 
 /// <summary>
 /// Activates or deactivates the TLabel margin override by replacing the VMT entry for

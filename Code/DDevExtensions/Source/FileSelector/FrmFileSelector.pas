@@ -22,9 +22,9 @@ unit FrmFileSelector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Contnrs, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, Menus, ExtCtrls, ActnList, ImgList, StdCtrls, ToolWin,
-  CtrlUtils, CommCtrl, ToolsAPI, IDEUtils, SimpleXmlImport, SimpleXmlIntf,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.ComCtrls, Vcl.Menus, Vcl.ExtCtrls, Vcl.ActnList, Vcl.ImgList, Vcl.StdCtrls, Vcl.ToolWin,
+  CtrlUtils, Winapi.CommCtrl, ToolsAPI, IDEUtils, SimpleXmlImport, SimpleXmlIntf,
   ToolsAPIHelpers, FrmBase, DelphiDesignerParser;
 
 type
@@ -33,7 +33,7 @@ type
   /// when clearing in OwnerData mode for significantly faster bulk clears.
   /// </summary>
   { Fix Clear() in OwnerData Mode. We don't need to get every item (OnData) if we delete them all. }
-  TListView = class(ComCtrls.TListView)
+  TListView = class(Vcl.ComCtrls.TListView)
   protected
     /// <summary>Intercepts CN_NOTIFY/LVN_DELETEALLITEMS to short-circuit OwnerData clears.</summary>
     /// <param name="Message">The forwarded notification.</param>
@@ -358,7 +358,7 @@ procedure SplitFilterText(const Text: string; List: TStrings);
 implementation
 
 uses
-  AppConsts, FrmExcelExport, Main, DtmImages, PluginConfig, Variants;
+  AppConsts, FrmExcelExport, Main, DtmImages, PluginConfig, System.Variants;
 
 {$R *.dfm}
 
@@ -597,6 +597,7 @@ end;
 destructor TFormFileSelector.Destroy;
 begin
   FFilterTexts.Free;
+  FParser.Free;   // created in InternExecute against the active editor; freed once here
   inherited Destroy;
 end;
 
@@ -750,7 +751,18 @@ end;
 
 procedure TFormFileSelector.ActionExportToExcelExecute(Sender: TObject);
 begin
-  TFormExcelExport.ExportListView('Units', ListView);
+  if ListView.Items.Count = 0 then
+  begin
+    ShowMessage('There are no units to export.');
+    Exit;
+  end;
+
+  try
+    TFormExcelExport.ExportListView('Units', ListView);
+  except
+    on E: Exception do
+      ShowMessage('Export to Excel failed:'#13#10 + E.Message);
+  end;
 end;
 
 procedure TFormFileSelector.ActionRemoveFromInsertListExecute(Sender: TObject);
@@ -941,7 +953,7 @@ end;
 procedure TFormFileSelector.FormCreate(Sender: TObject);
 begin
   FormFileSelector := Self;
-  ToolBar.DrawingStyle := ComCtrls.dsGradient;
+  ToolBar.DrawingStyle := Vcl.ComCtrls.dsGradient;
   ListView.DoubleBuffered := True;
   ToolBar.Flat := True; // BDS 2006's default is True => Flat is not stored in the DFM
 
@@ -1002,6 +1014,8 @@ begin
   DefaultDraw := True;
 
   Info := Item.Data;
+  if Info = nil then
+    Exit;
   if Info.Opened then
     Sender.Canvas.Font.Color := clBlue;
 
@@ -1060,6 +1074,8 @@ var
   FormFileName: string;
 begin
   Info := Item.Data;
+  if Info = nil then
+    Exit;
   InfoTip := Format('<b>Filename:</b> %s' + sLineBreak +
                     '<b>Filesize:</b> %d Bytes',
                     [Info.FileName, GetFileSize(Info.FileName)]);
@@ -1270,7 +1286,7 @@ procedure TFormFileSelector.GetFilenames;
         end;
       until not FindNextFile(SearchHandle, FindData);
     finally
-      Windows.FindClose(SearchHandle);
+      Winapi.Windows.FindClose(SearchHandle);
     end;
   end;
 
@@ -1662,7 +1678,10 @@ end;
 procedure TFormFileSelector.mniOpenFileClick(Sender: TObject);
 begin
   inherited;
-  btnOpen.Click;
+  // The popup can be raised with no (or a stale) selection; mirror the Enabled
+  // check ListViewDblClick uses so we don't drive Open over an empty list.
+  if btnOpen.Enabled then
+    btnOpen.Click;
 end;
 
 procedure TFormFileSelector.RefreshButtons;
@@ -1816,7 +1835,16 @@ procedure TFormFileSelector.RemoveUsesUnits(Writer: IOTAEditWriter; StopIndex: I
       if Idx = UsesList.Count - 1 then
       begin
         if Idx = 0 then
-          Write; // TODO: remove "uses" in a way that adding it would be still possible
+        begin
+          // Only one unit in the clause: there is no comma to remove and
+          // UsesList[Idx - 1] would be out of bounds. Skip - the caller's
+          // whole-"uses"-clause delete path (UsesList.Count = DeleteUsesList.Count)
+          // removes the entire clause instead.
+          CommaBegin := -1;
+          CommaEnd := -1;
+          Result := False;
+          Exit;
+        end;
         CommaBegin := UsesList[Idx - 1].EndLocation.Index; // includes the "," / ";"
         CommaEnd := Item.StartLocation.Index + 1;
         // last unit terminated by ";"
@@ -1922,6 +1950,7 @@ var
   FoundInImpl, FoundInIntf: TUsesItem;
   UseUnitsImplementation, AllowMoveFromInterfaceToImpl, EveryUnitOnSingleLine: Boolean;
   DeleteUsesList: TList;
+  Utf8: UTF8String;
 begin
   if (FEditor = nil) or (FParser = nil) then
     Exit;
@@ -2001,6 +2030,14 @@ begin
 
     if UnitNames.Count > 0 then
     begin
+      // Validate the insert location BEFORE creating the writer or issuing any
+      // deletes, so a not-found location cannot leave a half-rewritten clause.
+      if (UsesList.Count = 0) and (AddIndex <= 0) then
+      begin
+        ShowMessage('Could not locate the uses-clause insertion point; no changes were made.');
+        Exit;
+      end;
+
       Writer := FEditor.CreateUndoableWriter;
 
       // Sort the delete list by source code index to allow us to delete them in order
@@ -2052,7 +2089,10 @@ begin
         raise Exception.Create(sParseErrorUsesLocationNotFound);
 
       Writer.CopyTo(AddIndex);
-      Writer.Insert(PAnsiChar(Utf8Encode(S)));
+      // Hold the encoded text in a named local so its buffer outlives the Insert
+      // call; a bare PAnsiChar(Utf8Encode(...)) points at a temporary.
+      Utf8 := Utf8Encode(S);
+      Writer.Insert(PAnsiChar(Utf8));
       // Remove implementation-uses items if we add to the interface-uses.
       if not UseUnitsImplementation then
         RemoveUsesUnits(Writer, -1, DeleteUsesList, FParser.ImplUses);

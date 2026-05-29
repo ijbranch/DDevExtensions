@@ -21,7 +21,7 @@ unit RemoveExplicitProperty;
 interface
 
 uses
-  SysUtils, Classes, Forms, Controls, IDEHooks, Hooking;
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
 /// <summary>
 /// Activates or deactivates the TControl.DefineProperties redirection that suppresses streaming

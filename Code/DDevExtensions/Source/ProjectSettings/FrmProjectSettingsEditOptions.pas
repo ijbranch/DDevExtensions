@@ -20,8 +20,8 @@ unit FrmProjectSettingsEditOptions;
 interface
 
 uses
-  Variants, Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, Grids, ProjectSettingsData, StdCtrls, CheckLst, FrmBase;
+  System.Variants, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.Grids, ProjectSettingsData, Vcl.StdCtrls, Vcl.CheckLst, FrmBase;
 
 type
   /// <summary>

@@ -20,7 +20,7 @@ unit EmptyEventHandlerDetector;
 interface
 
 uses
-  SysUtils, Classes, Menus, ToolsAPI, PluginConfig, FrmTreePages,
+  System.SysUtils, System.Classes, Vcl.Menus, ToolsAPI, PluginConfig, FrmTreePages,
   FrmeOptionPageEmptyHandler;
 
 type
@@ -88,7 +88,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Windows, Forms, Dialogs, Generics.Collections, Main, IDENotifiers,
+  Winapi.Windows, Vcl.Forms, Vcl.Dialogs, System.Generics.Collections, Main, IDENotifiers,
   ToolsAPIHelpers, DelphiLexer, FrmEmptyEventHandlerDetector;
 
 procedure InitPlugin(Unload: Boolean);
@@ -157,6 +157,7 @@ var
   MethodStartLine: Integer;
   BeginCount: Integer;
   HasStatements: Boolean;
+  SawSender: Boolean;
 
   function IsEventHandlerName(const Name: string): Boolean;
   var
@@ -250,14 +251,23 @@ begin
             // Check if this looks like an event handler
             if IsEventHandlerName(CurrentMethodName) then
             begin
-              // Skip to the begin
+              SawSender := False;
+              // Skip to the begin. Require a 'Sender' parameter in the signature
+              // (a genuine VCL event handler) so ordinary methods that merely end
+              // in a common word (DoExit, ForceClose, RefreshUpdate, ...) are not
+              // misreported as empty event handlers.
               while Lexer.NextToken(Token) do
               begin
-                if Token.Kind = tkI_begin then
+                if (Token.Kind >= tkIdent) and SameText(string(Token.Value), 'Sender') then
+                  SawSender := True
+                else if Token.Kind = tkI_begin then
                 begin
-                  InMethodBody := True;
-                  BeginCount := 1;
-                  HasStatements := False;
+                  if SawSender then
+                  begin
+                    InMethodBody := True;
+                    BeginCount := 1;
+                    HasStatements := False;
+                  end;
                   Break;
                 end
                 else if Token.Kind in [tkI_procedure, tkI_function, tkI_implementation,
@@ -280,7 +290,7 @@ begin
               begin
                 Inc(BeginCount);
                 // case and try are actual statements - method is not empty
-                if BeginCount = 2 then  // We're at the first nesting level
+                if BeginCount >= 2 then  // a case/try block anywhere in the body
                   HasStatements := True;
               end;
 
@@ -309,7 +319,7 @@ begin
             tkString, tkInt, tkFloat:
               begin
                 // These indicate actual code content
-                if BeginCount = 1 then
+                if BeginCount >= 1 then
                   HasStatements := True;
               end;
 
@@ -317,19 +327,19 @@ begin
             tkI_goto, tkI_asm, tkI_inherited:
               begin
                 // Control flow statements
-                if BeginCount = 1 then
+                if BeginCount >= 1 then
                   HasStatements := True;
               end;
 
             tkAssign, tkPlus, tkMinus, tkMultiply, tkDivide:
               begin
                 // Operators indicate actual code
-                if BeginCount = 1 then
+                if BeginCount >= 1 then
                   HasStatements := True;
               end;
           else
             // Check for identifiers that are not just the method name
-            if (Token.Kind >= tkIdent) and (BeginCount = 1) then
+            if (Token.Kind >= tkIdent) and (BeginCount >= 1) then
             begin
               // Check if it's a statement keyword by value
               if SameText(string(Token.Value), 'Exit') or

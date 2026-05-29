@@ -20,8 +20,8 @@ unit FrmeOptionPageUnusedUnitDetector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, FrmeBase, FrmTreePages, UnusedUnitDetector;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, FrmeBase, FrmTreePages, UnusedUnitDetector;
 
 type
   /// <summary>Options page frame shown inside the IDE Tools dialog for the Unused Unit Detector plugin.</summary>

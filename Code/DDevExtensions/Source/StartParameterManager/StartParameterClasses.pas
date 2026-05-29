@@ -81,7 +81,7 @@ Macro-Tag attributes (load from file):
 interface
 
 uses
-  SysUtils, Classes, Contnrs, XMLDoc, XMLIntf;
+  System.SysUtils, System.Classes, System.Contnrs, Xml.XMLDoc, Xml.XMLIntf;
 
 type
   /// <summary>Exception class raised by the Start Parameter loader/parser.</summary>
@@ -381,7 +381,7 @@ type
 implementation
 
 uses
-  StrUtils, RegularExpressions, Variants, DateUtils, DelphiLexer, DelphiExpr;
+  System.StrUtils, System.RegularExpressions, System.Variants, System.DateUtils, DelphiLexer, DelphiExpr;
 
 resourcestring
   RsNotAValidParamFile = 'Not a valid Start Parameters file: %s';

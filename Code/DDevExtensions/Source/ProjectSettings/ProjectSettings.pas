@@ -21,7 +21,7 @@ unit ProjectSettings;
 interface
 
 uses
-  Variants, SysUtils, Classes, Contnrs, ToolsAPI, Menus, ActnList, Forms, Controls,
+  System.Variants, System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, Vcl.Menus, Vcl.ActnList, Vcl.Forms, Vcl.Controls,
   ProjectSettingsData, ProjectData, SimpleXmlImport, SimpleXmlIntf, IDENotifiers;
 
 type
@@ -412,8 +412,15 @@ begin
 end;
 
 procedure TProjectSettingsNotifier.ProjectDestroying(Data: TProjectData);
+var
+  L: TObject;
 begin
-  Data.NonPersistents[sProjectSettings].Free;
+  // Capture the entry and only free it if present, so a Destroying without a
+  // matching ProjectAdded (notifier registered after the project opened, or
+  // shutdown-ordering) cannot fault.
+  L := Data.NonPersistents[sProjectSettings];
+  if L <> nil then
+    L.Free;
 end;
 
 end.

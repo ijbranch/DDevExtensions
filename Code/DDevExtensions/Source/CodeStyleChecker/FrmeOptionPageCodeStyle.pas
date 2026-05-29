@@ -18,8 +18,8 @@ unit FrmeOptionPageCodeStyle;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Math, FrmeBase, FrmTreePages, CodeStyleChecker;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, System.Math, FrmeBase, FrmTreePages, CodeStyleChecker;
 
 type
   /// <summary>Tree-page frame surfacing all Code Style Checker options to the user.</summary>
@@ -221,7 +221,12 @@ procedure TFrameOptionPageCodeStyle.btnEditRulesClick( Sender: TObject );
 begin
 
   if TFormTypePrefixEditor.Execute( FPlugin ) then
+  begin
+    // Persist immediately so the saved CodeStyleChecker.xml matches the rules
+    // the summary now reports, even if the user later cancels the options dialog.
+    FPlugin.Save;
     UpdateRulesSummary;
+  end;
 
 end;
 

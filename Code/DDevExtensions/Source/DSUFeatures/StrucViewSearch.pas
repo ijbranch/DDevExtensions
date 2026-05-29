@@ -9,8 +9,8 @@ unit StrucViewSearch;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs, Controls, Forms, StdCtrls, ExtCtrls, ImgList,
-  Graphics, ActnList, Math,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ImgList,
+  Vcl.Graphics, Vcl.ActnList, System.Math,
   EditPopupCtrl, VirtTreeHandler, ToolsAPI, StructureViewAPI;
 
 type
@@ -356,7 +356,11 @@ begin
   begin
     if not IsWindowVisible(Form.Handle) then
     begin
-      if not (Form.FindComponent('ViewStructureCmd') as TAction).Execute then
+      // Resolve to a typed local and nil-check: if 'ViewStructureCmd' was renamed
+      // or removed (across IDE versions/personalities) FindComponent returns nil
+      // and calling .Execute on it would AV.
+      var ViewCmd := Form.FindComponent('ViewStructureCmd') as TAction;
+      if (ViewCmd = nil) or (not ViewCmd.Execute) then
         Exit;
     end;
     if FEdit.CanFocus then
@@ -520,7 +524,7 @@ begin
   FEdit.ListBox.Items.BeginUpdate;
   try
     MinLenDiff := MaxInt;
-    MinLenDiffIndex := 0;
+    MinLenDiffIndex := -1;
     FItems.Clear;
     FEdit.ListBox.Items.Clear;
     FEdit.ListBox.ScrollWidth := 0;
@@ -538,7 +542,18 @@ begin
   finally
     FEdit.ListBox.Items.EndUpdate;
   end;
-  FEdit.ListBox.ItemIndex := MinLenDiffIndex;
+  // Only select an item when the list is non-empty; setting ItemIndex on an
+  // empty list would make EditKeyPress treat ItemIndex<>-1 as a selection and
+  // index Items.Objects[] out of range.
+  if FEdit.ListBox.Items.Count > 0 then
+  begin
+    if MinLenDiffIndex >= 0 then
+      FEdit.ListBox.ItemIndex := MinLenDiffIndex
+    else
+      FEdit.ListBox.ItemIndex := 0;
+  end
+  else
+    FEdit.ListBox.ItemIndex := -1;
 end;
 
 end.

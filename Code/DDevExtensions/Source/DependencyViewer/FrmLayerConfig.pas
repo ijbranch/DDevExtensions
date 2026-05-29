@@ -21,8 +21,8 @@ unit FrmLayerConfig;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, Grids, FrmBase, DependencyViewer;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Grids, FrmBase, DependencyViewer;
 
 type
   /// <summary>Two-dimensional boolean matrix used to represent the allowed-dependency rules.</summary>
@@ -140,7 +140,15 @@ begin
 end;
 
 procedure TFormLayerConfig.FormDestroy( Sender: TObject );
+var
+  I: Integer;
 begin
+
+  // Free the per-layer pattern lists stored in Items.Objects[] (otherwise only
+  // freed on delete/defaults), so they are released on every dialog close.
+  for I := 0 to ListBoxLayers.Items.Count - 1 do
+    if ListBoxLayers.Items.Objects[ I ] <> nil then
+      TStringList( ListBoxLayers.Items.Objects[ I ] ).Free;
 
   SetLength( FRulesMatrix, 0 );
 
@@ -422,10 +430,18 @@ var
   NewMatrix: TBoolMatrix;
 begin
 
-  LayerName := InputBox( 'Add Layer', 'Enter layer name:', '' );
+  LayerName := Trim( InputBox( 'Add Layer', 'Enter layer name:', '' ) );
 
   if LayerName = '' then
     Exit;
+
+  // '=' and ',' are the LayerConfig.txt field delimiters; a name containing them
+  // cannot round-trip through Save/LoadFromFile, so reject it at input.
+  if ( Pos( '=', LayerName ) > 0 ) or ( Pos( ',', LayerName ) > 0 ) then
+  begin
+    ShowMessage( 'A layer name cannot contain "=" or "," characters.' );
+    Exit;
+  end;
 
   // Check for duplicate
   for I := 0 to ListBoxLayers.Items.Count - 1 do

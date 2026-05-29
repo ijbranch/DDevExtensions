@@ -26,7 +26,7 @@ unit UsesClauseManager;
 interface
 
 uses
-  Windows, SysUtils, Classes, Variants, Generics.Collections, Menus,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Variants, System.Generics.Collections, Vcl.Menus,
   ToolsAPI, FrmTreePages, PluginConfig, Main;
 
 type
@@ -224,7 +224,7 @@ var
 implementation
 
 uses
-  Forms, Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
   FrmUsesClauseManager, FrmeOptionPageUsesClause;
 
 { TUnitExportsDatabase }
@@ -537,6 +537,7 @@ function TUnitExportsDatabase.GetPreferredUnit( const Identifier: string;
 var
   I, J: Integer;
   LowerUnit: string;
+  CandLeaf: string;
 begin
   Result := '';
   if ( CandidateUnits = nil ) or ( CandidateUnits.Count = 0 ) then
@@ -548,13 +549,22 @@ begin
     Exit;
   end;
 
-  // Check RTL/VCL priority list
+  // Check RTL/VCL priority list. The priority entries are dotted (e.g.
+  // 'Vcl.Forms') while the candidate reverse-lookup names are bare file names
+  // (e.g. 'Forms'), so compare on the unqualified leaf name on both sides.
   for I := 0 to FRTLVCLPriority.Count - 1 do
   begin
     LowerUnit := LowerCase( FRTLVCLPriority[ I ] );
+    if Pos( '.', LowerUnit ) > 0 then
+      LowerUnit := Copy( LowerUnit, LastDelimiter( '.', LowerUnit ) + 1, MaxInt );
+
     for J := 0 to CandidateUnits.Count - 1 do
     begin
-      if SameText( CandidateUnits[ J ], FRTLVCLPriority[ I ] ) then
+      CandLeaf := LowerCase( CandidateUnits[ J ] );
+      if Pos( '.', CandLeaf ) > 0 then
+        CandLeaf := Copy( CandLeaf, LastDelimiter( '.', CandLeaf ) + 1, MaxInt );
+
+      if CandLeaf = LowerUnit then
       begin
         Result := CandidateUnits[ J ];
         Exit;
@@ -1016,8 +1026,8 @@ var
       if J > 0 then
       begin
         Result := Result + ',';
-        // Check if we need a new line (keep lines under ~80 chars)
-        if LineLen + Length( Units[ J ] ) + 2 > 78 then
+        // Wrap to keep uses-clause lines within the GITLAK 162-char limit.
+        if LineLen + Length( Units[ J ] ) + 2 > 160 then
         begin
           Result := Result + UTF8String( #13#10 + Indent );
           LineLen := Length( Indent );

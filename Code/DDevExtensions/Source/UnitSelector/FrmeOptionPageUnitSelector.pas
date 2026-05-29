@@ -19,9 +19,9 @@ unit FrmeOptionPageUnitSelector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, SimpleXmlIntf, SimpleXmlImport, FrmTreePages,
-  PluginConfig, FrmeBase, ExtCtrls, ComCtrls, Menus, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, SimpleXmlIntf, SimpleXmlImport, FrmTreePages,
+  PluginConfig, FrmeBase, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Menus, ToolsAPI;
 
 type
   /// <summary>
@@ -320,7 +320,12 @@ begin
         CodeRedirect(@TDelphiCommands_FileUseUnitCommandExecute,
           @Hooked_TDelphiCommands_FileUseUnitCommandExecute,
           HookTDelphiCommands_FileUseUnitCommandExecute);
-    end;
+    end
+    else
+      // The IDE command symbol could not be resolved (e.g. on Win64), so the hook
+      // cannot be installed - but still record the choice so the persisted state
+      // matches the UI instead of silently reverting on next load.
+      FReplaceUseUnit := Value;
   end;
 end;
 
@@ -336,7 +341,9 @@ begin
   {$IF CompilerVersion < 21.0} // Delphi 2009
   cbxUseUnitSelector.Checked := FUnitSelectorConfig.Active;
   {$ELSE}
-  cbxUseUnitSelector.Free;
+  // Modern compilers don't use this checkbox; hide it rather than Free the
+  // streamed control, so the published field is never left dangling.
+  cbxUseUnitSelector.Visible := False;
   {$IFEND}
   hkFindUseUnit.HotKey := FUnitSelectorConfig.FindUseUnitHotKey;
   chkReplaceUseUnit.Checked := FUnitSelectorConfig.ReplaceUseUnit;

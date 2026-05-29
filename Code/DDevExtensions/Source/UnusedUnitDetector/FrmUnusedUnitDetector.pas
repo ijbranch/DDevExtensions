@@ -21,9 +21,9 @@ unit FrmUnusedUnitDetector;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, Menus, Clipbrd, Generics.Collections,
-  Generics.Defaults, FrmBase, UnusedUnitDetector, ToolsAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, UnusedUnitDetector, ToolsAPI;
 
 type
   /// <summary>Main detector form for the Unused Unit Detector plugin.</summary>

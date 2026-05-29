@@ -21,9 +21,9 @@ unit FrmeOptionPageStartParameterTeam;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolsAPI, FrmTreePages, FrmOptions, PluginConfig, StdCtrls,
-  ModuleData, IDENotifiers, FrmeBase, ExtCtrls, IDEHooks, Hooking;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, ToolsAPI, FrmTreePages, FrmOptions, PluginConfig, Vcl.StdCtrls,
+  ModuleData, IDENotifiers, FrmeBase, Vcl.ExtCtrls, IDEHooks, Hooking;
 
 type
   /// <summary>
@@ -96,7 +96,7 @@ uses
   {$IF CompilerVersion >= 23.0} // XE2+
   CommonOptionStrs,
   {$IFEND}
-  Variants, Main, ProjectData, IDEUtils;
+  System.Variants, Main, ProjectData, IDEUtils;
 
 {$R *.dfm}
 
@@ -153,9 +153,11 @@ end;
 
 destructor TStartParameterTeam.Destroy;
 begin
+  // Disable first so any in-flight callback short-circuits, then free the
+  // notifiers (which unregister from the IDE in their own destructors).
+  Active := False;
   FIDENotifier.Free;
   FModuleNotifier.Free;
-  Active := False;
   inherited Destroy;
 end;
 
@@ -168,7 +170,7 @@ end;
 procedure TStartParameterTeam.RemoveRunParams(Project: IOTAProject);
 var
   Ext, S: string;
-  StartPos, EndPos, Len: Integer;
+  StartPos, EndPos: Integer;
   BOM: TBytes;
   Encoding: TEncoding;
   Stream: TFileStream;
@@ -190,13 +192,14 @@ begin
   Lines := TStringList.Create;
   Stream := nil;
   try
+    try
     Filename := Project.FileName;
     Ext := LowerCase(ExtractFileExt(Filename));
     if ((Ext = '.dproj') or (Ext = '.cbproj')) and FileExists(Filename) then
     begin
       Stream := TFileStream.Create(Filename, fmOpenReadWrite or fmShareDenyRead);
       SetLength(BOM, 4);
-      Stream.Read(BOM[0], 4);
+      SetLength(BOM, Stream.Read(BOM[0], 4));   // shrink to bytes actually read (short files)
       TEncoding.GetBufferEncoding(BOM, Encoding);
       Stream.Position := 0;
       Lines.LoadFromStream(Stream);
@@ -207,14 +210,11 @@ begin
         if StartPos > 0 then
         begin
           Inc(StartPos, Length('<Parameters Name="RunParams">'));
-          Len := Length(S);
-          EndPos := StartPos;
-          while EndPos < Len do
-          begin
-            if (S[EndPos] = '<') and (S[EndPos + 1] = '/') and (StrLComp('</Parameters>', PChar(S) + EndPos - 1, 13) = 0) then
-              Break;
-            Inc(EndPos);
-          end;
+          // Locate the closing tag with Pos to avoid PChar arithmetic walking
+          // past the buffer; if it isn't on this line, leave the line unchanged.
+          EndPos := Pos('</Parameters>', S, StartPos);
+          if EndPos = 0 then
+            EndPos := StartPos;
           if StartPos <> EndPos then
           begin
             S := Copy(S, 1, StartPos - 1) + Copy(S, EndPos, MaxInt);
@@ -229,14 +229,9 @@ begin
         if StartPos <> 0 then
         begin
           Inc(StartPos, Length('<Debugger_RunParams>'));
-          Len := Length(S);
-          EndPos := StartPos;
-          while EndPos < Len do
-          begin
-            if (S[EndPos] = '<') and (S[EndPos + 1] = '/') and (StrLComp('</Debugger_RunParams>', PChar(S) + EndPos - 1, 13) = 0) then
-              Break;
-            Inc(EndPos);
-          end;
+          EndPos := Pos('</Debugger_RunParams>', S, StartPos);
+          if EndPos = 0 then
+            EndPos := StartPos;
           if StartPos <> EndPos then
           begin
             S := Copy(S, 1, StartPos - 1) + Copy(S, EndPos, MaxInt);
@@ -254,6 +249,11 @@ begin
       Lines.SaveToStream(Stream, Encoding);
       Stream.Size := Stream.Position;
       SetFileTime(Stream.Handle, nil, nil, @LastWriteTime);
+    end;
+    except
+      on E: Exception do
+        // A locked/read-only/network .dproj must not abort the IDE save pipeline.
+        OutputDebugString(PChar('DDevExtensions StartParameterTeam.RemoveRunParams: ' + Filename + ' - ' + E.Message));
     end;
   finally
     Lines.Free;
@@ -344,7 +344,9 @@ begin
        (Ext = '.bdsproj') or
        (Ext = '.dproj') or (Ext = '.cbproj') then
     begin
-      if Supports((BorlandIDEServices as IOTAModuleServices).FindModule(FileName), IOTAProject, Project) then
+      var ModuleSvc: IOTAModuleServices;
+      if (BorlandIDEServices <> nil) and Supports(BorlandIDEServices, IOTAModuleServices, ModuleSvc) and
+         Supports(ModuleSvc.FindModule(FileName), IOTAProject, Project) then
       begin
         if ProjectDataList[Project].HasValue('RunParams') then
         begin

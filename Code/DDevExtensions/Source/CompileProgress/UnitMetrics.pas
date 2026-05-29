@@ -40,8 +40,14 @@ function CalculateUnitMetrics(const FileName: string): TUnitMetrics;
 implementation
 
 uses
-  SysUtils, Classes, DelphiLexer;
+  System.SysUtils, System.Classes, DelphiLexer;
 
+// NOTE: this is an APPROXIMATE metric, not an exact cyclomatic-complexity figure.
+// Complexity is incremented on every 'and'/'or' token (which includes boolean
+// operators in declarations and set/bitwise expressions, not only decision
+// points), and the case-label heuristic does not distinguish a 'case' statement
+// from a 'case'-variant record type declaration. Treat the numbers as a relative
+// indicator for ranking units, not an authoritative measurement.
 function CalculateUnitMetrics(const FileName: string): TUnitMetrics;
 var
   Lexer: TDelphiLexer;

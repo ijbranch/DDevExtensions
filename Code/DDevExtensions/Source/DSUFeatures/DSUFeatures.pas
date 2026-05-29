@@ -35,8 +35,8 @@ procedure KillAllDexplore;
 implementation
 
 uses
-  Windows, Messages, SysUtils, Classes, Contnrs, Hooking, Controls, Forms, Dialogs,
-  IDEHooks, ToolsAPI, IDEUtils, AppConsts, ImportHooking, PsAPI, DesignEditors, TypInfo;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Hooking, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  IDEHooks, ToolsAPI, IDEUtils, AppConsts, ImportHooking, Winapi.PsAPI, DesignEditors, System.TypInfo;
 
 {-----------------------------------------------------------------------------}
 { Close all and Kill IDE                                                      }
@@ -195,10 +195,10 @@ begin
 
     if Ancestor <> nil then
     begin
-      AncestorPropInfo := TypInfo.GetPropInfo(Ancestor, UTF8ToString(Self.GetPropInfo.Name), [tkMethod]);
+      AncestorPropInfo := System.TypInfo.GetPropInfo(Ancestor, UTF8ToString(Self.GetPropInfo.Name), [tkMethod]);
       if AncestorPropInfo <> nil then
       begin
-        if TypInfo.GetMethodProp(Ancestor, AncestorPropInfo).Code <> nil then
+        if System.TypInfo.GetMethodProp(Ancestor, AncestorPropInfo).Code <> nil then
           Result := '(nil)';
       end;
     end;

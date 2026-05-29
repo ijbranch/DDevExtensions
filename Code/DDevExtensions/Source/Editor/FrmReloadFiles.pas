@@ -26,8 +26,8 @@ unit FrmReloadFiles;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Contnrs, Graphics, Controls, Forms, Dialogs, FrmBase,
-  ComCtrls, StdCtrls, ExtCtrls, ImgList, Menus, ToolsAPI,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, FrmBase,
+  Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ImgList, Vcl.Menus, ToolsAPI,
   DocModuleHandler;
 
 const
@@ -146,8 +146,8 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Hooking, IDEHooks, StrUtils, ActiveX, Registry, ComObj, IDEUtils, ShellAPI, AppConsts,
-  Consts, CommCtrl, ToolsAPIHelpers;
+  Hooking, IDEHooks, System.StrUtils, Winapi.ActiveX, System.Win.Registry, System.Win.ComObj, IDEUtils, Winapi.ShellAPI, AppConsts,
+  Vcl.Consts, Winapi.CommCtrl, ToolsAPIHelpers;
 
 {$R *.dfm}
 
@@ -391,9 +391,14 @@ end;
 procedure TFormReloadFiles.mniShowInExplorerClick(Sender: TObject);
 var
   FileName: string;
+  Res: HINST;
 begin
+  if ListViewModules.Selected = nil then
+    Exit;
   FileName := TDocModule(ListViewModules.Selected.Data).FileName;
-  ShellExecute(Screen.ActiveCustomForm.Handle, 'open', 'explorer.exe', PChar(Format('/e, /select, "%s"', [FileName])), nil, SW_SHOWNORMAL);
+  Res := ShellExecute(Screen.ActiveCustomForm.Handle, 'open', 'explorer.exe', PChar(Format('/e, /select, "%s"', [FileName])), nil, SW_SHOWNORMAL);
+  if Res <= 32 then
+    ShowMessage('Could not open Explorer for: ' + FileName);
 end;
 
 procedure TFormReloadFiles.DiffMenuItemClick(Sender: TObject);
@@ -516,6 +521,13 @@ begin
                 FileStream.Write(Data[0], Length(Data));
             end;
           end;
+        end
+        else
+        begin
+          // Neither a form nor a source editor (e.g. a binary/.res editor):
+          // don't launch the diff tool against an empty base file.
+          ShowMessage('Cannot diff this editor - it is not a form or source editor.');
+          Exit;
         end;
       finally
         FileStream.Free;
@@ -547,7 +559,8 @@ begin
       end
     end
     else
-      RaiseLastOSError;
+      // Present a contextual message rather than a raw OS error dialog.
+      ShowMessage('Could not launch the diff tool:'#13#10 + FDiffer + #13#10 + SysErrorMessage(GetLastError));
   finally
     if TempFileName <> '' then
       DeleteFile(TempFileName);
@@ -1065,8 +1078,13 @@ begin
   try
     AModule.CanReloadFile;
   except
-    FCannotReloadModules.Add(AModule);
-    CanReloadPossible := False;
+    on E: Exception do
+    begin
+      FCannotReloadModules.Add(AModule);
+      CanReloadPossible := False;
+      // Don't swallow silently: record why the module was marked non-reloadable.
+      OutputDebugString(PChar('DDevExtensions ReloadFiles: ' + AModule.FileName + ' - ' + E.Message));
+    end;
   end;
 
   FileName := AModule.GetFileName;

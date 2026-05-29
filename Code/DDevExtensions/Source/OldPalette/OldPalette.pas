@@ -23,13 +23,13 @@ unit OldPalette;
 interface
 
 uses
-  Windows, Messages, SysUtils, Contnrs, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, ComponentPanel,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Contnrs, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.ExtCtrls, ComponentPanel,
   {$IFNDEF ALWAYS_DEFINED} // trick to get the IDE to not add those units again
   JvExExtCtrls, JvExtComponent, JvComponentPanel
   {$ENDIF}
-  FrmeOptionPageOldPalette, Buttons, TypInfo, IniFiles, CategoryButtons, PaletteAPI,
-  GraphUtil, StdCtrls, Menus, ToolWin, ComCtrls,
+  FrmeOptionPageOldPalette, Vcl.Buttons, System.TypInfo, System.IniFiles, Vcl.CategoryButtons, PaletteAPI,
+  Vcl.GraphUtil, Vcl.StdCtrls, Vcl.Menus, Vcl.ToolWin, Vcl.ComCtrls,
   ToolsAPI, ToolsAPIHelpers;
 
 const
@@ -246,7 +246,7 @@ var
 implementation
 
 uses
-  IDEUtils, HtHint, Hooking, IDEHooks, ComponentManager, StrUtils;
+  IDEUtils, HtHint, Hooking, IDEHooks, ComponentManager, System.StrUtils;
 
 {$R *.dfm}
 
@@ -451,8 +451,11 @@ begin
   if TabControl.Style <> tsTabs then
   begin
     {$IFDEF COMPILER10_UP}
-    ControlBar := TControlBar(Application.MainForm.FindChildControl('ControlBar1'));
-    if (ControlBar <> nil) and (ControlBar.DrawingStyle = ExtCtrls.dsGradient) then
+    if Application.MainForm <> nil then
+      ControlBar := TControlBar(Application.MainForm.FindChildControl('ControlBar1'))
+    else
+      ControlBar := nil;
+    if (ControlBar <> nil) and (ControlBar.DrawingStyle = Vcl.ExtCtrls.dsGradient) then
     begin
       R.Top := -PanelPalette.Top;
       GradientFillCanvas(Canvas, ControlBar.GradientStartColor, ControlBar.GradientEndColor, R, ControlBar.GradientDirection);
@@ -659,11 +662,10 @@ begin
           FRebuilding := PreviousRebuildingState;
 
         TabUpdated := False;
-        { Designer palette names }
-        if FIsFormDesigner then
-          PreselectTab(FDesignerSelectedPaletteName)
-        else
-          PreselectTab(FEditorSelectedPaletteName);
+        { Designer palette names. This block only runs when FIsFormDesigner is
+          True (outer guard), so always use the designer-context name; the
+          editor-context branch here was unreachable dead code. }
+        PreselectTab(FDesignerSelectedPaletteName);
         if not TabUpdated and (TabItemCount > 0) then
           TabControl.TabIndex := 0;
         TabControlChange(TabControl);
@@ -765,6 +767,7 @@ procedure TFrameOldPalette.SelectComponent(PalGroup: TButtonCategory; PalItem: T
       Exit;
     end;
 
+    Result := False;
     for I := 0 to TabItemCount - 1 do
     begin
       TabItem := TabItems[I];
@@ -789,10 +792,13 @@ procedure TFrameOldPalette.SelectComponent(PalGroup: TButtonCategory; PalItem: T
             end;
           end;
         end;
+        // The correct category tab was found and shown; report success so the
+        // caller does not reset the selection to the pointer button merely
+        // because the specific button (HelpKeyword) was not located on the strip.
+        Result := True;
         Break;
       end;
     end;
-    Result := False;
   end;
 
 begin
@@ -836,7 +842,7 @@ begin
     FEditorSelectedPaletteName := SelectedPaletteName;
 
   SelectedPalItem := nil;
-  if CompPal.SelectedItem <> nil then
+  if Assigned(CompPal) and (CompPal.SelectedItem <> nil) then
   begin
     if CompPal.SelectedItem.ClassNameIs('TButtonCategory') then
       SelectedPalItem := CompPal.SelectedItem;
