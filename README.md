@@ -100,15 +100,17 @@ Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "E
 
 Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
 
+Version 3.16.5 adds **Delphi 13.1 Win64 IDE build support**. The same source tree now produces `DDevExtensionsD130.dll` for the 32-bit IDE host (`bin\bds.exe`) and `DDevExtensionsD130x64.dll` for the 64-bit RAD Studio personality (`bin64\bds.exe`). The 64-bit Delphi-only IDE personality does not exist — only RAD Studio ships a 64-bit host. The 32-bit IDE build is unchanged. The installer detects both bitness hosts under the shared `Embarcadero\BDS\37.0` registry key and registers each under the correct `Experts` / `Experts x64` subkey. A small set of features rely on x86 inline asm or 5-byte JMP-rel32 hooks that don't port to Win64 and are inactive on the 64-bit host — see Help.md for the list. A diagnostic log at `%APPDATA%\DDevExtensions\Win64Shutdown.log` captures any plug-in teardown exception attributed to the responsible step (silent on clean shutdown).
+
+> **Note:** v3.16.5 has been built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Earlier Delphi releases (10.2 – 12) do not ship a 64-bit IDE host, so they keep the existing 32-bit build only.
+
 ### Version Number Interpretation
 
 - **First digit** - Major re-write/update
 - **Second digit** - Feature change (Add/Modify/Delete)
 - **Third digit** - Bug fixes
 
-> **Note:** DDevExtensions only supports the 32-bit IDE (bds.exe).
->
-> A 64-bit version was attempted but proved too daunting for Claude and myself.
+> **Note:** DDevExtensions supports the 32-bit IDE (`bin\bds.exe`) for Delphi 10.2 – 13. The 64-bit IDE host (`bin64\bds.exe`) is supported in Delphi 13.1 RAD Studio personality only. A subset of features that depend on x86 asm / 5-byte JMP hooks are inactive on the 64-bit IDE.
 
 ## Supported Delphi Versions
 
@@ -169,10 +171,12 @@ DDevExtensions/
 │   ├── Version.rc/.res            # Version resource
 │   │
 │   ├── Bin/                       # Build output
-│   │   ├── DDevExtensionsD130.dll # Extension DLL
-│   │   ├── DDevExtensionsReg.exe  # Installer
+│   │   ├── DDevExtensionsD130.dll    # Extension DLL (Win32 IDE host)
+│   │   ├── DDevExtensionsD130x64.dll # Extension DLL (Win64 IDE host, D13.1+)
+│   │   ├── DDevExtensionsReg.exe     # Installer
 │   │   ├── CompileInterceptorW.dll
-│   │   └── Changes.txt            # Version history
+│   │   ├── CompileInterceptorWx64.dll
+│   │   └── Changes.txt               # Version history
 │   │
 │   ├── D_D102/                    # Delphi 10.2 Tokyo project
 │   ├── D_D103/                    # Delphi 10.3 Rio project

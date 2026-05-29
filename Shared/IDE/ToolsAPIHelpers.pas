@@ -125,10 +125,10 @@ uses
 { TPropField }
 
 function TPropField.GetValue: Variant;
-  external vclide_bpl name '@Idepropset@TPropField@GetValue$qqrv';
+  external vclide_bpl name '@Idepropset@TPropField@GetValue$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 
 procedure TPropField.SetValue(const Value: Variant);
-  external vclide_bpl name '@Idepropset@TPropField@SetValue$qqrrx14System@Variant';
+  external vclide_bpl name '@Idepropset@TPropField@SetValue$qqrrx14System@Variant' {$IFDEF WIN64} delayed {$ENDIF};
 
 {------------------------------------------------------------------------------------------------------------}
 
@@ -623,9 +623,9 @@ type
   end;
 
 function PlatformManager: TPlatformManager;
-  external coreide_bpl name '@Platforms@PlatformManager$qqrv';
+  external coreide_bpl name '@Platforms@PlatformManager$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 function TPlatformManager.GetEnvOptions(const APlatform: string; const APersonality: string): PObject;
-  external coreide_bpl name '@Platforms@TPlatformManager@GetEnvOptions$qqrx20System@UnicodeStringt1';
+  external coreide_bpl name '@Platforms@TPlatformManager@GetEnvOptions$qqrx20System@UnicodeStringt1' {$IFDEF WIN64} delayed {$ENDIF};
 {$IFEND}
 
 function GetProjectEnvOptionPaths(const AProject: IOTAProject; const AOptionName: string): string;

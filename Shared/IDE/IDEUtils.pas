@@ -1976,18 +1976,18 @@ end;
 { TIDEEvent }
 
 procedure TIDEEvent.Add(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@Add$qqrynpqqrp14System@TObject$v';
+  external designide_bpl name '@Events@TEvent@Add$qqrynpqqrp14System@TObject$v' {$IFDEF WIN64} delayed {$ENDIF};
 procedure TIDEEvent.ForceAdd(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@ForceAdd$qqrynpqqrp14System@TObject$v';
+  external designide_bpl name '@Events@TEvent@ForceAdd$qqrynpqqrp14System@TObject$v' {$IFDEF WIN64} delayed {$ENDIF};
 procedure TIDEEvent.Remove(AHandler: TNotifyEvent);
-  external designide_bpl name '@Events@TEvent@Remove$qqrynpqqrp14System@TObject$v';
+  external designide_bpl name '@Events@TEvent@Remove$qqrynpqqrp14System@TObject$v' {$IFDEF WIN64} delayed {$ENDIF};
 
 function MainFormShown: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormShown$qqrv';
+  external coreide_bpl name '@Ideintf@MainFormShown$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 function MainFormCreated: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormCreated$qqrv';
+  external coreide_bpl name '@Ideintf@MainFormCreated$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 function MainFormDestroyed: TIDEEvent;
-  external coreide_bpl name '@Ideintf@MainFormDestroyed$qqrv';
+  external coreide_bpl name '@Ideintf@MainFormDestroyed$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 
 procedure Init;
 var

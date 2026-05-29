@@ -9,14 +9,6 @@
 {************************************************}
 unit EFastMM5Support;
 
-/// <summary>
-/// Bridges FastMM5's leak-tracking stack-trace hooks to EurekaLog's tracer/debug-info
-/// infrastructure. Replacing FastMM's <c>FastMM_GetStackTrace</c> and
-/// <c>FastMM_ConvertStackTraceToText</c> in the unit's initialisation section makes
-/// FastMM-reported leaks include EurekaLog-quality call stacks with unit/procedure/line
-/// information.
-/// </summary>
-
 {$I ELDefines.inc}
 
 interface
@@ -28,46 +20,11 @@ uses
   ETypes;
 
 var
-  /// <summary>
-  /// When True (the default), all FastMM stack traces are captured via raw-stack scanning;
-  /// when False, frame-pointer-based tracing is used unless <c>loRAWStackTrace</c> is set
-  /// in <c>MemLeaksOptions</c>. FastMM itself defaults to RAW tracing.
-  /// </summary>
   ForceUseRAWTracing: Boolean = True; // FastMM defaults to RAW stack tracing
 
-/// <summary>
-/// FastMM5-compatible stack-trace capture entry point. Dispatches to the RAW or frame
-/// tracer according to <see cref="ForceUseRAWTracing"/> and <c>MemLeaksOptions</c>.
-/// </summary>
-/// <param name="APReturnAddresses">Caller-supplied buffer that receives the captured return addresses.</param>
-/// <param name="AMaxDepth">Maximum number of return addresses to capture.</param>
-/// <param name="ASkipFrames">Number of leading frames to skip before recording.</param>
 procedure FastMM_GetStackTrace_EurekaLog(APReturnAddresses: PNativeUInt; AMaxDepth, ASkipFrames: Cardinal);
-/// <summary>
-/// Frame-pointer-based stack-trace capture used when raw tracing is disabled. Walks the
-/// stack via EurekaLog's <c>TracerLeaksFrame</c> tracer.
-/// </summary>
-/// <param name="APReturnAddresses">Buffer that receives the captured return addresses.</param>
-/// <param name="AMaxDepth">Maximum number of return addresses to capture.</param>
-/// <param name="ASkipFrames">Number of leading frames to skip.</param>
 procedure FastMM_GetStackTrace_EurekaLog_Frames(APReturnAddresses: PNativeUInt; AMaxDepth, ASkipFrames: Cardinal);
-/// <summary>
-/// Raw-stack-scanning capture used when frame pointers are unavailable or RAW tracing is
-/// requested. Walks the stack via EurekaLog's <c>TracerLeaksRAW</c> tracer.
-/// </summary>
-/// <param name="APReturnAddresses">Buffer that receives the captured return addresses.</param>
-/// <param name="AMaxDepth">Maximum number of return addresses to capture.</param>
-/// <param name="ASkipFrames">Number of leading frames to skip.</param>
 procedure FastMM_GetStackTrace_EurekaLog_RAW(APReturnAddresses: PNativeUInt; AMaxDepth, ASkipFrames: Cardinal);
-/// <summary>
-/// Converts a previously captured FastMM5 stack trace into human-readable text with
-/// pointer, line and source location information from EurekaLog's debug-info layer.
-/// </summary>
-/// <param name="APReturnAddresses">Buffer of captured return addresses.</param>
-/// <param name="AMaxDepth">Number of valid entries in <paramref name="APReturnAddresses"/>.</param>
-/// <param name="APBuffer">Optional caller-supplied destination buffer; pass <c>nil</c> to allocate one.</param>
-/// <param name="APBufferEnd">One past the end of <paramref name="APBuffer"/>; ignored when <paramref name="APBuffer"/> is <c>nil</c>.</param>
-/// <returns>Pointer to the next free position in the destination buffer, or to a freshly allocated buffer when <paramref name="APBuffer"/> is <c>nil</c>.</returns>
 function  FastMM_ConvertStackTraceToText_EurekaLog(APReturnAddresses: PNativeUInt; AMaxDepth: Cardinal; APBuffer, APBufferEnd: PWideChar): PWideChar;
 
 implementation

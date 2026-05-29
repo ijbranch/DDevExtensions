@@ -321,7 +321,7 @@ begin
       begin
         Item := TMenuItem.Create(FMenuItemProjectSettings);
         Item.Caption := Settings[i].Name;
-        Item.Tag := Integer(Settings[i]);
+        Item.Tag := NativeInt(Settings[i]);
         Item.RadioItem := True;
         Item.GroupIndex := 1;
 
@@ -341,7 +341,7 @@ begin
       begin
         Item := TMenuItem.Create(FMenuItemProjectSettings);
         Item.Caption := FGlobalSettings[i].Name;
-        Item.Tag := Integer(FGlobalSettings[i]);
+        Item.Tag := NativeInt(FGlobalSettings[i]);
         Item.RadioItem := True;
         Item.GroupIndex := 1;
 

@@ -142,11 +142,18 @@ end;
 constructor TStructureViewSearch.Create(AOwner: TComponent);
 var
   Form: TCustomForm;
+  {$IFNDEF CPUX64}
   LTree: TComponent;
+  {$ENDIF}
 begin
   inherited Create(AOwner);
   FItems := TObjectList.Create;
 
+  {$IFNDEF CPUX64}
+  // Win64: TIDEVirtualTreeHandler's TreeImport lookups against the 64-bit
+  // Idevirtualtrees BPL fail (different C++ name mangling), so any tree-touching
+  // operation raises "Not Supported" on the IDE's paint cycle. Skip the search
+  // box install entirely on Win64.
   Form := FindForm('StructureViewForm', '');
   if Form <> nil then
   begin
@@ -157,6 +164,7 @@ begin
       FTree := TIDEVirtualTreeHandler.Create(LTree as TCustomControl);
     end;
   end;
+  {$ENDIF}
 
   FFilterTimer := TTimer.Create(Self);
   FFilterTimer.Interval := 170;

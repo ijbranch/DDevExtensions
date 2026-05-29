@@ -168,7 +168,8 @@ var
 implementation
 
 uses
-  Themes, AppConsts, Hooking, IDEHooks;
+  Themes, AppConsts, Hooking, IDEHooks
+  {$IFDEF CPUX64}, Main {$ENDIF};
 
 const
   {$IF CompilerVersion >= 21.0} // Delphi 2010+
@@ -178,7 +179,7 @@ const
   {$IFEND}
 
 procedure ProgressFormPtr;
-  external coreide_bpl name '@Comprgrs@ProgressForm';
+  external coreide_bpl name '@Comprgrs@ProgressForm' {$IFDEF WIN64} delayed {$ENDIF};
 
 var
   ProgressFormP: ^TForm;
@@ -205,6 +206,21 @@ end;
 
 destructor TNativeProgressForm.Destroy;
 begin
+  {$IFDEF CPUX64}
+  // Win64 shutdown: each step is independently swallowed + logged so that one
+  // failure (typically a partially-torn-down coreide_bpl dereference) doesn't
+  // abort the rest of the destructor.
+  //
+  // The first three setters (StatusOverwrite, FilesCompiled, MaxFiles) all
+  // route through GetForm/ProgressFormP^ which dereferences a stale coreide_bpl
+  // global on shutdown — they're skipped entirely below since "tidying" the
+  // IDE's UI while the IDE is exiting is pointless.
+  try FreeAndNil(FProgressBar);   except on E: Exception do LogWin64UnloadStep('TNativeProgressForm.FProgressBar.Free', E); end;
+  try UpdateTaskbarProgress;      except on E: Exception do LogWin64UnloadStep('TNativeProgressForm.UpdateTaskbarProgress', E); end;
+  try FTaskbarList3 := nil;       except on E: Exception do LogWin64UnloadStep('TNativeProgressForm.FTaskbarList3:=nil', E); end;
+  try FTaskbarList := nil;        except on E: Exception do LogWin64UnloadStep('TNativeProgressForm.FTaskbarList:=nil', E); end;
+  try inherited Destroy;          except on E: Exception do LogWin64UnloadStep('TNativeProgressForm.inherited Destroy', E); end;
+  {$ELSE}
   StatusOverwrite := '';
   FilesCompiled := 0;
   MaxFiles := 0;
@@ -213,6 +229,7 @@ begin
   FTaskbarList3 := nil;
   FTaskbarList := nil;
   inherited Destroy;
+  {$ENDIF}
 end;
 
 function TNativeProgressForm.GetForm: TCustomForm;

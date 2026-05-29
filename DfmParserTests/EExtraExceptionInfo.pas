@@ -1,18 +1,5 @@
 unit EExtraExceptionInfo;
 
-/// <summary>
-/// EurekaLog support unit that augments captured bug reports with extra runtime details
-/// for selected RTL/VCL/Datasnap/REST/SOAP/XML/JSON/COM exception classes. Behaviour is
-/// driven entirely by conditional defines (<c>E_ADD_CUSTOM_INFO</c>,
-/// <c>E_ADD_CUSTOM_MESSAGE</c>, <c>E_ADD_NO_CUSTOM_INFO</c> and one
-/// <c>E_*_INFO</c> per supported exception family). When enabled, the implementation
-/// section registers EurekaLog event handlers in its initialisation block.
-/// </summary>
-/// <remarks>
-/// All public surface lives in conditional defines and the implementation section; the
-/// interface section deliberately exposes no symbols.
-/// </remarks>
-
 //
 // You can add define's symbol name to the
 // Project / Options / Delphi compiler / Conditional defines

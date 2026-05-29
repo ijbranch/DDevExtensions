@@ -71,14 +71,14 @@ type
   TIntegerList = class(TList)
   private
     /// <summary>Returns the integer stored at Index.</summary>
-    function GetItem(Index: Integer): Integer; {$IFDEF D9}inline;{$ENDIF}
+    function GetItem(Index: NativeInt): Integer; {$IFDEF D9}inline;{$ENDIF}
     /// <summary>Stores an integer at Index.</summary>
-    procedure SetItem(Index: Integer; const Value: Integer);{$IFDEF D9}inline;{$ENDIF}
+    procedure SetItem(Index: NativeInt; const Value: Integer);{$IFDEF D9}inline;{$ENDIF}
   public
     /// <summary>Appends Value and returns its index.</summary>
     function Add(Value: Integer): Integer; {$IFDEF D9}inline;{$ENDIF}
     /// <summary>Indexed accessor for the integer slots.</summary>
-    property Items[Index: Integer]: Integer read GetItem write SetItem; default;
+    property Items[Index: NativeInt]: Integer read GetItem write SetItem; default;
   end;
 
   /// <summary>Sorted string-to-string dictionary backed by a key list and a separate value pool.</summary>
@@ -198,7 +198,7 @@ end;
 
 { TIntegerList }
 
-function TIntegerList.GetItem(Index: Integer): Integer;
+function TIntegerList.GetItem(Index: NativeInt): Integer;
 begin
   Result := Integer(inherited Items[Index]);
 end;
@@ -208,7 +208,7 @@ begin
   Result := inherited Add(Pointer(Value));
 end;
 
-procedure TIntegerList.SetItem(Index: Integer; const Value: Integer);
+procedure TIntegerList.SetItem(Index: NativeInt; const Value: Integer);
 begin
   inherited Items[Index] := Pointer(Value);
 end;

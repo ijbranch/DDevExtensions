@@ -72,6 +72,20 @@ procedure RegisterLateLoader(Proc: TLateLoaderProc);
 /// </summary>
 procedure InitAppDataDirectory; // called by InstallHooks
 
+{$IFDEF CPUX64}
+/// <summary>
+/// Win64 shutdown diagnostic — appends a line to <c>%APPDATA%\DDevExtensions\Win64Shutdown.log</c>
+/// describing where in the teardown path an exception was swallowed. Public so feature
+/// destructors that wrap their own steps in try/except can attribute precisely.
+/// </summary>
+procedure LogWin64UnloadFailure(const LoaderKind: string; Index: Integer; E: Exception);
+/// <summary>
+/// Win64 shutdown diagnostic — like <see cref="LogWin64UnloadFailure"/> but takes a
+/// free-form step label (e.g. <c>'TCompileProgress.FBuildStatsMenuItem.Free'</c>).
+/// </summary>
+procedure LogWin64UnloadStep(const StepName: string; E: Exception);
+{$ENDIF}
+
 var
   /// <summary>Global PE-import-table hook list shared by features that need to redirect Windows API calls.</summary>
   APIHookList: TJclPeMapImgHooks;
@@ -341,6 +355,84 @@ begin
   DDevExtensionsMenu.Add( MenuItemAbout );
 end;
 
+{$IFDEF CPUX64}
+/// <summary>
+/// Writes a single line to <c>%APPDATA%\DDevExtensions\Win64Shutdown.log</c> and
+/// also emits it via <c>OutputDebugString</c>. Every operation is wrapped in
+/// <c>try/except</c> because we are already on the exception path during process
+/// teardown.
+/// </summary>
+procedure WriteWin64ShutdownLine(const Line: string);
+var
+  LogPath: string;
+  Stream: TFileStream;
+  Bytes: TBytes;
+begin
+  if Line = '' then Exit;
+  try
+    OutputDebugString(PChar(Line));
+  except
+    // OutputDebugString isn't expected to throw, but defensive on teardown.
+  end;
+  try
+    LogPath := AppDataDirectory + '\Win64Shutdown.log';
+    if FileExists(LogPath) then
+      Stream := TFileStream.Create(LogPath, fmOpenWrite or fmShareDenyWrite)
+    else
+      Stream := TFileStream.Create(LogPath, fmCreate or fmShareDenyWrite);
+    try
+      Stream.Seek(0, soEnd);
+      Bytes := TEncoding.UTF8.GetBytes(Line);
+      if Length(Bytes) > 0 then
+        Stream.WriteBuffer(Bytes[0], Length(Bytes));
+    finally
+      Stream.Free;
+    end;
+  except
+    // If we can't write the log we still got the dialog suppressed; don't
+    // re-raise during teardown.
+  end;
+end;
+
+/// <summary>
+/// Win64-only diagnostic helper. Appends a line describing an unloader failure
+/// to the Win64 shutdown log. Used by <see cref="UninstallHooks"/> to attribute
+/// the cascade of "Delphi 13 (64-bit)" AV dialogs that earlier appeared at
+/// Win64 IDE shutdown.
+/// </summary>
+procedure LogWin64UnloadFailure(const LoaderKind: string; Index: Integer; E: Exception);
+var
+  Line: string;
+begin
+  try
+    Line := Format('%s  DDevExtensions[Win64]: %s[%d] unload threw %s: %s'#13#10,
+      [FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Now), LoaderKind, Index,
+       string(E.ClassName), E.Message]);
+  except
+    Line := '';
+  end;
+  WriteWin64ShutdownLine(Line);
+end;
+
+/// <summary>
+/// Win64-only diagnostic helper for fine-grained step labels — used by feature
+/// destructors that wrap individual cleanup operations in their own try/except.
+/// </summary>
+procedure LogWin64UnloadStep(const StepName: string; E: Exception);
+var
+  Line: string;
+begin
+  try
+    Line := Format('%s  DDevExtensions[Win64]: step %s threw %s: %s'#13#10,
+      [FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', Now), StepName,
+       string(E.ClassName), E.Message]);
+  except
+    Line := '';
+  end;
+  WriteWin64ShutdownLine(Line);
+end;
+{$ENDIF}
+
 procedure UninstallHooks;
 var
   I: Integer;
@@ -358,7 +450,25 @@ begin
             try
               TLateLoaderProc(LateLoaderList[I])(True);
             except
+              {$IFDEF CPUX64}
+              on E: Exception do
+              begin
+                // Win64: per-unloader failures on shutdown trigger one IDE-owned
+                // "Delphi 13 (64-bit)" AV dialog per call, producing a cascade of
+                // 16+ identical dialogs. The IDE is already exiting, so swallow
+                // silently rather than spam the user.
+                //
+                // TODO(Win64): we don't yet know *which* unloader(s) throw or why.
+                // The actual fault may originate in a dependent BPL's finalization
+                // (e.g. edbrun240rsdelphiwin6413.bpl + 0x300D44) and bubble up to
+                // us, or one of our own unloaders may be calling a ToolsAPI service
+                // whose Win64 vtable layout we mishandle. Replace this swallow with
+                // proper per-feature fixes once we've attributed each fault.
+                LogWin64UnloadFailure('LateLoader', I, E);
+              end;
+              {$ELSE}
               Application.HandleException(Application);
+              {$ENDIF}
             end;
           end;
           FreeAndNil(LateLoaderList);
@@ -371,7 +481,16 @@ begin
             try
               TLateLoaderProc(ExpertLoaderList[I])(True);
             except
+              {$IFDEF CPUX64}
+              on E: Exception do
+              begin
+                // See LateLoader loop above — silent on Win64 shutdown.
+                // TODO(Win64): attribute each throwing unloader and fix at source.
+                LogWin64UnloadFailure('ExpertLoader', I, E);
+              end;
+              {$ELSE}
               Application.HandleException(Application);
+              {$ENDIF}
             end;
           end;
           FreeAndNil(ExpertLoaderList);

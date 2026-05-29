@@ -137,6 +137,7 @@ Filters_5_Routine=""
 Filters_5_Type="EControlC"
 Filters_5_Unit=""
 Filters_5_URL=""
+Freeze Activate=0
 GUID="{25137A22-7C76-4803-8C2B-645C155C0EAC}"
 idEurekaLog=1
 idEurekaLogDetailed=1

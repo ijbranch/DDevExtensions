@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.15.5 | Comprehensive Feature Reference
+Version 3.16.5 | Comprehensive Feature Reference
 
 ---
 
@@ -60,6 +60,33 @@ Version 3.15.5 | Comprehensive Feature Reference
 ---
 
 ## Getting Started
+
+### 64-bit IDE Host Notice (Delphi 13.1+)
+
+DDevExtensions v3.16.5 adds support for the Delphi 13.1 64-bit RAD Studio personality (`bin64\bds.exe`). Built and tested only in **Delphi 13.1 RAD Studio 64-bit**; earlier Delphi releases do not ship a 64-bit IDE host and continue to use the 32-bit DLL.
+
+The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target with the full feature set.
+
+**Features inactive on the 64-bit IDE host** (rely on x86 inline asm or 5-byte JMP-rel32 hooks that don't port to Win64):
+
+- Compile Progress hook
+- Document Module handler
+- Disable Alphasort Class Completion
+- Show File Project In Project Manager
+- Structure View Search filter
+- All compile / file-notification subscribers (the IDE notifier is intentionally not registered on Win64 — a multi-interface dispatch ABI issue causes a deterministic AV in `rtl370.bpl` during "Checking project dependencies..." otherwise)
+- Compile Interceptor input-handle redirect
+- Any callers depending on `RedirectOrgCall` / `CodeRedirect`
+
+All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
+
+**Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
+
+```
+%APPDATA%\DDevExtensions\Win64Shutdown.log
+```
+
+A clean shutdown leaves the file unchanged. If you ever see new lines appear after exiting the 64-bit IDE, send the line — it identifies the exact step that faulted (e.g. `step TCompileProgress.FormNativeProgress.Free threw EAccessViolation: ...`). Live capture is also possible by running [DebugView](https://learn.microsoft.com/en-us/sysinternals/downloads/debugview) or [DebugView++](https://github.com/CobaltFusion/DebugViewPP) elevated with Capture Win32 + Capture Global Win32 enabled. The 32-bit IDE does not produce this log.
 
 ### Accessing DDevExtensions Options
 

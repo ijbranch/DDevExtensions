@@ -583,8 +583,13 @@ var
   OrgProjectGroupCompileActive, OrgCallProjectGroupCompileActive: function(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
   OrgAppBuilderCompile: Pointer;
 
+{$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
   forward;
+{$ELSE}
+function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+  forward;
+{$ENDIF}
 
 function CallOrgProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
 begin
@@ -760,6 +765,7 @@ begin
 end;
 
 {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
 asm
   // Only show the dialog if we are called by TAppBuilder.Compile()
@@ -785,6 +791,15 @@ asm
   jb CompileActiveProject
   jmp CallOrgProjectGroupCompileActive
 end;
+{$ELSE}
+function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+begin
+  // Win64: the x86 caller-detection trick (inspecting the return address against
+  // TAppBuilder.Compile via stack/eax) does not translate to x64 reliably, so always
+  // route through the enhanced compile-active-project handler.
+  Result := CompileActiveProject(Instance, CompileMode, Wait);
+end;
+{$ENDIF}
 
 procedure InitPlugin(Unload: Boolean);
 // We can't hook into bds.exe because the copy protection will catch us. So we need to go a different
@@ -905,7 +920,13 @@ begin
   FIDENotifier.OnBeforeCompile := BeforeCompile;
   FIDENotifier.OnAfterCompile := AfterCompile;
 
+  {$IFNDEF CPUX64}
+  // Win64: CompileInterceptorWx64.dll's TPascalComInOut callback-table patch
+  // rewrites 8-byte function pointers as 4-byte (Cardinal arithmetic) — keep
+  // RegisterInterceptor off until/unless that's redesigned. The Win64
+  // CompileInterceptor is currently a no-op (InitCompileInterceptor early-exits).
   FCompileInterceptorId := GetCompileInterceptorServices.RegisterInterceptor(Self);
+  {$ENDIF}
 
   // Add Build Statistics menu item under Tools menu
   MenuItem := FindMenuItem( 'ToolsMenu' );
@@ -923,7 +944,19 @@ end;
 
 destructor TCompileProgress.Destroy;
 begin
-
+  {$IFDEF CPUX64}
+  // Win64 shutdown: each step is independently swallowed + logged so that one
+  // failure (typically a partially-torn-down ToolsAPI dispatch into rtl370.bpl)
+  // doesn't abort the rest of the destructor.
+  try FreeAndNil( FBuildStatsMenuItem );                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatsMenuItem.Free', E); end;
+  // RegisterInterceptor was never called on Win64 — see TCompileProgress.Create.
+  try FIDENotifier.Free;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FIDENotifier.Free', E); end;
+  try FormNativeProgress.Free;                            except on E: Exception do LogWin64UnloadStep('TCompileProgress.FormNativeProgress.Free', E); end;
+  try FBuildStatistics.Free;                              except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatistics.Free', E); end;
+  try FPasFilesLock.Free;                                 except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFilesLock.Free', E); end;
+  try FPasFiles.Free;                                     except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFiles.Free', E); end;
+  try inherited Destroy;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.inherited Destroy', E); end;
+  {$ELSE}
   FreeAndNil( FBuildStatsMenuItem );
   GetCompileInterceptorServices.UnregisterInterceptor( FCompileInterceptorId );
   FIDENotifier.Free;
@@ -932,7 +965,7 @@ begin
   FPasFilesLock.Free;
   FPasFiles.Free;
   inherited Destroy;
-
+  {$ENDIF}
 end;
 
 procedure TCompileProgress.Init;

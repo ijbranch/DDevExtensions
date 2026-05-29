@@ -130,7 +130,7 @@ type
     /// <summary>Strongly-typed indexer used by the Items default property.</summary>
     /// <param name="Index">Zero-based index.</param>
     /// <returns>The hook item at Index.</returns>
-    function GetItems(Index: Integer): TJclPeMapImgHookItem;
+    function GetItems(Index: NativeInt): TJclPeMapImgHookItem;
     /// <summary>Finds an item by its original IAT entry on a specific module.</summary>
     /// <param name="BaseAddress">Module base.</param>
     /// <param name="OriginalAddress">Original imported function pointer.</param>
@@ -209,7 +209,7 @@ type
     /// <param name="BaseAddress">Module base to scan.</param>
     procedure UnhookByBaseAddress(BaseAddress: Pointer);
     /// <summary>Default indexed accessor for hook items.</summary>
-    property Items[Index: Integer]: TJclPeMapImgHookItem read GetItems; default;
+    property Items[Index: NativeInt]: TJclPeMapImgHookItem read GetItems; default;
     /// <summary>Indexed look-up by (module base, original function) pair.</summary>
     property ItemFromOriginalAddress[BaseAddress, OriginalAddress: Pointer]: TJclPeMapImgHookItem read GetItemFromOriginalAddress;
     /// <summary>Indexed look-up by replacement function pointer.</summary>
@@ -396,7 +396,7 @@ end;
 
 { TJclPeMapImgHooks }
 
-function TJclPeMapImgHooks.GetItems(Index: Integer): TJclPeMapImgHookItem;
+function TJclPeMapImgHooks.GetItems(Index: NativeInt): TJclPeMapImgHookItem;
 begin
   Result := TJclPeMapImgHookItem(inherited Items[Index]);
 end;

@@ -276,8 +276,8 @@ begin
   FSettings.Assign(ASettings);
   FGlobalSettings.Assign(AGlobalSettings);
   try
-    lvwLocal.Tag := Integer(FSettings);
-    lvwGlobal.Tag := Integer(FGlobalSettings);
+    lvwLocal.Tag := NativeInt(FSettings);
+    lvwGlobal.Tag := NativeInt(FGlobalSettings);
     if (FSettings.Count = 0) and (GetProjectAssignment(GetActiveProject) = '') then
     begin
       // Create "Default" setting

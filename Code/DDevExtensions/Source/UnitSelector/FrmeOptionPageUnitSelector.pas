@@ -137,13 +137,13 @@ var
   OrgTViewDialog_Create: function(ViewDialog: TFormClass; DL: Byte; Owner: TComponent; GetFiles: TViewDialogGetFiles): TForm;
 
 function TViewDialog_Execute(ViewDialog: TForm): Boolean;
-  external coreide_bpl name '@Viewdlg@TViewDialog@Execute$qqrv';
+  external coreide_bpl name '@Viewdlg@TViewDialog@Execute$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 
 function TViewDialog_Create(ViewDialog: TFormClass; DL: Byte; Owner: TComponent; GetFiles: TViewDialogGetFiles): TForm;
-  external coreide_bpl name '@Viewdlg@TViewDialog@$bctr$qqrp18Classes@TComponentpqqrp28Collections@TStringHashTableo$v';
+  external coreide_bpl name '@Viewdlg@TViewDialog@$bctr$qqrp18Classes@TComponentpqqrp28Collections@TStringHashTableo$v' {$IFDEF WIN64} delayed {$ENDIF};
 
 procedure TViewDialog_FormCreate(ViewDialog: TForm; Sender: TObject);
-  external coreide_bpl name '@Viewdlg@TViewDialog@FormCreate$qqrp14System@TObject';
+  external coreide_bpl name '@Viewdlg@TViewDialog@FormCreate$qqrp14System@TObject' {$IFDEF WIN64} delayed {$ENDIF};
 
 type
   TViewDialogGetFilesComponent = class(TComponent)

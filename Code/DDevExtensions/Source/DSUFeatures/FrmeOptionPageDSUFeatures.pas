@@ -371,7 +371,7 @@ type
   TOpenControl = class(TControl);
 
 procedure OrgLoadRuntimeDesktop(Instance: TObject);
-  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv';
+  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 
 var
   HookDesktopLoadRuntimeDesktop: TRedirectCode;
@@ -737,7 +737,7 @@ const
   {$IFEND}
 
 function TProcess_stopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
-  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui';
+  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui' {$IFDEF WIN64} delayed {$ENDIF};
 
 function DbgStopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
 begin
@@ -899,18 +899,18 @@ var
   OrgCallOpenModuleFile: procedure(const ModuleName, EditorFileName: string);
 
 procedure OpenModuleFile(const ModuleName, EditorFileName: string);
-  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1';
+  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1' {$IFDEF WIN64} delayed {$ENDIF};
 
 {$IF CompilerVersion >= 22.0} // Delphi XE+
 function ExpandRootMacro(const InString: string; const AdditionalVars: TObject = nil): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash';
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash' {$IFDEF WIN64} delayed {$ENDIF};
 {$ELSE}
 function ExpandRootMacro(const Name: string): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString';
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' {$IFDEF WIN64} delayed {$ENDIF};
 {$IFEND}
 
 procedure VarBorlandIDE;
-  external coreide_bpl name '@Ideintf@BorlandIDE';
+  external coreide_bpl name '@Ideintf@BorlandIDE' {$IFDEF WIN64} delayed {$ENDIF};
 
 procedure HookedOpenModuleFile(const ModuleName, EditorFileName: string);
 const
@@ -1291,10 +1291,10 @@ var
   TDelphiProjectModuleHandler_GetFormList: procedure(Instance: TObject; List: TStrings);
 
 procedure TPascalProjectUpdaterClass;
-  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@';
+  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@' {$IFDEF WIN64} delayed {$ENDIF};
 procedure TPascalProjectUpdater_GetFormList(Instance: TObject; List: TStrings);
   external delphicoreide_bpl name
-    '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings;
+    '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings {$IFDEF WIN64} delayed {$ENDIF};
 
 procedure HookedTDelphiProjectModuleHandler_GetFormList(Instance: TObject; List: TStrings);
 const
@@ -1356,7 +1356,7 @@ end;
 {----------------------------------------------------------------------------------}
 
 procedure TCustomEditControl_HelpKeyword(Editor: TControl);
-  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv';
+  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 
 var
   OrgEditorHelpKeyword: procedure(Editor: TControl);
@@ -1458,12 +1458,21 @@ begin
 end;
 
 procedure TDSUFeaturesConfig.SetShowFileProjectInPrjMgr(const Value: Boolean);
+{$IFNDEF CPUX64}
 var
   ProjectManagerForm: TCustomForm;
   TreeCtrl: TCustomControl;
+{$ENDIF}
 begin
   if Value <> FShowFileProjectInPrjMgr then
   begin
+    {$IFDEF CPUX64}
+    // Win64: TIDEVirtualTreeHandler's TreeImport lookups against the 64-bit
+    // Idevirtualtrees BPL fail (different C++ name mangling), so any tree-touching
+    // operation raises "Not Supported" on the IDE's paint cycle. Keep the setting
+    // in XML for round-trip with the 32-bit IDE, but don't install the hook here.
+    FShowFileProjectInPrjMgr := Value;
+    {$ELSE}
     { Find the tree and initialize the tree handler }
     if FPrjMgrTree = nil then
     begin
@@ -1489,6 +1498,7 @@ begin
       FPrjMgrTree.OnGetText := PMGetText;
 
     FPrjMgrTree.Invalidate;
+    {$ENDIF}
   end;
 end;
 

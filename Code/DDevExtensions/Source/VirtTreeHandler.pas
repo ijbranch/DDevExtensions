@@ -416,8 +416,13 @@ begin
         begin
           TMethod(Pointer(INT_PTR(Self) + Field.Offset)^) := M;
           //Field.SetValue(Self, TValue.From<TMethod>(M));  => exception
+          {$IFNDEF CPUX64}
           if M.Code = @NotSupported then
              NotSupportedMsg(Field.Name);
+          {$ENDIF}
+          // Win64: TreeImport lookups against vclide370.bpl fail because the C++
+          // name mangling differs; leave the field pointing at @NotSupported and
+          // rely on call-site guards to skip the feature.
         end;
       end;
     end;

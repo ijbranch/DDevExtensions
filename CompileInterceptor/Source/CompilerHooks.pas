@@ -856,6 +856,19 @@ begin
 
   CompileInterceptorServices := TCompileInterceptorServices.Create(nil);
 
+  {$IFDEF WIN64}
+  // Win64: SetPascalComInOut rewrites the Pascal compiler's I/O callback table by
+  // pointer arithmetic into delphicoreide_bpl's TPascalComInOut record. The record
+  // layout (8-byte function pointers, no 'pascal' calling convention) differs on x64,
+  // so patching it stomps unrelated bytes and produces a deterministic AV in the
+  // compiler during dependency check. CompileInterceptorServices is still created
+  // so RegisterInterceptor works; the actual file/message interception is inactive.
+  IDENotifier := TIDENotifier.Create(nil);
+  if SupportsIDEServices(Services) then
+    NotifierId := Services.AddNotifier(IDENotifier);
+  Exit;
+  {$ENDIF}
+
   if DelphiVer < 15 then
   begin
     if DelphiVer = 9 then

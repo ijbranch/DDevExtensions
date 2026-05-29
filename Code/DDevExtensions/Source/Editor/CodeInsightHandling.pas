@@ -26,7 +26,7 @@ uses
   Windows, Hooking, IDEHooks;
 
 procedure TIDEPopupListBox_EditorKey(Instance: TObject; Sender: TObject; var Key: Char);
-  external coreide_bpl name '@Idepopuplistbox@TIDEPopupListBox@EditorKey$qqrp14System@TObjectrb';
+  external coreide_bpl name '@Idepopuplistbox@TIDEPopupListBox@EditorKey$qqrp14System@TObjectrb' {$IFDEF WIN64} delayed {$ENDIF};
 
 var
   OrgIDEPopupListBox_EditorKey: procedure(Instance: TObject; Sender: TObject; var Key: Char);

@@ -58,6 +58,12 @@ type
   end;
 
 /// <summary>Patches the first five bytes of Proc to JMP NewProc and stores the original bytes in Data.</summary>
+/// <remarks>
+/// On Win64 this is a no-op: the 5-byte JMP rel32 rewrite is not portable to x64
+/// (rel32 may be out of range and the prologue layout / SEH unwind info would be
+/// invalidated). Data is zeroed (RealProc=nil, Count=0) so a paired CodeRestore
+/// becomes harmless.
+/// </remarks>
 /// <param name="Proc">Function to redirect.</param>
 /// <param name="NewProc">Replacement function.</param>
 /// <param name="Data">Receives the saved prologue and ref-count.</param>
@@ -190,10 +196,16 @@ function GetStartCodeSize(CodePtr: Pointer; RequiredSize: Integer; OffsetTable: 
 /// <exception cref="Exception">Raised when Proc is nil or its prologue cannot be relocated.</exception>
 function CreateOrgCallMethodPtr(Proc: Pointer): Pointer;
 /// <summary>Redirects OrgProc to NewProc and returns a trampoline that still invokes the original implementation.</summary>
+/// <remarks>
+/// On Win64 this is a no-op: the x86 5-byte JMP rel32 rewrite is not portable to x64
+/// (rel32 may be out of range and overwriting an x64 function prologue breaks the ABI
+/// unwind/SEH info). The function silently returns <c>nil</c> on Win64; callers should
+/// treat that as "feature inactive" rather than fatal.
+/// </remarks>
 /// <param name="OrgProc">Function to redirect.</param>
 /// <param name="NewProc">Replacement function.</param>
-/// <returns>Trampoline that calls the original OrgProc.</returns>
-/// <exception cref="Exception">Raised on x64 (currently unsupported) or on memory write failure.</exception>
+/// <returns>Trampoline that calls the original OrgProc, or <c>nil</c> on Win64.</returns>
+/// <exception cref="Exception">Raised on Win32 if the memory write fails.</exception>
 function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
 /// <summary>Restores the prologue of OrgProc using the bytes captured in OrgCall, undoing RedirectOrgCall.</summary>
 /// <param name="OrgProc">Function whose prologue was patched.</param>
@@ -427,6 +439,22 @@ begin
     Data.RealProc := nil;
     Exit;
   end;
+  {$IFDEF CPUX64}
+  // Win64: TXRedirCode is a 5-byte JMP rel32. Three problems on x64:
+  //   1) The rel32 displacement is only ±2 GB, but our plugin DLL can easily be
+  //      farther than that from the IDE BPL we're hooking, so the JMP truncates
+  //      and we corrupt the IDE function with an invalid branch target.
+  //   2) Even when in range, overwriting an x64 function's prologue breaks the
+  //      ABI's unwind/seh info — leading to deterministic AVs the next time the
+  //      compiler walks call stacks during dependency checks.
+  //   3) The captured Data.Code (8 bytes) is then "restored" later, but if the
+  //      original prologue was longer than what we saved, restore is wrong too.
+  // Silently no-op so plugin startup completes; the feature that wanted the
+  // hook is simply inactive on Win64.
+  Data.RealProc := nil;
+  Data.Count := 0;
+  Exit;
+  {$ENDIF}
   if Data.Count = 0 then // do not overwrite an already backuped code
   begin
     Proc := GetActualAddr(Proc);
@@ -1331,6 +1359,16 @@ begin
   RedirectOrg(OrgProc, NewProc);
 end;
 
+{$IFDEF CPUX64}
+function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
+begin
+  // Win64: x86 5-byte JMP rewrite is not portable to x64 (rel32 can be out of range
+  // and the prologue layout differs). Silently return nil so plugin startup completes
+  // when a feature tries to install a hook the x64 redirector cannot do; the feature
+  // is simply inactive on Win64.
+  Result := nil;
+end;
+{$ELSE}
 function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
 var
   StartCodeSize: Integer;
@@ -1338,10 +1376,6 @@ var
   I: Integer;
   n: SIZE_T;
 begin
-  {$IFDEF CPUX64}
-  raise Exception.Create('RedirectOrgCall is not supported in x64 mode, yet');
-  {$ENDIF CPUX64}
-
   OrgProc := GetActualAddr(OrgProc);
   NewProc := GetActualAddr(NewProc);
   Result := CreateOrgCallMethodPtr(OrgProc);
@@ -1358,6 +1392,7 @@ begin
   if not WriteProcessMemory(GetCurrentProcess, OrgProc, @Buffer[0], StartCodeSize, n) then
     RaiseLastOSError;
 end;
+{$ENDIF}
 
 procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
 var

@@ -51,9 +51,19 @@ type
     /// <summary>Calls FOnFileNotification if assigned. Override to extend behaviour.</summary>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
   public
-    /// <summary>Registers this notifier with the IDE notifier list.</summary>
+    /// <summary>
+    /// Registers this notifier with the IDE notifier list.
+    /// </summary>
+    /// <remarks>
+    /// On Win64 the IDE registration is skipped — registering a multi-interface
+    /// IOTAIDENotifier / IOTAIDENotifier50 / IOTAIDENotifier80 wrapper with the
+    /// Delphi 13 64-bit IDE makes it AV deterministically at
+    /// <c>rtl370.bpl + 0x19AC54</c> during the "Checking project dependencies..."
+    /// phase of any compile. The object is still constructed so call-sites with
+    /// typed fields don't get nil derefs; it simply never receives callbacks.
+    /// </remarks>
     constructor Create;
-    /// <summary>Unregisters this notifier from the IDE notifier list.</summary>
+    /// <summary>Unregisters this notifier from the IDE notifier list (Win32 only — Win64 never registered).</summary>
     destructor Destroy; override;
 
     /// <summary>Event raised before each project compile.</summary>
@@ -219,12 +229,26 @@ end;
 constructor TIDENotifier.Create;
 begin
   inherited Create;
+  {$IFNDEF CPUX64}
+  // Win64 (Delphi 13.1): registering this notifier with the IDE via
+  // (BorlandIDEServices as IOTAServices).AddNotifier(Self) makes the IDE AV at
+  // rtl370.bpl + 0x19AC54 reading $FFFFFFFFFFFFFFFF during the
+  // "Checking project dependencies..." phase of any Win64 build. The crash
+  // happens regardless of whether any handlers are attached (FNotifiers can be
+  // empty) and is deterministic and bisected to AddNotifier on this multi-
+  // interface class (IOTAIDENotifier + 50 + 80 with overloaded BeforeCompile/
+  // AfterCompile signatures). The TIDENotifier object is still constructed so
+  // call-sites holding a typed field don't get nil derefs; it just never
+  // receives compile / file callbacks on Win64.
   IDENotifierList.AddNotifier(Self);
+  {$ENDIF}
 end;
 
 destructor TIDENotifier.Destroy;
 begin
+  {$IFNDEF CPUX64}
   IDENotifierList.RemoveNotifier(Self);
+  {$ENDIF}
   inherited Destroy;
 end;
 

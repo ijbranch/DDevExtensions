@@ -28,6 +28,8 @@ procedure InstallDisableAlphaSortClassCompletion(Value: Boolean);
 
 implementation
 
+{$IFDEF CPUX86}
+
 uses
   Windows, SysUtils, Classes, TypInfo, Hooking, IDEHooks;
 
@@ -482,5 +484,16 @@ begin
       ReplaceRelCallOffset(@CallAddrTSortedThingList_SetSortedP[CallOffsetSetSorted], OrgTSortedThingList_SetSorted);
   end;
 end;
+
+{$ELSE} // not CPUX86
+
+procedure InstallDisableAlphaSortClassCompletion(Value: Boolean);
+begin
+  // Win64: the IDE's class-completion routines live in 64-bit BPLs with a different
+  // binary layout, so the byte-signature scanning and inline asm patches in this unit
+  // do not apply. The feature is a no-op on Win64.
+end;
+
+{$ENDIF}
 
 end.

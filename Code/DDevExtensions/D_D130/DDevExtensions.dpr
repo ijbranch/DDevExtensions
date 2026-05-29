@@ -15,7 +15,11 @@ library DDevExtensions;
 {$WEAKLINKRTTI ON}
 {$RTTI EXPLICIT METHODS([]) PROPERTIES([]) FIELDS([])}
 
-{$LIBSUFFIX 'D130'}
+{$IFDEF WIN64}
+  {$LIBSUFFIX 'D130x64'}
+{$ELSE}
+  {$LIBSUFFIX 'D130'}
+{$ENDIF}
 
 {$I ..\Source\DelphiExtension.inc}
 
@@ -157,7 +161,18 @@ begin
     end;
   except
     on E: Exception do
+    begin
+      {$IFNDEF CPUX64}
       MessageBox(0, PChar(E.Message), PChar('DDevExtensions - ' + string(E.ClassName)), MB_OK or MB_ICONERROR);
+      {$ENDIF}
+      // Win64: the IDE tears down design-time BPLs (notably ElevateDB's
+      // edbrun240rsdelphiwin6413.bpl) in a different order than Win32, and a
+      // dependent-BPL AV during their own finalization bubbles up to our outer
+      // try/except. We have no recourse — the IDE is exiting anyway — so swallow
+      // the exception silently rather than misattribute the AV to our plugin via
+      // a "DDevExtensions - EAccessViolation" dialog. The IDE's own JIT exception
+      // handler still gets a chance to show its native dialog if it wants to.
+    end;
   end;
 end;
 
