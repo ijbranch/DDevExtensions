@@ -1,10 +1,10 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{7150B71F-82D5-4102-B49C-CB030DF3747D}</ProjectGuid>
-        <MainSource>DfmParserTestsDUnitX.dpr</MainSource>
+        <MainSource>DDevExtUnitTestsDUnitX.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <ProjectName Condition="'$(ProjectName)'==''">DfmParserTestsDUnitX</ProjectName>
+        <ProjectName Condition="'$(ProjectName)'==''">DDevExtUnitTestsDUnitX</ProjectName>
         <TargetedPlatforms>2</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
@@ -64,7 +64,7 @@
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
         <DCC_ImageBase>00400000</DCC_ImageBase>
-        <SanitizedProjectName>DfmParserTestsDUnitX</SanitizedProjectName>
+        <SanitizedProjectName>DDevExtUnitTestsDUnitX</SanitizedProjectName>
         <VerInfo_Locale>3081</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=;CFBundleName=</VerInfo_Keys>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
@@ -156,7 +156,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">DfmParserTestsDUnitX.dpr</Source>
+                    <Source Name="MainSource">DDevExtUnitTestsDUnitX.dpr</Source>
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\37.0\Bpl\addict5_d37.bpl">File C:\Users\Public\Documents\Embarcadero\Studio\37.0\Bpl\addict5_d37.bpl not found</Excluded_Packages>

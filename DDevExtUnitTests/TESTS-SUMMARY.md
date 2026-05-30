@@ -3,7 +3,7 @@
 ## What Was Created
 
 ### New DUnitX Test Infrastructure
-- **DfmParserTestsDUnitX.dpr** - DUnitX VCL GUI test runner
+- **DDevExtUnitTestsDUnitX.dpr** - DUnitX VCL GUI test runner
 - **TestDfmParserDUnitX.pas** - 29 comprehensive test cases
 
 ### New Test Data Files
@@ -79,13 +79,13 @@ See `DUNITX-SETUP.md` for instructions.
 
 ### Step 2: Compile
 ```batch
-cd D:\DDevExtensions\DfmParserTests
-dcc32 DfmParserTestsDUnitX.dpr
+cd D:\DDevExtensions\DDevExtUnitTests
+dcc32 DDevExtUnitTestsDUnitX.dpr
 ```
 
 ### Step 3: Run
 ```batch
-DfmParserTestsDUnitX.exe
+DDevExtUnitTestsDUnitX.exe
 ```
 
 ### Expected Results

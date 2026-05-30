@@ -1,10 +1,10 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{04E7BD58-2C0A-4BAE-BBBF-99D43A58559A}</ProjectGuid>
-        <MainSource>DfmParserTests.dpr</MainSource>
+        <MainSource>DDevExtUnitTests.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <ProjectName Condition="'$(ProjectName)'==''">DfmParserTests</ProjectName>
+        <ProjectName Condition="'$(ProjectName)'==''">DDevExtUnitTests</ProjectName>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Console</AppType>
         <FrameworkType>None</FrameworkType>
@@ -48,7 +48,7 @@
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DCC_MapFile>3</DCC_MapFile>
-        <SanitizedProjectName>DfmParserTests</SanitizedProjectName>
+        <SanitizedProjectName>DDevExtUnitTests</SanitizedProjectName>
         <VerInfo_Locale>3081</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=;CFBundleName=</VerInfo_Keys>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
@@ -112,7 +112,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">DfmParserTests.dpr</Source>
+                    <Source Name="MainSource">DDevExtUnitTests.dpr</Source>
                 </Source>
             </Delphi.Personality>
             <Platforms>

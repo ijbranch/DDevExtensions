@@ -35,15 +35,15 @@ DUnitX may already be included with your RAD Studio installation:
 ## Compiling the Tests
 
 ```batch
-cd D:\DDevExtensions\DfmParserTests
-dcc32 DfmParserTestsDUnitX.dpr
+cd D:\DDevExtensions\DDevExtUnitTests
+dcc32 DDevExtUnitTestsDUnitX.dpr
 ```
 
 ## Running the Tests
 
 ### GUI Mode (Default)
 ```batch
-DfmParserTestsDUnitX.exe
+DDevExtUnitTestsDUnitX.exe
 ```
 
 This opens the VCL GUI showing:
@@ -55,12 +55,12 @@ This opens the VCL GUI showing:
 
 ### Console Mode
 ```batch
-DfmParserTestsDUnitX.exe -console
+DDevExtUnitTestsDUnitX.exe -console
 ```
 
 ### XML Output (for CI/CD)
 ```batch
-DfmParserTestsDUnitX.exe -xml:results.xml
+DDevExtUnitTestsDUnitX.exe -xml:results.xml
 ```
 
 ## Test Attributes Reference

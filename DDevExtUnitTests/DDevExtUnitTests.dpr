@@ -1,4 +1,4 @@
-program DfmParserTests;
+program DDevExtUnitTests;
 
 {$APPTYPE CONSOLE}
 

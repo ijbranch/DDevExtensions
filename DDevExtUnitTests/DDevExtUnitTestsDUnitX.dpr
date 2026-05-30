@@ -1,5 +1,5 @@
 {$DEFINE  TESTINSIGHT}
-program DfmParserTestsDUnitX;
+program DDevExtUnitTestsDUnitX;
 
 {$IFNDEF TESTINSIGHT}
 {$APPTYPE GUI}

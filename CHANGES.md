@@ -61,6 +61,10 @@ speculative rewrite, are recorded as documented notes at the end.
 
 - **Extension DLL version resource corrected to 3.19.9.** `DDevExtensionsD130.dll` / `…x64.dll` had reported FileVersion/ProductVersion `2.87` because the `.dpr` links a pre-compiled `{$R ..\Version.res}` that Delphi does not regenerate from `Version.rc` during a normal `.dproj` build — so every prior `version.h`/`.dproj` bump bypassed the DLL's own version resource (the user-facing splash was always correct, sourced from `version.inc`). Recompiled `Version.res` with `brcc32` (`Version.rc` `#include`s `version.h` = 3.19.9) and rebuilt; the DLLs now report FileVersion 3.19.9. **Note for future releases:** `brcc32 Version.rc` must be part of the version-bump routine, otherwise the DLL resource silently lags. (2026-05-30) — `Code/DDevExtensions/Version.res`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/Version.rc`
 
+### Changed - test suite
+
+- **Renamed the test project `DfmParserTests` → `DDevExtUnitTests`** (folder, both `.dpr`/`.dproj` variants — the plain console runner and the DUnitX suite — `.res`/`.ini`/`.eof`, program declarations and all internal project references). The product-level name reflects that this is the umbrella unit-test suite; individual test units keep their feature names (`TestDfmParser`, `TestDfmParserDUnitX`), so future analyzer tests slot in as `TestCodeQuality`, etc. Untracked the rebuilt `.exe` artifacts and added a scoped `.gitignore` (`*.exe`). Both projects build clean (Win64, Release) and the suite still passes 31/31. **Why:** the DFM-specific name would mislead once analyzer coverage is added (see `AnalyzerTestCoverage-Plan.md`). (2026-05-30) — `DDevExtUnitTests/` (was `DfmParserTests/`), `.claude/settings.local.json`
+
 ### Documented (no code change)
 
 The following Low findings were left as-is with a rationale rather than changed,

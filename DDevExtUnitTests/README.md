@@ -4,26 +4,26 @@ DUnitX VCL GUI test suite for **gllDelphiDFMParser** - a lossless Delphi DFM fil
 
 ## Test Application
 
-**VCL GUI:** `DfmParserTestsDUnitX.exe` (DUnitX VCL GUI runner)
-**Console:** `DfmParserTests.exe` (console text output)
-**Project:** `DfmParserTestsDUnitX.dpr`
+**VCL GUI:** `DDevExtUnitTestsDUnitX.exe` (DUnitX VCL GUI runner)
+**Console:** `DDevExtUnitTests.exe` (console text output)
+**Project:** `DDevExtUnitTestsDUnitX.dpr`
 **Test Unit:** `TestDfmParserDUnitX.pas`
 
 ## Running Tests
 
 ### VCL GUI (Recommended)
 
-**Double-click** `DfmParserTestsDUnitX.exe` to launch the VCL GUI test runner.
+**Double-click** `DDevExtUnitTestsDUnitX.exe` to launch the VCL GUI test runner.
 
 Or from RAD Studio IDE:
-1. Open `DfmParserTestsDUnitX.dpr`
+1. Open `DDevExtUnitTestsDUnitX.dpr`
 2. Press **F9** to compile and run
 3. Click **Run All** in the GUI
 
 ### Console Mode
 
 ```bash
-DfmParserTests.exe
+DDevExtUnitTests.exe
 ```
 Runs tests with text output to console.
 

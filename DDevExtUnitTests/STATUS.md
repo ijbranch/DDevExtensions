@@ -18,10 +18,10 @@
   - String concatenation (`'Line1' + #13#10 + 'Line2'`) may need refinement
 
 ### 2. Test Project
-**Location:** `D:\DDevExtensions\DfmParserTests\`
+**Location:** `D:\DDevExtensions\DDevExtUnitTests\`
 
 **DUnitX VCL GUI Tests (Recommended):**
-- **DfmParserTestsDUnitX.dpr** - DUnitX test runner with VCL GUI
+- **DDevExtUnitTestsDUnitX.dpr** - DUnitX test runner with VCL GUI
 - **TestDfmParserDUnitX.pas** - 29 comprehensive test cases
   - 4 Basic parsing tests
   - 2 Round-trip tests
@@ -31,7 +31,7 @@
   - 5 File round-trip tests
 
 **Original Console Tests:**
-- **DfmParserTests.dpr** - Simple console test runner
+- **DDevExtUnitTests.dpr** - Simple console test runner
 - **TestDfmParser.pas** - 5 basic tests + file round-trip
 
 **Test Data:** `TestData/`
@@ -53,7 +53,7 @@
 ## Next Steps
 
 ### Immediate (to make it production-ready)
-1. **Run the tests** - Compile and execute `DfmParserTests.exe`
+1. **Run the tests** - Compile and execute `DDevExtUnitTests.exe`
 2. **Fix any failing tests** - Especially round-trip tests
 3. **Add more test data** - Real DFM files from actual projects
 4. **Test multi-line properties:**
@@ -114,9 +114,9 @@ Once stable:
 **Prerequisites:** DUnitX must be installed (see DUNITX-SETUP.md)
 
 ```batch
-cd D:\DDevExtensions\DfmParserTests
-dcc32 DfmParserTestsDUnitX.dpr
-DfmParserTestsDUnitX.exe
+cd D:\DDevExtensions\DDevExtUnitTests
+dcc32 DDevExtUnitTestsDUnitX.dpr
+DDevExtUnitTestsDUnitX.exe
 ```
 
 Opens VCL GUI showing:
@@ -128,9 +128,9 @@ Opens VCL GUI showing:
 ### Option 2: Console Tests (Simple)
 
 ```batch
-cd D:\DDevExtensions\DfmParserTests
-dcc32 DfmParserTests.dpr
-DfmParserTests.exe
+cd D:\DDevExtensions\DDevExtUnitTests
+dcc32 DDevExtUnitTests.dpr
+DDevExtUnitTests.exe
 ```
 
 Expected output:
