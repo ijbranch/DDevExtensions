@@ -51,6 +51,7 @@
         <SanitizedProjectName>DDevExtUnitTests</SanitizedProjectName>
         <VerInfo_Locale>3081</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=;CFBundleName=</VerInfo_Keys>
+        <DCC_Define>COMPILER6_UP;COMPILER7_UP;COMPILER9_UP;COMPILER10_UP;COMPILER11_UP;COMPILER12_UP;DELPHI2007_UP;$(DCC_Define)</DCC_Define>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
@@ -96,6 +97,12 @@
         <DCCReference Include="TestDfmParser.pas"/>
         <DCCReference Include="..\Shared\PascalParser\DelphiLexer.pas"/>
         <DCCReference Include="TestDelphiLexer.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiParserContainers.pas"/>
+        <DCCReference Include="TestDelphiParserContainers.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiExpr.pas"/>
+        <DCCReference Include="TestDelphiExpr.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiPreproc.pas"/>
+        <DCCReference Include="TestDelphiPreproc.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

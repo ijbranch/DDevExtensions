@@ -7,7 +7,12 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | Suite | Unit under test | Tests | Status |
 |-------|-----------------|-------|--------|
 | `TestDfmParser` | `gllDelphiDFMParser` (parse/serialize round-trip) | 31 (20 in-memory + 11 file) | green |
-| `TestDelphiLexer` | `DelphiLexer` (tokenisation + line/column contract) | 24 assertions / 9 cases | **landed 2026-05-30** |
+| `TestDelphiLexer` | `DelphiLexer` (tokenisation + line/column contract) | 24 / 9 cases | green |
+| `TestDelphiParserContainers` | `DelphiParserContainers` (hashtable/list/dictionary) | 24 / 5 cases | green |
+| `TestDelphiExpr` | `DelphiExpr` (arithmetic/boolean nodes + parser) | 21 / 6 cases | green |
+| `TestDelphiPreproc` | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 10 / 4 cases | green |
+
+**Tier 1 complete (110 assertions total).** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths.
 
 The lexer tests also guard two v3.19.9 behaviours directly: bracket tokenisation (`tkLBracket`/`tkRBracket` around an index expression — the magic-number bracket-depth fix) and `Line` 0-based / `Column` 1-based (the analyzer navigation contract).
 
@@ -20,9 +25,9 @@ Everything in `Shared\PascalParser\` is dependency-light (no ToolsAPI/VCL), prov
 Everything depends on these; a regression here silently corrupts every analyzer.
 
 - DONE **`DelphiLexer`**.
-- TODO **`DelphiExpr`** - arithmetic/boolean expression trees: operator precedence, int/float/string coercion, error paths. Pure value computation.
-- TODO **`DelphiPreproc`** - `$DEFINE`/`$IFDEF`/`$IF`/`$ELSE` nesting with mocked define/const resolvers (events). No file IO when `$INCLUDE` is avoided.
-- TODO **`DelphiParserContainers`** - hashtable/dictionary case-sensitivity and collisions (quick, foundational).
+- DONE **`DelphiExpr`** - literal/binary nodes, int/float coercion, unary minus, float div-by-zero error path, relational + boolean operators, and end-to-end `TExpressionParser.Parse` (precedence).
+- DONE **`DelphiPreproc`** - `$IFDEF`/`$IFNDEF`/`$ELSE`/`$ENDIF`, nested blocks, in-source `$DEFINE`/`$UNDEF`, and `Define`/`Undefine` state (driven via the API; no event resolvers needed).
+- DONE **`DelphiParserContainers`** - THashtable case-sensitivity + ownership-aware removal, TIntegerList round-trip, TStringDictionary, TStringCollection.
 
 ## Tier 2 - pure algorithmic logic, low/medium effort
 
@@ -53,7 +58,7 @@ These expose pure `class function AnalyzeUnit(const Source...)` cores but share 
 ## Suggested sequencing
 
 1. DONE `DelphiLexer`.
-2. Rest of Tier 1: `DelphiExpr`, `DelphiPreproc`, `DelphiParserContainers` - zero-refactor, immediate.
+2. DONE rest of Tier 1: `DelphiExpr`, `DelphiPreproc`, `DelphiParserContainers`.
 3. Tier 2 low-effort: `GenerateRefactoredSource`, `UnitMetrics`, `ProjectSettingsData.Compare`, `CtrlUtils` ragged-row sort.
 4. Extract-then-test: the analyzer cores + the shared `ConditionalEvaluator`.
 
