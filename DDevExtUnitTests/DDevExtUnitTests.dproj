@@ -3,7 +3,7 @@
         <ProjectGuid>{04E7BD58-2C0A-4BAE-BBBF-99D43A58559A}</ProjectGuid>
         <MainSource>DDevExtUnitTests.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <ProjectName Condition="'$(ProjectName)'==''">DDevExtUnitTests</ProjectName>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Console</AppType>
@@ -94,6 +94,8 @@
         </DelphiCompile>
         <DCCReference Include="..\Shared\PascalParser\gllDelphiDFMParser.pas"/>
         <DCCReference Include="TestDfmParser.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiLexer.pas"/>
+        <DCCReference Include="TestDelphiLexer.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

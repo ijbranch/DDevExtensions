@@ -9,16 +9,21 @@ uses
   System.Classes,
   System.IOUtils,
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
-  TestDfmParser in 'TestDfmParser.pas';
+  TestDfmParser in 'TestDfmParser.pas',
+  DelphiLexer in '..\Shared\PascalParser\DelphiLexer.pas',
+  TestDelphiLexer in 'TestDelphiLexer.pas';
 
 begin
   try
     WriteLn('=======================================');
-    WriteLn('DelphiDfmParser Test Suite');
+    WriteLn('DDevExtensions Unit Test Suite');
     WriteLn('=======================================');
     WriteLn;
 
     RunAllTests;
+
+    WriteLn;
+    RunLexerTests;
 
     WriteLn;
     WriteLn('=======================================');
