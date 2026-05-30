@@ -17,7 +17,9 @@ uses
   DelphiExpr in '..\Shared\PascalParser\DelphiExpr.pas',
   TestDelphiExpr in 'TestDelphiExpr.pas',
   DelphiPreproc in '..\Shared\PascalParser\DelphiPreproc.pas',
-  TestDelphiPreproc in 'TestDelphiPreproc.pas';
+  TestDelphiPreproc in 'TestDelphiPreproc.pas',
+  UnitMetrics in '..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas',
+  TestUnitMetrics in 'TestUnitMetrics.pas';
 
 begin
   try
@@ -39,6 +41,9 @@ begin
 
     WriteLn;
     RunPreprocTests;
+
+    WriteLn;
+    RunUnitMetricsTests;
 
     WriteLn;
     WriteLn('=======================================');

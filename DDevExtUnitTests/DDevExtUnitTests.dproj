@@ -103,6 +103,8 @@
         <DCCReference Include="TestDelphiExpr.pas"/>
         <DCCReference Include="..\Shared\PascalParser\DelphiPreproc.pas"/>
         <DCCReference Include="TestDelphiPreproc.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas"/>
+        <DCCReference Include="TestUnitMetrics.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

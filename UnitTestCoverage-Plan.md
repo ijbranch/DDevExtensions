@@ -11,8 +11,9 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | `TestDelphiParserContainers` | `DelphiParserContainers` (hashtable/list/dictionary) | 24 / 5 cases | green |
 | `TestDelphiExpr` | `DelphiExpr` (arithmetic/boolean nodes + parser) | 21 / 6 cases | green |
 | `TestDelphiPreproc` | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 10 / 4 cases | green |
+| `TestUnitMetrics` | `UnitMetrics` (LOC + cyclomatic complexity) | 4 / 4 cases | green |
 
-**Tier 1 complete (110 assertions total).** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths.
+**Tier 1 complete; Tier 2 = `UnitMetrics` only (114 assertions total).** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
 
 The lexer tests also guard two v3.19.9 behaviours directly: bracket tokenisation (`tkLBracket`/`tkRBracket` around an index expression — the magic-number bracket-depth fix) and `Line` 0-based / `Column` 1-based (the analyzer navigation contract).
 
@@ -31,11 +32,13 @@ Everything depends on these; a regression here silently corrupts every analyzer.
 
 ## Tier 2 - pure algorithmic logic, low/medium effort
 
-- TODO **`UsesClauseManager` - `TUsesClauseRefactorer.GenerateRefactoredSource(Source, Placements)`**: pure source-in -> rewritten-source-out, exactly like the DFM parser. Prime candidate. Also `GetPreferredUnit` (RTL/VCL tie-break) with mock candidate lists.
-- TODO **`CompileProgress\UnitMetrics` - `CalculateUnitMetrics`**: LOC + cyclomatic complexity; the case-depth/nesting heuristic is exactly the off-by-one risk worth a guard. (Reads a file today; trivially refactored to take a source string.)
-- TODO **`DependencyViewer` - cycle detection / depth / `MatchesWildcard`**: DFS cycle detection, longest-path depth, and the `*`/`?` layer-pattern matcher. MEDIUM - the graph algo needs a seam to feed an in-memory unit set.
-- TODO **`ProjectSettings\ProjectSettingsData` - `TProjectSetting.Compare` / `CopyFrom`**: active-flag-filtered preset comparison. EASY.
-- TODO **`CtrlUtils.TListViewSort.Compare`**: guards the v3.18.8 ragged-row sort fix (missing subitem treated as empty rather than silently equal). MEDIUM - needs VCL `TListItem` fixtures, but no IDE.
+- DONE **`CompileProgress\UnitMetrics` - `CalculateUnitMetrics`**: LOC + cyclomatic complexity; covered base/branch/case-label complexity and comment-line LOC exclusion (4 cases, via a temp-file fixture). `UnitMetrics` only `uses DelphiLexer`, so no refactor was needed.
+
+The remaining four candidates were **attempted under Option A and found to need extraction** (they could not be console-unit-tested as-is), so they are folded into Tier 3:
+- MOVED→T3 **`UsesClauseManager` `GenerateRefactoredSource`/`GetPreferredUnit`** - the unit `uses Main` + `FrmTreePages`; needs core extraction.
+- MOVED→T3 **`DependencyViewer` cycle detection / `MatchesWildcard`** - same `uses Main`; helpers are private/nested.
+- MOVED→T3 **`ProjectSettings\ProjectSettingsData` `Compare`/`CopyFrom`** - the unit `uses ToolsAPI` directly (for the `IOTAProject` overloads), so it will not compile in a console test. A `TProjectSetting.Compare`/`CopyFrom` test needs the pure preset model split from the ToolsAPI-coupled overloads. (A trial `AddOption` seam + console test were prototyped and reverted.)
+- MOVED→T3 **`CtrlUtils.TListViewSort.Compare`** - `Compare` reads a real `TListItem`, and a `TListView` cannot add items without a parent window (`EInvalidOperation: has no parent window`) in a console runner. Needs the comparison logic extracted to operate on plain strings (e.g. `CompareValues(S1, S2; Kind)`), or a GUI test runner. Guards the v3.18.8 ragged-row fix.
 
 ## Tier 3 - analyzer cores (need core extraction first)
 
@@ -59,6 +62,7 @@ These expose pure `class function AnalyzeUnit(const Source...)` cores but share 
 
 1. DONE `DelphiLexer`.
 2. DONE rest of Tier 1: `DelphiExpr`, `DelphiPreproc`, `DelphiParserContainers`.
+3. DONE Tier 2 `UnitMetrics`. The other Tier 2 items proved IDE/VCL-entangled and merged into Tier 3 extraction.
 3. Tier 2 low-effort: `GenerateRefactoredSource`, `UnitMetrics`, `ProjectSettingsData.Compare`, `CtrlUtils` ragged-row sort.
 4. Extract-then-test: the analyzer cores + the shared `ConditionalEvaluator`.
 
