@@ -354,3 +354,14 @@ modules/
 # Windows null device file (created by bash redirection)
 nul
 *.bak1
+
+
+# Build artifacts - never commit compiled output (enforced in-repo, not just via global gitignore)
+*.exe
+*.dll
+*.bpl
+*.dcu
+*.dcp
+*.bpi
+*.o
+*.obj
