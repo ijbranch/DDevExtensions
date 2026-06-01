@@ -365,3 +365,10 @@ nul
 *.bpi
 *.o
 *.obj
+
+# Auto-generated project resources churn on every build (binary, unmergeable) -> ignore.
+# Keep hand-built static-asset .res that have no regenerable source, or a fresh clone won't build.
+*.res
+!Version.res
+!Splash.res
+!ComponentPanel.res

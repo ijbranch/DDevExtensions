@@ -1,6 +1,18 @@
-# CHANGES.md - DDevExtensions Project History
+# Changelog - DDevExtensions Project History
 
 This file is the sole source and record of all project changes for DDevExtensions.
+
+---
+
+## 2026-06-01 - Repository hygiene: stop versioning auto-generated `.res`
+
+### Removed
+
+- **Auto-generated project `.res` files are no longer version-controlled.** Untracked (kept on disk) the six IDE-regenerated resources that the compiler rewrites on every build: `DDevExtensions.res` (D_D130), `DDevExtensionsReg.res`, `ExampleCompileInterceptor.res`, `CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`. **Why:** binary `.res` cannot be diff/merged, so each rebuild produced spurious changes that caused sync conflicts for contributors (reported by Achim Kalwa). They regenerate locally on build, so nothing is lost. (2026-06-01) — `D_D130/DDevExtensions.res`, `Installer/DDevExtensionsReg.res`, `Example/ExampleCompileInterceptor.res`, `Source/CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`
+
+### Changed
+
+- **`.gitignore` now ignores build output `*.res`, with negation exceptions** for the three hand-built static-asset resources that have no regenerable source and are referenced by explicit `{$R name.res}` directives — keeping them tracked so a fresh clone still builds: `Version.res` (from the tracked `Version.rc`), `Splash.res` (splash image), `ComponentPanel.res` (old-palette bitmaps). `*.exe`, `*.dll`, `*.bpl`, `*.dcu` ignore rules were already present. (2026-06-01) — `.gitignore`
 
 ---
 
