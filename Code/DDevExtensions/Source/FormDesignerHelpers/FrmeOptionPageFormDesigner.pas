@@ -160,31 +160,16 @@ begin
   {$IFNDEF DELPHI28_UP}
   chkRemoveTextHeightProperty.Enabled := False;
   {$ENDIF}
-  {$IFDEF CPUX64}
-  // On the 64-bit IDE these three cleaners install via CodeRedirect, which is a
-  // silent no-op on Win64 (see Shared\Hooking.pas) - the IDE would still write
-  // Explicit*, PixelsPerInch and TextHeight into DFMs. Disable the controls so
-  // the user is not misled into thinking DFMs are being cleaned. LabelMargin
-  // uses ReplaceVmtField and still works on x64, so it stays enabled.
-  chkRemoveExplicitProperties.Enabled := False;
-  chkRemoveExplicitProperties.Hint := 'Not available on the 64-bit IDE';
-  chkRemoveExplicitProperties.ShowHint := True;
-  chkRemovePixelsPerInchProperty.Enabled := False;
-  chkRemovePixelsPerInchProperty.Hint := 'Not available on the 64-bit IDE';
-  chkRemovePixelsPerInchProperty.ShowHint := True;
-  chkRemoveTextHeightProperty.Enabled := False;
-  chkRemoveTextHeightProperty.Hint := 'Not available on the 64-bit IDE';
-  chkRemoveTextHeightProperty.ShowHint := True;
-  {$ENDIF CPUX64}
+  // The three DFM cleaners now install via InstallFullReplaceHook, which uses an
+  // x64-safe 14-byte absolute-jump redirect (see Shared\Hooking.pas), so they
+  // function on both the 32- and 64-bit IDE and the controls stay enabled.
 end;
 
 procedure TFrameOptionPageFormDesigner.cbxActiveClick(Sender: TObject);
 begin
   cbxLabelMargin.Enabled := cbxActive.Checked;
-  {$IFNDEF CPUX64}
-  // On Win64 these three are force-disabled in Create and must stay that way, so
-  // the enable-with-Active logic is gated out. On Win32 every dependent box's
-  // Enabled state follows Active (and its compiler-version availability).
+  // Every dependent box's Enabled state follows Active (and its compiler-version
+  // availability). The x64-safe redirect means this is identical on Win32 and Win64.
   {$IFDEF COMPILER110_UP}
   chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
   chkRemovePixelsPerInchProperty.Enabled := cbxActive.Checked;
@@ -197,7 +182,6 @@ begin
   {$ELSE}
   chkRemoveTextHeightProperty.Enabled := False;
   {$ENDIF}
-  {$ENDIF CPUX64}
 end;
 
 procedure TFrameOptionPageFormDesigner.SetUserData(UserData: TObject);
@@ -311,10 +295,8 @@ procedure TFormDesigner.UpdateHooks;
 begin
   {$IFDEF INCLUDE_FORMDESIGNER}
   SetLabelMarginActive(Active and LabelMargin);
-  {$IFNDEF CPUX64}
-  // RemoveExplicit / PixelsPerInch / TextHeight install via CodeRedirect, which
-  // is a no-op on Win64. Gate them so the inert-on-x64 behaviour is explicit
-  // here rather than relying on the hidden no-op in Shared\Hooking.pas.
+  // RemoveExplicit / PixelsPerInch / TextHeight install via InstallFullReplaceHook,
+  // which redirects with an x64-safe absolute jump, so they apply on both Win32 and Win64.
   SetRemoveExplicitPropertyActive(Active and RemoveExplicitProperty);
   {$IFDEF COMPILER110_UP}
   SetRemovePixelsPerInchPropertyActive(Active and RemovePixelsPerInchProperty);
@@ -322,7 +304,6 @@ begin
   {$IFDEF DELPHI28_UP}
   SetRemoveTextHeightPropertyActive(Active and RemoveTextHeightProperty);
   {$ENDIF}
-  {$ENDIF CPUX64}
   {$ENDIF INCLUDE_FORMDESIGNER}
 end;
 

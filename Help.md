@@ -76,7 +76,9 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 - Structure View Search filter
 - All compile / file-notification subscribers (the IDE notifier is intentionally not registered on Win64 — a multi-interface dispatch ABI issue causes a deterministic AV in `rtl370.bpl` during "Checking project dependencies..." otherwise)
 - Compile Interceptor input-handle redirect
-- Any callers depending on `RedirectOrgCall` / `CodeRedirect`
+- Chain-back callers of `RedirectOrgCall` / `CodeRedirect` — hooks whose replacement calls the original function still need a trampoline that does not port to Win64, so they remain inactive.
+
+> **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
 All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
 
@@ -1991,6 +1993,8 @@ These properties are used by the IDE for anchor calculations. Only enable if you
 #### How It Works
 
 When enabled, the PixelsPerInch property is read from existing DFM files (for backward compatibility) but never written when saving. The IDE recalculates scaling at runtime based on the current display settings.
+
+> **Note — only observable at non-96 DPI.** Delphi only writes `PixelsPerInch` to a DFM when the design-time DPI differs from 96 (the standard 100% scaling baseline). The RTL streams it conditionally: `PixelsPerInch <> USER_DEFAULT_SCREEN_DPI` (96) — see `System.Classes.TDataModule.DefineProperties` (and the equivalent in `TCustomForm`). Consequently, when you design at **100% scaling (96 DPI)** the IDE never emits `PixelsPerInch` in the first place, so this option has **no visible effect** there — there is nothing to strip. The feature only does observable work (and only matters for version control) when forms/data modules are designed on a **scaled / high-DPI display** (e.g. 125% → 120 DPI, 150% → 144 DPI). This is also why a fresh form or data module saved at 96 DPI shows no `PixelsPerInch` line regardless of this setting.
 
 #### Delphi Version Compatibility (Fixed in 3.6.1)
 

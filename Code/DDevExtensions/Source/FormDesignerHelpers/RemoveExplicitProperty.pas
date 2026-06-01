@@ -36,7 +36,7 @@ uses
   IDEUtils;
 
 var
-  HookTControl_DefineProperties: TRedirectCode;
+  HookTControl_DefineProperties: TFullReplaceHook;
 
 type
   TControlEx = class(TControl)
@@ -174,9 +174,9 @@ begin
   begin
     IsActive := Active;
     if Active then
-      CodeRedirect(@TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties)
+      InstallFullReplaceHook(@TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties)
     else
-      UnhookFunction(HookTControl_DefineProperties);
+      RemoveFullReplaceHook(HookTControl_DefineProperties);
   end;
 end;
 

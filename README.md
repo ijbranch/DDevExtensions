@@ -116,6 +116,8 @@ Versions 3.17.7, 3.18.8 and 3.19.9 complete the **UI workflow audit** remediatio
 - ToolsAPI access is nil/`Supports`-guarded rather than hard-cast (safer Win64 teardown); silently-swallowed exceptions now log via `OutputDebugString`.
 - Correctness fixes including array-index magic-number detection, consistent dependency-cycle counts, deterministic priority/numeric sorts, Unicode-safe path handling, and accurate result-line navigation.
 
+Version 3.20.9 **restores the three "Do not store … into the DFM" Form Designer cleaners on the 64-bit IDE.** *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* were greyed out on the Win64 host because they installed via the 5-byte `JMP rel32` `CodeRedirect`, which is a deliberate no-op on x64. They are full-replacement hooks (their replacement `DefineProperties` never calls the original), so a new x64-safe primitive — `InstallFullReplaceHook` / `RemoveFullReplaceHook`, using a 14-byte absolute indirect jump — now drives them; the global `CodeRedirect` is left untouched so the chain-back hooks elsewhere stay correctly inactive on Win64. Verified live in the Delphi 13 Win64 IDE (Explicit\* and TextHeight strip on save). Note: *Remove PixelsPerInch* is only observable at non-96 DPI, because Delphi only streams `PixelsPerInch` when the design DPI differs from 96 — see Help.md.
+
 See `CHANGES.md` for the authoritative per-release detail.
 
 ### Version Number Interpretation

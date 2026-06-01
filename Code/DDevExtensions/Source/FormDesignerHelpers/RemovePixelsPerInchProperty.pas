@@ -30,7 +30,7 @@ uses
   IDEUtils;
 
 var
-  HookTControl_DefineProperties: TRedirectCode;
+  HookTControl_DefineProperties: TFullReplaceHook;
 
 type
   /// <summary>
@@ -77,9 +77,9 @@ begin
   begin
     IsActive := Active;
     if Active then
-      CodeRedirect(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties)
+      InstallFullReplaceHook(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties)
     else
-      UnhookFunction(HookTControl_DefineProperties);
+      RemoveFullReplaceHook(HookTControl_DefineProperties);
   end;
 end;
 

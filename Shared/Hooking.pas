@@ -57,6 +57,25 @@ type
       1: (Code2: Int64);
   end;
 
+  /// <summary>
+  /// Saved state for a full-replacement entry-point hook - one whose replacement function never
+  /// chains back into the original. Platform-neutral wrapper: on Win32 it carries the classic
+  /// TRedirectCode (5-byte JMP rel32); on Win64 it carries the 14 original bytes overwritten by a
+  /// 14-byte absolute indirect jump. See InstallFullReplaceHook for why the no-chain-back
+  /// restriction makes this safe on x64 where the general CodeRedirect is not.
+  /// </summary>
+  TFullReplaceHook = record
+    {$IFDEF CPUX64}
+    /// <summary>Address whose entry bytes were overwritten (nil when not installed).</summary>
+    RealProc: Pointer;
+    /// <summary>The 14 original bytes, restored verbatim by RemoveFullReplaceHook.</summary>
+    OrgBytes: array[0..13] of Byte;
+    {$ELSE}
+    /// <summary>Underlying Win32 redirection state (delegates to CodeRedirect/UnhookFunction).</summary>
+    Redir: TRedirectCode;
+    {$ENDIF CPUX64}
+  end;
+
 /// <summary>Patches the first five bytes of Proc to JMP NewProc and stores the original bytes in Data.</summary>
 /// <remarks>
 /// On Win64 this is a no-op: the 5-byte JMP rel32 rewrite is not portable to x64
@@ -96,6 +115,23 @@ procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; o
 /// <summary>Restores the prologue captured by HookFunction.</summary>
 /// <param name="Data">Existing redirection state.</param>
 procedure UnhookFunction(var Data: TRedirectCode);
+
+/// <summary>
+/// Installs an entry-point redirect from Proc to NewProc for a full-replacement hook (NewProc must
+/// never call back into Proc). On Win32 this delegates to CodeRedirect. On Win64 it overwrites the
+/// first 14 bytes of Proc with an absolute indirect jump (FF 25 00000000 + 8-byte target), which -
+/// unlike the general CodeRedirect, a deliberate no-op on x64 - is safe here precisely because the
+/// original body is never executed: control transfers with JMP (not CALL), so Proc never appears on
+/// a call stack and its unwind metadata is irrelevant, and no prologue is relocated or re-run. Use
+/// ONLY for hooks that fully replace the target; for chain-back hooks a real trampoline is required.
+/// </summary>
+/// <param name="Proc">Function to redirect (its entry is overwritten).</param>
+/// <param name="NewProc">Replacement function; must not chain back into Proc.</param>
+/// <param name="Hook">Receives the saved state needed to revert the redirect.</param>
+procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceHook);
+/// <summary>Reverts a redirect installed by InstallFullReplaceHook, restoring the original entry bytes.</summary>
+/// <param name="Hook">State previously populated by InstallFullReplaceHook.</param>
+procedure RemoveFullReplaceHook(var Hook: TFullReplaceHook);
 /// <summary>Overwrites Size bytes at DestProc with the bytes from SourceProc, bypassing memory protection.</summary>
 /// <param name="DestProc">Destination address (machine code).</param>
 /// <param name="SourceProc">Source bytes.</param>
@@ -506,6 +542,73 @@ procedure UnhookFunction(var Data: TRedirectCode);
 begin
   CodeRestore(Data);
 end;
+
+procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceHook);
+{$IFDEF CPUX64}
+const
+  JmpSize = 14; // FF 25 <rel32=0> <abs64 target>
+var
+  OldProtect: Cardinal;
+  Written: SIZE_T;
+  Patch: packed record
+    OpCode: Word;    // byte stream FF 25  (JMP qword ptr [rip+rel32])
+    Rel: Integer;    // 0 -> operand follows the instruction immediately
+    Target: Pointer; // absolute 64-bit destination
+  end;
+begin
+  Hook.RealProc := nil;
+  FillChar(Hook.OrgBytes, SizeOf(Hook.OrgBytes), 0);
+  if (Proc = nil) or (NewProc = nil) then
+    Exit;
+
+  Proc := GetActualAddr(Proc);
+
+  // Capture the bytes we are about to overwrite so the patch can be reverted verbatim. We never
+  // re-run them, so they need not fall on an instruction boundary.
+  Move(Proc^, Hook.OrgBytes[0], JmpSize);
+
+  Patch.OpCode := $25FF;
+  Patch.Rel := 0;
+  Patch.Target := NewProc;
+
+  if VirtualProtectEx(GetCurrentProcess, Proc, JmpSize, PAGE_EXECUTE_READWRITE, OldProtect) then
+  begin
+    if WriteProtectedMemory(Proc, @Patch, JmpSize, Written) and (Written = JmpSize) then
+      Hook.RealProc := Proc;
+    VirtualProtectEx(GetCurrentProcess, Proc, JmpSize, OldProtect, @OldProtect);
+    FlushInstructionCache(GetCurrentProcess, Proc, JmpSize);
+  end;
+end;
+{$ELSE}
+begin
+  CodeRedirect(Proc, NewProc, Hook.Redir);
+end;
+{$ENDIF CPUX64}
+
+procedure RemoveFullReplaceHook(var Hook: TFullReplaceHook);
+{$IFDEF CPUX64}
+const
+  JmpSize = 14;
+var
+  OldProtect: Cardinal;
+  Written: SIZE_T;
+begin
+  if Hook.RealProc = nil then
+    Exit;
+
+  if VirtualProtectEx(GetCurrentProcess, Hook.RealProc, JmpSize, PAGE_EXECUTE_READWRITE, OldProtect) then
+  begin
+    WriteProtectedMemory(Hook.RealProc, @Hook.OrgBytes[0], JmpSize, Written);
+    VirtualProtectEx(GetCurrentProcess, Hook.RealProc, JmpSize, OldProtect, @OldProtect);
+    FlushInstructionCache(GetCurrentProcess, Hook.RealProc, JmpSize);
+  end;
+  Hook.RealProc := nil;
+end;
+{$ELSE}
+begin
+  UnhookFunction(Hook.Redir);
+end;
+{$ENDIF CPUX64}
 
 function GetVirtualMethodCount(AClass: TClass): Integer;
 type

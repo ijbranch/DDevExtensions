@@ -42,7 +42,7 @@ uses
   IDEUtils;
 
 var
-  HookTForm_DefineProperties: TRedirectCode;
+  HookTForm_DefineProperties: TFullReplaceHook;
 
 type
   TFormEx = class(TCustomForm)
@@ -96,9 +96,9 @@ begin
   begin
     IsActive := Active;
     if Active then
-      CodeRedirect(@TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties)
+      InstallFullReplaceHook(@TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties)
     else
-      UnhookFunction(HookTForm_DefineProperties);
+      RemoveFullReplaceHook(HookTForm_DefineProperties);
   end;
 end;
 

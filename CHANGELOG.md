@@ -4,6 +4,22 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-06-02 - v3.20.9 - Restore the three DFM cleaners on the 64-bit IDE
+
+### Added
+
+- **New x64-safe full-replacement hook primitive `InstallFullReplaceHook` / `RemoveFullReplaceHook` (record `TFullReplaceHook`).** On Win32 it delegates to the classic `CodeRedirect`; on Win64 it overwrites the target's first 14 bytes with an absolute indirect jump (`FF 25 00000000` + 8-byte target). **Why:** the general `CodeRedirect` is a deliberate no-op on Win64 (5-byte `JMP rel32` has ±2 GB reach and corrupts x64 prologue/unwind info). The new primitive is safe *only* for hooks whose replacement never chains back into the original — control transfers with `JMP` not `CALL`, so the patched function never appears on a call stack and its unwind metadata is irrelevant, and no prologue is relocated or re-run. The global `CodeRedirect` is left untouched so the ~15 chain-back hooks elsewhere stay neutered on Win64. (2026-06-02) — `Shared/Hooking.pas`
+
+### Fixed
+
+- **The three "Do not store … into the DFM" options now work on the 64-bit IDE.** *Do not store the Explicit\* properties*, *…the PixelsPerInch property* and *…the TextHeight property* were greyed out under Options → Form Designer on the Win64 IDE because their `CodeRedirect` install was inert there (reported by a user who upgraded specifically for these). All three are full-replacement hooks (their replacement `DefineProperties` never calls the original), so they were switched to `InstallFullReplaceHook`/`RemoveFullReplaceHook` and the controls re-enabled on x64. Verified live on the Win64 D13 IDE: Explicit\* and TextHeight strip on save; PixelsPerInch shares the identical hook path. Builds clean Win32 + Win64 (D_D130, Release). (2026-06-02) — `Source/FormDesignerHelpers/RemoveExplicitProperty.pas`, `Source/FormDesignerHelpers/RemovePixelsPerInchProperty.pas`, `Source/FormDesignerHelpers/RemoveTextHeightProperty.pas`, `Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`, `Shared/Hooking.pas`, `Source/version.inc`
+
+### Documentation
+
+- **Documented that *Remove PixelsPerInch* is only observable at non-96 DPI.** Delphi streams `PixelsPerInch` only when the design DPI differs from 96 (`PixelsPerInch <> USER_DEFAULT_SCREEN_DPI` in `TDataModule`/`TCustomForm.DefineProperties`), so at 100% scaling the IDE never emits it and the option has no visible effect — it only does work on a scaled/high-DPI design display. **Why:** prevents the false "the option is broken" conclusion when no `PixelsPerInch` line appears at 96 DPI. (2026-06-02) — `Help.md`
+
+---
+
 ## 2026-06-01 - Repository hygiene: stop versioning auto-generated `.res`
 
 ### Removed
