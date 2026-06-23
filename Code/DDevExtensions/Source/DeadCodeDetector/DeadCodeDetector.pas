@@ -566,7 +566,6 @@ procedure TDeadCodeAnalyzer.ScanForReferences( const FileName: string; const Con
 var
   Lexer: TDelphiLexer;
   Token: TToken;
-  PrevTokenKind: TTokenKind;
   I: Integer;
   Symbol: TSymbolInfo;
   InImplementation: Boolean;
@@ -578,8 +577,6 @@ begin
   Lexer := TDelphiLexer.Create( FileName, Content );
 
   try
-    PrevTokenKind := tkNone;
-
     while Lexer.NextToken( Token ) do
     begin
       if Token.Kind = tkI_implementation then
@@ -617,8 +614,6 @@ begin
           end;
         end;
       end;
-
-      PrevTokenKind := Token.Kind;
     end;
   finally
     Lexer.Free;

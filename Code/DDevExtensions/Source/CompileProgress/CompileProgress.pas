@@ -154,8 +154,12 @@ type
   /// </summary>
   TCompileProgress = class(TPluginConfig, ICompileInterceptor)
   private
-    /// <summary>Identifier returned by the compile-interceptor service registration.</summary>
+    {$IFNDEF CPUX64}
+    /// <summary>Identifier returned by the compile-interceptor service registration.
+    /// Win32 only: RegisterInterceptor/UnregisterInterceptor are not called on Win64
+    /// (see TCompileProgress.Create / Destroy), so the field is unused there.</summary>
     FCompileInterceptorId: Integer;
+    {$ENDIF}
     /// <summary>IDE notifier that delivers Before/AfterCompile callbacks.</summary>
     FIDENotifier: TIDENotifier;
     /// <summary>List of .pas/.dcu file names expected during the current build, used to update the progress bar.</summary>

@@ -4,6 +4,17 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-06-24 - Code hygiene: clear three dcc64 compiler hints
+
+### Fixed
+
+- **Removed the dead `PrevTokenKind` local from `TDeadCodeAnalyzer.ScanForReferences`** (H2077, ×2). It was assigned but never read in that method — the genuine `PrevTokenKind` reads belong to a different method (`ExtractSymbols`) that has its own local of the same name. Pure dead code; no behaviour change. (2026-06-24) — `Source/DeadCodeDetector/DeadCodeDetector.pas`
+- **Gated `TCompileProgress.FCompileInterceptorId` behind `{$IFNDEF CPUX64}`** (H2219, private symbol declared but never used). The field is only assigned (`Create`) and read (`Destroy`) inside `{$IFNDEF CPUX64}` blocks — on Win64 the compile interceptor is deliberately a no-op, so the field was unreferenced there. The declaration now matches its usage, with the Win32-only rationale noted in its doc comment. (2026-06-24) — `Source/CompileProgress/CompileProgress.pas`
+
+Builds clean Win64 (D_D130, Release) with no diagnostics.
+
+---
+
 ## 2026-06-02 - v3.20.9 - Restore the three DFM cleaners on the 64-bit IDE
 
 ### Added
