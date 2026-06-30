@@ -41,6 +41,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 | Find Unit Replacement | ON | Ctrl+Shift+A |
 | Kill dexplore.exe on Exit | ON | Automatic |
 | IDE Path Sorter | ON | Tools menu (below Build Tools...) |
+| Sort Projects in Group | ON | Tools menu (below IDE Path Sorter) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -80,7 +81,7 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 
 > **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
-All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
+All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
 
 **Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
 
@@ -117,7 +118,8 @@ Tools
         ├── Code Style Checker...       (9. Style check)
         └── TODO/FIXME Aggregator...    (10. Review work items)
 
-  └── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
+  ├── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
+  └── Sort Projects in Group...         (Alphabetise the open project group's members)
 ```
 
 ![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
@@ -1810,6 +1812,26 @@ When a project is opened, the monitor begins watching its directory using the Wi
 **Default:** ON
 
 **Location:** Options > DDevExtensions > Extended IDE Settings
+
+---
+
+### Sort Projects in Group (New in 3.21.9)
+
+**Purpose:** Alphabetises the member projects of the **currently open project group** so they list in name order in the Project Manager.
+
+**Default:** ON
+
+**Location:** Tools > Sort Projects in Group...
+
+#### How it works
+
+The IDE has no API for reordering a project group's members and only reads the order from the `.groupproj` when the group is opened. The command therefore:
+
+1. Saves the active project group.
+2. Writes a `.bak` of the `.groupproj`, then rewrites it with the projects sorted — across **all three** places each project is listed (the `<ItemGroup>`, the per-project `<Target>` blocks, and the `Build`/`Clean`/`Make` `CallTarget` lists; the Project Manager order follows the `<Target>`/`CallTarget` sections, so sorting the `<ItemGroup>` alone has no effect).
+3. Closes and reopens the group so the IDE reloads the new order, then reselects the previously active project.
+
+A confirmation prompt warns that the group will be reloaded. The command no-ops (with a message) when the projects are already sorted or the group has fewer than two members. Disable via `DDevExtensions.DisabledFeatures=ProjectGroupSorter`.
 
 ---
 

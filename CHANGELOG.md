@@ -4,6 +4,17 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-06-30 - v3.21.9 - Add "Sort Projects in Group"
+
+### Added
+
+- **New "Sort Projects in Group" Tools-menu command (`ProjectGroupSorter`).** Alphabetises the member projects of the **currently open project group** so they list in name order in the Project Manager. It saves the group, rewrites the `.groupproj` on disk with the projects sorted, then closes and reopens the group so the IDE reloads the new order; the previously active project is reselected and a `.bak` of the group file is written first. A confirmation prompt warns that the group will be reloaded, and it no-ops with a message when the projects are already sorted or the group has fewer than two members. (2026-06-30) — `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `Source/RegisterPlugins.pas`, `Source/DelphiExtension.inc`, `D_D102/`…`D_D130/DDevExtensions.dpr`, `Source/version.inc`, `D_D130/DDevExtensions.dproj`
+  - **Why this approach:** ToolsAPI offers no way to reorder a project group's members — `IOTAProjectGroup` exposes only `RemoveProject` plus the interactive add dialogs — and the IDE reads the member order from the `.groupproj` only when the group is opened. Rewriting the file and forcing a reopen is therefore the only mechanism.
+  - **Why all three sections are sorted:** a `.groupproj` lists every project three times — in the `<ItemGroup>`, as a trio of per-project `<Target>` elements, and in each of the `Build`/`Clean`/`Make` `CallTarget` lists. The Project Manager tree order follows the `<Target>`/`CallTarget` sections, so sorting only the `<ItemGroup>` has **no visible effect**; `SortGroupProjectText` sorts all three consistently while preserving the header, `ProjectExtensions`, `Import` and any per-project dependency content verbatim.
+  - Modelled on `LibraryPathSorter` (Tools-menu item, no new IDE notifier), keeping it clear of the Win64 ToolsAPI teardown fragility. Registration is gated by `INCLUDE_PROJECTGROUPSORTER` and the `DDevExtensions.DisabledFeatures` env var (`ProjectGroupSorter`).
+
+---
+
 ## 2026-06-24 - Code hygiene: clear three dcc64 compiler hints
 
 ### Fixed

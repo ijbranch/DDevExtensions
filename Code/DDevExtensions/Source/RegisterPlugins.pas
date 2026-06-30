@@ -82,6 +82,9 @@ uses
   {$IFDEF INCLUDE_LIBRARYPATHSORTER}
   LibraryPathSorter,
   {$ENDIF INCLUDE_LIBRARYPATHSORTER}
+  {$IFDEF INCLUDE_PROJECTGROUPSORTER}
+  ProjectGroupSorter,
+  {$ENDIF INCLUDE_PROJECTGROUPSORTER}
   {$IFDEF INCLUDE_EXTERNALMODMONITOR}
   ExternalModMonitor,
   {$ENDIF INCLUDE_EXTERNALMODMONITOR}
@@ -239,6 +242,11 @@ begin
     {$IFDEF INCLUDE_LIBRARYPATHSORTER}
     if DisabledPlugins.IndexOf('LibraryPathSorter') = -1 then
       RegisterLateLoader(LibraryPathSorter.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_PROJECTGROUPSORTER}
+    if DisabledPlugins.IndexOf('ProjectGroupSorter') = -1 then
+      RegisterLateLoader(ProjectGroupSorter.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_EXTERNALMODMONITOR}
