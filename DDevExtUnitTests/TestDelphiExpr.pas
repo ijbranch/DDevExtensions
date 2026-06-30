@@ -16,7 +16,7 @@ procedure RunExprTests;
 implementation
 
 uses
-  System.SysUtils,
+  System.SysUtils, System.Classes,
   DelphiLexer, DelphiExpr;
 
 var

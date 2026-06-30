@@ -15,8 +15,8 @@ procedure RunPreprocTests;
 implementation
 
 uses
-  System.SysUtils,
-  DelphiLexer, DelphiPreproc;
+  System.SysUtils, System.Classes,
+  DelphiLexer, DelphiPreproc, DelphiParserContainers;
 
 var
   TestsPassed: Integer = 0;

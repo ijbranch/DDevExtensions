@@ -18,7 +18,7 @@ procedure RunLexerTests;
 implementation
 
 uses
-  System.SysUtils, System.Generics.Collections,
+  System.SysUtils, System.Generics.Collections, System.Classes,
   DelphiLexer;
 
 var
