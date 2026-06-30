@@ -12,8 +12,11 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | `TestDelphiExpr` | `DelphiExpr` (arithmetic/boolean nodes + parser) | 21 / 6 cases | green |
 | `TestDelphiPreproc` | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 10 / 4 cases | green |
 | `TestUnitMetrics` | `UnitMetrics` (LOC + cyclomatic complexity) | 4 / 4 cases | green |
+| `TestProjectGroupSorter` (DUnitX) | `ProjectGroupSorterCore` (`.groupproj` sort: ItemGroup + Targets + CallTargets) | 11 cases | green |
 
 **Tier 1 complete; Tier 2 = `UnitMetrics` only (114 assertions total).** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
+
+**Feature-core extraction (`ProjectGroupSorterCore`).** The "Sort Projects in Group" feature (v3.21.9) was authored with its pure `.groupproj` rewrite logic (`SortGroupProjectText`, `LeafName`) split into an RTL-only core unit from the start, leaving `ProjectGroupSorter` with only the menu/IDE orchestration. `TestProjectGroupSorter` (DUnitX, 11 cases) covers it — the first feature whose testable core was separated up front rather than retrofitted, the same seam the parked Tier 3 analyzer extractions still need.
 
 The lexer tests also guard two v3.19.9 behaviours directly: bracket tokenisation (`tkLBracket`/`tkRBracket` around an index expression — the magic-number bracket-depth fix) and `Line` 0-based / `Column` 1-based (the analyzer navigation contract).
 

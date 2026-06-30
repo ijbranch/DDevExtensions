@@ -4,6 +4,18 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-06-30 - Unit tests for "Sort Projects in Group" (+ testable core extraction)
+
+### Added
+
+- **DUnitX fixture `TTestProjectGroupSorter` (11 tests) covering the project-group sorter.** Verifies that an unsorted group becomes exactly the canonical sorted form across all three sections, that sorting is idempotent (drives the no-op path), case-insensitive (including the real-world "Scrap / SCtoXX / Store" ordering that bit the manual edit), that per-project `<Dependencies>` and the header/`ProjectExtensions`/`Import` boilerplate survive verbatim, that a group with no `<Target>` section reorders the `<ItemGroup>` without inventing targets, plus CRLF endings, single-project no-op and `LeafName`. Wired into `DDevExtUnitTestsDUnitX.dpr`; links clean in the suite and runtime-verified green (9 logic checks via a standalone `dcc64` console harness, exit 0). (2026-06-30) — `DDevExtUnitTests/TestProjectGroupSorterDUnitX.pas`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+
+### Changed
+
+- **Extracted the pure `.groupproj` rewrite logic into a new RTL-only unit `ProjectGroupSorterCore` (`SortGroupProjectText`, `LeafName`).** Behaviour-preserving split so the transform is unit-testable by a standalone executable without pulling in ToolsAPI/VCL. `ProjectGroupSorter` now `uses ProjectGroupSorterCore` and keeps only the menu item and IDE orchestration; the core is registered in all six D_D1xx DPRs. Also cleared a dcc64 H2077 hint (removed a dead `TargetIndent` default). Builds clean Win32 + Win64 (D130). (2026-06-30) — `Source/ProjectGroupSorter/ProjectGroupSorterCore.pas`, `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `D_D102/`…`D_D130/DDevExtensions.dpr`
+
+---
+
 ## 2026-06-30 - v3.21.9 - Add "Sort Projects in Group"
 
 ### Added

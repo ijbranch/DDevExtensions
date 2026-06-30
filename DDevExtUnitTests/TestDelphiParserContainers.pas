@@ -16,6 +16,7 @@ implementation
 
 uses
   System.SysUtils,
+  System.Classes,
   DelphiParserContainers;
 
 var

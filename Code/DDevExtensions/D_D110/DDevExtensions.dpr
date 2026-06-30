@@ -131,6 +131,7 @@ uses
   FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame},
   LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
   FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter},
+  ProjectGroupSorterCore in '..\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   ProjectGroupSorter in '..\Source\ProjectGroupSorter\ProjectGroupSorter.pas',
   FileWatcher in '..\..\..\Shared\FileWatcher.pas',
   ExternalModMonitor in '..\Source\ExternalModMonitor\ExternalModMonitor.pas',

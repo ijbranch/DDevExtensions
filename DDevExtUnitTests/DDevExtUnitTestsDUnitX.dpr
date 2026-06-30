@@ -37,7 +37,9 @@ uses
   {$ENDIF}
   DUnitX.TestFramework,
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
-  TestDfmParserDUnitX in 'TestDfmParserDUnitX.pas';
+  TestDfmParserDUnitX in 'TestDfmParserDUnitX.pas',
+  ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
+  TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas';
 
 {$R *.res}
 
