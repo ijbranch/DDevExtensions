@@ -71,10 +71,12 @@ type
     /// <param name="EditBuffer">The active editor buffer to navigate.</param>
     /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section (so the Up/Down shortcuts are directional).</param>
     procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
-    /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.</summary>
+    /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.
+    /// On the 64-bit IDE the next-binding probe is skipped (GetNextBindingRec AVs there),
+    /// so unhandled keys always use the built-in HOME/TAB fallback instead of krNextProc.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
     /// <param name="KeyCode">The shortcut that was pressed.</param>
-    /// <param name="BindingResult">Out parameter set to krHandled / krUnhandled / krNextProc.</param>
+    /// <param name="BindingResult">Out parameter set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
     procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
       var BindingResult: TKeyBindingResult);
     /// <summary>Internal worker for CtrlMoveCursor that consumes a single token starting at the caret.</summary>
@@ -1039,7 +1041,9 @@ var
   EditBuffer: IOTAEditBuffer;
   EditBlock: IOTAEditBlock;
   Column: Integer;
+  {$IFNDEF CPUX64}
   BindingRec: TKeyBindingRec;
+  {$ENDIF}
   {$IF CompilerVersion <= 20.0}
   SearchForwardEnvProp: TPropField;
   OldSearchForwardValue: Boolean;
@@ -1187,12 +1191,19 @@ begin
 
     if BindingResult = krUnhandled then
     begin
+      {$IFNDEF CPUX64}
+      // GetNextBindingRec/FillBindingRec round-trip an x64 binding-list pointer
+      // through the 32-bit TKeyBindingRec.Next field; in the 64-bit IDE the
+      // truncated/sign-extended pointer AVs inside Kbclient.FillBindingRec and
+      // wedges keystroke processing. Probe on Win32 only; on Win64 fall through
+      // to our own HOME/TAB fallback handling below.
       if Context.GetKeyBindingRec(BindingRec) and Context.KeyboardServices.GetNextBindingRec(BindingRec) then
       begin
         { Let the next proc struggle with the IDE }
         BindingResult := krNextProc;
         Exit;
       end;
+      {$ENDIF}
 
       { The HOME key isn't processed when bound to a method }
       if KeyCode = ShortCut(VK_HOME, []) then

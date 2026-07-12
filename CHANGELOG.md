@@ -4,6 +4,18 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-07-13 - v3.21.10 - Fix 64-bit IDE editor AV / dead keyboard in Keybindings next-binding probe
+
+### Fixed
+
+- **Keybindings crashed the 64-bit IDE while editing (`Access violation in coreide370.bpl` at `Kbclient.TKeyboardServices.FillBindingRec`, read of a sign-extended 32-bit address) and left the keyboard unresponsive.** `DoKeyBinding`'s unhandled-key path probed for a follow-on binding via `Context.GetKeyBindingRec` + `KeyboardServices.GetNextBindingRec`, but that legacy ToolsAPI round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next: Integer` field — in the 64-bit IDE the truncated/sign-extended pointer AVs inside `Kbclient.FillBindingRec`, and the exception unwinding out of `ProcessKeyStroke` wedged all subsequent keystroke processing until IDE restart. Common keys hit the path constantly (plain `Home` mid-line, `Tab` with no block selected). The probe is now gated `{$IFNDEF CPUX64}` (matching the existing Move-Line/Block Win64 gate): on Win64 unhandled keys always use the built-in HOME/TAB fallback instead of `krNextProc`, so another plugin partially bound to the same key is no longer chained on Win64 — a deliberate trade against IDE crashes. Underlying `Kbclient` defect is the 64-bit IDE's, worth reporting to Embarcadero QP. (2026-07-13) — `Source/Keybindings/FrmeOptionPageKeybindings.pas`
+
+### Changed
+
+- Version bumped 3.21.9 → 3.21.10 across ALL indicators, including the lagging ones: `Source/version.inc`, `version.h` (was stale at 3.19.9), all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj` (D_D102–D_D120 and the installer were stale at 3.19.9 — `VerInfo_MinorVer` 19→21, `FileVersion` → `3.21.10.*`, `ProductVersion` → 3.21; build numbers preserved). (2026-07-13)
+
+---
+
 ## 2026-06-30 - Unit tests for "Sort Projects in Group" (+ testable core extraction)
 
 ### Added

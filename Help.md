@@ -1730,6 +1730,10 @@ Layer configuration is saved to `DDevExtensions_Layers.json` in the application 
 
 4. **Section Toggle**: Press Ctrl+Shift+Up to jump to the `interface` keyword, or Ctrl+Shift+Down to jump to the `implementation` keyword. Works from anywhere in the unit.
 
+#### 64-bit IDE Note
+
+On the 64-bit IDE, when a bound key falls through unhandled, DDevExtensions applies its built-in Home/Tab fallback directly instead of chaining to another plugin's binding for the same key. The legacy next-binding probe (`GetNextBindingRec`) crashes the 64-bit IDE — its `TKeyBindingRec.Next` field is 32-bit and cannot hold an x64 pointer — so it is used on the 32-bit IDE only (since 3.21.10).
+
 ---
 
 ### External Mod Monitor

@@ -120,7 +120,9 @@ Version 3.20.9 **restores the three "Do not store … into the DFM" Form Designe
 
 Version 3.21.9 adds **Sort Projects in Group** — a Tools-menu command that alphabetises the member projects of the currently open project group so they list in name order in the Project Manager. Because the IDE has no API for reordering group members and only reads the order from the `.groupproj` when the group is opened, the command saves the group, rewrites the `.groupproj` with the projects sorted (across the `<ItemGroup>`, the per-project `<Target>` blocks **and** the `Build`/`Clean`/`Make` `CallTarget` lists — the Project Manager order follows the latter), then closes and reopens the group and reselects the previously active project. A `.bak` is written first, a prompt confirms the reload, and it no-ops when the projects are already sorted. See Help.md for details.
 
-See `CHANGES.md` for the authoritative per-release detail.
+Version 3.21.10 fixes an **editor access violation / dead keyboard in the 64-bit IDE**. When a Key Bindings shortcut fell through unhandled (e.g. plain `Home` mid-line, `Tab` with no block selected), the handler probed for a follow-on binding via the legacy `GetKeyBindingRec`/`GetNextBindingRec` ToolsAPI — which round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next` field and AVs inside the IDE's `Kbclient.FillBindingRec` (`Access violation in coreide370.bpl`), wedging all keyboard input until IDE restart. The probe is now Win32-only; on the 64-bit IDE unhandled keys use the built-in Home/Tab fallback directly, so another plugin partially bound to the same key is no longer chained there (the underlying defect is the 64-bit IDE's).
+
+See `CHANGELOG.md` for the authoritative per-release detail.
 
 ### Version Number Interpretation
 
@@ -831,4 +833,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.19.9 – 30 May 2026*
+*Version: 3.21.10 – 13 July 2026*
