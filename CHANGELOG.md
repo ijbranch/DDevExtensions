@@ -1496,3 +1496,9 @@ Per-step `try/except` wrappers were also added around the remaining cleanup oper
 ---
 
 *This changelog consolidates information from Changes.txt (v1.0-3.9.1), README.md (detailed version descriptions), and git commit history. All versions from the project's inception through current development are documented above.*
+
+
+## [Unreleased]
+
+### Added
+- `.gitattributes` — pin CRLF checkout for all text file types, independent of each clone's `core.autocrlf`; binaries marked explicitly, Pascal linguist hints included. (2026-07-28) — `.gitattributes`

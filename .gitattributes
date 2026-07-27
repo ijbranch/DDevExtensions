@@ -1,0 +1,42 @@
+# ============================================================================
+#  Line endings
+#  ---------------------------------------------------------------------------
+#  GITLAK repositories are Windows/Delphi only and mandate CRLF in the working
+#  tree (see the global CLAUDE.md; the ensure_crlf.py hook enforces it on every
+#  edit). Pinning it HERE rather than relying on a machine's core.autocrlf
+#  means a fresh clone is correct on any machine, whatever the local git config.
+#
+#  Blobs stay LF (git's canonical in-repo form), so this is a no-op for
+#  existing history: no renormalisation, no mass diff. It only makes checkout
+#  deterministic.
+# ============================================================================
+* text=auto eol=crlf
+
+# Binaries -- never line-ending normalised, never diffed as text.
+*.res binary
+*.ico binary
+*.bpl binary
+*.dcu binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.docx binary
+*.xlsx binary
+
+# Force Pascal/Delphi language detection
+*.pas linguist-language=Pascal
+*.dfm linguist-language=Pascal
+*.dpr linguist-language=Pascal
+*.dpk linguist-language=Pascal
+*.inc linguist-language=Pascal
+
+# Exclude from language stats
+*.html linguist-vendored
+*.htm linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+*.dproj linguist-vendored
+*.res linguist-vendored
+build/** linguist-generated
