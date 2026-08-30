@@ -638,11 +638,45 @@ directories, **0 dead macros, 4 divergent** (`$(DUNITX)`, `$(DELPHIMOCKS)`,
 `$(GOOGLEMAPSDIR)` ×2 — all defined in the 32-bit list only). With cleanup fully
 enabled the tool would remove **nothing**, which is the correct answer.
 
+### First live run (2026-08-31)
+
+Applied on the development machine, then the IDE was closed and reopened and project
+builds run against the result.
+
+| | |
+|---|---|
+| Path sets changed | 25 |
+| Stored characters | 31,428 → 22,413 (**28.7% saved**) |
+| Entries | 952 → 873 (−79) |
+| Variables created | 12, in **both** IDE lists |
+| Variables modified or deleted | 0 |
+| Windows user environment | untouched (opt-in left off) |
+
+The 79 removed entries were exactly the missing-directory references — a re-analysis
+afterwards reports 0 duplicates, 0 missing, 0 dead macros, 0 to remove. All 12 created
+variables are referenced; none was orphaned. One removed entry, `$(BDS)\\source\\rtl\\linux`,
+had been stored with **doubled backslashes** and could never have resolved.
+
+**§13.1 is answered: the IDE does NOT rewrite the Library key on shutdown.** The
+rewritten paths and both variable lists survived a normal close and reopen intact, and
+compiled. The direct write is correct and the deferred applier described in §9 is not
+needed — do not build it.
+
+**One defect the run exposed.** `Analyse` ran hygiene *after* candidate selection, so an
+entry queued for removal still voted for a variable and still counted toward its saving.
+Nothing was actually orphaned in this run, but the ordering made it possible and the
+reported saving counted characters that were never going to be written. Hygiene now runs
+before candidate generation and dropped entries are excluded from tallying, matching,
+scoring and rewriting; a mutation-checked test covers it.
+
+A second pass would save a further 1,778 characters (8.4%).
+
 ### Still open
 
-- **§13.1 is unresolved.** Whether the IDE rewrites the Library key on shutdown has
-  not been established. Apply writes directly, as the Sorter does, and refuses while
-  Tools > Options is open. No deferred applier was built — per §9, deliberately.
 - **§13.5** — design-time package unload/reload cleanliness is untested.
 - The two IDE variable lists remain diverged on the development machine; the tool
-  reports it but does not repair it.
+  reports it (4 entries, all divergent rather than dead) but does not repair it.
+- **Variable naming is functional but occasionally ugly.** A prefix ending in a version
+  segment yields `$(V37_0)` (from `...\\Delphi 13 Florence\37.0`), and a long leaf is
+  truncated mid-word at 16 characters (`$(IPWORKS_2024_DEL)`). The platform/config-token
+  widening rule of §6.5 could reasonably be extended to purely numeric segments.
