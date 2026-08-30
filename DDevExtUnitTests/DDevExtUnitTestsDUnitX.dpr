@@ -1,4 +1,4 @@
-{$DEFINE  TESTINSIGHT}
+﻿{$DEFINE  TESTINSIGHT}
 program DDevExtUnitTestsDUnitX;
 
 {$IFNDEF TESTINSIGHT}
@@ -39,7 +39,9 @@ uses
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
   TestDfmParserDUnitX in 'TestDfmParserDUnitX.pas',
   ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
-  TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas';
+  TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas',
+  PathCompactorCore in '..\Code\DDevExtensions\Source\PathCompactor\PathCompactorCore.pas',
+  TestPathCompactorDUnitX in 'TestPathCompactorDUnitX.pas';
 
 {$R *.res}
 

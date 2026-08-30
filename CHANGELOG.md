@@ -4,6 +4,162 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-08-31 - v3.22.11 - IDE Path Compactor
+
+### Added
+
+- **New Tools > IDE Path Compactor dialog that shortens the IDE's library path strings.** Analyses every
+  selected platform x path-type, proposes `$(NAME)` macro substitutions for repeated directory prefixes,
+  offers directory junctions for over-long third-party prefixes, and reports duplicate, dead and
+  undefined-macro entries. Reports stored *and* expanded lengths before/after, because only the expanded
+  length constrains the compiler command line while only the stored length triggers the IDE's "path too
+  long" warning - macros shorten the first, junctions the second. Backup and rollback reuse the existing
+  `TLibraryPathBackupManager` history, so one Restore list covers the Sorter and the Compactor alike.
+  Nothing is written until Apply. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/PathCompactorEnvVars.pas`,
+  `Source/PathCompactor/PathCompactorJunctions.pas`, `Source/PathCompactor/FrmPathCompactor.pas`,
+  `Source/PathCompactor/FrmPathCompactor.dfm`, `Source/RegisterPlugins.pas`,
+  `Source/DelphiExtension.inc`, `D_D102`...`D_D130/DDevExtensions.dpr`
+
+- **Saving is scored in STORED space, not expanded space.** Candidates must be generated from expanded
+  ancestors so a prefix can be matched across entries written in different forms, but the gain is measured
+  against the raw registry text each entry actually holds. **Why:** measured on the development machine,
+  `C:\Program Files (x86)\Embarcadero\Studio\37.0` is an ancestor of 104 of 363 entries and an
+  expanded-space score ranks it first at about 3,640 characters saved - yet all 104 are already stored as
+  `$(BDS)\...`, so accepting it would rewrite `$(BDS)\source\rtl` (24 stored characters) into
+  `$(STUDIO37)\source\rtl` (29), lengthening every one while reporting a four-figure win. Where a
+  candidate equals an existing macro's value the existing name is reused rather than a redundant one
+  invented. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+
+- **Variables are written to BOTH IDE macro-override keys.** RAD Studio reads `Environment Variables` in the
+  32-bit IDE and `Environment Variables x64` in the 64-bit IDE, but the `Library\<Platform>` keys those
+  macros resolve are shared between them and are not split. **Why:** defining a variable in one list only
+  makes every shared path entry using it resolve in one IDE and break silently in the other.
+  `GetBaseRegistryKey` returns the same value in both, so the naive `BaseRegistryKey + '\Environment
+  Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
+  silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
+
+- **DUnitX fixture `TTestPathCompactor` (20 tests) covering the compactor core.** Includes the regression
+  test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
+  of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
+  and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into
+  `DDevExtUnitTestsDUnitX.dpr`; 18/18 green via a standalone `dcc64` console runner. (2026-08-31) -
+  `DDevExtUnitTests/TestPathCompactorDUnitX.pas`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+
+- **Cleanup can now remove dead macro references, and every intended removal is re-verified before it
+  happens.** Three removals are offered, each opt-in and unticked by default: duplicate entries, entries
+  whose directory is missing, and entries whose macro resolves nowhere. Immediately before writing, the
+  Compactor re-tests every entry it is about to delete - re-probing the file system and re-resolving the
+  macro - and keeps any that now passes, reporting how many were rescued. **Why:** an analysis may be
+  minutes old by the time Apply runs; a disconnected share can reconnect or an installer finish in between,
+  and nothing should be deleted on the strength of a stale probe. It then lists every entry it is about to
+  remove, with the reason, and asks for confirmation. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`, `Source/PathCompactor/FrmPathCompactor.pas`,
+  `Source/PathCompactor/FrmPathCompactor.dfm`
+
+- **A macro that this IDE cannot resolve but the other IDE bitness can is reported as *divergent*, never as
+  dead, and is never removed.** **Why:** the two IDE variable lists have diverged on the development
+  machine, so `$(DUNITX)`, `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)` resolve in the 32-bit IDE but not the
+  64-bit one. Treating those as dead and deleting them from the shared library path would silently break
+  the IDE where they still work; the correct repair is to define the variable in both lists. The dialog
+  counts the two classes separately. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  `Source/PathCompactor/FrmPathCompactor.pas`
+
+### Changed
+
+- **`TLibraryPathType` and its record helper moved to the RTL-only `PathCompactorCore`,** with
+  `LibraryPathSorter` aliasing both. **Why:** the compactor's testable core must not pull in ToolsAPI, and a
+  second helper declared for the same type would not merge with the first - it would silently shadow it.
+  Note that a type alias re-exports neither the enumeration's members nor the helper, so
+  `FrmLibraryPathSorter` now uses `PathCompactorCore` directly. (2026-08-31) -
+  `Source/LibraryPathSorter/LibraryPathSorter.pas`, `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`
+
+- **Junction detection refuses the IDE's own installation tree, the Windows directory and the Program Files
+  roots.** **Why:** the brief assumed the prime target would be the GetIt `CatalogRepository`, but measured
+  on the development machine that prefix appears zero times, and the highest-scoring junction candidate is
+  `...\Embarcadero\Studio\37.0` itself at 104 uses. Junctioning it would relocate RAD Studio behind the
+  back of GetIt, the installer and every repair operation. Third-party trees under Program Files are still
+  offered. (2026-08-31) - `Source/PathCompactor/PathCompactorJunctions.pas`
+
+- **Duplicate removal is opt-in; duplicate detection is always on.** **Why:** a survey of the whole Library
+  key - 13 platforms, 96 populated path sets, 917 entries - found zero duplicates by either a raw or an
+  expanded-and-normalised test, so defaulting a destructive mutation on would take a risk against a problem
+  that does not occur. Detection is nearly free once the analysis exists and is strictly stronger than the
+  Sorter's own raw `SameText` check, which cannot see `$(BDS)\source` and the equivalent literal as one
+  directory. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+
+- **`$(LangDir)` is treated as a build-time macro, like `$(Config)`.** **Why:** it resolves per translation
+  language and appears only in the three Translated* path types; without this, 30 entries on the development
+  machine would be reported as dead macro references. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`
+
+- Version bumped 3.21.10 -> 3.22.11 across all indicators: `Source/version.inc`, `version.h`, all six
+  `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj` (`VerInfo_MinorVer` 21->22,
+  `VerInfo_Release` 10->11, `FileVersion` -> `3.22.11.*`, `ProductVersion` -> 3.22), **and
+  `Version.res` regenerated from `Version.rc`**. **Why:** the DLL takes its version resource from
+  `{$R ..\Version.res}`, a committed binary built from `version.h` - editing `version.h` alone
+  leaves the shipped DLL still reporting the previous version, which is what it did until the resource was
+  rebuilt (`brcc32 Version.rc -foVersion.res`; `cgrc` cannot be used from `bin` because its `resinator.exe`
+  helper lives in `bin64`). Verified: the built DLL now reports 3.22.11. (2026-08-31) -
+  `Source/version.inc`, `version.h`, `Version.res`, `D_D102`...`D_D130/DDevExtensions.dproj`,
+  `Installer/DDevExtensionsReg.dproj`
+
+- **Build numbers now auto-increment.** `VerInfo_AutoIncVersion` was absent from every project, so the
+  build number only ever moved when someone edited it by hand - which is why D_D102-D_D120 and the
+  installer had all been sitting at build 575 while D_D130 had reached 795: the number recorded who had
+  been edited, not what had been built. **Note the property name** - it is `VerInfo_AutoIncVersion`, not
+  `VerInfo_AutoIncBuild`; MSBuild's `AutoIncBuildNumber` target (in `CodeGear.Common.Targets`, wired into
+  `BuildDependsOn`) tests only the former, so the plausible-looking wrong name is silently inert. Verified
+  incrementing on successive command-line Win64 builds. Two side effects worth knowing: the task rewrites
+  the `.dproj` on every successful build (re-indenting it, so expect whitespace churn in diffs), and it
+  creates a per-configuration version block the first time a configuration is built. (2026-08-31) -
+  `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`
+
+### Fixed
+
+- **`OldPalette` resource/object/include search-path entries had never resolved.** All six IDE projects
+  carried the bare relative path `OldPalette` in `DCC_ResourcePath`, `DCC_ObjPath` and `DCC_IncludePath`,
+  which resolves against the `.dproj`'s own folder - `D_Dxxx\OldPalette` - and no such directory has
+  ever existed; the real one is `..\Source\OldPalette`. Every build emitted
+  `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
+  `D_D102`...`D_D130/DDevExtensions.dproj`
+
+- **The most-used prefix was being given the suffixed variable name.** Names were assigned while candidates
+  were generated, in dictionary order, so on the development machine the 499-use prefix became
+  `$(SOURCE_4)` while a 50-use one took `$(SOURCE)`. Names are now assigned at acceptance, in descending
+  order of value. Fixing that exposed a second defect: `UniqueVariableName` compared each candidate against
+  *every* candidate's provisional name - including its own - so every accepted variable picked up a
+  needless `_2`. It now compares only against already-accepted variables. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`
+
+- **The dialog's hint label rendered as mojibake** (`Sorter's backup history a<euro>" this tool...`). The
+  `.dfm` carried a raw UTF-8 em-dash, and DFMs have no BOM, so it was read as ANSI. Escaped as `#8212`;
+  the file is now pure ASCII. **Why it matters generally:** text DFMs in this repo must stay ASCII-safe -
+  non-ASCII belongs in `#nnnn` escapes. (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.dfm`
+
+- **`H2077 Value assigned to 'Failed' never used`** in the Compactor's Apply handler - the junction-failure
+  counter was incremented but never read, each failure already reporting itself in its own dialog. Removed.
+  (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.pas`
+
+### Known
+
+- `IDEUtils.ExpandDirMacros` reads neither IDE `Environment Variables` override key and lacks
+  `BDSCATALOGREPOSITORY`/`BDSCOMMONDIR`/`BDSUSERDIR`; worse, it *deletes* a macro it cannot resolve instead
+  of leaving it intact. The compactor therefore carries its own expander. Consequence for the existing
+  Sorter: a `$(BDSCatalogRepository)` entry expands to a bare `\...` remainder, fails `DirectoryExists` and
+  is wrongly flagged **invalid** - the `IsPathValid` "unexpanded macro, treat as valid" branch is
+  unreachable for it. Tracked separately.
+
+- Whether the IDE rewrites the Library key on shutdown is still unestablished. The Compactor writes directly,
+  as the Sorter already does, and refuses to Apply while the IDE's own Options dialog is open (that page
+  holds its own copy of the path and would commit it over any change). No deferred applier has been built.
+
+- The two IDE user-variable lists have already diverged on the development machine: `$(DUNITX)`,
+  `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)` exist only in the 32-bit list, so four shared library-path entries
+  do not resolve in the 64-bit IDE. The Compactor reports these; it does not repair them automatically.
+
+---
+
 ## 2026-07-13 - v3.21.10 - Fix 64-bit IDE editor AV / dead keyboard in Keybindings next-binding probe
 
 ### Fixed

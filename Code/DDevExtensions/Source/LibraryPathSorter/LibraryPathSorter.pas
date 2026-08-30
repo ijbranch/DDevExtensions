@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -23,40 +23,24 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.Menus, System.Win.Registry, System.Generics.Collections, System.Variants,
   ToolsAPI, FrmTreePages, PluginConfig, Main, SimpleXmlIntf, SimpleXmlImport,
-  IDEUtils, IDEHooks, ToolsAPIHelpers;
+  IDEUtils, IDEHooks, ToolsAPIHelpers,
+  PathCompactorCore;
 
 type
-  /// <summary>Identifies which Library-key value name a path operation targets.</summary>
-  TLibraryPathType = (
-    /// <summary>"Search Path" registry value (the Library Path).</summary>
-    lptSearchPath,
-    /// <summary>"Browsing Path" registry value.</summary>
-    lptBrowsingPath,
-    /// <summary>"Debug DCU Path" registry value.</summary>
-    lptDebugDCUPath,
-    /// <summary>"HPP Output Directory" registry value.</summary>
-    lptHPPOutputDirectory,
-    /// <summary>"Namespace Prefixes" registry value.</summary>
-    lptNamespacePrefixes,
-    /// <summary>"Package DCP Output" registry value.</summary>
-    lptPackageDCPOutput,
-    /// <summary>"Package DPL Output" registry value.</summary>
-    lptPackageDPLOutput,
-    /// <summary>"Translated Debug Library Path" registry value.</summary>
-    lptTranslatedDebugLibraryPath,
-    /// <summary>"Translated Library Path" registry value.</summary>
-    lptTranslatedLibraryPath,
-    /// <summary>"Translated Resource Path" registry value.</summary>
-    lptTranslatedResourcePath
-  );
+  /// <summary>
+  /// Identifies which Library-key value name a path operation targets.
+  /// Canonically declared in <c>PathCompactorCore</c> (which is RTL-only, so the
+  /// compactor's testable core can use it without pulling in ToolsAPI); aliased
+  /// here so existing callers keep compiling.
+  /// </summary>
+  TLibraryPathType = PathCompactorCore.TLibraryPathType;
 
-  /// <summary>Helper that exposes the registry value name and display name of a path-type value.</summary>
-  TLibraryPathTypeHelper = record helper for TLibraryPathType
-    /// <summary>Returns the registry value name corresponding to the path type.</summary>
-    function ToRegistryValueName: string;
-    /// <summary>Returns a user-facing display name for the path type.</summary>
-    function ToDisplayName: string;
-  end;
+  /// <summary>
+  /// Registry-value-name and display-name helper for <see cref="TLibraryPathType"/>.
+  /// Aliased from <c>PathCompactorCore</c> — a second helper declared for the same
+  /// type would not merge with the first, it would silently shadow it.
+  /// </summary>
+  TLibraryPathTypeHelper = PathCompactorCore.TLibraryPathTypeHelper;
 
   /// <summary>Snapshot of one path-type/platform value taken at a point in time.</summary>
   TPathBackup = record
@@ -178,45 +162,6 @@ implementation
 
 uses
   Vcl.Forms, Vcl.Controls, FrmLibraryPathSorter;
-
-const
-  PathTypeRegistryNames: array[TLibraryPathType] of string = (
-    'Search Path',
-    'Browsing Path',
-    'Debug DCU Path',
-    'HPP Output Directory',
-    'Namespace Prefixes',
-    'Package DCP Output',
-    'Package DPL Output',
-    'Translated Debug Library Path',
-    'Translated Library Path',
-    'Translated Resource Path'
-  );
-
-  PathTypeDisplayNames: array[TLibraryPathType] of string = (
-    'Library Path',
-    'Browsing Path',
-    'Debug DCU Path',
-    'HPP Output Directory',
-    'Namespace Prefixes',
-    'Package DCP Output',
-    'Package DPL Output',
-    'Translated Debug Library Path',
-    'Translated Library Path',
-    'Translated Resource Path'
-  );
-
-{ TLibraryPathTypeHelper }
-
-function TLibraryPathTypeHelper.ToRegistryValueName: string;
-begin
-  Result := PathTypeRegistryNames[Self];
-end;
-
-function TLibraryPathTypeHelper.ToDisplayName: string;
-begin
-  Result := PathTypeDisplayNames[Self];
-end;
 
 { TLibraryPathBackupManager }
 

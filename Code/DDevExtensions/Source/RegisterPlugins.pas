@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -82,6 +82,9 @@ uses
   {$IFDEF INCLUDE_LIBRARYPATHSORTER}
   LibraryPathSorter,
   {$ENDIF INCLUDE_LIBRARYPATHSORTER}
+  {$IFDEF INCLUDE_PATHCOMPACTOR}
+  PathCompactor,
+  {$ENDIF INCLUDE_PATHCOMPACTOR}
   {$IFDEF INCLUDE_PROJECTGROUPSORTER}
   ProjectGroupSorter,
   {$ENDIF INCLUDE_PROJECTGROUPSORTER}
@@ -242,6 +245,11 @@ begin
     {$IFDEF INCLUDE_LIBRARYPATHSORTER}
     if DisabledPlugins.IndexOf('LibraryPathSorter') = -1 then
       RegisterLateLoader(LibraryPathSorter.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_PATHCOMPACTOR}
+    if DisabledPlugins.IndexOf('PathCompactor') = -1 then
+      RegisterLateLoader(PathCompactor.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_PROJECTGROUPSORTER}

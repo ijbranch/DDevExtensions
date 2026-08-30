@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -129,8 +129,13 @@ uses
   CodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\CodeQualityAnalyzer.pas',
   FrmCodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas' {FormCodeQualityAnalyzer},
   FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame},
+  PathCompactorCore in '..\Source\PathCompactor\PathCompactorCore.pas',
   LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
   FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter},
+  PathCompactorEnvVars in '..\Source\PathCompactor\PathCompactorEnvVars.pas',
+  PathCompactorJunctions in '..\Source\PathCompactor\PathCompactorJunctions.pas',
+  PathCompactor in '..\Source\PathCompactor\PathCompactor.pas',
+  FrmPathCompactor in '..\Source\PathCompactor\FrmPathCompactor.pas' {FormPathCompactor},
   ProjectGroupSorterCore in '..\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   ProjectGroupSorter in '..\Source\ProjectGroupSorter\ProjectGroupSorter.pas',
   FileWatcher in '..\..\..\Shared\FileWatcher.pas',

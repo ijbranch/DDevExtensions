@@ -42,6 +42,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 | Kill dexplore.exe on Exit | ON | Automatic |
 | IDE Path Sorter | ON | Tools menu (below Build Tools...) |
 | Sort Projects in Group | ON | Tools menu (below IDE Path Sorter) |
+| IDE Path Compactor | ON | Tools menu (below IDE Path Sorter) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -119,6 +120,7 @@ Tools
         └── TODO/FIXME Aggregator...    (10. Review work items)
 
   ├── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
+  ├── IDE Path Compactor...             (Shorten the IDE library path strings)
   └── Sort Projects in Group...         (Alphabetise the open project group's members)
 ```
 
@@ -1964,6 +1966,60 @@ A confirmation prompt warns that the group will be reloaded. The command no-ops 
 - Create a manual backup before major changes with a descriptive name
 
 ---
+
+### IDE Path Compactor (New in 3.22.11)
+
+**Purpose:** Shortens the IDE's library path strings, rather than reordering them. Companion to the IDE Path Sorter.
+
+**Default:** ON
+
+**Location:** Tools > IDE Path Compactor... (below IDE Path Sorter...)
+
+#### Two different limits
+
+The tool reports **two** lengths before and after, because two separate limits exist and they are fixed by different means:
+
+| Limit | Measured on | Macros help? | Junctions help? |
+|---|---|---|---|
+| **Stored length** - the IDE's "path too long" warning | the raw registry string, macros unexpanded | **Yes** | Yes |
+| **Expanded length** - the `dcc32`/`dcc64` command line | the fully expanded string | **No** | **Yes** |
+
+If you are hitting the compiler command-line limit, macro substitution alone will not help you. The Summary tab shows both so the diagnosis is visible rather than guessed.
+
+#### What it does
+
+**Macro substitution.** Finds directory prefixes repeated across entries and proposes `$(NAME)` variables for them. Saving is scored against the **stored** text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and made longer - under a new variable. Where a candidate prefix equals an existing macro's value, that macro is reused rather than a duplicate invented.
+
+**Directory junctions.** For long physical prefixes, offers a short link (default `C:\CR`, editable). This is the only measure that shortens the expanded length. The IDE's own installation tree, the Windows directory and the Program Files roots are refused outright - junctioning those would relocate RAD Studio behind the back of GetIt, the installer and every repair operation.
+
+**Cleanup.** Reports, and optionally removes, three classes of entry.
+
+#### Cleanup is conservative by design
+
+All three removals are **opt-in and unticked by default**:
+
+- **Remove duplicate entries** - compares expanded, normalised paths case-insensitively, within one path set only. Stronger than the Path Sorter's own check, which compares raw text and so cannot see `$(BDS)\source` and the equivalent literal path as the same directory.
+- **Remove entries whose directory is missing** - platform-conditional folders are legitimately absent, and a folder on a disconnected share is not dead.
+- **Remove entries whose macro is undefined (dead)** - the macro resolves nowhere at all.
+
+Two safeguards apply to every removal:
+
+1. **Re-verification immediately before writing.** The analysis may be minutes old by the time you press Apply. A share can reconnect or an installer finish in between, so every entry marked for removal is re-tested - the file system re-probed, the macro re-resolved - and any that now passes is kept. You are told how many were rescued.
+2. **An explicit list before deletion.** Every entry to be removed is shown with its reason, and nothing is deleted until you confirm.
+
+#### Divergent macros are never removed
+
+RAD Studio keeps **two** independent user-variable lists - `Environment Variables` for the 32-bit IDE and `Environment Variables x64` for the 64-bit one - while the `Library\<Platform>` keys those macros resolve are shared between both IDEs.
+
+A macro that this IDE cannot resolve but the other one can is therefore **not dead**: the entry still works in the other IDE. Such entries are reported as **divergent** and are never removed. The correct repair is to define the variable in both lists, which is what Apply does for every variable the Compactor creates.
+
+#### Backup and rollback
+
+Every affected value is backed up before anything is written, into the **same history file the IDE Path Sorter uses** - so one Restore list covers both tools. Nothing is written until Apply.
+
+Apply is refused while the IDE's own Tools > Options dialog is open: that page holds its own in-memory copy of the library path and would write it back over your changes when committed.
+
+An IDE restart is required after Apply. The running IDE captured its environment block at launch and will not see new variables until it restarts.
 
 ### Release Compiler Unit Cache
 

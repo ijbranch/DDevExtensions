@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -23,7 +23,11 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Types, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
-  FrmBase, LibraryPathSorter;
+  // PathCompactorCore is required directly, not merely via LibraryPathSorter's
+  // alias: a type alias re-exports neither the enumeration's members
+  // (lptSearchPath and friends) nor the record helper that supplies
+  // ToDisplayName / ToRegistryValueName.
+  FrmBase, LibraryPathSorter, PathCompactorCore;
 
 type
   /// <summary>
