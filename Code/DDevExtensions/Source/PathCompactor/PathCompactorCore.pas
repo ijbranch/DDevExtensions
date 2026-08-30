@@ -878,7 +878,9 @@ begin
       Entries := FSets[SetIndex].Entries;
       for I := Low( Entries ) to High( Entries ) do
       begin
-        if Entries[I].Opaque or ( Entries[I].Expanded = '' ) then
+        // A dropped entry is not going to be written, so it neither votes for a
+        // candidate nor contributes to its saving.
+        if Entries[I].Opaque or Entries[I].Drop or ( Entries[I].Expanded = '' ) then
           Continue;
 
         Segments := Entries[I].Expanded.Split( [PathDelim] );
@@ -958,7 +960,7 @@ begin
     for I := Low( Entries ) to High( Entries ) do
     begin
       SetLength( Matches, 0 );
-      if not Entries[I].Opaque and ( Entries[I].Expanded <> '' ) then
+      if not Entries[I].Opaque and not Entries[I].Drop and ( Entries[I].Expanded <> '' ) then
         for K := Low( FCandidates ) to High( FCandidates ) do
           if StartsWithSegment( Entries[I].Expanded, FCandidates[K].Prefix ) then
           begin
@@ -1026,8 +1028,12 @@ begin
   begin
     Entries := FSets[SetIndex].Entries;
     for I := Low( Entries ) to High( Entries ) do
+    begin
+      if Entries[I].Drop then
+        Continue;
       Inc( Result, StoredLengthUnder( Entries[I], FAccepted ) -
                    StoredLengthUnder( Entries[I], Trial ) );
+    end;
   end;
 end;
 
@@ -1084,7 +1090,7 @@ begin
     for I := Low( Entries ) to High( Entries ) do
     begin
       Entries[I].NewRaw := '';
-      if Entries[I].Opaque then
+      if Entries[I].Opaque or Entries[I].Drop then
         Continue;
 
       BestMatch := -1;
@@ -1221,10 +1227,16 @@ procedure TPathCompactorAnalysis.Analyse;
 begin
   ExpandEntries;
   DetectDuplicates;
+
+  // Hygiene BEFORE candidate selection. An entry that is about to be removed
+  // must not vote for a variable: doing so can define a variable whose every
+  // user then disappears, and it overstates the saving by counting characters
+  // that were never going to be written.
+  ApplyHygiene;
+
   GenerateCandidates;
   SelectVariables;
   RewriteEntries;
-  ApplyHygiene;
 end;
 
 function TPathCompactorAnalysis.AcceptedVariables: TArray<TVarCandidate>;

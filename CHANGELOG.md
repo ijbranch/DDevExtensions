@@ -39,7 +39,7 @@ This file is the sole source and record of all project changes for DDevExtension
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
   silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (20 tests) covering the compactor core.** Includes the regression
+- **DUnitX fixture `TTestPathCompactor` (21 tests) covering the compactor core.** Includes the regression
   test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
   of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
   and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into
@@ -124,6 +124,15 @@ This file is the sole source and record of all project changes for DDevExtension
   `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
   `D_D102`...`D_D130/DDevExtensions.dproj`
 
+- **Entries queued for removal were still voting for macro variables.** `Analyse` ran hygiene *after*
+  candidate generation and selection, so an entry about to be deleted still counted toward a prefix's
+  occurrence tally and its saving. **Why it matters:** a variable could be defined whose every user then
+  disappeared - leaving an orphan in both IDE variable lists - and the reported saving counted characters
+  that were never going to be written. Hygiene now runs before candidate generation, and dropped entries
+  are excluded from the tally, from match records, from incremental scoring and from rewriting. Covered by
+  a test that fails if the ordering is put back. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`
+
 - **The most-used prefix was being given the suffixed variable name.** Names were assigned while candidates
   were generated, in dictionary order, so on the development machine the 499-use prefix became
   `$(SOURCE_4)` while a 50-use one took `$(SOURCE)`. Names are now assigned at acceptance, in descending
@@ -150,9 +159,16 @@ This file is the sole source and record of all project changes for DDevExtension
   is wrongly flagged **invalid** - the `IsPathValid` "unexpanded macro, treat as valid" branch is
   unreachable for it. Tracked separately.
 
-- Whether the IDE rewrites the Library key on shutdown is still unestablished. The Compactor writes directly,
-  as the Sorter already does, and refuses to Apply while the IDE's own Options dialog is open (that page
-  holds its own copy of the path and would commit it over any change). No deferred applier has been built.
+- **Resolved on first live use (2026-08-31):** the IDE does **not** rewrite the Library key on shutdown.
+  A compaction was applied, the IDE closed and reopened, and the rewritten paths and both variable lists
+  survived intact; project builds succeeded against them. No deferred applier is needed. First live run
+  over 25 path sets: 31,428 -> 22,413 stored characters (28.7%), 952 -> 873 entries (the 79 removed being
+  exactly the missing-directory references), 12 variables created in both IDE lists, none orphaned, none
+  modified, and nothing written to the Windows user environment.
+
+- ~~Whether the IDE rewrites the Library key on shutdown is still unestablished.~~ Answered above. The
+  Compactor writes directly, as the Sorter already does, and still refuses to Apply while the IDE's own
+  Options dialog is open - that page holds its own copy of the path and would commit it over any change.
 
 - The two IDE user-variable lists have already diverged on the development machine: `$(DUNITX)`,
   `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)` exist only in the 32-bit list, so four shared library-path entries

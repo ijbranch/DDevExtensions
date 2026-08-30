@@ -113,14 +113,14 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.11.799;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-    <VerInfo_Build>799</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.11.800;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+    <VerInfo_Build>800</VerInfo_Build>
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     <VerInfo_Release>11</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-    <VerInfo_Build>588</VerInfo_Build>
-    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=1.0.0.588;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <VerInfo_Build>589</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=1.0.0.589;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2)'!=''">
     <DCC_DcuOutput>lib\debug</DCC_DcuOutput>

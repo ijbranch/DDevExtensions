@@ -81,6 +81,9 @@ type
     /// <summary>Revalidation rescues an entry whose macro resolves by the time Apply runs.</summary>
     [Test]
     procedure TestRevalidateRescuesResolvedMacro;
+    /// <summary>An entry that will be removed does not vote for a macro variable.</summary>
+    [Test]
+    procedure TestDroppedEntriesDoNotVoteForVariables;
     /// <summary>Analyse then rewrite then expand yields the original expanded set.</summary>
     [Test]
     procedure TestRoundTripInvariant;
@@ -714,6 +717,42 @@ begin
     Rescued := Analysis.RevalidateDrops;
     Assert.AreEqual( 1, Rescued, 'the entry should have been rescued' );
     Assert.AreEqual( 0, Analysis.DropCount, 'nothing should remain marked' );
+  finally
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestDroppedEntriesDoNotVoteForVariables;
+var
+  Macros: TStringList;
+  Analysis: TPathCompactorAnalysis;
+  Vars: TArray<TVarCandidate>;
+  I: Integer;
+begin
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  try
+    // Only ONE surviving entry sits under this prefix; the other two are exact
+    // duplicates that hygiene will drop. Before hygiene ran ahead of candidate
+    // selection, the prefix scored three uses and won a variable whose users
+    // then vanished - an orphaned variable and an overstated saving.
+    Analysis.RemoveDuplicates := True;
+    Analysis.MinOccurrences := 2;
+    Analysis.MinNetSaving := 5;
+    Analysis.AddPathSet( 'Win64', lptSearchPath,
+      'D:\Vendor\ComponentSuite\Delphi13\Lib\Alpha;' +
+      'D:\Vendor\ComponentSuite\Delphi13\Lib\Alpha;' +
+      'D:\Vendor\ComponentSuite\Delphi13\Lib\Alpha;' +
+      'D:\Elsewhere\Thing' );
+    Analysis.Analyse;
+
+    Assert.AreEqual( 2, Analysis.DropCount, 'the two duplicates should be dropped' );
+
+    Vars := Analysis.AcceptedVariables;
+    for I := Low( Vars ) to High( Vars ) do
+      Assert.IsFalse( ContainsText( Vars[I].Prefix, 'ComponentSuite' ),
+        'a prefix used by only one surviving entry must not become a variable' );
   finally
     Analysis.Free;
     Macros.Free;
