@@ -131,6 +131,14 @@ This file is the sole source and record of all project changes for DDevExtension
   substitution behaviour is a wider, riskier change than this bug warrants. (2026-08-31) -
   `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`
 
+  **Confirmed in the live IDE (2026-08-31):** the Sorter now shows no entries marked invalid. That matches
+  the prediction from running both expanders side by side against the live registry - one spuriously blue
+  entry under the old behaviour, none under the new. Worth recording honestly, though, that the check was
+  less discriminating than intended: by the time it was made the underlying data had also been repaired -
+  the 79 missing directories removed, the six divergent variables copied into the x64 list, and
+  `$(LangDir)` reclassified as a build-time macro - so the condition the fix addresses can no longer arise
+  on that machine. It confirms the absence of false positives rather than exercising the fix directly.
+
 ### Changed
 
 - **`BdsRootDir`, `BuildMacroTable` and `BuildReservedNames` moved from `PathCompactor` to
