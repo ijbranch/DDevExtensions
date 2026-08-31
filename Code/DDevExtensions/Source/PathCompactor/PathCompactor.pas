@@ -251,6 +251,10 @@ begin
     PathCompactorPlugin := TPathCompactorPlugin.Create
   else
   begin
+    // Close the dialog BEFORE freeing the plugin. It is modeless and owned by
+    // Application, so it outlives us; unloading the package with the window
+    // still up would leave a live window running unloaded code.
+    TFormPathCompactor.CloseInstance;
     PathCompactorPlugin.Free;
     PathCompactorPlugin := nil;
   end;

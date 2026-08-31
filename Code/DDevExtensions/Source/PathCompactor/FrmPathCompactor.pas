@@ -202,6 +202,13 @@ type
   public
     /// <summary>Shows the dialog modelessly, reusing the existing instance if there is one.</summary>
     class procedure Execute;
+    /// <summary>
+    /// Destroys the open dialog, if any. Called when the design-time package is
+    /// unloaded: the form is modeless and owned by Application, so it outlives
+    /// the plugin, and leaving it standing means its code is unloaded from under
+    /// a live window.
+    /// </summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -240,6 +247,17 @@ begin
   var Instance := TFormPathCompactor.Create( Application );
   FormPathCompactorInstance := Instance;
   FormPathCompactorInstance.Show;
+end;
+
+class procedure TFormPathCompactor.CloseInstance;
+var
+  Instance: TFormPathCompactor;
+begin
+  // Clear the singleton first: FormClose would otherwise try to clear it again
+  // while the form is already being destroyed.
+  Instance := FormPathCompactorInstance;
+  FormPathCompactorInstance := nil;
+  Instance.Free;
 end;
 
 procedure TFormPathCompactor.FormCreate( Sender: TObject );

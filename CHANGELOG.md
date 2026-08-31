@@ -4,6 +4,40 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-08-31 - v3.22.13 - Close the Sorter/Compactor dialogs when the package unloads
+
+### Fixed
+
+- **Unloading the design-time package left the Path Sorter and Path Compactor dialogs standing, with
+  their code unloaded from under them.** `InitPlugin( Unload )` freed the plugin object but never closed
+  the dialog. Both are modeless, shown with `Show` and owned by `Application`, so they outlive the plugin
+  that created them; unloading the package then discards the form's code while its window is still alive,
+  and the next message it receives runs freed memory. The Sorter has carried this since 3.8.0 - the
+  Compactor merely inherited the pattern. Both `InitPlugin` routines now call a new
+  `TForm...CloseInstance` before freeing the plugin, which clears the singleton first so `FormClose`
+  cannot race it. **Why it mattered more for the Sorter:** its form reaches back through
+  `LibraryPathSorterPlugin.PathHandler`, which is about to be nil. (2026-08-31) -
+  `Source/LibraryPathSorter/LibraryPathSorter.pas`, `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`,
+  `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.pas`
+
+  This closes the last unverified item from the Path Compactor design brief (§13.5, design-time package
+  unload/reload cleanliness). The audit it prompted found the defect in the *existing* Sorter as well.
+
+### Changed
+
+- Version bumped 3.22.12 -> 3.22.13 across all indicators, with `Version.res` regenerated. (2026-08-31)
+
+### Known
+
+- **Build order matters for Win32, and the failure is misleading.** Building `D_D130` for **Win64**
+  rebuilds `CompileInterceptorW` and removes the Win32 `CompileInterceptorW.dll`; the next Win32 build then
+  fails in its *pre-build event* - `The system cannot find the file specified` - with **zero compiler
+  diagnostics**, which reads as a broken project rather than a missing artefact. The working order is:
+  build `CompileInterceptorW` Win32, then `D_D130` Win32. Both platforms write to the same
+  `CompileInterceptor\Bin` folder, which is the underlying cause.
+
+---
+
 ## 2026-08-31 - v3.22.12 - Fix Path Sorter marking macro paths as invalid
 
 ### Fixed

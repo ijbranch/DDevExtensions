@@ -595,6 +595,10 @@ begin
     LibraryPathSorterPlugin := TLibraryPathSorterPlugin.Create
   else
   begin
+    // Close the dialog BEFORE freeing the plugin. It is modeless and owned by
+    // Application, so it outlives us; and it reaches back through
+    // LibraryPathSorterPlugin.PathHandler, which is about to become nil.
+    TFormLibraryPathSorter.CloseInstance;
     LibraryPathSorterPlugin.Free;
     LibraryPathSorterPlugin := nil;
   end;

@@ -62,7 +62,7 @@
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     <VerInfo_DLL>true</VerInfo_DLL>
     <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.12.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.13.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
     <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_Locale>1033</VerInfo_Locale>
@@ -90,10 +90,10 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <Debugger_HostApplication>$(BDS)\Bin\bds.exe</Debugger_HostApplication>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.12.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.13.575;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
     <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
-    <VerInfo_Release>12</VerInfo_Release>
+    <VerInfo_Release>13</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Base_Win64)'!=''">
     <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
@@ -113,14 +113,14 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.12.804;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-    <VerInfo_Build>804</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.13.805;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+    <VerInfo_Build>805</VerInfo_Build>
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
-    <VerInfo_Release>12</VerInfo_Release>
+    <VerInfo_Release>13</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-    <VerInfo_Build>594</VerInfo_Build>
-    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=1.0.0.594;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    <VerInfo_Build>596</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=1.0.0.596;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2)'!=''">
     <DCC_DcuOutput>lib\debug</DCC_DcuOutput>
@@ -138,11 +138,11 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.12.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.13.575;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
     <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
-    <VerInfo_Release>12</VerInfo_Release>
+    <VerInfo_Release>13</VerInfo_Release>
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
   </PropertyGroup>
   <ProjectExtensions>

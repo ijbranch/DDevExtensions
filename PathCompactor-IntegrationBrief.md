@@ -731,7 +731,11 @@ interaction misbehaves, which is exactly what fixtures are worst at catching.
 
 ### Still open
 
-- **§13.5** — design-time package unload/reload cleanliness is untested.
+- ~~**§13.5** - design-time package unload/reload cleanliness is untested.~~ **Closed 2026-08-31.**
+  The audit found a real defect, and not only in the Compactor: `InitPlugin( Unload )` freed the
+  plugin but left the modeless dialog standing, so unloading the package discarded the form's code
+  from under a live window. The Path Sorter had carried the same defect since 3.8.0. Both now close
+  their dialog before the plugin is freed. Fixed in v3.22.13.
 - ~~The two IDE variable lists remain diverged on the development machine.~~ Repaired
   2026-08-31: the six variables present only in the 32-bit list were copied into the x64
   list, and the tool now reports 0 divergent macros. The divergence pre-dated the

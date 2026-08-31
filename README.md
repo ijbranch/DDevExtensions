@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.22.13 fixes both the **IDE Path Sorter** and the **IDE Path Compactor** leaving their dialog open when the design-time package is unloaded. Each dialog is modeless and owned by the application, so it outlived the plugin that created it; unloading the package discarded the form's code while its window was still alive. Both now close their dialog before the plugin is freed. The Sorter had carried this since 3.8.0.
+
 Version 3.22.12 fixes the **IDE Path Sorter** marking valid paths as invalid. Any entry whose macro could not be resolved - `$(BDSCatalogRepository)`, or any variable defined in the IDE's own Environment Variables list - was drawn blue as a missing directory, because `IDEUtils.ExpandDirMacros` replaces an unresolvable macro with an empty string rather than leaving it in place. The Sorter now uses the Path Compactor's expander, which leaves such a macro intact so the entry is correctly reported as unverifiable rather than missing.
 
 Version 3.22.11 adds the **IDE Path Compactor** - a companion to the IDE Path Sorter that shortens the IDE's library path strings rather than reordering them. Tools > IDE Path Compactor analyses every selected platform and path type, proposes `$(NAME)` macro substitutions for directory prefixes that repeat across entries, offers directory junctions for over-long third-party prefixes, and reports duplicate, missing and undefined-macro entries. It reports **two** lengths before and after, because two different limits exist: the *stored* length is what triggers the IDE's "path too long" warning and is shortened by macros, while the *expanded* length is what constrains the `dcc32`/`dcc64` command line and is shortened only by a junction. Saving is scored against the stored text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and longer - under a newly invented variable. Accepted variables are written to both the 32-bit and 64-bit IDE macro-override keys, since the library path they resolve is shared between the two IDEs while those variable lists are not. Junction detection refuses the IDE's own installation tree. Nothing is written until Apply, every affected value is backed up first, and rollback uses the IDE Path Sorter's existing backup history. See Help.md for details.
@@ -839,4 +841,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.22.12 – 31 August 2026*
+*Version: 3.22.13 – 31 August 2026*

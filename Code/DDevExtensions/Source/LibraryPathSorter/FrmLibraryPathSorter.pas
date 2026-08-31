@@ -259,6 +259,13 @@ type
   public
     /// <summary>Shows (or activates) the singleton sorter dialog.</summary>
     class procedure Execute;
+    /// <summary>
+    /// Destroys the open dialog, if any. Called when the design-time package is
+    /// unloaded: the form is modeless and owned by Application, so it outlives
+    /// the plugin, and leaving it standing means its code is unloaded from under
+    /// a live window.
+    /// </summary>
+    class procedure CloseInstance;
   end;
 
 /// <summary>Singleton instance of the sorter dialog (nil while not shown).</summary>
@@ -274,6 +281,17 @@ uses
   // BuildMacroTable lives here: the Sorter needs the same IDE macro table the
   // Compactor uses, so that validity checking resolves what the IDE resolves.
   PathCompactorEnvVars;
+
+class procedure TFormLibraryPathSorter.CloseInstance;
+var
+  Instance: TFormLibraryPathSorter;
+begin
+  // Clear the singleton first: FormClose would otherwise try to clear it again
+  // while the form is already being destroyed.
+  Instance := FormLibraryPathSorterInstance;
+  FormLibraryPathSorterInstance := nil;
+  Instance.Free;
+end;
 
 class procedure TFormLibraryPathSorter.Execute;
 begin
