@@ -669,14 +669,28 @@ reported saving counted characters that were never going to be written. Hygiene 
 before candidate generation and dropped entries are excluded from tallying, matching,
 scoring and rewriting; a mutation-checked test covers it.
 
-A second pass would save a further 1,778 characters (8.4%).
+### Second pass (2026-08-31)
+
+Applied with all three cleanup options ticked. Result: **0 to remove** - the first pass
+had already taken the 79 missing directories, and the four remaining unresolvable macros
+are divergent, so protected. Cumulative across both passes: **31,428 -> 20,635 stored
+characters (34.3% saved)**, 24 variables in both IDE lists, none modified, none deleted.
+
+The run also had the *Windows user environment* box ticked, which wrote 12 variables to
+`HKCU\Environment`. Those were subsequently removed by hand: they achieve nothing
+(command-line MSBuild does not read the IDE library path) and several of the generated
+names - `CODE`, `COMMON`, `SRC`, `SOAP`, `CONTRIB`, `INDY` - are far too generic to sit in a
+user-global environment where every process inherits them. The option remains available but
+should stay off unless a `.dproj` is being hand-edited to use one of these macros.
+**Worth considering:** warn in the dialog when a proposed name is a common generic token
+and that option is ticked.
 
 ### Still open
 
 - **§13.5** — design-time package unload/reload cleanliness is untested.
 - The two IDE variable lists remain diverged on the development machine; the tool
   reports it (4 entries, all divergent rather than dead) but does not repair it.
-- **Variable naming is functional but occasionally ugly.** A prefix ending in a version
-  segment yields `$(V37_0)` (from `...\\Delphi 13 Florence\37.0`), and a long leaf is
-  truncated mid-word at 16 characters (`$(IPWORKS_2024_DEL)`). The platform/config-token
-  widening rule of §6.5 could reasonably be extended to purely numeric segments.
+- Variable names can still run long where a collision forces widening
+  (`$(EUREKALOG_7_SOURCE)`, `$(INFOPOWER4KFLORENCE_LIB)`). That is the intended trade -
+  a meaningful long name beats a short meaningless one - but a smarter rule might drop
+  noise segments such as `packages` or `lib` when folding in a parent.

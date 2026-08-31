@@ -39,7 +39,7 @@ This file is the sole source and record of all project changes for DDevExtension
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
   silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (21 tests) covering the compactor core.** Includes the regression
+- **DUnitX fixture `TTestPathCompactor` (23 tests) covering the compactor core.** Includes the regression
   test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
   of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
   and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into
@@ -123,6 +123,22 @@ This file is the sole source and record of all project changes for DDevExtension
   ever existed; the real one is `..\Source\OldPalette`. Every build emitted
   `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
   `D_D102`...`D_D130/DDevExtensions.dproj`
+
+- **A bare version folder became a meaningless variable name, and identical path tails collided into
+  `_2`.** `...\Delphi 13 Florence\37.0` yielded `$(V37_0)` - the sanitiser prefixing `V` because the name
+  could not start with a digit - and a second library ending in the same `...\Florence\37.0` tail took
+  `$(V37_0_2)`, which says nothing about which library it is. Version-like segments (digits and separators
+  only) now trigger the same widening as platform and config tokens, and a name collision is resolved by
+  folding in another parent segment before any numeric suffix is considered. Measured on the development
+  machine, the next pass now proposes `$(TMS_VCL_UIPACK)`, `$(RBUILDER_LIB)` and `$(EUREKALOG_7_SOURCE)`
+  where it previously offered `$(LIB)`, `$(LIB_2)` and `$(SOURCE_3)`. Widened names may run to 28
+  characters rather than 16, since a meaningful long name beats a short meaningless one. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`
+
+- **The dialog left pre-Apply figures on screen after a successful Apply.** The grid still showed the
+  before/after of a change that had already been made, while Apply greyed itself out - which reads as a
+  fault rather than a completed action. Apply now re-runs the analysis against the registry as it then
+  stands, and says so. (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.pas`
 
 - **Entries queued for removal were still voting for macro variables.** `Analyse` ran hygiene *after*
   candidate generation and selection, so an entry about to be deleted still counted toward a prefix's

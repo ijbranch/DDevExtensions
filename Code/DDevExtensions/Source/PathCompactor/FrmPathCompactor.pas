@@ -793,7 +793,7 @@ var
   Vars: TArray<TVarCandidate>;
   PathSet: TPathSet;
   Description, Error, DropList: string;
-  Created, Rescued: Integer;
+  Created, Rescued, SetCount: Integer;
   Drops: TArray<string>;
 begin
   if FAnalysis = nil then
@@ -934,13 +934,21 @@ begin
     Screen.Cursor := crDefault;
   end;
 
+  SetCount := FAnalysis.Sets.Count;
+
   MessageDlg( Format(
     'Compaction applied.'#13#10#13#10 +
     '%d path sets rewritten, %d junctions created.'#13#10#13#10 +
-    'Restart the IDE for the new library paths and variables to take effect.',
-    [FAnalysis.Sets.Count, Created] ), mtInformation, [mbOK], 0 );
+    'Restart the IDE for the new library paths and variables to take effect.'#13#10#13#10 +
+    'The results below have been refreshed against the registry as it now ' +
+    'stands, so they no longer describe the change you just applied.',
+    [SetCount, Created] ), mtInformation, [mbOK], 0 );
 
-  btnApply.Enabled := False;
+  // Re-analyse rather than just disabling Apply. Leaving the pre-Apply figures
+  // on screen invites the reader to believe they still describe the registry,
+  // and makes the greyed-out Apply look like a fault rather than a completed
+  // action. A fresh pass shows what (if anything) is still worth doing.
+  btnAnalyseClick( Sender );
 end;
 
 end.

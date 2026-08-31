@@ -81,6 +81,12 @@ type
     /// <summary>Revalidation rescues an entry whose macro resolves by the time Apply runs.</summary>
     [Test]
     procedure TestRevalidateRescuesResolvedMacro;
+    /// <summary>A bare version folder never becomes a variable name on its own.</summary>
+    [Test]
+    procedure TestVersionSegmentNaming;
+    /// <summary>Two paths with identical tails get distinguishing names, not X and X_2.</summary>
+    [Test]
+    procedure TestCollisionWidensRatherThanSuffixes;
     /// <summary>An entry that will be removed does not vote for a macro variable.</summary>
     [Test]
     procedure TestDroppedEntriesDoNotVoteForVariables;
@@ -717,6 +723,66 @@ begin
     Rescued := Analysis.RevalidateDrops;
     Assert.AreEqual( 1, Rescued, 'the entry should have been rescued' );
     Assert.AreEqual( 0, Analysis.DropCount, 'nothing should remain marked' );
+  finally
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestVersionSegmentNaming;
+begin
+  // A bare version folder names nothing, so the rule widens to its parent -
+  // otherwise the sanitiser produces the meaningless $(V37_0).
+  Assert.AreEqual( 'FLORENCE_37_0',
+    DeriveVariableName( 'D:\Libs\Florence\37.0' ) );
+  Assert.AreEqual( 'BONUSKSVC_8_0_2',
+    DeriveVariableName( 'D:\Vendor\BonusKSVC\8.0.2' ) );
+  // Digits alone are version-like; a name with letters is not.
+  Assert.IsTrue( IsVersionLikeSegment( '37.0' ) );
+  Assert.IsTrue( IsVersionLikeSegment( '13' ) );
+  Assert.IsFalse( IsVersionLikeSegment( 'd13' ) );
+  Assert.IsFalse( IsVersionLikeSegment( 'Florence' ) );
+end;
+
+procedure TTestPathCompactor.TestCollisionWidensRatherThanSuffixes;
+var
+  Macros: TStringList;
+  Analysis: TPathCompactorAnalysis;
+  Vars: TArray<TVarCandidate>;
+  I: Integer;
+  Suffixed: Integer;
+begin
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  try
+    Analysis.MinNetSaving := 5;
+    // Two different libraries whose paths end identically. Naming from the tail
+    // alone gives both the same name; the second would become X_2, which says
+    // nothing about which library it is.
+    Analysis.AddPathSet( 'Win64', lptSearchPath,
+      'D:\gllOmniThreadLibrary\packages\Florence\37.0\Alpha;' +
+      'D:\gllOmniThreadLibrary\packages\Florence\37.0\Beta;' +
+      'D:\gllOmniThreadLibrary\packages\Florence\37.0\Gamma;' +
+      'D:\gllZylIdleTimer\packages\Florence\37.0\Delta;' +
+      'D:\gllZylIdleTimer\packages\Florence\37.0\Epsilon;' +
+      'D:\gllZylIdleTimer\packages\Florence\37.0\Zeta' );
+    Analysis.Analyse;
+
+    Vars := Analysis.AcceptedVariables;
+    Assert.IsTrue( Length( Vars ) >= 2, 'expected a variable for each library' );
+
+    Suffixed := 0;
+    for I := Low( Vars ) to High( Vars ) do
+      if EndsText( '_2', Vars[I].Name ) or EndsText( '_3', Vars[I].Name ) then
+        Inc( Suffixed );
+
+    Assert.AreEqual( 0, Suffixed,
+      'a collision should widen to a distinguishing name, not append a suffix' );
+
+    // Every accepted name must still be unique.
+    for I := Low( Vars ) to High( Vars ) do
+      for var J := I + 1 to High( Vars ) do
+        Assert.AreNotEqual( Vars[I].Name, Vars[J].Name, 'names must be unique' );
   finally
     Analysis.Free;
     Macros.Free;

@@ -326,11 +326,26 @@ function StartsWithSegment( const APath, APrefix: string ): Boolean;
 function IsPlatformOrConfigToken( const ASegment: string ): Boolean;
 
 /// <summary>
-/// Derives a candidate variable name from APrefix's trailing segment, widening
-/// to earlier segments while the trailing one is a platform or config token so
-/// that <c>...\Dcp\Win32</c> yields <c>DCP_WIN32</c> rather than <c>WIN32</c>.
+/// True when ASegment is nothing but digits and separators — a version folder
+/// such as <c>37.0</c>, <c>13</c> or <c>8.0.2</c>. Such a segment names nothing
+/// on its own and must not become a variable name.
 /// </summary>
-function DeriveVariableName( const APrefix: string ): string;
+function IsVersionLikeSegment( const ASegment: string ): Boolean;
+
+/// <summary>
+/// Derives a candidate variable name from APrefix's trailing segment, widening
+/// to earlier segments while the trailing one is a platform token, a config
+/// token or a bare version number — so <c>...\Dcp\Win32</c> yields
+/// <c>DCP_WIN32</c> rather than <c>WIN32</c>, and <c>...\Florence\37.0</c>
+/// does not yield <c>V37_0</c>.
+/// </summary>
+/// <param name="AExtraSegments">
+/// Additional parent segments to fold in beyond the automatic widening. Used to
+/// resolve a collision with a meaningful name rather than a <c>_2</c> suffix.
+/// </param>
+/// <param name="AMaxLength">Longest name to emit; widened names are allowed to run longer.</param>
+function DeriveVariableName( const APrefix: string; AExtraSegments: Integer = 0;
+  AMaxLength: Integer = 0 ): string;
 
 /// <summary>Splits a semicolon-separated path value, trimming entries and discarding empty ones.</summary>
 procedure SplitPathValue( AList: TStrings; const AValue: string );
@@ -390,6 +405,12 @@ const
 
   /// <summary>Longest generated variable name.</summary>
   MaxVariableNameLength = 16;
+
+  /// <summary>Longest name allowed once segments have been folded in to break a collision.</summary>
+  MaxWidenedNameLength = 28;
+
+  /// <summary>How many parent segments may be folded in before falling back to a numeric suffix.</summary>
+  MaxWidenSteps = 3;
 
 { TLibraryPathTypeHelper }
 
@@ -483,10 +504,32 @@ begin
   Result := False;
 end;
 
-function DeriveVariableName( const APrefix: string ): string;
+function IsVersionLikeSegment( const ASegment: string ): Boolean;
+var
+  I: Integer;
+  HasDigit: Boolean;
+begin
+  Result := False;
+  HasDigit := False;
+  if ASegment = '' then
+    Exit;
+
+  for I := 1 to Length( ASegment ) do
+  begin
+    if CharInSet( ASegment[I], ['0'..'9'] ) then
+      HasDigit := True
+    else if not CharInSet( ASegment[I], ['.', '-', '_', ' '] ) then
+      Exit;
+  end;
+
+  Result := HasDigit;
+end;
+
+function DeriveVariableName( const APrefix: string; AExtraSegments: Integer;
+  AMaxLength: Integer ): string;
 var
   Segments: TArray<string>;
-  Last, First, I, J: Integer;
+  Last, First, I, J, Limit: Integer;
   Raw: string;
   Ch: Char;
 begin
@@ -498,11 +541,20 @@ begin
   if Last < 0 then
     Exit( 'PATH' );
 
-  // Widen while the trailing segment is a platform or config token, so that
-  // "...\Dcp\Win32" gives DCP_WIN32 rather than the misleading WIN32.
+  // Widen while the trailing segment names nothing on its own: a platform or
+  // config token ("...\Dcp\Win32" -> DCP_WIN32, not WIN32) or a bare version
+  // folder ("...\Florence\37.0" -> FLORENCE_37_0, not V37_0).
   First := Last;
-  while ( First > 0 ) and IsPlatformOrConfigToken( Segments[First] ) do
+  while ( First > 0 ) and
+        ( IsPlatformOrConfigToken( Segments[First] ) or
+          IsVersionLikeSegment( Segments[First] ) ) do
     Dec( First );
+
+  // Fold in further parents on request, to break a collision with a name that
+  // actually distinguishes the two paths instead of a bare _2.
+  for I := 1 to AExtraSegments do
+    if First > 1 then
+      Dec( First );
 
   Raw := '';
   for I := First to Last do
@@ -526,8 +578,19 @@ begin
   if ( Result = '' ) or not CharInSet( Result[1], ['A'..'Z'] ) then
     Result := 'V' + Result;
 
-  if Length( Result ) > MaxVariableNameLength then
-    SetLength( Result, MaxVariableNameLength );
+  Limit := AMaxLength;
+  if Limit <= 0 then
+    if AExtraSegments > 0 then
+      Limit := MaxWidenedNameLength
+    else
+      Limit := MaxVariableNameLength;
+
+  if Length( Result ) > Limit then
+    SetLength( Result, Limit );
+
+  // Never end on a separator left behind by truncation.
+  while ( Result <> '' ) and ( Result[Length( Result )] = '_' ) do
+    SetLength( Result, Length( Result ) - 1 );
 end;
 
 procedure SplitPathValue( AList: TStrings; const AValue: string );
@@ -1184,10 +1247,41 @@ end;
 function TPathCompactorAnalysis.UniqueVariableName( const APrefix: string ): string;
 var
   Base: string;
-  Suffix, I: Integer;
+  Suffix, I, Widen: Integer;
   Taken: Boolean;
+
+  function NameIsTaken( const AName: string ): Boolean;
+  var
+    K: Integer;
+  begin
+    Result := True;
+
+    // Never shadow an IDE built-in or a process environment variable.
+    if FReservedNames.IndexOf( AName ) >= 0 then
+      Exit;
+    // Nor an existing IDE variable holding a different value.
+    if FMacros.IndexOfName( AName ) >= 0 then
+      Exit;
+    // Only ALREADY-ACCEPTED variables can genuinely collide.
+    for K := Low( FAccepted ) to High( FAccepted ) do
+      if SameText( FCandidates[FAccepted[K]].Name, AName ) then
+        Exit;
+
+    Result := False;
+  end;
+
 begin
-  Base := DeriveVariableName( APrefix );
+  // Prefer a name that distinguishes the path: fold in another parent segment
+  // before resorting to a numeric suffix, so two libraries that both end in
+  // "...\Delphi 13 Florence\37.0" get their own names rather than X and X_2.
+  for Widen := 0 to MaxWidenSteps do
+  begin
+    Result := DeriveVariableName( APrefix, Widen );
+    if not NameIsTaken( Result ) then
+      Exit;
+  end;
+
+  Base := DeriveVariableName( APrefix, MaxWidenSteps );
   Result := Base;
   Suffix := 1;
 
