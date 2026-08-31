@@ -4,6 +4,50 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-08-31 - v3.22.12 - Fix Path Sorter marking macro paths as invalid
+
+### Fixed
+
+- **The IDE Path Sorter drew every entry with an unresolvable macro as invalid (blue).** A
+  `$(BDSCatalogRepository)\Lib` entry was reported as a missing directory even though the directory was
+  perfectly present. **Why:** `IDEUtils.ExpandDirMacros` substitutes an **empty string** for any macro it
+  cannot resolve rather than leaving the macro in place, so that entry reached `DirectoryExists` as
+  `\Lib`, which fails. The `IsPathValid` branch that exists precisely for this case - "unexpanded macro
+  remains, cannot verify, treat as valid" - tested for a surviving `$(` and could therefore never be
+  reached. Compounding it, `ExpandDirMacros` reads neither of the IDE's `Environment Variables` keys, so
+  **every** user-defined macro met the same fate: on the development machine that included `$(DUNITX)`,
+  `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)`.
+
+  The Sorter now expands with `PathCompactorCore.ExpandLibraryMacros` against a proper macro table - this
+  IDE's user overrides, the IDE built-ins, then the process environment - which leaves an unresolvable
+  macro intact and so makes the "cannot verify" branch reachable and correct. `IDEUtils.ExpandDirMacros`
+  itself is deliberately **not** modified: it is shared by several other features and changing its
+  substitution behaviour is a wider, riskier change than this bug warrants. (2026-08-31) -
+  `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`
+
+### Changed
+
+- **`BdsRootDir`, `BuildMacroTable` and `BuildReservedNames` moved from `PathCompactor` to
+  `PathCompactorEnvVars`.** **Why:** the Path Sorter needs the same IDE macro table the Compactor uses, and
+  it should not have to depend on the Compactor's plugin unit to get it. `PathCompactorEnvVars` already
+  owns everything to do with reading the IDE's macro-override keys, so it is where they belong.
+  (2026-08-31) - `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/PathCompactorEnvVars.pas`
+
+- Version bumped 3.22.11 -> 3.22.12 across all indicators, with `Version.res` regenerated from
+  `Version.rc` so the shipped DLL reports the new version. (2026-08-31) - `Source/version.inc`,
+  `version.h`, `Version.res`, `D_D102`...`D_D130/DDevExtensions.dproj`,
+  `Installer/DDevExtensionsReg.dproj`
+
+### Known
+
+- The Compactor's first junction-creating Apply ran on the development machine and behaved as designed:
+  three junctions created (`C:\EUREKALO`, `C:\IPWORKS2`, `C:\TESTINSI`), all recorded in the plugin config
+  for later health checks, and **no Embarcadero tree offered or created** - the two-way exclusion held
+  through a real elevated Apply. Cumulative saving across the session's passes: 29,109 -> 20,862 stored
+  characters on the restored baseline.
+
+---
+
 ## 2026-08-31 - v3.22.11 - IDE Path Compactor
 
 ### Added

@@ -184,6 +184,12 @@ type
     FChangesApplied: Boolean;
     /// <summary>Cache of (lower-cased path) -&gt; validity to keep owner-draw fast.</summary>
     FPathValidityCache: TDictionary<string, Boolean>;
+    /// <summary>
+    /// Macro table used to expand entries for validity checking: this IDE's
+    /// user overrides, the IDE built-ins and the process environment. Built on
+    /// demand and dropped whenever the validity cache is invalidated.
+    /// </summary>
+    FMacroTable: TStringList;
     /// <summary>Full list of installed platforms (used to refill cboPlatform after filtering).</summary>
     FAllPlatforms: TStringList;
     /// <summary>Maps platform category -&gt; list of platforms in that category.</summary>
@@ -202,6 +208,8 @@ type
     procedure InvalidatePathCache;
     /// <summary>Expands $(PLATFORM) and $(BDS)-style macros in APath for validity checking.</summary>
     function ExpandPathMacros( const APath: string ): string;
+    /// <summary>Returns the macro table, building it on first use.</summary>
+    function MacroTable: TStrings;
     /// <summary>Updates the panel-header captions with current counts and warning markers.</summary>
     procedure UpdatePanelLabels;
     /// <summary>Populates cboPlatform from the path handler.</summary>
@@ -262,7 +270,10 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Win.Registry, IDEUtils, Main;
+  System.Win.Registry, IDEUtils, Main,
+  // BuildMacroTable lives here: the Sorter needs the same IDE macro table the
+  // Compactor uses, so that validity checking resolves what the IDE resolves.
+  PathCompactorEnvVars;
 
 class procedure TFormLibraryPathSorter.Execute;
 begin
@@ -289,6 +300,9 @@ begin
   FDeletedCount := 0;
   FChangesApplied := False;
   FPathValidityCache := TDictionary<string, Boolean>.Create;
+  FMacroTable := TStringList.Create;
+  FMacroTable.CaseSensitive := False;
+  FMacroTable.NameValueSeparator := '=';
   FAllPlatforms := TStringList.Create;
   FPlatformCategories := TDictionary<string, TStringList>.Create;
   FPlatformCheckboxes := TList<TCheckBox>.Create;
@@ -335,6 +349,7 @@ begin
       'For the changes to take effect, you must close and reopen Delphi.' );
 
   FPathValidityCache.Free;
+  FMacroTable.Free;
   FPlatformCheckboxes.Free;
 
   for var CatList in FPlatformCategories.Values do
@@ -807,21 +822,37 @@ begin
   end;
 end;
 
+function TFormLibraryPathSorter.MacroTable: TStrings;
+begin
+  if FMacroTable.Count = 0 then
+    BuildMacroTable( FMacroTable,
+      LibraryPathSorterPlugin.PathHandler.BaseRegistryKey, '' );
+  Result := FMacroTable;
+end;
+
 function TFormLibraryPathSorter.ExpandPathMacros( const APath: string ): string;
 var
   SelectedPlatform: string;
 begin
   Result := APath;
 
-  // Expand $(PLATFORM) using the combo box selection
+  // Expand $(PLATFORM) using the combo box selection, not the active project's
+  // platform - this dialog is examining one platform's registry key, which is
+  // not necessarily the one the current project targets.
   if cboPlatform.ItemIndex >= 0 then
   begin
     SelectedPlatform := cboPlatform.Items[cboPlatform.ItemIndex];
     Result := StringReplace( Result, '$(PLATFORM)', SelectedPlatform, [rfReplaceAll, rfIgnoreCase] );
   end;
 
-  // Delegate to IDEUtils for all other macros ($(BDS), $(BDSCOMMONDIR), env vars, etc.)
-  Result := IDEUtils.ExpandDirMacros( Result );
+  // Deliberately NOT IDEUtils.ExpandDirMacros. That routine substitutes an
+  // empty string for any macro it cannot resolve, so "$(BDSCatalogRepository)\Lib"
+  // arrives at DirectoryExists as "\Lib" - which fails, and the entry is drawn
+  // blue as though the directory were missing. It also knows nothing of the
+  // IDE's own Environment Variables keys, so every user-defined macro met the
+  // same fate. ExpandLibraryMacros leaves an unresolvable macro intact, which
+  // is what makes the "cannot verify, treat as valid" branch below reachable.
+  Result := ExpandLibraryMacros( Result, MacroTable );
 end;
 
 function TFormLibraryPathSorter.IsPathValid( const APath: string ): Boolean;
@@ -845,7 +876,11 @@ begin
   // Expand macros
   ExpandedPath := ExpandPathMacros( TrimmedPath );
 
-  // If unexpanded macros remain, treat as valid (can't verify)
+  // A macro that resolves nowhere leaves "$(" in place, and the directory it
+  // names cannot be checked - so the entry is reported valid rather than being
+  // condemned on a path we could not build. (The Path Compactor reports these
+  // separately, distinguishing a dead macro from one the other IDE bitness
+  // defines.)
   if Pos( '$(', ExpandedPath ) > 0 then
   begin
     Result := True;
@@ -863,6 +898,9 @@ end;
 procedure TFormLibraryPathSorter.InvalidatePathCache;
 begin
   FPathValidityCache.Clear;
+  // The macro table is rebuilt with the cache: a variable may have been added
+  // or changed in the IDE since it was last read.
+  FMacroTable.Clear;
 end;
 
 procedure TFormLibraryPathSorter.UpdatePanelLabels;
