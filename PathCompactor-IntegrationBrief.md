@@ -123,7 +123,7 @@ Verified 2026-08-31.
 Code\DDevExtensions\Source\PathCompactor\
   PathCompactorCore.pas        RTL-only. Expander, candidate analysis, rewrite, hygiene. No ToolsAPI, no VCL, no Registry.
   PathCompactor.pas            TPluginConfig descendant, Tools menu item, InitPlugin. Owns the macro-table builder.
-  PathCompactorJunctions.pas   Junction detection/creation with elevation fallback. Winapi only.
+  (PathCompactorJunctions.pas  WITHDRAWN - built, then removed in v3.22.14; see below)
   PathCompactorEnvVars.pas     IDE override key + HKCU\Environment + WM_SETTINGCHANGE.
   FrmPathCompactor.pas/.dfm    The dialog (TFormBase descendant, mirroring FrmLibraryPathSorter).
 DDevExtUnitTests\                (repository root, not Code\DDevExtensions)
@@ -308,7 +308,12 @@ Copy `SortPaths`' count-verification guard: assert the output entry count equals
 
 ---
 
-## 7. Junctions (`PathCompactorJunctions.pas`)
+## 7. Junctions (`PathCompactorJunctions.pas`) — WITHDRAWN
+
+> **This section is withdrawn.** The feature was built, hardened and then removed in
+> v3.22.14 because it fails silently when the library it points at moves. The design
+> below is kept for the record, and because it documents exclusions that any future
+> attempt would need. See *Junctions removed* near the end before reading it as a plan.
 
 ### 7.1 Detection
 
@@ -593,7 +598,7 @@ Match the house format in `CHANGELOG.md` (dated heading, bold lead sentence, tra
 
 Built and shipped. Six new files under `Code\DDevExtensions\Source\PathCompactor\`
 (`PathCompactorCore.pas`, `PathCompactor.pas`, `PathCompactorEnvVars.pas`,
-`PathCompactorJunctions.pas`, `FrmPathCompactor.pas/.dfm`) plus
+`FrmPathCompactor.pas/.dfm`) plus
 `DDevExtUnitTests\TestPathCompactorDUnitX.pas`. Registered in `DelphiExtension.inc`,
 `RegisterPlugins.pas`, all six `D_Dxxx\DDevExtensions.dpr` and the DUnitX project.
 `LibraryPathSorter` aliases `TLibraryPathType` and its helper from the core.
