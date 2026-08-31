@@ -136,7 +136,6 @@ uses
   LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
   FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter},
   PathCompactorEnvVars in '..\Source\PathCompactor\PathCompactorEnvVars.pas',
-  PathCompactorJunctions in '..\Source\PathCompactor\PathCompactorJunctions.pas',
   PathCompactor in '..\Source\PathCompactor\PathCompactor.pas',
   FrmPathCompactor in '..\Source\PathCompactor\FrmPathCompactor.pas' {FormPathCompactor},
   ProjectGroupSorterCore in '..\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',

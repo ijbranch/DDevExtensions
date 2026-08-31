@@ -81,9 +81,6 @@ type
     /// <summary>Revalidation rescues an entry whose macro resolves by the time Apply runs.</summary>
     [Test]
     procedure TestRevalidateRescuesResolvedMacro;
-    /// <summary>The IDE installation tree is refused as a junction target, in both directions.</summary>
-    [Test]
-    procedure TestJunctionRefusesIdeTree;
     /// <summary>A bare version folder never becomes a variable name on its own.</summary>
     [Test]
     procedure TestVersionSegmentNaming;
@@ -108,7 +105,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.StrUtils,
-  PathCompactorCore, PathCompactorJunctions;
+  PathCompactorCore;
 
 const
   BdsDir = 'C:\Program Files (x86)\Embarcadero\Studio\37.0';
@@ -736,35 +733,6 @@ begin
     Analysis.Free;
     Macros.Free;
   end;
-end;
-
-procedure TTestPathCompactor.TestJunctionRefusesIdeTree;
-const
-  BdsRoot = 'C:\Program Files (x86)\Embarcadero\Studio\37.0';
-begin
-  // Under the root - the case the original guard covered.
-  Assert.IsFalse( IsJunctionCandidate( BdsRoot + '\source', 96, BdsRoot ),
-    'a directory under the IDE root must never be junctioned' );
-  Assert.IsFalse( IsJunctionCandidate( BdsRoot, 104, BdsRoot ),
-    'the IDE root itself must never be junctioned' );
-
-  // ABOVE the root - the case it did NOT cover. Junctioning this would
-  // relocate every installed version of RAD Studio at once; measured on a real
-  // machine it was the top-ranked candidate at 458 uses.
-  Assert.IsFalse(
-    IsJunctionCandidate( 'C:\Program Files (x86)\Embarcadero\Studio', 458, BdsRoot ),
-    'the PARENT of the IDE root must never be junctioned' );
-  // A deep install, so the ancestor clears the 40-character floor on its own
-  // merits and is excluded by the rule rather than incidentally by length.
-  Assert.IsFalse(
-    IsJunctionCandidate( 'C:\Program Files (x86)\Vendor Tools\Embarcadero',
-      458, 'C:\Program Files (x86)\Vendor Tools\Embarcadero\Studio\37.0' ),
-    'no ancestor of the IDE root may be junctioned, however long' );
-
-  // A third-party tree under Program Files is still a legitimate offer.
-  Assert.IsTrue(
-    IsJunctionCandidate( 'C:\Program Files (x86)\Neos Eureka S.r.l\EurekaLog 7', 18, BdsRoot ),
-    'a third-party tree the IDE does not own should still be offered' );
 end;
 
 procedure TTestPathCompactor.TestVersionSegmentNaming;

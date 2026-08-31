@@ -729,6 +729,35 @@ became `$(V37_0_SOURCE)`. Widening now reaches past version and token segments
 looking at real output rather than by testing - the rules are individually correct and only their
 interaction misbehaves, which is exactly what fixtures are worst at catching.
 
+### Junctions removed (2026-08-31, v3.22.14)
+
+Section 7 is withdrawn. The junction feature was implemented, hardened and then removed.
+
+It did the one thing macros cannot - shorten the **expanded** path - but it was the only
+permanent, machine-global change the tool made, and it failed silently. When a library it
+points at is updated into a NEW folder, the link keeps resolving to the OLD install: every
+path still resolves, the project still compiles, and it compiles against stale files with
+no error anywhere. `EurekaLog 7` and `IPWorks 2024 Delphi Edition` both carry a version in
+the folder name, so a major update almost certainly creates a sibling rather than replacing
+in place - precisely the silent case.
+
+The safeguards were real and each was tested: a two-way exclusion of the IDE's own tree,
+collapsing of nested offers, unique link names, an opt-in switch defaulting off, a warning
+when offers went unselected. **Every one of them depends on somebody remembering why it is
+there, months later, while updating an unrelated library.** That is the argument that
+settled it - a safeguard which must be remembered is not a safeguard. Removed outright
+rather than defaulted off.
+
+Macro substitution carries the same staleness exposure but fails visibly: `$(EUREKALOG_7)`
+is in the path list where it can be read and checked. A junction offers nothing to look at.
+
+On the development machine the three junctions were removed and their 31 entries rewritten
+to macros defined in both IDE lists, keeping the saving without the hidden dependency.
+
+**If the expanded-length limit ever becomes the binding constraint**, this is the section to
+reopen - but the reopening should start from "how does the user find out the link went
+stale", which is the question the original design never answered.
+
 ### Still open
 
 - ~~**§13.5** - design-time package unload/reload cleanliness is untested.~~ **Closed 2026-08-31.**

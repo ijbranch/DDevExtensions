@@ -43,8 +43,6 @@ type
     FWriteUserEnvironment: Boolean;
     /// <summary>Semicolon-separated names of variables this plugin has created.</summary>
     FCreatedVariables: string;
-    /// <summary>Semicolon-separated Link=Source pairs for junctions this plugin has created.</summary>
-    FCreatedJunctions: string;
     /// <summary>OnClick handler for the Tools-menu item.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
@@ -63,10 +61,6 @@ type
     procedure RecordCreatedVariable( const AName: string );
     /// <summary>Returns the names of variables this plugin has created.</summary>
     function CreatedVariableNames: TArray<string>;
-    /// <summary>Records a junction this plugin created, so its health can be checked on load.</summary>
-    procedure RecordCreatedJunction( const ALinkPath, ASourcePath: string );
-    /// <summary>Verifies every recorded junction still resolves; returns those that do not.</summary>
-    function BrokenJunctions: TArray<string>;
   published
     /// <summary>Persisted enable flag for the plugin.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
@@ -76,8 +70,6 @@ type
     property WriteUserEnvironment: Boolean read FWriteUserEnvironment write FWriteUserEnvironment;
     /// <summary>Semicolon-separated names of variables this plugin has created.</summary>
     property CreatedVariables: string read FCreatedVariables write FCreatedVariables;
-    /// <summary>Semicolon-separated Link=Source pairs for junctions this plugin has created.</summary>
-    property CreatedJunctions: string read FCreatedJunctions write FCreatedJunctions;
   end;
 
 /// <summary>Plugin entry point that creates or frees PathCompactorPlugin.</summary>
@@ -93,7 +85,7 @@ uses
   Winapi.Windows, System.IOUtils, System.StrUtils,
   Vcl.Forms,
   ToolsAPI, IDEUtils, ToolsAPIHelpers, Main,
-  PathCompactorCore, PathCompactorEnvVars, PathCompactorJunctions,
+  PathCompactorCore, PathCompactorEnvVars,
   FrmPathCompactor;
 
 { TPathCompactorPlugin }
@@ -197,52 +189,6 @@ begin
     List.Free;
   end;
   Save;
-end;
-
-procedure TPathCompactorPlugin.RecordCreatedJunction( const ALinkPath, ASourcePath: string );
-var
-  List: TStringList;
-begin
-  List := TStringList.Create;
-  try
-    List.Delimiter := ';';
-    List.StrictDelimiter := True;
-    List.NameValueSeparator := '=';
-    List.DelimitedText := FCreatedJunctions;
-    if List.IndexOfName( ALinkPath ) < 0 then
-      List.Add( ALinkPath + '=' + ASourcePath );
-    FCreatedJunctions := List.DelimitedText;
-  finally
-    List.Free;
-  end;
-  Save;
-end;
-
-function TPathCompactorPlugin.BrokenJunctions: TArray<string>;
-var
-  List: TStringList;
-  I: Integer;
-begin
-  SetLength( Result, 0 );
-  List := TStringList.Create;
-  try
-    List.Delimiter := ';';
-    List.StrictDelimiter := True;
-    List.NameValueSeparator := '=';
-    List.DelimitedText := FCreatedJunctions;
-
-    // A deleted junction silently breaks every path that depends on it, and the
-    // resulting compile errors give no clue why — so this is checked on load.
-    for I := 0 to List.Count - 1 do
-      if ( List.Names[I] <> '' ) and
-         not IsJunctionTo( List.Names[I], List.ValueFromIndex[I] ) then
-      begin
-        SetLength( Result, Length( Result ) + 1 );
-        Result[High( Result )] := List.Names[I];
-      end;
-  finally
-    List.Free;
-  end;
 end;
 
 procedure InitPlugin( Unload: Boolean );

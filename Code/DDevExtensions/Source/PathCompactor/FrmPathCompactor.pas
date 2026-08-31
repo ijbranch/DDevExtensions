@@ -12,9 +12,9 @@ unit FrmPathCompactor;
 
 /// <summary>
 /// Hosts the IDE Path Compactor dialog: analyses the selected platform ×
-/// path-type registry values, proposes <c>$(NAME)</c> macro substitutions and
-/// directory junctions, reports duplicate, missing and undefined-macro entries,
-/// and applies the result behind a backup.
+/// path-type registry values, proposes <c>$(NAME)</c> macro substitutions for
+/// repeated directory prefixes, reports duplicate, missing and undefined-macro
+/// entries, and applies the result behind a backup.
 /// </summary>
 /// <remarks>
 /// Nothing is written until Apply, and Apply is refused while the IDE's own
@@ -35,25 +35,11 @@ uses
   FrmBase, PathCompactorCore, LibraryPathSorter;
 
 type
-  /// <summary>A junction the analysis is offering to create.</summary>
-  TJunctionOffer = record
-    /// <summary>Expanded directory the junction would point at.</summary>
-    SourcePath: string;
-    /// <summary>Proposed link path, editable by the user.</summary>
-    LinkPath: string;
-    /// <summary>Number of entries that would shorten.</summary>
-    Occurrences: Integer;
-    /// <summary>Expanded characters saved across the scope.</summary>
-    ExpandedSaving: Integer;
-    /// <summary>True when the user has ticked it.</summary>
-    Accepted: Boolean;
-  end;
-
   /// <summary>
   /// Modeless dialog that analyses the IDE's per-platform library path values and
   /// proposes ways to shorten them: <c>$(NAME)</c> macro substitutions for repeated
-  /// directory prefixes, directory junctions for over-long physical prefixes, and
-  /// removal of duplicate, dead-macro and missing-directory entries.
+  /// directory prefixes, and removal of duplicate, dead-macro and
+  /// missing-directory entries.
   /// </summary>
   /// <remarks>
   /// Analysis is read-only and safe to run at any time; nothing is written until
@@ -96,10 +82,6 @@ type
     tabVariables: TTabSheet;
     /// <summary>Proposed variables, each tickable; shows name, value, uses and characters saved.</summary>
     lvVariables: TListView;
-    /// <summary>Tab hosting the junction opportunities.</summary>
-    tabJunctions: TTabSheet;
-    /// <summary>Junction offers, each tickable; unticked by default because a junction is permanent.</summary>
-    lvJunctions: TListView;
     /// <summary>Tab hosting the before/after preview.</summary>
     tabPreview: TTabSheet;
     /// <summary>Strip holding the preview path-set selector.</summary>
@@ -140,8 +122,6 @@ type
     procedure cboPreviewSetChange( Sender: TObject );
     /// <summary>Refreshes the status line when a proposed variable is ticked or unticked.</summary>
     procedure lvVariablesItemChecked( Sender: TObject; Item: TListItem );
-    procedure lvJunctionsDblClick( Sender: TObject );
-    procedure lvJunctionsItemChecked( Sender: TObject; Item: TListItem );
   private
     /// <summary>Registry reader/writer, reused from the Path Sorter.</summary>
     FPathHandler: TLibraryPathHandler;
@@ -149,8 +129,6 @@ type
     FBackupManager: TLibraryPathBackupManager;
     /// <summary>The current analysis, or nil before the first Analyse.</summary>
     FAnalysis: TPathCompactorAnalysis;
-    /// <summary>Junctions currently on offer.</summary>
-    FJunctions: TArray<TJunctionOffer>;
     /// <summary>Macro table used for the current analysis.</summary>
     FMacros: TStringList;
     /// <summary>True once Apply has written something, so the close hint can mention a restart.</summary>
@@ -169,8 +147,6 @@ type
     procedure FillSummary;
     /// <summary>Rebuilds the proposed-variables list from the current analysis.</summary>
     procedure FillVariables;
-    /// <summary>Finds and lists the junction opportunities.</summary>
-    procedure FillJunctions;
     /// <summary>Rebuilds the preview set selector.</summary>
     procedure FillPreviewSets;
     /// <summary>Shows the before/after text for the selected preview set.</summary>
@@ -180,7 +156,7 @@ type
 
     /// <summary>Total expanded length of a set, before rewriting.</summary>
     function ExpandedLengthBefore( APathSet: TPathSet ): Integer;
-    /// <summary>Total expanded length of a set, after rewriting and junctioning.</summary>
+    /// <summary>Total expanded length of a set, after rewriting.</summary>
     function ExpandedLengthAfter( APathSet: TPathSet ): Integer;
     /// <summary>True when the IDE's own options dialog is currently showing.</summary>
     function IdeOptionsDialogIsOpen: Boolean;
@@ -190,15 +166,6 @@ type
     /// is never removed by cleanup.
     /// </summary>
     procedure BuildDivergentNames( AList: TStrings );
-    /// <summary>Applies accepted junction link paths to the rewritten entries.</summary>
-    procedure ApplyJunctionRewrites;
-    /// <summary>
-    /// Returns a short, distinct link path for ASourcePath that does not clash
-    /// with one already offered or with an existing directory.
-    /// </summary>
-    function MakeLinkPath( const ASourcePath: string; ACount: Integer ): string;
-    /// <summary>Number of junction offers the user has ticked.</summary>
-    function AcceptedJunctionCount: Integer;
   public
     /// <summary>Shows the dialog modelessly, reusing the existing instance if there is one.</summary>
     class procedure Execute;
@@ -222,7 +189,7 @@ implementation
 uses
   System.StrUtils, System.Math, System.UITypes, System.IOUtils,
   IDEHooks, Main,
-  PathCompactor, PathCompactorEnvVars, PathCompactorJunctions;
+  PathCompactor, PathCompactorEnvVars;
 
 const
   /// <summary>Most removals listed individually in the Apply confirmation.</summary>
@@ -475,7 +442,6 @@ begin
 
     FillSummary;
     FillVariables;
-    FillJunctions;
     FillPreviewSets;
     ShowPreview;
     UpdateStatus;
@@ -515,22 +481,6 @@ begin
   begin
     if Entries[I].Drop then
       Continue;
-
-    // Macro substitution never changes the expanded length; only an accepted
-    // junction does, by shortening the physical prefix.
-    if Entries[I].Expanded <> '' then
-      Expanded := Entries[I].Expanded
-    else
-      Expanded := Entries[I].Raw;
-
-    for J := Low( FJunctions ) to High( FJunctions ) do
-      if FJunctions[J].Accepted and
-         StartsWithSegment( Expanded, FJunctions[J].SourcePath ) then
-      begin
-        Expanded := FJunctions[J].LinkPath +
-          Copy( Expanded, Length( FJunctions[J].SourcePath ) + 1, MaxInt );
-        Break;
-      end;
 
     Inc( Result, Length( Expanded ) + 1 );
   end;
@@ -594,208 +544,6 @@ begin
     end;
   finally
     lvVariables.Items.EndUpdate;
-  end;
-end;
-
-function TFormPathCompactor.MakeLinkPath( const ASourcePath: string;
-  ACount: Integer ): string;
-var
-  Leaf, Name: string;
-  I, Suffix: Integer;
-  Ch: Char;
-  Clash: Boolean;
-begin
-  // A two-letter stub is too short to be meaningful and collides readily -
-  // "Source" and "Studio" both give SO/ST, a keystroke apart. Use a longer
-  // stem, then guarantee uniqueness against the other offers on the list.
-  Leaf := ExtractFileName( ExcludeTrailingPathDelimiter( ASourcePath ) );
-  Name := '';
-  for I := 1 to Length( Leaf ) do
-  begin
-    Ch := Leaf[I];
-    if CharInSet( Ch, ['A'..'Z', 'a'..'z', '0'..'9'] ) then
-      Name := Name + UpCase( Ch );
-    if Length( Name ) >= 8 then
-      Break;
-  end;
-  if Name = '' then
-    Name := 'LINK';
-
-  Suffix := 1;
-  repeat
-    if Suffix = 1 then
-      Result := 'C:\' + Name
-    else
-      Result := 'C:\' + Name + IntToStr( Suffix );
-
-    Clash := TDirectory.Exists( Result );
-    if not Clash then
-      for I := 0 to ACount - 1 do
-        if SameText( FJunctions[I].LinkPath, Result ) then
-        begin
-          Clash := True;
-          Break;
-        end;
-
-    Inc( Suffix );
-  until not Clash or ( Suffix > 50 );
-end;
-
-function TFormPathCompactor.AcceptedJunctionCount: Integer;
-var
-  I: Integer;
-begin
-  Result := 0;
-  for I := 0 to lvJunctions.Items.Count - 1 do
-    if lvJunctions.Items[I].Checked then
-      Inc( Result );
-end;
-
-procedure TFormPathCompactor.lvJunctionsItemChecked( Sender: TObject; Item: TListItem );
-begin
-  if ( Item <> nil ) and ( Item.Index >= Low( FJunctions ) ) and
-     ( Item.Index <= High( FJunctions ) ) then
-    FJunctions[Item.Index].Accepted := Item.Checked;
-end;
-
-procedure TFormPathCompactor.lvJunctionsDblClick( Sender: TObject );
-var
-  Item: TListItem;
-  Link: string;
-begin
-  Item := lvJunctions.Selected;
-  if ( Item = nil ) or ( Item.Index > High( FJunctions ) ) then
-    Exit;
-
-  Link := FJunctions[Item.Index].LinkPath;
-  if not InputQuery( 'Junction link path',
-       'Create the link for'#13#10 + FJunctions[Item.Index].SourcePath +
-       #13#10#13#10 + 'at:', Link ) then
-    Exit;
-
-  Link := ExcludeTrailingPathDelimiter( Trim( Link ) );
-  if Link = '' then
-    Exit;
-
-  if TDirectory.Exists( Link ) and
-     not IsJunctionTo( Link, FJunctions[Item.Index].SourcePath ) then
-  begin
-    MessageDlg( 'A directory already exists at ' + Link +
-      ' and is not a junction to that source. Choose another link path.',
-      mtWarning, [mbOK], 0 );
-    Exit;
-  end;
-
-  FJunctions[Item.Index].LinkPath := Link;
-  FJunctions[Item.Index].ExpandedSaving :=
-    FJunctions[Item.Index].Occurrences *
-    ( Length( FJunctions[Item.Index].SourcePath ) - Length( Link ) );
-
-  Item.SubItems[0] := Link;
-  Item.SubItems[2] := IntToStr( FJunctions[Item.Index].ExpandedSaving );
-  FillSummary;
-end;
-
-procedure TFormPathCompactor.FillJunctions;
-var
-  Tally: TDictionary<string, Integer>;
-  SetIndex, I, J: Integer;
-  Entries: TArray<TPathEntry>;
-  Segments: TArray<string>;
-  Prefix: string;
-  Pair: TPair<string, Integer>;
-  Offer: TJunctionOffer;
-  Item: TListItem;
-  Root: string;
-  Nested: Boolean;
-begin
-  SetLength( FJunctions, 0 );
-  Root := BdsRootDir;
-
-  Tally := TDictionary<string, Integer>.Create;
-  try
-    for SetIndex := 0 to FAnalysis.Sets.Count - 1 do
-    begin
-      Entries := FAnalysis.Sets[SetIndex].Entries;
-      for I := Low( Entries ) to High( Entries ) do
-      begin
-        if Entries[I].Opaque or ( Entries[I].Expanded = '' ) then
-          Continue;
-
-        Segments := Entries[I].Expanded.Split( [PathDelim] );
-        Prefix := '';
-        for J := Low( Segments ) to High( Segments ) - 1 do
-        begin
-          if Prefix <> '' then
-            Prefix := Prefix + PathDelim;
-          Prefix := Prefix + Segments[J];
-
-          if Tally.ContainsKey( Prefix ) then
-            Tally[Prefix] := Tally[Prefix] + 1
-          else
-            Tally.Add( Prefix, 1 );
-        end;
-      end;
-    end;
-
-    // Collect, then keep only the best of any ancestor/descendant chain: once
-    // a directory is junctioned its children gain nothing from their own link,
-    // and offering "EurekaLog 7" alongside its Source, Lib and Packages just
-    // invites the user to create four links where one will do.
-    for Pair in Tally do
-      if IsJunctionCandidate( Pair.Key, Pair.Value, Root ) then
-      begin
-        Offer := Default( TJunctionOffer );
-        Offer.SourcePath := Pair.Key;
-        Offer.Occurrences := Pair.Value;
-        Offer.Accepted := False;
-
-        Nested := False;
-        for I := High( FJunctions ) downto Low( FJunctions ) do
-          if StartsWithSegment( Offer.SourcePath, FJunctions[I].SourcePath ) or
-             StartsWithSegment( FJunctions[I].SourcePath, Offer.SourcePath ) then
-          begin
-            // Keep whichever saves more expanded characters.
-            if Offer.Occurrences * Length( Offer.SourcePath ) >
-               FJunctions[I].Occurrences * Length( FJunctions[I].SourcePath ) then
-            begin
-              // Replace the weaker one in place.
-              FJunctions[I] := Offer;
-              FJunctions[I].LinkPath := MakeLinkPath( Offer.SourcePath, I );
-              FJunctions[I].ExpandedSaving := Offer.Occurrences *
-                ( Length( Offer.SourcePath ) - Length( FJunctions[I].LinkPath ) );
-            end;
-            Nested := True;
-            Break;
-          end;
-
-        if Nested then
-          Continue;
-
-        SetLength( FJunctions, Length( FJunctions ) + 1 );
-        Offer.LinkPath := MakeLinkPath( Offer.SourcePath, High( FJunctions ) );
-        Offer.ExpandedSaving :=
-          Pair.Value * ( Length( Pair.Key ) - Length( Offer.LinkPath ) );
-        FJunctions[High( FJunctions )] := Offer;
-      end;
-  finally
-    Tally.Free;
-  end;
-
-  lvJunctions.Items.BeginUpdate;
-  try
-    lvJunctions.Items.Clear;
-    for I := Low( FJunctions ) to High( FJunctions ) do
-    begin
-      Item := lvJunctions.Items.Add;
-      Item.Caption := FJunctions[I].SourcePath;
-      Item.SubItems.Add( FJunctions[I].LinkPath );
-      Item.SubItems.Add( IntToStr( FJunctions[I].Occurrences ) );
-      Item.SubItems.Add( IntToStr( FJunctions[I].ExpandedSaving ) );
-      Item.Checked := False;
-    end;
-  finally
-    lvJunctions.Items.EndUpdate;
   end;
 end;
 
@@ -900,53 +648,13 @@ begin
       Exit( True );
 end;
 
-procedure TFormPathCompactor.ApplyJunctionRewrites;
-var
-  SetIndex, I, J: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Current: string;
-begin
-  for SetIndex := 0 to FAnalysis.Sets.Count - 1 do
-  begin
-    PathSet := FAnalysis.Sets[SetIndex];
-    Entries := PathSet.Entries;
-
-    for I := Low( Entries ) to High( Entries ) do
-    begin
-      if Entries[I].Opaque or Entries[I].Drop or ( Entries[I].Expanded = '' ) then
-        Continue;
-
-      for J := Low( FJunctions ) to High( FJunctions ) do
-        if FJunctions[J].Accepted and
-           StartsWithSegment( Entries[I].Expanded, FJunctions[J].SourcePath ) then
-        begin
-          Current := FJunctions[J].LinkPath +
-            Copy( Entries[I].Expanded, Length( FJunctions[J].SourcePath ) + 1, MaxInt );
-          // Only take the junction form when it is genuinely shorter than
-          // whatever the macro pass produced.
-          if Entries[I].NewRaw = '' then
-          begin
-            if Length( Current ) < Length( Entries[I].Raw ) then
-              Entries[I].NewRaw := Current;
-          end
-          else if Length( Current ) < Length( Entries[I].NewRaw ) then
-            Entries[I].NewRaw := Current;
-          Break;
-        end;
-    end;
-
-    PathSet.Entries := Entries;
-  end;
-end;
-
 procedure TFormPathCompactor.btnApplyClick( Sender: TObject );
 var
   I: Integer;
   Vars: TArray<TVarCandidate>;
   PathSet: TPathSet;
   Description, Error, DropList, Generic: string;
-  Created, Rescued, SetCount, Forgone: Integer;
+  Rescued, SetCount: Integer;
   Drops: TArray<string>;
 begin
   if FAnalysis = nil then
@@ -1008,32 +716,6 @@ begin
       end;
   end;
 
-  // Junctions are on a tab of their own, so it is easy to apply without ever
-  // looking at them - and they are the only measure that shortens the expanded
-  // path, which is what constrains the compiler command line.
-  if ( Length( FJunctions ) > 0 ) and ( AcceptedJunctionCount = 0 ) then
-  begin
-    Forgone := 0;
-    for I := Low( FJunctions ) to High( FJunctions ) do
-      Inc( Forgone, FJunctions[I].ExpandedSaving );
-
-    if MessageDlg( Format(
-         '%d junction opportunit%s available on the Junction opportunities tab, ' +
-         'but none is selected.'#13#10#13#10 +
-         'Junctions are the only measure that shortens the EXPANDED path - the ' +
-         'one that constrains the compiler command line. Macro substitution does ' +
-         'not help there. Selecting them all would save about %d expanded ' +
-         'characters.'#13#10#13#10 +
-         'Apply without any junctions?',
-         [Length( FJunctions ), IfThen( Length( FJunctions ) = 1, 'y is', 'ies are' ),
-          Forgone] ),
-         mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
-    begin
-      pgcResults.ActivePage := tabJunctions;
-      Exit;
-    end;
-  end;
-
   // Show exactly what will be deleted, in full, before deleting any of it.
   Drops := FAnalysis.DropSummary;
   if Length( Drops ) > 0 then
@@ -1074,35 +756,6 @@ begin
       FBackupManager.CreateBackup( PathSet.PathType, PathSet.PlatformName,
         PathSet.Original, Description );
     end;
-
-    // 2. Junctions BEFORE any path write: a path rewritten to a link that was
-    //    never created points at nothing. A junction that fails or is cancelled
-    //    drops only its own rewrites, never the whole Apply.
-    Created := 0;
-    for I := Low( FJunctions ) to High( FJunctions ) do
-    begin
-      if not FJunctions[I].Accepted then
-        Continue;
-
-      if CreateJunction( FJunctions[I].LinkPath, FJunctions[I].SourcePath, Error ) then
-      begin
-        Inc( Created );
-        if PathCompactorPlugin <> nil then
-          PathCompactorPlugin.RecordCreatedJunction( FJunctions[I].LinkPath,
-            FJunctions[I].SourcePath );
-      end
-      else
-      begin
-        FJunctions[I].Accepted := False; // drop only this junction's rewrites
-        MessageDlg( 'Junction not created for ' + FJunctions[I].SourcePath +
-          #13#10#13#10 + Error + #13#10#13#10 +
-          'Its path rewrites have been skipped; the rest of the compaction ' +
-          'will still be applied.', mtWarning, [mbOK], 0 );
-      end;
-    end;
-
-    if Created > 0 then
-      ApplyJunctionRewrites;
 
     // 3. Variables, into BOTH IDE lists (the path they resolve is shared).
     Vars := FAnalysis.AcceptedVariables;
@@ -1147,11 +800,11 @@ begin
 
   MessageDlg( Format(
     'Compaction applied.'#13#10#13#10 +
-    '%d path sets rewritten, %d junctions created.'#13#10#13#10 +
+    '%d path sets rewritten.'#13#10#13#10 +
     'Restart the IDE for the new library paths and variables to take effect.'#13#10#13#10 +
     'The results below have been refreshed against the registry as it now ' +
     'stands, so they no longer describe the change you just applied.',
-    [SetCount, Created] ), mtInformation, [mbOK], 0 );
+    [SetCount] ), mtInformation, [mbOK], 0 );
 
   // Re-analyse rather than just disabling Apply. Leaving the pre-Apply figures
   // on screen invites the reader to believe they still describe the registry,

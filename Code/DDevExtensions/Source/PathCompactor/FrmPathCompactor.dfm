@@ -209,44 +209,6 @@ inherited FormPathCompactor: TFormPathCompactor
         OnItemChecked = lvVariablesItemChecked
       end
     end
-    object tabJunctions: TTabSheet
-      Caption = 'Junction opportunities'
-      ImageIndex = 2
-      object lvJunctions: TListView
-        Left = 0
-        Top = 0
-        Width = 992
-        Height = 496
-        Align = alClient
-        Checkboxes = True
-        Columns = <
-          item
-            Caption = 'Source directory'
-            Width = 520
-          end
-          item
-            Caption = 'Link'
-            Width = 140
-          end
-          item
-            Alignment = taRightJustify
-            Caption = 'Uses'
-            Width = 60
-          end
-          item
-            Alignment = taRightJustify
-            Caption = 'Expanded chars saved'
-            Width = 150
-          end>
-        GridLines = True
-        ReadOnly = True
-        RowSelect = True
-        TabOrder = 0
-        ViewStyle = vsReport
-        OnDblClick = lvJunctionsDblClick
-        OnItemChecked = lvJunctionsItemChecked
-      end
-    end
     object tabPreview: TTabSheet
       Caption = 'Preview'
       ImageIndex = 3

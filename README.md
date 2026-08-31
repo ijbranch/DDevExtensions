@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.22.14 removes the **directory-junction** feature from the IDE Path Compactor. A junction was the only measure that shortened the *expanded* path, but it was also the only permanent, machine-wide change the tool made - and it failed silently: when a library it pointed at was later updated into a new folder, the link kept resolving to the old install and everything compiled against stale files with no error. The safeguards built around it all depended on someone remembering why they existed. Macro substitution remains, and has the same exposure but fails visibly, because the variable is right there in the path list.
+
 Version 3.22.13 fixes both the **IDE Path Sorter** and the **IDE Path Compactor** leaving their dialog open when the design-time package is unloaded. Each dialog is modeless and owned by the application, so it outlived the plugin that created it; unloading the package discarded the form's code while its window was still alive. Both now close their dialog before the plugin is freed. The Sorter had carried this since 3.8.0.
 
 Version 3.22.12 fixes the **IDE Path Sorter** marking valid paths as invalid. Any entry whose macro could not be resolved - `$(BDSCatalogRepository)`, or any variable defined in the IDE's own Environment Variables list - was drawn blue as a missing directory, because `IDEUtils.ExpandDirMacros` replaces an unresolvable macro with an empty string rather than leaving it in place. The Sorter now uses the Path Compactor's expander, which leaves such a macro intact so the entry is correctly reported as unverifiable rather than missing.
@@ -841,4 +843,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.22.13 – 31 August 2026*
+*Version: 3.22.14 – 31 August 2026*

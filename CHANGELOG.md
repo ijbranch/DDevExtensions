@@ -4,6 +4,52 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-08-31 - v3.22.14 - Remove the directory-junction feature
+
+### Removed
+
+- **The directory-junction feature is gone entirely** - `PathCompactorJunctions.pas`, the Junction
+  opportunities tab, the creation and health-check machinery, and the `CreatedJunctions` setting.
+
+  **Why.** It was the one genuinely useful thing macros cannot do: a junction is the only measure that
+  shortens the **expanded** path, the one that constrains the compiler command line. But it was also the
+  only permanent, machine-global change the tool made, and its failure mode is silent. When a library it
+  points at is later updated into a **new** folder - `EurekaLog 7` becoming `EurekaLog 8`, or
+  `IPWorks 2024` becoming `IPWorks 2025` - the link keeps resolving to the **old** install, every path
+  through it still resolves, and the project compiles against stale files with no error of any kind. The
+  installer meanwhile adds its own literal entries for the new location, because it knows nothing of the
+  link.
+
+  The safeguards built for it were real - a two-way exclusion of the IDE's own tree, collapsing of nested
+  offers, an opt-in switch defaulting off, a warning when offers went unselected - but every one of them
+  depends on somebody remembering why they are there, months later, while updating an unrelated library.
+  A safeguard that must be remembered is not a safeguard. Removed rather than defaulted off.
+
+  Macro substitution has the same staleness exposure but fails **visibly**: `$(EUREKALOG_7)` is right
+  there in the path list and can be checked. A junction gives you nothing to look at.
+
+  (2026-08-31) - `Source/PathCompactor/PathCompactorJunctions.pas` (deleted),
+  `Source/PathCompactor/FrmPathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.dfm`,
+  `Source/PathCompactor/PathCompactor.pas`, `D_D102`...`D_D130/DDevExtensions.dpr`,
+  `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/TestPathCompactorDUnitX.pas`
+
+- The **Expanded before / after** columns remain in the summary grid. They now always match, which is the
+  honest reading: macro substitution never shortens the expanded path. Keeping them still answers the
+  question the grid exists to answer - whether the expanded length is anywhere near its limit.
+
+### Changed
+
+- Version bumped 3.22.13 -> 3.22.14 across all indicators, with `Version.res` regenerated. (2026-08-31)
+
+### Known
+
+- **The three junctions created on the development machine were removed and their 31 path entries rewritten
+  to macros** - `$(EUREKALOG_7)`, `$(IPWORKS_2024)` and `$(TESTINSIGHT)`, each defined in **both** IDE
+  variable lists. Same saving, but the dependency is now visible in the path list rather than hidden in a
+  reparse point. The target directories were never touched: deleting a junction removes only a name.
+
+---
+
 ## 2026-08-31 - v3.22.13 - Close the Sorter/Compactor dialogs when the package unloads
 
 ### Fixed
@@ -143,7 +189,7 @@ This file is the sole source and record of all project changes for DDevExtension
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
   silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (26 tests) covering the compactor core.** Includes the regression
+- **DUnitX fixture `TTestPathCompactor` (25 tests) covering the compactor core.** Includes the regression
   test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
   of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
   and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into

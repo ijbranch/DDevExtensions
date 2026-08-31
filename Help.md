@@ -1979,20 +1979,16 @@ A confirmation prompt warns that the group will be reloaded. The command no-ops 
 
 The tool reports **two** lengths before and after, because two separate limits exist and they are fixed by different means:
 
-| Limit | Measured on | Macros help? | Junctions help? |
-|---|---|---|---|
-| **Stored length** - the IDE's "path too long" warning | the raw registry string, macros unexpanded | **Yes** | Yes |
-| **Expanded length** - the `dcc32`/`dcc64` command line | the fully expanded string | **No** | **Yes** |
+| Limit | Measured on | Macros help? |
+|---|---|---|
+| **Stored length** - the IDE's "path too long" warning | the raw registry string, macros unexpanded | **Yes** |
+| **Expanded length** - the `dcc32`/`dcc64` command line | the fully expanded string | **No** |
 
-If you are hitting the compiler command-line limit, macro substitution alone will not help you. The Summary tab shows both so the diagnosis is visible rather than guessed.
+If you are hitting the compiler command-line limit, macro substitution will not help you - it shortens only the stored string. Both columns are still reported so that limit is visible rather than guessed.
 
 #### What it does
 
 **Macro substitution.** Finds directory prefixes repeated across entries and proposes `$(NAME)` variables for them. Saving is scored against the **stored** text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and made longer - under a new variable. Where a candidate prefix equals an existing macro's value, that macro is reused rather than a duplicate invented.
-
-**Directory junctions.** For long physical prefixes, offers a short link whose name you can change by **double-clicking the Link column**. This is the only measure that shortens the expanded length, so if you are hitting the compiler command-line limit it is the only one that will help - and Apply warns you if offers exist but none is selected.
-
-The IDE's own installation tree is refused outright, **in both directions**: neither a directory inside `$(BDS)` nor any ancestor of it is ever offered. That second half matters - `...\Embarcadero\Studio` is not *inside* `...\Studio\37.0`, yet junctioning it would relocate every installed version of RAD Studio at once. The Windows directory and the Program Files roots are excluded the same way. Overlapping offers are collapsed to whichever saves more, so you are never asked to junction a directory and its own parent.
 
 **Cleanup.** Reports, and optionally removes, three classes of entry.
 
