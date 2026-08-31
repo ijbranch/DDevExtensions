@@ -39,7 +39,7 @@ This file is the sole source and record of all project changes for DDevExtension
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
   silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (23 tests) covering the compactor core.** Includes the regression
+- **DUnitX fixture `TTestPathCompactor` (24 tests) covering the compactor core.** Includes the regression
   test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
   of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
   and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into
@@ -123,6 +123,35 @@ This file is the sole source and record of all project changes for DDevExtension
   ever existed; the real one is `..\Source\OldPalette`. Every build emitted
   `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
   `D_D102`...`D_D130/DDevExtensions.dproj`
+
+- **The junction exclusion tested only one direction, and offered the IDE's own installation tree.**
+  `IsJunctionCandidate` refused anything *under* `$(BDS)` but nothing *above* it, so
+  `...\Embarcadero\Studio` - the parent of `...\Studio\37.0` - sailed through, and on the development
+  machine it was the **top-ranked candidate at 458 uses**. Accepting it would have junctioned every
+  installed version of RAD Studio at once and rewritten 458 entries to point through the link.
+  `...\Embarcadero` escaped too, and only by accident: at 34 characters it fell below the 40-character
+  floor. The exclusion now tests both directions, for the IDE root and for the Windows directory.
+  **Why it went unnoticed:** the guard was written and verified against the case it was designed for
+  - a directory *inside* the IDE tree - and the symmetric case was never considered. Covered by a
+  mutation-checked test. Never fired in practice; no junction was ever created. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorJunctions.pas`
+
+- **Junction offers were nested, cryptically named and not editable.** The parent `EurekaLog 7` was
+  offered alongside its `Source`, `Lib` and `Packages` children, inviting four links where one will
+  do; link paths were two letters taken from the leaf, so `Source` and `Studio` both proposed
+  `C:\SO` / `C:\ST` - a keystroke apart, and two sources sharing an initial pair would have collided
+  on the same link. Overlapping offers are now collapsed to whichever saves more, link names use a
+  longer stem made unique against the other offers and against existing directories, and the Link
+  column can be edited by double-clicking it, as the brief always specified. (2026-08-31) -
+  `Source/PathCompactor/FrmPathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.dfm`
+
+- **Apply now warns when junction opportunities exist but none is selected.** The junction list lives
+  on its own tab, so it is easy to apply without ever looking at it - which is exactly what happened
+  in practice. The prompt names how many offers there are and roughly how many expanded characters
+  they would save, and switching to that tab is one click from declining. **Why it matters:** a
+  junction is the only measure that shortens the expanded path, the one that constrains the compiler
+  command line; macro substitution cannot help there at all. (2026-08-31) -
+  `Source/PathCompactor/FrmPathCompactor.pas`
 
 - **A bare version folder became a meaningless variable name, and identical path tails collided into
   `_2`.** `...\Delphi 13 Florence\37.0` yielded `$(V37_0)` - the sanitiser prefixing `V` because the name

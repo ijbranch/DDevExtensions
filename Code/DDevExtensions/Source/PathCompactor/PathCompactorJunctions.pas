@@ -107,12 +107,28 @@ begin
   // Never the IDE's own tree. This is the exclusion that matters: on a real
   // machine the IDE installation is by far the most-used long prefix, so
   // without this the tool's top suggestion would be to junction RAD Studio.
-  if ( ABdsRootDir <> '' ) and IsUnderDirectory( APrefix, ExcludeTrailingPathDelimiter( ABdsRootDir ) ) then
-    Exit;
+  //
+  // BOTH directions must be tested. Excluding only what lies UNDER the root
+  // leaves its PARENT wide open - "...\Embarcadero\Studio" is not under
+  // "...\Embarcadero\Studio\37.0", yet junctioning it would relocate every
+  // installed version of RAD Studio at once. Measured on a real machine that
+  // parent was the top-ranked candidate at 458 uses.
+  if ABdsRootDir <> '' then
+  begin
+    if IsUnderDirectory( APrefix, ExcludeTrailingPathDelimiter( ABdsRootDir ) ) then
+      Exit;
+    if IsUnderDirectory( ExcludeTrailingPathDelimiter( ABdsRootDir ), APrefix ) then
+      Exit;
+  end;
 
-  // Never a Windows system directory.
-  if ( WinDir <> '' ) and IsUnderDirectory( APrefix, ExcludeTrailingPathDelimiter( WinDir ) ) then
-    Exit;
+  // Never a Windows system directory, in either direction.
+  if WinDir <> '' then
+  begin
+    if IsUnderDirectory( APrefix, ExcludeTrailingPathDelimiter( WinDir ) ) then
+      Exit;
+    if IsUnderDirectory( ExcludeTrailingPathDelimiter( WinDir ), APrefix ) then
+      Exit;
+  end;
 
   // Never the Program Files roots themselves — only trees inside them.
   if SameText( APrefix, ExcludeTrailingPathDelimiter( ProgFiles ) ) or

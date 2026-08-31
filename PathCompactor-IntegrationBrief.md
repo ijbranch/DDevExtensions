@@ -685,6 +685,27 @@ should stay off unless a `.dproj` is being hand-edited to use one of these macro
 **Worth considering:** warn in the dialog when a proposed name is a common generic token
 and that option is ticked.
 
+### Junction near-miss (2026-08-31)
+
+The junction exclusion of §7.1 was written to refuse anything *under* the IDE root and did so
+correctly - but it never tested the other direction. `...@Embarcadero@Studio`, the parent of
+`...@Studio@37.0`, was therefore offered, and on this machine it ranked **first at 458 uses**.
+Accepting it would have junctioned every installed RAD Studio version behind a single link and
+rewritten 458 entries through it.
+
+It was never applied - the boxes were ticked after Apply, and `CreatedJunctions` in the plugin
+config is empty, confirming nothing was attempted. The exclusion now tests both directions and a
+mutation-checked test covers it.
+
+**The lesson for §7.1:** an exclusion expressed as "is X inside Y" needs the converse asked
+explicitly. The rule read correctly and passed its own test; the case it missed was the one nobody
+thought to write down.
+
+Three further junction defects were fixed at the same time: overlapping offers (a directory and its
+own parent both listed), two-letter link names that were cryptic and collision-prone, and a Link
+column the brief described as editable but which was read-only. Apply now also warns when offers
+exist and none is selected, since the tab is easy to miss.
+
 ### Still open
 
 - **§13.5** — design-time package unload/reload cleanliness is untested.

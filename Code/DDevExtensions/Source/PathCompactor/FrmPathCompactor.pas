@@ -140,6 +140,8 @@ type
     procedure cboPreviewSetChange( Sender: TObject );
     /// <summary>Refreshes the status line when a proposed variable is ticked or unticked.</summary>
     procedure lvVariablesItemChecked( Sender: TObject; Item: TListItem );
+    procedure lvJunctionsDblClick( Sender: TObject );
+    procedure lvJunctionsItemChecked( Sender: TObject; Item: TListItem );
   private
     /// <summary>Registry reader/writer, reused from the Path Sorter.</summary>
     FPathHandler: TLibraryPathHandler;
@@ -190,6 +192,13 @@ type
     procedure BuildDivergentNames( AList: TStrings );
     /// <summary>Applies accepted junction link paths to the rewritten entries.</summary>
     procedure ApplyJunctionRewrites;
+    /// <summary>
+    /// Returns a short, distinct link path for ASourcePath that does not clash
+    /// with one already offered or with an existing directory.
+    /// </summary>
+    function MakeLinkPath( const ASourcePath: string; ACount: Integer ): string;
+    /// <summary>Number of junction offers the user has ticked.</summary>
+    function AcceptedJunctionCount: Integer;
   public
     /// <summary>Shows the dialog modelessly, reusing the existing instance if there is one.</summary>
     class procedure Execute;
@@ -570,6 +579,105 @@ begin
   end;
 end;
 
+function TFormPathCompactor.MakeLinkPath( const ASourcePath: string;
+  ACount: Integer ): string;
+var
+  Leaf, Name: string;
+  I, Suffix: Integer;
+  Ch: Char;
+  Clash: Boolean;
+begin
+  // A two-letter stub is too short to be meaningful and collides readily -
+  // "Source" and "Studio" both give SO/ST, a keystroke apart. Use a longer
+  // stem, then guarantee uniqueness against the other offers on the list.
+  Leaf := ExtractFileName( ExcludeTrailingPathDelimiter( ASourcePath ) );
+  Name := '';
+  for I := 1 to Length( Leaf ) do
+  begin
+    Ch := Leaf[I];
+    if CharInSet( Ch, ['A'..'Z', 'a'..'z', '0'..'9'] ) then
+      Name := Name + UpCase( Ch );
+    if Length( Name ) >= 8 then
+      Break;
+  end;
+  if Name = '' then
+    Name := 'LINK';
+
+  Suffix := 1;
+  repeat
+    if Suffix = 1 then
+      Result := 'C:\' + Name
+    else
+      Result := 'C:\' + Name + IntToStr( Suffix );
+
+    Clash := TDirectory.Exists( Result );
+    if not Clash then
+      for I := 0 to ACount - 1 do
+        if SameText( FJunctions[I].LinkPath, Result ) then
+        begin
+          Clash := True;
+          Break;
+        end;
+
+    Inc( Suffix );
+  until not Clash or ( Suffix > 50 );
+end;
+
+function TFormPathCompactor.AcceptedJunctionCount: Integer;
+var
+  I: Integer;
+begin
+  Result := 0;
+  for I := 0 to lvJunctions.Items.Count - 1 do
+    if lvJunctions.Items[I].Checked then
+      Inc( Result );
+end;
+
+procedure TFormPathCompactor.lvJunctionsItemChecked( Sender: TObject; Item: TListItem );
+begin
+  if ( Item <> nil ) and ( Item.Index >= Low( FJunctions ) ) and
+     ( Item.Index <= High( FJunctions ) ) then
+    FJunctions[Item.Index].Accepted := Item.Checked;
+end;
+
+procedure TFormPathCompactor.lvJunctionsDblClick( Sender: TObject );
+var
+  Item: TListItem;
+  Link: string;
+begin
+  Item := lvJunctions.Selected;
+  if ( Item = nil ) or ( Item.Index > High( FJunctions ) ) then
+    Exit;
+
+  Link := FJunctions[Item.Index].LinkPath;
+  if not InputQuery( 'Junction link path',
+       'Create the link for'#13#10 + FJunctions[Item.Index].SourcePath +
+       #13#10#13#10 + 'at:', Link ) then
+    Exit;
+
+  Link := ExcludeTrailingPathDelimiter( Trim( Link ) );
+  if Link = '' then
+    Exit;
+
+  if TDirectory.Exists( Link ) and
+     not IsJunctionTo( Link, FJunctions[Item.Index].SourcePath ) then
+  begin
+    MessageDlg( 'A directory already exists at ' + Link +
+      ' and is not a junction to that source. Choose another link path.',
+      mtWarning, [mbOK], 0 );
+    Exit;
+  end;
+
+  FJunctions[Item.Index].LinkPath := Link;
+  FJunctions[Item.Index].ExpandedSaving :=
+    FJunctions[Item.Index].Occurrences *
+    ( Length( FJunctions[Item.Index].SourcePath ) - Length( Link ) );
+
+  Item.SubItems[0] := Link;
+  Item.SubItems[2] := IntToStr( FJunctions[Item.Index].ExpandedSaving );
+  FillSummary;
+end;
+
 procedure TFormPathCompactor.FillJunctions;
 var
   Tally: TDictionary<string, Integer>;
@@ -581,6 +689,7 @@ var
   Offer: TJunctionOffer;
   Item: TListItem;
   Root: string;
+  Nested: Boolean;
 begin
   SetLength( FJunctions, 0 );
   Root := BdsRootDir;
@@ -611,18 +720,44 @@ begin
       end;
     end;
 
+    // Collect, then keep only the best of any ancestor/descendant chain: once
+    // a directory is junctioned its children gain nothing from their own link,
+    // and offering "EurekaLog 7" alongside its Source, Lib and Packages just
+    // invites the user to create four links where one will do.
     for Pair in Tally do
       if IsJunctionCandidate( Pair.Key, Pair.Value, Root ) then
       begin
+        Offer := Default( TJunctionOffer );
         Offer.SourcePath := Pair.Key;
         Offer.Occurrences := Pair.Value;
-        // A short, memorable default the user can edit.
-        Offer.LinkPath := 'C:\' + UpperCase( Copy( ExtractFileName( Pair.Key ), 1, 2 ) );
-        Offer.ExpandedSaving :=
-          Pair.Value * ( Length( Pair.Key ) - Length( Offer.LinkPath ) );
         Offer.Accepted := False;
 
+        Nested := False;
+        for I := High( FJunctions ) downto Low( FJunctions ) do
+          if StartsWithSegment( Offer.SourcePath, FJunctions[I].SourcePath ) or
+             StartsWithSegment( FJunctions[I].SourcePath, Offer.SourcePath ) then
+          begin
+            // Keep whichever saves more expanded characters.
+            if Offer.Occurrences * Length( Offer.SourcePath ) >
+               FJunctions[I].Occurrences * Length( FJunctions[I].SourcePath ) then
+            begin
+              // Replace the weaker one in place.
+              FJunctions[I] := Offer;
+              FJunctions[I].LinkPath := MakeLinkPath( Offer.SourcePath, I );
+              FJunctions[I].ExpandedSaving := Offer.Occurrences *
+                ( Length( Offer.SourcePath ) - Length( FJunctions[I].LinkPath ) );
+            end;
+            Nested := True;
+            Break;
+          end;
+
+        if Nested then
+          Continue;
+
         SetLength( FJunctions, Length( FJunctions ) + 1 );
+        Offer.LinkPath := MakeLinkPath( Offer.SourcePath, High( FJunctions ) );
+        Offer.ExpandedSaving :=
+          Pair.Value * ( Length( Pair.Key ) - Length( Offer.LinkPath ) );
         FJunctions[High( FJunctions )] := Offer;
       end;
   finally
@@ -793,7 +928,7 @@ var
   Vars: TArray<TVarCandidate>;
   PathSet: TPathSet;
   Description, Error, DropList: string;
-  Created, Rescued, SetCount: Integer;
+  Created, Rescued, SetCount, Forgone: Integer;
   Drops: TArray<string>;
 begin
   if FAnalysis = nil then
@@ -823,6 +958,32 @@ begin
       #13#10#13#10 +
       'The remaining counts have been updated.', [Rescued] ),
       mtInformation, [mbOK], 0 );
+  end;
+
+  // Junctions are on a tab of their own, so it is easy to apply without ever
+  // looking at them - and they are the only measure that shortens the expanded
+  // path, which is what constrains the compiler command line.
+  if ( Length( FJunctions ) > 0 ) and ( AcceptedJunctionCount = 0 ) then
+  begin
+    Forgone := 0;
+    for I := Low( FJunctions ) to High( FJunctions ) do
+      Inc( Forgone, FJunctions[I].ExpandedSaving );
+
+    if MessageDlg( Format(
+         '%d junction opportunit%s available on the Junction opportunities tab, ' +
+         'but none is selected.'#13#10#13#10 +
+         'Junctions are the only measure that shortens the EXPANDED path - the ' +
+         'one that constrains the compiler command line. Macro substitution does ' +
+         'not help there. Selecting them all would save about %d expanded ' +
+         'characters.'#13#10#13#10 +
+         'Apply without any junctions?',
+         [Length( FJunctions ), IfThen( Length( FJunctions ) = 1, 'y is', 'ies are' ),
+          Forgone] ),
+         mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+    begin
+      pgcResults.ActivePage := tabJunctions;
+      Exit;
+    end;
   end;
 
   // Show exactly what will be deleted, in full, before deleting any of it.

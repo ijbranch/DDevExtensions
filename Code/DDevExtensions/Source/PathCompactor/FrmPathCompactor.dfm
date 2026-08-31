@@ -243,6 +243,8 @@ inherited FormPathCompactor: TFormPathCompactor
         RowSelect = True
         TabOrder = 0
         ViewStyle = vsReport
+        OnDblClick = lvJunctionsDblClick
+        OnItemChecked = lvJunctionsItemChecked
       end
     end
     object tabPreview: TTabSheet

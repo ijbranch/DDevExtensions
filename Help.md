@@ -1990,7 +1990,9 @@ If you are hitting the compiler command-line limit, macro substitution alone wil
 
 **Macro substitution.** Finds directory prefixes repeated across entries and proposes `$(NAME)` variables for them. Saving is scored against the **stored** text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and made longer - under a new variable. Where a candidate prefix equals an existing macro's value, that macro is reused rather than a duplicate invented.
 
-**Directory junctions.** For long physical prefixes, offers a short link (default `C:\CR`, editable). This is the only measure that shortens the expanded length. The IDE's own installation tree, the Windows directory and the Program Files roots are refused outright - junctioning those would relocate RAD Studio behind the back of GetIt, the installer and every repair operation.
+**Directory junctions.** For long physical prefixes, offers a short link whose name you can change by **double-clicking the Link column**. This is the only measure that shortens the expanded length, so if you are hitting the compiler command-line limit it is the only one that will help - and Apply warns you if offers exist but none is selected.
+
+The IDE's own installation tree is refused outright, **in both directions**: neither a directory inside `$(BDS)` nor any ancestor of it is ever offered. That second half matters - `...\Embarcadero\Studio` is not *inside* `...\Studio\37.0`, yet junctioning it would relocate every installed version of RAD Studio at once. The Windows directory and the Program Files roots are excluded the same way. Overlapping offers are collapsed to whichever saves more, so you are never asked to junction a directory and its own parent.
 
 **Cleanup.** Reports, and optionally removes, three classes of entry.
 

@@ -41,6 +41,7 @@ uses
   ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas',
   PathCompactorCore in '..\Code\DDevExtensions\Source\PathCompactor\PathCompactorCore.pas',
+  PathCompactorJunctions in '..\Code\DDevExtensions\Source\PathCompactor\PathCompactorJunctions.pas',
   TestPathCompactorDUnitX in 'TestPathCompactorDUnitX.pas';
 
 {$R *.res}
