@@ -688,8 +688,8 @@ and that option is ticked.
 ### Junction near-miss (2026-08-31)
 
 The junction exclusion of §7.1 was written to refuse anything *under* the IDE root and did so
-correctly - but it never tested the other direction. `...@Embarcadero@Studio`, the parent of
-`...@Studio@37.0`, was therefore offered, and on this machine it ranked **first at 458 uses**.
+correctly - but it never tested the other direction. `...\Embarcadero\Studio`, the parent of
+`...\Studio\37.0`, was therefore offered, and on this machine it ranked **first at 458 uses**.
 Accepting it would have junctioned every installed RAD Studio version behind a single link and
 rewritten 458 entries through it.
 
@@ -705,6 +705,29 @@ Three further junction defects were fixed at the same time: overlapping offers (
 own parent both listed), two-letter link names that were cryptic and collision-prone, and a Link
 column the brief described as editable but which was read-only. Apply now also warns when offers
 exist and none is selected, since the tab is easy to miss.
+
+### Live verification in the running IDE (2026-08-31)
+
+The dialog was driven in a real Delphi 13 IDE and inspected, without applying anything.
+
+| Check | Result |
+|---|---|
+| Menu placement | `IDE Path Sorter...` then `IDE Path Compactor...` directly beneath |
+| Hygiene group | four checkboxes, all unticked by default |
+| Hint label em dash | renders correctly; no mojibake |
+| Junction tab | 3 rows, and **no Embarcadero tree present** |
+
+The junction tab is the telling one. Before the fixes it offered seven rows including
+`C:\Program Files (x86)\Embarcadero\Studio` at 458 uses, plus EurekaLog's `Source`, `Lib` and
+`Packages` alongside their own parent, with two-letter links. It now offers three: EurekaLog 7,
+IPWorks and TestInsight, linked as `C:\EUREKALO`, `C:\IPWORKS2` and `C:\TESTINSI`.
+
+The run also caught a naming case the unit tests did not: version segments were skipped when
+deriving a base name but not when widening to break a collision, so a second `source` candidate
+became `$(V37_0_SOURCE)`. Widening now reaches past version and token segments
+(`$(STUDIO_37_0_SOURCE)`). Worth noting that this was the third naming defect in a row found by
+looking at real output rather than by testing - the rules are individually correct and only their
+interaction misbehaves, which is exactly what fixtures are worst at catching.
 
 ### Still open
 

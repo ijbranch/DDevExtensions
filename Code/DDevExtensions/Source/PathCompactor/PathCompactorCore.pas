@@ -551,10 +551,21 @@ begin
     Dec( First );
 
   // Fold in further parents on request, to break a collision with a name that
-  // actually distinguishes the two paths instead of a bare _2.
+  // actually distinguishes the two paths instead of a bare _2. Skip over
+  // version and token segments while doing so: folding in "37.0" to break a
+  // clash on "source" gives V37_0_SOURCE, which is no more meaningful than the
+  // suffix it replaced. Reach past it to the segment that actually names
+  // something.
   for I := 1 to AExtraSegments do
-    if First > 1 then
+  begin
+    if First <= 1 then
+      Break;
+    Dec( First );
+    while ( First > 1 ) and
+          ( IsPlatformOrConfigToken( Segments[First] ) or
+            IsVersionLikeSegment( Segments[First] ) ) do
       Dec( First );
+  end;
 
   Raw := '';
   for I := First to Last do

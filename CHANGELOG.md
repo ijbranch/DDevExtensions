@@ -124,6 +124,14 @@ This file is the sole source and record of all project changes for DDevExtension
   `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
   `D_D102`...`D_D130/DDevExtensions.dproj`
 
+- **Collision widening folded in version segments, reproducing the problem it was meant to solve.**
+  Version-like segments were skipped when deriving a base name but not when widening to break a
+  clash, so a second candidate ending in `source` took the parent `37.0` and became
+  `$(V37_0_SOURCE)` - no more meaningful than the `_2` suffix it replaced, and carrying the same
+  `V` prefix the sanitiser adds when a name would otherwise start with a digit. Widening now reaches
+  past version and token segments to one that names something: `$(STUDIO_37_0_SOURCE)`. Found by
+  driving the running IDE. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+
 - **The junction exclusion tested only one direction, and offered the IDE's own installation tree.**
   `IsJunctionCandidate` refused anything *under* `$(BDS)` but nothing *above* it, so
   `...\Embarcadero\Studio` - the parent of `...\Studio\37.0` - sailed through, and on the development
