@@ -326,6 +326,23 @@ function StartsWithSegment( const APath, APrefix: string ): Boolean;
 function IsPlatformOrConfigToken( const ASegment: string ): Boolean;
 
 /// <summary>
+/// True when ASegment is a structural folder name that says nothing about
+/// <i>which</i> library a path belongs to — <c>packages</c>, <c>lib</c>,
+/// <c>src</c> and the like. Skipped when folding a parent in to break a name
+/// collision, so <c>...\tms.vcl.uipack\packages\d13</c> widens to
+/// <c>TMS_VCL_UIPACK_D13</c> rather than the useless <c>PACKAGES_D13</c>.
+/// </summary>
+function IsNoiseSegment( const ASegment: string ): Boolean;
+
+/// <summary>
+/// True when AName is a common word that would be a poor choice for a
+/// machine-wide environment variable — <c>SRC</c>, <c>COMMON</c>, <c>CODE</c>
+/// and similar. Such a name is harmless inside the IDE's own variable list but
+/// collides readily once every process on the machine inherits it.
+/// </summary>
+function IsGenericVariableName( const AName: string ): Boolean;
+
+/// <summary>
 /// True when ASegment is nothing but digits and separators — a version folder
 /// such as <c>37.0</c>, <c>13</c> or <c>8.0.2</c>. Such a segment names nothing
 /// on its own and must not become a variable name.
@@ -399,6 +416,19 @@ const
 
   /// <summary>Build configuration names that must never become a variable name on their own.</summary>
   ConfigTokens: array[0..1] of string = ( 'Debug', 'Release' );
+
+  /// <summary>Structural folder names that identify no particular library.</summary>
+  NoiseSegments: array[0..13] of string = (
+    'packages', 'package', 'lib', 'libs', 'bin', 'src', 'source', 'sources',
+    'build', 'out', 'output', 'dcu', 'obj', 'units'
+  );
+
+  /// <summary>Names too common to be safe as machine-wide environment variables.</summary>
+  GenericNames: array[0..21] of string = (
+    'SRC', 'SOURCE', 'SOURCES', 'LIB', 'LIBS', 'BIN', 'DATA', 'COMMON', 'CODE',
+    'DOC', 'DOCS', 'INCLUDE', 'TEMP', 'TMP', 'HOME', 'ROOT', 'DEV', 'TEST',
+    'TESTS', 'BUILD', 'OUT', 'OUTPUT'
+  );
 
   /// <summary>Shortest prefix worth replacing with a macro.</summary>
   MinPrefixLength = 8;
@@ -525,11 +555,34 @@ begin
   Result := HasDigit;
 end;
 
+function IsNoiseSegment( const ASegment: string ): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := Low( NoiseSegments ) to High( NoiseSegments ) do
+    if SameText( ASegment, NoiseSegments[I] ) then
+      Exit;
+  Result := False;
+end;
+
+function IsGenericVariableName( const AName: string ): Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := Low( GenericNames ) to High( GenericNames ) do
+    if SameText( AName, GenericNames[I] ) then
+      Exit;
+  Result := False;
+end;
+
 function DeriveVariableName( const APrefix: string; AExtraSegments: Integer;
   AMaxLength: Integer ): string;
 var
   Segments: TArray<string>;
-  Last, First, I, J, Limit: Integer;
+  Chosen: TArray<Integer>;
+  Last, First, Next, I, J, Limit: Integer;
   Raw: string;
   Ch: Char;
 begin
@@ -550,29 +603,46 @@ begin
           IsVersionLikeSegment( Segments[First] ) ) do
     Dec( First );
 
+  // Everything from First to Last is part of the base name: the trailing
+  // segment plus any token/version segments the loop above reached past.
+  SetLength( Chosen, 0 );
+  for I := First to Last do
+  begin
+    SetLength( Chosen, Length( Chosen ) + 1 );
+    Chosen[High( Chosen )] := I;
+  end;
+
   // Fold in further parents on request, to break a collision with a name that
-  // actually distinguishes the two paths instead of a bare _2. Skip over
-  // version and token segments while doing so: folding in "37.0" to break a
-  // clash on "source" gives V37_0_SOURCE, which is no more meaningful than the
-  // suffix it replaced. Reach past it to the segment that actually names
-  // something.
+  // actually distinguishes the two paths instead of a bare _2 - skipping any
+  // parent that names nothing. "37.0" folded in to break a clash on "source"
+  // gives V37_0_SOURCE, no better than the suffix it replaced; "packages"
+  // folded in gives PACKAGES_D13, which identifies no library at all. Reach
+  // past both to a segment that actually names something.
+  Next := First;
   for I := 1 to AExtraSegments do
   begin
-    if First <= 1 then
+    if Next <= 1 then
       Break;
-    Dec( First );
-    while ( First > 1 ) and
-          ( IsPlatformOrConfigToken( Segments[First] ) or
-            IsVersionLikeSegment( Segments[First] ) ) do
-      Dec( First );
+    Dec( Next );
+    while ( Next > 1 ) and
+          ( IsPlatformOrConfigToken( Segments[Next] ) or
+            IsVersionLikeSegment( Segments[Next] ) or
+            IsNoiseSegment( Segments[Next] ) ) do
+      Dec( Next );
+
+    // Prepend it, keeping path order.
+    SetLength( Chosen, Length( Chosen ) + 1 );
+    for J := High( Chosen ) downto 1 do
+      Chosen[J] := Chosen[J - 1];
+    Chosen[0] := Next;
   end;
 
   Raw := '';
-  for I := First to Last do
+  for J := Low( Chosen ) to High( Chosen ) do
   begin
     if Raw <> '' then
       Raw := Raw + '_';
-    Raw := Raw + Segments[I];
+    Raw := Raw + Segments[Chosen[J]];
   end;
 
   Result := '';

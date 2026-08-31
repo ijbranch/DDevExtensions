@@ -945,7 +945,7 @@ var
   I: Integer;
   Vars: TArray<TVarCandidate>;
   PathSet: TPathSet;
-  Description, Error, DropList: string;
+  Description, Error, DropList, Generic: string;
   Created, Rescued, SetCount, Forgone: Integer;
   Drops: TArray<string>;
 begin
@@ -976,6 +976,36 @@ begin
       #13#10#13#10 +
       'The remaining counts have been updated.', [Rescued] ),
       mtInformation, [mbOK], 0 );
+  end;
+
+  // Names that are fine inside the IDE's own variable list can be a poor idea
+  // once every process on the machine inherits them.
+  if chkWriteUserEnv.Checked then
+  begin
+    Generic := '';
+    Vars := FAnalysis.AcceptedVariables;
+    for I := Low( Vars ) to High( Vars ) do
+      if not Vars[I].PreExisting and IsGenericVariableName( Vars[I].Name ) then
+        Generic := Generic + #13#10 + '    ' + Vars[I].Name + '  =  ' + Vars[I].Prefix;
+
+    if Generic <> '' then
+      if MessageDlg(
+           'These variables have very common names, and you have asked for them to be ' +
+           'defined as Windows user environment variables:' + #13#10 + Generic +
+           #13#10#13#10 +
+           'Every process you launch would inherit them, so a name like SRC or COMMON ' +
+           'can collide with build scripts, makefiles and installers - and such a ' +
+           'collision is hard to trace back here.' + #13#10#13#10 +
+           'They are harmless inside the IDE''s own variable list, which is written ' +
+           'either way. Continue and write them to the Windows environment as well?',
+           mtWarning, [mbYes, mbNo], 0 ) <> mrYes then
+      begin
+        chkWriteUserEnv.Checked := False;
+        MessageDlg( 'The Windows environment option has been unticked. The IDE ' +
+          'variables are unaffected; press Apply again to continue.',
+          mtInformation, [mbOK], 0 );
+        Exit;
+      end;
   end;
 
   // Junctions are on a tab of their own, so it is easy to apply without ever

@@ -25,16 +25,42 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Changed
 
+- **Widening now skips structural folder names.** Breaking a name collision by folding in the parent gave
+  `PACKAGES_D13` for `...\tms.vcl.uipack\packages\d13` - a name identifying no library at all, and no more
+  useful than the `D13_2` it replaced. `packages`, `lib`, `src`, `bin`, `build`, `out`, `dcu`, `obj` and
+  their variants are now stepped over, reaching a segment that actually names something:
+  `TMS_VCL_UIPACK_D13`, and `SHARED3_RAD13` where it previously produced `LIB_RAD13`. (2026-08-31) -
+  `Source/PathCompactor/PathCompactorCore.pas`
+
+- **Apply now warns before writing generically-named variables to the Windows environment.** Ticking "Also
+  define as Windows user environment variables" with names like `SRC`, `COMMON`, `CODE` or `DATA` on the
+  list is a quiet hazard: those are harmless inside the IDE's own variable list but every process on the
+  machine inherits the Windows ones, and a collision with a build script or installer is hard to trace
+  back here. The prompt names the offenders and their values, and declining unticks the option rather than
+  cancelling the whole Apply. **Why:** this happened in practice - 12 such variables were written and had
+  to be removed by hand. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  `Source/PathCompactor/FrmPathCompactor.pas`
+
+- **Build numbers aligned across all seven projects.** They had drifted to 575 / 598 / 806 because
+  `VerInfo_AutoIncVersion` increments only the configuration actually built, and for years only some
+  configurations were. All now carry the Win64 number, 598. (2026-08-31) -
+  `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`
+
 - Version bumped 3.22.12 -> 3.22.13 across all indicators, with `Version.res` regenerated. (2026-08-31)
 
 ### Known
 
-- **Build order matters for Win32, and the failure is misleading.** Building `D_D130` for **Win64**
-  rebuilds `CompileInterceptorW` and removes the Win32 `CompileInterceptorW.dll`; the next Win32 build then
-  fails in its *pre-build event* - `The system cannot find the file specified` - with **zero compiler
-  diagnostics**, which reads as a broken project rather than a missing artefact. The working order is:
-  build `CompileInterceptorW` Win32, then `D_D130` Win32. Both platforms write to the same
-  `CompileInterceptor\Bin` folder, which is the underlying cause.
+- **A Win32 build of `D_D130` fails until `CompileInterceptorW` has been built for Win32, and the failure
+  is misleading.** The pre-build event copies `CompileInterceptor\Bin\CompileInterceptorW.dll`, which is a
+  **gitignored build artefact** - so a fresh clone, or any tree where it has not been produced, fails with
+  `The system cannot find the file specified` and **zero compiler diagnostics**. That reads as a broken
+  project rather than a missing file. Build `CompileInterceptorW` for Win32 first.
+
+  **Correction:** an earlier revision of this entry claimed a Win64 build *deletes* the Win32 DLL. That was
+  written from a coincidence and does not reproduce - building `D_D130` for Win64, and building
+  `CompileInterceptorW` for Win64, were both tested directly and left the Win32 DLL untouched. The two
+  platforms do not collide: `{$LIBSUFFIX 'x64'}` in the `.dpr` gives the Win64 build its own
+  `CompileInterceptorWx64.dll`.
 
 ---
 
@@ -117,7 +143,7 @@ This file is the sole source and record of all project changes for DDevExtension
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
   silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (24 tests) covering the compactor core.** Includes the regression
+- **DUnitX fixture `TTestPathCompactor` (26 tests) covering the compactor core.** Includes the regression
   test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
   of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
   and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into

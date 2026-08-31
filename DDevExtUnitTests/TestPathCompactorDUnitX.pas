@@ -87,6 +87,12 @@ type
     /// <summary>A bare version folder never becomes a variable name on its own.</summary>
     [Test]
     procedure TestVersionSegmentNaming;
+    /// <summary>Widening skips structural folder names that identify no library.</summary>
+    [Test]
+    procedure TestWideningSkipsNoiseSegments;
+    /// <summary>Common words are flagged as poor machine-wide variable names.</summary>
+    [Test]
+    procedure TestGenericNameDetection;
     /// <summary>Two paths with identical tails get distinguishing names, not X and X_2.</summary>
     [Test]
     procedure TestCollisionWidensRatherThanSuffixes;
@@ -774,6 +780,40 @@ begin
   Assert.IsTrue( IsVersionLikeSegment( '13' ) );
   Assert.IsFalse( IsVersionLikeSegment( 'd13' ) );
   Assert.IsFalse( IsVersionLikeSegment( 'Florence' ) );
+end;
+
+procedure TTestPathCompactor.TestWideningSkipsNoiseSegments;
+begin
+  // Base name only - no widening requested.
+  Assert.AreEqual( 'D13', DeriveVariableName( 'D:\TMS\Products\tms.vcl.uipack\packages\d13' ) );
+
+  // Widened by one to break a clash: "packages" identifies no library, so the
+  // rule must reach past it. PACKAGES_D13 would be no more useful than D13_2.
+  Assert.AreEqual( 'TMS_VCL_UIPACK_D13',
+    DeriveVariableName( 'D:\TMS\Products\tms.vcl.uipack\packages\d13', 1 ) );
+
+  // Same for lib/src and friends.
+  Assert.AreEqual( 'INFOPOWER_LIB',
+    DeriveVariableName( 'D:\woll2woll\InfoPower\lib', 1 ) );
+
+  Assert.IsTrue( IsNoiseSegment( 'packages' ) );
+  Assert.IsTrue( IsNoiseSegment( 'Lib' ) );
+  Assert.IsTrue( IsNoiseSegment( 'SRC' ) );
+  Assert.IsFalse( IsNoiseSegment( 'EurekaLog 7' ) );
+  Assert.IsFalse( IsNoiseSegment( 'tms.vcl.uipack' ) );
+end;
+
+procedure TTestPathCompactor.TestGenericNameDetection;
+begin
+  // These are fine inside the IDE's own list but poor once every process on the
+  // machine inherits them.
+  Assert.IsTrue( IsGenericVariableName( 'SRC' ) );
+  Assert.IsTrue( IsGenericVariableName( 'COMMON' ) );
+  Assert.IsTrue( IsGenericVariableName( 'CODE' ) );
+  Assert.IsTrue( IsGenericVariableName( 'data' ) );
+  Assert.IsFalse( IsGenericVariableName( 'EUREKALOG_7' ) );
+  Assert.IsFalse( IsGenericVariableName( 'TMS_VCL_UIPACK' ) );
+  Assert.IsFalse( IsGenericVariableName( 'DUNITX' ) );
 end;
 
 procedure TTestPathCompactor.TestCollisionWidensRatherThanSuffixes;
