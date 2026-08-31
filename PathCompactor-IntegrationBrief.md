@@ -732,8 +732,14 @@ interaction misbehaves, which is exactly what fixtures are worst at catching.
 ### Still open
 
 - **§13.5** — design-time package unload/reload cleanliness is untested.
-- The two IDE variable lists remain diverged on the development machine; the tool
-  reports it (4 entries, all divergent rather than dead) but does not repair it.
+- ~~The two IDE variable lists remain diverged on the development machine.~~ Repaired
+  2026-08-31: the six variables present only in the 32-bit list were copied into the x64
+  list, and the tool now reports 0 divergent macros. The divergence pre-dated the
+  Compactor entirely - it is visible in the 09:01 backup taken before anything was
+  applied. It arises because RAD Studio writes a variable edit to the list matching the
+  running IDE's bitness and never synchronises the two, while the path keys they resolve
+  are shared. The tool still only *reports* divergence; repairing it stays a deliberate
+  manual act.
 - Variable names can still run long where a collision forces widening
   (`$(EUREKALOG_7_SOURCE)`, `$(INFOPOWER4KFLORENCE_LIB)`). That is the intended trade -
   a meaningful long name beats a short meaningless one - but a smarter rule might drop

@@ -223,9 +223,23 @@ This file is the sole source and record of all project changes for DDevExtension
   Compactor writes directly, as the Sorter already does, and still refuses to Apply while the IDE's own
   Options dialog is open - that page holds its own copy of the path and would commit it over any change.
 
-- The two IDE user-variable lists have already diverged on the development machine: `$(DUNITX)`,
-  `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)` exist only in the 32-bit list, so four shared library-path entries
-  do not resolve in the 64-bit IDE. The Compactor reports these; it does not repair them automatically.
+- ~~The two IDE user-variable lists have already diverged on the development machine.~~
+  **Repaired 2026-08-31.** Six variables existed only in the 32-bit list - `DUNITX`, `DELPHIMOCKS`,
+  `GOOGLEMAPSDIR`, `DEMOSDIR`, `IB_PROTOCOL` and `InterBase` - and four shared library-path entries used
+  three of them, so those entries were dead in the 64-bit IDE. They were copied across by hand and the
+  Compactor now reports 0 divergent macros.
+
+  **Why it happens, since it will happen again.** RAD Studio writes an environment-variable edit to the
+  list belonging to the bitness of the IDE you are running: Tools > Options > Environment Variables in
+  `bin\bds.exe` writes `Environment Variables`, and the same dialog in `bin64\bds.exe` writes
+  `Environment Variables x64`. Nothing synchronises the two, while the `Library\<Platform>` keys they
+  resolve are shared. Corroboration that the x64 list was populated independently rather than copied:
+  `IBREDISTDIR` holds *different text* in each - a literal path in one, a `$(PUBLIC)`-based one in the
+  other - which a copy could not produce. **Add IDE variables from the 64-bit IDE, or add them to both.**
+  This is the same asymmetry that makes §8.1's two-list write mandatory.
+
+  The Compactor still only *reports* divergence and does not repair it: defining a variable in the other
+  list changes how that IDE resolves every path using it, which should be a deliberate act.
 
 ---
 
