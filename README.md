@@ -12,33 +12,77 @@ DDevExtensions adds new features to RAD Studio.
 
 This version has been extensively re-worked for Delphi 10.2 and up.  Any identified issues have been resolved.  New features have been added.
 
-Version 3.0 was set to clearly break from the old version 2.88. 
+**Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
-Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector.
+Version 3.22.12 fixes the **IDE Path Sorter** marking valid paths as invalid. Any entry whose macro could not be resolved - `$(BDSCatalogRepository)`, or any variable defined in the IDE's own Environment Variables list - was drawn blue as a missing directory, because `IDEUtils.ExpandDirMacros` replaces an unresolvable macro with an empty string rather than leaving it in place. The Sorter now uses the Path Compactor's expander, which leaves such a macro intact so the entry is correctly reported as unverifiable rather than missing.
 
-Version 3.2 adds two Form Designer options to prevent PixelsPerInch and TextHeight properties from being saved to DFM files, eliminating phantom changes caused by different DPI settings and font rendering across developer machines.
+Version 3.22.11 adds the **IDE Path Compactor** - a companion to the IDE Path Sorter that shortens the IDE's library path strings rather than reordering them. Tools > IDE Path Compactor analyses every selected platform and path type, proposes `$(NAME)` macro substitutions for directory prefixes that repeat across entries, offers directory junctions for over-long third-party prefixes, and reports duplicate, missing and undefined-macro entries. It reports **two** lengths before and after, because two different limits exist: the *stored* length is what triggers the IDE's "path too long" warning and is shortened by macros, while the *expanded* length is what constrains the `dcc32`/`dcc64` command line and is shortened only by a junction. Saving is scored against the stored text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and longer - under a newly invented variable. Accepted variables are written to both the 32-bit and 64-bit IDE macro-override keys, since the library path they resolve is shared between the two IDEs while those variable lists are not. Junction detection refuses the IDE's own installation tree. Nothing is written until Apply, every affected value is backed up first, and rollback uses the IDE Path Sorter's existing backup history. See Help.md for details.
 
-Version 3.3.0 enhances the Dependency Viewer with reverse dependency view ("Used By" mode), dependency depth indicators, improved circular reference analysis showing interface/implementation links with click-to-highlight and double-click-to-open functionality, and a new Impact Analysis panel that shows direct/transitive dependents with risk scoring when you select a unit.
+Version 3.21.10 fixes an **editor access violation / dead keyboard in the 64-bit IDE**. When a Key Bindings shortcut fell through unhandled (e.g. plain `Home` mid-line, `Tab` with no block selected), the handler probed for a follow-on binding via the legacy `GetKeyBindingRec`/`GetNextBindingRec` ToolsAPI — which round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next` field and AVs inside the IDE's `Kbclient.FillBindingRec` (`Access violation in coreide370.bpl`), wedging all keyboard input until IDE restart. The probe is now Win32-only; on the 64-bit IDE unhandled keys use the built-in Home/Tab fallback directly, so another plugin partially bound to the same key is no longer chained there (the underlying defect is the 64-bit IDE's — reported to Embarcadero).
 
-Version 3.3.1 adds the Unreachable Code Detector - a new tool that finds code that can never execute, such as statements after Exit, Raise, Break, Continue, Halt, or Abort calls.
+Version 3.21.9 adds **Sort Projects in Group** — a Tools-menu command that alphabetises the member projects of the currently open project group so they list in name order in the Project Manager. Because the IDE has no API for reordering group members and only reads the order from the `.groupproj` when the group is opened, the command saves the group, rewrites the `.groupproj` with the projects sorted (across the `<ItemGroup>`, the per-project `<Target>` blocks **and** the `Build`/`Clean`/`Make` `CallTarget` lists — the Project Manager order follows the latter), then closes and reopens the group and reselects the previously active project. A `.bak` is written first, a prompt confirms the reload, and it no-ops when the projects are already sorted. See Help.md for details.
 
-Version 3.4 adds the Smart Uses Clause Manager - automatically analyzes which symbols from each unit are used in the interface vs implementation sections, then recommends or applies changes to move units to their optimal uses clause location.
+Version 3.20.9 **restores the three "Do not store … into the DFM" Form Designer cleaners on the 64-bit IDE.** *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* were greyed out on the Win64 host because they installed via the 5-byte `JMP rel32` `CodeRedirect`, which is a deliberate no-op on x64. They are full-replacement hooks (their replacement `DefineProperties` never calls the original), so a new x64-safe primitive — `InstallFullReplaceHook` / `RemoveFullReplaceHook`, using a 14-byte absolute indirect jump — now drives them; the global `CodeRedirect` is left untouched so the chain-back hooks elsewhere stay correctly inactive on Win64. Verified live in the Delphi 13 Win64 IDE (Explicit\* and TextHeight strip on save). Note: *Remove PixelsPerInch* is only observable at non-96 DPI, because Delphi only streams `PixelsPerInch` when the design DPI differs from 96 — see Help.md.
 
-Version 3.4.1 adds three new features: Interface/Implementation Section Toggle (Ctrl+Shift+Up/Down keyboard shortcut), Empty Event Handler Detector (finds event handlers with empty bodies), and DFM/PAS Consistency Checker (detects mismatches between DFM components and PAS field declarations).
+Versions 3.17.7, 3.18.8 and 3.19.9 complete the **UI workflow audit** remediation — a systematic pass over every button and menu action across all feature modules for reliability, correctness and GITLAK coding-standards compliance. v3.17.7 addresses the High-severity findings, v3.18.8 the Medium, and v3.19.9 the Low. Highlights across the sweep:
 
-Version 3.5 enhances the Dependency Viewer with conditional compilation support - reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude inactive code from analysis, eliminating false positive circular references in multi-app codebases with shared units.
+- Project scans no longer abort on a single unreadable/malformed unit (per-module `try/except` isolation; a skipped-file count is surfaced).
+- Editor navigation is hardened everywhere (`OpenModule` wrapped, `EditViewCount > 0` guards, `FileExists` checks, friendly "could not open" messages).
+- Close-during-scan use-after-free is vetoed (`FScanning` guard) in every scanner that pumps the message queue.
+- Option-page frames validate their `UserData` cast and nil-guard Load/Save.
+- All CSV exports are RFC 4180-escaped; the Excel exporter avoids integer-overflow progress and never orphans a hidden Excel process.
+- ToolsAPI access is nil/`Supports`-guarded rather than hard-cast (safer Win64 teardown); silently-swallowed exceptions now log via `OutputDebugString`.
+- Correctness fixes including array-index magic-number detection, consistent dependency-cycle counts, deterministic priority/numeric sorts, Unicode-safe path handling, and accurate result-line navigation.
 
-Version 3.5.1 fixes bugs in the Dead Code Detector, Code Style Checker, and Empty Event Handler Detector. The field detection tools now correctly skip the implicit published section of forms (VCL components) and only check fields after an explicit private/protected keyword. The Empty Event Handler Detector now requires event suffixes at the end of method names and correctly detects case/try statements as non-empty. The DDevExtensions submenu has been reordered by workflow (dependency analysis → code quality → style/consistency).
+Version 3.17.6 **re-lands the Delphi 13.1 Win64 IDE build support on a clean baseline.** The initial v3.16.5 Win64 attempt was reverted because it destabilised the RAD Studio personality; v3.17.6 rebuilds the support incrementally with three root-cause access-violation fixes — IDE-notifier registration, compile-interceptor unregister, and native progress-form teardown — all gated or made symmetric for the 64-bit host. The `%APPDATA%\DDevExtensions\Win64Shutdown.log` diagnostic attributes any teardown exception to the responsible step (silent on clean shutdown). v3.17.6 also begins the **UI workflow audit** remediation, fixing the one Critical and the first High-severity finding (Win64 pointer-truncation AVs from `Integer(...)` tag round-trips, corrected to `NativeInt`).
 
-Version 3.5.2 fixes multiple Code Style Checker bugs: field detection now works correctly, method names and parameters are no longer incorrectly flagged as fields, return types and case labels are no longer flagged as parameters, and line number navigation is now accurate. All feature dialogs are now non-modal and open at screen center.
+Version 3.16.5 adds **Delphi 13.1 Win64 IDE build support**. The same source tree now produces `DDevExtensionsD130.dll` for the 32-bit IDE host (`bin\bds.exe`) and `DDevExtensionsD130x64.dll` for the 64-bit RAD Studio personality (`bin64\bds.exe`). The 64-bit Delphi-only IDE personality does not exist — only RAD Studio ships a 64-bit host. The 32-bit IDE build is unchanged. The installer detects both bitness hosts under the shared `Embarcadero\BDS\37.0` registry key and registers each under the correct `Experts` / `Experts x64` subkey. A small set of features rely on x86 inline asm or 5-byte JMP-rel32 hooks that don't port to Win64 and are inactive on the 64-bit host — see Help.md for the list. A diagnostic log at `%APPDATA%\DDevExtensions\Win64Shutdown.log` captures any plug-in teardown exception attributed to the responsible step (silent on clean shutdown).
 
-Version 3.6.0 adds two new Code Style Checker rules (Variable Type Prefix Rules and Unit Scope Names) plus the Code Quality Analyzer - a unified tool that detects common code quality issues including magic numbers, hardcoded strings, commented-out code, empty except blocks, catch-all exception handlers, missing try/finally patterns, and potential memory leaks. All detectors are configurable with whitelists and thresholds. Cleanup is deliberately conservative: removal of duplicates, missing directories and dead macro references is opt-in and off by default, every intended removal is re-verified immediately before it happens (a share may have reconnected since you pressed Analyse), each one is listed for confirmation, and a macro that resolves only in the *other* IDE bitness is reported as divergent rather than dead so it is never deleted. It also fixes the `OldPalette` search-path entries, which pointed at a directory that has never existed and emitted `H2675` on every build. See Help.md for details.
+> **Note:** v3.16.5 has been built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Earlier Delphi releases (10.2 – 12) do not ship a 64-bit IDE host, so they keep the existing 32-bit build only.
 
-Version 3.6.0 enhances the Dependency Viewer with two new features: Export Circular References (export circular reference analysis to CSV or TXT files for external review) and Layer Violation Detection (define architectural layers with pattern-based unit matching and detect forbidden cross-layer dependencies).
+Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
 
-Version 3.6.1 fixes a compilation error in Delphi 10.2-10.4 where the Remove PixelsPerInch Property feature would fail to compile because `ReadPixelsPerInch`/`WritePixelsPerInch` methods were introduced in Delphi 11. The feature now works in all supported Delphi versions - in Delphi 10.2-10.4, it reads and discards the PixelsPerInch property from DFM files created in Delphi 11+, allowing cross-version compatibility.
+Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "Export Graph..." button appears when Graphviz is detected on the system (download from https://graphviz.org/download/). After scanning a project, click "Export Graph..." to export a dependency diagram rendered as PNG. Project units are shown as green nodes, external/RTL units as blue, with solid edges for interface dependencies and dashed edges for implementation dependencies. Units involved in circular references are highlighted with red borders.
 
-Version 3.6.2 removes dead CodeSite logging code from `RemovePixelsPerInchProperty.pas` (commented-out uses clause and unused conditional block).
+Version 3.13.5 adds a **project load grace period** to the **External Mod Monitor**. When a project group is loaded, the IDE normalises/rewrites `.dproj` files, which previously triggered spurious "Files Refreshed" notifications. File change events arriving within the configurable grace period (default 3 seconds) after project load are now silently discarded.
+
+Version 3.13.4 also adds **Windows balloon notifications** to the **External Mod Monitor**. When externally modified files are refreshed, a notification shows which files were updated. Configurable via Options (enabled by default).
+
+Version 3.13.4 enhances the **IDE Path Sorter** with **platform category filter checkboxes**. When many platforms are installed, the Platform dropdown can be filtered by category (Windows, Android, iOS, ARM, macOS, Linux). An "All" checkbox shows all platforms at once. Only categories with installed platforms appear. Checkbox selections persist across sessions.
+
+Version 3.12.4 adds the **External Mod Monitor** — real-time detection of externally modified files. The Delphi IDE normally only detects external changes when it regains focus. This feature monitors project directories using the Windows `ReadDirectoryChangesW` API and silently refreshes modified files in the IDE within ~200ms, without any external dependencies. Files with unsaved editor changes are never overwritten, and monitoring is automatically suppressed during compilation. Configurable via Tools > DDevExtensions > Options > External Mod Monitor (enabled by default).
+
+Version 3.10.3 adds an **About dialog** to the DDevExtensions submenu. "About..." appears as the last item in the menu and displays the plugin name, version, copyright information, and contributors. The dialog is built programmatically using native VCL components and closes with OK or Escape.
+
+Version 3.9.3 fixes the **compile progress bar position** at non-100% display scaling. The reference panel lookup was updated from `pnErrors` to `pnHints` to match the Delphi 12+/13 IDE compile progress dialog layout. DPI scaling (`ScaleForPPI`) and dynamic height (`TotalLines.Height div 2`) are restored, so the progress bar now positions and sizes correctly at all DPI settings (100%, 125%, 150%, etc.).
+
+Version 3.9.2 fixes a bug in the **Options dialog** that prevented it from operating correctly.
+
+Version 3.9.1 enhances the **IDE Path Sorter** with path loss detection and diagnostics:
+
+- Moved to Tools menu (below Build Tools...) for easier access
+- Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
+- Deleted entry counter tracks manual deletions and compares against actual difference
+- Mismatch warning if deleted count differs from expected (indicates unexpected path loss)
+- Visual highlighting of paths in the original panel that are missing from the working panel (pink background, maroon bold text)
+- "Show Missing Paths..." context menu option to list all paths missing from the working panel
+- Resizable Original Panel width via horizontal splitter between panels
+- Form position, size, and panel width preserved between sessions
+- Fixed potential issue where duplicate paths could be lost during sorting
+
+Version 3.8.0 adds the **IDE Path Sorter** (formerly Library Path Sorter) - a tool to manage and organize Delphi IDE library paths:
+
+- Sort library paths alphabetically in a working panel
+- Support for all path types: Library Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP/DPL Output, and Translated paths
+- Support for all platforms (Win32, Win64, etc.)
+- Dual-panel interface: read-only original paths and editable working panel
+- Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
+- Delete entries via right-click context menu
+- Duplicate path detection with red highlighting
+- Click working panel entry to highlight all matching entries in original panel
+- Automatic backup before applying changes
+- Backup history with restore and delete capabilities
+- Access via Tools → "IDE Path Sorter..." (below Build Tools...)
 
 Version 3.7.0 adds two major enhancements to the Code Style Checker and Compiler Progress features:
 
@@ -56,75 +100,33 @@ All anti-pattern checks are individually configurable with customizable threshol
 - New "Style Issues" tab in Build Statistics dialog showing all style violations from the last compile
 - Full sorting, filtering by category (Naming Convention vs Anti-Pattern), navigation, copy, and export functionality
 
-Version 3.8.0 adds the **IDE Path Sorter** (formerly Library Path Sorter) - a tool to manage and organize Delphi IDE library paths:
+Version 3.6.2 removes dead CodeSite logging code from `RemovePixelsPerInchProperty.pas` (commented-out uses clause and unused conditional block).
 
-- Sort library paths alphabetically in a working panel
-- Support for all path types: Library Path, Browsing Path, Debug DCU Path, HPP Output Directory, Namespace Prefixes, Package DCP/DPL Output, and Translated paths
-- Support for all platforms (Win32, Win64, etc.)
-- Dual-panel interface: read-only original paths and editable working panel
-- Manual reordering via Up/Down/Top/Bottom buttons or drag-and-drop
-- Delete entries via right-click context menu
-- Duplicate path detection with red highlighting
-- Click working panel entry to highlight all matching entries in original panel
-- Automatic backup before applying changes
-- Backup history with restore and delete capabilities
-- Access via Tools → "IDE Path Sorter..." (below Build Tools...)
+Version 3.6.1 fixes a compilation error in Delphi 10.2-10.4 where the Remove PixelsPerInch Property feature would fail to compile because `ReadPixelsPerInch`/`WritePixelsPerInch` methods were introduced in Delphi 11. The feature now works in all supported Delphi versions - in Delphi 10.2-10.4, it reads and discards the PixelsPerInch property from DFM files created in Delphi 11+, allowing cross-version compatibility.
 
-Version 3.9.1 enhances the **IDE Path Sorter** with path loss detection and diagnostics:
+Version 3.6.0 enhances the Dependency Viewer with two new features: Export Circular References (export circular reference analysis to CSV or TXT files for external review) and Layer Violation Detection (define architectural layers with pattern-based unit matching and detect forbidden cross-layer dependencies).
 
-- Moved to Tools menu (below Build Tools...) for easier access
-- Path counts displayed in panel labels (e.g., "Original Paths: 73", "Working Panel: 73")
-- Deleted entry counter tracks manual deletions and compares against actual difference
-- Mismatch warning if deleted count differs from expected (indicates unexpected path loss)
-- Visual highlighting of paths in the original panel that are missing from the working panel (pink background, maroon bold text)
-- "Show Missing Paths..." context menu option to list all paths missing from the working panel
-- Resizable Original Panel width via horizontal splitter between panels
-- Form position, size, and panel width preserved between sessions
-- Fixed potential issue where duplicate paths could be lost during sorting
+Version 3.6.0 adds two new Code Style Checker rules (Variable Type Prefix Rules and Unit Scope Names) plus the Code Quality Analyzer - a unified tool that detects common code quality issues including magic numbers, hardcoded strings, commented-out code, empty except blocks, catch-all exception handlers, missing try/finally patterns, and potential memory leaks. All detectors are configurable with whitelists and thresholds. Cleanup is deliberately conservative: removal of duplicates, missing directories and dead macro references is opt-in and off by default, every intended removal is re-verified immediately before it happens (a share may have reconnected since you pressed Analyse), each one is listed for confirmation, and a macro that resolves only in the *other* IDE bitness is reported as divergent rather than dead so it is never deleted. It also fixes the `OldPalette` search-path entries, which pointed at a directory that has never existed and emitted `H2675` on every build. See Help.md for details.
 
-Version 3.9.2 fixes a bug in the **Options dialog** that prevented it from operating correctly.
+Version 3.5.2 fixes multiple Code Style Checker bugs: field detection now works correctly, method names and parameters are no longer incorrectly flagged as fields, return types and case labels are no longer flagged as parameters, and line number navigation is now accurate. All feature dialogs are now non-modal and open at screen center.
 
-Version 3.9.3 fixes the **compile progress bar position** at non-100% display scaling. The reference panel lookup was updated from `pnErrors` to `pnHints` to match the Delphi 12+/13 IDE compile progress dialog layout. DPI scaling (`ScaleForPPI`) and dynamic height (`TotalLines.Height div 2`) are restored, so the progress bar now positions and sizes correctly at all DPI settings (100%, 125%, 150%, etc.).
+Version 3.5.1 fixes bugs in the Dead Code Detector, Code Style Checker, and Empty Event Handler Detector. The field detection tools now correctly skip the implicit published section of forms (VCL components) and only check fields after an explicit private/protected keyword. The Empty Event Handler Detector now requires event suffixes at the end of method names and correctly detects case/try statements as non-empty. The DDevExtensions submenu has been reordered by workflow (dependency analysis → code quality → style/consistency).
 
-Version 3.10.3 adds an **About dialog** to the DDevExtensions submenu. "About..." appears as the last item in the menu and displays the plugin name, version, copyright information, and contributors. The dialog is built programmatically using native VCL components and closes with OK or Escape.
+Version 3.5 enhances the Dependency Viewer with conditional compilation support - reads project defines and evaluates `{$IFDEF}`, `{$IFNDEF}`, `{$IF Defined(...)}` blocks to exclude inactive code from analysis, eliminating false positive circular references in multi-app codebases with shared units.
 
-Version 3.12.4 adds the **External Mod Monitor** — real-time detection of externally modified files. The Delphi IDE normally only detects external changes when it regains focus. This feature monitors project directories using the Windows `ReadDirectoryChangesW` API and silently refreshes modified files in the IDE within ~200ms, without any external dependencies. Files with unsaved editor changes are never overwritten, and monitoring is automatically suppressed during compilation. Configurable via Tools > DDevExtensions > Options > External Mod Monitor (enabled by default).
+Version 3.4.1 adds three new features: Interface/Implementation Section Toggle (Ctrl+Shift+Up/Down keyboard shortcut), Empty Event Handler Detector (finds event handlers with empty bodies), and DFM/PAS Consistency Checker (detects mismatches between DFM components and PAS field declarations).
 
-Version 3.13.4 enhances the **IDE Path Sorter** with **platform category filter checkboxes**. When many platforms are installed, the Platform dropdown can be filtered by category (Windows, Android, iOS, ARM, macOS, Linux). An "All" checkbox shows all platforms at once. Only categories with installed platforms appear. Checkbox selections persist across sessions.
+Version 3.4 adds the Smart Uses Clause Manager - automatically analyzes which symbols from each unit are used in the interface vs implementation sections, then recommends or applies changes to move units to their optimal uses clause location.
 
-Version 3.13.4 also adds **Windows balloon notifications** to the **External Mod Monitor**. When externally modified files are refreshed, a notification shows which files were updated. Configurable via Options (enabled by default).
+Version 3.3.1 adds the Unreachable Code Detector - a new tool that finds code that can never execute, such as statements after Exit, Raise, Break, Continue, Halt, or Abort calls.
 
-Version 3.13.5 adds a **project load grace period** to the **External Mod Monitor**. When a project group is loaded, the IDE normalises/rewrites `.dproj` files, which previously triggered spurious "Files Refreshed" notifications. File change events arriving within the configurable grace period (default 3 seconds) after project load are now silently discarded.
+Version 3.3.0 enhances the Dependency Viewer with reverse dependency view ("Used By" mode), dependency depth indicators, improved circular reference analysis showing interface/implementation links with click-to-highlight and double-click-to-open functionality, and a new Impact Analysis panel that shows direct/transitive dependents with risk scoring when you select a unit.
 
-Version 3.14.5 adds **Graphviz DOT export** to the **Dependency Viewer**. The "Export Graph..." button appears when Graphviz is detected on the system (download from https://graphviz.org/download/). After scanning a project, click "Export Graph..." to export a dependency diagram rendered as PNG. Project units are shown as green nodes, external/RTL units as blue, with solid edges for interface dependencies and dashed edges for implementation dependencies. Units involved in circular references are highlighted with red borders.
+Version 3.2 adds two Form Designer options to prevent PixelsPerInch and TextHeight properties from being saved to DFM files, eliminating phantom changes caused by different DPI settings and font rendering across developer machines.
 
-Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
+Version 3.1 adds code metrics (LOC and Cyclomatic Complexity) to the Build Statistics feature, plus three new code quality tools: TODO/FIXME Aggregator, Code Style Checker, and Dead Code Detector.
 
-Version 3.16.5 adds **Delphi 13.1 Win64 IDE build support**. The same source tree now produces `DDevExtensionsD130.dll` for the 32-bit IDE host (`bin\bds.exe`) and `DDevExtensionsD130x64.dll` for the 64-bit RAD Studio personality (`bin64\bds.exe`). The 64-bit Delphi-only IDE personality does not exist — only RAD Studio ships a 64-bit host. The 32-bit IDE build is unchanged. The installer detects both bitness hosts under the shared `Embarcadero\BDS\37.0` registry key and registers each under the correct `Experts` / `Experts x64` subkey. A small set of features rely on x86 inline asm or 5-byte JMP-rel32 hooks that don't port to Win64 and are inactive on the 64-bit host — see Help.md for the list. A diagnostic log at `%APPDATA%\DDevExtensions\Win64Shutdown.log` captures any plug-in teardown exception attributed to the responsible step (silent on clean shutdown).
-
-> **Note:** v3.16.5 has been built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Earlier Delphi releases (10.2 – 12) do not ship a 64-bit IDE host, so they keep the existing 32-bit build only.
-
-Version 3.17.6 **re-lands the Delphi 13.1 Win64 IDE build support on a clean baseline.** The initial v3.16.5 Win64 attempt was reverted because it destabilised the RAD Studio personality; v3.17.6 rebuilds the support incrementally with three root-cause access-violation fixes — IDE-notifier registration, compile-interceptor unregister, and native progress-form teardown — all gated or made symmetric for the 64-bit host. The `%APPDATA%\DDevExtensions\Win64Shutdown.log` diagnostic attributes any teardown exception to the responsible step (silent on clean shutdown). v3.17.6 also begins the **UI workflow audit** remediation, fixing the one Critical and the first High-severity finding (Win64 pointer-truncation AVs from `Integer(...)` tag round-trips, corrected to `NativeInt`).
-
-Versions 3.17.7, 3.18.8 and 3.19.9 complete the **UI workflow audit** remediation — a systematic pass over every button and menu action across all feature modules for reliability, correctness and GITLAK coding-standards compliance. v3.17.7 addresses the High-severity findings, v3.18.8 the Medium, and v3.19.9 the Low. Highlights across the sweep:
-
-- Project scans no longer abort on a single unreadable/malformed unit (per-module `try/except` isolation; a skipped-file count is surfaced).
-- Editor navigation is hardened everywhere (`OpenModule` wrapped, `EditViewCount > 0` guards, `FileExists` checks, friendly "could not open" messages).
-- Close-during-scan use-after-free is vetoed (`FScanning` guard) in every scanner that pumps the message queue.
-- Option-page frames validate their `UserData` cast and nil-guard Load/Save.
-- All CSV exports are RFC 4180-escaped; the Excel exporter avoids integer-overflow progress and never orphans a hidden Excel process.
-- ToolsAPI access is nil/`Supports`-guarded rather than hard-cast (safer Win64 teardown); silently-swallowed exceptions now log via `OutputDebugString`.
-- Correctness fixes including array-index magic-number detection, consistent dependency-cycle counts, deterministic priority/numeric sorts, Unicode-safe path handling, and accurate result-line navigation.
-
-Version 3.20.9 **restores the three "Do not store … into the DFM" Form Designer cleaners on the 64-bit IDE.** *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* were greyed out on the Win64 host because they installed via the 5-byte `JMP rel32` `CodeRedirect`, which is a deliberate no-op on x64. They are full-replacement hooks (their replacement `DefineProperties` never calls the original), so a new x64-safe primitive — `InstallFullReplaceHook` / `RemoveFullReplaceHook`, using a 14-byte absolute indirect jump — now drives them; the global `CodeRedirect` is left untouched so the chain-back hooks elsewhere stay correctly inactive on Win64. Verified live in the Delphi 13 Win64 IDE (Explicit\* and TextHeight strip on save). Note: *Remove PixelsPerInch* is only observable at non-96 DPI, because Delphi only streams `PixelsPerInch` when the design DPI differs from 96 — see Help.md.
-
-Version 3.21.9 adds **Sort Projects in Group** — a Tools-menu command that alphabetises the member projects of the currently open project group so they list in name order in the Project Manager. Because the IDE has no API for reordering group members and only reads the order from the `.groupproj` when the group is opened, the command saves the group, rewrites the `.groupproj` with the projects sorted (across the `<ItemGroup>`, the per-project `<Target>` blocks **and** the `Build`/`Clean`/`Make` `CallTarget` lists — the Project Manager order follows the latter), then closes and reopens the group and reselects the previously active project. A `.bak` is written first, a prompt confirms the reload, and it no-ops when the projects are already sorted. See Help.md for details.
-
-Version 3.21.10 fixes an **editor access violation / dead keyboard in the 64-bit IDE**. When a Key Bindings shortcut fell through unhandled (e.g. plain `Home` mid-line, `Tab` with no block selected), the handler probed for a follow-on binding via the legacy `GetKeyBindingRec`/`GetNextBindingRec` ToolsAPI — which round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next` field and AVs inside the IDE's `Kbclient.FillBindingRec` (`Access violation in coreide370.bpl`), wedging all keyboard input until IDE restart. The probe is now Win32-only; on the 64-bit IDE unhandled keys use the built-in Home/Tab fallback directly, so another plugin partially bound to the same key is no longer chained there (the underlying defect is the 64-bit IDE's — reported to Embarcadero).
-
-Version 3.22.11 adds the **IDE Path Compactor** - a companion to the IDE Path Sorter that shortens the IDE's library path strings rather than reordering them. Tools > IDE Path Compactor analyses every selected platform and path type, proposes `$(NAME)` macro substitutions for directory prefixes that repeat across entries, offers directory junctions for over-long third-party prefixes, and reports duplicate, missing and undefined-macro entries. It reports **two** lengths before and after, because two different limits exist: the *stored* length is what triggers the IDE's "path too long" warning and is shortened by macros, while the *expanded* length is what constrains the `dcc32`/`dcc64` command line and is shortened only by a junction. Saving is scored against the stored text each entry actually holds, so an entry already written as `$(BDS)\source\rtl` is left alone instead of being re-expressed - and longer - under a newly invented variable. Accepted variables are written to both the 32-bit and 64-bit IDE macro-override keys, since the library path they resolve is shared between the two IDEs while those variable lists are not. Junction detection refuses the IDE's own installation tree. Nothing is written until Apply, every affected value is backed up first, and rollback uses the IDE Path Sorter's existing backup history. See Help.md for details.
-
-Version 3.22.12 fixes the **IDE Path Sorter** marking valid paths as invalid. Any entry whose macro could not be resolved - `$(BDSCatalogRepository)`, or any variable defined in the IDE's own Environment Variables list - was drawn blue as a missing directory, because `IDEUtils.ExpandDirMacros` replaces an unresolvable macro with an empty string rather than leaving it in place. The Sorter now uses the Path Compactor's expander, which leaves such a macro intact so the entry is correctly reported as unverifiable rather than missing.
+Version 3.0 was set to clearly break from the old version 2.88. 
 
 See `CHANGELOG.md` for the authoritative per-release detail.
 
