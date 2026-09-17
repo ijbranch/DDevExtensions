@@ -8,8 +8,9 @@ VCL and the IDE so they can be tested outside it.
 | `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 32 |
 | `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 25 |
 | `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 11 |
-| `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement | 26 |
-| | **Total** | **94** |
+| `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement | 27 |
+| `TestDecirculariserCoreDUnitX.pas` | `DecirculariserCore` - circular reference analysis | 21 |
+| | **Total** | **116** |
 
 The rest of this document describes the DFM parser suite specifically.
 

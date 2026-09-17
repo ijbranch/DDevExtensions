@@ -33,6 +33,10 @@ type
     /// <summary>Declarations below the implementation keyword are not exported.</summary>
     [Test]
     procedure TestImplementationDeclarationsAreNotExported;
+    /// <summary>A const or var PARAMETER must not be read as a section keyword, or the
+    /// routine's return type is recorded as an export of the unit.</summary>
+    [Test]
+    procedure TestParameterModifiersDoNotLeakIntoSectionState;
     /// <summary>A unit that exports nothing is not added to the database.</summary>
     [Test]
     procedure TestUnitWithNoExportsIsNotStored;
@@ -241,6 +245,28 @@ begin
       'the interface constant should be exported' );
     Assert.IsFalse( HasExport( DB, 'Hidden', 'PRIVATE_VALUE', ekConst ),
       'an implementation-section constant must not be exported' );
+  finally
+    DB.Free;
+  end;
+end;
+
+procedure TTestUnitExportsDatabase.TestParameterModifiersDoNotLeakIntoSectionState;
+var
+  DB: TUnitExportsDatabase;
+begin
+  DB := TUnitExportsDatabase.Create;
+  try
+    DB.ScanSource( 'Parsing', 'Parsing.pas', Src( [
+      'unit Parsing;', 'interface',
+      'function ParseValue( const AName: string; var AValue: string ): Boolean;',
+      'implementation', 'end.' ] ) );
+    Assert.IsTrue( HasExport( DB, 'Parsing', 'ParseValue', ekFunction ),
+      'the function itself is exported' );
+    Assert.IsFalse( HasExport( DB, 'Parsing', 'Boolean', ekVar ),
+      'the return type must NOT be recorded as a var export - the "var AValue" parameter'
+      + ' must not put the scanner into a var section' );
+    Assert.IsFalse( HasExport( DB, 'Parsing', 'Boolean', ekConst ),
+      'nor as a const export, via the "const AName" parameter' );
   finally
     DB.Free;
   end;

@@ -63,7 +63,9 @@ uses
   TestPathCompactorDUnitX in 'TestPathCompactorDUnitX.pas',
   UsesClauseManagerCore in '..\Code\DDevExtensions\Source\UsesClauseManager\UsesClauseManagerCore.pas',
   DelphiLexer in '..\Shared\PascalParser\DelphiLexer.pas',
-  TestUsesClauseManagerCoreDUnitX in 'TestUsesClauseManagerCoreDUnitX.pas';
+  TestUsesClauseManagerCoreDUnitX in 'TestUsesClauseManagerCoreDUnitX.pas',
+  DecirculariserCore in '..\Code\DDevExtensions\Source\Decirculariser\DecirculariserCore.pas',
+  TestDecirculariserCoreDUnitX in 'TestDecirculariserCoreDUnitX.pas';
 
 {$R *.res}
 

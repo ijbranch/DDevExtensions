@@ -31,7 +31,8 @@
   - 5 File round-trip tests
 - **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
-- **TestUsesClauseManagerCoreDUnitX.pas** - 26 cases (`UsesClauseManagerCore`, 3 fixtures)
+- **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`, 3 fixtures)
+- **TestDecirculariserCoreDUnitX.pas** - 21 cases (`DecirculariserCore`, 4 fixtures)
 
 **Original Console Tests:**
 - **DDevExtUnitTests.dpr** - Simple console test runner
@@ -181,8 +182,9 @@ Failed: Y
 ---
 
 ## Known Issues
-None outstanding in this suite. All 94 tests across the four DUnitX test units pass
-(DFM parser 32, PathCompactor 25, ProjectGroupSorter 11, UsesClauseManagerCore 26).
+None outstanding in this suite. All 116 tests across the five DUnitX test units pass
+(DFM parser 32, PathCompactor 25, ProjectGroupSorter 11, UsesClauseManagerCore 27,
+DecirculariserCore 21).
 
 `UsesClauseManagerCore` carries one deliberate characterisation test,
 `TestDuplicateUnitNameCurrentlyRaises`, which pins a known defect rather than endorsing it:

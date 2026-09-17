@@ -8,6 +8,52 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Added
 
+- **`DecirculariserCore` - circular unit reference analysis that says what to DO about them.**
+  A new RTL-only core (`Source/Decirculariser/DecirculariserCore.pas`, 21 tests) that builds the
+  unit graph for a set of sources, finds the entangled groups with an iterative Tarjan, and ranks
+  what it would take to break each one. Three judgements are the point of it:
+
+  - **Groups, not cycles.** A group of n mutually dependent units contains a factorial number of
+    distinct cycles, so enumerating them does not terminate usefully. The strongly-connected
+    component is the honest unit of "these are stuck together".
+  - **The dangerous cycles are the SMALL ones.** Delphi permits a cycle through `implementation`
+    sections - that is what the two-part unit is *for* - and it costs nothing at compile time. What
+    bites is a group held together by exactly ONE implementation edge, because the other direction
+    is already an interface use: the day somebody needs that type in the interface they get `E2004`
+    and a hard stop, with no prior warning. Those are reported **FRAGILE** and sorted to the top,
+    above far larger benign meshes.
+  - **An edge is judged by the identifiers that actually cross it.** Nothing crossing means a dead
+    uses entry. Two identifiers means an extract-to-a-leaf-unit job, and it names them. Forty means
+    genuine collaboration, and the tool says so instead of pretending to automate a design decision.
+
+  It deliberately does **not** rewrite source. There is no IDE plugin yet either - this is the
+  analysis, tested, with the plugin to follow.
+
+  **Validated against a known answer.** Pointed at `DBiServer` it independently found exactly the
+  two fragile pairs that a completely separate compiler-derived dependency graph had identified -
+  same pairs, same directions - and went further by naming the identifiers: `dbserver ->
+  servervalidation` carries only `ParseParamValue` and `ValidateServerConfiguration`, and
+  `serverdlg -> main` only `BooleanToStr` and `StrToBoolean`. Both are small, real extractions.
+  Pointed at the legacy `DBiManager` it reported the same 47-unit group that graph had, correctly
+  classified benign (96 implementation edges, 3 interface).
+
+  (2026-09-17) - `Source/Decirculariser/DecirculariserCore.pas` (new),
+  `DDevExtUnitTests/TestDecirculariserCoreDUnitX.pas` (new), `D_D102`...`D_D130/DDevExtensions.dpr`
+
+- **An "I cannot tell" verdict, rather than confident bad advice.** Building the above exposed that
+  the exports scanner records class MEMBER names as unit exports, so every VCL form "exports"
+  `FormCreate` and forty unrelated forms appear to depend on the main form because of it. An
+  identifier that several units in the set declare is now excluded from edge attribution and
+  **counted**, and an edge left with no unique identifier but some ambiguous ones is reported as
+  `dcvAmbiguous` - *"remove the entry and let the compiler decide"* - instead of being declared
+  dead. Advising a deletion on that evidence would have been advising a guess.
+
+  This measurably changed an answer: `serverdlg -> main` went from "6 identifiers, genuine
+  collaboration" to "2 identifiers, extractable". Four of the six were class-member noise, and the
+  old reading was simply wrong.
+
+  (2026-09-17) - `Source/Decirculariser/DecirculariserCore.pas`
+
 - **The DUnitX suite can now run headless, and does.** `DDevExtUnitTestsDUnitX.dpr` hardcoded
   `{$DEFINE TESTINSIGHT}` on line 1 and otherwise built a VCL GUI runner, so there was no way to run
   the tests without the IDE and no exit code for a build server to read. The define is now taken from
@@ -37,6 +83,22 @@ This file is the sole source and record of all project changes for DDevExtension
   (2026-09-17) - `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
 
 ### Fixed
+
+- **The exports scanner read a `const` or `var` PARAMETER as a section keyword.** In
+  `TUnitExportsDatabase.ScanSource` the section-keyword handling ran *before* the brace-depth
+  check, so the `var` in `function Parse( var AValue: string ): Boolean` put the scanner into a
+  var section - and the return type, `Boolean`, was recorded as an exported identifier of the
+  unit. Every routine with a `const` or `var` parameter contributed a bogus export.
+
+  Brace depth is now tracked first and everything inside parentheses is skipped, section keywords
+  included. This improves the Uses Clause Manager's placement analysis as well, since it was
+  matching against those phantom exports too.
+
+  Found by pointing the new Decirculariser at `DBiServer` and seeing `Boolean` reported as an
+  identifier crossing a uses edge. Pinned by `TestParameterModifiersDoNotLeakIntoSectionState`.
+
+  (2026-09-17) - `Source/UsesClauseManager/UsesClauseManagerCore.pas`,
+  `DDevExtUnitTests/TestUsesClauseManagerCoreDUnitX.pas`
 
 - **The Path Compactor's "Expanded after" column was showing a count, not a length.**
   `TFormPathCompactor.ExpandedLengthAfter` declared a local `Expanded: string` and never assigned

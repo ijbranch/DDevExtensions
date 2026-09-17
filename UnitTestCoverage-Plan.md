@@ -15,6 +15,7 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | `TestProjectGroupSorter` (DUnitX) | `ProjectGroupSorterCore` (`.groupproj` sort: ItemGroup + Targets + CallTargets) | 11 cases | green |
 | `TestPathCompactor` (DUnitX) | `PathCompactorCore` (macro expansion, stored-space scoring, naming, hygiene) | 25 cases | green |
 | `TestUsesClauseManagerCore` (DUnitX) | `UsesClauseManagerCore` (exports DB, identifier usage, placement + rewrite) | 26 cases | green |
+| `TestDecirculariserCore` (DUnitX) | `DecirculariserCore` (SCC detection, fragile/benign classification, edge symbol attribution) | 21 cases | green |
 
 **Tier 1 complete; Tier 2 = `UnitMetrics` only.** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
 
@@ -43,7 +44,8 @@ Everything depends on these; a regression here silently corrupts every analyzer.
 
 The remaining four candidates were **attempted under Option A and found to need extraction** (they could not be console-unit-tested as-is), so they are folded into Tier 3:
 - DONE (v3.22.15) **`UsesClauseManager` `GenerateRefactoredSource`/`GetPreferredUnit`** - the extraction that was needed here is done: both now live in `UsesClauseManagerCore` and are covered by `TestUsesClauseManagerCoreDUnitX` (26 cases). See "Retrofitted core extraction" above for the technique.
-- MOVED→T3 **`DependencyViewer` cycle detection / `MatchesWildcard`** - the unit `uses Main`, and the helpers are private/nested; needs the same core extraction `UsesClauseManagerCore` has now had.
+- PARTLY SUPERSEDED (v3.22.15) **`DependencyViewer` cycle detection** - `DecirculariserCore` now does RTL-only cycle detection, risk classification and per-edge symbol attribution with 21 tests, so the cycle half of this item no longer needs the DependencyViewer extraction. The layer rules and `MatchesWildcard` still do.
+- MOVED→T3 **`DependencyViewer` layer rules / `MatchesWildcard`** - the unit `uses Main`, and the helpers are private/nested; needs the same core extraction `UsesClauseManagerCore` has now had.
 - MOVED→T3 **`ProjectSettings\ProjectSettingsData` `Compare`/`CopyFrom`** - the unit `uses ToolsAPI` directly (for the `IOTAProject` overloads), so it will not compile in a console test. A `TProjectSetting.Compare`/`CopyFrom` test needs the pure preset model split from the ToolsAPI-coupled overloads. (A trial `AddOption` seam + console test were prototyped and reverted.)
 - MOVED→T3 **`CtrlUtils.TListViewSort.Compare`** - `Compare` reads a real `TListItem`, and a `TListView` cannot add items without a parent window (`EInvalidOperation: has no parent window`) in a console runner. Needs the comparison logic extracted to operate on plain strings (e.g. `CompareValues(S1, S2; Kind)`), or a GUI test runner. Guards the v3.18.8 ragged-row fix.
 

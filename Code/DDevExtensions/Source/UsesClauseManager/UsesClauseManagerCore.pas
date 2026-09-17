@@ -338,6 +338,31 @@ begin
       if not InInterface then
         Continue;
 
+      { Brace depth is tracked BEFORE the section keywords, and everything inside
+        parentheses is skipped - section keywords included.
+
+        A parameter list may contain const, var and out. Honouring those as section
+        keywords left the scanner believing that whatever FOLLOWED the parameter list was
+        still inside a var or const section, so a routine's return type was recorded as an
+        exported identifier of the unit. "function Parse( var AValue: string ): Boolean"
+        exported Boolean. That in turn made the placement analysis, and the Decirculariser
+        built on top of it, believe an edge carried an identifier that does not exist. }
+      if Token.Kind = tkLParan then
+      begin
+        Inc( BraceDepth );
+        Continue;
+      end;
+
+      if Token.Kind = tkRParan then
+      begin
+        if BraceDepth > 0 then
+          Dec( BraceDepth );
+        Continue;
+      end;
+
+      if BraceDepth > 0 then
+        Continue;
+
       // Track section keywords
       if Token.Kind = tkI_type then
       begin
@@ -370,15 +395,6 @@ begin
         InConst := False;
         InVar := False;
       end;
-
-      // Track brace depth for skipping nested declarations
-      if Token.Kind = tkLParan then
-        Inc( BraceDepth )
-      else if Token.Kind = tkRParan then
-        Dec( BraceDepth );
-
-      if BraceDepth > 0 then
-        Continue;
 
       // Collect exports based on current section
       if Token.Kind = tkIdent then  // Identifier tokens

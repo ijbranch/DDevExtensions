@@ -7,8 +7,9 @@
 - **TestDfmParserDUnitX.pas** - 32 comprehensive test cases
 - **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
-- **TestUsesClauseManagerCoreDUnitX.pas** - 26 cases (`UsesClauseManagerCore`)
-- **94 tests in total**, all passing
+- **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`)
+- **TestDecirculariserCoreDUnitX.pas** - 21 cases (`DecirculariserCore`)
+- **116 tests in total**, all passing
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)
