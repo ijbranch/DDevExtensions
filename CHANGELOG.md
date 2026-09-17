@@ -54,6 +54,26 @@ This file is the sole source and record of all project changes for DDevExtension
 
   (2026-09-17) - `Source/Decirculariser/DecirculariserCore.pas`
 
+- **README gains a Dependencies section.** It had none, which for a released plugin left an obvious
+  question unanswered. Measured across 267 real uses clauses rather than assumed: **the shipped DLL
+  needs RAD Studio and nothing else** - `rtl`, `vcl`, `designide`, and the IDE's own design-time API.
+  DUnitX, FastMM5, TestInsight and EurekaLog are test-only and reach no product binary; 7-Zip is for
+  packaging and is optional.
+
+  It also records the three references that **look** like third-party dependencies and are not,
+  because the defines guarding them are never set anywhere in the repository:
+  `JclSimpleXml`/`JclStreams` behind `JEDI_XML`, `SimpleRtl.Containers` behind `CMD_COMPILER`, and
+  `Libc` behind `LINUX`. Anyone searching the source will find those names, so the README now says
+  plainly that they are dormant.
+
+  And it records the one piece of third-party code that genuinely is included:
+  `Shared/ImportHooking.pas` is derived from the JEDI Code Library's `JclPeImage.pas` and carries the
+  **Mozilla Public License 1.1** in its header. It is vendored rather than linked - the JCL is not
+  needed to build or run this - but for a public repository that attribution belongs somewhere more
+  visible than a file header.
+
+  (2026-09-17) - `README.md`
+
 - **The DUnitX suite can now run headless, and does.** `DDevExtUnitTestsDUnitX.dpr` hardcoded
   `{$DEFINE TESTINSIGHT}` on line 1 and otherwise built a VCL GUI runner, so there was no way to run
   the tests without the IDE and no exit code for a build server to read. The define is now taken from

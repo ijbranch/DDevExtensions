@@ -183,6 +183,39 @@ The project group includes:
 3. **DDevExtensionsReg** - Installer application
 
 
+## Dependencies
+
+**To use it: RAD Studio, and nothing else.** The shipped DLL requires only the `rtl`, `vcl` and
+`designide` packages. Everything it needs beyond the RTL and VCL is the IDE's own design-time API -
+`ToolsAPI`, `PlatformAPI`, `PaletteAPI`, `StructureViewAPI`, `DesignIntf`, `DesignEditors` - which
+ships with Delphi. There is no third-party library to install.
+
+**To build the tests:** DUnitX, FastMM5, and optionally TestInsight (Debug configuration) and
+EurekaLog. None of these reach the product DLL.
+
+**To package a release:** `build.bat` uses `brcc32` (ships with Delphi) and 7-Zip. 7-Zip is optional -
+its absence skips packaging with a notice rather than failing the build.
+
+### Not dependencies, despite appearances
+
+Three conditional branches reference libraries that are **never compiled**, because the defines
+guarding them are not set anywhere in this repository. Searching the source will find these names;
+they are dormant, and the product does not need the libraries:
+
+| Reference | Guarded by | In |
+|---|---|---|
+| `JclSimpleXml`, `JclStreams` (JEDI Code Library) | `{$IFDEF JEDI_XML}` | `Shared/Xml/SimpleXmlDoc.pas` |
+| `SimpleRtl.Containers` | `{$IFDEF CMD_COMPILER}` | `Shared/ImportHooking.pas` |
+| `Libc` | `{$IFDEF LINUX}` | `Shared/Xml/SimpleXmlDoc.pas` |
+
+### Third-party code included
+
+`Shared/ImportHooking.pas` is derived from **`JclPeImage.pas`** of the JEDI Code Library and is
+covered by the **Mozilla Public License 1.1**, as its file header records. Initial developer Petr
+Vones; see the header for the full contributor list. The code is vendored, not linked - the JCL
+itself is not required to build or run DDevExtensions.
+
+
 ## How to install
 
 Simply start the DDevExtensionsReg.exe.
