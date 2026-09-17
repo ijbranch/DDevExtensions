@@ -125,11 +125,11 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <VerInfo_Release>15</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-    <VerInfo_Build>612</VerInfo_Build>
+    <VerInfo_Build>613</VerInfo_Build>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
     <VerInfo_Release>15</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.22.15.612;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.22.15.613;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2)'!=''">
     <DCC_DcuOutput>lib\debug</DCC_DcuOutput>

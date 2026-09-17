@@ -93,6 +93,33 @@ This file is the sole source and record of all project changes for DDevExtension
 
   (2026-09-17) - `Source/version.inc`, `version.h`, `version.bat`
 
+- **`build.bat`'s version pipeline repaired - it would have silently regressed the version.**
+  `version.bat` carried only `majorversion` and `minorversion`, and `build.bat` *generates*
+  `Source\version.inc` and `version.h` from them. So running it would have written
+  `VersionNumber = '3.22'` and `VER_PRODUCTVERSION 3,22,0,0` over the three-field values, compiled
+  that into `Version.res`, and shipped a DLL reporting **3.22** - with nothing to warn anyone. Three
+  further faults in the same dozen lines:
+
+  - `del version.h` deleted a **tracked** file, leaving the tree dirty after every build. Removed.
+  - `cgrc Version.rc -foVersion.res` fails on RAD Studio 12+ with *"Error: .res is not an executable
+    image"*, so the resource was never rebuilt. Now `brcc32` first (present in every Delphi bin
+    folder, same syntax for decades) falling back to `cgrc`, and a hard stop if both fail rather
+    than carrying on with a stale resource.
+  - The release folder and archive were named from two fields, so 3.22.11 through 3.22.15 would all
+    have landed in `Release\3.22\DDevExtensions322.7z`, each overwriting the last.
+
+  `version.bat` now carries `releaseversion`, every consumer uses all three fields, and a guard
+  refuses to build at all if `releaseversion` is unset. The three `echo` lines were changed to the
+  redirect-first form (`>file echo text`), which avoids both the trailing space that `echo text >file`
+  leaves in the output and the batch trap where a digit immediately before `>` is read as a stream
+  handle.
+
+  **Verified by replaying the version block in a scratch directory: `version.inc`, `version.h` and
+  `Version.res` all regenerate byte-identical to the committed files, and the guard exits non-zero
+  on a two-field `version.bat` before writing anything.**
+
+  (2026-09-17) - `version.bat`, `build.bat`
+
 - **`DDevExtensions_Map.html` refreshed** - it was a 2026-01-06 snapshot. Four components were absent
   from it entirely: the **IDE Path Compactor** (3,034 lines), the **IDE Path Sorter** (2,495),
   **Sort Projects in Group** (478) and the **External Mod Monitor** (726). All four are now in both

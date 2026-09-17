@@ -13,8 +13,14 @@ if NOT "%fileversion%#" == "#" goto HASVERSION
 :: *************************
 :: * Adjust version number
 call version.bat
-SET fileversion=%majorversion%%minorversion%
-SET version=%majorversion%.%minorversion%
+if "%releaseversion%#" == "#" (
+  echo ERROR: version.bat does not set releaseversion. The product version has THREE
+  echo        fields; building with two would silently write a lower version into
+  echo        Source\version.inc, version.h and Version.res.
+  goto Error1
+)
+SET fileversion=%majorversion%%minorversion%%releaseversion%
+SET version=%majorversion%.%minorversion%.%releaseversion%
 SET versioninfo=%version%
 SET ReleaseDir=%~dp0\Release\%version%
 
@@ -22,15 +28,27 @@ SET ReleaseDir=%~dp0\Release\%version%
 :HASVERSION
 echo Version    : %version%
 echo FileVersion: %fileversion%
-echo Major.Minor: %majorversion%.%minorversion%
+echo Major.Minor.Release: %majorversion%.%minorversion%.%releaseversion%
 echo VersionInfo: %versioninfo%
 echo.
 
-echo VersionNumber = '%versioninfo%'; >Source\version.inc
-echo #define VER_PRODUCTVERSION          %majorversion%,%minorversion%,0,0 >version.h
-echo #define VER_PRODUCTVERSION_STR      "%majorversion%.%minorversion%\0" >>version.h
-cgrc Version.rc -foVersion.res
-del version.h
+:: Redirect FIRST. "echo text >file" leaves the space before the ">" in the output, and a
+:: digit immediately before ">" would be read as a stream handle - this form avoids both,
+:: so the generated files are byte-identical to the ones in the repository.
+>Source\version.inc echo  VersionNumber = '%versioninfo%';
+>version.h echo #define VER_PRODUCTVERSION          %majorversion%,%minorversion%,%releaseversion%,0
+>>version.h echo #define VER_PRODUCTVERSION_STR      "%majorversion%.%minorversion%.%releaseversion%"
+:: brcc32 first: cgrc in RAD Studio 12+ rejects this invocation with
+:: "Error: .res is not an executable image". brcc32 ships in every Delphi bin folder
+:: and has taken the same syntax for decades, so it is the portable choice.
+brcc32 Version.rc -foVersion.res
+if ERRORLEVEL 1 cgrc Version.rc -foVersion.res
+if ERRORLEVEL 1 (
+  echo ERROR: could not compile Version.rc - the DLL would keep its previous version.
+  goto Error1
+)
+:: version.h is TRACKED and hand-editable, so it is deliberately NOT deleted here.
+:: Deleting it removed a committed file and left the tree dirty after every build.
 
 :: **********************************************************************************************
 
@@ -306,7 +324,7 @@ echo.
 
 echo === Packaging ==============================
 
-echo DDevExtensions Version %majorversion%.%minorversion%>bin\Version.txt
+echo DDevExtensions Version %majorversion%.%minorversion%.%releaseversion%>bin\Version.txt
 if "%fileversion%#" == "Dev#" echo %versioninfo%>>bin\Version.txt
 
 :: Delete old files
