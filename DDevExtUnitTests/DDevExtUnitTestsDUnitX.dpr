@@ -41,7 +41,10 @@ uses
   ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas',
   PathCompactorCore in '..\Code\DDevExtensions\Source\PathCompactor\PathCompactorCore.pas',
-  TestPathCompactorDUnitX in 'TestPathCompactorDUnitX.pas';
+  TestPathCompactorDUnitX in 'TestPathCompactorDUnitX.pas',
+  UsesClauseManagerCore in '..\Code\DDevExtensions\Source\UsesClauseManager\UsesClauseManagerCore.pas',
+  DelphiLexer in '..\Shared\PascalParser\DelphiLexer.pas',
+  TestUsesClauseManagerCoreDUnitX in 'TestUsesClauseManagerCoreDUnitX.pas';
 
 {$R *.res}
 

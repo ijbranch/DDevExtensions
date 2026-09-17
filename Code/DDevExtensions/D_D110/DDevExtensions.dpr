@@ -117,6 +117,7 @@ uses
   UnreachableCodeDetector in '..\Source\UnreachableCodeDetector\UnreachableCodeDetector.pas',
   FrmUnreachableCodeDetector in '..\Source\UnreachableCodeDetector\FrmUnreachableCodeDetector.pas' {FormUnreachableCodeDetector},
   FrmeOptionPageUnreachableCode in '..\Source\UnreachableCodeDetector\FrmeOptionPageUnreachableCode.pas' {FrameOptionPageUnreachableCode: TFrame},
+  UsesClauseManagerCore in '..\Source\UsesClauseManager\UsesClauseManagerCore.pas',
   UsesClauseManager in '..\Source\UsesClauseManager\UsesClauseManager.pas',
   FrmUsesClauseManager in '..\Source\UsesClauseManager\FrmUsesClauseManager.pas' {FormUsesClauseManager},
   FrmeOptionPageUsesClause in '..\Source\UsesClauseManager\FrmeOptionPageUsesClause.pas' {FrameOptionPageUsesClause: TFrame},
