@@ -120,6 +120,32 @@ This file is the sole source and record of all project changes for DDevExtension
 
   (2026-09-17) - `version.bat`, `build.bat`
 
+- **`build.bat` now runs end to end, and was proved to by running it.** It had not been exercised in
+  full for a long time and could not complete on any machine that did not carry sixteen Delphi
+  installations:
+
+  - It built **sixteen** IDE versions, **ten of which have no project folder in this repository** -
+    `D_2009`, `D_D10`, `D_D101` and the XE-era folders. Per README.md those live upstream. Those
+    blocks are removed; the six supported versions (10.2 through 13.0) remain.
+  - A missing IDE was a hard failure. Each version now goes through a `:BuildOne` subroutine that
+    **skips with a notice** when the IDE is not installed or the project folder is absent. Only a
+    genuine compile failure stops the run.
+  - `BuildInstallerWith` was hardcoded to Studio 21.0 (Delphi 10.4). It now picks the newest
+    installed IDE.
+  - Packaging assumed 7-Zip at a fixed path; it is now guarded and skipped with a notice.
+  - **`call version.bat` failed outright wherever `NoDefaultCurrentDirectoryInExePath=1` is set** -
+    common on hardened and CI machines - because cmd then refuses to resolve a batch file from the
+    current directory. It reports *"'version.bat' is not recognized"* while the file sits right
+    there, which is a thoroughly misleading error. Now called by explicit `%~dp0` path.
+  - A run ends with a summary of what was built and what was skipped.
+
+  **Measured on a machine carrying only Delphi 13:** exit code 0, installer and Delphi 13.0 built
+  clean, five versions skipped, packaging skipped. `bin\Version.txt` reads `3.22.15`, the built DLL
+  reports 3.22.15, and - the point of the exercise - `version.inc`, `version.h` and `Version.res`
+  came back **unmodified in git**, so a full run no longer rewrites the version or dirties the tree.
+
+  (2026-09-17) - `build.bat`, `.gitignore`
+
 - **`DDevExtensions_Map.html` refreshed** - it was a 2026-01-06 snapshot. Four components were absent
   from it entirely: the **IDE Path Compactor** (3,034 lines), the **IDE Path Sorter** (2,495),
   **Sort Projects in Group** (478) and the **External Mod Monitor** (726). All four are now in both

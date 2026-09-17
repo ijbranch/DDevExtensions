@@ -375,3 +375,4 @@ nul
 
 # Test runner output (regenerated on every headless run)
 bin/dunitx-results.xml
+Code/DDevExtensions/[Bb]in/Version.txt

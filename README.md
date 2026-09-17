@@ -166,6 +166,17 @@ Releases are available at https://www.idefixpack.de/ddev
 
 Open the appropriate `Code\DDevExtensions\D_Dxxx\DDevExtensions.groupproj` for your Delphi version and build all projects.
 
+Or run `Code\DDevExtensions\build.bat`, which builds the installer and every supported Delphi version
+present on the machine. A version whose IDE is not installed is **skipped with a notice** rather than
+failing the run, so the script works on a machine carrying a single Delphi; the run ends with a count
+of what was built and what was skipped. Packaging needs 7-Zip and is skipped if it is absent.
+
+The product version lives in `version.bat` as three fields (`majorversion`, `minorversion`,
+`releaseversion`). `build.bat` generates `Source\version.inc` and `version.h` from them and compiles
+`Version.rc` into `Version.res`, which is what the DLL reports — so **change the version in
+`version.bat` and rebuild**, rather than editing the generated files. The script refuses to run if
+`releaseversion` is unset.
+
 The project group includes:
 1. **CompileInterceptorW** - Compiler interceptor library (built first automatically)
 2. **DDevExtensions** - Main extension DLL

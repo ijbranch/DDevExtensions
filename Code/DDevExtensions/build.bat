@@ -4,7 +4,13 @@ SETLOCAL
 :: *************************
 :: * rebuild with Delphi 2009 (much smaller file). XE2 is required for the .res file
 REM Set BuildInstallerWith="C:\CodeGear\RAD Studio\6.0\bin\rsvars.bat"
-Set BuildInstallerWith="C:\Program Files (x86)\Embarcadero\Studio\21.0\bin\rsvars.bat"
+:: Build the installer with whichever Delphi is actually present, newest first. This used
+:: to be hardcoded to Studio 21.0 (Delphi 10.4), so the script could not run at all on a
+:: machine that did not happen to have that exact version installed.
+SET BuildInstallerWith=
+for %%V in (37.0 23.0 22.0 21.0 20.0 19.0) do (
+  if not defined BuildInstallerWith if exist "C:\Program Files (x86)\Embarcadero\Studio\%%V\bin\rsvars.bat" set BuildInstallerWith="C:\Program Files (x86)\Embarcadero\Studio\%%V\bin\rsvars.bat"
+)
 
 SET curdir=%CD%
 cd /d "%~dp0"
@@ -12,7 +18,10 @@ cd /d "%~dp0"
 if NOT "%fileversion%#" == "#" goto HASVERSION
 :: *************************
 :: * Adjust version number
-call version.bat
+:: Explicit path: with NoDefaultCurrentDirectoryInExePath=1 set - common on hardened and
+:: CI machines - cmd refuses to resolve a batch file from the current directory, so a bare
+:: "call version.bat" fails with "not recognized" even though the file is right there.
+call "%~dp0version.bat"
 if "%releaseversion%#" == "#" (
   echo ERROR: version.bat does not set releaseversion. The product version has THREE
   echo        fields; building with two would silently write a lower version into
@@ -54,6 +63,14 @@ if ERRORLEVEL 1 (
 
 SET LINKMAPFILE=..\..\Tools\LinkMapFile\linkmapfile.exe
 
+:: Delete intermediate files. Only the folders this repository carries - the pre-10.2
+:: project folders live in the upstream repository, see README.md.
+del /Q /S D_D102\lib\*.dcu >NUL
+del /Q /S D_D103\lib\*.dcu >NUL
+del /Q /S D_D104\lib\*.dcu >NUL
+del /Q /S D_D110\lib\*.dcu >NUL
+del /Q /S D_D120\lib\*.dcu >NUL
+del /Q /S D_D130\lib\*.dcu >NUL
 :: Delete intermediate files
 del /Q /S D_2009\lib\*.dcu >NUL
 del /Q /S D_2010\lib\*.dcu >NUL
@@ -77,252 +94,40 @@ del /Q /S D_D130\lib\*.dcu >NUL
 if "%1-" == "clean-" goto :EOF
 
 echo.
+
+:: ----------------------------------------------------------------------------------------
+:: A version whose IDE is not installed, or whose project folder is not in this repository,
+:: is SKIPPED with a notice rather than failing the run. That is what lets this script go
+:: end to end on a machine carrying a single Delphi. Only a genuine COMPILE failure stops it.
+:: Delphi 2009 - 10.1 are not built here; those project folders live upstream (see README.md).
+:: ----------------------------------------------------------------------------------------
+SET BUILT=0
+SET SKIPPED=0
+SET BUILDERROR=
+
+echo.
 echo === Installer ==============================
-cd Installer
+if not defined BuildInstallerWith (
+  echo   SKIPPED - no Delphi installation found to build the installer with.
+  set /A SKIPPED+=1
+) else (
+  cd Installer
+  call %BuildInstallerWith%
+  msbuild /nologo /t:Build /p:Config=Release DDevExtensionsReg.dproj
+  if ERRORLEVEL 1 goto Error1
+  cd ..
+  del bin\DDevExtensionsReg.map bin\DDevExtensionsReg.drc 2>NUL
+  set /A BUILT+=1
+)
 
-:: Use XE2 to create the .res file
-::call "C:\Program Files (x86)\Embarcadero\RAD Studio\9.0\bin\rsvars.bat"
-::msbuild /nologo /t:Build /p:Config=Release DDevExtensionsReg.dproj
-::if ERRORLEVEL 1 goto Error1
+call :BuildOne "Delphi 13.0" "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat" D_D130 DDevExtensionsD130
+call :BuildOne "Delphi 12.0" "C:\Program Files (x86)\Embarcadero\Studio\23.0\bin\rsvars.bat" D_D120 DDevExtensionsD120
+call :BuildOne "Delphi 11.0" "C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat" D_D110 DDevExtensionsD110
+call :BuildOne "Delphi 10.4" "C:\Program Files (x86)\Embarcadero\Studio\21.0\bin\rsvars.bat" D_D104 DDevExtensionsD104
+call :BuildOne "Delphi 10.3" "C:\Program Files (x86)\Embarcadero\Studio\20.0\bin\rsvars.bat" D_D103 DDevExtensionsD103
+call :BuildOne "Delphi 10.2" "C:\Program Files (x86)\Embarcadero\Studio\19.0\bin\rsvars.bat" D_D102 DDevExtensionsD102
 
-:: rebuild with Delphi 2009 (much smaller file). XE2 is required for the .res file
-call %BuildInstallerWith%
-msbuild /nologo /t:Build /p:Config=Release DDevExtensionsReg.dproj
-if ERRORLEVEL 1 goto Error1
-
-cd ..
-del bin\DDevExtensionsReg.map bin\DDevExtensionsReg.drc
-echo.
-
-echo.
-echo === Delphi 13.0 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\rsvars.bat"
-
-cd D_D130
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD130.dll
-del bin\DDevExtensionsD130.map bin\DDevExtensions.drc
-echo.
-
-echo === Delphi 12.0 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\23.0\bin\rsvars.bat"
-
-cd D_D120
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD120.dll
-del bin\DDevExtensionsD120.map bin\DDevExtensions.drc
-echo.
-
-echo.
-echo === Delphi 11.0 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\22.0\bin\rsvars.bat"
-
-cd D_D110
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD110.dll
-del bin\DDevExtensionsD110.map bin\DDevExtensions.drc
-echo.
-
-echo.
-echo === Delphi 10.4 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\21.0\bin\rsvars.bat"
-
-cd D_D104
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD104.dll
-del bin\DDevExtensionsD104.map bin\DDevExtensions.drc
-echo.
-
-echo.
-echo === Delphi 10.3 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\20.0\bin\rsvars.bat"
-
-cd D_D103
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD103.dll
-del bin\DDevExtensionsD103.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi 10.2 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\19.0\bin\rsvars.bat"
-
-cd D_D102
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD102.dll
-del bin\DDevExtensionsD102.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi 10.1 Berlin ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\18.0\bin\rsvars.bat"
-
-cd D_D101
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD101.dll
-del bin\DDevExtensionsD101.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi 10 Seattle ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\17.0\bin\rsvars.bat"
-
-cd D_D10
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsD10.dll
-del bin\DDevExtensionsD10.map bin\DDevExtensions.drc
-echo.
-
-echo.
-echo === Delphi XE8 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\16.0\bin\rsvars.bat"
-
-cd D_XE8
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE8.dll
-del bin\DDevExtensionsXE8.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE7 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\15.0\bin\rsvars.bat"
-
-cd D_XE7
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE7.dll
-del bin\DDevExtensionsXE7.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE6 ==============================
-call "C:\Program Files (x86)\Embarcadero\Studio\14.0\bin\rsvars.bat"
-
-cd D_XE6
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE6.dll
-del bin\DDevExtensionsXE6.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE5 ==============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\12.0\bin\rsvars.bat"
-
-cd D_XE5
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE5.dll
-del bin\DDevExtensionsXE5.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE4 ==============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\11.0\bin\rsvars.bat"
-
-cd D_XE4
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE4.dll
-del bin\DDevExtensionsXE4.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE3 ==============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\10.0\bin\rsvars.bat"
-
-cd D_XE3
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE3.dll
-del bin\DDevExtensionsXE3.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE2 ==============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\9.0\bin\rsvars.bat"
-
-cd D_XE2
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE2.dll
-del bin\DDevExtensionsXE2.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi XE ==============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\8.0\bin\rsvars.bat"
-
-cd D_XE
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensionsXE.dll
-del bin\DDevExtensionsXE.map bin\DDevExtensions.drc
-echo.
-
-
-echo.
-echo === Delphi 2010 ============================
-call "C:\Program Files (x86)\Embarcadero\RAD Studio\7.0\bin\rsvars.bat"
-
-cd D_2010
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions2010.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensions2010.dll
-del bin\DDevExtensions2010.map bin\DDevExtensions2010.drc
-echo.
-
-
-echo.
-echo === Delphi 2009 ============================
-call "C:\CodeGear\RAD Studio\6.0\bin\rsvars.bat"
-
-cd D_2009
-msbuild /nologo /t:Build /p:Config=Release DDevExtensions2009.dproj
-if ERRORLEVEL 1 goto Error1
-cd ..
-if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\DDevExtensions2009.dll
-del bin\DDevExtensions2009.map bin\DDevExtensions2009.drc
-echo.
-
-
-echo === Packaging ==============================
+if defined BUILDERROR goto Error0
 
 echo DDevExtensions Version %majorversion%.%minorversion%.%releaseversion%>bin\Version.txt
 if "%fileversion%#" == "Dev#" echo %versioninfo%>>bin\Version.txt
@@ -331,6 +136,11 @@ if "%fileversion%#" == "Dev#" echo %versioninfo%>>bin\Version.txt
 del "%ReleaseDir%\DDevExtensions*.*" /Q 2>NUL
 md "%ReleaseDir%" 2>NUL
 
+if not exist "C:\Program Files\7-Zip\7z.exe" (
+  echo   SKIPPED packaging - 7-Zip is not installed at C:\Program Files\7-Zip.
+  cd ..
+  goto Summary
+)
 cd bin
 SET FILENAME=..\DDevExtensions
 
@@ -346,6 +156,46 @@ if "%fileversion%#" == "Dev#"  copy /Y ChangeLog.txt "%ReleaseDir%\Changelog.txt
 :: ===========================================
 goto Leave
 :Error1
+
+:Summary
+echo.
+echo === Summary ================================
+echo   Built   : %BUILT%
+echo   Skipped : %SKIPPED%
+echo.
+goto Leave
+
+:: ----------------------------------------------------------------------------------------
+:: :BuildOne  %1 display name  %2 rsvars.bat (quoted)  %3 project folder  %4 output DLL name
+:: ----------------------------------------------------------------------------------------
+:BuildOne
+echo.
+echo === %~1 ==============================
+if not exist %2 (
+  echo   SKIPPED - %~1 is not installed on this machine.
+  set /A SKIPPED+=1
+  goto :EOF
+)
+if not exist "%~3\DDevExtensions.dproj" (
+  echo   SKIPPED - project folder %~3 is not in this repository.
+  set /A SKIPPED+=1
+  goto :EOF
+)
+call %2
+cd %~3
+msbuild /nologo /t:Build /p:Config=Release DDevExtensions.dproj
+if ERRORLEVEL 1 (
+  cd ..
+  echo   *** BUILD FAILED for %~1
+  set BUILDERROR=1
+  goto :EOF
+)
+cd ..
+if exist "%LINKMAPFILE%" "%LINKMAPFILE%" bin\%~4.dll
+del bin\%~4.map bin\DDevExtensions.drc 2>NUL
+set /A BUILT+=1
+goto :EOF
+
 cd ..
 :Error0
 pause
