@@ -472,9 +472,11 @@ end;
 function TFormPathCompactor.ExpandedLengthAfter( APathSet: TPathSet ): Integer;
 var
   Entries: TArray<TPathEntry>;
-  I, J: Integer;
-  Expanded: string;
+  I: Integer;
 begin
+  { Measured exactly as ExpandedLengthBefore does, less the entries being dropped. Macro
+    substitution never shortens the EXPANDED path - only the stored one - so for a set with
+    no drops this deliberately equals the before figure. }
   Result := 0;
   Entries := APathSet.Entries;
   for I := Low( Entries ) to High( Entries ) do
@@ -482,7 +484,11 @@ begin
     if Entries[I].Drop then
       Continue;
 
-    Inc( Result, Length( Expanded ) + 1 );
+    if Entries[I].Expanded <> '' then
+      Inc( Result, Length( Entries[I].Expanded ) )
+    else
+      Inc( Result, Length( Entries[I].Raw ) );
+    Inc( Result ); // the separating semicolon
   end;
   if Result > 0 then
     Dec( Result );
@@ -653,7 +659,7 @@ var
   I: Integer;
   Vars: TArray<TVarCandidate>;
   PathSet: TPathSet;
-  Description, Error, DropList, Generic: string;
+  Description, DropList, Generic: string;
   Rescued, SetCount: Integer;
   Drops: TArray<string>;
 begin
