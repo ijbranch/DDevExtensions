@@ -4,7 +4,11 @@
 
 ### New DUnitX Test Infrastructure
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX VCL GUI test runner
-- **TestDfmParserDUnitX.pas** - 29 comprehensive test cases
+- **TestDfmParserDUnitX.pas** - 32 comprehensive test cases
+- **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
+- **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
+- **TestUsesClauseManagerCoreDUnitX.pas** - 26 cases (`UsesClauseManagerCore`)
+- **94 tests in total**, all passing
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)
@@ -12,7 +16,7 @@
 - **MultiLineStrings.dfm** - TMemo.Lines, TComboBox.Items, TListBox.Items (parenthesized lists `(...)`)
 - **Complex.dfm** - Production-quality form with PageControl, tabs, GroupBox, StringGrid, nested panels
 
-## Complete Test Coverage (29 Tests)
+## DFM Parser Test Coverage (32 Tests)
 
 ### 1. Basic Parsing Tests (4)
 - ✅ `TestSimpleProperties` - Parse form with Caption, Width, Visible
@@ -91,7 +95,7 @@ DDevExtUnitTestsDUnitX.exe
 ### Expected Results
 
 **If multi-line parsing works:**
-- 29/29 tests pass ✅
+- 32/32 DFM-parser tests pass ✅
 - All file round-trips succeed
 - Parser is production-ready
 

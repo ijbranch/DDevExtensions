@@ -1,2 +1,2 @@
-#define VER_PRODUCTVERSION          3,22,14,0
-#define VER_PRODUCTVERSION_STR      "3.22.14"
+#define VER_PRODUCTVERSION          3,22,15,0
+#define VER_PRODUCTVERSION_STR      "3.22.15"

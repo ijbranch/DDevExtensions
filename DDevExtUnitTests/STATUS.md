@@ -22,13 +22,16 @@
 
 **DUnitX VCL GUI Tests (Recommended):**
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX test runner with VCL GUI
-- **TestDfmParserDUnitX.pas** - 29 comprehensive test cases
+- **TestDfmParserDUnitX.pas** - 32 comprehensive test cases
   - 4 Basic parsing tests
   - 2 Round-trip tests
   - 3 Property manipulation tests
   - 5 Advanced value type tests
   - 10 Edge case tests
   - 5 File round-trip tests
+- **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
+- **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
+- **TestUsesClauseManagerCoreDUnitX.pas** - 26 cases (`UsesClauseManagerCore`, 3 fixtures)
 
 **Original Console Tests:**
 - **DDevExtUnitTests.dpr** - Simple console test runner
@@ -178,7 +181,12 @@ Failed: Y
 ---
 
 ## Known Issues
-None yet - tests haven't been run! 😊
+None outstanding in this suite. All 94 tests across the four DUnitX test units pass
+(DFM parser 32, PathCompactor 25, ProjectGroupSorter 11, UsesClauseManagerCore 26).
+
+`UsesClauseManagerCore` carries one deliberate characterisation test,
+`TestDuplicateUnitNameCurrentlyRaises`, which pins a known defect rather than endorsing it:
+two search-path directories holding units of the same name raise `EListError`. See CHANGELOG.md.
 
 ---
 

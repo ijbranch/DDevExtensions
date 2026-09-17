@@ -4,6 +4,94 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-09-17 - v3.22.15 - A testable core for the Uses Clause Manager
+
+### Fixed
+
+- **The Path Compactor's "Expanded after" column was showing a count, not a length.**
+  `TFormPathCompactor.ExpandedLengthAfter` declared a local `Expanded: string` and never assigned
+  it, so `Inc( Result, Length( Expanded ) + 1 )` added 1 per surviving entry - the column reported
+  *(entries kept) - 1* beside a "before" column holding a real character count. It now measures
+  exactly as `ExpandedLengthBefore` does, less the dropped entries, which finally makes the
+  v3.22.14 note about the two columns matching true in the code as well as in prose.
+
+  **Why it survived:** the routine lives in the form, and only `PathCompactorCore` beside it has
+  tests. The compiler had been reporting it all along as `H2164 Variable 'J' is declared but never
+  used` - the unused loop variable left behind when whatever filled `Expanded` was removed.
+
+  (2026-09-17) - `Source/PathCompactor/FrmPathCompactor.pas`
+
+- Removed a dead `Error` local from `TFormPathCompactor.btnApplyClick` (the second `H2164`).
+  Checked first that it was not a dropped failure: `WriteVariable` and `WritePaths` are both plain
+  procedures with no error out-parameter, so nothing was being swallowed. The project now builds
+  with zero hints and zero warnings.
+
+  (2026-09-17) - `Source/PathCompactor/FrmPathCompactor.pas`
+
+### Changed
+
+- **Extracted a testable core out of the Uses Clause Manager.** `TUnitExportsDatabase`,
+  `TIdentifierUsageAnalyzer` and `TUsesClauseRefactorer` now live in a new `UsesClauseManagerCore`
+  unit that depends on the RTL and `DelphiLexer` only - no ToolsAPI, no VCL, no IDE - in the same
+  shape as `PathCompactorCore` and `ProjectGroupSorterCore`.
+
+  **No functional change.** Every line of the three classes' logic moved verbatim; a diff of the 991
+  moved lines shows edits in exactly two routines, both mechanical:
+
+  - `BuildFromSearchPath( IOTAProject )` was the only ToolsAPI dependency in the analysis code. Its
+    filesystem half became `BuildFromDirectories( TStrings )` on the core class, and its IDE half is
+    now a class helper back in `UsesClauseManager`, so the existing call site is unchanged.
+  - `ScanUnit` was split: it still loads the file exactly as before, then delegates the parse to a new
+    `ScanSource( UnitName, UnitPath, Source )`. That is the seam the tests use - it needs no file on disk.
+
+  `UsesClauseManager` re-exports every moved type (and the enum values as constants), so the unit's
+  published interface is unchanged and no consumer needed an edit.
+
+  One call had to be qualified: `FindClose( SR )` now reads `System.SysUtils.FindClose( SR )`. Moving
+  `Winapi.Windows` into the core's implementation section changed the resolution order, and
+  `Winapi.Windows.FindClose` takes a `THandle` - the compiler caught it as `E2010`. The qualified call
+  is what the original resolved to anyway.
+
+  (2026-09-17) - `Source/UsesClauseManager/UsesClauseManagerCore.pas` (new),
+  `Source/UsesClauseManager/UsesClauseManager.pas`, `D_D102`...`D_D130/DDevExtensions.dpr`
+
+- **Version stamped 3.22.15 across all four sources.** `Source/version.inc` and `version.h` carry the
+  product version; `version.bat` had been left at `minorversion=9` since v3.9 and is live - `build.bat`
+  calls it and names the release folder `Release\%majorversion%.%minorversion%` - so a release built
+  from it would have been labelled **3.9**. Corrected to 22. Note it holds only two fields, so it
+  cannot express the third; it now reads 3.22 for a 3.22.15 product.
+
+  (2026-09-17) - `Source/version.inc`, `version.h`, `version.bat`
+
+### Added
+
+- **26 DUnitX tests for `UsesClauseManagerCore`** - the first tests this feature has ever had. They
+  cover the exports database (export kinds, interface-only scope, case-insensitive lookup, the reverse
+  lookup, RTL/VCL priority tie-breaking, `Clear`), the usage analyser (both uses clauses, interface vs
+  implementation identifiers, qualified references) and the refactorer (all four placement outcomes,
+  and that the rewritten source really does relocate the unit).
+
+  Mutation-proved rather than assumed: inverting the "only used in implementation" recommendation in
+  the core turns exactly two tests red, each on its own assertion.
+
+  (2026-09-17) - `DDevExtUnitTests/TestUsesClauseManagerCoreDUnitX.pas` (new),
+  `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+
+### Known issues
+
+- **`TUnitExportsDatabase` raises on two units with the same name.** The exports dictionary is
+  populated with `TDictionary.Add` and has no duplicate guard, so two search-path directories each
+  holding (say) a `Utils.pas` raise `EListError`, and the partly-built export list leaks with it. The
+  behaviour is pinned by `TestDuplicateUnitNameCurrentlyRaises` as a characterisation test so that
+  changing it is a deliberate act. Not fixed here - this change set is behaviour-preserving by intent.
+
+- **`BuildFromSearchPath` discards the project directory.** It adds `ExtractFileDir( Project.FileName )`
+  to the path list and then assigns `DelimitedText`, which replaces the whole list. So whenever the
+  project has options, the project's own directory is never scanned. Behaviour preserved and commented
+  at the site; fixing it is now a testable decision rather than a guess.
+
+---
+
 ## 2026-08-31 - v3.22.14 - Remove the directory-junction feature
 
 ### Removed

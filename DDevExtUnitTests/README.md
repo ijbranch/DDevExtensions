@@ -1,13 +1,25 @@
-# DFM Parser Tests
+# DDevExtensions Unit Tests
 
-DUnitX VCL GUI test suite for **gllDelphiDFMParser** - a lossless Delphi DFM file parser.
+DUnitX test suites for the DDevExtensions cores - the units deliberately kept free of ToolsAPI,
+VCL and the IDE so they can be tested outside it.
+
+| Test unit | Unit under test | Tests |
+|-----------|-----------------|-------|
+| `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 32 |
+| `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 25 |
+| `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 11 |
+| `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement | 26 |
+| | **Total** | **94** |
+
+The rest of this document describes the DFM parser suite specifically.
 
 ## Test Application
 
 **VCL GUI:** `DDevExtUnitTestsDUnitX.exe` (DUnitX VCL GUI runner)
 **Console:** `DDevExtUnitTests.exe` (console text output)
 **Project:** `DDevExtUnitTestsDUnitX.dpr`
-**Test Unit:** `TestDfmParserDUnitX.pas`
+**Test Units:** `TestDfmParserDUnitX.pas`, `TestPathCompactorDUnitX.pas`,
+`TestProjectGroupSorterDUnitX.pas`, `TestUsesClauseManagerCoreDUnitX.pas`
 
 ## Running Tests
 
@@ -27,7 +39,7 @@ DDevExtUnitTests.exe
 ```
 Runs tests with text output to console.
 
-## Test Coverage - 32 Tests (All Passing ✅)
+## DFM Parser Coverage - 32 Tests (All Passing ✅)
 
 ### Basic Parsing (4 tests)
 - ✓ Simple properties
@@ -118,7 +130,7 @@ This copies 5 production DFM files from `E:\DBiWorkflow Development` to `TestDat
 
 ## Test Results
 
-**✅ All 32 tests passing** (100% success rate):
+**✅ All 32 DFM-parser tests passing** (94 across the whole suite):
 - Synthetic test cases covering all DFM features
 - Real-world production DFM files from DBiWorkflow (5 files, 67 KB total)
 

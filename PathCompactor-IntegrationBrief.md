@@ -575,7 +575,7 @@ Match the house format in `CHANGELOG.md` (dated heading, bold lead sentence, tra
   and its entries are left unrewritten. Optionally (off by default) the variables are also written to
   `HKCU\Environment`. Backup and rollback reuse the existing `TLibraryPathBackupManager` history. Pure
   analysis logic lives in RTL-only `PathCompactorCore` with a
-  18-test DUnitX fixture. (2026-XX-XX) — `Source/PathCompactor/*`, `Source/RegisterPlugins.pas`,
+  25-test DUnitX fixture. (2026-XX-XX) — `Source/PathCompactor/*`, `Source/RegisterPlugins.pas`,
   `Source/DelphiExtension.inc`, `D_D102`…`D_D130/DDevExtensions.dpr`,
   `DDevExtUnitTests/TestPathCompactorDUnitX.pas`
 
@@ -603,7 +603,7 @@ Built and shipped. Six new files under `Code\DDevExtensions\Source\PathCompactor
 `RegisterPlugins.pas`, all six `D_Dxxx\DDevExtensions.dpr` and the DUnitX project.
 `LibraryPathSorter` aliases `TLibraryPathType` and its helper from the core.
 
-**20/20 tests green.** Both plugin DLLs build clean, x86 and x64, v3.22.11.
+**25/25 tests green.** Both plugin DLLs build clean, x86 and x64, v3.22.11.
 
 ### What changed against the plan
 
