@@ -372,3 +372,6 @@ nul
 !Version.res
 !Splash.res
 !ComponentPanel.res
+
+# Test runner output (regenerated on every headless run)
+bin/dunitx-results.xml

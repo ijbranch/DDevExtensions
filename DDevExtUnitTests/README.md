@@ -15,7 +15,10 @@ The rest of this document describes the DFM parser suite specifically.
 
 ## Test Application
 
-**VCL GUI:** `DDevExtUnitTestsDUnitX.exe` (DUnitX VCL GUI runner)
+**Headless (Release):** `DDevExtUnitTestsDUnitX.exe` - console output, an NUnit XML report
+(`dunitx-results.xml`) and exit code 0 on green / 1 on red. This is what CI should call.
+**TestInsight (Debug):** the Debug configuration defines `TESTINSIGHT` and runs under the IDE.
+**VCL GUI:** build with `GUI_TEST_RUNNER` defined for the DUnitX GUI runner.
 **Console:** `DDevExtUnitTests.exe` (console text output)
 **Project:** `DDevExtUnitTestsDUnitX.dpr`
 **Test Units:** `TestDfmParserDUnitX.pas`, `TestPathCompactorDUnitX.pas`,

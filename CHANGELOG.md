@@ -6,6 +6,36 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ## 2026-09-17 - v3.22.15 - A testable core for the Uses Clause Manager
 
+### Added
+
+- **The DUnitX suite can now run headless, and does.** `DDevExtUnitTestsDUnitX.dpr` hardcoded
+  `{$DEFINE TESTINSIGHT}` on line 1 and otherwise built a VCL GUI runner, so there was no way to run
+  the tests without the IDE and no exit code for a build server to read. The define is now taken from
+  the `.dproj` per configuration, and the `.dpr` selects between three runners:
+
+  | Define | Runner |
+  |---|---|
+  | `TESTINSIGHT` (Debug config) | TestInsight host - use this while writing tests |
+  | `GUI_TEST_RUNNER` | the DUnitX VCL GUI runner, opt-in |
+  | neither (Release) | console runner, NUnit XML report, meaningful exit code |
+
+  `TESTINSIGHT` had actually been defined **three** times over - in the `.dpr` and in both the Debug
+  and Release `DCC_Define` lists - which is why removing it from one place had no effect. Release now
+  carries `RELEASE` only, and `{$MESSAGE FATAL}` catches an attempt to define two runners at once.
+
+  First full headless run: **94 tests found, 94 passed, exit code 0** - DFM parser 32, PathCompactor
+  25, ProjectGroupSorter 11, UsesClauseManagerCore 26.
+
+  (2026-09-17) - `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dproj`
+
+- **`Assert.IgnoreCaseDefault := False` in the runner mainline.** Our `gllDUnitX` fork defaults a
+  two-argument string comparison to ignore case, and nothing at the call site reveals it - so a test
+  whose subject *is* the casing cannot fail. Checked rather than assumed before adopting it: all 94
+  tests still pass with it set, so the weak default was costing this suite nothing today. It is set
+  now so that a future test cannot inherit it.
+
+  (2026-09-17) - `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+
 ### Fixed
 
 - **The Path Compactor's "Expanded after" column was showing a count, not a length.**
@@ -62,6 +92,15 @@ This file is the sole source and record of all project changes for DDevExtension
   cannot express the third; it now reads 3.22 for a 3.22.15 product.
 
   (2026-09-17) - `Source/version.inc`, `version.h`, `version.bat`
+
+- **`DDevExtensions_Map.html` refreshed** - it was a 2026-01-06 snapshot. Four components were absent
+  from it entirely: the **IDE Path Compactor** (3,034 lines), the **IDE Path Sorter** (2,495),
+  **Sort Projects in Group** (478) and the **External Mod Monitor** (726). All four are now in both
+  the component table and the `projectData` object, every component's line count was re-measured by
+  the procedure documented in the file's own header, and the totals moved from 62,338 lines / 131
+  Pascal files to **91,941 / 156**.
+
+  (2026-09-17) - `DDevExtensions_Map.html`
 
 ### Added
 

@@ -40,8 +40,8 @@ COMPONENTS INCLUDED:
 
   Build Order: CompileInterceptor → DDevExtensions → Installer
 
-LAST UPDATED: 2026-01-06
-TOTAL LINES OF CODE: 62,338
+LAST UPDATED: 2026-09-17
+TOTAL LINES OF CODE: 91,941
 ================================================================================
 -->
 <html lang="en">
@@ -831,33 +831,37 @@ TOTAL LINES OF CODE: 62,338
             <th>Category</th>
             <th>LOC</th>
         </tr>
+        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing</td><td>Shared Library</td><td>7,177</td></tr>
         <tr><td><strong>IDE Utilities</strong></td><td>Tools API helpers and IDE integration</td><td>Shared Library</td><td>6,654</td></tr>
-        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing</td><td>Shared Library</td><td>6,481</td></tr>
-        <tr><td><strong>Dependency Viewer</strong></td><td>Unit dependency analysis</td><td>Analysis</td><td>3,631</td></tr>
-        <tr><td><strong>Compile Interceptor</strong></td><td>Compiler hooks for metrics</td><td>Build</td><td>3,382</td></tr>
-        <tr><td><strong>Core Framework</strong></td><td>Plugin initialization and management</td><td>Core</td><td>3,160</td></tr>
-        <tr><td><strong>Project Settings</strong></td><td>Version info management</td><td>Project</td><td>2,957</td></tr>
-        <tr><td><strong>Compile Progress</strong></td><td>Build tracking and statistics</td><td>Build</td><td>2,811</td></tr>
-        <tr><td><strong>DSU Features</strong></td><td>Extended IDE settings</td><td>Editor</td><td>2,693</td></tr>
-        <tr><td><strong>Old Palette</strong></td><td>Legacy component palette</td><td>UI</td><td>2,412</td></tr>
-        <tr><td><strong>Start Parameter Manager</strong></td><td>Debug launch parameters</td><td>Project</td><td>2,163</td></tr>
-        <tr><td><strong>Code Style Checker</strong></td><td>Naming convention enforcement</td><td>Analysis</td><td>2,077</td></tr>
-        <tr><td><strong>File Selector</strong></td><td>File selection dialogs</td><td>UI</td><td>1,944</td></tr>
+        <tr><td><strong>Core Framework</strong></td><td>Plugin initialization and management</td><td>Core</td><td>4,320</td></tr>
+        <tr><td><strong>Dependency Viewer</strong></td><td>Unit dependency analysis</td><td>Analysis</td><td>4,222</td></tr>
+        <tr><td><strong>Compile Interceptor</strong></td><td>Compiler hooks for metrics</td><td>Build</td><td>4,033</td></tr>
+        <tr><td><strong>Compile Progress</strong></td><td>Build tracking and statistics</td><td>Build</td><td>3,691</td></tr>
+        <tr><td><strong>Project Settings</strong></td><td>Version info management</td><td>Project</td><td>3,375</td></tr>
+        <tr><td><strong>DSU Features</strong></td><td>Extended IDE settings</td><td>Editor</td><td>3,055</td></tr>
+        <tr><td><strong>IDE Path Compactor</strong></td><td>Shorten IDE library paths via $(MACRO) substitution</td><td>Project</td><td>3,034</td></tr>
+        <tr><td><strong>Old Palette</strong></td><td>Legacy component palette</td><td>UI</td><td>2,755</td></tr>
+        <tr><td><strong>Code Style Checker</strong></td><td>Naming convention enforcement</td><td>Analysis</td><td>2,731</td></tr>
+        <tr><td><strong>IDE Path Sorter</strong></td><td>Sort and de-duplicate IDE library paths</td><td>Project</td><td>2,495</td></tr>
+        <tr><td><strong>Start Parameter Manager</strong></td><td>Debug launch parameters</td><td>Project</td><td>2,418</td></tr>
         <tr><td><strong>Uses Clause Manager</strong></td><td>Optimize uses clauses</td><td>Analysis</td><td>2,302</td></tr>
-        <tr><td><strong>Editor Features</strong></td><td>Code editing enhancements</td><td>Editor</td><td>1,873</td></tr>
-        <tr><td><strong>Unreachable Code</strong></td><td>Dead path detection</td><td>Analysis</td><td>1,658</td></tr>
-        <tr><td><strong>Dead Code Detector</strong></td><td>Unused code finder</td><td>Analysis</td><td>1,352</td></tr>
-        <tr><td><strong>Code Quality Analyzer</strong></td><td>Quality checks</td><td>Analysis</td><td>1,313</td></tr>
-        <tr><td><strong>Unused Unit Detector</strong></td><td>Uses clause cleanup</td><td>Analysis</td><td>1,273</td></tr>
-        <tr><td><strong>DFM/PAS Consistency</strong></td><td>Form sync checker</td><td>Analysis</td><td>1,264</td></tr>
-        <tr><td><strong>Keybindings</strong></td><td>Keyboard shortcuts</td><td>Editor</td><td>1,257</td></tr>
-        <tr><td><strong>TODO Aggregator</strong></td><td>Comment scanner</td><td>Analysis</td><td>943</td></tr>
+        <tr><td><strong>Editor Features</strong></td><td>Code editing enhancements</td><td>Editor</td><td>2,196</td></tr>
+        <tr><td><strong>File Selector</strong></td><td>File selection dialogs</td><td>UI</td><td>2,152</td></tr>
+        <tr><td><strong>Unreachable Code</strong></td><td>Dead path detection</td><td>Analysis</td><td>1,815</td></tr>
+        <tr><td><strong>Code Quality Analyzer</strong></td><td>Quality checks</td><td>Analysis</td><td>1,636</td></tr>
+        <tr><td><strong>Dead Code Detector</strong></td><td>Unused code finder</td><td>Analysis</td><td>1,555</td></tr>
+        <tr><td><strong>Keybindings</strong></td><td>Keyboard shortcuts</td><td>Editor</td><td>1,480</td></tr>
+        <tr><td><strong>Unused Unit Detector</strong></td><td>Uses clause cleanup</td><td>Analysis</td><td>1,458</td></tr>
+        <tr><td><strong>DFM/PAS Consistency</strong></td><td>Form sync checker</td><td>Analysis</td><td>1,408</td></tr>
+        <tr><td><strong>TODO Aggregator</strong></td><td>Comment scanner</td><td>Analysis</td><td>1,114</td></tr>
+        <tr><td><strong>Component Selector</strong></td><td>Quick component search</td><td>UI</td><td>951</td></tr>
+        <tr><td><strong>Empty Event Handler</strong></td><td>Empty handler finder</td><td>Analysis</td><td>920</td></tr>
         <tr><td><strong>XML Utilities</strong></td><td>Configuration storage</td><td>Shared Library</td><td>898</td></tr>
-        <tr><td><strong>Empty Event Handler</strong></td><td>Empty handler finder</td><td>Analysis</td><td>802</td></tr>
-        <tr><td><strong>Component Selector</strong></td><td>Quick component search</td><td>UI</td><td>784</td></tr>
-        <tr><td><strong>Form Designer</strong></td><td>Designer helpers</td><td>Editor</td><td>714</td></tr>
+        <tr><td><strong>Form Designer</strong></td><td>Designer helpers</td><td>Editor</td><td>864</td></tr>
+        <tr><td><strong>External Mod Monitor</strong></td><td>Auto-refresh on external file modification</td><td>Editor</td><td>726</td></tr>
         <tr><td><strong>General Utilities</strong></td><td>Hooking and streams</td><td>Shared Library</td><td>505</td></tr>
-        <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>398</td></tr>
+        <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>498</td></tr>
+        <tr><td><strong>Sort Projects in Group</strong></td><td>Alphabetise .groupproj member projects</td><td>Project</td><td>478</td></tr>
     </table>
 
     <h2>Technical Specifications</h2>
@@ -865,8 +869,8 @@ TOTAL LINES OF CODE: 62,338
         <tr><th>Specification</th><th>Value</th></tr>
         <tr><td>Type</td><td>IDE Expert (DLL Plugin)</td></tr>
         <tr><td>Supported IDEs</td><td>Delphi 10.2 Tokyo through 13.0 Florence</td></tr>
-        <tr><td>Total Lines of Code</td><td>62,338</td></tr>
-        <tr><td>Total Pascal Files</td><td>131</td></tr>
+        <tr><td>Total Lines of Code</td><td>91,941</td></tr>
+        <tr><td>Total Pascal Files</td><td>156</td></tr>
         <tr><td>Output Files</td><td>DDevExtensions.dll, CompileInterceptorW.dll, DDevExtensionsReg.exe</td></tr>
         <tr><td>Configuration</td><td>XML files in %APPDATA%\DDevExtensions\</td></tr>
     </table>
@@ -947,42 +951,70 @@ TOTAL LINES OF CODE: 62,338
                 description: 'Visual unit dependency analysis tool. Shows forward and reverse dependencies, detects circular references, and identifies layer violations.',
                 features: ['Forward dependency analysis', 'Reverse dependency analysis', 'Circular reference detection', 'Layer violation detection', 'Export to CSV/TXT'],
                 dependencies: ['Pascal Parser', 'IDE Utilities', 'XML Utilities'],
-                linesOfCode: 3631
+                linesOfCode: 4222
             },
             'CodeQualityAnalyzer': {
                 category: 'Code Analysis',
                 description: 'Comprehensive code quality checker that scans for common issues like magic numbers, hardcoded strings, and potential memory leaks.',
                 features: ['Magic number detection', 'Hardcoded string detection', 'Empty exception handlers', 'Missing try/finally', 'Memory leak detection'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1313
+                linesOfCode: 1636
             },
             'CodeStyleChecker': {
                 category: 'Code Analysis',
                 description: 'Enforces Delphi naming conventions. Checks type prefixes (T, I, E, P), field prefixes (F), and parameter prefixes (A).',
                 features: ['Type prefix rules', 'Field prefix rules', 'Parameter prefix rules', 'Custom variable prefixes', 'Unit scope validation'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 2077
+                linesOfCode: 2731
             },
             'DeadCodeDetector': {
                 category: 'Code Analysis',
                 description: 'Finds unused code elements including procedures, functions, and private fields. Smart filtering ignores virtual methods and event handlers.',
                 features: ['Unused procedure detection', 'Unused field detection', 'Smart filtering', 'Wildcard ignore patterns'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1352
+                linesOfCode: 1555
             },
             'UnusedUnitDetector': {
                 category: 'Code Analysis',
                 description: 'Identifies units in uses clauses that are not actually used by the code. Analyses both interface and implementation sections.',
                 features: ['Interface section analysis', 'Implementation section analysis', 'Configurable ignore list'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1273
+                linesOfCode: 1458
             },
             'UnreachableCodeDetector': {
                 category: 'Code Analysis',
                 description: 'Finds code that can never execute, such as statements after Exit, Raise, Break, or Continue.',
                 features: ['Post-exit code detection', 'Post-raise detection', 'Case statement aware', 'Conditional compilation support'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1658
+                linesOfCode: 1815
+            },
+            'PathCompactor': {
+                category: 'Project Management',
+                description: 'Shortens the IDE library path strings by proposing $(NAME) macro substitutions for repeated directory prefixes, and reports duplicate, missing and undefined-macro entries.',
+                features: ['Macro substitution', 'Stored-space scoring', 'Hygiene detection', 'Backup and rollback'],
+                dependencies: ['IDE Utilities', 'XML Utilities'],
+                linesOfCode: 3034
+            },
+            'LibraryPathSorter': {
+                category: 'Project Management',
+                description: 'Sorts and de-duplicates the IDE library, browsing and debug-DCU paths, with backup history.',
+                features: ['Path sorting', 'Duplicate removal', 'Backup history', 'Per-platform'],
+                dependencies: ['IDE Utilities', 'XML Utilities'],
+                linesOfCode: 2495
+            },
+            'ProjectGroupSorter': {
+                category: 'Project Management',
+                description: 'Alphabetises the member projects of the open project group by rewriting the .groupproj ItemGroup, per-project Targets and CallTarget lists.',
+                features: ['.groupproj rewrite', 'Reload and reselect', 'Backup file', 'No-op when sorted'],
+                dependencies: ['IDE Utilities'],
+                linesOfCode: 478
+            },
+            'ExternalModMonitor': {
+                category: 'Editor',
+                description: 'Watches the project tree with ReadDirectoryChangesW and refreshes modules changed outside the IDE.',
+                features: ['Directory watching', 'Auto-refresh', 'Conflict prompt'],
+                dependencies: ['IDE Utilities'],
+                linesOfCode: 726
             },
             'UsesClauseManager': {
                 category: 'Code Analysis',
@@ -996,28 +1028,28 @@ TOTAL LINES OF CODE: 62,338
                 description: 'Centralized comment scanner that finds TODO, FIXME, HACK, BUG, NOTE, and XXX comments across the project.',
                 features: ['Multi-tag scanning', 'Priority parsing', 'Filterable results', 'Sortable list'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 943
+                linesOfCode: 1114
             },
             'EmptyEventHandler': {
                 category: 'Code Analysis',
                 description: 'Finds event handlers with empty bodies that serve no purpose and can be removed.',
                 features: ['Empty handler detection', 'Form event scanning'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 802
+                linesOfCode: 920
             },
             'DfmPasConsistency': {
                 category: 'Code Analysis',
                 description: 'Verifies synchronization between DFM files and Pascal source. Finds missing components and type mismatches.',
                 features: ['Missing component detection', 'Missing field detection', 'Type mismatch detection'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1264
+                linesOfCode: 1408
             },
             'CompileProgress': {
                 category: 'Build Tools',
                 description: 'Build progress tracking with per-unit compile times, LOC metrics, and cyclomatic complexity analysis.',
                 features: ['Per-unit compile times', 'LOC metrics', 'Cyclomatic complexity', 'Taskbar integration', 'Auto-save on success'],
                 dependencies: ['Compile Interceptor', 'IDE Utilities'],
-                linesOfCode: 2811
+                linesOfCode: 3691
             },
             'CompileBackup': {
                 category: 'Build Tools',
@@ -1045,42 +1077,42 @@ TOTAL LINES OF CODE: 62,338
                 description: 'Editor improvement features including enhanced key bindings and navigation.',
                 features: ['Tab indentation', 'Home key enhancement', 'Word navigation', 'Interface/Implementation toggle'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 1873
+                linesOfCode: 2196
             },
             'Keybindings': {
                 category: 'Editor',
                 description: 'Enhanced keyboard shortcuts for common IDE operations.',
                 features: ['Custom shortcuts', 'Key binding management'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 1257
+                linesOfCode: 1480
             },
             'FormDesigner': {
                 category: 'Editor',
                 description: 'Form designer helpers that eliminate phantom changes and improve DPI handling.',
                 features: ['Remove ExplicitX properties', 'Remove PixelsPerInch', 'Label margin helper'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 714
+                linesOfCode: 864
             },
             'DSUFeatures': {
                 category: 'Editor',
                 description: 'Extended IDE settings including Structure View search and class completion options.',
                 features: ['Disable alpha-sort', 'Structure View search', 'Project visibility'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2693
+                linesOfCode: 3055
             },
             'ProjectSettings': {
                 category: 'Project Management',
                 description: 'Multi-project version info management for consistent versioning across project groups.',
                 features: ['Version info management', 'Multi-project support', 'Build number automation'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2957
+                linesOfCode: 3375
             },
             'StartParameterManager': {
                 category: 'Project Management',
                 description: 'Multiple start parameter configurations for debugging with easy switching.',
                 features: ['Multiple configurations', 'Quick switching', 'Parameter history'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2163
+                linesOfCode: 2418
             },
             'StartParameterTeam': {
                 category: 'Project Management',
@@ -1094,21 +1126,21 @@ TOTAL LINES OF CODE: 62,338
                 description: 'Searchable component selector popup for quick component access.',
                 features: ['Quick search', 'Component filtering', 'Keyboard navigation'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 784
+                linesOfCode: 951
             },
             'OldPalette': {
                 category: 'UI Component',
                 description: 'Legacy-style component palette for older Delphi versions (10.2 and earlier).',
                 features: ['Classic palette UI', 'Category organization'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2412
+                linesOfCode: 2755
             },
             'FileSelector': {
                 category: 'UI Component',
                 description: 'Enhanced file selection dialogs with additional features.',
                 features: ['Enhanced file dialogs', 'Recent files'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 1944
+                linesOfCode: 2152
             },
             'UnitSelector': {
                 category: 'UI Component',
@@ -1150,14 +1182,14 @@ TOTAL LINES OF CODE: 62,338
                     'User-mode installation (no admin rights required)'
                 ],
                 dependencies: ['Windows Registry API', 'DDevExtensions.dll', 'CompileInterceptorW.dll'],
-                linesOfCode: 398
+                linesOfCode: 498
             },
             'PascalParser': {
                 category: 'Shared Library',
                 description: 'Pascal source code tokenizer and parser used by all code analysis tools. Handles lexing, expression parsing, and preprocessor directives.',
                 features: ['Tokenization', 'Expression parsing', 'Preprocessor handling', 'DFM parsing'],
                 dependencies: [],
-                linesOfCode: 6481
+                linesOfCode: 7177
             },
             'IDEUtilities': {
                 category: 'Shared Library',
@@ -1192,7 +1224,7 @@ TOTAL LINES OF CODE: 62,338
                     'Thread-safe event notification to main extension'
                 ],
                 dependencies: ['Windows API (CreateProcess hooks)', 'Shared memory for IPC'],
-                linesOfCode: 3382
+                linesOfCode: 4033
             },
             'DelphiIDE': {
                 category: 'External',
