@@ -44,7 +44,7 @@ Version 3.17.6 **re-lands the Delphi 13.1 Win64 IDE build support on a clean bas
 
 Version 3.16.5 adds **Delphi 13.1 Win64 IDE build support**. The same source tree now produces `DDevExtensionsD130.dll` for the 32-bit IDE host (`bin\bds.exe`) and `DDevExtensionsD130x64.dll` for the 64-bit RAD Studio personality (`bin64\bds.exe`). The 64-bit Delphi-only IDE personality does not exist — only RAD Studio ships a 64-bit host. The 32-bit IDE build is unchanged. The installer detects both bitness hosts under the shared `Embarcadero\BDS\37.0` registry key and registers each under the correct `Experts` / `Experts x64` subkey. A small set of features rely on x86 inline asm or 5-byte JMP-rel32 hooks that don't port to Win64 and are inactive on the 64-bit host — see Help.md for the list. A diagnostic log at `%APPDATA%\DDevExtensions\Win64Shutdown.log` captures any plug-in teardown exception attributed to the responsible step (silent on clean shutdown).
 
-> **Note:** v3.16.5 has been built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Earlier Delphi releases (10.2 – 12) do not ship a 64-bit IDE host, so they keep the existing 32-bit build only.
+> **Note:** v3.16.5 was built and tested only in the Delphi 13.1 64-bit RAD Studio personality. Delphi 10.2 – 11 do not ship a 64-bit IDE host and keep the 32-bit build only. **Delphi 12 does have one** — RAD Studio 12.2 added `bin64\bds.exe` as an opt-in preview — and a `DDevExtensionsD120x64.dll` is built for it as of 2026-09-19, but it is **untested**: no Delphi 12 installation was available to compile or run it against. Treat it as provisional and report what you find.
 
 Version 3.15.5 makes the **Section Toggle** and **Move Line/Block** shortcuts fully user-configurable. Previously both features hard-coded their keys — Section Toggle in particular bound itself to **Ctrl+Shift+Up/Down** (Delphi's native "jump between declaration and implementation body") and was on by default, silently shadowing a core IDE shortcut. The Key Bindings options page now exposes four `THotKey` editors so each direction can be reassigned independently. Section Toggle now defaults to **off** with blank keys so the IDE's native Ctrl+Shift+Up/Down navigation is preserved; users can opt in and pick any chord. Move Line/Block defaults preserve the traditional Ctrl+Shift+Alt+Up/Down.
 
@@ -142,7 +142,7 @@ See `CHANGELOG.md` for the authoritative per-release detail.
 - **Second digit** - Feature change (Add/Modify/Delete)
 - **Third digit** - Bug fixes
 
-> **Note:** DDevExtensions supports the 32-bit IDE (`bin\bds.exe`) for Delphi 10.2 – 13. The 64-bit IDE host (`bin64\bds.exe`) is supported in Delphi 13.1 RAD Studio personality only. A subset of features that depend on x86 asm / 5-byte JMP hooks are inactive on the 64-bit IDE.
+> **Note:** DDevExtensions supports the 32-bit IDE (`bin\bds.exe`) for Delphi 10.2 – 13. The 64-bit IDE host (`bin64\bds.exe`) is supported and verified in the Delphi 13 RAD Studio personality; a Delphi 12 build (`DDevExtensionsD120x64.dll`) exists for the 12.2+ preview 64-bit IDE but is untested. A subset of features that depend on x86 asm / 5-byte JMP hooks are inactive on the 64-bit IDE.
 
 ## Supported Delphi Versions
 
@@ -150,8 +150,8 @@ See `CHANGELOG.md` for the authoritative per-release detail.
 - Delphi 10.3 Rio
 - Delphi 10.4 Sydney
 - Delphi 11.0 Alexandria
-- Delphi 12.0 Athens
-- Delphi 13.0 Florence
+- Delphi 12.0 Athens (32-bit IDE; 64-bit IDE from 12.2, untested)
+- Delphi 13.0 Florence (32-bit and 64-bit IDE)
 
 For older Delphi versions (2009-10.1), see the original repository or DelphiPraxis fork.
 
@@ -166,10 +166,27 @@ Releases are available at https://www.idefixpack.de/ddev
 
 Open the appropriate `Code\DDevExtensions\D_Dxxx\DDevExtensions.groupproj` for your Delphi version and build all projects.
 
-Or run `Code\DDevExtensions\build.bat`, which builds the installer and every supported Delphi version
-present on the machine. A version whose IDE is not installed is **skipped with a notice** rather than
-failing the run, so the script works on a machine carrying a single Delphi; the run ends with a count
-of what was built and what was skipped. Packaging needs 7-Zip and is skipped if it is absent.
+Or run `Code\DDevExtensions\build.bat`, which builds CompileInterceptor, the installer and every
+supported Delphi version present on the machine. A version whose IDE is not installed is **skipped
+with a notice** rather than failing the run, so the script works on a machine carrying a single
+Delphi; the run ends with a count of what was built and what was skipped. Packaging needs 7-Zip and
+is skipped if it is absent.
+
+Every project is built for an explicitly named platform, so a `.dproj` left saved on the wrong one
+cannot change what the script produces. Delphi 12 and 13 are built twice, because both ship a
+64-bit IDE host - `DDevExtensionsD120.dll` / `DDevExtensionsD130.dll` for `bin\bds.exe`, and
+`DDevExtensionsD120x64.dll` / `DDevExtensionsD130x64.dll` for `bin64\bds.exe`. RAD Studio 12.2 was
+the release that added the 64-bit IDE, as an opt-in preview; on a 12.0 or 12.1 installation there is
+no `bin64\bds.exe`, so the installer never offers that row and the extra DLL is simply unused.
+Delphi 10.2-11 are 32-bit only. CompileInterceptor
+is built for **both** bitnesses (`CompileInterceptorW.dll` and `CompileInterceptorWx64.dll`) because
+it is loaded into the IDE process, and it is built **first**, since the `DDevExtensions` projects copy
+it into `bin` from a pre-build event. `CompileInterceptor\build.bat` is a separate, obsolete script
+hardcoded to Delphi 2009/2010 - it is not used and does not need to be run.
+
+The installer is built for **Win32** on purpose: it reads the IDE's `RootDir` from
+`HKLM\Software\Embarcadero\BDS\<n>`, which RAD Studio writes into the 32-bit registry view
+(`WOW6432Node`), so a 64-bit build detects fewer IDEs.
 
 The product version lives in `version.bat` as three fields (`majorversion`, `minorversion`,
 `releaseversion`). `build.bat` generates `Source\version.inc` and `version.h` from them and compiles
@@ -178,7 +195,7 @@ The product version lives in `version.bat` as three fields (`majorversion`, `min
 `releaseversion` is unset.
 
 The project group includes:
-1. **CompileInterceptorW** - Compiler interceptor library (built first automatically)
+1. **CompileInterceptorW** - Compiler interceptor library (built first, Win32 and Win64)
 2. **DDevExtensions** - Main extension DLL
 3. **DDevExtensionsReg** - Installer application
 

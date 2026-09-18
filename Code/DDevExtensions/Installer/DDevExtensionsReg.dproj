@@ -117,16 +117,16 @@
   <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
     <BT_BuildType>Debug</BT_BuildType>
     <Manifest_File>(Ohne)</Manifest_File>
-    <VerInfo_Build>1</VerInfo_Build>
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.15.1;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
+    <VerInfo_Build>9</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.15.9;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
     <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
-    <VerInfo_Build>604</VerInfo_Build>
+    <VerInfo_Build>605</VerInfo_Build>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
     <VerInfo_Release>15</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.22.15.604;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.22.15;Comments=</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.22.15.605;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.22.15;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2)'!=''">
     <VerInfo_MinorVer>22</VerInfo_MinorVer>

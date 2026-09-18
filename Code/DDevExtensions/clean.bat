@@ -1,1 +1,1 @@
-@build.bat clean
+@call "%~dp0build.bat" clean

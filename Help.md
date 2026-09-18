@@ -63,9 +63,9 @@ Version 3.16.5 | Comprehensive Feature Reference
 
 ## Getting Started
 
-### 64-bit IDE Host Notice (Delphi 13.1+)
+### 64-bit IDE Host Notice (Delphi 12.2+ and 13)
 
-DDevExtensions v3.16.5 adds support for the Delphi 13.1 64-bit RAD Studio personality (`bin64\bds.exe`). Built and tested only in **Delphi 13.1 RAD Studio 64-bit**; earlier Delphi releases do not ship a 64-bit IDE host and continue to use the 32-bit DLL.
+DDevExtensions v3.16.5 adds support for the Delphi 13.1 64-bit RAD Studio personality (`bin64\bds.exe`), which is where it was built and tested. **RAD Studio 12.2 also ships a 64-bit IDE host**, as an opt-in preview, and a `DDevExtensionsD120x64.dll` is built for it as of 2026-09-19 — but that build is **untested**, since no Delphi 12 installation was available. Delphi 10.2 – 11, and Delphi 12.0/12.1, have no 64-bit IDE host and continue to use the 32-bit DLL.
 
 The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target with the full feature set.
 

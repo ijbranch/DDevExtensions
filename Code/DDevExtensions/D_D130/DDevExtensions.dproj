@@ -74,7 +74,7 @@
     <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
     <DCC_ExeOutput>..\bin</DCC_ExeOutput>
     <DCC_ImageBase>53900000</DCC_ImageBase>
-    <DCC_DcuOutput>lib</DCC_DcuOutput>
+    <DCC_DcuOutput>lib\$(Platform)</DCC_DcuOutput>
     <UsePackages>true</UsePackages>
     <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
     <DCC_DependencyCheckOutputName>..\bin\DDevExtensionsD130.dll</DCC_DependencyCheckOutputName>
@@ -97,6 +97,8 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <VerInfo_Release>15</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Base_Win64)'!=''">
+    <PreBuildEvent><![CDATA[copy /Y "$(MSBuildProjectDirectory)\..\..\..\CompileInterceptor\Bin\CompileInterceptorWx64.dll" "$(MSBuildProjectDirectory)\..\bin"
+$(PreBuildEvent)]]></PreBuildEvent>
     <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
     <BT_BuildType>Debug</BT_BuildType>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
@@ -119,20 +121,20 @@ $(PreBuildEvent)]]></PreBuildEvent>
   <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
-    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.15.603;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-    <VerInfo_Build>603</VerInfo_Build>
+    <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.22.15.610;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+    <VerInfo_Build>610</VerInfo_Build>
     <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     <VerInfo_Release>15</VerInfo_Release>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-    <VerInfo_Build>616</VerInfo_Build>
+    <VerInfo_Build>623</VerInfo_Build>
     <VerInfo_MajorVer>3</VerInfo_MajorVer>
     <VerInfo_MinorVer>22</VerInfo_MinorVer>
     <VerInfo_Release>15</VerInfo_Release>
-    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.22.15.616;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
+    <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.22.15.623;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.22.15;Comments=</VerInfo_Keys>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Cfg_2)'!=''">
-    <DCC_DcuOutput>lib\debug</DCC_DcuOutput>
+    <DCC_DcuOutput>lib\$(Platform)\debug</DCC_DcuOutput>
     <MapFile>3</MapFile>
     <ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
     <DCC_DebugDCUs>true</DCC_DebugDCUs>
@@ -389,6 +391,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
       <DesignClass>TFrame</DesignClass>
     </DCCReference>
     <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManagerCore.pas" />
+    <DCCReference Include="..\Source\Decirculariser\DecirculariserCore.pas" />
     <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManager.pas" />
     <DCCReference Include="..\Source\UsesClauseManager\FrmUsesClauseManager.pas">
       <Form>FormUsesClauseManager</Form>

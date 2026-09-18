@@ -11,7 +11,11 @@ library DDevExtensions;
 {$WEAKLINKRTTI ON}
 {$RTTI EXPLICIT METHODS([]) PROPERTIES([]) FIELDS([])}
 
-{$LIBSUFFIX 'D120'}
+{$IFDEF WIN64}
+  {$LIBSUFFIX 'D120x64'}
+{$ELSE}
+  {$LIBSUFFIX 'D120'}
+{$ENDIF}
 
 {$I ..\Source\DelphiExtension.inc}
 

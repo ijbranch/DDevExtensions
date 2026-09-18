@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DelphiSpeedUp Installer                                                    *}
 {*                                                                            *}
@@ -31,14 +31,15 @@ type
   /// Identifies a supported Delphi / RAD Studio installation that the installer
   /// can target. One enum value per (product version, IDE-host bitness) pair —
   /// e.g. <c>ekDelphi130</c> for the 32-bit Delphi 13 IDE host and
-  /// <c>ekDelphi130x64</c> for its 64-bit sibling.
+  /// <c>ekDelphi130x64</c> for its 64-bit sibling. Delphi 12 has both as well,
+  /// because RAD Studio 12.2 added a 64-bit IDE host as an opt-in preview.
   /// </summary>
   TEnvKind = ({ekDelphi5, ekBCB5, ekDelphi6, ekBCB6, ekDelphi7,
               ekDelphi9, ekBDS2006, ekDelphi2007,} ekDelphi2009, ekDelphi2010,
               ekDelphiXE, ekDelphiXE2, ekDelphiXE3, ekDelphiXE4, ekDelphiXE5,
               ekDelphiXE6, ekDelphiXE7, ekDelphiXE8, ekDelphi10Seattle,
               ekDelphi101Berlin, ekDelphi102, ekDelphi103, ekDelphi104,
-              ekDelphi110, ekDelphi120, ekDelphi130, ekDelphi130x64);
+              ekDelphi110, ekDelphi120, ekDelphi120x64, ekDelphi130, ekDelphi130x64);
 
   /// <summary>Set of <see cref="TEnvKind"/> values (currently unused at run time but kept for API symmetry).</summary>
   TEnvKinds = set of TEnvKind;
@@ -100,7 +101,11 @@ const
     (Version: 'D103';    IDEName: 'RAD Studio 10.3';                 Key: 'Embarcadero\BDS\20.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
     (Version: 'D104';    IDEName: 'RAD Studio 10.4';                 Key: 'Embarcadero\BDS\21.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
     (Version: 'D110';    IDEName: 'RAD Studio 11.0';                 Key: 'Embarcadero\BDS\22.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
-    (Version: 'D120';    IDEName: 'RAD Studio 12.0';                 Key: 'Embarcadero\BDS\23.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
+    (Version: 'D120';    IDEName: 'RAD Studio 12.0 (32-bit IDE)';    Key: 'Embarcadero\BDS\23.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
+    // RAD Studio 12.2 introduced a 64-bit IDE host as an opt-in preview; 12.0 and 12.1 have no
+    // bin64\bds.exe, so this row simply does not appear on those installations - detection is by
+    // HostExeRelPath existing, not by product version.
+    (Version: 'D120x64'; IDEName: 'RAD Studio 12.2+ (64-bit IDE)';   Key: 'Embarcadero\BDS\23.0'; ExpertsSubKey: 'Experts x64'; HostExeRelPath: 'bin64\bds.exe'; CompInterceptorDll: 'CompileInterceptorWx64.dll'),
     (Version: 'D130';    IDEName: 'RAD Studio 13.0 (32-bit IDE)';    Key: 'Embarcadero\BDS\37.0'; ExpertsSubKey: 'Experts';     HostExeRelPath: 'bin\bds.exe';   CompInterceptorDll: 'CompileInterceptorW.dll'),
     (Version: 'D130x64'; IDEName: 'RAD Studio 13.0 (64-bit IDE)';    Key: 'Embarcadero\BDS\37.0'; ExpertsSubKey: 'Experts x64'; HostExeRelPath: 'bin64\bds.exe'; CompInterceptorDll: 'CompileInterceptorWx64.dll')
   );

@@ -4,6 +4,133 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-09-19 - Delphi 12 64-bit IDE host support (untested)
+
+Ian queried the claim that Delphi 12 has no 64-bit IDE, and he was right: **RAD Studio 12.2 shipped a
+64-bit IDE host (`bin64\bds.exe`) as an opt-in preview**, continued in 12.3, before Delphi 13 made it
+the real thing. The repository asserted the opposite in three places, and the build script and
+installer were built around that assumption.
+
+**This support is wired up blind and is UNTESTED.** No Delphi 12 installation exists on the build
+machine, so `D_D120` cannot be compiled, the DLL cannot be loaded, and the installer row cannot be
+exercised. Everything below is a faithful mirror of the verified Delphi 13 arrangement, nothing more.
+The Win64 feature restrictions in `Help.md` apply there too, probably more so in a preview IDE.
+
+### Added
+
+- **`DDevExtensionsD120x64.dll` for the Delphi 12.2+ 64-bit IDE host.** (2026-09-19) -
+  `Code\DDevExtensions\D_D120\DDevExtensions.dpr`, `Code\DDevExtensions\D_D120\DDevExtensions.dproj`,
+  `Code\DDevExtensions\build.bat`
+  `{$LIBSUFFIX 'D120'}` becomes the `{$IFDEF WIN64}` pair that yields `D120x64`; the project activates
+  `Win64` (`TargetedPlatforms` 1 -> 3) and gains the `Base_Win64` activator and settings groups it never
+  had, with the x64 interceptor pre-build copy and `$(BDS)\Bin64\bds.exe` as the debug host; and
+  `build.bat` builds `D_D120` twice, Win32 then Win64.
+
+- **`ekDelphi120x64` installer target.** (2026-09-19) - `Code\DDevExtensions\Installer\Main.pas`
+  `RAD Studio 12.2+ (64-bit IDE)`, under the shared `Embarcadero\BDS\23.0` key but registering into
+  `Experts x64`, deploying `CompileInterceptorWx64.dll`. The existing `D120` row is relabelled
+  `(32-bit IDE)` to match. **Detection is by `HostExeRelPath` existing**, so on a 12.0 or 12.1
+  installation - which has no `bin64\bds.exe` - the row simply never appears, and the extra DLL is
+  unused rather than wrong.
+
+### Fixed
+
+- **Win32/Win64 DCU collision in `D_D120`.** (2026-09-19) -
+  `Code\DDevExtensions\D_D120\DDevExtensions.dproj`
+  Same defect fixed in `D_D130` earlier today, and it had to be fixed before the project could ever be
+  built for two platforms: `DCC_DcuOutput` was `lib` in the shared `Base` group. Now `lib\$(Platform)`.
+
+- **Three stale claims that Delphi 10.2-12 have no 64-bit IDE host.** (2026-09-19) - `README.md`,
+  `Help.md`
+  `README.md` said it twice (the v3.16.5 note and the supported-IDE note) and `Help.md` once, in the
+  *64-bit IDE Host Notice* heading and body. All three now say 10.2-11 and 12.0/12.1 have no 64-bit
+  host, that 12.2+ does, and that the Delphi 12 x64 build is untested. The supported-versions list and
+  the Compile section are updated to match.
+
+---
+
+## 2026-09-19 - `build.bat` builds every platform, and builds CompileInterceptor
+
+Reported by Stephane Wierzbicki: on a fresh Delphi 13.2 installation `Code\DDevExtensions\build.bat`
+produced only `DDevExtensionsD130x64.dll` and a 64-bit `DDevExtensionsReg.exe`. Nothing 32-bit was
+built, and neither bitness of CompileInterceptor was built at all, so each project had to be compiled
+by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
+
+### Fixed
+
+- **No msbuild call passed `/p:Platform`, so every project built its `.dproj` default - `Win64` for
+  `D_D130`.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+  **Why:** with `Platform` unset msbuild falls back to the project's own
+  `<Platform Condition="'$(Platform)'==''">` line, and `D_D130` was last saved with Win64 selected.
+  Nothing in the script said which platform it wanted, so the answer was whatever the IDE happened to
+  leave behind - and for the five pre-13 folders, which default to `Win32`, the same script silently
+  did the right thing. That is why it looked like a Win64-only bug rather than a missing switch.
+  Every build now names its platform. Delphi 13 is built twice, Win32 then Win64, because it is the
+  only version with a **production** 64-bit IDE host; `D_D102`-`D_D110` declare `Win64=False` and
+  carry no x64 `$LIBSUFFIX`, so Win32 is all there is for them. (Delphi 12 was added below - it has
+  a preview 64-bit IDE, which this entry originally got wrong.)
+
+- **CompileInterceptor was never built by `build.bat`.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+  Its own `CompileInterceptor\build.bat` is hardcoded to `RAD Studio\9.0` and `CodeGear\6.0` - Delphi
+  2010 and 2009 - so it cannot run on a current machine, and the main script never called it. Both
+  bitnesses are now built first, with the newest installed Delphi, and copied into `bin`. It has to
+  come first: the `DDevExtensions` projects copy the interceptor DLL into `bin` from a `PreBuildEvent`,
+  which on a fresh clone fails outright because `CompileInterceptor\Bin` ships no `CompileInterceptorW.dll`.
+  One build serves every Delphi version - it resolves the IDE DLLs by name at run time - but it does
+  need one per bitness, because it is loaded into the IDE's own process.
+
+- **Win32 and Win64 DCUs were written to the same folder, so building both platforms could not work.**
+  (2026-09-19) - `Code\DDevExtensions\D_D130\DDevExtensions.dproj`,
+  `CompileInterceptor\Source\CompileInterceptorW.dproj`
+  `DCC_DcuOutput` was `lib` (and `..\lib`) in the `Base` group, which both platforms share, so the
+  second platform's build would meet the first platform's DCUs and stop with
+  `F2048 Bad unit format ... Expected version: 37.0, Windows Unicode(x64) Found version: ... (x86)`.
+  This was latent for as long as only one platform was ever built. Now `lib\$(Platform)` and
+  `..\lib\$(Platform)`.
+
+- **The 64-bit IDE build never copied `CompileInterceptorWx64.dll` into `bin`.** (2026-09-19) -
+  `Code\DDevExtensions\D_D130\DDevExtensions.dproj`
+  Only `Base_Win32` carried the `PreBuildEvent`, so the x64 interceptor reached `bin` by hand or not
+  at all. `Base_Win64` now has the matching copy. It uses `$(MSBuildProjectDirectory)` rather than the
+  IDE's `$(PROJECTDIR)`/`$(OUTPUTDIR)` macros, which evaluate to empty that early in a Win64
+  command-line build - the copy then runs as `copy /Y "\..\..\..\...dll" ""` and fails the build
+  with `MSB3073`.
+
+- **The installer is built Win32, not Win64.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+  **Why:** `TFormMain.GetRootDir` reads the IDE's `RootDir` from
+  `HKLM\Software\Embarcadero\BDS\<n>`, which RAD Studio writes into the **32-bit** registry view
+  (`WOW6432Node`) - verified on this machine, where the 64-bit view of that key is empty. A 64-bit
+  installer sees nothing there and has to fall back to the per-user `HKCU` copy, so it detects fewer
+  IDEs than a 32-bit one does.
+
+- **`::` comments inside a parenthesised `( ... )` block.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+  cmd reads a `::` label inside a block as a drive specifier, which printed
+  `The system cannot find the drive specified.` in the middle of an otherwise successful run. Block
+  comments now live outside the block.
+
+- **`clean.bat` could not find `build.bat`.** (2026-09-19) - `Code\DDevExtensions\clean.bat`
+  It called `build.bat` by bare name. With `NoDefaultCurrentDirectoryInExePath=1` set - common on
+  hardened and CI machines - cmd refuses to resolve a batch file from the current directory, the same
+  trap `build.bat` already guards against for `version.bat`. Now `"%~dp0build.bat"`. The clean path
+  also exits through `:Leave`, so it restores the caller's working directory instead of leaving it in
+  the project folder.
+
+### Changed
+
+- **`build.bat` no longer mentions the pre-10.2 project folders.** (2026-09-19) -
+  `Code\DDevExtensions\build.bat`
+  Delphi 10.2 is the oldest version this repository supports, so the `del` sweep over `D_2009`,
+  `D_2010`, `D_XE`-`D_XE8`, `D_D10` and `D_D101` - folders that live upstream and are not here - is
+  gone, along with the duplicate second pass over the folders that are. Those 24 lines printed
+  `The system cannot find the path specified.` on every run.
+
+**Verified end to end** on Delphi 13 (37.0) from a cleaned tree: 5 built, 5 skipped for versions not
+installed, 0 warnings, 0 errors, no stray output. `bin` holds `CompileInterceptorW.dll` (x86),
+`CompileInterceptorWx64.dll` (x64), `DDevExtensionsD130.dll` (x86), `DDevExtensionsD130x64.dll` (x64)
+and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
+
+---
+
 ## 2026-09-17 - v3.22.15 - A testable core for the Uses Clause Manager
 
 ### Added

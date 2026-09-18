@@ -61,7 +61,7 @@
         <DCC_UsePackage>vclimg;vcl;vclx;dbrtl;Rave90VCL;bdertl;rtl;xmlrtl;vclactnband;VclSmp;svnui;svn;TeeUI;Tee;TeeDB;vcldb;vcldbx;vcltouch;dsnap;dsnapcon;vclib;ibxpress;adortl;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_110_150;Intraweb_110_150;vclie;webdsnap;inetdb;websnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;CodeSiteExpressVcl;EmbeddedWebBrowser_XE;VirtualTreesD15;ZComponent;ZParseSql;ZCore;ZDbc;ZPlain;AHComps;DbxClientDriver;AzureCloud;Jcl;JclDeveloperTools;JclVcl;JclContainers;JvCore;JvSystem;JvStdCtrls;JvAppFrm;JvBands;JvDB;JvDlgs;JvBDE;JvControls;JvCmp;JvCrypt;JvCustom;JvDocking;JvDotNetCtrls;JvGlobus;JvHMI;JvJans;JvManagedThreads;JvMM;JvNet;JvPageComps;JvPascalInterpreter;JvPluginSystem;JvPrintPreview;JvRuntimeDesign;JvTimeFramework;JvWizards;JvXPCtrls;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_ImageBase>B740000</DCC_ImageBase>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_DcuOutput>..\lib</DCC_DcuOutput>
+        <DCC_DcuOutput>..\lib\$(Platform)</DCC_DcuOutput>
         <DCC_DcpOutput>..\lib</DCC_DcpOutput>
         <DCC_DependencyCheckOutputName>..\bin\CompileInterceptorW.dll</DCC_DependencyCheckOutputName>
         <GenDll>true</GenDll>
