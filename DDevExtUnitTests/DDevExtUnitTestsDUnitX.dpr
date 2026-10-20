@@ -53,6 +53,7 @@ uses
   {$IF NOT ( DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER ) )}
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
+  DUnitX.Exceptions,
   {$IFEND}
   DUnitX.TestFramework,
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
@@ -84,6 +85,7 @@ uses
 var
   Runner: ITestRunner;
   Results: IRunResults;
+  XmlFile: string;
 {$IFEND}
 
 begin
@@ -104,6 +106,20 @@ begin
 {$ENDIF}
 
 {$IF NOT ( DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER ) )}
+  { Honour DUnitX's own command line: the result-XML path test_run passes, and --run:<names>
+    to run one fixture.  An unknown option exits 251 rather than silently running the whole
+    suite. }
+  try
+    TDUnitX.CheckCommandLine;
+  except
+    on E: ECommandLineError do
+    begin
+      Writeln( 'Command-line error: ' + E.Message );
+      ExitCode := 251;
+      Exit;
+    end;
+  end;
+
   try
     { Our gllDUnitX fork defaults Assert.AreEqual( string, string ) to IGNORE CASE, and
       nothing at the call site reveals it - a test whose subject is the casing cannot
@@ -117,7 +133,11 @@ begin
     Runner := TDUnitX.CreateRunner;
     Runner.UseRTTI := False;
     Runner.AddLogger( TDUnitXConsoleLogger.Create( True ) );
-    Runner.AddLogger( TDUnitXXMLNUnitFileLogger.Create( TDUnitX.Options.XMLOutputFile ) );
+    { The estate runner reads <exeDir>\<exeBaseName>-results.xml when it names no file. }
+    XmlFile := TDUnitX.Options.XMLOutputFile;
+    if ( XmlFile = '' ) or SameText( ExtractFileName( XmlFile ), 'dunitx-results.xml' ) then
+      XmlFile := ChangeFileExt( ParamStr( 0 ), '' ) + '-results.xml';
+    Runner.AddLogger( TDUnitXXMLNUnitFileLogger.Create( XmlFile ) );
 
     Results := Runner.Execute;
 
@@ -125,17 +145,22 @@ begin
     Writeln( Format( 'TOTAL %d   PASSED %d   FAILED %d   ERRORS %d',
       [ Results.TestCount, Results.PassCount, Results.FailureCount, Results.ErrorCount ] ) );
 
-    { A non-zero exit code is the whole point of the headless runner - without it a
-      build server cannot tell a red suite from a green one. }
-    if Results.AllPassed then
+    { The estate exit-code contract: 0 green, failures + errors clamped at 249, 250 when no
+      test ran ( a filter matching nothing must never read as green ), 251 when the runner
+      itself raised. }
+    if Results.TestCount = 0 then
+      ExitCode := 250
+    else if Results.AllPassed then
       ExitCode := 0
+    else if Results.FailureCount + Results.ErrorCount > 249 then
+      ExitCode := 249
     else
-      ExitCode := 1;
+      ExitCode := Results.FailureCount + Results.ErrorCount;
   except
     on E: Exception do
     begin
       Writeln( 'RUNNER EXCEPTION: ' + E.ClassName + ': ' + E.Message );
-      ExitCode := 2;
+      ExitCode := 251;
     end;
   end;
 {$IFEND}

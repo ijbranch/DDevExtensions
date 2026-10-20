@@ -8,6 +8,17 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Changed
 
+- **The DUnitX runner follows the estate command-line and exit-code contract.** (2026-10-21) -
+  `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/README.md`,
+  `DDevExtUnitTests/DUNITX-SETUP.md`, `.gitignore`
+  It never called `TDUnitX.CheckCommandLine`, so it ignored the result-XML path `test_run` passes,
+  wrote no report where the tool looks, and could not run one fixture with `--run:`.  It now parses
+  the command line first ( an unknown option exits 251 ), writes
+  `DDevExtUnitTestsDUnitX-results.xml` beside the exe when no file is named, and exits 0 green,
+  failures + errors capped at 249, 250 when no test ran, 251 when the runner raised ( was 1 and 2 ).
+  The suite is registered with `test_run` as `DDevExtUnitTestsDUnitX` ( GITLAKMCP `settings.ini`,
+  Target73 ), so `verify_change` runs it.  `DUNITX-SETUP.md` no longer shows `-console`, which was
+  never an option and now fails the run.
 - **This file follows Keep a Changelog.** (2026-10-21) - `CHANGELOG.md`
   It used its own dated sections, which `verify_change` fails on every commit.  Each versioned section
   is now `## [X.Y.Z] - date`; an unversioned one joins the release above it, the one it shipped in, and

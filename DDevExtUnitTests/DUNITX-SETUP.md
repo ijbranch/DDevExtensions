@@ -54,13 +54,16 @@ This opens the VCL GUI showing:
 - Execution time per test
 
 ### Console Mode
+The Release build is the console runner; it takes no switch to select it.  An unknown option
+makes it exit 251 rather than run the whole suite.
 ```batch
-DDevExtUnitTestsDUnitX.exe -console
+DDevExtUnitTestsDUnitX.exe
 ```
 
 ### XML Output (for CI/CD)
+Written to `DDevExtUnitTestsDUnitX-results.xml` beside the exe unless a file is named:
 ```batch
-DDevExtUnitTestsDUnitX.exe -xml:results.xml
+DDevExtUnitTestsDUnitX.exe --xmlfile:results.xml
 ```
 
 ## Test Attributes Reference

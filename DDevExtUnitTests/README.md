@@ -27,7 +27,10 @@ The rest of this document describes the DFM parser suite specifically.
 ## Test Application
 
 **Headless (Release):** `DDevExtUnitTestsDUnitX.exe` - console output, an NUnit XML report
-(`dunitx-results.xml`) and exit code 0 on green / 1 on red. This is what CI should call.
+(`bin\DDevExtUnitTestsDUnitX-results.xml`, or the file `--xmlfile:` names) and the estate exit code:
+0 green, failures + errors capped at 249, 250 when no test ran, 251 when the runner itself failed
+(an unknown option included).  This is what CI should call, and what `test_run` runs as target
+`DDevExtUnitTestsDUnitX`.  `--run:Unit.TFixture[.Test]` runs one fixture or test.
 **TestInsight (Debug):** the Debug configuration defines `TESTINSIGHT` and runs under the IDE.
 **VCL GUI:** build with `GUI_TEST_RUNNER` defined for the DUnitX GUI runner.
 **Project:** `DDevExtUnitTestsDUnitX.dpr`
@@ -49,7 +52,9 @@ Or from RAD Studio IDE:
 ```bash
 bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue
 ```
-Runs the Release build headless: console output, `dunitx-results.xml`, non-zero exit code on red.
+Runs the Release build headless: console output, `DDevExtUnitTestsDUnitX-results.xml` beside the
+exe, non-zero exit code on red.  One fixture:
+`bin/DDevExtUnitTestsDUnitX.exe --run:TestDelphiExprDUnitX.TTestDelphiExpr`.
 
 ## DFM Parser Coverage - 34 Tests (All Passing ✅)
 
