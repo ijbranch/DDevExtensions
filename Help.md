@@ -2063,7 +2063,7 @@ The editor buffer is read at most once per paint cycle and at most four times a 
 
 #### Requirements
 
-Delphi 13 or later (the `D_D130` project).  Drawn through the IDE's code-editor paint notifier (`INTACodeEditorEvents`), in the 32-bit and 64-bit IDE alike.
+Delphi 11 or later: the code-editor paint API (`ToolsAPI.Editor`) first shipped in Delphi 11, so the Delphi 10.x projects cannot have it.  Tested on Delphi 13 (`D_D130`); listed in `D_D110` and `D_D120` too, which cannot be built on the build machine and are untested.  Drawn through the IDE's code-editor paint notifier (`INTACodeEditorEvents`), in the 32-bit and 64-bit IDE alike.
 
 ---
 

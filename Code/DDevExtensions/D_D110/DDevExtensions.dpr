@@ -144,7 +144,10 @@ uses
   ProjectGroupSorter in '..\Source\ProjectGroupSorter\ProjectGroupSorter.pas',
   FileWatcher in '..\..\..\Shared\FileWatcher.pas',
   ExternalModMonitor in '..\Source\ExternalModMonitor\ExternalModMonitor.pas',
-  FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame};
+  FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame},
+  MethodSeparatorsCore in '..\Source\MethodSeparators\MethodSeparatorsCore.pas',
+  MethodSeparators in '..\Source\MethodSeparators\MethodSeparators.pas',
+  FrmeOptionPageMethodSeparators in '..\Source\MethodSeparators\FrmeOptionPageMethodSeparators.pas' {FrameOptionPageMethodSeparators: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

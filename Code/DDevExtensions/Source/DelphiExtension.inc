@@ -86,7 +86,7 @@
   {$UNDEF INCLUDE_STARTPARAMETERTEAM} // XE2's StartParameter are configuration-aware
 {$IFEND}
 
-{$IF CompilerVersion < 37.0} // Delphi 13+: only the D_D130 project lists the MethodSeparators units
+{$IF CompilerVersion < 35.0} // Delphi 11+: the code-editor paint API (ToolsAPI.Editor) does not exist before it
   {$UNDEF INCLUDE_METHODSEPARATORS}
 {$IFEND}
 

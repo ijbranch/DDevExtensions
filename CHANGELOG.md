@@ -4,7 +4,7 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
-## 2026-10-21 - Shared units: version conditionals resolved
+## 2026-10-21 - Shared units: version conditionals resolved; Method Separators for Delphi 11 and 12
 
 ### Fixed
 
@@ -37,6 +37,19 @@ This file is the sole source and record of all project changes for DDevExtension
   `@Ideservices@TOTAProjectResource@...`, an export the 32-bit Delphi 13 IDE has and the 64-bit one
   does not.  `IDEUtils.pas` defines its own symbols correctly and is unchanged.  Suite: 191 of 191 pass;
   both DLLs build clean.
+
+### Changed
+
+- **Method Separators is listed in the Delphi 11 and 12 projects, untested.** (2026-10-21) -
+  `Source/DelphiExtension.inc`, `D_D110/DDevExtensions.dpr`, `D_D110/DDevExtensions.dproj`,
+  `D_D120/DDevExtensions.dpr`, `D_D120/DDevExtensions.dproj`, `README.md`, `Help.md`
+  Ian, 2026-10-21: keep the older projects and give them the feature, though no machine here can build
+  them.  The guard now switches it off below Delphi 11 ( `CompilerVersion < 35.0` ), where the
+  code-editor paint API ( `ToolsAPI.Editor`, `INTACodeEditorEvents` ) does not exist, so `D_D102` to
+  `D_D104` cannot have it.  The notifier implements only the base `INTACodeEditorEvents` interface,
+  which Embarcadero extends with numbered descendants rather than changing, so it should compile
+  unchanged there.  The two `.dproj` files also gain the Decirculariser references their `.dpr` files
+  already had, so its units show in the Project Manager.
 
 ## 2026-10-21 - v3.23.15 - Method Separators
 

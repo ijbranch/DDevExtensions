@@ -379,6 +379,21 @@ $(PreBuildEvent)]]></PreBuildEvent>
             <Form>FrameOptionPageExternalModMonitor</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="..\Source\Decirculariser\DecirculariserCore.pas"/>
+        <DCCReference Include="..\Source\Decirculariser\Decirculariser.pas"/>
+        <DCCReference Include="..\Source\Decirculariser\FrmDecirculariser.pas">
+            <Form>FormDecirculariser</Form>
+        </DCCReference>
+        <DCCReference Include="..\Source\Decirculariser\FrmeOptionPageDecirculariser.pas">
+            <Form>FrameOptionPageDecirculariser</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Source\MethodSeparators\MethodSeparatorsCore.pas"/>
+        <DCCReference Include="..\Source\MethodSeparators\MethodSeparators.pas"/>
+        <DCCReference Include="..\Source\MethodSeparators\FrmeOptionPageMethodSeparators.pas">
+            <Form>FrameOptionPageMethodSeparators</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

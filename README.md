@@ -14,7 +14,7 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
-Version 3.23.15 adds **Method Separators**: a faint dotted, dashed or solid line in the code editor above each top-level routine, type declaration and unit section, with a colour that follows the editor theme.  The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil; this is an independent implementation built on DDevExtensions' own Pascal lexer, with its analysis in an RTL-only `MethodSeparatorsCore` covered by 24 unit tests.  Options > DDevExtensions > Method Separators turns it on or off.  Delphi 13 only.
+Version 3.23.15 adds **Method Separators**: a faint dotted, dashed or solid line in the code editor above each top-level routine, type declaration and unit section, with a colour that follows the editor theme.  The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil; this is an independent implementation built on DDevExtensions' own Pascal lexer, with its analysis in an RTL-only `MethodSeparatorsCore` covered by 24 unit tests.  Options > DDevExtensions > Method Separators turns it on or off.  Tested on Delphi 13; built into the Delphi 11 and 12 projects too, untested there.
 
 Version 3.22.15 fixes the IDE Path Compactor's **"Expanded after"** summary column, which was reporting a count of surviving entries rather than a character length: the local it measured was declared but never assigned, so every entry contributed 1. It now measures exactly as the "before" column does, less the entries being dropped. The same release extracts the Uses Clause Manager's analysis into an RTL-only `UsesClauseManagerCore` - matching `PathCompactorCore` and `ProjectGroupSorterCore` - and gives that feature its first 26 unit tests. The extraction is behaviour-preserving and the plugin's published interface is unchanged.
 
@@ -579,7 +579,7 @@ Prevents the IDE's source formatter from being triggered accidentally. Useful if
 **Editor tab double click action** (default: zoom)
 Configures what happens when you double-click an editor tab. Options include zooming the editor to full screen or super-zoom mode for distraction-free coding.
 
-**Method Separators** (default: on, Delphi 13+) - **New in 3.23.15**
+**Method Separators** (default: on, Delphi 11+; tested on 13) - **New in 3.23.15**
 Draws a faint line above each top-level routine, class / record / interface declaration and `initialization` / `finalization` section, so long units are easier to scan.  Documentation comments directly above a routine stay below its line.  Line style, a custom colour and the kinds of block separated are set in Options > DDevExtensions > Method Separators.  Idea from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil.
 
 **Structure View Search** (default: no hotkey)
