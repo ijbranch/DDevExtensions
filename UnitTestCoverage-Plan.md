@@ -1,23 +1,23 @@
 # Unit-Test Coverage Plan
 
-Living plan for extending automated, IDE-free unit tests across DDevExtensions. Tests live in `DDevExtUnitTests\` (renamed from `DfmParserTests`) and run as a console runner (`DDevExtUnitTests.dpr`, self-contained PASS/FAIL) plus a DUnitX variant (`DDevExtUnitTestsDUnitX.dpr`). Supersedes the earlier analyzer-only scoping note.
+Living plan for extending automated, IDE-free unit tests across DDevExtensions. Tests live in `DDevExtUnitTests\` (renamed from `DfmParserTests`) and run under the DUnitX runner `DDevExtUnitTestsDUnitX.dpr` (the hand-rolled console runner `DDevExtUnitTests.dpr` was retired on 2026-10-21, its checks ported test-for-test into DUnitX fixtures). Supersedes the earlier analyzer-only scoping note.
 
 ## Current coverage
 
 | Suite | Unit under test | Tests | Status |
 |-------|-----------------|-------|--------|
-| `TestDfmParser` | `gllDelphiDFMParser` (parse/serialize round-trip) | 31 (20 in-memory + 11 file) | green |
-| `TestDelphiLexer` | `DelphiLexer` (tokenisation + line/column contract) | 24 / 9 cases | green |
-| `TestDelphiParserContainers` | `DelphiParserContainers` (hashtable/list/dictionary) | 24 / 5 cases | green |
-| `TestDelphiExpr` | `DelphiExpr` (arithmetic/boolean nodes + parser) | 21 / 6 cases | green |
-| `TestDelphiPreproc` | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 10 / 4 cases | green |
-| `TestUnitMetrics` | `UnitMetrics` (LOC + cyclomatic complexity) | 4 / 4 cases | green |
+| `TestDfmParser` (DUnitX) | `gllDelphiDFMParser` (parse/serialize round-trip, edits reach the serialised text, every `TestData` file) | 34 cases | green |
+| `TestDelphiLexer` (DUnitX) | `DelphiLexer` (tokenisation + line/column contract) | 9 cases | green |
+| `TestDelphiParserContainers` (DUnitX) | `DelphiParserContainers` (hashtable/list/dictionary) | 5 cases | **1 red**: `TestHashtableCaseSensitive` (see below) |
+| `TestDelphiExpr` (DUnitX) | `DelphiExpr` (arithmetic/boolean nodes + parser) | 5 cases | green |
+| `TestDelphiPreproc` (DUnitX) | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 4 cases | green |
+| `TestUnitMetrics` (DUnitX) | `UnitMetrics` (LOC + cyclomatic complexity) | 4 cases | green |
 | `TestProjectGroupSorter` (DUnitX) | `ProjectGroupSorterCore` (`.groupproj` sort: ItemGroup + Targets + CallTargets) | 11 cases | green |
 | `TestPathCompactor` (DUnitX) | `PathCompactorCore` (macro expansion, stored-space scoring, naming, hygiene) | 25 cases | green |
 | `TestUsesClauseManagerCore` (DUnitX) | `UsesClauseManagerCore` (exports DB, identifier usage, placement + rewrite) | 26 cases | green |
 | `TestDecirculariserCore` (DUnitX) | `DecirculariserCore` (SCC detection, fragile/benign classification, edge symbol attribution) | 21 cases | green |
 
-**Tier 1 complete; Tier 2 = `UnitMetrics` only.** The test project declares the same `COMPILERx_UP` (Delphi 10.2+) symbols as the main projects via a Base-config `DCC_Define`, so the Shared units compile their modern paths. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
+**Tier 1 complete; Tier 2 = `UnitMetrics` only.** **Open defect (2026-10-21):** the Shared parser units test `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty and neither the product `.dproj` nor `DDevExtUnitTestsDUnitX.dproj` defines them (the `.dpr`'s `{$I DelphiExtension.inc}` does not reach separately compiled units).  The retired console project defined them at Base level, which hid this: its claim to match the main projects was wrong.  So `THashtable.Create( True, ... )` raises its Delphi-5 assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is compiled out.  `TestHashtableCaseSensitive` is red until that is fixed. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
 
 **Feature-core extraction (`ProjectGroupSorterCore`).** The "Sort Projects in Group" feature (v3.21.9) was authored with its pure `.groupproj` rewrite logic (`SortGroupProjectText`, `LeafName`) split into an RTL-only core unit from the start, leaving `ProjectGroupSorter` with only the menu/IDE orchestration. `TestProjectGroupSorter` (DUnitX, 11 cases) covers it — the first feature whose testable core was separated up front rather than retrofitted. `PathCompactorCore` (v3.22.11) followed the same pattern.
 
@@ -27,7 +27,7 @@ The lexer tests also guard two v3.19.9 behaviours directly: bracket tokenisation
 
 ## Key insight - most value needs no refactor
 
-Everything in `Shared\PascalParser\` is dependency-light (no ToolsAPI/VCL), proven by the DFM and lexer suites compiling standalone. The foundational parser tests are therefore **zero-refactor** - just add a `TestXxx.pas` to `DDevExtUnitTests` and wire it into the `.dpr`. The analyzer engines (Tier 3) are the ones that need extraction, because they share a unit with their IOTA plugin class.
+Everything in `Shared\PascalParser\` is dependency-light (no ToolsAPI/VCL), proven by the DFM and lexer suites compiling standalone. The foundational parser tests are therefore **zero-refactor** - just add a `TestXxxDUnitX.pas` fixture to `DDevExtUnitTests` and wire it into `DDevExtUnitTestsDUnitX.dpr`. The analyzer engines (Tier 3) are the ones that need extraction, because they share a unit with their IOTA plugin class.
 
 ## Tier 1 - foundational, zero-refactor (highest leverage)
 
@@ -77,9 +77,8 @@ These expose pure `class function AnalyzeUnit(const Source...)` cores but share 
 
 ## How to add a test
 
-1. Create `TestXxx.pas` in `DDevExtUnitTests\` with a `RunXxxTests` procedure, a local `Assert(Cond, Msg)` (raise on fail), and `WriteLn` PASS lines + a summary - mirror `TestDelphiLexer.pas`.
-2. Add the unit-under-test and the test unit to `DDevExtUnitTests.dpr`'s `uses` (with the `in '..\path'` form) and call `RunXxxTests` from the `begin` block.
-3. Build (`DDevExtUnitTests.dproj`, Win64/Win32 Release) and run the exe **from the `DDevExtUnitTests` folder** so any `TestData` file fixtures resolve.
-4. Optionally add a matching DUnitX test class to `DDevExtUnitTestsDUnitX.dpr` for the framework-based suite.
+1. Create `TestXxxDUnitX.pas` in `DDevExtUnitTests/` with a `[TestFixture]` class, one `[Test]` per behaviour with a `<summary>` saying what it proves, and `TDUnitX.RegisterTestFixture` in `initialization` - mirror `TestDelphiLexerDUnitX.pas`.
+2. Add the unit under test (if not already listed) and the test unit to `DDevExtUnitTestsDUnitX.dpr`'s `uses` with the `in '<path>'` form.
+3. Build `DDevExtUnitTestsDUnitX.dproj` Release Win64 (Debug defines `TESTINSIGHT`) and run `bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue`.  The runner sets `Assert.IgnoreCaseDefault := False`, so string comparisons are case-sensitive.
 
-> Note: run the console runner from its own directory - it locates `TestData` relative to the working directory, so launching from `\bin` skips file-based fixtures.
+> Note: `TestDfmParserDUnitX` resolves `TestData` from the working directory or, failing that, `../DDevExtUnitTests/TestData` relative to the exe, so the file fixtures run from `bin` too (before 2026-10-21 they passed there by skipping).

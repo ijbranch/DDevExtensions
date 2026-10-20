@@ -4,12 +4,15 @@
 
 ### New DUnitX Test Infrastructure
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX VCL GUI test runner
-- **TestDfmParserDUnitX.pas** - 32 comprehensive test cases
+- **TestDfmParserDUnitX.pas** - 34 comprehensive test cases
 - **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
 - **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`)
-- **TestDecirculariserCoreDUnitX.pas** - 21 cases (`DecirculariserCore`)
-- **116 tests in total**, all passing
+- **TestDecirculariserCoreDUnitX.pas** - 43 cases (`DecirculariserCore`)
+- **TestMethodSeparatorsCoreDUnitX.pas** - 24 cases (`MethodSeparatorsCore`)
+- **TestDelphiLexerDUnitX.pas** - 9, **TestDelphiParserContainersDUnitX.pas** - 5, **TestDelphiExprDUnitX.pas** - 5,
+  **TestDelphiPreprocDUnitX.pas** - 4, **TestUnitMetricsDUnitX.pas** - 4 (ported 2026-10-21 from the retired console runner)
+- **191 tests in total**, 190 passing; `TestHashtableCaseSensitive` is red (missing `COMPILERx_UP` defines, see `STATUS.md`)
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)

@@ -34,9 +34,9 @@
 - **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`, 3 fixtures)
 - **TestDecirculariserCoreDUnitX.pas** - 21 cases (`DecirculariserCore`, 4 fixtures)
 
-**Original Console Tests:**
-- **DDevExtUnitTests.dpr** - Simple console test runner
-- **TestDfmParser.pas** - 5 basic tests + file round-trip
+**Original Console Tests:** retired 2026-10-21.  `DDevExtUnitTests.dpr` and its six `Test*.pas`
+units were ported into the DUnitX fixtures `TestDelphiLexerDUnitX`, `TestDelphiParserContainersDUnitX`,
+`TestDelphiExprDUnitX`, `TestDelphiPreprocDUnitX`, `TestUnitMetricsDUnitX` and `TestDfmParserDUnitX`.
 
 **Test Data:** `TestData/`
   - `Simple.dfm` - Basic form with simple properties
@@ -57,7 +57,7 @@
 ## Next Steps
 
 ### Immediate (to make it production-ready)
-1. **Run the tests** - Compile and execute `DDevExtUnitTests.exe`
+1. **Run the tests** - Build Release Win64 and execute `bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue`
 2. **Fix any failing tests** - Especially round-trip tests
 3. **Add more test data** - Real DFM files from actual projects
 4. **Test multi-line properties:**
@@ -129,62 +129,13 @@ Opens VCL GUI showing:
 - Detailed failure messages
 - Execution time per test
 
-### Option 2: Console Tests (Simple)
-
-```batch
-cd D:\DDevExtensions\DDevExtUnitTests
-dcc32 DDevExtUnitTests.dpr
-DDevExtUnitTests.exe
-```
-
-Expected output:
-```
-=======================================
-DelphiDfmParser Test Suite
-=======================================
-
-Unit Tests:
------------
-Test: Simple properties
-  PASS
-Test: Round-trip (parse then serialize)
-  PASS - Round-trip preserved exactly
-Test: Nested components
-  PASS
-Test: Inherited keyword
-  PASS
-Test: Property modification
-  PASS
-
-Round-trip File Tests:
-----------------------
-Test file: Simple.dfm
-  PASS - Round-trip preserved exactly
-Test file: Nested.dfm
-  PASS - Round-trip preserved exactly
-Test file: Binary.dfm
-  PASS (or FAIL if multi-line not working yet)
-Test file: Collections.dfm
-  PASS (or FAIL if multi-line not working yet)
-Test file: MultiLineStrings.dfm
-  PASS (or FAIL if multi-line not working yet)
-Test file: Complex.dfm
-  PASS (or FAIL if multi-line not working yet)
-
-Test Summary:
--------------
-Passed: X
-Failed: Y
-
-=======================================
-```
-
 ---
 
 ## Known Issues
-None outstanding in this suite. All 116 tests across the five DUnitX test units pass
-(DFM parser 32, PathCompactor 25, ProjectGroupSorter 11, UsesClauseManagerCore 27,
-DecirculariserCore 21).
+One red test of 191: `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive`.  The Shared
+parser units test `COMPILER6_UP` and friends, which nothing defines for them (`DelphiParser.inc`
+is empty); the retired console project defined them itself and hid it.  See
+`../UnitTestCoverage-Plan.md`.
 
 `UsesClauseManagerCore` carries one deliberate characterisation test,
 `TestDuplicateUnitNameCurrentlyRaises`, which pins a known defect rather than endorsing it:

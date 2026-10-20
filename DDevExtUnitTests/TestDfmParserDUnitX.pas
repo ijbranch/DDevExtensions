@@ -1,4 +1,4 @@
-unit TestDfmParserDUnitX;
+﻿unit TestDfmParserDUnitX;
 
 /// <summary>
 /// DUnitX test fixture for the Delphi DFM parser in <c>gllDelphiDFMParser</c>. Verifies
@@ -60,6 +60,13 @@ type
     /// <summary>Verifies that <c>SetProperty</c> appends a brand-new property when one with that name does not exist.</summary>
     [Test]
     procedure TestPropertyAddition;
+    /// <summary>
+    /// Proves a modify, a delete and an add made through the object model all reach the
+    /// serialised text, not just the in-memory tree: the DFM cleaners write that text
+    /// back to disk, so an edit that never serialises is silently lost.
+    /// </summary>
+    [Test]
+    procedure TestPropertyEditsReachSerialisedOutput;
 
     // Advanced value type tests
     /// <summary>Verifies that <c>{ ... }</c> binary blocks parse with <c>ValueKind = dvkBinary</c> and preserve the braces in <c>RawValue</c>.</summary>
@@ -137,9 +144,44 @@ type
     /// <summary>Round-trips the real-world <c>StatusViewer</c> DFM copied from production code.</summary>
     [Test]
     procedure TestFileRoundTrip_RealWorld_StatusViewer;
+
+    // Folder sweep
+    /// <summary>
+    /// Proves EVERY <c>.dfm</c> in <c>TestData</c> round-trips byte-exact, including any
+    /// file added after the named tests above were written; it fails when the folder
+    /// holds no <c>.dfm</c> at all, so a mislocated folder cannot pass by default.
+    /// </summary>
+    [Test]
+    procedure TestFileRoundTrip_EveryTestDataFile;
   end;
 
 implementation
+
+/// <summary>Locates the <c>TestData</c> folder of DFM fixtures.</summary>
+/// <remarks>
+/// The runner is built into <c>..\bin</c> and may be started from there or from this
+/// folder, so a bare relative <c>TestData</c> path found nothing from <c>bin</c> and every
+/// file test passed by skipping.  The current directory is tried first, then
+/// <c>..\DDevExtUnitTests\TestData</c> relative to the executable.
+/// </remarks>
+/// <returns>The full path of the folder, or the bare relative path when neither exists.</returns>
+function TestDataDir: string;
+begin
+
+  if TDirectory.Exists( 'TestData' ) then Exit( TPath.GetFullPath( 'TestData' ) );
+
+  Result := TPath.GetFullPath( TPath.Combine( ExtractFilePath( ParamStr( 0 ) ), '..\DDevExtUnitTests\TestData' ) );
+
+  if ( not TDirectory.Exists( Result ) ) then Result := 'TestData';
+end;
+
+/// <summary>Returns the full path of a file in the <c>TestData</c> folder.</summary>
+/// <param name="AFileName">Bare file name, for example <c>Simple.dfm</c>.</param>
+/// <returns>AFileName combined with <see cref="TestDataDir"/>.</returns>
+function TestDataFile( const AFileName: string ): string;
+begin
+  Result := TPath.Combine( TestDataDir, AFileName );
+end;
 
 procedure TTestDelphiDfmParser.Setup;
 begin
@@ -368,6 +410,29 @@ begin
     Assert.IsNotNull(Doc.Root.FindProperty('Width'), 'Width property added');
   finally
     Doc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestPropertyEditsReachSerialisedOutput;
+begin
+  var sOriginal :=
+    'object Form1: TForm1' + #13#10 +
+    '  Caption = ''Original''' + #13#10 +
+    '  Width = 800' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc := TDelphiDfmParser.Parse( sOriginal );
+  try
+    oDoc.Root.SetProperty( 'Caption', '''Modified''' );
+    oDoc.Root.DeleteProperty( 'Width' );
+    oDoc.Root.SetProperty( 'Height', '600' );
+
+    var sModified := TDelphiDfmParser.Serialize( oDoc );
+    Assert.Contains( sModified, 'Modified', False, 'the modified caption is in the output' );
+    Assert.DoesNotContain( sModified, 'Width', False, 'the deleted Width is gone from the output' );
+    Assert.Contains( sModified, 'Height', False, 'the added Height is in the output' );
+  finally
+    oDoc.Free;
   end;
 end;
 
@@ -657,7 +722,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\Simple.dfm';
+  FileName := TestDataFile( 'Simple.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -677,7 +742,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\Nested.dfm';
+  FileName := TestDataFile( 'Nested.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -697,7 +762,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\Binary.dfm';
+  FileName := TestDataFile( 'Binary.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -717,7 +782,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\Collections.dfm';
+  FileName := TestDataFile( 'Collections.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -737,7 +802,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\MultiLineStrings.dfm';
+  FileName := TestDataFile( 'MultiLineStrings.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -757,7 +822,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\Complex.dfm';
+  FileName := TestDataFile( 'Complex.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Test file not found - skipped');
 
@@ -779,7 +844,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\RealWorld_BackupDialog.dfm';
+  FileName := TestDataFile( 'RealWorld_BackupDialog.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Real-world test file not found - run COPY-REAL-WORLD-TESTS.bat');
 
@@ -799,7 +864,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\RealWorld_DataModule.dfm';
+  FileName := TestDataFile( 'RealWorld_DataModule.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Real-world test file not found - run COPY-REAL-WORLD-TESTS.bat');
 
@@ -819,7 +884,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\RealWorld_LoginDialog.dfm';
+  FileName := TestDataFile( 'RealWorld_LoginDialog.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Real-world test file not found - run COPY-REAL-WORLD-TESTS.bat');
 
@@ -839,7 +904,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\RealWorld_PrintForm.dfm';
+  FileName := TestDataFile( 'RealWorld_PrintForm.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Real-world test file not found - run COPY-REAL-WORLD-TESTS.bat');
 
@@ -859,7 +924,7 @@ var
   Original, Serialized: string;
   Doc: TDfmDocument;
 begin
-  FileName := 'TestData\RealWorld_StatusViewer.dfm';
+  FileName := TestDataFile( 'RealWorld_StatusViewer.dfm' );
   if not FileExists(FileName) then
     Assert.Pass('Real-world test file not found - run COPY-REAL-WORLD-TESTS.bat');
 
@@ -870,6 +935,29 @@ begin
     Assert.AreEqual(Original, Serialized, 'Real-world StatusViewer round-trip must be lossless');
   finally
     Doc.Free;
+  end;
+end;
+
+{ Folder Sweep }
+
+procedure TTestDelphiDfmParser.TestFileRoundTrip_EveryTestDataFile;
+begin
+  var sDir := TestDataDir;
+  var saFiles: TArray<string> := nil;
+
+  if TDirectory.Exists( sDir ) then saFiles := TDirectory.GetFiles( sDir, '*.dfm' );
+
+  if Length( saFiles ) = 0 then Assert.Fail( 'No .dfm files found in ' + sDir );
+
+  for var sFileName in saFiles do
+  begin
+    var sOriginal := TFile.ReadAllText( sFileName, TEncoding.UTF8 );
+    var oDoc      := TDelphiDfmParser.Parse( sOriginal );
+    try
+      Assert.AreEqual( sOriginal, TDelphiDfmParser.Serialize( oDoc ), 'Round-trip must be lossless: ' + ExtractFileName( sFileName ) );
+    finally
+      oDoc.Free;
+    end;
   end;
 end;
 

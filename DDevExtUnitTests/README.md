@@ -5,12 +5,22 @@ VCL and the IDE so they can be tested outside it.
 
 | Test unit | Unit under test | Tests |
 |-----------|-----------------|-------|
-| `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 32 |
+| `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 34 |
 | `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 25 |
 | `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 11 |
 | `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement | 27 |
-| `TestDecirculariserCoreDUnitX.pas` | `DecirculariserCore` - circular reference analysis | 21 |
-| | **Total** | **116** |
+| `TestDecirculariserCoreDUnitX.pas` | `DecirculariserCore` - circular reference analysis, start-up code, `RemoveUsesEntry` | 43 |
+| `TestMethodSeparatorsCoreDUnitX.pas` | `MethodSeparatorsCore` - method separator scan and colours | 24 |
+| `TestDelphiLexerDUnitX.pas` | `DelphiLexer` - token kinds, line/column contract | 9 |
+| `TestDelphiParserContainersDUnitX.pas` | `DelphiParserContainers` - hashtable, lists, dictionary | 5 |
+| `TestDelphiExprDUnitX.pas` | `DelphiExpr` - `$IF` expression nodes and parser | 5 |
+| `TestDelphiPreprocDUnitX.pas` | `DelphiPreproc` - conditional branch selection | 4 |
+| `TestUnitMetricsDUnitX.pas` | `UnitMetrics` - LOC and cyclomatic complexity | 4 |
+| | **Total** | **191** |
+
+The hand-rolled console runner `DDevExtUnitTests.dpr` was retired on 2026-10-21; its checks live on in the
+DUnitX fixtures above.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` is red until the
+missing `COMPILERx_UP` defines in the Shared parser units are fixed (see `../UnitTestCoverage-Plan.md`).
 
 The rest of this document describes the DFM parser suite specifically.
 
@@ -20,10 +30,8 @@ The rest of this document describes the DFM parser suite specifically.
 (`dunitx-results.xml`) and exit code 0 on green / 1 on red. This is what CI should call.
 **TestInsight (Debug):** the Debug configuration defines `TESTINSIGHT` and runs under the IDE.
 **VCL GUI:** build with `GUI_TEST_RUNNER` defined for the DUnitX GUI runner.
-**Console:** `DDevExtUnitTests.exe` (console text output)
 **Project:** `DDevExtUnitTestsDUnitX.dpr`
-**Test Units:** `TestDfmParserDUnitX.pas`, `TestPathCompactorDUnitX.pas`,
-`TestProjectGroupSorterDUnitX.pas`, `TestUsesClauseManagerCoreDUnitX.pas`
+**Test Units:** every `Test*DUnitX.pas` in the table above
 
 ## Running Tests
 
@@ -39,11 +47,11 @@ Or from RAD Studio IDE:
 ### Console Mode
 
 ```bash
-DDevExtUnitTests.exe
+bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue
 ```
-Runs tests with text output to console.
+Runs the Release build headless: console output, `dunitx-results.xml`, non-zero exit code on red.
 
-## DFM Parser Coverage - 32 Tests (All Passing ✅)
+## DFM Parser Coverage - 34 Tests (All Passing ✅)
 
 ### Basic Parsing (4 tests)
 - ✓ Simple properties
@@ -59,6 +67,7 @@ Runs tests with text output to console.
 - ✓ Property modification
 - ✓ Property deletion
 - ✓ Property addition
+- ✓ Modify, delete and add all reach the serialised text
 
 ### Advanced Value Types (5 tests)
 - ✓ Binary data (hex blobs in `{ }`)
@@ -76,7 +85,9 @@ Runs tests with text output to console.
 - ✓ Empty sets (`[]`)
 - ✓ Negative numbers
 
-### File Round-Trips (11 tests)
+### File Round-Trips (12 tests)
+
+One test per file below, plus a sweep that round-trips every `.dfm` in `TestData`.
 
 **Synthetic Test Files (6):**
 - `Simple.dfm` - Basic form with properties
@@ -134,7 +145,7 @@ This copies 5 production DFM files from `E:\DBiWorkflow Development` to `TestDat
 
 ## Test Results
 
-**✅ All 32 DFM-parser tests passing** (94 across the whole suite):
+**✅ All 34 DFM-parser tests passing** (191 tests across the whole suite, 1 red - see above):
 - Synthetic test cases covering all DFM features
 - Real-world production DFM files from DBiWorkflow (5 files, 67 KB total)
 

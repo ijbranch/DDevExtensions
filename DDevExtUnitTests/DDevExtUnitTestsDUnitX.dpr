@@ -67,7 +67,16 @@ uses
   DecirculariserCore in '..\Code\DDevExtensions\Source\Decirculariser\DecirculariserCore.pas',
   TestDecirculariserCoreDUnitX in 'TestDecirculariserCoreDUnitX.pas',
   MethodSeparatorsCore in '..\Code\DDevExtensions\Source\MethodSeparators\MethodSeparatorsCore.pas',
-  TestMethodSeparatorsCoreDUnitX in 'TestMethodSeparatorsCoreDUnitX.pas';
+  TestMethodSeparatorsCoreDUnitX in 'TestMethodSeparatorsCoreDUnitX.pas',
+  TestDelphiLexerDUnitX in 'TestDelphiLexerDUnitX.pas',
+  DelphiParserContainers in '..\Shared\PascalParser\DelphiParserContainers.pas',
+  TestDelphiParserContainersDUnitX in 'TestDelphiParserContainersDUnitX.pas',
+  DelphiExpr in '..\Shared\PascalParser\DelphiExpr.pas',
+  TestDelphiExprDUnitX in 'TestDelphiExprDUnitX.pas',
+  DelphiPreproc in '..\Shared\PascalParser\DelphiPreproc.pas',
+  TestDelphiPreprocDUnitX in 'TestDelphiPreprocDUnitX.pas',
+  UnitMetrics in '..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas',
+  TestUnitMetricsDUnitX in 'TestUnitMetricsDUnitX.pas';
 
 {$R *.res}
 

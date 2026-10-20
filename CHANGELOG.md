@@ -66,6 +66,38 @@ Tulip source is included.  The credit is recorded in each unit header, on the op
   re-implements: Tulip Method Separators ( Samer Assil, MIT ) and VSoft.ExternalModDetector ( VSoft
   Technologies, Apache 2.0 ), whose credit had been only in `ExternalModMonitor.pas`'s header.
 
+### Unit tests: legacy suite converted to DUnitX
+
+- **The hand-rolled console suite is now five DUnitX fixtures, and its runner is gone.**  Every check
+  in `TestDelphiLexer`, `TestDelphiParserContainers`, `TestDelphiExpr`, `TestDelphiPreproc` and
+  `TestUnitMetrics` is a DUnitX assertion that can fail (9, 5, 5, 4 and 4 tests), each fixture
+  mutation-proved against its product unit.  `TestDfmParser`'s two checks the DUnitX DFM fixture
+  lacked became `TestPropertyEditsReachSerialisedOutput` and `TestFileRoundTrip_EveryTestDataFile`.
+  The suite is 191 tests.  (2026-10-21) - `DDevExtUnitTests/TestDelphiLexerDUnitX.pas`,
+  `TestDelphiParserContainersDUnitX.pas`, `TestDelphiExprDUnitX.pas`, `TestDelphiPreprocDUnitX.pas`,
+  `TestUnitMetricsDUnitX.pas`, `TestDfmParserDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
+
+- **The DFM file round-trip tests passed from `bin` without running.**  They opened a bare relative
+  `TestData\` path and `Assert.Pass`ed when it was missing, and the runner is built into `bin`, where it
+  is missing.  `TestDataDir` now falls back to `..\DDevExtUnitTests\TestData` beside the exe; a
+  serialiser mutation now fails all 12 file tests.  (2026-10-21) - `DDevExtUnitTests/TestDfmParserDUnitX.pas`
+
+- **Removed the legacy console runner.**  `DDevExtUnitTests.dpr`, `.dproj`, `.dproj.local`, `.res` and
+  the six `Test*.pas` units it ran, once each check was confirmed ported.  (2026-10-21) -
+  `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests.dproj`, `TestDfmParser.pas`,
+  `TestDelphiLexer.pas`, `TestDelphiParserContainers.pas`, `TestDelphiExpr.pas`, `TestDelphiPreproc.pas`,
+  `TestUnitMetrics.pas`, `README.md`, `STATUS.md`, `TESTS-SUMMARY.md`, `UnitTestCoverage-Plan.md`
+
+- **Known, not changed: `TestHashtableCaseSensitive` is red.**  The Shared parser units test
+  `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty
+  and no project defines them for those units, so `THashtable.Create( True, ... )` trips its Delphi 5
+  assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is
+  compiled out, in the plug-in too.  The retired console project defined the symbols itself, which
+  is why it was green.  The fix goes in its own commit after this release, for review before it is
+  pushed ( Ian, 2026-10-21 ), because enabling those branches changes behaviour in every feature that
+  uses the lexer.  (2026-10-21) - `Shared/PascalParser/DelphiParserContainers.pas`,
+  `Shared/PascalParser/DelphiLexer.pas`, `Shared/PascalParser/DelphiParser.inc`
+
 ## 2026-10-19 - The Decirculariser in the IDE
 
 The analysis core of 2026-09-17 gets its IDE plugin, as agreed then: a findings window that ranks the
