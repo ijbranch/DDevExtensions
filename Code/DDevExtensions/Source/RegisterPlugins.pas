@@ -70,6 +70,9 @@ uses
   {$IFDEF INCLUDE_USESCLAUSEMANAGER}
   UsesClauseManager,
   {$ENDIF INCLUDE_USESCLAUSEMANAGER}
+  {$IFDEF INCLUDE_DECIRCULARISER}
+  Decirculariser,
+  {$ENDIF INCLUDE_DECIRCULARISER}
   {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
   EmptyEventHandlerDetector,
   {$ENDIF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
@@ -225,6 +228,11 @@ begin
     {$IFDEF INCLUDE_USESCLAUSEMANAGER}
     if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
       RegisterLateLoader(UsesClauseManager.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_DECIRCULARISER}
+    if DisabledPlugins.IndexOf('Decirculariser') = -1 then
+      RegisterLateLoader(Decirculariser.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DFMPASCONSISTENCY}

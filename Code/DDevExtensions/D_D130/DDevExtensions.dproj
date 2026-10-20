@@ -392,6 +392,14 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </DCCReference>
     <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManagerCore.pas" />
     <DCCReference Include="..\Source\Decirculariser\DecirculariserCore.pas" />
+    <DCCReference Include="..\Source\Decirculariser\Decirculariser.pas" />
+    <DCCReference Include="..\Source\Decirculariser\FrmDecirculariser.pas">
+      <Form>FormDecirculariser</Form>
+    </DCCReference>
+    <DCCReference Include="..\Source\Decirculariser\FrmeOptionPageDecirculariser.pas">
+      <Form>FrameOptionPageDecirculariser</Form>
+      <DesignClass>TFrame</DesignClass>
+    </DCCReference>
     <DCCReference Include="..\Source\UsesClauseManager\UsesClauseManager.pas" />
     <DCCReference Include="..\Source\UsesClauseManager\FrmUsesClauseManager.pas">
       <Form>FormUsesClauseManager</Form>

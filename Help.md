@@ -28,6 +28,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 | Component Selector | OFF | Configurable hotkey |
 | Confirm Ctrl+F1 While Debugging | ON | Automatic |
 | Dead Code Detector | ON | DDevExtensions submenu |
+| Decirculariser | ON | DDevExtensions submenu |
 | DFM/PAS Consistency Checker | ON | DDevExtensions submenu |
 | Dependency Viewer | OFF | DDevExtensions submenu |
 | Disable Package Cache | OFF | Options |
@@ -82,7 +83,7 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 
 > **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
-All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
+All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
 
 **Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
 
@@ -115,9 +116,10 @@ Tools
         ├── Unreachable Code Detector...(5. Remove unreachable code)
         ├── Empty Event Handler...      (6. Remove empty handlers)
         ├── Uses Clause Manager...      (7. Organize uses clauses)
-        ├── DFM/PAS Consistency...      (8. Check form/code sync)
-        ├── Code Style Checker...       (9. Style check)
-        └── TODO/FIXME Aggregator...    (10. Review work items)
+        ├── Decirculariser...           (8.  Break circular references)
+        ├── DFM/PAS Consistency...      (9.  Check form/code sync)
+        ├── Code Style Checker...       (10.  Style check)
+        └── TODO/FIXME Aggregator...    (11.  Review work items)
 
   ├── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
   ├── IDE Path Compactor...             (Shorten the IDE library path strings)
@@ -198,9 +200,10 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 | 5 | **Unreachable Code Detector** | Find code within functions that can never execute |
 | 6 | **Empty Event Handler Detector** | Find event handlers that were created but never implemented |
 | 7 | **Uses Clause Manager** | After cleanup, organize remaining uses clauses |
-| 8 | **DFM/PAS Consistency** | Verify form files match their code files |
-| 9 | **Code Style Checker** | Check naming conventions and style rules |
-| 10 | **TODO/FIXME Aggregator** | Review outstanding work items and technical debt |
+| 8 | **Decirculariser** | Rank the circular unit references and break the dangerous ones |
+| 9 | **DFM/PAS Consistency** | Verify form files match their code files |
+| 10 | **Code Style Checker** | Check naming conventions and style rules |
+| 11 | **TODO/FIXME Aggregator** | Review outstanding work items and technical debt |
 
 ### Suggested Workflow
 
@@ -2669,6 +2672,56 @@ Unit SysUtils:
 
 Recommendation: Keep in interface (interface usage takes priority)
 ```
+
+---
+
+### Decirculariser (2026-10-19)
+
+**Purpose:** Finds the groups of units in the active project that depend on each other, ranks them by how dangerous they are, and says what it would take to break each link - down to the identifiers that hold it in place.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Decirculariser
+
+**Access:** Tools > DDevExtensions > Decirculariser...
+
+#### Why groups, and why the small ones first
+
+- **Groups, not cycles.** A group of mutually dependent units contains a huge number of distinct cycles, so listing them is useless.  The group is the honest answer to "these units are stuck together".
+- **FRAGILE groups are listed first.** A cycle through `implementation` sections is legal Delphi and costs nothing.  The danger is a group held together by exactly ONE implementation-section use while the other direction is already an interface use: the day someone needs that type in the interface section, the build stops with `E2004 Circular unit reference`, with no warning beforehand.  A two-unit FRAGILE pair therefore outranks a large benign tangle.
+
+#### The window
+
+- **Top list:** one row per group - its risk (`FRAGILE`, `benign`, or `UNCOMPILABLE` when only part of a project was read), the number of units, the interface and implementation edges inside it, and its members.
+- **Bottom list:** the implementation-section edges of the selected group, cheapest to break first, each with its verdict:
+
+| Verdict | Meaning | Fix |
+|---------|---------|-----|
+| dead uses entry | Nothing of the target unit is referenced | `auto`, or `by hand (start-up code)` - see below |
+| cannot tell | Only identifiers that several units declare are referenced (inherited form members, most often) | Remove the entry and let the compiler decide |
+| extractable | A few identifiers cross the edge, named in the details | Move them to a shared leaf unit |
+| collaboration | Many identifiers cross it | A design decision: an interface, an event or a registry |
+
+- **Details:** the full advice for the selected edge and the identifiers that cross it.
+- Double-click an edge (or right-click > **Open File**) to go to its uses entry. **Copy report** puts a plain-text report on the clipboard.
+
+#### Remove dead entries
+
+Only rows marked `auto` can be removed: a dead uses entry to a unit with **no start-up code**. A unit with an `initialization` or `finalization` section, or a class constructor or destructor, is `by hand (start-up code)` instead: the entry may be what links that code in or what decides the order it runs in, and removing it still compiles, so nothing would tell you.
+
+Select one or more `auto` rows and click **Remove dead entries...**. Before changing anything the project is analysed again from the current editor buffers, and only entries that are still dead are removed.  Each removal deletes just that entry (its comma, any `in '...'` part, and its line when the line is left empty), and the only entry of a clause takes the whole `uses` clause with it.  An entry is refused, and reported, when the clause holds a compiler directive or a comment lies inside the text to be deleted.
+
+The changed units are left **modified in the editor and not saved**: compile to confirm, then save, or undo with Ctrl+Z.
+
+#### Configuration Options
+
+- **Enabled**: Master switch
+- **Extractable threshold**: at or below this many crossing identifiers an edge is `extractable` rather than `collaboration` (default 3)
+
+#### Limits
+
+- Only the project's own `.pas` units are analysed; the RTL, the VCL and units outside the project are not things you can restructure here.
+- An old-style unit body (`begin ... end.` in place of an `initialization` section) is not recognised as start-up code.
 
 ---
 

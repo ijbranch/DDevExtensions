@@ -4,6 +4,77 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-10-19 - The Decirculariser in the IDE
+
+The analysis core of 2026-09-17 gets its IDE plugin, as agreed then: a findings window that ranks the
+project's circular unit references by risk, and a fix for the one case a tool may make by itself.
+Everything else stays advice.  Building it turned up two defects in the core, both fixed and pinned by
+tests.
+
+### Added
+
+- **Tools > DDevExtensions > Decirculariser...** (2026-10-19) -
+  `Source/Decirculariser/Decirculariser.pas`, `Source/Decirculariser/FrmDecirculariser.pas`,
+  `Source/Decirculariser/FrmDecirculariser.dfm`, `Source/Decirculariser/FrmeOptionPageDecirculariser.pas`,
+  `Source/Decirculariser/FrmeOptionPageDecirculariser.dfm`, `Source/RegisterPlugins.pas`,
+  `Source/DelphiExtension.inc`, `D_D102`...`D_D130/DDevExtensions.dpr`, `D_D130/DDevExtensions.dproj`
+  Scans the active project (an open unit is read from its editor buffer, so unsaved changes count) and
+  lists the entangled groups, most dangerous first; for the selected group, its implementation-section
+  edges, cheapest to break first, with the verdict, the crossing identifiers and the advice.  Double-click
+  goes to the uses entry; **Copy report** copies the plain-text report.  Options page: Enabled, and the
+  extractable threshold (default 3).  New `INCLUDE_DECIRCULARISER` define; `Decirculariser` in
+  `DDevExtensions.DisabledFeatures` turns it off.
+
+- **Remove dead entries - the only automatic fix.** (2026-10-19) - `Source/Decirculariser/DecirculariserCore.pas`,
+  `Source/Decirculariser/Decirculariser.pas`, `Source/Decirculariser/FrmDecirculariser.pas`
+  Offered only for a dead uses entry to a unit with no start-up code (`CanAutoRemove`).  Before anything
+  changes, the project is analysed again from the current editor buffers and only entries still dead are
+  removed, so a stale list cannot delete a live entry.  The edit is one undoable write per unit, nothing
+  is saved, and the user compiles, then saves or undoes.
+  **Why the start-up-code rule:** "nothing crosses" does not make an entry safe to delete when the target
+  has an `initialization` or `finalization` section or a class constructor or destructor.  The entry can
+  be what links that code in or what decides the order it runs in, and removing it still compiles, so no
+  compiler would report the change.  New `TDcBreakCandidate.TargetHasStartupCode` / `CanAutoRemove` and
+  `HasStartupCode`.
+
+- **`RemoveUsesEntry` - deletes one uses entry and changes nothing else.** (2026-10-19) -
+  `Source/Decirculariser/DecirculariserCore.pas`
+  Pure text in, text out, on the same `DelphiLexer` the analysis uses.  The entry goes with its comma,
+  any `in '...'` part and its line when that is left empty; the only entry takes the whole clause.  It
+  refuses, with the source unchanged and a reason, when the clause holds a compiler directive (which
+  entries it governs cannot be decided here), when a comment lies inside the text to delete, or when the
+  entry is missing or ambiguous.  The Uses Clause Manager's `GenerateRefactoredSource` was not reused: it
+  rebuilds the whole clause, reformatting it.
+
+- **22 tests, 138 in the suite; mutation-proved.** (2026-10-19) - `DDevExtUnitTests/TestDecirculariserCoreDUnitX.pas`,
+  `DDevExtUnitTests/README.md`
+  Start-up-code detection, `CanAutoRemove`, 13 `RemoveUsesEntry` cases asserting the exact resulting text,
+  dotted names and 1-based lines.  Six mutants, one per safety rule (start-up code ignored, the
+  `TA = class` / `constructor` false positive, the emptied line left behind, 0-based lines, last-part-only
+  name resolution, a swallowed comment), each failed at least one test; the source was restored
+  byte-for-byte.
+
+### Fixed
+
+- **Dotted unit names were never edge targets, so their cycles were missed.** (2026-10-19) -
+  `Source/Decirculariser/DecirculariserCore.pas`
+  `AddEdge` resolved every dotted reference on its last part, so `uses App.Beta` looked for a unit
+  `Beta`, not the analysed unit `App.Beta`, and a project of `App.Xxx` units looked acyclic.  It now
+  tries the full name first and the last part only when the set has no such unit (a unit-scope prefix,
+  `Vcl.Forms` for `Forms`).
+
+- **Every line number was one too low.** (2026-10-19) - `Source/Decirculariser/DecirculariserCore.pas`
+  The lexer counts lines from 0 and `TDcEdge.LineNumber` passed that straight through, so the report sent
+  its reader to the line above the uses entry.  Now 1-based, as the editor shows it.
+
+### Known, not changed
+
+- **The Win64 Debug build of the DLL does not compile** (found 2026-10-19, not caused by this work) -
+  `Shared/Hooking.pas`.  Under `DEBUG` with `CPUX64`, the `end;` closing `if IsDebuggerPresent then begin`
+  sits inside the `{$ELSE}` branch, so the 64-bit Debug build loses it and fails with `E2070` and 30
+  knock-on errors.  Release, which `build.bat` ships, is unaffected; shared upstream code, so raised
+  rather than changed.
+
 ## 2026-09-19 - Delphi 12 64-bit IDE host support (untested)
 
 Ian queried the claim that Delphi 12 has no 64-bit IDE, and he was right: **RAD Studio 12.2 shipped a

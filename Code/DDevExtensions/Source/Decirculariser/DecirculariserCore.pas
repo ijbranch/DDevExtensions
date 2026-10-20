@@ -42,8 +42,10 @@ unit DecirculariserCore;
 ///   whole value of this unit, and it is why it needs the exports database from
 ///   <c>UsesClauseManagerCore</c> rather than just a graph.
 ///
-/// This unit deliberately does NOT rewrite source. It reports what to do and how big the job
-/// is; applying the trivial cases is a separate, explicit step.
+/// This unit writes no file and touches no editor.  It reports what to do and how big the job
+/// is; for the one trivial case - a dead entry to a unit with no start-up code
+/// ( <c>CanAutoRemove</c> ) - <see cref="RemoveUsesEntry"/> returns the edited text, and the
+/// IDE plugin decides whether to apply it.
 /// </remarks>
 
 {$I ..\DelphiExtension.inc}
@@ -63,7 +65,7 @@ type
     ToUnit: string;
     /// <summary>Section the reference appears in.</summary>
     Section: TUsesSection;
-    /// <summary>Source line of the reference, for navigation.</summary>
+    /// <summary>Source line of the reference, 1-based as the editor shows it.</summary>
     LineNumber: Integer;
   end;
 
@@ -109,6 +111,16 @@ type
     AmbiguousSymbolCount: Integer;
     /// <summary>How big the job is.</summary>
     Verdict: TDcVerdict;
+    /// <summary>True when <c>Edge.ToUnit</c> runs code of its own at start-up or shut-down: an
+    /// <c>initialization</c> or <c>finalization</c> section, or a class constructor or
+    /// destructor.  Nothing crossing the edge then does not make the entry safe to delete -
+    /// it can be what links that code in, or what decides the order it runs in, and the
+    /// compiler cannot tell you either has changed.</summary>
+    TargetHasStartupCode: Boolean;
+    /// <summary>True for the one case a tool may fix by itself: a dead entry
+    /// ( <c>dcvUnusedEdge</c> ) to a unit with no start-up code, which
+    /// <see cref="RemoveUsesEntry"/> can delete without changing what the program does.</summary>
+    CanAutoRemove: Boolean;
     /// <summary>One line saying what to do about it.</summary>
     Advice: string;
   end;
@@ -149,14 +161,24 @@ type
     FGroups: TArray<TDcGroup>;
     /// <summary>Threshold at and below which an edge is judged extractable.</summary>
     FFewSymbolsLimit: Integer;
+    /// <summary>Lower-case names of the added units that have start-up code
+    /// ( <see cref="HasStartupCode"/> ), filled by <see cref="BuildGraph"/>.</summary>
+    FStartupUnits: TDictionary<string, Boolean>;
     /// <summary>Parses every added unit into edges, exports and referenced identifiers.</summary>
     procedure BuildGraph;
     /// <summary>Iterative Tarjan. Returns only components of more than one unit.</summary>
+    /// <returns>Each group as its members, alphabetically.</returns>
     function FindGroups: TArray<TArray<string>>;
     /// <summary>Identifiers of <paramref name="AToUnit"/> that <paramref name="AFromUnit"/> uses.</summary>
+    /// <param name="AFromUnit">Unit whose uses clause carries the edge.</param>
+    /// <param name="AToUnit">Unit the edge refers to.</param>
+    /// <param name="AAmbiguous">Receives how many referenced identifiers were excluded because several units declare them.</param>
+    /// <returns>The identifiers unique to the target that the source references, alphabetically.</returns>
     function CrossingSymbols( const AFromUnit, AToUnit: string;
       out AAmbiguous: Integer ): TArray<string>;
     /// <summary>Fills in the candidates, counts and kind for one group.</summary>
+    /// <param name="AMembers">Members of the group.</param>
+    /// <returns>The described group.</returns>
     function DescribeGroup( const AMembers: TArray<string> ): TDcGroup;
   public
     /// <summary>Creates an empty analyser.</summary>
@@ -171,14 +193,18 @@ type
     /// code you can actually change.</remarks>
     procedure AddUnit( const AUnitName: string; const ASource: UTF8String );
     /// <summary>Adds every .pas file in a directory. Returns how many were added.</summary>
+    /// <param name="ADirectory">Directory to read; not searched recursively.</param>
+    /// <returns>How many units were added; an unreadable file is skipped.</returns>
     function AddDirectory( const ADirectory: string ): Integer;
     /// <summary>Runs the analysis. Safe to call again after adding more units.</summary>
     procedure Analyse;
     /// <summary>Renders the analysis as a plain-text report.</summary>
+    /// <returns>The report text, one group after another.</returns>
     function Report: string;
     /// <summary>Entangled groups, most dangerous first, then largest.</summary>
     property Groups: TArray<TDcGroup> read FGroups;
     /// <summary>Number of units added.</summary>
+    /// <returns>The number of distinct units added.</returns>
     function UnitCount: Integer;
     /// <summary>At and below this many crossing identifiers an edge is judged extractable
     /// rather than genuine collaboration. Defaults to 3.</summary>
@@ -186,14 +212,46 @@ type
   end;
 
 /// <summary>Human-readable name of a group kind.</summary>
+/// <param name="AKind">The kind to name.</param>
+/// <returns>The name used in the report and the window.</returns>
 function DcGroupKindToStr( AKind: TDcGroupKind ): string;
 /// <summary>Human-readable name of a verdict.</summary>
+/// <param name="AVerdict">The verdict to name.</param>
+/// <returns>The name used in the report and the window.</returns>
 function DcVerdictToStr( AVerdict: TDcVerdict ): string;
+
+/// <summary>
+/// True when the source runs code of its own at start-up or shut-down: an
+/// <c>initialization</c> or <c>finalization</c> section, or a class constructor or destructor.
+/// </summary>
+/// <param name="ASource">UTF-8 source text of one unit, without a BOM.</param>
+/// <returns>True when any of them is present; words inside comments and strings do not count.</returns>
+/// <remarks>An old-style unit body ( <c>begin ... end.</c> in place of an <c>initialization</c>
+/// section ) is not detected.</remarks>
+function HasStartupCode( const ASource: UTF8String ): Boolean;
+
+/// <summary>
+/// Deletes one entry from one uses clause and changes nothing else: the entry's name, any
+/// <c>in '...'</c> part and its separating comma go, and so does the line it stood on when that
+/// line is left empty.  The only entry of a clause takes the whole <c>uses ... ;</c> with it.
+/// </summary>
+/// <param name="ASource">UTF-8 source text of the unit, without a BOM.</param>
+/// <param name="AUnitName">The entry to remove.  A dotted entry matches on its full name or on
+/// its last part, as <c>TDecirculariser</c> resolves edges ( <c>Bar</c> finds <c>Foo.Bar</c> ).</param>
+/// <param name="ASection">The uses clause to edit: the interface one or the implementation one.</param>
+/// <param name="ANewSource">The edited source; equal to <paramref name="ASource"/> on refusal.</param>
+/// <param name="AReason">Why nothing was changed; empty on success.</param>
+/// <returns>True when the entry was removed.  False - with the source unchanged - when the section
+/// has no uses clause, the entry is not in it or matches more than once, the clause holds a
+/// compiler directive ( which entries a directive governs is not decidable here ), a comment lies
+/// inside the text to delete, or the clause cannot be read.</returns>
+function RemoveUsesEntry( const ASource: UTF8String; const AUnitName: string; ASection: TUsesSection;
+  out ANewSource: UTF8String; out AReason: string ): Boolean;
 
 implementation
 
 uses
-  System.Generics.Defaults, System.Math;
+  System.Generics.Defaults, System.Math, DelphiLexer;
 
 const
   /// <summary>Default for <see cref="TDecirculariser.FewSymbolsLimit"/>.</summary>
@@ -225,6 +283,249 @@ begin
   end;
 end;
 
+function HasStartupCode( const ASource: UTF8String ): Boolean;
+var
+  Lexer: TDelphiLexer;
+  Token: TToken;
+  bAfterClass: Boolean;
+  PrevKind: TTokenKind;
+begin
+  Result      := False;
+  bAfterClass := False;
+  PrevKind    := tkComment;
+  Lexer       := TDelphiLexer.Create( '', ASource );
+  try
+    while Lexer.NextToken( Token ) do
+    begin
+      if Token.Kind in [ tkComment, tkDirective ] then
+        Continue;
+
+      case Token.Kind of
+        tkI_initialization, tkI_finalization:
+          Exit( True );
+        tkI_constructor, tkI_destructor:
+          if bAfterClass then
+            Exit( True );
+      end;
+      { "class" straight after "=" or "packed" opens a type ( "TA = class" ), and its first
+        member may well be an ordinary constructor; only elsewhere is it the modifier of a
+        class constructor or destructor. }
+      bAfterClass := ( Token.Kind = tkI_class ) and not ( PrevKind in [ tkEqual, tkI_packed ] );
+      PrevKind    := Token.Kind;
+    end;
+  finally
+    Lexer.Free;
+  end;
+end;
+
+type
+  /// <summary>One entry of a uses clause as <see cref="RemoveUsesEntry"/> reads it, as half-open
+  /// 1-based byte ranges into the source.</summary>
+  TUsesEntrySpan = record
+    /// <summary>Name as written, dotted parts joined.</summary>
+    Name: string;
+    /// <summary>First byte of the name.</summary>
+    StartIdx: Integer;
+    /// <summary>Byte after the name or after its <c>in '...'</c> string.</summary>
+    EndIdx: Integer;
+    /// <summary>First byte of the comma or semicolon that follows.</summary>
+    SepIdx: Integer;
+    /// <summary>Byte after that comma or semicolon.</summary>
+    SepEndIdx: Integer;
+  end;
+
+function RemoveUsesEntry( const ASource: UTF8String; const AUnitName: string; ASection: TUsesSection;
+  out ANewSource: UTF8String; out AReason: string ): Boolean;
+var
+  Lexer: TDelphiLexer;
+  Token: TToken;
+  Entries: TList<TUsesEntrySpan>;
+  Comments: TList<Integer>;
+  Entry: TUsesEntrySpan;
+  iUsesIdx, iMatch, iDelFrom, iDelTo, I: Integer;
+  SectionKind: TTokenKind;
+
+  { The next token that is not a comment; records each comment's start so that a deletion can
+    refuse to swallow one.  Nil at the end of the source. }
+  function NextCode: TToken;
+  begin
+    while Lexer.NextToken( Result ) do
+    begin
+      if Result.Kind <> tkComment then
+        Exit;
+      Comments.Add( Result.Index );
+    end;
+    Result := nil;
+  end;
+
+  function Refuse( const AWhy: string ): Boolean;
+  begin
+    AReason    := AWhy;
+    ANewSource := ASource;
+    Result     := False;
+  end;
+
+  function LeafOf( const AName: string ): string;
+  begin
+    Result := Copy( AName, LastDelimiter( '.', AName ) + 1, MaxInt );
+  end;
+
+  function IsBlank( AFrom, ATo: Integer ): Boolean;
+  var
+    J: Integer;
+  begin
+    for J := AFrom to ATo - 1 do
+      if not ( ASource[ J ] in [ ' ', #9 ] ) then
+        Exit( False );
+    Result := True;
+  end;
+
+  function CommentIn( AFrom, ATo: Integer ): Boolean;
+  var
+    iIdx: Integer;
+  begin
+    for iIdx in Comments do
+      if ( iIdx >= AFrom ) and ( iIdx < ATo ) then
+        Exit( True );
+    Result := False;
+  end;
+
+  { When the deletion leaves its line holding nothing but spaces, the whole line goes, break included. }
+  procedure TakeWholeLine;
+  var
+    iLineStart, iLineEnd: Integer;
+  begin
+    iLineStart := iDelFrom;
+    while ( iLineStart > 1 ) and not ( ASource[ iLineStart - 1 ] in [ #10, #13 ] ) do
+      Dec( iLineStart );
+    iLineEnd := iDelTo;
+    while ( iLineEnd <= Length( ASource ) ) and not ( ASource[ iLineEnd ] in [ #10, #13 ] ) do
+      Inc( iLineEnd );
+    if not ( IsBlank( iLineStart, iDelFrom ) and IsBlank( iDelTo, iLineEnd ) ) then
+      Exit;
+
+    iDelFrom := iLineStart;
+    iDelTo   := iLineEnd;
+    if ( iDelTo <= Length( ASource ) ) and ( ASource[ iDelTo ] = #13 ) then
+      Inc( iDelTo );
+    if ( iDelTo <= Length( ASource ) ) and ( ASource[ iDelTo ] = #10 ) then
+      Inc( iDelTo );
+  end;
+
+begin
+  AReason    := '';
+  ANewSource := ASource;
+  if ASection = usInterface then
+    SectionKind := tkI_interface
+  else
+    SectionKind := tkI_implementation;
+
+  Lexer    := TDelphiLexer.Create( '', ASource );
+  Entries  := TList<TUsesEntrySpan>.Create;
+  Comments := TList<Integer>.Create;
+  try
+    { The section keyword: the first "interface" is the section, any later one a type. }
+    repeat
+      Token := NextCode;
+    until ( Token = nil ) or ( Token.Kind = SectionKind );
+    if Token = nil then
+      Exit( Refuse( 'the unit has no such section' ) );
+
+    repeat
+      Token := NextCode;
+    until ( Token = nil ) or ( Token.Kind <> tkDirective );
+    if ( Token = nil ) or ( Token.Kind <> tkI_uses ) then
+      Exit( Refuse( 'the section has no uses clause' ) );
+    iUsesIdx := Token.Index;
+
+    repeat
+      Token := NextCode;
+      if ( Token <> nil ) and ( Token.Kind = tkDirective ) then
+        Exit( Refuse( 'the uses clause holds a compiler directive, so which entries it governs ' +
+          'cannot be decided here - remove the entry by hand' ) );
+      if ( Token = nil ) or not Token.IsIdent then
+        Exit( Refuse( 'the uses clause could not be read' ) );
+
+      Entry          := Default( TUsesEntrySpan );
+      Entry.Name     := Token.Value;
+      Entry.StartIdx := Token.Index;
+      Entry.EndIdx   := Token.Index + Token.TokenLength;
+      Token := NextCode;
+      while ( Token <> nil ) and ( Token.Kind = tkQualifier ) do
+      begin
+        Token := NextCode;
+        if ( Token = nil ) or not Token.IsIdent then
+          Exit( Refuse( 'the uses clause could not be read' ) );
+        Entry.Name   := Entry.Name + '.' + Token.Value;
+        Entry.EndIdx := Token.Index + Token.TokenLength;
+        Token := NextCode;
+      end;
+
+      if ( Token <> nil ) and ( Token.Kind = tkI_in ) then
+      begin
+        Token := NextCode;
+        if ( Token = nil ) or ( Token.Kind <> tkString ) then
+          Exit( Refuse( 'the uses clause could not be read' ) );
+        Entry.EndIdx := Token.Index + Token.TokenLength;
+        Token := NextCode;
+      end;
+
+      if ( Token <> nil ) and ( Token.Kind = tkDirective ) then
+        Exit( Refuse( 'the uses clause holds a compiler directive, so which entries it governs ' +
+          'cannot be decided here - remove the entry by hand' ) );
+      if ( Token = nil ) or not ( Token.Kind in [ tkComma, tkSemicolon ] ) then
+        Exit( Refuse( 'the uses clause could not be read' ) );
+      Entry.SepIdx    := Token.Index;
+      Entry.SepEndIdx := Token.Index + Token.TokenLength;
+      Entries.Add( Entry );
+    until Token.Kind = tkSemicolon;
+
+    iMatch := -1;
+    for I := 0 to Entries.Count - 1 do
+      if SameText( Entries[ I ].Name, AUnitName ) or SameText( LeafOf( Entries[ I ].Name ), AUnitName ) then
+      begin
+        if iMatch >= 0 then
+          Exit( Refuse( Format( '%s matches more than one entry of the uses clause', [ AUnitName ] ) ) );
+        iMatch := I;
+      end;
+    if iMatch < 0 then
+      Exit( Refuse( Format( '%s is not in the uses clause', [ AUnitName ] ) ) );
+
+    Entry := Entries[ iMatch ];
+    if Entries.Count = 1 then
+    begin
+      { The only entry: the clause goes with it. }
+      iDelFrom := iUsesIdx;
+      iDelTo   := Entry.SepEndIdx;
+    end
+    else if iMatch < Entries.Count - 1 then
+    begin
+      { Not the last: the entry, its comma and the spaces after them. }
+      iDelFrom := Entry.StartIdx;
+      iDelTo   := Entry.SepEndIdx;
+      while ( iDelTo <= Length( ASource ) ) and ( ASource[ iDelTo ] in [ ' ', #9 ] ) do
+        Inc( iDelTo );
+    end
+    else
+    begin
+      { The last: from the comma before it, so the semicolon stays where it is. }
+      iDelFrom := Entries[ iMatch - 1 ].SepIdx;
+      iDelTo   := Entry.EndIdx;
+    end;
+
+    if CommentIn( iDelFrom, iDelTo ) then
+      Exit( Refuse( 'a comment lies inside the text that would be deleted - remove the entry by hand' ) );
+
+    TakeWholeLine;
+    ANewSource := Copy( ASource, 1, iDelFrom - 1 ) + Copy( ASource, iDelTo, MaxInt );
+    Result     := True;
+  finally
+    Comments.Free;
+    Entries.Free;
+    Lexer.Free;
+  end;
+end;
+
 { TDecirculariser }
 
 constructor TDecirculariser.Create;
@@ -236,10 +537,12 @@ begin
   FUsedIdents      := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
   FExports         := TUnitExportsDatabase.Create;
   FFewSymbolsLimit := DEFAULT_FEW_SYMBOLS;
+  FStartupUnits    := TDictionary<string, Boolean>.Create;
 end;
 
 destructor TDecirculariser.Destroy;
 begin
+  FStartupUnits.Free;
   FExports.Free;
   FUsedIdents.Free;
   FEdges.Free;
@@ -315,10 +618,10 @@ var
   var
     sTo: string;
   begin
-    { A dotted reference resolves on its leaf name, which is how the unit would be found
-      on the search path. }
+    { A dotted reference names a dotted unit ( "App.Rules" ) when the set has one, and otherwise
+      resolves on its leaf name, as a unit-scope prefix ( "Vcl.Forms" for "Forms" ) would. }
     sTo := LowerCase( AUsed.UnitName );
-    if Pos( '.', sTo ) > 0 then
+    if not FSources.ContainsKey( sTo ) and ( Pos( '.', sTo ) > 0 ) then
       sTo := LowerCase( Copy( AUsed.UnitName, LastDelimiter( '.', AUsed.UnitName ) + 1, MaxInt ) );
 
     { Only edges INSIDE the analysed set are of interest - the RTL and the VCL are not
@@ -329,7 +632,8 @@ var
     Edge.FromUnit   := FNames[ AFrom ];
     Edge.ToUnit     := FNames[ sTo ];
     Edge.Section    := AUsed.Section;
-    Edge.LineNumber := AUsed.LineNumber;
+    { The lexer counts lines from 0; the editor, and every reader of a report, from 1. }
+    Edge.LineNumber := AUsed.LineNumber + 1;
     FEdges.Add( Edge );
   end;
 
@@ -337,10 +641,15 @@ begin
   FEdges.Clear;
   FUsedIdents.Clear;
   FExports.Clear;
+  FStartupUnits.Clear;
 
-  { Pass one: every unit's exports, so that symbol attribution can resolve either way round. }
+  { Pass one: every unit's exports, so that symbol attribution can resolve either way round,
+    and whether it runs start-up code, which decides whether a dead entry may be deleted. }
   for Pair in FSources do
+  begin
     FExports.ScanSource( FNames[ Pair.Key ], FNames[ Pair.Key ] + '.pas', Pair.Value );
+    FStartupUnits.AddOrSetValue( Pair.Key, HasStartupCode( Pair.Value ) );
+  end;
 
   { Pass two: the uses clauses and the identifiers each unit actually mentions. }
   Analyzer := TIdentifierUsageAnalyzer.Create;
@@ -606,7 +915,10 @@ begin
 
       Inc( Result.ImplementationEdgeCount );
 
-      Candidate.Edge            := Edge;
+      Candidate                      := Default( TDcBreakCandidate );
+      Candidate.Edge                 := Edge;
+      Candidate.TargetHasStartupCode := FStartupUnits.ContainsKey( LowerCase( Edge.ToUnit ) ) and
+        FStartupUnits[ LowerCase( Edge.ToUnit ) ];
       Candidate.CrossingSymbols := CrossingSymbols( Edge.FromUnit, Edge.ToUnit,
         Candidate.AmbiguousSymbolCount );
 
@@ -619,9 +931,16 @@ begin
       end
       else if Length( Candidate.CrossingSymbols ) = 0 then
       begin
-        Candidate.Verdict := dcvUnusedEdge;
-        Candidate.Advice := Format( 'No identifier of %s is referenced at all - remove it ' +
-          'from the implementation uses clause of %s.', [ Edge.ToUnit, Edge.FromUnit ] );
+        Candidate.Verdict       := dcvUnusedEdge;
+        Candidate.CanAutoRemove := not Candidate.TargetHasStartupCode;
+        if Candidate.CanAutoRemove then
+          Candidate.Advice := Format( 'No identifier of %s is referenced at all - remove it ' +
+            'from the implementation uses clause of %s.', [ Edge.ToUnit, Edge.FromUnit ] )
+        else
+          Candidate.Advice := Format( 'No identifier of %s is referenced, but %s runs start-up code ' +
+            '(initialization, finalization or a class constructor). The entry may be what links it in ' +
+            'or what orders it, which no compiler checks - remove it from %s by hand only if that ' +
+            'does not matter.', [ Edge.ToUnit, Edge.ToUnit, Edge.FromUnit ] );
       end
       else if Length( Candidate.CrossingSymbols ) <= FFewSymbolsLimit then
       begin

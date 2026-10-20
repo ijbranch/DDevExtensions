@@ -107,6 +107,96 @@ type
     /// <summary>The report states how much was analysed.</summary>
     [Test]
     procedure TestReportStatesTheScope;
+    /// <summary>Line numbers are the editor's, counted from 1: the lexer counts from 0, and
+    /// passing that through sent every reader of the report to the line above.</summary>
+    [Test]
+    procedure TestEdgeLineNumberIsOneBased;
+  end;
+
+  /// <summary>Dotted unit names, which the suite and most modern code use.</summary>
+  [TestFixture]
+  TTestDecirculariserDottedNames = class
+  public
+    /// <summary>Two dotted units that use each other are a group.  Resolving every dotted
+    /// reference on its last part alone missed them, so a project of App.Xxx units looked
+    /// acyclic.</summary>
+    [Test]
+    procedure TestDottedUnitsFormAGroup;
+  end;
+
+  /// <summary>Start-up code, which decides whether a dead entry may be deleted by a tool.</summary>
+  [TestFixture]
+  TTestDecirculariserStartupCode = class
+  public
+    /// <summary>An initialization section is start-up code.</summary>
+    [Test]
+    procedure TestInitializationSectionCounts;
+    /// <summary>A finalization section alone is start-up code too.</summary>
+    [Test]
+    procedure TestFinalizationSectionCounts;
+    /// <summary>A class constructor runs before the unit's code is used, so it counts.</summary>
+    [Test]
+    procedure TestClassConstructorCounts;
+    /// <summary>The words inside a comment or a string are not code, and an ordinary
+    /// constructor is not start-up code.</summary>
+    [Test]
+    procedure TestWordsInCommentsAndPlainConstructorsDoNotCount;
+    /// <summary>A dead entry to a plain unit is the one case offered for automatic removal.</summary>
+    [Test]
+    procedure TestDeadEntryToPlainUnitCanBeRemoved;
+    /// <summary>A dead entry to a unit with start-up code is NOT offered: removing it compiles
+    /// but can unlink or reorder that code, which nothing would report.</summary>
+    [Test]
+    procedure TestDeadEntryToUnitWithStartupCodeIsNotOffered;
+    /// <summary>Only dead entries are ever offered, never an edge that carries identifiers.</summary>
+    [Test]
+    procedure TestExtractableEdgeIsNeverOffered;
+  end;
+
+  /// <summary><c>RemoveUsesEntry</c>: removes exactly one entry and changes nothing else.</summary>
+  [TestFixture]
+  TTestRemoveUsesEntry = class
+  public
+    /// <summary>A middle entry on one line takes its comma and space with it.</summary>
+    [Test]
+    procedure TestMiddleEntryOnOneLine;
+    /// <summary>The first entry on one line.</summary>
+    [Test]
+    procedure TestFirstEntryOnOneLine;
+    /// <summary>The last entry takes the comma before it, so the semicolon stays.</summary>
+    [Test]
+    procedure TestLastEntryOnOneLine;
+    /// <summary>An entry on a line of its own takes the whole line, line break included.</summary>
+    [Test]
+    procedure TestEntryOnItsOwnLineTakesTheLine;
+    /// <summary>The last of several entries, each on its own line, leaves the one before it
+    /// ending in the semicolon.</summary>
+    [Test]
+    procedure TestLastEntryOnItsOwnLine;
+    /// <summary>The only entry takes the whole uses clause with it.</summary>
+    [Test]
+    procedure TestOnlyEntryRemovesTheClause;
+    /// <summary>An <c>in '...'</c> entry goes with its path.</summary>
+    [Test]
+    procedure TestEntryWithInPath;
+    /// <summary>A dotted entry is found by its last part, as the analyser names the edge.</summary>
+    [Test]
+    procedure TestDottedEntryFoundByLeafName;
+    /// <summary>Only the named section is edited: the same name in the other clause is untouched.</summary>
+    [Test]
+    procedure TestOnlyTheNamedSectionIsEdited;
+    /// <summary>A compiler directive in the clause is refused, source unchanged.</summary>
+    [Test]
+    procedure TestDirectiveInClauseIsRefused;
+    /// <summary>An entry that is not there is refused with a reason, source unchanged.</summary>
+    [Test]
+    procedure TestMissingEntryIsRefused;
+    /// <summary>A comment beside the deleted text survives.</summary>
+    [Test]
+    procedure TestCommentOutsideTheDeletionSurvives;
+    /// <summary>A comment that would be swallowed is refused rather than lost.</summary>
+    [Test]
+    procedure TestCommentInsideTheDeletionIsRefused;
   end;
 
 implementation
@@ -607,10 +697,262 @@ begin
   end;
 end;
 
+procedure TTestDecirculariserReport.TestEdgeLineNumberIsOneBased;
+var
+  D: TDecirculariser;
+  G: TDcGroup;
+begin
+  D := TDecirculariser.Create;
+  try
+    { "uses Beta;" is on line 5 of Alpha as the editor numbers it. }
+    D.AddUnit( 'Alpha', Src( [
+      'unit Alpha;', 'interface', 'procedure AlphaThing;', 'implementation', 'uses Beta;', 'end.' ] ) );
+    D.AddUnit( 'Beta', Src( [
+      'unit Beta;', 'interface', 'uses Alpha;', 'procedure BetaThing;', 'implementation', 'end.' ] ) );
+    D.Analyse;
+    G := GroupWith( D.Groups, 'Alpha' );
+    Assert.AreEqual<Integer>( 5, CandidateFor( G, 'Alpha', 'Beta' ).Edge.LineNumber,
+      'the line the editor shows' );
+    Assert.IsTrue( Pos( '(line 5)', D.Report ) > 0, 'and the report prints the same line' );
+  finally
+    D.Free;
+  end;
+end;
+
+{ TTestDecirculariserDottedNames }
+
+procedure TTestDecirculariserDottedNames.TestDottedUnitsFormAGroup;
+var
+  D: TDecirculariser;
+begin
+  D := TDecirculariser.Create;
+  try
+    D.AddUnit( 'App.Alpha', Src( [
+      'unit App.Alpha;', 'interface', 'procedure AlphaThing;', 'implementation', 'uses App.Beta;', 'end.' ] ) );
+    D.AddUnit( 'App.Beta', Src( [
+      'unit App.Beta;', 'interface', 'procedure BetaThing;', 'implementation', 'uses App.Alpha;', 'end.' ] ) );
+    D.Analyse;
+    Assert.AreEqual<Integer>( 1, Length( D.Groups ), 'App.Alpha and App.Beta use each other' );
+    Assert.AreEqual<Integer>( 2, Length( D.Groups[ 0 ].Units ), 'one group of both' );
+  finally
+    D.Free;
+  end;
+end;
+
+{ TTestDecirculariserStartupCode }
+
+procedure TTestDecirculariserStartupCode.TestInitializationSectionCounts;
+begin
+  Assert.IsTrue( HasStartupCode( Src( [
+    'unit A;', 'interface', 'implementation', 'initialization', '  RegisterThings;', 'end.' ] ) ) );
+end;
+
+procedure TTestDecirculariserStartupCode.TestFinalizationSectionCounts;
+begin
+  Assert.IsTrue( HasStartupCode( Src( [
+    'unit A;', 'interface', 'implementation', 'finalization', '  FreeThings;', 'end.' ] ) ) );
+end;
+
+procedure TTestDecirculariserStartupCode.TestClassConstructorCounts;
+begin
+  Assert.IsTrue( HasStartupCode( Src( [
+    'unit A;', 'interface', 'type', '  TA = class', '    class constructor Create;', '  end;',
+    'implementation', 'class constructor TA.Create;', 'begin', 'end;', 'end.' ] ) ) );
+end;
+
+procedure TTestDecirculariserStartupCode.TestWordsInCommentsAndPlainConstructorsDoNotCount;
+begin
+  Assert.IsFalse( HasStartupCode( Src( [
+    'unit A;', 'interface', 'type', '  TA = class', '    constructor Create;', '  end;',
+    'const S = ''initialization'';', 'implementation', '{ finalization }', '// class constructor',
+    'constructor TA.Create;', 'begin', 'end;', 'end.' ] ) ) );
+end;
+
+/// <summary>A pair whose Alpha -> Beta implementation edge carries nothing; Beta is given ATail.</summary>
+function DeadEdgePair( const ABetaTail: array of string ): TDecirculariser;
+var
+  Lines: TArray<string>;
+  I: Integer;
+begin
+  Result := TDecirculariser.Create;
+  Result.AddUnit( 'Alpha', Src( [
+    'unit Alpha;', 'interface', 'procedure AlphaThing;', 'implementation', 'uses Beta;', 'end.' ] ) );
+  Lines := [ 'unit Beta;', 'interface', 'uses Alpha;', 'procedure BetaThing;', 'implementation' ];
+  for I := Low( ABetaTail ) to High( ABetaTail ) do
+    Lines := Lines + [ ABetaTail[ I ] ];
+  Result.AddUnit( 'Beta', Src( Lines + [ 'end.' ] ) );
+  Result.Analyse;
+end;
+
+procedure TTestDecirculariserStartupCode.TestDeadEntryToPlainUnitCanBeRemoved;
+var
+  D: TDecirculariser;
+  C: TDcBreakCandidate;
+begin
+  D := DeadEdgePair( [] );
+  try
+    C := CandidateFor( GroupWith( D.Groups, 'Alpha' ), 'Alpha', 'Beta' );
+    Assert.AreEqual<TDcVerdict>( dcvUnusedEdge, C.Verdict, 'nothing of Beta is used by Alpha' );
+    Assert.IsFalse( C.TargetHasStartupCode );
+    Assert.IsTrue( C.CanAutoRemove, 'a dead entry to a plain unit is the safe case' );
+  finally
+    D.Free;
+  end;
+end;
+
+procedure TTestDecirculariserStartupCode.TestDeadEntryToUnitWithStartupCodeIsNotOffered;
+var
+  D: TDecirculariser;
+  C: TDcBreakCandidate;
+begin
+  D := DeadEdgePair( [ 'initialization', '  RegisterThings;' ] );
+  try
+    C := CandidateFor( GroupWith( D.Groups, 'Alpha' ), 'Alpha', 'Beta' );
+    Assert.AreEqual<TDcVerdict>( dcvUnusedEdge, C.Verdict, 'still dead: nothing of Beta is used' );
+    Assert.IsTrue( C.TargetHasStartupCode );
+    Assert.IsFalse( C.CanAutoRemove, 'but not for a tool to delete' );
+    Assert.IsTrue( Pos( 'start-up code', C.Advice ) > 0, 'and the advice says why' );
+  finally
+    D.Free;
+  end;
+end;
+
+procedure TTestDecirculariserStartupCode.TestExtractableEdgeIsNeverOffered;
+var
+  D: TDecirculariser;
+  C: TDcBreakCandidate;
+begin
+  D := TDecirculariser.Create;
+  try
+    D.AddUnit( 'Alpha', Src( [
+      'unit Alpha;', 'interface', 'procedure AlphaThing;', 'implementation', 'uses Beta;',
+      'procedure AlphaThing;', 'begin', '  BetaThing;', 'end;', 'end.' ] ) );
+    D.AddUnit( 'Beta', Src( [
+      'unit Beta;', 'interface', 'uses Alpha;', 'procedure BetaThing;', 'implementation', 'end.' ] ) );
+    D.Analyse;
+    C := CandidateFor( GroupWith( D.Groups, 'Alpha' ), 'Alpha', 'Beta' );
+    Assert.AreEqual<TDcVerdict>( dcvFewSymbols, C.Verdict, 'BetaThing crosses the edge' );
+    Assert.IsFalse( C.CanAutoRemove, 'an edge carrying identifiers is never removed by the tool' );
+  finally
+    D.Free;
+  end;
+end;
+
+{ TTestRemoveUsesEntry }
+
+/// <summary>Removes AName from ASection of ASource and asserts the result is exactly AExpected.</summary>
+procedure CheckRemoved( const ASource: array of string; const AName: string; ASection: TUsesSection;
+  const AExpected: array of string );
+var
+  sNew: UTF8String;
+  sWhy: string;
+begin
+  Assert.IsTrue( RemoveUsesEntry( Src( ASource ), AName, ASection, sNew, sWhy ), 'refused: ' + sWhy );
+  Assert.AreEqual( string( Src( AExpected ) ), string( sNew ), 'every other byte unchanged' );
+end;
+
+/// <summary>Asserts the removal is refused, the source comes back unchanged and a reason is given.</summary>
+procedure CheckRefused( const ASource: array of string; const AName: string; ASection: TUsesSection );
+var
+  sNew: UTF8String;
+  sWhy: string;
+begin
+  Assert.IsFalse( RemoveUsesEntry( Src( ASource ), AName, ASection, sNew, sWhy ), 'should be refused' );
+  Assert.AreEqual( string( Src( ASource ) ), string( sNew ), 'source unchanged on refusal' );
+  Assert.IsTrue( sWhy <> '', 'a refusal says why' );
+end;
+
+procedure TTestRemoveUsesEntry.TestMiddleEntryOnOneLine;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses A, B, C;', 'end.' ], 'B', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses A, C;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestFirstEntryOnOneLine;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses A, B, C;', 'end.' ], 'A', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses B, C;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestLastEntryOnOneLine;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses A, B, C;', 'end.' ], 'C', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses A, B;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestEntryOnItsOwnLineTakesTheLine;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses', '  A,', '  B,', '  C;', 'end.' ],
+    'B', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses', '  A,', '  C;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestLastEntryOnItsOwnLine;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses', '  A,', '  B;', 'end.' ],
+    'B', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses', '  A;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestOnlyEntryRemovesTheClause;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses', '  A;', '', 'procedure P;', 'end.' ],
+    'A', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', '', 'procedure P;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestEntryWithInPath;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses A in ''..\A.pas'', B;', 'end.' ],
+    'A', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses B;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestDottedEntryFoundByLeafName;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses App.Alpha, App.Beta;', 'end.' ],
+    'Alpha', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses App.Beta;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestOnlyTheNamedSectionIsEdited;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'uses A, B;', 'implementation', 'uses C, A;', 'end.' ],
+    'A', usImplementation,
+    [ 'unit U;', 'interface', 'uses A, B;', 'implementation', 'uses C;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestDirectiveInClauseIsRefused;
+begin
+  CheckRefused( [ 'unit U;', 'interface', 'implementation', 'uses A, {$IFDEF X} B, {$ENDIF} C;', 'end.' ],
+    'A', usImplementation );
+end;
+
+procedure TTestRemoveUsesEntry.TestMissingEntryIsRefused;
+begin
+  CheckRefused( [ 'unit U;', 'interface', 'implementation', 'uses A, B;', 'end.' ], 'Z', usImplementation );
+end;
+
+procedure TTestRemoveUsesEntry.TestCommentOutsideTheDeletionSurvives;
+begin
+  CheckRemoved( [ 'unit U;', 'interface', 'implementation', 'uses A, { keep } B;', 'end.' ],
+    'A', usImplementation,
+    [ 'unit U;', 'interface', 'implementation', 'uses { keep } B;', 'end.' ] );
+end;
+
+procedure TTestRemoveUsesEntry.TestCommentInsideTheDeletionIsRefused;
+begin
+  CheckRefused( [ 'unit U;', 'interface', 'implementation', 'uses A, { about B } B;', 'end.' ],
+    'B', usImplementation );
+end;
+
 initialization
   TDUnitX.RegisterTestFixture( TTestDecirculariserGraph );
   TDUnitX.RegisterTestFixture( TTestDecirculariserClassification );
   TDUnitX.RegisterTestFixture( TTestDecirculariserCandidates );
   TDUnitX.RegisterTestFixture( TTestDecirculariserReport );
+  TDUnitX.RegisterTestFixture( TTestDecirculariserDottedNames );
+  TDUnitX.RegisterTestFixture( TTestDecirculariserStartupCode );
+  TDUnitX.RegisterTestFixture( TTestRemoveUsesEntry );
 
 end.
