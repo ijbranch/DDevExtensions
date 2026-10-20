@@ -556,10 +556,10 @@ The practical rule: write `PathCompactorCore` in whatever Delphi 13 supports —
 
 ## 14. Changelog entry
 
-Match the house format in `CHANGELOG.md` (dated heading, bold lead sentence, trailing date and file list):
+Match the house format in `CHANGELOG.md`, which follows Keep a Changelog since 2026-10-21 (version heading, then a bold lead sentence, the date and the file list on each entry):
 
 ```markdown
-## 2026-XX-XX - vX.Y.Z - Library Path Compactor
+## [X.Y.Z] - 2026-XX-XX
 
 ### Added
 
