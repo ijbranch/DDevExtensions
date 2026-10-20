@@ -840,7 +840,7 @@ begin
 end;
 
 (*
-	<expression>  ::=  [ "+" | "-" | "not" | � ] <term> { [ "+" | "-" | "or" | "xor" ] <term> }*
+	<expression>  ::=  [ "+" | "-" | "not" ] <term> { [ "+" | "-" | "or" | "xor" ] <term> }*
 
   <term>  ::=  <factor> { [ "*" | "/" | "mod" | "and" ] <factor> }*
 
@@ -942,7 +942,7 @@ end;
 
   <B-term>  ::=  <B-not-factor> { "and" <B-not-factor> }*
 
-  <B-not-factor>  ::=  [ "not" | � ] <B-factor>
+  <B-not-factor>  ::=  [ "not" ] <B-factor>
 
   <relop>  ::=  "<" | "<=" | ">" | ">=" | "=" | "<>"
 

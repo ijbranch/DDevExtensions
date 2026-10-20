@@ -29,6 +29,19 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Fixed
 
+- **The 64-bit Debug build failed in `Hooking.pas`.** (2026-10-21) - `Shared/Hooking.pas`
+  In `GetStartCodeSize.Failed`, the `end;` closing `if IsDebuggerPresent then begin` sat inside the
+  Win32-only `{$ELSE}` branch, so Win64 Debug saw an unclosed block and failed with 30 errors from
+  line 1041 on.  Release builds compile out the whole `{$IFDEF DEBUG}` block, which is why the
+  installed plug-in was never affected.  The `end;` now follows `{$ENDIF CPUX64}`.
+- **A German message showed "wÃ¯Â¿Â½hrend" for "während".** (2026-10-21) -
+  `Source/DSUFeatures/DSUFeatures.pas`, `Shared/PascalParser/DelphiExpr.pas`
+  The DocInsight pass of `c44e26c` decoded these ANSI files as UTF-8 and wrote U+FFFD in place of
+  each byte it could not read.  `DSUFeatures.pas` had no BOM, so the compiler then read the UTF-8
+  bytes as ANSI.  The `ä` (cp1252 `E4`) is restored and the file gains its UTF-8 BOM.
+  In `DelphiExpr.pas` the lost character was a fourth, empty alternative in two grammar comments
+  ( `[ "+" | "-" | "not" | ? ]` ); the brackets already say "optional", and the parser accepts only
+  the three, so the alternative is dropped.
 - **The Shared units the plug-in compiles were building their Delphi 5 branches.** (2026-10-21) -
   `Shared/PascalParser/DelphiLexer.pas`, `Shared/PascalParser/DelphiParserContainers.pas`,
   `Shared/PascalParser/DelphiDesignerParser.pas`, `Shared/PascalParser/DelphiExpr.pas`, `Shared/FileStreams.pas`,

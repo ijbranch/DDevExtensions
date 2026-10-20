@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -52,7 +52,7 @@ const
   // English
   sConfirmCloseAllAndKillException_Eng = 'An exception occured while quitting. Do you want to kill Delphi/BCB now?';
   // German
-  sConfirmCloseAllAndKillException_Ger = 'Es trat eine Exception w�hrend des Beendens auf. Soll der Prozess Delphi/BCB trotzdem beendet werden?';
+  sConfirmCloseAllAndKillException_Ger = 'Es trat eine Exception während des Beendens auf. Soll der Prozess Delphi/BCB trotzdem beendet werden?';
   (* PrY - French Translation by Pierre Y. / pierre@levosgien.net *)
   sConfirmCloseAllAndKillException_Fre = 'Une erreur s''est produite pendant la fermeture de Delphi/BCB. Voulez-vous terminer le processus?';
   (* /PrY *)

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* (C) 2006-2013 Andreas Hausladen                                            *}
 {*                                                                            *}
@@ -1027,8 +1027,8 @@ var
           int 3
           call [P]
         end;
-      end;
         {$ENDIF CPUX64}
+      end;
       {$ENDIF DEBUG}
       {$IF CompilerVersion >= 20.0}
       raise Exception.CreateFmt('Cannot handle opcode %.2x %.2x %.2x %.2x', [P[0], P[1], P[2], P[3]]);
