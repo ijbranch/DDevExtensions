@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* Delphi Expression Parser                                                   *}
 {*                                                                            *}
@@ -220,7 +220,9 @@ type
     procedure ErrorMsg(const Msg: string; const Args: array of const; Token: TToken); virtual;
     procedure Error(const Msg: string);
   private
-    function NextCache: TToken; {$IFDEF COMPILER10_UP} inline; {$ENDIF}
+    /// <summary>Returns the next token of the expression, from the look-ahead cache when it holds one.</summary>
+    /// <returns>The next token, or nil at the end of the expression.</returns>
+    function NextCache: TToken; inline;
     procedure Next;
     procedure Rescan(Token: TToken);
     function Match(const Tokens: array of TTokenKind): Boolean; overload;

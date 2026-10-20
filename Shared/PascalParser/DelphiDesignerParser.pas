@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* Delphi Designer Parser                                                     *}
 {*                                                                            *}
@@ -19,7 +19,6 @@ unit DelphiDesignerParser;
 /// TDelphiPreprocessor / TDelphiLexer.
 /// </summary>
 
-{$I DelphiParser.inc}
 
 interface
 
@@ -452,6 +451,11 @@ type
     function ParseQualifiedName: string;
     procedure ParseHead;
   protected
+    /// <summary>
+    /// Defines the symbols the parsed source sees: <c>CONDITIONALEXPRESSION</c>, this compiler's
+    /// <c>VERxxx</c>, and <c>MSWINDOWS</c> / <c>UNICODE</c> where they apply.  Override to add more.
+    /// </summary>
+    /// <param name="Parser">The preprocessor that will run over the source.</param>
     procedure InitDefines(Parser: TDelphiPreprocessor); virtual;
   public
     constructor Create(const AFilename: string; const AText: UTF8String);
@@ -1097,23 +1101,17 @@ end;
 
 procedure TDesignerParser.InitDefines(Parser: TDelphiPreprocessor);
 begin
-  {$IFDEF COMPILER6_UP}
-  p.Define('CONDITIONALEXPRESSION');
-  if CompilerVersion = 18.5 then
-     p.Define('VER180'); // Delphi 2007 defines both
-  p.Define('VER' + IntToStr(Trunc(CompilerVersion * 10)));
-  {$ELSE}
-  p.Define('VER130'); // Delphi 5
-  {$ENDIF COMPILER6_UP}
+  Parser.Define('CONDITIONALEXPRESSION');
+  Parser.Define('VER' + IntToStr(Trunc(CompilerVersion * 10)));
 
   {$IFDEF MSWINDOWS}
-  p.Define('MSWINDOWS');
+  Parser.Define('MSWINDOWS');
   {$ENDIF MSWINDOWS}
   {$IFDEF LINUX}
-  p.Define('LINUX');
+  Parser.Define('LINUX');
   {$ENDIF LINUX}
   {$IFDEF UNICODE}
-  p.Define('UNICODE');
+  Parser.Define('UNICODE');
   {$ENDIF UNICODE}
 end;
 

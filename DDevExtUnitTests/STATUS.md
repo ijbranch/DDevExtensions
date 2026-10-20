@@ -132,10 +132,10 @@ Opens VCL GUI showing:
 ---
 
 ## Known Issues
-One red test of 191: `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive`.  The Shared
-parser units test `COMPILER6_UP` and friends, which nothing defines for them (`DelphiParser.inc`
-is empty); the retired console project defined them itself and hid it.  See
-`../UnitTestCoverage-Plan.md`.
+None open.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` was red from 2026-10-21
+until the same day's fix: the Shared units tested `COMPILER6_UP` and friends, which nothing defined
+for them (`DelphiParser.inc` was empty), so they compiled their Delphi 5 branches.  The conditionals
+are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.
 
 `UsesClauseManagerCore` carries one deliberate characterisation test,
 `TestDuplicateUnitNameCurrentlyRaises`, which pins a known defect rather than endorsing it:

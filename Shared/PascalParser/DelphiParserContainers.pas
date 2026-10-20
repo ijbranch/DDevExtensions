@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* Container classes                                                          *}
 {*                                                                            *}
@@ -131,11 +131,7 @@ begin
   FItems := THashtableStringList.Create;
   FItems.Sorted := True;
   FItems.Duplicates := dupError;
-  {$IFDEF COMPILER6_UP}
   FItems.CaseSensitive := CaseSensitive;
-  {$ELSE}
-  Assert(CaseSensitive = False, 'TStringList has no CaseSensitive property in Delphi 5');
-  {$ENDIF COMPILER6_UP}
 end;
 
 destructor THashtable.Destroy;

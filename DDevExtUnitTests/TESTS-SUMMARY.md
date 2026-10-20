@@ -12,7 +12,7 @@
 - **TestMethodSeparatorsCoreDUnitX.pas** - 24 cases (`MethodSeparatorsCore`)
 - **TestDelphiLexerDUnitX.pas** - 9, **TestDelphiParserContainersDUnitX.pas** - 5, **TestDelphiExprDUnitX.pas** - 5,
   **TestDelphiPreprocDUnitX.pas** - 4, **TestUnitMetricsDUnitX.pas** - 4 (ported 2026-10-21 from the retired console runner)
-- **191 tests in total**, 190 passing; `TestHashtableCaseSensitive` is red (missing `COMPILERx_UP` defines, see `STATUS.md`)
+- **191 tests in total**, all passing (`TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)

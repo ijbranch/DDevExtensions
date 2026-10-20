@@ -19,8 +19,8 @@ VCL and the IDE so they can be tested outside it.
 | | **Total** | **191** |
 
 The hand-rolled console runner `DDevExtUnitTests.dpr` was retired on 2026-10-21; its checks live on in the
-DUnitX fixtures above.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` is red until the
-missing `COMPILERx_UP` defines in the Shared parser units are fixed (see `../UnitTestCoverage-Plan.md`).
+DUnitX fixtures above.  All 191 pass; `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive`, red
+when first converted, exposed the missing `COMPILERx_UP` defines, since resolved (see `../UnitTestCoverage-Plan.md`).
 
 The rest of this document describes the DFM parser suite specifically.
 

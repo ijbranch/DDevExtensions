@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* Delphi Lexer                                                               *}
 {*                                                                            *}
@@ -16,15 +16,8 @@ unit DelphiLexer;
 /// Delphi versions.
 /// </summary>
 
-{$I DelphiParser.inc}
-
-{$IFDEF COMPILER12_UP}
-  {$STRINGCHECKS OFF}
-{$ENDIF COMPILER12_UP}
-
-{$IFDEF COMPILER10_UP}
-  {$DEFINE SUPPORTS_INLINE}
-{$ENDIF}
+{$STRINGCHECKS OFF}
+{$DEFINE SUPPORTS_INLINE}
 
 interface
 
@@ -391,6 +384,9 @@ type
     procedure ReadBOM;
     procedure FillBuffer;
     function GetEof: Boolean;
+    /// <summary>Decodes Data according to the BOM found by ReadBOM: ANSI, UTF-8, UTF-16 (either byte order) or UCS-4.</summary>
+    /// <param name="Data">Raw bytes read after the BOM.</param>
+    /// <returns>The decoded text; empty when Data is nil.</returns>
     function DataToString(const Data: TBytes): string;
     function DataToUtf8String(const Data: TBytes): UTF8String;
     function InternReadAll: TBytes;
@@ -648,11 +644,7 @@ var
   C: array[0..2] of WideChar;
 begin
   Utf8ToUnicode(@C, Length(C), P, UTF8CharSize(P[Index]));
-  {$IF CompilerVersion >= 25.0}
   Result := C[0].IsLetter;
-  {$ELSE}
-  Result := Character.IsLetter(C[0]);
-  {$IFEND}
 end;
 
 function IsUtf8LetterOrDigit(P: PUTF8Char; Index: Integer): Boolean;
@@ -660,11 +652,7 @@ var
   C: array[0..2] of WideChar;
 begin
   Utf8ToUnicode(@C, Length(C), P, UTF8CharSize(P[Index]));
-  {$IF CompilerVersion >= 25.0}
   Result := C[0].IsLetterOrDigit;
-  {$ELSE}
-  Result := Character.IsLetterOrDigit(C[0]);
-  {$IFEND}
 end;
 {$ENDIF UNICODE}
 
@@ -750,10 +738,8 @@ function TTextFileReader.DataToString(const Data: TBytes): string;
 
 var
   A: AnsiString;
-  {$IFDEF COMPILER6_UP}
   W: UnicodeString;
   UCS4: UCS4String;
-  {$ENDIF COMPILER6_UP}
 begin
   Result := '';
   if Data = nil then
@@ -764,11 +750,10 @@ begin
         SetString(A, PAnsiChar(@Data[0]), Length(Data));
         Result := string(A);
       end;
-    {$IFDEF COMPILER6_UP}
     bomUtf8:
       begin
         SetString(A, PAnsiChar(@Data[0]), Length(Data));
-        Result := Utf8ToAnsi(A);
+        Result := UTF8ToString(A); // Utf8ToAnsi would drop every character outside the ANSI code page
       end;
     bomUcs2BE:
       begin
@@ -789,7 +774,6 @@ begin
         Move(UCS4[0], Data[0], Length(Data));
         Result := UCS4StringToWideString(UCS4);
       end;
-    {$ENDIF COMPILER6_UP}
   end;
 end;
 

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -111,11 +111,9 @@ type
     /// <summary>Truncates the stream to NewSize using either the IDE routines or SetEndOfFile.</summary>
     /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Int64 overload of SetSize for Delphi 6+.</summary>
     /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
   public
     /// <summary>Wraps an existing handle. Ownership is not transferred.</summary>
     /// <param name="AHandle">Open file handle.</param>
@@ -126,13 +124,8 @@ type
     function Read(var Buffer; Count: Integer): Integer; override;
     /// <summary>Writes up to Count bytes to the underlying handle.</summary>
     function Write(const Buffer; Count: Integer): Integer; override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Seeks within the underlying handle (Delphi 6+ Int64 overload).</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
-    /// <summary>Seeks within the underlying handle (legacy Longint overload).</summary>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
 
     /// <summary>Underlying file handle.</summary>
     property Handle: THandle read FHandle;
@@ -159,10 +152,8 @@ type
   protected
     /// <summary>Flushes pending writes and resizes the wrapped stream.</summary>
     procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Int64 overload of SetSize.</summary>
     procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
   public
     /// <summary>Wraps a file handle behind a fresh TOrgStream.</summary>
     /// <param name="AHandle">Open file handle.</param>
@@ -178,13 +169,11 @@ type
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Buffers Count bytes; flushes automatically when the buffer fills up.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Seeks within the wrapped stream, flushing the buffer as needed.</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
-    /// <summary>Seeks within the wrapped stream (legacy overload).</summary>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
     /// <summary>Writes any buffered bytes to the wrapped stream and resets the buffer.</summary>
     procedure Flush;
 
@@ -218,10 +207,8 @@ type
   protected
     /// <summary>Always raises; injecting streams are read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Always raises; injecting streams are read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates the stream and decodes the BOM, transcoding the file payload when necessary.</summary>
     /// <param name="AHandle">Open file handle.</param>
@@ -232,13 +219,8 @@ type
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Seeks within the combined view of inject buffer and underlying file.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
-    /// <summary>Seeks within the combined view (legacy overload).</summary>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
 
     /// <summary>Length of the UTF-8 conversion result when the source had a UCS2/UCS4 BOM.</summary>
     property UtfConversionSize: Integer read FUtfConversionSize;
@@ -259,10 +241,8 @@ type
   protected
     /// <summary>Always raises; reader streams are read-only.</summary>
     procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Always raises; reader streams are read-only.</summary>
     procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
   public
     /// <summary>Custom allocator that uses GetMem for direct instances to avoid GetMemoryManager overhead.</summary>
     class function NewInstance: TObject; override;
@@ -277,13 +257,8 @@ type
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Always raises EAbort; the stream is read-only.</summary>
     function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
     /// <summary>Adjusts the reader's position within the cache.</summary>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
-    /// <summary>Adjusts the reader's position within the cache (legacy overload).</summary>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
 
     /// <summary>Owning cache.</summary>
     property FileCache: TFileCache read FFileCache;
@@ -661,19 +636,15 @@ begin
   FCalcBufStart := True;
 end;
 
-{$IFDEF COMPILER6_UP}
 function TBufferedWriteStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
-{$ELSE}
-function TBufferedWriteStream.Seek(Offset: Longint; Origin: Word): Longint;
-{$ENDIF COMPILER6_UP}
 var
   StreamPos: Int64;
 begin
   StreamPos := Stream.Position;
-  if (Origin = {$IFDEF COMPILER6_UP}soCurrent{$ELSE}soFromCurrent{$ENDIF}) and (Offset = 0) then
+  if (Origin = soCurrent) and (Offset = 0) then
     Result := StreamPos + FBufSize
   else
-  if (Origin = {$IFDEF COMPILER6_UP}soBeginning{$ELSE}soFromBeginning{$ENDIF}) and (Offset = StreamPos + FBufSize) then
+  if (Origin = soBeginning) and (Offset = StreamPos + FBufSize) then
     Result := StreamPos + FBufSize
   else
   begin
@@ -694,14 +665,12 @@ begin
   Stream.Size := NewSize;
 end;
 
-{$IFDEF COMPILER6_UP}
 procedure TBufferedWriteStream.SetSize(const NewSize: Int64);
 begin
   Flush;
   FCalcBufStart := True;
   Stream.Size := NewSize;
 end;
-{$ENDIF COMPILER6_UP}
 
 { TOrgStream }
 
@@ -714,16 +683,9 @@ end;
 
 procedure TOrgStream.SetSize(NewSize: Longint);
 begin
-  {$IFDEF COMPILER6_UP}
   SetSize(Int64(NewSize));
-  {$ELSE}
-  Seek(NewSize, soFromBeginning);
-  if FOrgStreamData = nil then
-    Win32Check(SetEndOfFile(FHandle));
-  {$ENDIF COMPILER6_UP}
 end;
 
-{$IFDEF COMPILER6_UP}
 procedure TOrgStream.SetSize(const NewSize: Int64);
 begin
   Seek(NewSize, soBeginning);
@@ -732,7 +694,6 @@ begin
     Win32Check(SetEndOfFile(FHandle));
     {$WARNINGS ON}
 end;
-{$ENDIF COMPILER6_UP}
 
 function TOrgStream.Read(var Buffer; Count: Integer): Integer;
 begin
@@ -768,11 +729,7 @@ begin
     Result := 0;
 end;
 
-{$IFDEF COMPILER6_UP}
 function TOrgStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
-{$ELSE}
-function TOrgStream.Seek(Offset: Longint; Origin: Word): Longint;
-{$ENDIF COMPILER6_UP}
 begin
   if FHandle <> INVALID_HANDLE_VALUE then
   begin
@@ -995,15 +952,7 @@ begin
   Inc(FVirtualPosition, Result);
 end;
 
-{$IFDEF COMPILER6_UP}
 function TInjectStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
-{$ELSE}
-function TInjectStream.Seek(Offset: Longint; Origin: Word): Longint;
-const
-  soEnd = soFromEnd;
-  soBeginning = soFromBeginning;
-  soCurrent = soFromCurrent;
-{$ENDIF COMPILER6_UP}
 var
   RelPosition: Int64;
   Len: Integer;
@@ -1070,12 +1019,10 @@ begin
   raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
 end;
 
-{$IFDEF COMPILER6_UP}
 procedure TInjectStream.SetSize(const NewSize: Int64);
 begin
   raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
 end;
-{$ENDIF COMPILER6_UP}
 
 { TFileCacheReaderStream }
 
@@ -1138,22 +1085,12 @@ begin
   raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
 end;
 
-{$IFDEF COMPILER6_UP}
 procedure TFileCacheReaderStream.SetSize(const NewSize: Int64);
 begin
   raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
 end;
-{$ENDIF COMPILER6_UP}
 
-{$IFDEF COMPILER6_UP}
 function TFileCacheReaderStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
-{$ELSE}
-function TFileCacheReaderStream.Seek(Offset: Longint; Origin: Word): Longint;
-const
-  soEnd = soFromEnd;
-  soBeginning = soFromBeginning;
-  soCurrent = soFromCurrent;
-{$ENDIF COMPILER6_UP}
 begin
   case Origin of
     soBeginning:

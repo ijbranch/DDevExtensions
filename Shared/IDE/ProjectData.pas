@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -536,11 +536,7 @@ begin
     FItems.AddObject(Name, TDataVariantItem.Create(Value));
     if not Loading then
     begin
-      {$IFDEF COMPILER6_UP}
       Project.MarkModified;
-      {$ELSE}
-      Project.ProjectOptions.ModifiedState := True;
-      {$ENDIF COMPILER6_UP}
     end;
   end
   else
@@ -551,11 +547,7 @@ begin
       TDataVariantItem(FItems.Objects[Index]).Value := Value;
       if not Loading then
       begin
-        {$IFDEF COMPILER6_UP}
         Project.MarkModified;
-        {$ELSE}
-        Project.ProjectOptions.ModifiedState := True;
-        {$ENDIF COMPILER6_UP}
       end;
     end;
   end;

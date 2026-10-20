@@ -4,6 +4,40 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-10-21 - Shared units: version conditionals resolved
+
+### Fixed
+
+- **The Shared units the plug-in compiles were building their Delphi 5 branches.** (2026-10-21) -
+  `Shared/PascalParser/DelphiLexer.pas`, `Shared/PascalParser/DelphiParserContainers.pas`,
+  `Shared/PascalParser/DelphiDesignerParser.pas`, `Shared/PascalParser/DelphiExpr.pas`, `Shared/FileStreams.pas`,
+  `Shared/IDE/ProjectData.pas`, `Shared/IDE/ProjectResource.pas`, `Shared/PascalParser/DelphiParser.inc` (removed)
+  They test `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP` / `COMPILER14_UP`, which only
+  `DelphiExtension.inc` defines, and they do not include it: two included `DelphiParser.inc`, which
+  was empty, and five included nothing.  Found by the DUnitX conversion
+  ( `TestHashtableCaseSensitive` ).  What it cost, and what changes now:
+  - `THashtable.Create( True, ... )` tripped a "no CaseSensitive in Delphi 5" assertion.  It is now
+    honoured.  Its one product caller ( `DelphiPreproc` ) passes False, so nothing it does changes.
+  - `TTextFileReader` read a **UTF-16 or UCS-4 file as empty**: the decoder for those BOMs was compiled
+    out.  UTF-8 files never went that way, which is why no feature looked broken.  They decode now, and
+    the UTF-8 branch it enables uses `UTF8ToString`, not the inherited `Utf8ToAnsi`, which would have
+    dropped every character outside the ANSI code page.
+  - `TDesignerParser` ( File Selector ) defined `VER130`, so it read every unit as Delphi 5 for
+    `{$IFDEF VERxxx}`.  It now defines `VER370` and `CONDITIONALEXPRESSION`, through its `Parser`
+    parameter rather than the field the parameter always equals.
+  - `FileStreams` overrode the deprecated `Longint` `Seek`, `ProjectData` marked the project modified
+    through `ProjectOptions.ModifiedState`, and the lexer and expression parser were never inlined.
+    Each now takes its modern branch.
+
+  **How:** the conditionals were resolved by a script with a small Pascal scanner ( so a `'{$ENDIF'`
+  inside a string is not a directive ), each symbol taken as defined, which every Delphi 6+ compiler
+  agrees on.  In the same pass a lone `{$IF CompilerVersion >= N}` with N up to 37 was resolved too;
+  that removed `ProjectResource`'s whole pre-XE2 half, which no supported compiler builds.  **Not
+  enabled, deliberately:** that half's `COMPILER9_UP` / `COMPILER14_UP` code links by name to
+  `@Ideservices@TOTAProjectResource@...`, an export the 32-bit Delphi 13 IDE has and the 64-bit one
+  does not.  `IDEUtils.pas` defines its own symbols correctly and is unchanged.  Suite: 191 of 191 pass;
+  both DLLs build clean.
+
 ## 2026-10-21 - v3.23.15 - Method Separators
 
 A faint line in the code editor above each top-level routine, type declaration and unit section.  The
