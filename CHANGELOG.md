@@ -4,6 +4,68 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ---
 
+## 2026-10-21 - v3.23.15 - Method Separators
+
+A faint line in the code editor above each top-level routine, type declaration and unit section.  The
+idea comes from **Tulip Method Separators by Samer Assil** (MIT licence,
+https://github.com/SamerAssil/Tulip_Method_Separators); this is an independent implementation, and no
+Tulip source is included.  The credit is recorded in each unit header, on the options page, in
+`README.md` and in `Help.md`.
+
+### Added
+
+- **Method Separators.** (2026-10-21) - `Source/MethodSeparators/MethodSeparatorsCore.pas`,
+  `Source/MethodSeparators/MethodSeparators.pas`, `Source/MethodSeparators/FrmeOptionPageMethodSeparators.pas`,
+  `Source/MethodSeparators/FrmeOptionPageMethodSeparators.dfm`, `Source/RegisterPlugins.pas`,
+  `Source/DelphiExtension.inc`, `D_D130/DDevExtensions.dpr`, `D_D130/DDevExtensions.dproj`
+  Separates procedures, functions, constructors, destructors and operators ( class methods included,
+  nested routines and anonymous methods not ), class / record / object / interface declarations that
+  have a body, and `initialization`, `finalization` and a program's main block - by default in the
+  implementation section only.  The line sits above any comment, directive or attribute lines stacked
+  directly on the block, so a DocInsight block stays with its routine.  Options page: **Active** check box,
+  the three kinds of block, line style ( dotted, dashed, solid ) and a custom colour; the automatic colour
+  is derived from the editor background ( darker on a light theme, lighter on a dark one ), and a custom
+  colour too close to the background is replaced by it.  New `INCLUDE_METHODSEPARATORS` define, limited to
+  Delphi 13+ because only the `D_D130` project lists the units; `MethodSeparators` in
+  `DDevExtensions.DisabledFeatures` turns it off.
+
+  **Why the design is shaped this way:** the analysis is an RTL + `DelphiLexer` unit with no ToolsAPI, so
+  every rule is a unit test; the IDE half only reads buffers, caches and paints.  The notifier implements
+  `INTACodeEditorEvents` alone with no overloaded methods - the overloaded multi-interface notifier
+  behind the Win64 `TIDENotifier` crash ( v3.17.6 ) is the shape deliberately avoided - and is registered
+  on both IDEs, unregistered symmetrically, and detached before removal so a late IDE call cannot reach
+  a freed configuration.  A buffer is read at most once per paint cycle and per 250 ms, and rescanned
+  only when its text changed; a check that comes too soon is deferred to a repaint 300 ms later rather
+  than dropped, so the last keystroke of a burst is never left with stale separators.
+
+- **24 unit tests for the separator scan, colour rules and paint throttle.** (2026-10-21) -
+  `DDevExtUnitTests/TestMethodSeparatorsCoreDUnitX.pas` (new), `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+  Mutation-proved: disabling the comment climb, the generic `record`-constraint check, the `{$ELSE}`
+  alternative-header merge and the throttle's boundary each turned exactly the test written for it red.
+
+### Fixed
+
+- **Alternative routine headers under `{$IFDEF}` / `{$ELSE}` swallowed the routine after them.** (2026-10-21) -
+  `Source/MethodSeparators/MethodSeparatorsCore.pas`
+  Found while writing the edge-case tests, before release: the second header was taken for a nested
+  routine of the first, so the scan consumed the next top-level routine as its body and that routine lost
+  its separator.  Headers separated by `{$ELSE}` / `{$ELSEIF}` are now skipped as one.
+
+### Changed
+
+- **Version 3.23.15.** (2026-10-21) - `Source/version.inc`, `version.h`, `version.bat`, `Version.res`,
+  `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`, `README.md`
+
+- **`DDevExtensions_Map.html` lists Method Separators and the Decirculariser.** (2026-10-21) -
+  `DDevExtensions_Map.html`
+  A summary row and a component entry for each, with line counts, and the totals recounted the way the
+  page's own instructions say ( 164 Pascal files, 97,049 lines ).
+
+- **Ideas credited in `README.md`.** (2026-10-21) - `README.md`
+  A new "Ideas credited" table beside "Third-party code included" names the projects whose idea a feature
+  re-implements: Tulip Method Separators ( Samer Assil, MIT ) and VSoft.ExternalModDetector ( VSoft
+  Technologies, Apache 2.0 ), whose credit had been only in `ExternalModMonitor.pas`'s header.
+
 ## 2026-10-19 - The Decirculariser in the IDE
 
 The analysis core of 2026-09-17 gets its IDE plugin, as agreed then: a findings window that ranks the

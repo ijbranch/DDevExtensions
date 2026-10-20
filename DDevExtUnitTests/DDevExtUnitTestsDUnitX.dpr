@@ -65,7 +65,9 @@ uses
   DelphiLexer in '..\Shared\PascalParser\DelphiLexer.pas',
   TestUsesClauseManagerCoreDUnitX in 'TestUsesClauseManagerCoreDUnitX.pas',
   DecirculariserCore in '..\Code\DDevExtensions\Source\Decirculariser\DecirculariserCore.pas',
-  TestDecirculariserCoreDUnitX in 'TestDecirculariserCoreDUnitX.pas';
+  TestDecirculariserCoreDUnitX in 'TestDecirculariserCoreDUnitX.pas',
+  MethodSeparatorsCore in '..\Code\DDevExtensions\Source\MethodSeparators\MethodSeparatorsCore.pas',
+  TestMethodSeparatorsCoreDUnitX in 'TestMethodSeparatorsCoreDUnitX.pas';
 
 {$R *.res}
 

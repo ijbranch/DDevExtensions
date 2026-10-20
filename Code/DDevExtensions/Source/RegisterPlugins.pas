@@ -94,6 +94,9 @@ uses
   {$IFDEF INCLUDE_EXTERNALMODMONITOR}
   ExternalModMonitor,
   {$ENDIF INCLUDE_EXTERNALMODMONITOR}
+  {$IFDEF INCLUDE_METHODSEPARATORS}
+  MethodSeparators,
+  {$ENDIF INCLUDE_METHODSEPARATORS}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
   CodeInsightHandling;
 
@@ -268,6 +271,11 @@ begin
     {$IFDEF INCLUDE_EXTERNALMODMONITOR}
     if DisabledPlugins.IndexOf('ExternalModMonitor') = -1 then
       RegisterLateLoader(ExternalModMonitor.InitPlugin);
+    {$ENDIF}
+
+    {$IFDEF INCLUDE_METHODSEPARATORS}
+    if DisabledPlugins.IndexOf('MethodSeparators') = -1 then
+      RegisterLateLoader(MethodSeparators.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}

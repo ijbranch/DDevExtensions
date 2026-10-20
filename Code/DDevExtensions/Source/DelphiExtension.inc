@@ -64,6 +64,7 @@
 {$DEFINE INCLUDE_PATHCOMPACTOR}
 {$DEFINE INCLUDE_PROJECTGROUPSORTER}
 {$DEFINE INCLUDE_EXTERNALMODMONITOR}
+{$DEFINE INCLUDE_METHODSEPARATORS}
 
 {------------------------------------------------------------------------------}
 // dependencies
@@ -83,6 +84,10 @@
 
 {$IF CompilerVersion > 23.0} // XE2+
   {$UNDEF INCLUDE_STARTPARAMETERTEAM} // XE2's StartParameter are configuration-aware
+{$IFEND}
+
+{$IF CompilerVersion < 37.0} // Delphi 13+: only the D_D130 project lists the MethodSeparators units
+  {$UNDEF INCLUDE_METHODSEPARATORS}
 {$IFEND}
 
 {------------------------------------------------------------------------------}

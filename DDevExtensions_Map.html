@@ -24,7 +24,7 @@ COMPONENTS INCLUDED:
     Uses Clause Manager, TODO Aggregator, Empty Event Handler Detector,
     DFM/PAS Consistency, Compile Progress, Editor Enhancements, Form Designer,
     Project Settings, Start Parameter Manager, Component Selector, DSU Features,
-    Keybindings, File Selector, Installer
+    Keybindings, File Selector, Decirculariser, Method Separators, Installer
 
   Shared Libraries:
     PascalParser, IDE Utilities, XML Utilities, General Utilities
@@ -847,8 +847,10 @@ TOTAL LINES OF CODE: 91,941
         <tr><td><strong>Uses Clause Manager</strong></td><td>Optimize uses clauses</td><td>Analysis</td><td>2,302</td></tr>
         <tr><td><strong>Editor Features</strong></td><td>Code editing enhancements</td><td>Editor</td><td>2,196</td></tr>
         <tr><td><strong>File Selector</strong></td><td>File selection dialogs</td><td>UI</td><td>2,152</td></tr>
+        <tr><td><strong>Decirculariser</strong></td><td>Rank and break circular unit references</td><td>Analysis</td><td>2,039</td></tr>
         <tr><td><strong>Unreachable Code</strong></td><td>Dead path detection</td><td>Analysis</td><td>1,815</td></tr>
         <tr><td><strong>Code Quality Analyzer</strong></td><td>Quality checks</td><td>Analysis</td><td>1,636</td></tr>
+        <tr><td><strong>Method Separators</strong></td><td>Editor lines between methods (idea: Tulip Method Separators, Samer Assil)</td><td>Editor</td><td>1,577</td></tr>
         <tr><td><strong>Dead Code Detector</strong></td><td>Unused code finder</td><td>Analysis</td><td>1,555</td></tr>
         <tr><td><strong>Keybindings</strong></td><td>Keyboard shortcuts</td><td>Editor</td><td>1,480</td></tr>
         <tr><td><strong>Unused Unit Detector</strong></td><td>Uses clause cleanup</td><td>Analysis</td><td>1,458</td></tr>
@@ -869,8 +871,8 @@ TOTAL LINES OF CODE: 91,941
         <tr><th>Specification</th><th>Value</th></tr>
         <tr><td>Type</td><td>IDE Expert (DLL Plugin)</td></tr>
         <tr><td>Supported IDEs</td><td>Delphi 10.2 Tokyo through 13.0 Florence</td></tr>
-        <tr><td>Total Lines of Code</td><td>91,941</td></tr>
-        <tr><td>Total Pascal Files</td><td>156</td></tr>
+        <tr><td>Total Lines of Code</td><td>97,049</td></tr>
+        <tr><td>Total Pascal Files</td><td>164</td></tr>
         <tr><td>Output Files</td><td>DDevExtensions.dll, CompileInterceptorW.dll, DDevExtensionsReg.exe</td></tr>
         <tr><td>Configuration</td><td>XML files in %APPDATA%\DDevExtensions\</td></tr>
     </table>
@@ -1015,6 +1017,20 @@ TOTAL LINES OF CODE: 91,941
                 features: ['Directory watching', 'Auto-refresh', 'Conflict prompt'],
                 dependencies: ['IDE Utilities'],
                 linesOfCode: 726
+            },
+            'MethodSeparators': {
+                category: 'Editor',
+                description: 'Draws a faint line in the code editor above each top-level routine, type declaration and unit section, through INTACodeEditorEvents. Idea from Tulip Method Separators by Samer Assil (MIT); independent implementation.',
+                features: ['Lexer-based block detection', 'DocInsight comments stay below the line', 'Theme-aware colour', 'Throttled per-file cache'],
+                dependencies: ['Pascal Parser', 'IDE Utilities'],
+                linesOfCode: 1577
+            },
+            'Decirculariser': {
+                category: 'Code Analysis',
+                description: 'Ranks the project\'s circular unit references by risk and removes dead uses entries, the one fix it makes by itself.',
+                features: ['Cycle detection', 'Risk ranking', 'Per-edge symbol attribution', 'Dead-entry removal'],
+                dependencies: ['Pascal Parser', 'IDE Utilities'],
+                linesOfCode: 2039
             },
             'UsesClauseManager': {
                 category: 'Code Analysis',

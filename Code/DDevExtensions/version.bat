@@ -1,3 +1,3 @@
 @SET majorversion=3
-@SET minorversion=22
+@SET minorversion=23
 @SET releaseversion=15

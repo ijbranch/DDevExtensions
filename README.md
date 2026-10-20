@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.23.15 adds **Method Separators**: a faint dotted, dashed or solid line in the code editor above each top-level routine, type declaration and unit section, with a colour that follows the editor theme.  The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil; this is an independent implementation built on DDevExtensions' own Pascal lexer, with its analysis in an RTL-only `MethodSeparatorsCore` covered by 24 unit tests.  Options > DDevExtensions > Method Separators turns it on or off.  Delphi 13 only.
+
 Version 3.22.15 fixes the IDE Path Compactor's **"Expanded after"** summary column, which was reporting a count of surviving entries rather than a character length: the local it measured was declared but never assigned, so every entry contributed 1. It now measures exactly as the "before" column does, less the entries being dropped. The same release extracts the Uses Clause Manager's analysis into an RTL-only `UsesClauseManagerCore` - matching `PathCompactorCore` and `ProjectGroupSorterCore` - and gives that feature its first 26 unit tests. The extraction is behaviour-preserving and the plugin's published interface is unchanged.
 
 Version 3.22.14 removes the **directory-junction** feature from the IDE Path Compactor. A junction was the only measure that shortened the *expanded* path, but it was also the only permanent, machine-wide change the tool made - and it failed silently: when a library it pointed at was later updated into a new folder, the link kept resolving to the old install and everything compiled against stale files with no error. The safeguards built around it all depended on someone remembering why they existed. Macro substitution remains, and has the same exposure but fails visibly, because the variable is right there in the path list.
@@ -231,6 +233,16 @@ they are dormant, and the product does not need the libraries:
 covered by the **Mozilla Public License 1.1**, as its file header records. Initial developer Petr
 Vones; see the header for the full contributor list. The code is vendored, not linked - the JCL
 itself is not required to build or run DDevExtensions.
+
+### Ideas credited
+
+Some features re-implement an idea first published by another project.  No source from these
+projects is included; the credit is for the idea.
+
+| Feature | Inspired by | Author | Licence |
+|---|---|---|---|
+| Method Separators | [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) | Samer Assil | MIT |
+| External Mod Monitor | [VSoft.ExternalModDetector](https://github.com/VSoftTechnologies/VSoft.ExternalModDetector) | VSoft Technologies | Apache 2.0 |
 
 
 ## How to install
@@ -567,6 +579,9 @@ Prevents the IDE's source formatter from being triggered accidentally. Useful if
 
 **Editor tab double click action** (default: zoom)
 Configures what happens when you double-click an editor tab. Options include zooming the editor to full screen or super-zoom mode for distraction-free coding.
+
+**Method Separators** (default: on, Delphi 13+) - **New in 3.23.15**
+Draws a faint line above each top-level routine, class / record / interface declaration and `initialization` / `finalization` section, so long units are easier to scan.  Documentation comments directly above a routine stay below its line.  Line style, a custom colour and the kinds of block separated are set in Options > DDevExtensions > Method Separators.  Idea from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil.
 
 **Structure View Search** (default: no hotkey)
 Adds a search box to the Structure View panel, allowing you to quickly filter and find methods, properties, and other elements in large units. Assign a hotkey for quick access.
@@ -907,4 +922,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.22.15 – 17 September 2026*
+*Version: 3.23.15 – 21 October 2026*

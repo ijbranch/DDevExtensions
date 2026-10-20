@@ -44,6 +44,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 | IDE Path Sorter | ON | Tools menu (below Build Tools...) |
 | Sort Projects in Group | ON | Tools menu (below IDE Path Sorter) |
 | IDE Path Compactor | ON | Tools menu (below IDE Path Sorter) |
+| Method Separators | ON | Automatic (Options to configure) |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -83,7 +84,7 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 
 > **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
-All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, etc. — run on the 64-bit host.
+All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, Method Separators, etc. — run on the 64-bit host.
 
 **Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
 
@@ -2021,6 +2022,50 @@ Every affected value is backed up before anything is written, into the **same hi
 Apply is refused while the IDE's own Tools > Options dialog is open: that page holds its own in-memory copy of the library path and would write it back over your changes when committed.
 
 An IDE restart is required after Apply. The running IDE captured its environment block at launch and will not see new variables until it restarts.
+
+### Method Separators (New in 3.23.15)
+
+**Purpose:** Draws a faint horizontal line in the code editor above each top-level routine, so long units are easier to scan.
+
+**Default:** ON
+
+**Location:** Options > DDevExtensions > Method Separators
+
+**Credit:** The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil (MIT licence).  This is an independent implementation built on DDevExtensions' own Pascal lexer; no Tulip source is included.
+
+#### How It Works
+
+The line is drawn across the top edge of the first line of each block.  When comments, compiler directives or attributes sit directly above a routine (no blank line between), the separator moves up above them, so a DocInsight block stays with the routine it documents.  A comment trailing code on the line above is not counted.
+
+Separated by default, in the implementation section only:
+
+- Procedures, functions, constructors, destructors and operators, including `class` methods.  Nested routines and anonymous methods are not separated.
+- Class, record, object and interface declarations that have a body.  Forward declarations (`TFoo = class;`), short declarations (`EOops = class( Exception );`) and `class of` types are not.
+- `initialization`, `finalization`, and a program's main `begin` block.
+
+Alternative headers for one routine under `{$IFDEF}` / `{$ELSE}` count as one routine.  Only `.pas`, `.dpr` and `.dpk` files are marked; include files are not.
+
+The editor buffer is read at most once per paint cycle and at most four times a second, and is rescanned only when its text has changed.  Typing, pasting and undo all update the lines within about a third of a second.
+
+#### Options
+
+- **Active**: Shows or hides the separators.  Takes effect immediately; no IDE restart.
+- **Separate class, record and interface declarations**: Default on.
+- **Separate initialization, finalization and main program block**: Default on.
+- **Also separate declarations in the interface section**: Default off.  When on, types and standalone routine declarations in the interface section are separated; the methods declared inside a class are not.
+- **Line style**: Dotted (default), dashed or solid.
+- **Custom colour**: By default the colour is derived from the editor background: darker on a light theme, lighter on a dark one.  A custom colour too close to the background to be seen is replaced by the automatic colour.
+
+#### Can Be Disabled Via
+
+- Options checkbox (persisted in configuration XML)
+- Environment variable: `DDevExtensions.DisabledFeatures=MethodSeparators`
+
+#### Requirements
+
+Delphi 13 or later (the `D_D130` project).  Drawn through the IDE's code-editor paint notifier (`INTACodeEditorEvents`), in the 32-bit and 64-bit IDE alike.
+
+---
 
 ### Release Compiler Unit Cache
 
