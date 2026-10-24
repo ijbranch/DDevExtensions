@@ -8,7 +8,7 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Changed
 
-- **The DUnitX runner follows the estate command-line and exit-code contract.** (2026-10-21) -
+- (2026-10-21) **The DUnitX runner follows the estate command-line and exit-code contract.** -
   `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/README.md`,
   `DDevExtUnitTests/DUNITX-SETUP.md`, `.gitignore`
   It never called `TDUnitX.CheckCommandLine`, so it ignored the result-XML path `test_run` passes,
@@ -19,7 +19,7 @@ This file is the sole source and record of all project changes for DDevExtension
   The suite is registered with `test_run` as `DDevExtUnitTestsDUnitX` ( GITLAKMCP `settings.ini`,
   Target73 ), so `verify_change` runs it.  `DUNITX-SETUP.md` no longer shows `-console`, which was
   never an option and now fails the run.
-- **This file follows Keep a Changelog.** (2026-10-21) - `CHANGELOG.md`
+- (2026-10-21) **This file follows Keep a Changelog.** - `CHANGELOG.md`
   It used its own dated sections, which `verify_change` fails on every commit.  Each versioned section
   is now `## [X.Y.Z] - date`; an unversioned one joins the release above it, the one it shipped in, and
   the newest, still unreleased, opens `## [Unreleased]`.  Variant headings ( "Fixed - correctness",
@@ -27,7 +27,7 @@ This file is the sole source and record of all project changes for DDevExtension
   blocks become labelled paragraphs, as they record no change.  Sections with no categories become one
   entry each, filed by their title.  A script moved the text and proved every old content line is still
   present, the same number of times; nothing was reworded.
-- **Method Separators is listed in the Delphi 11 and 12 projects, untested.** (2026-10-21) -
+- (2026-10-21) **Method Separators is listed in the Delphi 11 and 12 projects, untested.** -
   `Source/DelphiExtension.inc`, `D_D110/DDevExtensions.dpr`, `D_D110/DDevExtensions.dproj`,
   `D_D120/DDevExtensions.dpr`, `D_D120/DDevExtensions.dproj`, `README.md`, `Help.md`
   Ian, 2026-10-21: keep the older projects and give them the feature, though no machine here can build
@@ -40,12 +40,12 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Fixed
 
-- **The 64-bit Debug build failed in `Hooking.pas`.** (2026-10-21) - `Shared/Hooking.pas`
+- (2026-10-21) **The 64-bit Debug build failed in `Hooking.pas`.** - `Shared/Hooking.pas`
   In `GetStartCodeSize.Failed`, the `end;` closing `if IsDebuggerPresent then begin` sat inside the
   Win32-only `{$ELSE}` branch, so Win64 Debug saw an unclosed block and failed with 30 errors from
   line 1041 on.  Release builds compile out the whole `{$IFDEF DEBUG}` block, which is why the
   installed plug-in was never affected.  The `end;` now follows `{$ENDIF CPUX64}`.
-- **A German message showed "wÃ¯Â¿Â½hrend" for "während".** (2026-10-21) -
+- (2026-10-21) **A German message showed "wÃ¯Â¿Â½hrend" for "während".** -
   `Source/DSUFeatures/DSUFeatures.pas`, `Shared/PascalParser/DelphiExpr.pas`
   The DocInsight pass of `c44e26c` decoded these ANSI files as UTF-8 and wrote U+FFFD in place of
   each byte it could not read.  `DSUFeatures.pas` had no BOM, so the compiler then read the UTF-8
@@ -53,7 +53,7 @@ This file is the sole source and record of all project changes for DDevExtension
   In `DelphiExpr.pas` the lost character was a fourth, empty alternative in two grammar comments
   ( `[ "+" | "-" | "not" | ? ]` ); the brackets already say "optional", and the parser accepts only
   the three, so the alternative is dropped.
-- **The Shared units the plug-in compiles were building their Delphi 5 branches.** (2026-10-21) -
+- (2026-10-21) **The Shared units the plug-in compiles were building their Delphi 5 branches.** -
   `Shared/PascalParser/DelphiLexer.pas`, `Shared/PascalParser/DelphiParserContainers.pas`,
   `Shared/PascalParser/DelphiDesignerParser.pas`, `Shared/PascalParser/DelphiExpr.pas`, `Shared/FileStreams.pas`,
   `Shared/IDE/ProjectData.pas`, `Shared/IDE/ProjectResource.pas`, `Shared/PascalParser/DelphiParser.inc` (removed)
@@ -119,7 +119,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
 
 ### Added
 
-- **Method Separators.** (2026-10-21) - `Source/MethodSeparators/MethodSeparatorsCore.pas`,
+- (2026-10-21) **Method Separators.** - `Source/MethodSeparators/MethodSeparatorsCore.pas`,
   `Source/MethodSeparators/MethodSeparators.pas`, `Source/MethodSeparators/FrmeOptionPageMethodSeparators.pas`,
   `Source/MethodSeparators/FrmeOptionPageMethodSeparators.dfm`, `Source/RegisterPlugins.pas`,
   `Source/DelphiExtension.inc`, `D_D130/DDevExtensions.dpr`, `D_D130/DDevExtensions.dproj`
@@ -143,12 +143,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
   only when its text changed; a check that comes too soon is deferred to a repaint 300 ms later rather
   than dropped, so the last keystroke of a burst is never left with stale separators.
 
-- **24 unit tests for the separator scan, colour rules and paint throttle.** (2026-10-21) -
-  `DDevExtUnitTests/TestMethodSeparatorsCoreDUnitX.pas` (new), `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
-  Mutation-proved: disabling the comment climb, the generic `record`-constraint check, the `{$ELSE}`
-  alternative-header merge and the throttle's boundary each turned exactly the test written for it red.
-
-- **Tools > DDevExtensions > Decirculariser...** (2026-10-19) -
+- (2026-10-19) **Tools > DDevExtensions > Decirculariser...** -
   `Source/Decirculariser/Decirculariser.pas`, `Source/Decirculariser/FrmDecirculariser.pas`,
   `Source/Decirculariser/FrmDecirculariser.dfm`, `Source/Decirculariser/FrmeOptionPageDecirculariser.pas`,
   `Source/Decirculariser/FrmeOptionPageDecirculariser.dfm`, `Source/RegisterPlugins.pas`,
@@ -160,7 +155,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
   extractable threshold (default 3).  New `INCLUDE_DECIRCULARISER` define; `Decirculariser` in
   `DDevExtensions.DisabledFeatures` turns it off.
 
-- **Remove dead entries - the only automatic fix.** (2026-10-19) - `Source/Decirculariser/DecirculariserCore.pas`,
+- (2026-10-19) **Remove dead entries - the only automatic fix.** - `Source/Decirculariser/DecirculariserCore.pas`,
   `Source/Decirculariser/Decirculariser.pas`, `Source/Decirculariser/FrmDecirculariser.pas`
   Offered only for a dead uses entry to a unit with no start-up code (`CanAutoRemove`).  Before anything
   changes, the project is analysed again from the current editor buffers and only entries still dead are
@@ -172,7 +167,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
   compiler would report the change.  New `TDcBreakCandidate.TargetHasStartupCode` / `CanAutoRemove` and
   `HasStartupCode`.
 
-- **`RemoveUsesEntry` - deletes one uses entry and changes nothing else.** (2026-10-19) -
+- (2026-10-19) **`RemoveUsesEntry` - deletes one uses entry and changes nothing else.** -
   `Source/Decirculariser/DecirculariserCore.pas`
   Pure text in, text out, on the same `DelphiLexer` the analysis uses.  The entry goes with its comma,
   any `in '...'` part and its line when that is left empty; the only entry takes the whole clause.  It
@@ -181,15 +176,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
   entry is missing or ambiguous.  The Uses Clause Manager's `GenerateRefactoredSource` was not reused: it
   rebuilds the whole clause, reformatting it.
 
-- **22 tests, 138 in the suite; mutation-proved.** (2026-10-19) - `DDevExtUnitTests/TestDecirculariserCoreDUnitX.pas`,
-  `DDevExtUnitTests/README.md`
-  Start-up-code detection, `CanAutoRemove`, 13 `RemoveUsesEntry` cases asserting the exact resulting text,
-  dotted names and 1-based lines.  Six mutants, one per safety rule (start-up code ignored, the
-  `TA = class` / `constructor` false positive, the emptied line left behind, 0-based lines, last-part-only
-  name resolution, a swallowed comment), each failed at least one test; the source was restored
-  byte-for-byte.
-
-- **`DDevExtensionsD120x64.dll` for the Delphi 12.2+ 64-bit IDE host.** (2026-09-19) -
+- (2026-09-19) **`DDevExtensionsD120x64.dll` for the Delphi 12.2+ 64-bit IDE host.** -
   `Code\DDevExtensions\D_D120\DDevExtensions.dpr`, `Code\DDevExtensions\D_D120\DDevExtensions.dproj`,
   `Code\DDevExtensions\build.bat`
   `{$LIBSUFFIX 'D120'}` becomes the `{$IFDEF WIN64}` pair that yields `D120x64`; the project activates
@@ -197,7 +184,7 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
   had, with the x64 interceptor pre-build copy and `$(BDS)\Bin64\bds.exe` as the debug host; and
   `build.bat` builds `D_D120` twice, Win32 then Win64.
 
-- **`ekDelphi120x64` installer target.** (2026-09-19) - `Code\DDevExtensions\Installer\Main.pas`
+- (2026-09-19) **`ekDelphi120x64` installer target.** - `Code\DDevExtensions\Installer\Main.pas`
   `RAD Studio 12.2+ (64-bit IDE)`, under the shared `Embarcadero\BDS\23.0` key but registering into
   `Experts x64`, deploying `CompileInterceptorWx64.dll`. The existing `D120` row is relabelled
   `(32-bit IDE)` to match. **Detection is by `HostExeRelPath` existing**, so on a 12.0 or 12.1
@@ -206,50 +193,36 @@ by hand and the 64-bit DLL renamed. Three separate causes, all fixed.
 
 ### Changed
 
-- **Version 3.23.15.** (2026-10-21) - `Source/version.inc`, `version.h`, `version.bat`, `Version.res`,
+- (2026-10-21) **Version 3.23.15.** - `Source/version.inc`, `version.h`, `version.bat`, `Version.res`,
   `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`, `README.md`
 
-- **`DDevExtensions_Map.html` lists Method Separators and the Decirculariser.** (2026-10-21) -
+- (2026-10-21) **`DDevExtensions_Map.html` lists Method Separators and the Decirculariser.** -
   `DDevExtensions_Map.html`
   A summary row and a component entry for each, with line counts, and the totals recounted the way the
   page's own instructions say ( 164 Pascal files, 97,049 lines ).
 
-- **Ideas credited in `README.md`.** (2026-10-21) - `README.md`
+- (2026-10-21) **Ideas credited in `README.md`.** - `README.md`
   A new "Ideas credited" table beside "Third-party code included" names the projects whose idea a feature
   re-implements: Tulip Method Separators ( Samer Assil, MIT ) and VSoft.ExternalModDetector ( VSoft
   Technologies, Apache 2.0 ), whose credit had been only in `ExternalModMonitor.pas`'s header.
 
-- **The hand-rolled console suite is now five DUnitX fixtures, and its runner is gone.**  Every check
-  in `TestDelphiLexer`, `TestDelphiParserContainers`, `TestDelphiExpr`, `TestDelphiPreproc` and
-  `TestUnitMetrics` is a DUnitX assertion that can fail (9, 5, 5, 4 and 4 tests), each fixture
-  mutation-proved against its product unit.  `TestDfmParser`'s two checks the DUnitX DFM fixture
-  lacked became `TestPropertyEditsReachSerialisedOutput` and `TestFileRoundTrip_EveryTestDataFile`.
-  The suite is 191 tests.  (2026-10-21) - `DDevExtUnitTests/TestDelphiLexerDUnitX.pas`,
-  `TestDelphiParserContainersDUnitX.pas`, `TestDelphiExprDUnitX.pas`, `TestDelphiPreprocDUnitX.pas`,
-  `TestUnitMetricsDUnitX.pas`, `TestDfmParserDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
-
-- **The DFM file round-trip tests passed from `bin` without running.**  They opened a bare relative
-  `TestData\` path and `Assert.Pass`ed when it was missing, and the runner is built into `bin`, where it
-  is missing.  `TestDataDir` now falls back to `..\DDevExtUnitTests\TestData` beside the exe; a
-  serialiser mutation now fails all 12 file tests.  (2026-10-21) - `DDevExtUnitTests/TestDfmParserDUnitX.pas`
-
-- **Removed the legacy console runner.**  `DDevExtUnitTests.dpr`, `.dproj`, `.dproj.local`, `.res` and
-  the six `Test*.pas` units it ran, once each check was confirmed ported.  (2026-10-21) -
+- (2026-10-21) **Removed the legacy console runner.**  `DDevExtUnitTests.dpr`, `.dproj`, `.dproj.local`, `.res` and
+  the six `Test*.pas` units it ran, once each check was confirmed ported.  -
   `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests.dproj`, `TestDfmParser.pas`,
   `TestDelphiLexer.pas`, `TestDelphiParserContainers.pas`, `TestDelphiExpr.pas`, `TestDelphiPreproc.pas`,
   `TestUnitMetrics.pas`, `README.md`, `STATUS.md`, `TESTS-SUMMARY.md`, `UnitTestCoverage-Plan.md`
 
-- **Known, not changed: `TestHashtableCaseSensitive` is red.**  The Shared parser units test
+- (2026-10-21) **Known, not changed: `TestHashtableCaseSensitive` is red.**  The Shared parser units test
   `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty
   and no project defines them for those units, so `THashtable.Create( True, ... )` trips its Delphi 5
   assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is
   compiled out, in the plug-in too.  The retired console project defined the symbols itself, which
   is why it was green.  The fix goes in its own commit after this release, for review before it is
   pushed ( Ian, 2026-10-21 ), because enabling those branches changes behaviour in every feature that
-  uses the lexer.  (2026-10-21) - `Shared/PascalParser/DelphiParserContainers.pas`,
+  uses the lexer.  - `Shared/PascalParser/DelphiParserContainers.pas`,
   `Shared/PascalParser/DelphiLexer.pas`, `Shared/PascalParser/DelphiParser.inc`
 
-- **`build.bat` no longer mentions the pre-10.2 project folders.** (2026-09-19) -
+- (2026-09-19) **`build.bat` no longer mentions the pre-10.2 project folders.** -
   `Code\DDevExtensions\build.bat`
   Delphi 10.2 is the oldest version this repository supports, so the `del` sweep over `D_2009`,
   `D_2010`, `D_XE`-`D_XE8`, `D_D10` and `D_D101` - folders that live upstream and are not here - is
@@ -263,37 +236,37 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Fixed
 
-- **Alternative routine headers under `{$IFDEF}` / `{$ELSE}` swallowed the routine after them.** (2026-10-21) -
+- (2026-10-21) **Alternative routine headers under `{$IFDEF}` / `{$ELSE}` swallowed the routine after them.** -
   `Source/MethodSeparators/MethodSeparatorsCore.pas`
   Found while writing the edge-case tests, before release: the second header was taken for a nested
   routine of the first, so the scan consumed the next top-level routine as its body and that routine lost
   its separator.  Headers separated by `{$ELSE}` / `{$ELSEIF}` are now skipped as one.
 
-- **Dotted unit names were never edge targets, so their cycles were missed.** (2026-10-19) -
+- (2026-10-19) **Dotted unit names were never edge targets, so their cycles were missed.** -
   `Source/Decirculariser/DecirculariserCore.pas`
   `AddEdge` resolved every dotted reference on its last part, so `uses App.Beta` looked for a unit
   `Beta`, not the analysed unit `App.Beta`, and a project of `App.Xxx` units looked acyclic.  It now
   tries the full name first and the last part only when the set has no such unit (a unit-scope prefix,
   `Vcl.Forms` for `Forms`).
 
-- **Every line number was one too low.** (2026-10-19) - `Source/Decirculariser/DecirculariserCore.pas`
+- (2026-10-19) **Every line number was one too low.** - `Source/Decirculariser/DecirculariserCore.pas`
   The lexer counts lines from 0 and `TDcEdge.LineNumber` passed that straight through, so the report sent
   its reader to the line above the uses entry.  Now 1-based, as the editor shows it.
 
-- **Win32/Win64 DCU collision in `D_D120`.** (2026-09-19) -
+- (2026-09-19) **Win32/Win64 DCU collision in `D_D120`.** -
   `Code\DDevExtensions\D_D120\DDevExtensions.dproj`
   Same defect fixed in `D_D130` earlier today, and it had to be fixed before the project could ever be
   built for two platforms: `DCC_DcuOutput` was `lib` in the shared `Base` group. Now `lib\$(Platform)`.
 
-- **Three stale claims that Delphi 10.2-12 have no 64-bit IDE host.** (2026-09-19) - `README.md`,
+- (2026-09-19) **Three stale claims that Delphi 10.2-12 have no 64-bit IDE host.** - `README.md`,
   `Help.md`
   `README.md` said it twice (the v3.16.5 note and the supported-IDE note) and `Help.md` once, in the
   *64-bit IDE Host Notice* heading and body. All three now say 10.2-11 and 12.0/12.1 have no 64-bit
   host, that 12.2+ does, and that the Delphi 12 x64 build is untested. The supported-versions list and
   the Compile section are updated to match.
 
-- **No msbuild call passed `/p:Platform`, so every project built its `.dproj` default - `Win64` for
-  `D_D130`.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+- (2026-09-19) **No msbuild call passed `/p:Platform`, so every project built its `.dproj` default - `Win64` for
+  `D_D130`.** - `Code\DDevExtensions\build.bat`
   **Why:** with `Platform` unset msbuild falls back to the project's own
   `<Platform Condition="'$(Platform)'==''">` line, and `D_D130` was last saved with Win64 selected.
   Nothing in the script said which platform it wanted, so the answer was whatever the IDE happened to
@@ -304,7 +277,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   carry no x64 `$LIBSUFFIX`, so Win32 is all there is for them. (Delphi 12 was added below - it has
   a preview 64-bit IDE, which this entry originally got wrong.)
 
-- **CompileInterceptor was never built by `build.bat`.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+- (2026-09-19) **CompileInterceptor was never built by `build.bat`.** - `Code\DDevExtensions\build.bat`
   Its own `CompileInterceptor\build.bat` is hardcoded to `RAD Studio\9.0` and `CodeGear\6.0` - Delphi
   2010 and 2009 - so it cannot run on a current machine, and the main script never called it. Both
   bitnesses are now built first, with the newest installed Delphi, and copied into `bin`. It has to
@@ -313,8 +286,8 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   One build serves every Delphi version - it resolves the IDE DLLs by name at run time - but it does
   need one per bitness, because it is loaded into the IDE's own process.
 
-- **Win32 and Win64 DCUs were written to the same folder, so building both platforms could not work.**
-  (2026-09-19) - `Code\DDevExtensions\D_D130\DDevExtensions.dproj`,
+- (2026-09-19) **Win32 and Win64 DCUs were written to the same folder, so building both platforms could not work.**
+  — `Code\DDevExtensions\D_D130\DDevExtensions.dproj`,
   `CompileInterceptor\Source\CompileInterceptorW.dproj`
   `DCC_DcuOutput` was `lib` (and `..\lib`) in the `Base` group, which both platforms share, so the
   second platform's build would meet the first platform's DCUs and stop with
@@ -322,7 +295,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   This was latent for as long as only one platform was ever built. Now `lib\$(Platform)` and
   `..\lib\$(Platform)`.
 
-- **The 64-bit IDE build never copied `CompileInterceptorWx64.dll` into `bin`.** (2026-09-19) -
+- (2026-09-19) **The 64-bit IDE build never copied `CompileInterceptorWx64.dll` into `bin`.** -
   `Code\DDevExtensions\D_D130\DDevExtensions.dproj`
   Only `Base_Win32` carried the `PreBuildEvent`, so the x64 interceptor reached `bin` by hand or not
   at all. `Base_Win64` now has the matching copy. It uses `$(MSBuildProjectDirectory)` rather than the
@@ -330,19 +303,19 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   command-line build - the copy then runs as `copy /Y "\..\..\..\...dll" ""` and fails the build
   with `MSB3073`.
 
-- **The installer is built Win32, not Win64.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+- (2026-09-19) **The installer is built Win32, not Win64.** - `Code\DDevExtensions\build.bat`
   **Why:** `TFormMain.GetRootDir` reads the IDE's `RootDir` from
   `HKLM\Software\Embarcadero\BDS\<n>`, which RAD Studio writes into the **32-bit** registry view
   (`WOW6432Node`) - verified on this machine, where the 64-bit view of that key is empty. A 64-bit
   installer sees nothing there and has to fall back to the per-user `HKCU` copy, so it detects fewer
   IDEs than a 32-bit one does.
 
-- **`::` comments inside a parenthesised `( ... )` block.** (2026-09-19) - `Code\DDevExtensions\build.bat`
+- (2026-09-19) **`::` comments inside a parenthesised `( ... )` block.** - `Code\DDevExtensions\build.bat`
   cmd reads a `::` label inside a block as a drive specifier, which printed
   `The system cannot find the drive specified.` in the middle of an otherwise successful run. Block
   comments now live outside the block.
 
-- **`clean.bat` could not find `build.bat`.** (2026-09-19) - `Code\DDevExtensions\clean.bat`
+- (2026-09-19) **`clean.bat` could not find `build.bat`.** - `Code\DDevExtensions\clean.bat`
   It called `build.bat` by bare name. With `NoDefaultCurrentDirectoryInExePath=1` set - common on
   hardened and CI machines - cmd refuses to resolve a batch file from the current directory, the same
   trap `build.bat` already guards against for `version.bat`. Now `"%~dp0build.bat"`. The clean path
@@ -351,7 +324,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 **Known, not changed:**
 
-- **The Win64 Debug build of the DLL does not compile** (found 2026-10-19, not caused by this work) -
+- (2026-10-21) **The Win64 Debug build of the DLL does not compile** (found 2026-10-19, not caused by this work) -
   `Shared/Hooking.pas`.  Under `DEBUG` with `CPUX64`, the `end;` closing `if IsDebuggerPresent then begin`
   sits inside the `{$ELSE}` branch, so the 64-bit Debug build loses it and fails with `E2070` and 30
   knock-on errors.  Release, which `build.bat` ships, is unaffected; shared upstream code, so raised
@@ -361,7 +334,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Added
 
-- **`DecirculariserCore` - circular unit reference analysis that says what to DO about them.**
+- (2026-09-17) **`DecirculariserCore` - circular unit reference analysis that says what to DO about them.**
   A new RTL-only core (`Source/Decirculariser/DecirculariserCore.pas`, 21 tests) that builds the
   unit graph for a set of sources, finds the entangled groups with an iterative Tarjan, and ranks
   what it would take to break each one. Three judgements are the point of it:
@@ -390,10 +363,10 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   Pointed at the legacy `DBiManager` it reported the same 47-unit group that graph had, correctly
   classified benign (96 implementation edges, 3 interface).
 
-  (2026-09-17) - `Source/Decirculariser/DecirculariserCore.pas` (new),
+  — `Source/Decirculariser/DecirculariserCore.pas` (new),
   `DDevExtUnitTests/TestDecirculariserCoreDUnitX.pas` (new), `D_D102`...`D_D130/DDevExtensions.dpr`
 
-- **An "I cannot tell" verdict, rather than confident bad advice.** Building the above exposed that
+- (2026-09-17) **An "I cannot tell" verdict, rather than confident bad advice.** Building the above exposed that
   the exports scanner records class MEMBER names as unit exports, so every VCL form "exports"
   `FormCreate` and forty unrelated forms appear to depend on the main form because of it. An
   identifier that several units in the set declare is now excluded from edge attribution and
@@ -405,9 +378,9 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   collaboration" to "2 identifiers, extractable". Four of the six were class-member noise, and the
   old reading was simply wrong.
 
-  (2026-09-17) - `Source/Decirculariser/DecirculariserCore.pas`
+  — `Source/Decirculariser/DecirculariserCore.pas`
 
-- **README gains a Dependencies section.** It had none, which for a released plugin left an obvious
+- (2026-09-17) **README gains a Dependencies section.** It had none, which for a released plugin left an obvious
   question unanswered. Measured across 267 real uses clauses rather than assumed: **the shipped DLL
   needs RAD Studio and nothing else** - `rtl`, `vcl`, `designide`, and the IDE's own design-time API.
   DUnitX, FastMM5, TestInsight and EurekaLog are test-only and reach no product binary; 7-Zip is for
@@ -425,51 +398,11 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   needed to build or run this - but for a public repository that attribution belongs somewhere more
   visible than a file header.
 
-  (2026-09-17) - `README.md`
-
-- **The DUnitX suite can now run headless, and does.** `DDevExtUnitTestsDUnitX.dpr` hardcoded
-  `{$DEFINE TESTINSIGHT}` on line 1 and otherwise built a VCL GUI runner, so there was no way to run
-  the tests without the IDE and no exit code for a build server to read. The define is now taken from
-  the `.dproj` per configuration, and the `.dpr` selects between three runners:
-
-  | Define | Runner |
-  |---|---|
-  | `TESTINSIGHT` (Debug config) | TestInsight host - use this while writing tests |
-  | `GUI_TEST_RUNNER` | the DUnitX VCL GUI runner, opt-in |
-  | neither (Release) | console runner, NUnit XML report, meaningful exit code |
-
-  `TESTINSIGHT` had actually been defined **three** times over - in the `.dpr` and in both the Debug
-  and Release `DCC_Define` lists - which is why removing it from one place had no effect. Release now
-  carries `RELEASE` only, and `{$MESSAGE FATAL}` catches an attempt to define two runners at once.
-
-  First full headless run: **94 tests found, 94 passed, exit code 0** - DFM parser 32, PathCompactor
-  25, ProjectGroupSorter 11, UsesClauseManagerCore 26.
-
-  (2026-09-17) - `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dproj`
-
-- **`Assert.IgnoreCaseDefault := False` in the runner mainline.** Our `gllDUnitX` fork defaults a
-  two-argument string comparison to ignore case, and nothing at the call site reveals it - so a test
-  whose subject *is* the casing cannot fail. Checked rather than assumed before adopting it: all 94
-  tests still pass with it set, so the weak default was costing this suite nothing today. It is set
-  now so that a future test cannot inherit it.
-
-  (2026-09-17) - `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
-
-- **26 DUnitX tests for `UsesClauseManagerCore`** - the first tests this feature has ever had. They
-  cover the exports database (export kinds, interface-only scope, case-insensitive lookup, the reverse
-  lookup, RTL/VCL priority tie-breaking, `Clear`), the usage analyser (both uses clauses, interface vs
-  implementation identifiers, qualified references) and the refactorer (all four placement outcomes,
-  and that the rewritten source really does relocate the unit).
-
-  Mutation-proved rather than assumed: inverting the "only used in implementation" recommendation in
-  the core turns exactly two tests red, each on its own assertion.
-
-  (2026-09-17) - `DDevExtUnitTests/TestUsesClauseManagerCoreDUnitX.pas` (new),
-  `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
+  — `README.md`
 
 ### Changed
 
-- **Extracted a testable core out of the Uses Clause Manager.** `TUnitExportsDatabase`,
+- (2026-09-17) **Extracted a testable core out of the Uses Clause Manager.** `TUnitExportsDatabase`,
   `TIdentifierUsageAnalyzer` and `TUsesClauseRefactorer` now live in a new `UsesClauseManagerCore`
   unit that depends on the RTL and `DelphiLexer` only - no ToolsAPI, no VCL, no IDE - in the same
   shape as `PathCompactorCore` and `ProjectGroupSorterCore`.
@@ -491,18 +424,18 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   `Winapi.Windows.FindClose` takes a `THandle` - the compiler caught it as `E2010`. The qualified call
   is what the original resolved to anyway.
 
-  (2026-09-17) - `Source/UsesClauseManager/UsesClauseManagerCore.pas` (new),
+  — `Source/UsesClauseManager/UsesClauseManagerCore.pas` (new),
   `Source/UsesClauseManager/UsesClauseManager.pas`, `D_D102`...`D_D130/DDevExtensions.dpr`
 
-- **Version stamped 3.22.15 across all four sources.** `Source/version.inc` and `version.h` carry the
+- (2026-09-17) **Version stamped 3.22.15 across all four sources.** `Source/version.inc` and `version.h` carry the
   product version; `version.bat` had been left at `minorversion=9` since v3.9 and is live - `build.bat`
   calls it and names the release folder `Release\%majorversion%.%minorversion%` - so a release built
   from it would have been labelled **3.9**. Corrected to 22. Note it holds only two fields, so it
   cannot express the third; it now reads 3.22 for a 3.22.15 product.
 
-  (2026-09-17) - `Source/version.inc`, `version.h`, `version.bat`
+  — `Source/version.inc`, `version.h`, `version.bat`
 
-- **`build.bat`'s version pipeline repaired - it would have silently regressed the version.**
+- (2026-09-17) **`build.bat`'s version pipeline repaired - it would have silently regressed the version.**
   `version.bat` carried only `majorversion` and `minorversion`, and `build.bat` *generates*
   `Source\version.inc` and `version.h` from them. So running it would have written
   `VersionNumber = '3.22'` and `VER_PRODUCTVERSION 3,22,0,0` over the three-field values, compiled
@@ -527,9 +460,9 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   `Version.res` all regenerate byte-identical to the committed files, and the guard exits non-zero
   on a two-field `version.bat` before writing anything.**
 
-  (2026-09-17) - `version.bat`, `build.bat`
+  — `version.bat`, `build.bat`
 
-- **`build.bat` now runs end to end, and was proved to by running it.** It had not been exercised in
+- (2026-09-17) **`build.bat` now runs end to end, and was proved to by running it.** It had not been exercised in
   full for a long time and could not complete on any machine that did not carry sixteen Delphi
   installations:
 
@@ -553,20 +486,20 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   reports 3.22.15, and - the point of the exercise - `version.inc`, `version.h` and `Version.res`
   came back **unmodified in git**, so a full run no longer rewrites the version or dirties the tree.
 
-  (2026-09-17) - `build.bat`, `.gitignore`
+  — `build.bat`, `.gitignore`
 
-- **`DDevExtensions_Map.html` refreshed** - it was a 2026-01-06 snapshot. Four components were absent
+- (2026-09-17) **`DDevExtensions_Map.html` refreshed** - it was a 2026-01-06 snapshot. Four components were absent
   from it entirely: the **IDE Path Compactor** (3,034 lines), the **IDE Path Sorter** (2,495),
   **Sort Projects in Group** (478) and the **External Mod Monitor** (726). All four are now in both
   the component table and the `projectData` object, every component's line count was re-measured by
   the procedure documented in the file's own header, and the totals moved from 62,338 lines / 131
   Pascal files to **91,941 / 156**.
 
-  (2026-09-17) - `DDevExtensions_Map.html`
+  — `DDevExtensions_Map.html`
 
 ### Fixed
 
-- **The exports scanner read a `const` or `var` PARAMETER as a section keyword.** In
+- (2026-09-17) **The exports scanner read a `const` or `var` PARAMETER as a section keyword.** In
   `TUnitExportsDatabase.ScanSource` the section-keyword handling ran *before* the brace-depth
   check, so the `var` in `function Parse( var AValue: string ): Boolean` put the scanner into a
   var section - and the return type, `Boolean`, was recorded as an exported identifier of the
@@ -579,10 +512,10 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   Found by pointing the new Decirculariser at `DBiServer` and seeing `Boolean` reported as an
   identifier crossing a uses edge. Pinned by `TestParameterModifiersDoNotLeakIntoSectionState`.
 
-  (2026-09-17) - `Source/UsesClauseManager/UsesClauseManagerCore.pas`,
+  — `Source/UsesClauseManager/UsesClauseManagerCore.pas`,
   `DDevExtUnitTests/TestUsesClauseManagerCoreDUnitX.pas`
 
-- **The Path Compactor's "Expanded after" column was showing a count, not a length.**
+- (2026-09-17) **The Path Compactor's "Expanded after" column was showing a count, not a length.**
   `TFormPathCompactor.ExpandedLengthAfter` declared a local `Expanded: string` and never assigned
   it, so `Inc( Result, Length( Expanded ) + 1 )` added 1 per surviving entry - the column reported
   *(entries kept) - 1* beside a "before" column holding a real character count. It now measures
@@ -593,24 +526,24 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   tests. The compiler had been reporting it all along as `H2164 Variable 'J' is declared but never
   used` - the unused loop variable left behind when whatever filled `Expanded` was removed.
 
-  (2026-09-17) - `Source/PathCompactor/FrmPathCompactor.pas`
+  — `Source/PathCompactor/FrmPathCompactor.pas`
 
-- Removed a dead `Error` local from `TFormPathCompactor.btnApplyClick` (the second `H2164`).
+- (2026-09-17) Removed a dead `Error` local from `TFormPathCompactor.btnApplyClick` (the second `H2164`).
   Checked first that it was not a dropped failure: `WriteVariable` and `WritePaths` are both plain
   procedures with no error out-parameter, so nothing was being swallowed. The project now builds
   with zero hints and zero warnings.
 
-  (2026-09-17) - `Source/PathCompactor/FrmPathCompactor.pas`
+  — `Source/PathCompactor/FrmPathCompactor.pas`
 
 **Known issues:**
 
-- **`TUnitExportsDatabase` raises on two units with the same name.** The exports dictionary is
+- (2026-09-17) **`TUnitExportsDatabase` raises on two units with the same name.** The exports dictionary is
   populated with `TDictionary.Add` and has no duplicate guard, so two search-path directories each
   holding (say) a `Utils.pas` raise `EListError`, and the partly-built export list leaks with it. The
   behaviour is pinned by `TestDuplicateUnitNameCurrentlyRaises` as a characterisation test so that
   changing it is a deliberate act. Not fixed here - this change set is behaviour-preserving by intent.
 
-- **`BuildFromSearchPath` discards the project directory.** It adds `ExtractFileDir( Project.FileName )`
+- (2026-09-17) **`BuildFromSearchPath` discards the project directory.** It adds `ExtractFileDir( Project.FileName )`
   to the path list and then assigns `DelimitedText`, which replaces the whole list. So whenever the
   project has options, the project's own directory is never scanned. Behaviour preserved and commented
   at the site; fixing it is now a testable decision rather than a guess.
@@ -619,11 +552,11 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Changed
 
-- Version bumped 3.22.13 -> 3.22.14 across all indicators, with `Version.res` regenerated. (2026-08-31)
+- (2026-08-31) Version bumped 3.22.13 -> 3.22.14 across all indicators, with `Version.res` regenerated.
 
 ### Removed
 
-- **The directory-junction feature is gone entirely** - `PathCompactorJunctions.pas`, the Junction
+- (2026-08-31) **The directory-junction feature is gone entirely** - `PathCompactorJunctions.pas`, the Junction
   opportunities tab, the creation and health-check machinery, and the `CreatedJunctions` setting.
 
   **Why.** It was the one genuinely useful thing macros cannot do: a junction is the only measure that
@@ -643,18 +576,18 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   Macro substitution has the same staleness exposure but fails **visibly**: `$(EUREKALOG_7)` is right
   there in the path list and can be checked. A junction gives you nothing to look at.
 
-  (2026-08-31) - `Source/PathCompactor/PathCompactorJunctions.pas` (deleted),
+  — `Source/PathCompactor/PathCompactorJunctions.pas` (deleted),
   `Source/PathCompactor/FrmPathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.dfm`,
   `Source/PathCompactor/PathCompactor.pas`, `D_D102`...`D_D130/DDevExtensions.dpr`,
   `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/TestPathCompactorDUnitX.pas`
 
-- The **Expanded before / after** columns remain in the summary grid. They now always match, which is the
+- (2026-08-31) The **Expanded before / after** columns remain in the summary grid. They now always match, which is the
   honest reading: macro substitution never shortens the expanded path. Keeping them still answers the
   question the grid exists to answer - whether the expanded length is anywhere near its limit.
 
 **Known:**
 
-- **The three junctions created on the development machine were removed and their 31 path entries rewritten
+- (2026-08-31) **The three junctions created on the development machine were removed and their 31 path entries rewritten
   to macros** - `$(EUREKALOG_7)`, `$(IPWORKS_2024)` and `$(TESTINSIGHT)`, each defined in **both** IDE
   variable lists. Same saving, but the dependency is now visible in the path list rather than hidden in a
   reparse point. The target directories were never touched: deleting a junction removes only a name.
@@ -663,32 +596,32 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Changed
 
-- **Widening now skips structural folder names.** Breaking a name collision by folding in the parent gave
+- (2026-08-31) **Widening now skips structural folder names.** Breaking a name collision by folding in the parent gave
   `PACKAGES_D13` for `...\tms.vcl.uipack\packages\d13` - a name identifying no library at all, and no more
   useful than the `D13_2` it replaced. `packages`, `lib`, `src`, `bin`, `build`, `out`, `dcu`, `obj` and
   their variants are now stepped over, reaching a segment that actually names something:
-  `TMS_VCL_UIPACK_D13`, and `SHARED3_RAD13` where it previously produced `LIB_RAD13`. (2026-08-31) -
+  `TMS_VCL_UIPACK_D13`, and `SHARED3_RAD13` where it previously produced `LIB_RAD13`. -
   `Source/PathCompactor/PathCompactorCore.pas`
 
-- **Apply now warns before writing generically-named variables to the Windows environment.** Ticking "Also
+- (2026-08-31) **Apply now warns before writing generically-named variables to the Windows environment.** Ticking "Also
   define as Windows user environment variables" with names like `SRC`, `COMMON`, `CODE` or `DATA` on the
   list is a quiet hazard: those are harmless inside the IDE's own variable list but every process on the
   machine inherits the Windows ones, and a collision with a build script or installer is hard to trace
   back here. The prompt names the offenders and their values, and declining unticks the option rather than
   cancelling the whole Apply. **Why:** this happened in practice - 12 such variables were written and had
-  to be removed by hand. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  to be removed by hand. - `Source/PathCompactor/PathCompactorCore.pas`,
   `Source/PathCompactor/FrmPathCompactor.pas`
 
-- **Build numbers aligned across all seven projects.** They had drifted to 575 / 598 / 806 because
+- (2026-08-31) **Build numbers aligned across all seven projects.** They had drifted to 575 / 598 / 806 because
   `VerInfo_AutoIncVersion` increments only the configuration actually built, and for years only some
-  configurations were. All now carry the Win64 number, 598. (2026-08-31) -
+  configurations were. All now carry the Win64 number, 598. -
   `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`
 
-- Version bumped 3.22.12 -> 3.22.13 across all indicators, with `Version.res` regenerated. (2026-08-31)
+- (2026-08-31) Version bumped 3.22.12 -> 3.22.13 across all indicators, with `Version.res` regenerated.
 
 ### Fixed
 
-- **Unloading the design-time package left the Path Sorter and Path Compactor dialogs standing, with
+- (2026-08-31) **Unloading the design-time package left the Path Sorter and Path Compactor dialogs standing, with
   their code unloaded from under them.** `InitPlugin( Unload )` freed the plugin object but never closed
   the dialog. Both are modeless, shown with `Show` and owned by `Application`, so they outlive the plugin
   that created them; unloading the package then discards the form's code while its window is still alive,
@@ -696,7 +629,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   Compactor merely inherited the pattern. Both `InitPlugin` routines now call a new
   `TForm...CloseInstance` before freeing the plugin, which clears the singleton first so `FormClose`
   cannot race it. **Why it mattered more for the Sorter:** its form reaches back through
-  `LibraryPathSorterPlugin.PathHandler`, which is about to be nil. (2026-08-31) -
+  `LibraryPathSorterPlugin.PathHandler`, which is about to be nil. -
   `Source/LibraryPathSorter/LibraryPathSorter.pas`, `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`,
   `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.pas`
 
@@ -705,7 +638,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 **Known:**
 
-- **A Win32 build of `D_D130` fails until `CompileInterceptorW` has been built for Win32, and the failure
+- (2026-08-31) **A Win32 build of `D_D130` fails until `CompileInterceptorW` has been built for Win32, and the failure
   is misleading.** The pre-build event copies `CompileInterceptor\Bin\CompileInterceptorW.dll`, which is a
   **gitignored build artefact** - so a fresh clone, or any tree where it has not been produced, fails with
   `The system cannot find the file specified` and **zero compiler diagnostics**. That reads as a broken
@@ -721,20 +654,20 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Changed
 
-- **`BdsRootDir`, `BuildMacroTable` and `BuildReservedNames` moved from `PathCompactor` to
+- (2026-08-31) **`BdsRootDir`, `BuildMacroTable` and `BuildReservedNames` moved from `PathCompactor` to
   `PathCompactorEnvVars`.** **Why:** the Path Sorter needs the same IDE macro table the Compactor uses, and
   it should not have to depend on the Compactor's plugin unit to get it. `PathCompactorEnvVars` already
   owns everything to do with reading the IDE's macro-override keys, so it is where they belong.
-  (2026-08-31) - `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/PathCompactorEnvVars.pas`
+  — `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- Version bumped 3.22.11 -> 3.22.12 across all indicators, with `Version.res` regenerated from
-  `Version.rc` so the shipped DLL reports the new version. (2026-08-31) - `Source/version.inc`,
+- (2026-08-31) Version bumped 3.22.11 -> 3.22.12 across all indicators, with `Version.res` regenerated from
+  `Version.rc` so the shipped DLL reports the new version. - `Source/version.inc`,
   `version.h`, `Version.res`, `D_D102`...`D_D130/DDevExtensions.dproj`,
   `Installer/DDevExtensionsReg.dproj`
 
 ### Fixed
 
-- **The IDE Path Sorter drew every entry with an unresolvable macro as invalid (blue).** A
+- (2026-08-31) **The IDE Path Sorter drew every entry with an unresolvable macro as invalid (blue).** A
   `$(BDSCatalogRepository)\Lib` entry was reported as a missing directory even though the directory was
   perfectly present. **Why:** `IDEUtils.ExpandDirMacros` substitutes an **empty string** for any macro it
   cannot resolve rather than leaving the macro in place, so that entry reached `DirectoryExists` as
@@ -748,7 +681,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   IDE's user overrides, the IDE built-ins, then the process environment - which leaves an unresolvable
   macro intact and so makes the "cannot verify" branch reachable and correct. `IDEUtils.ExpandDirMacros`
   itself is deliberately **not** modified: it is shared by several other features and changing its
-  substitution behaviour is a wider, riskier change than this bug warrants. (2026-08-31) -
+  substitution behaviour is a wider, riskier change than this bug warrants. -
   `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`
 
   **Confirmed in the live IDE (2026-08-31):** the Sorter now shows no entries marked invalid. That matches
@@ -761,7 +694,7 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 **Known:**
 
-- The Compactor's first junction-creating Apply ran on the development machine and behaved as designed:
+- (2026-08-31) The Compactor's first junction-creating Apply ran on the development machine and behaved as designed:
   three junctions created (`C:\EUREKALO`, `C:\IPWORKS2`, `C:\TESTINSI`), all recorded in the plugin config
   for later health checks, and **no Embarcadero tree offered or created** - the two-way exclusion held
   through a real elevated Apply. Cumulative saving across the session's passes: 29,109 -> 20,862 stored
@@ -771,20 +704,20 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ### Added
 
-- **New Tools > IDE Path Compactor dialog that shortens the IDE's library path strings.** Analyses every
+- (2026-08-31) **New Tools > IDE Path Compactor dialog that shortens the IDE's library path strings.** Analyses every
   selected platform x path-type, proposes `$(NAME)` macro substitutions for repeated directory prefixes,
   offers directory junctions for over-long third-party prefixes, and reports duplicate, dead and
   undefined-macro entries. Reports stored *and* expanded lengths before/after, because only the expanded
   length constrains the compiler command line while only the stored length triggers the IDE's "path too
   long" warning - macros shorten the first, junctions the second. Backup and rollback reuse the existing
   `TLibraryPathBackupManager` history, so one Restore list covers the Sorter and the Compactor alike.
-  Nothing is written until Apply. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  Nothing is written until Apply. - `Source/PathCompactor/PathCompactorCore.pas`,
   `Source/PathCompactor/PathCompactor.pas`, `Source/PathCompactor/PathCompactorEnvVars.pas`,
   `Source/PathCompactor/PathCompactorJunctions.pas`, `Source/PathCompactor/FrmPathCompactor.pas`,
   `Source/PathCompactor/FrmPathCompactor.dfm`, `Source/RegisterPlugins.pas`,
   `Source/DelphiExtension.inc`, `D_D102`...`D_D130/DDevExtensions.dpr`
 
-- **Saving is scored in STORED space, not expanded space.** Candidates must be generated from expanded
+- (2026-08-31) **Saving is scored in STORED space, not expanded space.** Candidates must be generated from expanded
   ancestors so a prefix can be matched across entries written in different forms, but the gain is measured
   against the raw registry text each entry actually holds. **Why:** measured on the development machine,
   `C:\Program Files (x86)\Embarcadero\Studio\37.0` is an ancestor of 104 of 363 entries and an
@@ -792,84 +725,77 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   `$(BDS)\...`, so accepting it would rewrite `$(BDS)\source\rtl` (24 stored characters) into
   `$(STUDIO37)\source\rtl` (29), lengthening every one while reporting a four-figure win. Where a
   candidate equals an existing macro's value the existing name is reused rather than a redundant one
-  invented. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+  invented. - `Source/PathCompactor/PathCompactorCore.pas`
 
-- **Variables are written to BOTH IDE macro-override keys.** RAD Studio reads `Environment Variables` in the
+- (2026-08-31) **Variables are written to BOTH IDE macro-override keys.** RAD Studio reads `Environment Variables` in the
   32-bit IDE and `Environment Variables x64` in the 64-bit IDE, but the `Library\<Platform>` keys those
   macros resolve are shared between them and are not split. **Why:** defining a variable in one list only
   makes every shared path entry using it resolve in one IDE and break silently in the other.
   `GetBaseRegistryKey` returns the same value in both, so the naive `BaseRegistryKey + '\Environment
   Variables'` names the 32-bit list even from the 64-bit IDE. Divergences already present are reported, not
-  silently inherited. (2026-08-31) - `Source/PathCompactor/PathCompactorEnvVars.pas`
+  silently inherited. - `Source/PathCompactor/PathCompactorEnvVars.pas`
 
-- **DUnitX fixture `TTestPathCompactor` (25 tests) covering the compactor core.** Includes the regression
-  test for the stored-space scoring defect, the platform/config-token naming guard, the core-level refusal
-  of `lptNamespacePrefixes`, and two invariants asserted on every fixture: stored length never increases,
-  and analyse-rewrite-expand reproduces the original expanded path set minus intentional drops. Wired into
-  `DDevExtUnitTestsDUnitX.dpr`; 18/18 green via a standalone `dcc64` console runner. (2026-08-31) -
-  `DDevExtUnitTests/TestPathCompactorDUnitX.pas`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
-
-- **Cleanup can now remove dead macro references, and every intended removal is re-verified before it
+- (2026-08-31) **Cleanup can now remove dead macro references, and every intended removal is re-verified before it
   happens.** Three removals are offered, each opt-in and unticked by default: duplicate entries, entries
   whose directory is missing, and entries whose macro resolves nowhere. Immediately before writing, the
   Compactor re-tests every entry it is about to delete - re-probing the file system and re-resolving the
   macro - and keeps any that now passes, reporting how many were rescued. **Why:** an analysis may be
   minutes old by the time Apply runs; a disconnected share can reconnect or an installer finish in between,
   and nothing should be deleted on the strength of a stale probe. It then lists every entry it is about to
-  remove, with the reason, and asks for confirmation. (2026-08-31) -
+  remove, with the reason, and asks for confirmation. -
   `Source/PathCompactor/PathCompactorCore.pas`, `Source/PathCompactor/FrmPathCompactor.pas`,
   `Source/PathCompactor/FrmPathCompactor.dfm`
 
-- **A macro that this IDE cannot resolve but the other IDE bitness can is reported as *divergent*, never as
+- (2026-08-31) **A macro that this IDE cannot resolve but the other IDE bitness can is reported as *divergent*, never as
   dead, and is never removed.** **Why:** the two IDE variable lists have diverged on the development
   machine, so `$(DUNITX)`, `$(DELPHIMOCKS)` and `$(GOOGLEMAPSDIR)` resolve in the 32-bit IDE but not the
   64-bit one. Treating those as dead and deleting them from the shared library path would silently break
   the IDE where they still work; the correct repair is to define the variable in both lists. The dialog
-  counts the two classes separately. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`,
+  counts the two classes separately. - `Source/PathCompactor/PathCompactorCore.pas`,
   `Source/PathCompactor/FrmPathCompactor.pas`
 
-- `.gitattributes` — pin CRLF checkout for all text file types, independent of each clone's `core.autocrlf`; binaries marked explicitly, Pascal linguist hints included. (2026-07-28) — `.gitattributes`
+- (2026-07-28) `.gitattributes` — pin CRLF checkout for all text file types, independent of each clone's `core.autocrlf`; binaries marked explicitly, Pascal linguist hints included. — `.gitattributes`
 
 ### Changed
 
-- **`TLibraryPathType` and its record helper moved to the RTL-only `PathCompactorCore`,** with
+- (2026-08-31) **`TLibraryPathType` and its record helper moved to the RTL-only `PathCompactorCore`,** with
   `LibraryPathSorter` aliasing both. **Why:** the compactor's testable core must not pull in ToolsAPI, and a
   second helper declared for the same type would not merge with the first - it would silently shadow it.
   Note that a type alias re-exports neither the enumeration's members nor the helper, so
-  `FrmLibraryPathSorter` now uses `PathCompactorCore` directly. (2026-08-31) -
+  `FrmLibraryPathSorter` now uses `PathCompactorCore` directly. -
   `Source/LibraryPathSorter/LibraryPathSorter.pas`, `Source/LibraryPathSorter/FrmLibraryPathSorter.pas`
 
-- **Junction detection refuses the IDE's own installation tree, the Windows directory and the Program Files
+- (2026-08-31) **Junction detection refuses the IDE's own installation tree, the Windows directory and the Program Files
   roots.** **Why:** the brief assumed the prime target would be the GetIt `CatalogRepository`, but measured
   on the development machine that prefix appears zero times, and the highest-scoring junction candidate is
   `...\Embarcadero\Studio\37.0` itself at 104 uses. Junctioning it would relocate RAD Studio behind the
   back of GetIt, the installer and every repair operation. Third-party trees under Program Files are still
-  offered. (2026-08-31) - `Source/PathCompactor/PathCompactorJunctions.pas`
+  offered. - `Source/PathCompactor/PathCompactorJunctions.pas`
 
-- **Duplicate removal is opt-in; duplicate detection is always on.** **Why:** a survey of the whole Library
+- (2026-08-31) **Duplicate removal is opt-in; duplicate detection is always on.** **Why:** a survey of the whole Library
   key - 13 platforms, 96 populated path sets, 917 entries - found zero duplicates by either a raw or an
   expanded-and-normalised test, so defaulting a destructive mutation on would take a risk against a problem
   that does not occur. Detection is nearly free once the analysis exists and is strictly stronger than the
   Sorter's own raw `SameText` check, which cannot see `$(BDS)\source` and the equivalent literal as one
-  directory. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+  directory. - `Source/PathCompactor/PathCompactorCore.pas`
 
-- **`$(LangDir)` is treated as a build-time macro, like `$(Config)`.** **Why:** it resolves per translation
+- (2026-08-31) **`$(LangDir)` is treated as a build-time macro, like `$(Config)`.** **Why:** it resolves per translation
   language and appears only in the three Translated* path types; without this, 30 entries on the development
-  machine would be reported as dead macro references. (2026-08-31) -
+  machine would be reported as dead macro references. -
   `Source/PathCompactor/PathCompactorCore.pas`
 
-- Version bumped 3.21.10 -> 3.22.11 across all indicators: `Source/version.inc`, `version.h`, all six
+- (2026-08-31) Version bumped 3.21.10 -> 3.22.11 across all indicators: `Source/version.inc`, `version.h`, all six
   `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj` (`VerInfo_MinorVer` 21->22,
   `VerInfo_Release` 10->11, `FileVersion` -> `3.22.11.*`, `ProductVersion` -> 3.22), **and
   `Version.res` regenerated from `Version.rc`**. **Why:** the DLL takes its version resource from
   `{$R ..\Version.res}`, a committed binary built from `version.h` - editing `version.h` alone
   leaves the shipped DLL still reporting the previous version, which is what it did until the resource was
   rebuilt (`brcc32 Version.rc -foVersion.res`; `cgrc` cannot be used from `bin` because its `resinator.exe`
-  helper lives in `bin64`). Verified: the built DLL now reports 3.22.11. (2026-08-31) -
+  helper lives in `bin64`). Verified: the built DLL now reports 3.22.11. -
   `Source/version.inc`, `version.h`, `Version.res`, `D_D102`...`D_D130/DDevExtensions.dproj`,
   `Installer/DDevExtensionsReg.dproj`
 
-- **Build numbers now auto-increment.** `VerInfo_AutoIncVersion` was absent from every project, so the
+- (2026-08-31) **Build numbers now auto-increment.** `VerInfo_AutoIncVersion` was absent from every project, so the
   build number only ever moved when someone edited it by hand - which is why D_D102-D_D120 and the
   installer had all been sitting at build 575 while D_D130 had reached 795: the number recorded who had
   been edited, not what had been built. **Note the property name** - it is `VerInfo_AutoIncVersion`, not
@@ -877,27 +803,27 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   `BuildDependsOn`) tests only the former, so the plausible-looking wrong name is silently inert. Verified
   incrementing on successive command-line Win64 builds. Two side effects worth knowing: the task rewrites
   the `.dproj` on every successful build (re-indenting it, so expect whitespace churn in diffs), and it
-  creates a per-configuration version block the first time a configuration is built. (2026-08-31) -
+  creates a per-configuration version block the first time a configuration is built. -
   `D_D102`...`D_D130/DDevExtensions.dproj`, `Installer/DDevExtensionsReg.dproj`
 
 ### Fixed
 
-- **`OldPalette` resource/object/include search-path entries had never resolved.** All six IDE projects
+- (2026-08-31) **`OldPalette` resource/object/include search-path entries had never resolved.** All six IDE projects
   carried the bare relative path `OldPalette` in `DCC_ResourcePath`, `DCC_ObjPath` and `DCC_IncludePath`,
   which resolves against the `.dproj`'s own folder - `D_Dxxx\OldPalette` - and no such directory has
   ever existed; the real one is `..\Source\OldPalette`. Every build emitted
-  `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). (2026-08-31) -
+  `H2675 Directory not found: OldPalette`. Corrected in all six projects (6 entries each). -
   `D_D102`...`D_D130/DDevExtensions.dproj`
 
-- **Collision widening folded in version segments, reproducing the problem it was meant to solve.**
+- (2026-08-31) **Collision widening folded in version segments, reproducing the problem it was meant to solve.**
   Version-like segments were skipped when deriving a base name but not when widening to break a
   clash, so a second candidate ending in `source` took the parent `37.0` and became
   `$(V37_0_SOURCE)` - no more meaningful than the `_2` suffix it replaced, and carrying the same
   `V` prefix the sanitiser adds when a name would otherwise start with a digit. Widening now reaches
   past version and token segments to one that names something: `$(STUDIO_37_0_SOURCE)`. Found by
-  driving the running IDE. (2026-08-31) - `Source/PathCompactor/PathCompactorCore.pas`
+  driving the running IDE. - `Source/PathCompactor/PathCompactorCore.pas`
 
-- **The junction exclusion tested only one direction, and offered the IDE's own installation tree.**
+- (2026-08-31) **The junction exclusion tested only one direction, and offered the IDE's own installation tree.**
   `IsJunctionCandidate` refused anything *under* `$(BDS)` but nothing *above* it, so
   `...\Embarcadero\Studio` - the parent of `...\Studio\37.0` - sailed through, and on the development
   machine it was the **top-ranked candidate at 458 uses**. Accepting it would have junctioned every
@@ -909,24 +835,24 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   mutation-checked test. Never fired in practice; no junction was ever created. (2026-08-31) -
   `Source/PathCompactor/PathCompactorJunctions.pas`
 
-- **Junction offers were nested, cryptically named and not editable.** The parent `EurekaLog 7` was
+- (2026-08-31) **Junction offers were nested, cryptically named and not editable.** The parent `EurekaLog 7` was
   offered alongside its `Source`, `Lib` and `Packages` children, inviting four links where one will
   do; link paths were two letters taken from the leaf, so `Source` and `Studio` both proposed
   `C:\SO` / `C:\ST` - a keystroke apart, and two sources sharing an initial pair would have collided
   on the same link. Overlapping offers are now collapsed to whichever saves more, link names use a
   longer stem made unique against the other offers and against existing directories, and the Link
-  column can be edited by double-clicking it, as the brief always specified. (2026-08-31) -
+  column can be edited by double-clicking it, as the brief always specified. -
   `Source/PathCompactor/FrmPathCompactor.pas`, `Source/PathCompactor/FrmPathCompactor.dfm`
 
-- **Apply now warns when junction opportunities exist but none is selected.** The junction list lives
+- (2026-08-31) **Apply now warns when junction opportunities exist but none is selected.** The junction list lives
   on its own tab, so it is easy to apply without ever looking at it - which is exactly what happened
   in practice. The prompt names how many offers there are and roughly how many expanded characters
   they would save, and switching to that tab is one click from declining. **Why it matters:** a
   junction is the only measure that shortens the expanded path, the one that constrains the compiler
-  command line; macro substitution cannot help there at all. (2026-08-31) -
+  command line; macro substitution cannot help there at all. -
   `Source/PathCompactor/FrmPathCompactor.pas`
 
-- **A bare version folder became a meaningless variable name, and identical path tails collided into
+- (2026-08-31) **A bare version folder became a meaningless variable name, and identical path tails collided into
   `_2`.** `...\Delphi 13 Florence\37.0` yielded `$(V37_0)` - the sanitiser prefixing `V` because the name
   could not start with a digit - and a second library ending in the same `...\Florence\37.0` tail took
   `$(V37_0_2)`, which says nothing about which library it is. Version-like segments (digits and separators
@@ -934,61 +860,61 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
   folding in another parent segment before any numeric suffix is considered. Measured on the development
   machine, the next pass now proposes `$(TMS_VCL_UIPACK)`, `$(RBUILDER_LIB)` and `$(EUREKALOG_7_SOURCE)`
   where it previously offered `$(LIB)`, `$(LIB_2)` and `$(SOURCE_3)`. Widened names may run to 28
-  characters rather than 16, since a meaningful long name beats a short meaningless one. (2026-08-31) -
+  characters rather than 16, since a meaningful long name beats a short meaningless one. -
   `Source/PathCompactor/PathCompactorCore.pas`
 
-- **The dialog left pre-Apply figures on screen after a successful Apply.** The grid still showed the
+- (2026-08-31) **The dialog left pre-Apply figures on screen after a successful Apply.** The grid still showed the
   before/after of a change that had already been made, while Apply greyed itself out - which reads as a
   fault rather than a completed action. Apply now re-runs the analysis against the registry as it then
-  stands, and says so. (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.pas`
+  stands, and says so. - `Source/PathCompactor/FrmPathCompactor.pas`
 
-- **Entries queued for removal were still voting for macro variables.** `Analyse` ran hygiene *after*
+- (2026-08-31) **Entries queued for removal were still voting for macro variables.** `Analyse` ran hygiene *after*
   candidate generation and selection, so an entry about to be deleted still counted toward a prefix's
   occurrence tally and its saving. **Why it matters:** a variable could be defined whose every user then
   disappeared - leaving an orphan in both IDE variable lists - and the reported saving counted characters
   that were never going to be written. Hygiene now runs before candidate generation, and dropped entries
   are excluded from the tally, from match records, from incremental scoring and from rewriting. Covered by
-  a test that fails if the ordering is put back. (2026-08-31) -
+  a test that fails if the ordering is put back. -
   `Source/PathCompactor/PathCompactorCore.pas`
 
-- **The most-used prefix was being given the suffixed variable name.** Names were assigned while candidates
+- (2026-08-31) **The most-used prefix was being given the suffixed variable name.** Names were assigned while candidates
   were generated, in dictionary order, so on the development machine the 499-use prefix became
   `$(SOURCE_4)` while a 50-use one took `$(SOURCE)`. Names are now assigned at acceptance, in descending
   order of value. Fixing that exposed a second defect: `UniqueVariableName` compared each candidate against
   *every* candidate's provisional name - including its own - so every accepted variable picked up a
-  needless `_2`. It now compares only against already-accepted variables. (2026-08-31) -
+  needless `_2`. It now compares only against already-accepted variables. -
   `Source/PathCompactor/PathCompactorCore.pas`
 
-- **The dialog's hint label rendered as mojibake** (`Sorter's backup history a<euro>" this tool...`). The
+- (2026-08-31) **The dialog's hint label rendered as mojibake** (`Sorter's backup history a<euro>" this tool...`). The
   `.dfm` carried a raw UTF-8 em-dash, and DFMs have no BOM, so it was read as ANSI. Escaped as `#8212`;
   the file is now pure ASCII. **Why it matters generally:** text DFMs in this repo must stay ASCII-safe -
-  non-ASCII belongs in `#nnnn` escapes. (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.dfm`
+  non-ASCII belongs in `#nnnn` escapes. - `Source/PathCompactor/FrmPathCompactor.dfm`
 
-- **`H2077 Value assigned to 'Failed' never used`** in the Compactor's Apply handler - the junction-failure
+- (2026-08-31) **`H2077 Value assigned to 'Failed' never used`** in the Compactor's Apply handler - the junction-failure
   counter was incremented but never read, each failure already reporting itself in its own dialog. Removed.
-  (2026-08-31) - `Source/PathCompactor/FrmPathCompactor.pas`
+  — `Source/PathCompactor/FrmPathCompactor.pas`
 
 **Known:**
 
-- `IDEUtils.ExpandDirMacros` reads neither IDE `Environment Variables` override key and lacks
+- (2026-08-31) `IDEUtils.ExpandDirMacros` reads neither IDE `Environment Variables` override key and lacks
   `BDSCATALOGREPOSITORY`/`BDSCOMMONDIR`/`BDSUSERDIR`; worse, it *deletes* a macro it cannot resolve instead
   of leaving it intact. The compactor therefore carries its own expander. Consequence for the existing
   Sorter: a `$(BDSCatalogRepository)` entry expands to a bare `\...` remainder, fails `DirectoryExists` and
   is wrongly flagged **invalid** - the `IsPathValid` "unexpanded macro, treat as valid" branch is
   unreachable for it. Tracked separately.
 
-- **Resolved on first live use (2026-08-31):** the IDE does **not** rewrite the Library key on shutdown.
+- (2026-08-31) **Resolved on first live use:** the IDE does **not** rewrite the Library key on shutdown.
   A compaction was applied, the IDE closed and reopened, and the rewritten paths and both variable lists
   survived intact; project builds succeeded against them. No deferred applier is needed. First live run
   over 25 path sets: 31,428 -> 22,413 stored characters (28.7%), 952 -> 873 entries (the 79 removed being
   exactly the missing-directory references), 12 variables created in both IDE lists, none orphaned, none
   modified, and nothing written to the Windows user environment.
 
-- ~~Whether the IDE rewrites the Library key on shutdown is still unestablished.~~ Answered above. The
+- (2026-08-31) ~~Whether the IDE rewrites the Library key on shutdown is still unestablished.~~ Answered above. The
   Compactor writes directly, as the Sorter already does, and still refuses to Apply while the IDE's own
   Options dialog is open - that page holds its own copy of the path and would commit it over any change.
 
-- ~~The two IDE user-variable lists have already diverged on the development machine.~~
+- (2026-08-31) ~~The two IDE user-variable lists have already diverged on the development machine.~~
   **Repaired 2026-08-31.** Six variables existed only in the 32-bit list - `DUNITX`, `DELPHIMOCKS`,
   `GOOGLEMAPSDIR`, `DEMOSDIR`, `IB_PROTOCOL` and `InterBase` - and four shared library-path entries used
   three of them, so those entries were dead in the 64-bit IDE. They were copied across by hand and the
@@ -1008,33 +934,29 @@ and `DDevExtensionsReg.exe` (x86), each confirmed by its PE machine word.
 
 ## [3.21.10] - 2026-07-13
 
-### Added
-
-- **DUnitX fixture `TTestProjectGroupSorter` (11 tests) covering the project-group sorter.** Verifies that an unsorted group becomes exactly the canonical sorted form across all three sections, that sorting is idempotent (drives the no-op path), case-insensitive (including the real-world "Scrap / SCtoXX / Store" ordering that bit the manual edit), that per-project `<Dependencies>` and the header/`ProjectExtensions`/`Import` boilerplate survive verbatim, that a group with no `<Target>` section reorders the `<ItemGroup>` without inventing targets, plus CRLF endings, single-project no-op and `LeafName`. Wired into `DDevExtUnitTestsDUnitX.dpr`; links clean in the suite and runtime-verified green (9 logic checks via a standalone `dcc64` console harness, exit 0). (2026-06-30) — `DDevExtUnitTests/TestProjectGroupSorterDUnitX.pas`, `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`
-
 ### Changed
 
-- Version bumped 3.21.9 → 3.21.10 across ALL indicators, including the lagging ones: `Source/version.inc`, `version.h` (was stale at 3.19.9), all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj` (D_D102–D_D120 and the installer were stale at 3.19.9 — `VerInfo_MinorVer` 19→21, `FileVersion` → `3.21.10.*`, `ProductVersion` → 3.21; build numbers preserved). (2026-07-13)
+- (2026-07-13) Version bumped 3.21.9 → 3.21.10 across ALL indicators, including the lagging ones: `Source/version.inc`, `version.h` (was stale at 3.19.9), all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj` (D_D102–D_D120 and the installer were stale at 3.19.9 — `VerInfo_MinorVer` 19→21, `FileVersion` → `3.21.10.*`, `ProductVersion` → 3.21; build numbers preserved).
 
-- **Extracted the pure `.groupproj` rewrite logic into a new RTL-only unit `ProjectGroupSorterCore` (`SortGroupProjectText`, `LeafName`).** Behaviour-preserving split so the transform is unit-testable by a standalone executable without pulling in ToolsAPI/VCL. `ProjectGroupSorter` now `uses ProjectGroupSorterCore` and keeps only the menu item and IDE orchestration; the core is registered in all six D_D1xx DPRs. Also cleared a dcc64 H2077 hint (removed a dead `TargetIndent` default). Builds clean Win32 + Win64 (D130). (2026-06-30) — `Source/ProjectGroupSorter/ProjectGroupSorterCore.pas`, `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `D_D102/`…`D_D130/DDevExtensions.dpr`
+- (2026-06-30) **Extracted the pure `.groupproj` rewrite logic into a new RTL-only unit `ProjectGroupSorterCore` (`SortGroupProjectText`, `LeafName`).** Behaviour-preserving split so the transform is unit-testable by a standalone executable without pulling in ToolsAPI/VCL. `ProjectGroupSorter` now `uses ProjectGroupSorterCore` and keeps only the menu item and IDE orchestration; the core is registered in all six D_D1xx DPRs. Also cleared a dcc64 H2077 hint (removed a dead `TargetIndent` default). Builds clean Win32 + Win64 (D130). — `Source/ProjectGroupSorter/ProjectGroupSorterCore.pas`, `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `D_D102/`…`D_D130/DDevExtensions.dpr`
 
 ### Fixed
 
-- **Keybindings crashed the 64-bit IDE while editing (`Access violation in coreide370.bpl` at `Kbclient.TKeyboardServices.FillBindingRec`, read of a sign-extended 32-bit address) and left the keyboard unresponsive.** `DoKeyBinding`'s unhandled-key path probed for a follow-on binding via `Context.GetKeyBindingRec` + `KeyboardServices.GetNextBindingRec`, but that legacy ToolsAPI round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next: Integer` field — in the 64-bit IDE the truncated/sign-extended pointer AVs inside `Kbclient.FillBindingRec`, and the exception unwinding out of `ProcessKeyStroke` wedged all subsequent keystroke processing until IDE restart. Common keys hit the path constantly (plain `Home` mid-line, `Tab` with no block selected). The probe is now gated `{$IFNDEF CPUX64}` (matching the existing Move-Line/Block Win64 gate): on Win64 unhandled keys always use the built-in HOME/TAB fallback instead of `krNextProc`, so another plugin partially bound to the same key is no longer chained on Win64 — a deliberate trade against IDE crashes. Underlying `Kbclient` defect is the 64-bit IDE's — reported to Embarcadero (2026-07-13). (2026-07-13) — `Source/Keybindings/FrmeOptionPageKeybindings.pas`
+- (2026-07-13) **Keybindings crashed the 64-bit IDE while editing (`Access violation in coreide370.bpl` at `Kbclient.TKeyboardServices.FillBindingRec`, read of a sign-extended 32-bit address) and left the keyboard unresponsive.** `DoKeyBinding`'s unhandled-key path probed for a follow-on binding via `Context.GetKeyBindingRec` + `KeyboardServices.GetNextBindingRec`, but that legacy ToolsAPI round-trips an x64 binding-list pointer through the 32-bit `TKeyBindingRec.Next: Integer` field — in the 64-bit IDE the truncated/sign-extended pointer AVs inside `Kbclient.FillBindingRec`, and the exception unwinding out of `ProcessKeyStroke` wedged all subsequent keystroke processing until IDE restart. Common keys hit the path constantly (plain `Home` mid-line, `Tab` with no block selected). The probe is now gated `{$IFNDEF CPUX64}` (matching the existing Move-Line/Block Win64 gate): on Win64 unhandled keys always use the built-in HOME/TAB fallback instead of `krNextProc`, so another plugin partially bound to the same key is no longer chained on Win64 — a deliberate trade against IDE crashes. Underlying `Kbclient` defect is the 64-bit IDE's — reported to Embarcadero. — `Source/Keybindings/FrmeOptionPageKeybindings.pas`
 
 ## [3.21.9] - 2026-06-30
 
 ### Added
 
-- **New "Sort Projects in Group" Tools-menu command (`ProjectGroupSorter`).** Alphabetises the member projects of the **currently open project group** so they list in name order in the Project Manager. It saves the group, rewrites the `.groupproj` on disk with the projects sorted, then closes and reopens the group so the IDE reloads the new order; the previously active project is reselected and a `.bak` of the group file is written first. A confirmation prompt warns that the group will be reloaded, and it no-ops with a message when the projects are already sorted or the group has fewer than two members. (2026-06-30) — `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `Source/RegisterPlugins.pas`, `Source/DelphiExtension.inc`, `D_D102/`…`D_D130/DDevExtensions.dpr`, `Source/version.inc`, `D_D130/DDevExtensions.dproj`
+- (2026-06-30) **New "Sort Projects in Group" Tools-menu command (`ProjectGroupSorter`).** Alphabetises the member projects of the **currently open project group** so they list in name order in the Project Manager. It saves the group, rewrites the `.groupproj` on disk with the projects sorted, then closes and reopens the group so the IDE reloads the new order; the previously active project is reselected and a `.bak` of the group file is written first. A confirmation prompt warns that the group will be reloaded, and it no-ops with a message when the projects are already sorted or the group has fewer than two members. — `Source/ProjectGroupSorter/ProjectGroupSorter.pas`, `Source/RegisterPlugins.pas`, `Source/DelphiExtension.inc`, `D_D102/`…`D_D130/DDevExtensions.dpr`, `Source/version.inc`, `D_D130/DDevExtensions.dproj`
   - **Why this approach:** ToolsAPI offers no way to reorder a project group's members — `IOTAProjectGroup` exposes only `RemoveProject` plus the interactive add dialogs — and the IDE reads the member order from the `.groupproj` only when the group is opened. Rewriting the file and forcing a reopen is therefore the only mechanism.
   - **Why all three sections are sorted:** a `.groupproj` lists every project three times — in the `<ItemGroup>`, as a trio of per-project `<Target>` elements, and in each of the `Build`/`Clean`/`Make` `CallTarget` lists. The Project Manager tree order follows the `<Target>`/`CallTarget` sections, so sorting only the `<ItemGroup>` has **no visible effect**; `SortGroupProjectText` sorts all three consistently while preserving the header, `ProjectExtensions`, `Import` and any per-project dependency content verbatim.
   - Modelled on `LibraryPathSorter` (Tools-menu item, no new IDE notifier), keeping it clear of the Win64 ToolsAPI teardown fragility. Registration is gated by `INCLUDE_PROJECTGROUPSORTER` and the `DDevExtensions.DisabledFeatures` env var (`ProjectGroupSorter`).
 
 ### Fixed
 
-- **Removed the dead `PrevTokenKind` local from `TDeadCodeAnalyzer.ScanForReferences`** (H2077, ×2). It was assigned but never read in that method — the genuine `PrevTokenKind` reads belong to a different method (`ExtractSymbols`) that has its own local of the same name. Pure dead code; no behaviour change. (2026-06-24) — `Source/DeadCodeDetector/DeadCodeDetector.pas`
-- **Gated `TCompileProgress.FCompileInterceptorId` behind `{$IFNDEF CPUX64}`** (H2219, private symbol declared but never used). The field is only assigned (`Create`) and read (`Destroy`) inside `{$IFNDEF CPUX64}` blocks — on Win64 the compile interceptor is deliberately a no-op, so the field was unreferenced there. The declaration now matches its usage, with the Win32-only rationale noted in its doc comment. (2026-06-24) — `Source/CompileProgress/CompileProgress.pas`
+- (2026-06-24) **Removed the dead `PrevTokenKind` local from `TDeadCodeAnalyzer.ScanForReferences`** (H2077, ×2). It was assigned but never read in that method — the genuine `PrevTokenKind` reads belong to a different method (`ExtractSymbols`) that has its own local of the same name. Pure dead code; no behaviour change. — `Source/DeadCodeDetector/DeadCodeDetector.pas`
+- (2026-06-24) **Gated `TCompileProgress.FCompileInterceptorId` behind `{$IFNDEF CPUX64}`** (H2219, private symbol declared but never used). The field is only assigned (`Create`) and read (`Destroy`) inside `{$IFNDEF CPUX64}` blocks — on Win64 the compile interceptor is deliberately a no-op, so the field was unreferenced there. The declaration now matches its usage, with the Win32-only rationale noted in its doc comment. — `Source/CompileProgress/CompileProgress.pas`
 
 Builds clean Win64 (D_D130, Release) with no diagnostics.
 
@@ -1042,23 +964,23 @@ Builds clean Win64 (D_D130, Release) with no diagnostics.
 
 ### Added
 
-- **New x64-safe full-replacement hook primitive `InstallFullReplaceHook` / `RemoveFullReplaceHook` (record `TFullReplaceHook`).** On Win32 it delegates to the classic `CodeRedirect`; on Win64 it overwrites the target's first 14 bytes with an absolute indirect jump (`FF 25 00000000` + 8-byte target). **Why:** the general `CodeRedirect` is a deliberate no-op on Win64 (5-byte `JMP rel32` has ±2 GB reach and corrupts x64 prologue/unwind info). The new primitive is safe *only* for hooks whose replacement never chains back into the original — control transfers with `JMP` not `CALL`, so the patched function never appears on a call stack and its unwind metadata is irrelevant, and no prologue is relocated or re-run. The global `CodeRedirect` is left untouched so the ~15 chain-back hooks elsewhere stay neutered on Win64. (2026-06-02) — `Shared/Hooking.pas`
+- (2026-06-02) **New x64-safe full-replacement hook primitive `InstallFullReplaceHook` / `RemoveFullReplaceHook` (record `TFullReplaceHook`).** On Win32 it delegates to the classic `CodeRedirect`; on Win64 it overwrites the target's first 14 bytes with an absolute indirect jump (`FF 25 00000000` + 8-byte target). **Why:** the general `CodeRedirect` is a deliberate no-op on Win64 (5-byte `JMP rel32` has ±2 GB reach and corrupts x64 prologue/unwind info). The new primitive is safe *only* for hooks whose replacement never chains back into the original — control transfers with `JMP` not `CALL`, so the patched function never appears on a call stack and its unwind metadata is irrelevant, and no prologue is relocated or re-run. The global `CodeRedirect` is left untouched so the ~15 chain-back hooks elsewhere stay neutered on Win64. — `Shared/Hooking.pas`
 
 ### Changed
 
-- **`.gitignore` now ignores build output `*.res`, with negation exceptions** for the three hand-built static-asset resources that have no regenerable source and are referenced by explicit `{$R name.res}` directives — keeping them tracked so a fresh clone still builds: `Version.res` (from the tracked `Version.rc`), `Splash.res` (splash image), `ComponentPanel.res` (old-palette bitmaps). `*.exe`, `*.dll`, `*.bpl`, `*.dcu` ignore rules were already present. (2026-06-01) — `.gitignore`
+- (2026-06-01) **`.gitignore` now ignores build output `*.res`, with negation exceptions** for the three hand-built static-asset resources that have no regenerable source and are referenced by explicit `{$R name.res}` directives — keeping them tracked so a fresh clone still builds: `Version.res` (from the tracked `Version.rc`), `Splash.res` (splash image), `ComponentPanel.res` (old-palette bitmaps). `*.exe`, `*.dll`, `*.bpl`, `*.dcu` ignore rules were already present. — `.gitignore`
 
 ### Removed
 
-- **Auto-generated project `.res` files are no longer version-controlled.** Untracked (kept on disk) the six IDE-regenerated resources that the compiler rewrites on every build: `DDevExtensions.res` (D_D130), `DDevExtensionsReg.res`, `ExampleCompileInterceptor.res`, `CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`. **Why:** binary `.res` cannot be diff/merged, so each rebuild produced spurious changes that caused sync conflicts for contributors (reported by Achim Kalwa). They regenerate locally on build, so nothing is lost. (2026-06-01) — `D_D130/DDevExtensions.res`, `Installer/DDevExtensionsReg.res`, `Example/ExampleCompileInterceptor.res`, `Source/CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`
+- (2026-06-01) **Auto-generated project `.res` files are no longer version-controlled.** Untracked (kept on disk) the six IDE-regenerated resources that the compiler rewrites on every build: `DDevExtensions.res` (D_D130), `DDevExtensionsReg.res`, `ExampleCompileInterceptor.res`, `CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`. **Why:** binary `.res` cannot be diff/merged, so each rebuild produced spurious changes that caused sync conflicts for contributors (reported by Achim Kalwa). They regenerate locally on build, so nothing is lost. — `D_D130/DDevExtensions.res`, `Installer/DDevExtensionsReg.res`, `Example/ExampleCompileInterceptor.res`, `Source/CompileInterceptorW.res`, `DDevExtUnitTests.res`, `DDevExtUnitTestsDUnitX.res`
 
 ### Fixed
 
-- **The three "Do not store … into the DFM" options now work on the 64-bit IDE.** *Do not store the Explicit\* properties*, *…the PixelsPerInch property* and *…the TextHeight property* were greyed out under Options → Form Designer on the Win64 IDE because their `CodeRedirect` install was inert there (reported by a user who upgraded specifically for these). All three are full-replacement hooks (their replacement `DefineProperties` never calls the original), so they were switched to `InstallFullReplaceHook`/`RemoveFullReplaceHook` and the controls re-enabled on x64. Verified live on the Win64 D13 IDE: Explicit\* and TextHeight strip on save; PixelsPerInch shares the identical hook path. Builds clean Win32 + Win64 (D_D130, Release). (2026-06-02) — `Source/FormDesignerHelpers/RemoveExplicitProperty.pas`, `Source/FormDesignerHelpers/RemovePixelsPerInchProperty.pas`, `Source/FormDesignerHelpers/RemoveTextHeightProperty.pas`, `Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`, `Shared/Hooking.pas`, `Source/version.inc`
+- (2026-06-02) **The three "Do not store … into the DFM" options now work on the 64-bit IDE.** *Do not store the Explicit\* properties*, *…the PixelsPerInch property* and *…the TextHeight property* were greyed out under Options → Form Designer on the Win64 IDE because their `CodeRedirect` install was inert there (reported by a user who upgraded specifically for these). All three are full-replacement hooks (their replacement `DefineProperties` never calls the original), so they were switched to `InstallFullReplaceHook`/`RemoveFullReplaceHook` and the controls re-enabled on x64. Verified live on the Win64 D13 IDE: Explicit\* and TextHeight strip on save; PixelsPerInch shares the identical hook path. Builds clean Win32 + Win64 (D_D130, Release). — `Source/FormDesignerHelpers/RemoveExplicitProperty.pas`, `Source/FormDesignerHelpers/RemovePixelsPerInchProperty.pas`, `Source/FormDesignerHelpers/RemoveTextHeightProperty.pas`, `Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`, `Shared/Hooking.pas`, `Source/version.inc`
 
 **Documentation:**
 
-- **Documented that *Remove PixelsPerInch* is only observable at non-96 DPI.** Delphi streams `PixelsPerInch` only when the design DPI differs from 96 (`PixelsPerInch <> USER_DEFAULT_SCREEN_DPI` in `TDataModule`/`TCustomForm.DefineProperties`), so at 100% scaling the IDE never emits it and the option has no visible effect — it only does work on a scaled/high-DPI design display. **Why:** prevents the false "the option is broken" conclusion when no `PixelsPerInch` line appears at 96 DPI. (2026-06-02) — `Help.md`
+- (2026-06-02) **Documented that *Remove PixelsPerInch* is only observable at non-96 DPI.** Delphi streams `PixelsPerInch` only when the design DPI differs from 96 (`PixelsPerInch <> USER_DEFAULT_SCREEN_DPI` in `TDataModule`/`TCustomForm.DefineProperties`), so at 100% scaling the IDE never emits it and the option has no visible effect — it only does work on a scaled/high-DPI design display. **Why:** prevents the false "the option is broken" conclusion when no `PixelsPerInch` line appears at 96 DPI. — `Help.md`
 
 ## [3.19.9] - 2026-05-30
 
@@ -1072,51 +994,51 @@ speculative rewrite, are recorded as documented notes at the end.
 
 ### Changed
 
-- **Renamed the test project `DfmParserTests` → `DDevExtUnitTests`** (folder, both `.dpr`/`.dproj` variants — the plain console runner and the DUnitX suite — `.res`/`.ini`/`.eof`, program declarations and all internal project references). The product-level name reflects that this is the umbrella unit-test suite; individual test units keep their feature names (`TestDfmParser`, `TestDfmParserDUnitX`), so future analyzer tests slot in as `TestCodeQuality`, etc. Untracked the rebuilt `.exe` artifacts and added a scoped `.gitignore` (`*.exe`). Both projects build clean (Win64, Release) and the suite still passes 31/31. **Why:** the DFM-specific name would mislead once analyzer coverage is added (see `UnitTestCoverage-Plan.md`). (2026-05-30) — `DDevExtUnitTests/` (was `DfmParserTests/`), `.claude/settings.local.json`
-- **Added `DelphiLexer` unit tests** (`TestDelphiLexer.pas`, 9 cases / 24 assertions) covering token classification (keywords vs identifiers, int/float/hex/string literals, multi-char operators, brackets, comments, directives) and the `Line` 0-based / `Column` 1-based contract. Guards two v3.19.9 behaviours: bracket tokenisation behind the magic-number bracket-depth fix, and the analyzer navigation line/column base. The lexer underpins every analyzer and the DFM parser, so this is the highest-leverage coverage. Suite now passes 55 (31 DFM + 24 lexer). Build artifacts (`.exe`/`.dll`/`.dcu`…) are no longer tracked — repo `.gitignore` enforces it. The coverage roadmap was expanded and renamed `AnalyzerTestCoverage-Plan.md` → `UnitTestCoverage-Plan.md`. (2026-05-30) — `DDevExtUnitTests/TestDelphiLexer.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `UnitTestCoverage-Plan.md`, `.gitignore`
-- **Completed Tier 1 unit-test coverage** — added `TestDelphiExpr.pas` (6 cases / 21 assertions: literal/binary nodes, int↔float coercion, unary minus, float div-by-zero error path, relational/boolean operators, end-to-end `TExpressionParser.Parse` precedence), `TestDelphiParserContainers.pas` (5 cases / 24 assertions: THashtable case-sensitivity + ownership-aware removal, TIntegerList, TStringDictionary, TStringCollection) and `TestDelphiPreproc.pas` (4 cases / 10 assertions: `$IFDEF`/`$IFNDEF`/`$ELSE`/nested blocks, in-source `$DEFINE`/`$UNDEF`, `Define`/`Undefine` state). The test project now declares the same Delphi-10.2+ `COMPILERx_UP` symbols as the main projects (Base-config `DCC_Define`) so the Shared units compile their modern paths. Suite passes 110 assertions (31 DFM + 24 lexer + 24 containers + 21 expr + 10 preproc) on Win32 and Win64. (2026-05-30) — `DDevExtUnitTests/TestDelphiExpr.pas`, `DDevExtUnitTests/TestDelphiParserContainers.pas`, `DDevExtUnitTests/TestDelphiPreproc.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests/DDevExtUnitTests.dproj`, `UnitTestCoverage-Plan.md`
-- **Added Tier 2 `UnitMetrics` tests** (`TestUnitMetrics.pas`, 4 cases) covering base/branch (`if`/`while`/`for`)/case-label cyclomatic complexity and LOC with comment-line exclusion (via a temp-file fixture, since the public API takes a file name). Suite now passes 114 assertions. The other Tier 2 candidates (`ProjectSettingsData`, `CtrlUtils`, `UsesClauseManager`, `DependencyViewer`) were attempted and found to need core extraction to be console-testable — `ProjectSettingsData` `uses ToolsAPI` directly and `CtrlUtils.TListViewSort.Compare` needs a windowed `TListView` — so they were folded into the Tier 3 extraction roadmap (no production change; trial seams were reverted). (2026-05-30) — `DDevExtUnitTests/TestUnitMetrics.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests/DDevExtUnitTests.dproj`, `UnitTestCoverage-Plan.md`
+- (2026-05-30) **Renamed the test project `DfmParserTests` → `DDevExtUnitTests`** (folder, both `.dpr`/`.dproj` variants — the plain console runner and the DUnitX suite — `.res`/`.ini`/`.eof`, program declarations and all internal project references). The product-level name reflects that this is the umbrella unit-test suite; individual test units keep their feature names (`TestDfmParser`, `TestDfmParserDUnitX`), so future analyzer tests slot in as `TestCodeQuality`, etc. Untracked the rebuilt `.exe` artifacts and added a scoped `.gitignore` (`*.exe`). Both projects build clean (Win64, Release) and the suite still passes 31/31. **Why:** the DFM-specific name would mislead once analyzer coverage is added (see `UnitTestCoverage-Plan.md`). — `DDevExtUnitTests/` (was `DfmParserTests/`), `.claude/settings.local.json`
+- (2026-05-30) **Added `DelphiLexer` unit tests** (`TestDelphiLexer.pas`, 9 cases / 24 assertions) covering token classification (keywords vs identifiers, int/float/hex/string literals, multi-char operators, brackets, comments, directives) and the `Line` 0-based / `Column` 1-based contract. Guards two v3.19.9 behaviours: bracket tokenisation behind the magic-number bracket-depth fix, and the analyzer navigation line/column base. The lexer underpins every analyzer and the DFM parser, so this is the highest-leverage coverage. Suite now passes 55 (31 DFM + 24 lexer). Build artifacts (`.exe`/`.dll`/`.dcu`…) are no longer tracked — repo `.gitignore` enforces it. The coverage roadmap was expanded and renamed `AnalyzerTestCoverage-Plan.md` → `UnitTestCoverage-Plan.md`. — `DDevExtUnitTests/TestDelphiLexer.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `UnitTestCoverage-Plan.md`, `.gitignore`
+- (2026-05-30) **Completed Tier 1 unit-test coverage** — added `TestDelphiExpr.pas` (6 cases / 21 assertions: literal/binary nodes, int↔float coercion, unary minus, float div-by-zero error path, relational/boolean operators, end-to-end `TExpressionParser.Parse` precedence), `TestDelphiParserContainers.pas` (5 cases / 24 assertions: THashtable case-sensitivity + ownership-aware removal, TIntegerList, TStringDictionary, TStringCollection) and `TestDelphiPreproc.pas` (4 cases / 10 assertions: `$IFDEF`/`$IFNDEF`/`$ELSE`/nested blocks, in-source `$DEFINE`/`$UNDEF`, `Define`/`Undefine` state). The test project now declares the same Delphi-10.2+ `COMPILERx_UP` symbols as the main projects (Base-config `DCC_Define`) so the Shared units compile their modern paths. Suite passes 110 assertions (31 DFM + 24 lexer + 24 containers + 21 expr + 10 preproc) on Win32 and Win64. — `DDevExtUnitTests/TestDelphiExpr.pas`, `DDevExtUnitTests/TestDelphiParserContainers.pas`, `DDevExtUnitTests/TestDelphiPreproc.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests/DDevExtUnitTests.dproj`, `UnitTestCoverage-Plan.md`
+- (2026-05-30) **Added Tier 2 `UnitMetrics` tests** (`TestUnitMetrics.pas`, 4 cases) covering base/branch (`if`/`while`/`for`)/case-label cyclomatic complexity and LOC with comment-line exclusion (via a temp-file fixture, since the public API takes a file name). Suite now passes 114 assertions. The other Tier 2 candidates (`ProjectSettingsData`, `CtrlUtils`, `UsesClauseManager`, `DependencyViewer`) were attempted and found to need core extraction to be console-testable — `ProjectSettingsData` `uses ToolsAPI` directly and `CtrlUtils.TListViewSort.Compare` needs a windowed `TListView` — so they were folded into the Tier 3 extraction roadmap (no production change; trial seams were reverted). — `DDevExtUnitTests/TestUnitMetrics.pas`, `DDevExtUnitTests/DDevExtUnitTests.dpr`, `DDevExtUnitTests/DDevExtUnitTests.dproj`, `UnitTestCoverage-Plan.md`
 
 ### Fixed
 
-- **Option-page frames no longer trust the framework blindly.** `SetUserData` now validates the cast (`is` test, nil on mismatch) and `LoadData`/`SaveData` early-exit when the config is not assigned, in Compile Backup, Compiler Enhancements and File Cleaner — a wrong/nil `UserData` can no longer AV or raise `EInvalidCast` during page setup. (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageCompilerEnhancements.pas`, `FrmeOptionPageFileCleaner.pas`
-- **`AfterCompile` style-check wrapped in try/except** so a checker/parse failure can no longer escape into the IDE's post-compile notifier pipeline. (2026-05-30) — `CompileProgress.pas`
-- **Native progress label** no longer dereferences a nil `FProgressBar` when `SetMaxFiles` left it unset (`FMaxFiles <= 0`). (2026-05-30) — `NativeProgressForm.pas`
-- **Debugger step-into-skip** validates the dcc32 module handle and both exports, uses `GetModuleHandle` instead of leaking a `LoadLibrary` handle, and only installs the `FindSourceLine` redirect once the byte-signature match and dependency thunks resolved (otherwise the hook could call nil). (2026-05-30) — `DbgStepIntoSkip.pas`
-- **Dependency Viewer close-during-scan** guarded with an `FScanning` re-entrancy/close veto (`ScannerProgress` pumps the message queue). (2026-05-30) — `FrmDependencyViewer.pas`
-- **Keybindings `SetActive`** uses `Supports(BorlandIDEServices, IOTAKeyboardServices)` instead of a hard `as` cast, so the destructor-time disable cannot raise `EIntfCastError` during (Win64) shutdown. (2026-05-30) — `FrmeOptionPageKeybindings.pas`
-- **IDE Path Sorter** singleton creates into a local and only assigns the global after a successful constructor (a `FormCreate` exception no longer leaves a dangling non-nil instance), and `Create Backup` uses `InputQuery` so Cancel no longer creates a backup. (2026-05-30) — `FrmLibraryPathSorter.pas`
-- **Project Settings**: `Set Versioninfo` enable test guards `GetActiveProject <> nil` before `GetPersonality`; the settings submenu guards `Items[Count-1]`; the Versioninfo dialog wraps `LoadFromIconFile` in try/except and replaces an `Assert`-only control lookup with a release-safe runtime guard. (2026-05-30) — `ProjectSettings.pas`, `FrmProjectSettingsSetVersioninfo.pas`
-- **Unused Unit Detector** unload closes any open detector form (new `CloseInstance`) and frees the plugin under an `Assigned` guard, so a stale form cannot reference freed plugin state. (2026-05-30) — `UnusedUnitDetector.pas`, `FrmUnusedUnitDetector.pas`
-- **External Mod Monitor**: toggling `Active` in the options page now syncs the live watch set (`ApplyActiveState` — clears watches + tray icon on disable, scans open projects on enable) instead of only flipping the flag; the project-group branch now watches each member project; `ProcessNotifications` validates every `FILE_NOTIFY_INFORMATION` record stays within the 4 KB buffer before `Move` (truncated final record can no longer read out of bounds). (2026-05-30) — `ExternalModMonitor.pas`, `FrmeOptionPageExternalModMonitor.pas`, `FileWatcher.pas`
-- **TODO Aggregator** clipboard copy wrapped in try/except (transient clipboard lock no longer surfaces a raw `EClipboardException`). (2026-05-30) — `FrmTodoAggregator.pas`
-- **`Application.MainForm` nil-guarded** before `FindComponent('mnuFormatSource')` in the DSU source-formatter-hotkey setter. (2026-05-30) — `FrmeOptionPageDSUFeatures.pas`
-- **Core**: `TPluginConfig` legacy-migration and `ComponentSelector` registry load/save no longer swallow exceptions silently (logged via `OutputDebugString`; the registry paths never re-raise out of `Destroy`); `InitAppDataDirectory` checks `ForceDirectories` and falls back beside the executable; `DeletePackageComponents` asserts list-count parity after `Pack`. (2026-05-30) — `PluginConfig.pas`, `ComponentSelector.pas`, `Main.pas`, `ComponentManager.pas`
-- **`StartParameterUpdate`** guards the dead `FActionCustomize` dereference so re-wiring the (currently commented-out) action cannot AV. (2026-05-30) — `StartParameterManagerReg.pas`
+- (2026-05-30) **Option-page frames no longer trust the framework blindly.** `SetUserData` now validates the cast (`is` test, nil on mismatch) and `LoadData`/`SaveData` early-exit when the config is not assigned, in Compile Backup, Compiler Enhancements and File Cleaner — a wrong/nil `UserData` can no longer AV or raise `EInvalidCast` during page setup. — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageCompilerEnhancements.pas`, `FrmeOptionPageFileCleaner.pas`
+- (2026-05-30) **`AfterCompile` style-check wrapped in try/except** so a checker/parse failure can no longer escape into the IDE's post-compile notifier pipeline. — `CompileProgress.pas`
+- (2026-05-30) **Native progress label** no longer dereferences a nil `FProgressBar` when `SetMaxFiles` left it unset (`FMaxFiles <= 0`). — `NativeProgressForm.pas`
+- (2026-05-30) **Debugger step-into-skip** validates the dcc32 module handle and both exports, uses `GetModuleHandle` instead of leaking a `LoadLibrary` handle, and only installs the `FindSourceLine` redirect once the byte-signature match and dependency thunks resolved (otherwise the hook could call nil). — `DbgStepIntoSkip.pas`
+- (2026-05-30) **Dependency Viewer close-during-scan** guarded with an `FScanning` re-entrancy/close veto (`ScannerProgress` pumps the message queue). — `FrmDependencyViewer.pas`
+- (2026-05-30) **Keybindings `SetActive`** uses `Supports(BorlandIDEServices, IOTAKeyboardServices)` instead of a hard `as` cast, so the destructor-time disable cannot raise `EIntfCastError` during (Win64) shutdown. — `FrmeOptionPageKeybindings.pas`
+- (2026-05-30) **IDE Path Sorter** singleton creates into a local and only assigns the global after a successful constructor (a `FormCreate` exception no longer leaves a dangling non-nil instance), and `Create Backup` uses `InputQuery` so Cancel no longer creates a backup. — `FrmLibraryPathSorter.pas`
+- (2026-05-30) **Project Settings**: `Set Versioninfo` enable test guards `GetActiveProject <> nil` before `GetPersonality`; the settings submenu guards `Items[Count-1]`; the Versioninfo dialog wraps `LoadFromIconFile` in try/except and replaces an `Assert`-only control lookup with a release-safe runtime guard. — `ProjectSettings.pas`, `FrmProjectSettingsSetVersioninfo.pas`
+- (2026-05-30) **Unused Unit Detector** unload closes any open detector form (new `CloseInstance`) and frees the plugin under an `Assigned` guard, so a stale form cannot reference freed plugin state. — `UnusedUnitDetector.pas`, `FrmUnusedUnitDetector.pas`
+- (2026-05-30) **External Mod Monitor**: toggling `Active` in the options page now syncs the live watch set (`ApplyActiveState` — clears watches + tray icon on disable, scans open projects on enable) instead of only flipping the flag; the project-group branch now watches each member project; `ProcessNotifications` validates every `FILE_NOTIFY_INFORMATION` record stays within the 4 KB buffer before `Move` (truncated final record can no longer read out of bounds). — `ExternalModMonitor.pas`, `FrmeOptionPageExternalModMonitor.pas`, `FileWatcher.pas`
+- (2026-05-30) **TODO Aggregator** clipboard copy wrapped in try/except (transient clipboard lock no longer surfaces a raw `EClipboardException`). — `FrmTodoAggregator.pas`
+- (2026-05-30) **`Application.MainForm` nil-guarded** before `FindComponent('mnuFormatSource')` in the DSU source-formatter-hotkey setter. — `FrmeOptionPageDSUFeatures.pas`
+- (2026-05-30) **Core**: `TPluginConfig` legacy-migration and `ComponentSelector` registry load/save no longer swallow exceptions silently (logged via `OutputDebugString`; the registry paths never re-raise out of `Destroy`); `InitAppDataDirectory` checks `ForceDirectories` and falls back beside the executable; `DeletePackageComponents` asserts list-count parity after `Pack`. — `PluginConfig.pas`, `ComponentSelector.pas`, `Main.pas`, `ComponentManager.pas`
+- (2026-05-30) **`StartParameterUpdate`** guards the dead `FActionCustomize` dereference so re-wiring the (currently commented-out) action cannot AV. — `StartParameterManagerReg.pas`
 
-- **Code Quality Analyzer**: the `AllowMagicInArrayIndex` exemption now tracks bracket-nesting depth, so any literal inside `[ ... ]` (e.g. `A[ I + 5 ]`) is treated as an array index, not just the token directly after `[`. The unimplemented memory-leak check defaults off and its option-page controls are disabled so it cannot advertise a check that does nothing. Line/Column base documented. (2026-05-30) — `CodeQualityAnalyzer.pas`, `FrmeOptionPageCodeQuality.pas`
-- **Code Style navigation** clamps the caret column to a minimum of 1 (`Max(1, Column)`) so synthetic `Column 0` violations still position sensibly. (2026-05-30) — `FrmCodeStyleChecker.pas`
-- **Component Selector** best-fit selection uses the **absolute** length difference, so it no longer always biases toward the shortest entry. (2026-05-30) — `ComponentSelector.pas`
-- **Dependency Viewer** reports a consistent cycle "unit count" (distinct units = `Length(Steps) - 1`) across the listbox, CSV and TXT exports, and the `dot.exe` PATH search skips empty entries and strips surrounding quotes. (2026-05-30) — `FrmDependencyViewer.pas`
-- **Empty Event Handler Detector** records the declaration line from the `procedure`/`function` keyword token, so navigation lands on the declaration's first line even when the name wraps. (2026-05-30) — `EmptyEventHandlerDetector.pas`
-- **Unreachable Code** preview ellipsis is now driven by a real truncation flag (50-char cap hit with more non-EOL content) rather than the post-trim length. (2026-05-30) — `UnreachableCodeDetector.pas`
-- **TODO Aggregator** priority sort maps High/Normal/Low to integer ranks (unknown values rank last) and compares numerically; the `Column` field doc corrected to 1-based. (2026-05-30) — `FrmTodoAggregator.pas`, `TodoAggregator.pas`
-- **Old Palette** only calls `LoadComponentBitmap` when `GetClass(Item.Name) <> nil`, otherwise goes straight to the default-image path. (2026-05-30) — `OldPalette.pas`
-- **File Cleaner** uses Unicode-safe `LowerCase` for the saved-file extension instead of the legacy `AnsiLowerCase` round-trip; the destructor stops processing (`Active := False`) before freeing the notifier (`FreeAndNil`). (2026-05-30) — `FrmeOptionPageFileCleaner.pas`
-- **File Selector** default filter-field index uses an intention-revealing constant instead of an unrelated image-list constant; stray double semicolon removed. (2026-05-30) — `FrmFileSelector.pas`
-- **Uses Clause Manager** Apply/Move verify the active editor's `FileName` still equals the analysed file before rewriting, and `ScanUnit` logs (rather than silently swallows) a file-load failure. (2026-05-30) — `FrmUsesClauseManager.pas`, `UsesClauseManager.pas`
-- **Focus Editor** (Editor variant) keeps scanning the remaining `TEditWindow` forms when an edit window has no focusable `Editor` child, only stopping after a successful `SetFocus`. (2026-05-30) — `Editor\FocusEditor.pas`
-- **Excel export** progress uses `Int64(i) * 100` to avoid integer overflow on very large lists. (2026-05-30) — `FrmExcelExport.pas`
-- **CSV exports** now RFC 4180-escape embedded double-quotes (Code Quality, Dead Code, DFM/PAS Consistency, Empty Event Handler, Unused Unit). (2026-05-30) — `FrmCodeQualityAnalyzer.pas`, `FrmDeadCodeDetector.pas`, `FrmDfmPasConsistency.pas`, `FrmEmptyEventHandlerDetector.pas`, `FrmUnusedUnitDetector.pas`
+- (2026-05-30) **Code Quality Analyzer**: the `AllowMagicInArrayIndex` exemption now tracks bracket-nesting depth, so any literal inside `[ ... ]` (e.g. `A[ I + 5 ]`) is treated as an array index, not just the token directly after `[`. The unimplemented memory-leak check defaults off and its option-page controls are disabled so it cannot advertise a check that does nothing. Line/Column base documented. — `CodeQualityAnalyzer.pas`, `FrmeOptionPageCodeQuality.pas`
+- (2026-05-30) **Code Style navigation** clamps the caret column to a minimum of 1 (`Max(1, Column)`) so synthetic `Column 0` violations still position sensibly. — `FrmCodeStyleChecker.pas`
+- (2026-05-30) **Component Selector** best-fit selection uses the **absolute** length difference, so it no longer always biases toward the shortest entry. — `ComponentSelector.pas`
+- (2026-05-30) **Dependency Viewer** reports a consistent cycle "unit count" (distinct units = `Length(Steps) - 1`) across the listbox, CSV and TXT exports, and the `dot.exe` PATH search skips empty entries and strips surrounding quotes. — `FrmDependencyViewer.pas`
+- (2026-05-30) **Empty Event Handler Detector** records the declaration line from the `procedure`/`function` keyword token, so navigation lands on the declaration's first line even when the name wraps. — `EmptyEventHandlerDetector.pas`
+- (2026-05-30) **Unreachable Code** preview ellipsis is now driven by a real truncation flag (50-char cap hit with more non-EOL content) rather than the post-trim length. — `UnreachableCodeDetector.pas`
+- (2026-05-30) **TODO Aggregator** priority sort maps High/Normal/Low to integer ranks (unknown values rank last) and compares numerically; the `Column` field doc corrected to 1-based. — `FrmTodoAggregator.pas`, `TodoAggregator.pas`
+- (2026-05-30) **Old Palette** only calls `LoadComponentBitmap` when `GetClass(Item.Name) <> nil`, otherwise goes straight to the default-image path. — `OldPalette.pas`
+- (2026-05-30) **File Cleaner** uses Unicode-safe `LowerCase` for the saved-file extension instead of the legacy `AnsiLowerCase` round-trip; the destructor stops processing (`Active := False`) before freeing the notifier (`FreeAndNil`). — `FrmeOptionPageFileCleaner.pas`
+- (2026-05-30) **File Selector** default filter-field index uses an intention-revealing constant instead of an unrelated image-list constant; stray double semicolon removed. — `FrmFileSelector.pas`
+- (2026-05-30) **Uses Clause Manager** Apply/Move verify the active editor's `FileName` still equals the analysed file before rewriting, and `ScanUnit` logs (rather than silently swallows) a file-load failure. — `FrmUsesClauseManager.pas`, `UsesClauseManager.pas`
+- (2026-05-30) **Focus Editor** (Editor variant) keeps scanning the remaining `TEditWindow` forms when an edit window has no focusable `Editor` child, only stopping after a successful `SetFocus`. — `Editor\FocusEditor.pas`
+- (2026-05-30) **Excel export** progress uses `Int64(i) * 100` to avoid integer overflow on very large lists. — `FrmExcelExport.pas`
+- (2026-05-30) **CSV exports** now RFC 4180-escape embedded double-quotes (Code Quality, Dead Code, DFM/PAS Consistency, Empty Event Handler, Unused Unit). — `FrmCodeQualityAnalyzer.pas`, `FrmDeadCodeDetector.pas`, `FrmDfmPasConsistency.pas`, `FrmEmptyEventHandlerDetector.pas`, `FrmUnusedUnitDetector.pas`
 
-- **Silently-failing hooks now log** when an install fails: Focus Editor (LoadDesktop symbol unresolved), Form Designer `ReplaceVmtField`, and the DSU structure-view `SetFocus` empty `except`. (2026-05-30) — `FocusEditor\FocusEditor.pas`, `LabelMarginHelper.pas`, `StrucViewSearch.pas`
-- **Reload-hook exception** passes the actual exception object (and logs) instead of `nil` to the application handler. (2026-05-30) — `FrmReloadFiles.pas`
-- **IDE menu handler** re-resolves the Project menu each `ActionUpdate` tick rather than trusting a cached `TMenuItem` that the IDE may have freed during a personality switch. (2026-05-30) — `IDEMenuHandler.pas`
-- **Options URL label** shows a message when the link cannot be opened instead of silently greying itself out. (2026-05-30) — `Shared\IDE\Options\FrmOptions.pas`
-- **Stray debug `Write;`** removed from the Project-Settings `CopyTo` option loop; `UpdateExceptWarnings` uses an inline `for var iI` loop counter per GITLAK. (2026-05-30) — `ProjectSettingsData.pas`, `FrmeOptionPageCompilerEnhancements.pas`
-- **IDE Path Sorter** dead `Item.Data` tag removed (Restore/Delete resolve by index). (2026-05-30) — `FrmLibraryPathSorter.pas`
+- (2026-05-30) **Silently-failing hooks now log** when an install fails: Focus Editor (LoadDesktop symbol unresolved), Form Designer `ReplaceVmtField`, and the DSU structure-view `SetFocus` empty `except`. — `FocusEditor\FocusEditor.pas`, `LabelMarginHelper.pas`, `StrucViewSearch.pas`
+- (2026-05-30) **Reload-hook exception** passes the actual exception object (and logs) instead of `nil` to the application handler. — `FrmReloadFiles.pas`
+- (2026-05-30) **IDE menu handler** re-resolves the Project menu each `ActionUpdate` tick rather than trusting a cached `TMenuItem` that the IDE may have freed during a personality switch. — `IDEMenuHandler.pas`
+- (2026-05-30) **Options URL label** shows a message when the link cannot be opened instead of silently greying itself out. — `Shared\IDE\Options\FrmOptions.pas`
+- (2026-05-30) **Stray debug `Write;`** removed from the Project-Settings `CopyTo` option loop; `UpdateExceptWarnings` uses an inline `for var iI` loop counter per GITLAK. — `ProjectSettingsData.pas`, `FrmeOptionPageCompilerEnhancements.pas`
+- (2026-05-30) **IDE Path Sorter** dead `Item.Data` tag removed (Restore/Delete resolve by index). — `FrmLibraryPathSorter.pas`
 
-- **Extension DLL version resource corrected to 3.19.9.** `DDevExtensionsD130.dll` / `…x64.dll` had reported FileVersion/ProductVersion `2.87` because the `.dpr` links a pre-compiled `{$R ..\Version.res}` that Delphi does not regenerate from `Version.rc` during a normal `.dproj` build — so every prior `version.h`/`.dproj` bump bypassed the DLL's own version resource (the user-facing splash was always correct, sourced from `version.inc`). Recompiled `Version.res` with `brcc32` (`Version.rc` `#include`s `version.h` = 3.19.9) and rebuilt; the DLLs now report FileVersion 3.19.9. **Note for future releases:** `brcc32 Version.rc` must be part of the version-bump routine, otherwise the DLL resource silently lags. (2026-05-30) — `Code/DDevExtensions/Version.res`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/Version.rc`
+- (2026-05-30) **Extension DLL version resource corrected to 3.19.9.** `DDevExtensionsD130.dll` / `…x64.dll` had reported FileVersion/ProductVersion `2.87` because the `.dpr` links a pre-compiled `{$R ..\Version.res}` that Delphi does not regenerate from `Version.rc` during a normal `.dproj` build — so every prior `version.h`/`.dproj` bump bypassed the DLL's own version resource (the user-facing splash was always correct, sourced from `version.inc`). Recompiled `Version.res` with `brcc32` (`Version.rc` `#include`s `version.h` = 3.19.9) and rebuilt; the DLLs now report FileVersion 3.19.9. **Note for future releases:** `brcc32 Version.rc` must be part of the version-bump routine, otherwise the DLL resource silently lags. — `Code/DDevExtensions/Version.res`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/Version.rc`
 
 **Documented (no code change):**
 
@@ -1153,44 +1075,44 @@ large speculative rewrite or the issue was already mitigated by existing gating.
 
 ### Changed
 
-- Version bumped 3.17.7 → 3.18.8 (`MinorVer` 17→18, `Release` 7→8, `FileVersion` `3.18.8.x`, `ProductVersion` 3.18) across `version.inc`, `version.h`, all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj`. (2026-05-30)
-- **Fully-qualified all RTL/VCL unit-scope names in uses clauses** across every `.pas` under `Code/DDevExtensions/Source` (93 files, 921 entries): `Windows`→`Winapi.Windows`, `Classes`→`System.Classes`, `Forms`→`Vcl.Forms`, `Registry`→`System.Win.Registry`, `XMLDoc`→`Xml.XMLDoc`, etc. Project, IDE/ToolsAPI and third-party (JVCL) units are left unprefixed. Short unit qualifiers used in code were then reviewed: redundant ones were dropped to bare names (`LoadBitmap`, `FinalizePackage`), while genuine disambiguations were kept fully qualified (`Vcl.ComCtrls.dsGradient`/`Vcl.ExtCtrls.dsGradient`, `Vcl.ComCtrls.TListView`, `Winapi.Windows.SetFocus`/`FindClose`, `System.AnsiStrings.StrLIComp`, `System.TypInfo.GetPropInfo`). Builds clean on Win32 and Win64. (2026-05-30) — all Source units
-- DocInsight XML documentation updated for the members changed in this work: the new `FScanning` / `FBusy` fields are documented, and `TKeybindings.ToggleSection` (new `GoToImplementation` param) and `TKeybindings.FindDeclaration` (now a `Boolean` function) have updated `<param>`/`<returns>`. (2026-05-30) — `FrmCodeStyleChecker.pas`, `FrmDeadCodeDetector.pas`, `FrmTodoAggregator.pas`, `FrmUnreachableCodeDetector.pas`, `FrmUnusedUnitDetector.pas`, `FrmUsesClauseManager.pas`, `FrmeOptionPageKeybindings.pas`
+- (2026-05-30) Version bumped 3.17.7 → 3.18.8 (`MinorVer` 17→18, `Release` 7→8, `FileVersion` `3.18.8.x`, `ProductVersion` 3.18) across `version.inc`, `version.h`, all six `D_Dxxx/DDevExtensions.dproj` and `Installer/DDevExtensionsReg.dproj`.
+- (2026-05-30) **Fully-qualified all RTL/VCL unit-scope names in uses clauses** across every `.pas` under `Code/DDevExtensions/Source` (93 files, 921 entries): `Windows`→`Winapi.Windows`, `Classes`→`System.Classes`, `Forms`→`Vcl.Forms`, `Registry`→`System.Win.Registry`, `XMLDoc`→`Xml.XMLDoc`, etc. Project, IDE/ToolsAPI and third-party (JVCL) units are left unprefixed. Short unit qualifiers used in code were then reviewed: redundant ones were dropped to bare names (`LoadBitmap`, `FinalizePackage`), while genuine disambiguations were kept fully qualified (`Vcl.ComCtrls.dsGradient`/`Vcl.ExtCtrls.dsGradient`, `Vcl.ComCtrls.TListView`, `Winapi.Windows.SetFocus`/`FindClose`, `System.AnsiStrings.StrLIComp`, `System.TypInfo.GetPropInfo`). Builds clean on Win32 and Win64. — all Source units
+- (2026-05-30) DocInsight XML documentation updated for the members changed in this work: the new `FScanning` / `FBusy` fields are documented, and `TKeybindings.ToggleSection` (new `GoToImplementation` param) and `TKeybindings.FindDeclaration` (now a `Boolean` function) have updated `<param>`/`<returns>`. — `FrmCodeStyleChecker.pas`, `FrmDeadCodeDetector.pas`, `FrmTodoAggregator.pas`, `FrmUnreachableCodeDetector.pas`, `FrmUnusedUnitDetector.pas`, `FrmUsesClauseManager.pas`, `FrmeOptionPageKeybindings.pas`
 
 ### Fixed
 
-- **Project scans no longer abort on one bad file.** The per-module loops in the Code Quality, Code Style, Empty-Event-Handler, Dead Code, DFM/PAS Consistency, Dependency Viewer and Unused Unit scanners now isolate each module in try/except (and the engines guard `LoadFromFile`), so a single locked/unreadable/malformed unit is skipped instead of aborting the whole project scan. Code Quality also surfaces a skipped-file count. (2026-05-30) — `CodeQualityAnalyzer.pas`, `FrmCodeQualityAnalyzer.pas`, `CodeStyleChecker.pas`, `FrmEmptyEventHandlerDetector.pas`, `DeadCodeDetector.pas`, `DfmPasConsistency`/`FrmDfmPasConsistency.pas`, `DependencyViewer.pas`, `UnusedUnitDetector.pas`
-- **`EditViews[0]` / `OpenModule` navigation hardened.** Open-file/double-click handlers across Code Quality, Code Style, Dead Code, Unreachable Code and Build Statistics now check `FileExists`, wrap `OpenModule` in try/except, guard `EditViewCount > 0`, and report "could not open" / "no source editor" instead of doing nothing or AV-ing. (2026-05-30) — `FrmCodeQualityAnalyzer.pas`, `FrmCodeStyleChecker.pas`, `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`, `FrmBuildStatistics.pas`
-- **Close-during-scan use-after-free** guarded in Dead Code and Unreachable Code (re-entrancy/`FScanning` veto), matching the v3.17.7 fix to the other scanners. (2026-05-30) — `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`
-- **CSV/file exports guarded.** Export handlers (Code Style, Unreachable Code, Dependency Viewer circular/violations) wrap `SaveToFile` in try/except; Code Style now escapes CSV fields (RFC 4180). (2026-05-30) — `FrmCodeStyleChecker.pas`, `FrmUnreachableCodeDetector.pas`, `FrmDependencyViewer.pas`
-- **Excel export rewritten** to wrap all OLE automation in try/except, address cells by numeric `Cells[r,c]` (fixes >26-column corruption), and never orphan a hidden Excel process on failure. (2026-05-30) — `FrmExcelExport.pas`
-- **Unguarded file IO surfaced** with friendly messages instead of raw exceptions: Compiler-Backup save, Start Parameter `.params` create/open, Start-Parameter-Team `.dproj` rewrite, IDE Path Sorter registry write (with resync), File Cleaner deletions (isolated from the IDE save pipeline). (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `StartParameterCtrl.pas`, `FrmeOptionPageStartParameterTeam.pas`, `FrmLibraryPathSorter.pas`, `FrmeOptionPageFileCleaner.pas`
-- **ToolsAPI / nil dereferences guarded** per the GITLAK nil-check rule: Splash services, Component Selector construction/hotkey/click, Old Palette (`MainForm`/`GetComponentPalette`), DSU structure-view action and project-tree `OnGetText`, Editor reload, Reload "Show in Explorer", Project Settings `ProjectDestroying`/`ActionExecute`, Start Parameter `GetActiveParams`/`DoPopup`, Start-Parameter-Team `FileNotification`, External Mod Monitor config casts and per-editor inspection, Keybindings `EditPosition`. (2026-05-30) — multiple units
-- **Win64 teardown safety:** Build-Statistics, Dead Code and IDE-menu-handler menu items are detached from their parent before being freed (avoids double-free during IDE teardown); Compile-Active project-restore moved into a `finally`; Start-Parameter-Team destructor disables before freeing notifiers. (2026-05-30) — `CompileProgress.pas`, `DeadCodeDetector.pas`, `IDEMenuHandler.pas`, `FrmeOptionPageStartParameterTeam.pas`
-- **Silently-swallowed exceptions now logged** (`OutputDebugString`) rather than discarded: Component Manager registration, Compile-Backup write, DSU background-parsing probe, Reload `CanReloadFile`, Project-Settings option capture, TODO/External-Mod-Monitor file handling, IDE-Path-Sorter owner-draw, Start-Parameter `WMSetFocus` bare except removed. (2026-05-30) — multiple units
+- (2026-05-30) **Project scans no longer abort on one bad file.** The per-module loops in the Code Quality, Code Style, Empty-Event-Handler, Dead Code, DFM/PAS Consistency, Dependency Viewer and Unused Unit scanners now isolate each module in try/except (and the engines guard `LoadFromFile`), so a single locked/unreadable/malformed unit is skipped instead of aborting the whole project scan. Code Quality also surfaces a skipped-file count. — `CodeQualityAnalyzer.pas`, `FrmCodeQualityAnalyzer.pas`, `CodeStyleChecker.pas`, `FrmEmptyEventHandlerDetector.pas`, `DeadCodeDetector.pas`, `DfmPasConsistency`/`FrmDfmPasConsistency.pas`, `DependencyViewer.pas`, `UnusedUnitDetector.pas`
+- (2026-05-30) **`EditViews[0]` / `OpenModule` navigation hardened.** Open-file/double-click handlers across Code Quality, Code Style, Dead Code, Unreachable Code and Build Statistics now check `FileExists`, wrap `OpenModule` in try/except, guard `EditViewCount > 0`, and report "could not open" / "no source editor" instead of doing nothing or AV-ing. — `FrmCodeQualityAnalyzer.pas`, `FrmCodeStyleChecker.pas`, `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`, `FrmBuildStatistics.pas`
+- (2026-05-30) **Close-during-scan use-after-free** guarded in Dead Code and Unreachable Code (re-entrancy/`FScanning` veto), matching the v3.17.7 fix to the other scanners. — `FrmDeadCodeDetector.pas`, `FrmUnreachableCodeDetector.pas`
+- (2026-05-30) **CSV/file exports guarded.** Export handlers (Code Style, Unreachable Code, Dependency Viewer circular/violations) wrap `SaveToFile` in try/except; Code Style now escapes CSV fields (RFC 4180). — `FrmCodeStyleChecker.pas`, `FrmUnreachableCodeDetector.pas`, `FrmDependencyViewer.pas`
+- (2026-05-30) **Excel export rewritten** to wrap all OLE automation in try/except, address cells by numeric `Cells[r,c]` (fixes >26-column corruption), and never orphan a hidden Excel process on failure. — `FrmExcelExport.pas`
+- (2026-05-30) **Unguarded file IO surfaced** with friendly messages instead of raw exceptions: Compiler-Backup save, Start Parameter `.params` create/open, Start-Parameter-Team `.dproj` rewrite, IDE Path Sorter registry write (with resync), File Cleaner deletions (isolated from the IDE save pipeline). — `FrmeOptionPageCompileBackup.pas`, `StartParameterCtrl.pas`, `FrmeOptionPageStartParameterTeam.pas`, `FrmLibraryPathSorter.pas`, `FrmeOptionPageFileCleaner.pas`
+- (2026-05-30) **ToolsAPI / nil dereferences guarded** per the GITLAK nil-check rule: Splash services, Component Selector construction/hotkey/click, Old Palette (`MainForm`/`GetComponentPalette`), DSU structure-view action and project-tree `OnGetText`, Editor reload, Reload "Show in Explorer", Project Settings `ProjectDestroying`/`ActionExecute`, Start Parameter `GetActiveParams`/`DoPopup`, Start-Parameter-Team `FileNotification`, External Mod Monitor config casts and per-editor inspection, Keybindings `EditPosition`. — multiple units
+- (2026-05-30) **Win64 teardown safety:** Build-Statistics, Dead Code and IDE-menu-handler menu items are detached from their parent before being freed (avoids double-free during IDE teardown); Compile-Active project-restore moved into a `finally`; Start-Parameter-Team destructor disables before freeing notifiers. — `CompileProgress.pas`, `DeadCodeDetector.pas`, `IDEMenuHandler.pas`, `FrmeOptionPageStartParameterTeam.pas`
+- (2026-05-30) **Silently-swallowed exceptions now logged** (`OutputDebugString`) rather than discarded: Component Manager registration, Compile-Backup write, DSU background-parsing probe, Reload `CanReloadFile`, Project-Settings option capture, TODO/External-Mod-Monitor file handling, IDE-Path-Sorter owner-draw, Start-Parameter `WMSetFocus` bare except removed. — multiple units
 
-- **Code Quality Analyzer**: `const` parameter modifiers no longer mistaken for a const section (paren-depth tracking); hardcoded-string detection decodes `''`/skips `#nn` tokens; nil-Plugin guard; the nested-`except` mis-analysis was already resolved by the v3.17.7 block-stack rewrite. (2026-05-30) — `CodeQualityAnalyzer.pas`
-- **Dead Code Detector**: reference matching now scopes unit/private/protected symbols to their own file (the previous identical if/else branches marked any same-named identifier as a use, masking dead code). (2026-05-30) — `DeadCodeDetector.pas`
-- **Empty Event Handler Detector**: requires a `Sender` parameter (cuts false positives on methods merely ending in a common word) and counts statements at any nesting depth (no longer reports handlers whose work is in a nested block). (2026-05-30) — `EmptyEventHandlerDetector.pas`
-- **Uses Clause Manager**: priority match compares unqualified leaf names (dotted vs bare), and Apply never auto-moves units the analyser could not classify. (2026-05-30) — `UsesClauseManager.pas`, `FrmUsesClauseManager.pas`
-- **CtrlUtils list sort**: ragged rows (items with fewer subitems) treat a missing subitem as empty rather than returning "equal" and corrupting the order. (2026-05-30) — `CtrlUtils.pas`
-- **Keybindings**: the Section-Toggle Up/Down shortcuts now go to interface / implementation respectively (were identical); target row clamped to the buffer. (2026-05-30) — `FrmeOptionPageKeybindings.pas`
-- **Dependency Viewer**: cycle highlighting no longer mutates node captions (relies on custom draw), per-layer pattern lists freed on dialog close, layer-name input trimmed and `=`/`,` rejected (protects the config round-trip), and the shared export dialog title is reset. (2026-05-30) — `FrmDependencyViewer.pas`, `FrmLayerConfig.pas`
-- **DFM/PAS Consistency**: replaced a dangling-`PChar`-in-`Item.Data` with a hidden subitem, restored the summary on returning to the "All" filter, and guard empty filename / unknown line on navigate. (2026-05-30) — `FrmDfmPasConsistency.pas`, `DfmPasConsistency.pas`
-- **Unreachable Code / Old Palette / Compile-Progress** logic tidy-ups (sort-safe selection clear, dead editor-context branch removed, `Boolean(Variant)` replaced with a value comparison, switch-project combo ordering). (2026-05-30) — `FrmDeadCodeDetector.pas`, `OldPalette.pas`, `CompileProgress.pas`, `FrmSwitchToModuleProject.pas`
-- **IDE Path Sorter** Apply verification compares actual path content element-by-element (was semicolon-count only). (2026-05-30) — `FrmLibraryPathSorter.pas`
+- (2026-05-30) **Code Quality Analyzer**: `const` parameter modifiers no longer mistaken for a const section (paren-depth tracking); hardcoded-string detection decodes `''`/skips `#nn` tokens; nil-Plugin guard; the nested-`except` mis-analysis was already resolved by the v3.17.7 block-stack rewrite. — `CodeQualityAnalyzer.pas`
+- (2026-05-30) **Dead Code Detector**: reference matching now scopes unit/private/protected symbols to their own file (the previous identical if/else branches marked any same-named identifier as a use, masking dead code). — `DeadCodeDetector.pas`
+- (2026-05-30) **Empty Event Handler Detector**: requires a `Sender` parameter (cuts false positives on methods merely ending in a common word) and counts statements at any nesting depth (no longer reports handlers whose work is in a nested block). — `EmptyEventHandlerDetector.pas`
+- (2026-05-30) **Uses Clause Manager**: priority match compares unqualified leaf names (dotted vs bare), and Apply never auto-moves units the analyser could not classify. — `UsesClauseManager.pas`, `FrmUsesClauseManager.pas`
+- (2026-05-30) **CtrlUtils list sort**: ragged rows (items with fewer subitems) treat a missing subitem as empty rather than returning "equal" and corrupting the order. — `CtrlUtils.pas`
+- (2026-05-30) **Keybindings**: the Section-Toggle Up/Down shortcuts now go to interface / implementation respectively (were identical); target row clamped to the buffer. — `FrmeOptionPageKeybindings.pas`
+- (2026-05-30) **Dependency Viewer**: cycle highlighting no longer mutates node captions (relies on custom draw), per-layer pattern lists freed on dialog close, layer-name input trimmed and `=`/`,` rejected (protects the config round-trip), and the shared export dialog title is reset. — `FrmDependencyViewer.pas`, `FrmLayerConfig.pas`
+- (2026-05-30) **DFM/PAS Consistency**: replaced a dangling-`PChar`-in-`Item.Data` with a hidden subitem, restored the summary on returning to the "All" filter, and guard empty filename / unknown line on navigate. — `FrmDfmPasConsistency.pas`, `DfmPasConsistency.pas`
+- (2026-05-30) **Unreachable Code / Old Palette / Compile-Progress** logic tidy-ups (sort-safe selection clear, dead editor-context branch removed, `Boolean(Variant)` replaced with a value comparison, switch-project combo ordering). — `FrmDeadCodeDetector.pas`, `OldPalette.pas`, `CompileProgress.pas`, `FrmSwitchToModuleProject.pas`
+- (2026-05-30) **IDE Path Sorter** Apply verification compares actual path content element-by-element (was semicolon-count only). — `FrmLibraryPathSorter.pas`
 
-- Win64-inert features now disable their controls or are explicitly gated with a comment: Compile Backup option page, DSU editor-double-click zoom signature, IDE-internal parser-thread offset, Focus Editor hook. (2026-05-30) — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageDSUFeatures.pas`, `FocusEditor.pas`
-- The experimental, unreferenced `DbgStepIntoSkip` debugger unit gated `{$IFNDEF CPUX64}` and documented as unsupported/inactive. (2026-05-30) — `DbgStepIntoSkip.pas`
-- A bare English sentence inside an active-able `{$IF CompilerVersion > 37}` block (a compile time-bomb on the next compiler) replaced with `{$MESSAGE WARN}`; German placeholder exception text replaced with English. (2026-05-30) — `RemovePixelsPerInchProperty.pas`, `FrmProjectSettingsSetVersioninfo.pas`
-- `with TForm.Create do try..finally Free` rewritten to a named local; `Utf8Encode(...)`→`PAnsiChar` temporary captured in a named local for Win64 safety; Code-Style rule edits and Form-Designer dependent-checkbox states persisted/synchronised correctly. (2026-05-30) — `FrmSwitchToModuleProject.pas`, `FrmFileSelector.pas`, `FrmeOptionPageCodeStyle.pas`, `FrmeOptionPageFormDesigner.pas`
-- File Selector: `FParser` leak freed in the destructor; single-remaining-unit uses-clause removal no longer indexes out of bounds. (2026-05-30) — `FrmFileSelector.pas`
+- (2026-05-30) Win64-inert features now disable their controls or are explicitly gated with a comment: Compile Backup option page, DSU editor-double-click zoom signature, IDE-internal parser-thread offset, Focus Editor hook. — `FrmeOptionPageCompileBackup.pas`, `FrmeOptionPageDSUFeatures.pas`, `FocusEditor.pas`
+- (2026-05-30) The experimental, unreferenced `DbgStepIntoSkip` debugger unit gated `{$IFNDEF CPUX64}` and documented as unsupported/inactive. — `DbgStepIntoSkip.pas`
+- (2026-05-30) A bare English sentence inside an active-able `{$IF CompilerVersion > 37}` block (a compile time-bomb on the next compiler) replaced with `{$MESSAGE WARN}`; German placeholder exception text replaced with English. — `RemovePixelsPerInchProperty.pas`, `FrmProjectSettingsSetVersioninfo.pas`
+- (2026-05-30) `with TForm.Create do try..finally Free` rewritten to a named local; `Utf8Encode(...)`→`PAnsiChar` temporary captured in a named local for Win64 safety; Code-Style rule edits and Form-Designer dependent-checkbox states persisted/synchronised correctly. — `FrmSwitchToModuleProject.pas`, `FrmFileSelector.pas`, `FrmeOptionPageCodeStyle.pas`, `FrmeOptionPageFormDesigner.pas`
+- (2026-05-30) File Selector: `FParser` leak freed in the destructor; single-remaining-unit uses-clause removal no longer indexes out of bounds. — `FrmFileSelector.pas`
 
 **Notes (findings scoped to documentation rather than a code change):**
 
-- VirtTreeHandler `@NotSupported` accessors on Win64: already unreachable because the tree handler is creation-gated `{$IFNDEF CPUX64}`.
-- External Mod Monitor: option changes still take effect on next IDE restart, and auto-refresh during a compile is unguarded on Win64 (the IDE notifier is gated off there) — both documented.
-- IDE Path Sorter restore-by-list-index and construction double-load, Reload-Files window-proc restore, Project-Settings default-preset auto-assign, and the TODO multi-keyword-per-comment limit: left as-is (correct for current usage) and noted.
+- (2026-05-30) VirtTreeHandler `@NotSupported` accessors on Win64: already unreachable because the tree handler is creation-gated `{$IFNDEF CPUX64}`.
+- (2026-05-30) External Mod Monitor: option changes still take effect on next IDE restart, and auto-refresh during a compile is unguarded on Win64 (the IDE notifier is gated off there) — both documented.
+- (2026-05-30) IDE Path Sorter restore-by-list-index and construction double-load, Reload-Files window-proc restore, Project-Settings default-preset auto-assign, and the TODO multi-keyword-per-comment limit: left as-is (correct for current usage) and noted.
 
 ## [3.17.7] - 2026-05-30
 
@@ -1202,44 +1124,44 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Changed
 
-- Version bumped 3.17.6 → 3.17.7 (`Release` 6→7, `FileVersion` `3.17.7.x`; `MinorVer`/`ProductVersion` unchanged). (2026-05-30) — `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
-- Added the missing `<VerInfo_Release>` element (=7) to the older project files and the Installer, which previously carried the release digit only in the `FileVersion` string. Their discrete `MajorVer`/`MinorVer`/`Release` fields now match `D_D130`. **Why:** version-info consistency across all personalities; these projects target Delphi 10.2–12 and are not built in the current Delphi 13 environment. (2026-05-30) — `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
+- (2026-05-30) Version bumped 3.17.6 → 3.17.7 (`Release` 6→7, `FileVersion` `3.17.7.x`; `MinorVer`/`ProductVersion` unchanged). — `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
+- (2026-05-30) Added the missing `<VerInfo_Release>` element (=7) to the older project files and the Installer, which previously carried the release digit only in the `FileVersion` string. Their discrete `MajorVer`/`MinorVer`/`Release` fields now match `D_D130`. **Why:** version-info consistency across all personalities; these projects target Delphi 10.2–12 and are not built in the current Delphi 13 environment. — `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
 
 ### Fixed
 
-- **Code Quality Analyzer try/finally detector silently disarmed; non-try `end`s corrupted state.** A single `TryDepth` counter plus an `InExceptBlock` flag drove every `end`. `try/finally` never decremented the counter (so after the first one the missing-try/finally check stopped working and treated all later `Create`s as protected), and any `end` from a record/class/case/begin was mis-counted as a try-end, drifting the except state. Replaced with a structural block stack that matches each `end` to the construct it closes, tracks per-try except/finally sections, and resets at `implementation`. (2026-05-30) — `Code/DDevExtensions/Source/CodeQualityAnalyzer/CodeQualityAnalyzer.pas`
-- **Code Style Checker reported a flood of bogus UnitScopePrefix violations.** The unit-scope lookahead consumed the terminating semicolon of a uses clause, which was never re-tested, so `InUsesClause` never cleared and every later identifier was checked as if still in the uses list. Re-apply the termination test to the peeked token. (2026-05-30) — `Code/DDevExtensions/Source/CodeStyleChecker/CodeStyleChecker.pas`
-- **Compiler Enhancements promoted exactly the wrong warnings to errors.** The ExceptWarnings membership test was inverted (`IndexOf <> -1`), so only the codes the user listed to keep as warnings were promoted, and a special-case made an empty list promote everything. Now promotes every warning except those listed. (2026-05-30) — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
-- **Editor "Select modified / unmodified files" menu items were labelled with each other's caption.** Swapped the two resource-string assignments in `FormCreate`. (2026-05-30) — `Code/DDevExtensions/Source/Editor/FrmReloadFiles.pas`
-- **Unused Unit Detector: every unit reported the line of the `uses` keyword, and used units could be reported as unused.** Track each unit token's own start position for its line number, and scan every occurrence of a known identifier (not just the first) when deciding whether a unit is referenced. (2026-05-30) — `Code/DDevExtensions/Source/UnusedUnitDetector/UnusedUnitDetector.pas`
-- **Unreachable Code Detector opened the wrong source location after sorting.** Double-click resolved the row by re-walking the items in scan order, but column sort (`AlphaSort`) reorders the rows. Resolve through the original index stored in the item's `Data` instead. (2026-05-30) — `Code/DDevExtensions/Source/UnreachableCodeDetector/FrmUnreachableCodeDetector.pas`
-- **Uses Clause Manager recorded reserved words as identifiers.** `Token.Kind >= tkIdent` swept in every keyword (begin, class, if, ...), polluting the interface-vs-implementation placement analysis. Changed all six predicates to `Token.Kind = tkIdent`. (2026-05-30) — `Code/DDevExtensions/Source/UsesClauseManager/UsesClauseManager.pas`
+- (2026-05-30) **Code Quality Analyzer try/finally detector silently disarmed; non-try `end`s corrupted state.** A single `TryDepth` counter plus an `InExceptBlock` flag drove every `end`. `try/finally` never decremented the counter (so after the first one the missing-try/finally check stopped working and treated all later `Create`s as protected), and any `end` from a record/class/case/begin was mis-counted as a try-end, drifting the except state. Replaced with a structural block stack that matches each `end` to the construct it closes, tracks per-try except/finally sections, and resets at `implementation`. — `Code/DDevExtensions/Source/CodeQualityAnalyzer/CodeQualityAnalyzer.pas`
+- (2026-05-30) **Code Style Checker reported a flood of bogus UnitScopePrefix violations.** The unit-scope lookahead consumed the terminating semicolon of a uses clause, which was never re-tested, so `InUsesClause` never cleared and every later identifier was checked as if still in the uses list. Re-apply the termination test to the peeked token. — `Code/DDevExtensions/Source/CodeStyleChecker/CodeStyleChecker.pas`
+- (2026-05-30) **Compiler Enhancements promoted exactly the wrong warnings to errors.** The ExceptWarnings membership test was inverted (`IndexOf <> -1`), so only the codes the user listed to keep as warnings were promoted, and a special-case made an empty list promote everything. Now promotes every warning except those listed. — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
+- (2026-05-30) **Editor "Select modified / unmodified files" menu items were labelled with each other's caption.** Swapped the two resource-string assignments in `FormCreate`. — `Code/DDevExtensions/Source/Editor/FrmReloadFiles.pas`
+- (2026-05-30) **Unused Unit Detector: every unit reported the line of the `uses` keyword, and used units could be reported as unused.** Track each unit token's own start position for its line number, and scan every occurrence of a known identifier (not just the first) when deciding whether a unit is referenced. — `Code/DDevExtensions/Source/UnusedUnitDetector/UnusedUnitDetector.pas`
+- (2026-05-30) **Unreachable Code Detector opened the wrong source location after sorting.** Double-click resolved the row by re-walking the items in scan order, but column sort (`AlphaSort`) reorders the rows. Resolve through the original index stored in the item's `Data` instead. — `Code/DDevExtensions/Source/UnreachableCodeDetector/FrmUnreachableCodeDetector.pas`
+- (2026-05-30) **Uses Clause Manager recorded reserved words as identifiers.** `Token.Kind >= tkIdent` swept in every keyword (begin, class, if, ...), polluting the interface-vs-implementation placement analysis. Changed all six predicates to `Token.Kind = tkIdent`. — `Code/DDevExtensions/Source/UsesClauseManager/UsesClauseManager.pas`
 
-- **Use-after-free when closing Code Style Checker, TODO Aggregator or Unused Unit Detector during a scan.** Each scan pumps the message queue, so the user could close the form while the scanner was still on the stack, freeing the form and its worker. Added an `FScanning` guard that vetoes the close (`Action := caNone`) while a scan is running. (2026-05-30) — `Code/DDevExtensions/Source/CodeStyleChecker/FrmCodeStyleChecker.pas`, `Code/DDevExtensions/Source/TodoAggregator/FrmTodoAggregator.pas`, `Code/DDevExtensions/Source/UnusedUnitDetector/FrmUnusedUnitDetector.pas`
-- **Enabling Compiler Enhancements with a missing interceptor DLL threw a raw exception into the options dialog and left `FActive` inconsistent.** Wrapped (un)registration in try/except, roll `FActive` back on failure, and show a friendly message. (2026-05-30) — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
-- **DSU Features: `FPrjMgrTree.Invalidate` dereferenced a nil tree** when the project manager form was not found (common at IDE-load when the setter first runs). Guarded with a nil check. (2026-05-30) — `Code/DDevExtensions/Source/DSUFeatures/FrmeOptionPageDSUFeatures.pas`
-- **DSU Features: package-load hook blanked or AV'd the main-form caption** in its `finally` when `MainForm` was nil/hidden during early startup. Only restore the caption when it was actually changed. (2026-05-30) — `Code/DDevExtensions/Source/DSUFeatures/DSUFeatures.pas`
-- **IDE Path Sorter: a failed backup save raised instead of returning False,** so the "Failed to create backup. Continue anyway?" path was unreachable. `CreateBackup` now traps the save failure, returns False, and reloads from disk to stay consistent. (2026-05-30) — `Code/DDevExtensions/Source/LibraryPathSorter/LibraryPathSorter.pas`
+- (2026-05-30) **Use-after-free when closing Code Style Checker, TODO Aggregator or Unused Unit Detector during a scan.** Each scan pumps the message queue, so the user could close the form while the scanner was still on the stack, freeing the form and its worker. Added an `FScanning` guard that vetoes the close (`Action := caNone`) while a scan is running. — `Code/DDevExtensions/Source/CodeStyleChecker/FrmCodeStyleChecker.pas`, `Code/DDevExtensions/Source/TodoAggregator/FrmTodoAggregator.pas`, `Code/DDevExtensions/Source/UnusedUnitDetector/FrmUnusedUnitDetector.pas`
+- (2026-05-30) **Enabling Compiler Enhancements with a missing interceptor DLL threw a raw exception into the options dialog and left `FActive` inconsistent.** Wrapped (un)registration in try/except, roll `FActive` back on failure, and show a friendly message. — `Code/DDevExtensions/Source/CompilerEnhancements/FrmeOptionPageCompilerEnhancements.pas`
+- (2026-05-30) **DSU Features: `FPrjMgrTree.Invalidate` dereferenced a nil tree** when the project manager form was not found (common at IDE-load when the setter first runs). Guarded with a nil check. — `Code/DDevExtensions/Source/DSUFeatures/FrmeOptionPageDSUFeatures.pas`
+- (2026-05-30) **DSU Features: package-load hook blanked or AV'd the main-form caption** in its `finally` when `MainForm` was nil/hidden during early startup. Only restore the caption when it was actually changed. — `Code/DDevExtensions/Source/DSUFeatures/DSUFeatures.pas`
+- (2026-05-30) **IDE Path Sorter: a failed backup save raised instead of returning False,** so the "Failed to create backup. Continue anyway?" path was unreachable. `CreateBackup` now traps the save failure, returns False, and reloads from disk to stay consistent. — `Code/DDevExtensions/Source/LibraryPathSorter/LibraryPathSorter.pas`
 
-- **Keybindings Move-Line/Block corrupted memory on Win64.** It hand-cast `IOTAEditWriter` to a replica record with fixed 32-bit field offsets and poked IDE-internal structures. Gated the struct manipulation behind `{$IFNDEF CPUX64}`; the block move now uses only the documented `IOTAEditWriter` API on Win64 (undo grouping / persistent-block restoration degraded but safe). (2026-05-30) — `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.pas`
-- **Form Designer DFM cleaners were inert on Win64 but presented as active.** RemoveExplicit/PixelsPerInch/TextHeight install via `CodeRedirect`, a no-op on Win64. The three check boxes are now disabled with a "Not available on the 64-bit IDE" hint, and the hook installs are gated so the intent is explicit. LabelMargin (ReplaceVmtField) still works and stays enabled. (2026-05-30) — `Code/DDevExtensions/Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`
+- (2026-05-30) **Keybindings Move-Line/Block corrupted memory on Win64.** It hand-cast `IOTAEditWriter` to a replica record with fixed 32-bit field offsets and poked IDE-internal structures. Gated the struct manipulation behind `{$IFNDEF CPUX64}`; the block move now uses only the documented `IOTAEditWriter` API on Win64 (undo grouping / persistent-block restoration degraded but safe). — `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.pas`
+- (2026-05-30) **Form Designer DFM cleaners were inert on Win64 but presented as active.** RemoveExplicit/PixelsPerInch/TextHeight install via `CodeRedirect`, a no-op on Win64. The three check boxes are now disabled with a "Not available on the 64-bit IDE" hint, and the hook installs are gated so the intent is explicit. LabelMargin (ReplaceVmtField) still works and stays enabled. — `Code/DDevExtensions/Source/FormDesignerHelpers/FrmeOptionPageFormDesigner.pas`
 
 ## [3.17.6] - 2026-05-30
 
 ### Changed
 
-- Version bumped 3.16.5 → 3.17.6 across all version-info locations: `MinorVer` 16→17, `Release` 5→6, `FileVersion` `3.16.5.x`→`3.17.6.x`, `ProductVersion` 3.16→3.17 (build numbers preserved; stale legacy `2.5.0.584` blocks left untouched). (2026-05-30) — `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
+- (2026-05-30) Version bumped 3.16.5 → 3.17.6 across all version-info locations: `MinorVer` 16→17, `Release` 5→6, `FileVersion` `3.16.5.x`→`3.17.6.x`, `ProductVersion` 3.16→3.17 (build numbers preserved; stale legacy `2.5.0.584` blocks left untouched). — `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`
 
 ### Fixed
 
-- **Project Settings preset menu corrupted/AV on Win64 (64-bit pointer truncation).** The dynamic **Project → Project Settings** preset submenu stored each `TProjectSetting` object pointer into `TMenuItem.Tag` via `Integer(...)`, which truncates a 64-bit address to 32 bits on the Win64 IDE host. Clicking a preset then reconstructed a corrupted pointer in `DoAssignSettingClick`, dereferenced by `Options.CopyTo` / `FGlobalSettings.IndexOf` → access violation or garbage settings applied to the active project. Changed the store-side casts to `NativeInt(...)` (`TMenuItem.Tag` is `NativeInt`); the read-side casts already read the full 64-bit `Tag`. (2026-05-30) — `Code/DDevExtensions/Source/ProjectSettings/ProjectSettings.pas`
-- **Manage Configurations in-place rename corrupted/AV on Win64 (same root cause).** `DoExecute` stored the `TProjectSettingList` working lists into `lvwLocal.Tag` / `lvwGlobal.Tag` via `Integer(...)`; on Win64 the truncated pointer never matched `FSettings`, so `lvwGlobalEdited` (F2 rename) chose the wrong `Local:`/`Global:` prefix and ran the duplicate-name check (`List.FindByName`) against a bad pointer. Changed both store-side casts to `NativeInt(...)`. (2026-05-30) — `Code/DDevExtensions/Source/ProjectSettings/FrmProjectSettingManageSettings.pas`
+- (2026-05-30) **Project Settings preset menu corrupted/AV on Win64 (64-bit pointer truncation).** The dynamic **Project → Project Settings** preset submenu stored each `TProjectSetting` object pointer into `TMenuItem.Tag` via `Integer(...)`, which truncates a 64-bit address to 32 bits on the Win64 IDE host. Clicking a preset then reconstructed a corrupted pointer in `DoAssignSettingClick`, dereferenced by `Options.CopyTo` / `FGlobalSettings.IndexOf` → access violation or garbage settings applied to the active project. Changed the store-side casts to `NativeInt(...)` (`TMenuItem.Tag` is `NativeInt`); the read-side casts already read the full 64-bit `Tag`. — `Code/DDevExtensions/Source/ProjectSettings/ProjectSettings.pas`
+- (2026-05-30) **Manage Configurations in-place rename corrupted/AV on Win64 (same root cause).** `DoExecute` stored the `TProjectSettingList` working lists into `lvwLocal.Tag` / `lvwGlobal.Tag` via `Integer(...)`; on Win64 the truncated pointer never matched `FSettings`, so `lvwGlobalEdited` (F2 rename) chose the wrong `Local:`/`Global:` prefix and ran the duplicate-name check (`List.FindByName`) against a bad pointer. Changed both store-side casts to `NativeInt(...)`. — `Code/DDevExtensions/Source/ProjectSettings/FrmProjectSettingManageSettings.pas`
 
 ## [3.16.5] - 2026-05-13
 
 ### Added
 
-- **Delphi 13.1 Win64 IDE Build Support** (2026-05-13)
+- (2026-05-13) **Delphi 13.1 Win64 IDE Build Support**
 
   **Note:** Built and tested only in the Delphi 13.1 64-bit RAD Studio personality (`bin64\bds.exe`). Earlier Delphi releases do not ship a 64-bit IDE host. The 32-bit IDE build is unchanged and remains the primary target.
 
@@ -1293,7 +1215,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Changed
 
-- **Key Bindings: User-Configurable Section Toggle and Move Line/Block Shortcuts** (2026-04-23)
+- (2026-04-23) **Key Bindings: User-Configurable Section Toggle and Move Line/Block Shortcuts**
 
   **Problem:** The "Interface/Implementation Section Toggle" feature (added in v3.4.1) bound itself to **Ctrl+Shift+Up / Ctrl+Shift+Down** with the default state set to on. Those chords are Delphi's long-standing native shortcut for jumping between a routine's declaration and its implementation body, so installing DDevExtensions silently shadowed a core IDE shortcut. A user reported muscle-memory breakage after installing v3.14.5. "Move line/block up/down" similarly hard-coded Ctrl+Shift+Alt+Up/Down, which collides with GExperts.
 
@@ -1312,7 +1234,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
   **Files Modified:** `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.pas`, `Code/DDevExtensions/Source/Keybindings/FrmeOptionPageKeybindings.dfm`, `Code/DDevExtensions/Source/version.inc`, `Code/DDevExtensions/version.h`, `Code/DDevExtensions/D_D102/DDevExtensions.dproj`, `Code/DDevExtensions/D_D103/DDevExtensions.dproj`, `Code/DDevExtensions/D_D104/DDevExtensions.dproj`, `Code/DDevExtensions/D_D110/DDevExtensions.dproj`, `Code/DDevExtensions/D_D120/DDevExtensions.dproj`, `Code/DDevExtensions/D_D130/DDevExtensions.dproj`, `Code/DDevExtensions/Installer/DDevExtensionsReg.dproj`, `README.md`, `Help.md`
 
-- **Build Config: Map File and EXE Output Standardisation** (2026-03-27)
+- (2026-03-27) **Build Config: Map File and EXE Output Standardisation**
 
   **Changes Made:** Added `DCC_ExeOutput=..\bin` and `DCC_MapFile=3` to DfmParserTests.dproj (had neither). Added `DCC_ExeOutput=..\bin` to DfmParserTestsDUnitX.dproj (had MapFile but no output path). All 10 .dproj files now consistently have both settings.
 
@@ -1322,7 +1244,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Dependency Viewer: Graphviz DOT Export** (2026-03-25)
+- (2026-03-25) **Dependency Viewer: Graphviz DOT Export**
 
   **Problem:** The Dependency Viewer provided interactive tree-based exploration and CSV/TXT exports for circular references and layer violations, but had no way to produce a visual graph diagram showing the full dependency structure at a glance.
 
@@ -1348,7 +1270,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Changed
 
-- **External Mod Monitor: Project Load Grace Period** (2026-03-25)
+- (2026-03-25) **External Mod Monitor: Project Load Grace Period**
 
   **Problem:** When a project group is loaded in RAD Studio, the IDE normalises/rewrites .dproj files. The External Mod Monitor detected these IDE-initiated writes and showed spurious "Files Refreshed" balloon notifications.
 
@@ -1365,7 +1287,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **External Mod Monitor: Windows Balloon Notifications** (2026-03-24)
+- (2026-03-24) **External Mod Monitor: Windows Balloon Notifications**
 
   **Problem:** When the External Mod Monitor silently refreshed externally modified files, there was no visual feedback to the user about which files had been updated.
 
@@ -1383,7 +1305,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
   **Files Modified:** Source/ExternalModMonitor/ExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.pas, Source/ExternalModMonitor/FrmeOptionPageExternalModMonitor.dfm
 
-- **IDE Path Sorter: Platform Category Filter Checkboxes** (2026-03-24)
+- (2026-03-24) **IDE Path Sorter: Platform Category Filter Checkboxes**
 
   **Problem:** When many platforms are installed (Win32, Win64, Android, iOS, macOS, ARM, Linux, etc.), the Platform dropdown in the IDE Path Sorter shows all of them in a flat list, making it harder to find the desired platform.
 
@@ -1407,7 +1329,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Add External Mod Monitor (real-time file change detection)** (2026-03-23)
+- (2026-03-23) **Add External Mod Monitor (real-time file change detection)**
 
   **Problem:** The Delphi IDE only detects external file modifications when it regains focus (Alt-Tab away and back). When using external tools (AI assistants, version control, other editors) that modify project files while the IDE is active, changes go undetected. The VSoft.ExternalModDetector plugin solves this but requires an external FileSystemMonitor dependency, which is undesirable for a public repository.
 
@@ -1427,7 +1349,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Fix External Mod Monitor not detecting .dpr file changes** (2026-03-23)
+- (2026-03-23) **Fix External Mod Monitor not detecting .dpr file changes**
 
   **Problem:** The External Mod Monitor did not refresh `.dpr` files when modified externally. The `.dpr` extension was missing from the default `MonitoredExtensions` list, so file changes were detected by the watcher but silently discarded by the extension filter. Additionally, `FileWatcher.pas` stored directory keys as `UpperCase(...)`, which mangled the path case flowing through to `IOTAModuleServices.FindModule` — an unnecessary risk even though Windows paths are case-insensitive.
 
@@ -1440,7 +1362,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
   **Files Modified:** Source/ExternalModMonitor/ExternalModMonitor.pas, Shared/FileWatcher.pas, Source/version.inc, all .dproj files (D_D102–D_D130 + Installer)
 
-- **Fix IDE Path Sorter cosmetic issues, persist panel sizes, add multi-select** (2026-03-15)
+- (2026-03-15) **Fix IDE Path Sorter cosmetic issues, persist panel sizes, add multi-select**
 
   **Problem:** The `>>` and `A-Z` buttons were children of `pnlMain` at fixed absolute positions (Left=444), causing them to overlap `lstWorking` content. The "Auto-backup before apply" checkbox text was truncated at Width=150. The main path panel and backup panel heights were not persisted between sessions. The working panel only supported single item selection.
 
@@ -1465,7 +1387,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Changed
 
-- **Rename Library Path Sorter to IDE Path Sorter** (2026-03-15)
+- (2026-03-15) **Rename Library Path Sorter to IDE Path Sorter**
 
   **Context:** The tool was named "Library Path Sorter" but it handles all IDE path types (Library Path, Browsing Path, Debug DCU Path, etc.), not just library paths. The dropdown also showed "Search Path" which is the registry key name, not the user-facing Delphi terminology ("Library Path").
 
@@ -1484,7 +1406,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Add About Dialog + Version Bump** (2026-02-21)
+- (2026-02-21) **Add About Dialog + Version Bump**
 
   **Context:** No About dialog existed in the DDevExtensions submenu. Version bumped from 3.9.3 to 3.10.3 to reflect the new feature.
 
@@ -1503,7 +1425,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Library Path Sorter - Invalid Path Highlighting** (2026-02-14)
+- (2026-02-14) **Library Path Sorter - Invalid Path Highlighting**
 
   **Context:** Library Path Sorter already highlighted duplicates (red) and missing paths (pink), but provided no filesystem validation. Users needed to identify paths that don't exist on disk to clean up invalid library path entries.
 
@@ -1529,7 +1451,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
   **Files Modified:** FrmLibraryPathSorter.pas (line 18: added Generics.Collections; lines 97-101: added private members; lines 613-680: added validation methods; lines 146, 185: cache init/free; lines 237, 488, 492: cache invalidation; lines 541-591: updated lstWorkingDrawItem; lines 639-695: updated lstCurrentDrawItem; lines 617-620: updated labels)
 
-- **DFM Parser Unit Development** (2026-02-08)
+- (2026-02-08) **DFM Parser Unit Development**
 
   **Context:** Development of new DFM parser functionality to enhance form file analysis capabilities.
 
@@ -1544,7 +1466,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Changed
 
-- **Project Configuration - Win32-Only Platform** (2026-02-14)
+- (2026-02-14) **Project Configuration - Win32-Only Platform**
 
   **Context:** DDevExtensions hooks into the Delphi IDE which is 32-bit only. Win64 platform support was incorrectly configured, causing build errors with x86 assembly code incompatible with x64.
 
@@ -1565,7 +1487,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Fix Compile Progress Bar Position at Non-100% DPI Scaling** (2026-02-21)
+- (2026-02-21) **Fix Compile Progress Bar Position at Non-100% DPI Scaling**
 
   **Context:** User feedback (ertank, 2026-02-10) reported that the compilation progress bar position was broken at non-100% display scaling. Root cause: `SetMaxFiles` in `NativeProgressForm.pas` used `pnErrors` as the reference panel, but Delphi 12+ changed the compile progress dialog layout — the correct reference panel is `pnHints`. Additionally, DPI scaling (`ScaleForPPI`) and dynamic height (`TotalLines.Height div 2`) from v2.91 were missing.
 
@@ -1581,7 +1503,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Fix for Options Dialog** (2026-01-27)
+- (2026-01-27) **Fix for Options Dialog**
 
   **Problem:** Options dialog had unspecified issues preventing proper operation.
 
@@ -1597,7 +1519,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Library Path Sorter Critical Path Loss Fix** (2026-01-14)
+- (2026-01-14) **Library Path Sorter Critical Path Loss Fix**
 
   **Problem:** Library Path Sorter had a critical bug where paths could be lost during sorting operations. TStringList.Sort with CaseSensitive=False could lose paths under certain conditions.
 
@@ -1626,7 +1548,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Library Path Sorter Enhanced Diagnostics** (2026-01-14)
+- (2026-01-14) **Library Path Sorter Enhanced Diagnostics**
 
   **Problem:** Users needed better visibility into path changes and potential losses during Library Path Sorter operations.
 
@@ -1649,7 +1571,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Library Path Sorter Feature Added** (2026-01-13)
+- (2026-01-13) **Library Path Sorter Feature Added**
 
   **Problem:** Delphi's library path management in Options dialog is cumbersome - difficult to see full paths, no sorting capability, no duplicate detection, no backup/restore, and manual reordering is tedious.
 
@@ -1677,7 +1599,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Anti-Pattern Detection & Compiler Integration** (2026-01-10)
+- (2026-01-10) **Anti-Pattern Detection & Compiler Integration**
 
   **Problem:** Code Style Checker only detected naming convention violations. No detection of common anti-patterns like deep nesting, long methods, or empty finally blocks. Style issues only visible when manually running the checker.
 
@@ -1707,7 +1629,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Removed
 
-- **Dead Code Cleanup** (2026-01-09)
+- (2026-01-09) **Dead Code Cleanup**
 
   **Problem:** RemovePixelsPerInchProperty.pas contained commented-out CodeSite logging code that was no longer needed.
 
@@ -1724,7 +1646,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Delphi 10.2-10.4 Compilation Fix** (2026-01-08)
+- (2026-01-08) **Delphi 10.2-10.4 Compilation Fix**
 
   **Problem:** Remove PixelsPerInch Property feature failed to compile in Delphi 10.2-10.4 because `ReadPixelsPerInch`/`WritePixelsPerInch` methods were introduced in Delphi 11.
 
@@ -1742,7 +1664,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Code Quality Analyzer & Dependency Viewer Enhancements** (2026-01-07)
+- (2026-01-07) **Code Quality Analyzer & Dependency Viewer Enhancements**
 
   **Problem:** Code Style Checker lacked variable type prefix rules and unit scope name checking. No unified tool for detecting common code quality issues. Dependency Viewer lacked export capability for circular references and architectural layer enforcement.
 
@@ -1777,7 +1699,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Code Style Checker Bug Fixes** (2026-01-06)
+- (2026-01-06) **Code Style Checker Bug Fixes**
 
   **Problem:** Code Style Checker had multiple bugs: field detection not working due to look-ahead consuming tokens, method names/parameters incorrectly flagged as fields, return types/case labels incorrectly flagged as parameters, function names without parameters flagged as parameters, false positives for built-in types in default parameter values, and line number navigation off by one.
 
@@ -1800,7 +1722,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Dead Code & Event Handler Detector Fixes** (2026-01-05)
+- (2026-01-05) **Dead Code & Event Handler Detector Fixes**
 
   **Problem:** Dead Code Detector had field name parsing bug (showing ":" or "ClassName.:" instead of proper field names). Both Dead Code Detector and Code Style Checker incorrectly flagged VCL components. Empty Event Handler Detector had false positives for non-event methods.
 
@@ -1824,7 +1746,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Dependency Viewer Conditional Compilation Support** (2026-01-05)
+- (2026-01-05) **Dependency Viewer Conditional Compilation Support**
 
   **Problem:** Dependency Viewer produced false positive circular references in multi-app codebases where units used conditional compilation to include/exclude dependencies based on project defines.
 
@@ -1843,7 +1765,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Three New Code Quality Features** (2026-01-05)
+- (2026-01-05) **Three New Code Quality Features**
 
   **Problem:** Developers needed quick interface/implementation navigation, detection of empty event handlers, and verification of DFM/PAS consistency.
 
@@ -1882,7 +1804,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **TextHeight Option Bugfix** (2026-01-04)
+- (2026-01-04) **TextHeight Option Bugfix**
 
   **Problem:** RemoveTextHeightProperty feature had unspecified bug preventing proper operation.
 
@@ -1898,7 +1820,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Smart Uses Clause Manager** (2026-01-03)
+- (2026-01-03) **Smart Uses Clause Manager**
 
   **Problem:** Developers manually manage uses clause organisation, often placing units in interface when they're only used in implementation, increasing compilation dependencies unnecessarily.
 
@@ -1928,7 +1850,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Unreachable Code Detector** (2026-01-03)
+- (2026-01-03) **Unreachable Code Detector**
 
   **Problem:** No tool to detect code that can never execute due to preceding Exit, Raise, Break, Continue, Halt, or Abort statements.
 
@@ -1958,7 +1880,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Dependency Viewer Major Enhancement** (2026-01-03)
+- (2026-01-03) **Dependency Viewer Major Enhancement**
 
   **Problem:** Dependency Viewer showed only forward dependencies ("uses"). No way to see reverse dependencies ("used by"), understand dependency depth, or assess impact of changes. Circular reference display lacked detail about which uses clause caused each link.
 
@@ -1984,7 +1906,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Fixed
 
-- **Form Designer DPI/Font Phantom Changes Prevention** (2026-01-03)
+- (2026-01-03) **Form Designer DPI/Font Phantom Changes Prevention**
 
   **Problem:** Different DPI settings and font rendering across developer machines caused phantom changes to PixelsPerInch and TextHeight properties in DFM files, creating unnecessary version control noise and merge conflicts.
 
@@ -2006,7 +1928,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Five New Code Quality Tools** (2026-01-03)
+- (2026-01-03) **Five New Code Quality Tools**
 
   **Problem:** No built-in tools for tracking TODO comments, enforcing naming conventions, detecting unused code, or analysing code metrics during builds.
 
@@ -2051,7 +1973,7 @@ exceptions or use-after-free), and performance (single-pass scanning preserved).
 
 ### Added
 
-- **Public Release (Ian Branch)** (2026-01-02)
+- (2026-01-02) **Public Release (Ian Branch)**
 
   **Context:** Complete rewrite and modernisation of DDevExtensions for Delphi 10.2+. Version 3.0 marks the first public release of the Ian Branch, clearly breaking from Andreas Hausladen's version 2.88.
 
