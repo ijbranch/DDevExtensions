@@ -4,10 +4,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 This file is the sole source and record of all project changes for DDevExtensions.
 
-## [Unreleased]
+## [In-Service]
 
 ### Changed
 
+- (2026-10-29) **`## [In-Service]` replaces `## [Unreleased]`.** - `CHANGELOG.md`, `DDevExtUnitTests/CHANGELOG.md`, `CLAUDE.md`
+  A DDevExtensions build is in service as soon as it is built and deployed (Ian, 2026-10-29: "As soon as
+  they are generated they go into service"), as for GITLAKLib, GITLAKDB and the `gll*` forks: there is no
+  unreleased backlog.  The new `CLAUDE.md` records it, with the version, build and deploy steps.
 - (2026-10-21) **The DUnitX runner follows the estate command-line and exit-code contract.** -
   `DDevExtUnitTests/DDevExtUnitTestsDUnitX.dpr`, `DDevExtUnitTests/README.md`,
   `DDevExtUnitTests/DUNITX-SETUP.md`, `.gitignore`

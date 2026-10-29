@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > repository's `CHANGELOG.md` were moved here the same day.  Product changes, including those that change a product
 > unit together with its tests, stay in the repository's `CHANGELOG.md`.
 
-## [Unreleased]
+## [In-Service]
 
 ### Added
 
