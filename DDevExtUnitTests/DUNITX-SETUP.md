@@ -27,10 +27,10 @@ DUnitX is a modern unit testing framework for Delphi. It provides:
      - `C:\path\to\DUnitX\Source`
      - `C:\path\to\DUnitX\Source\Loggers`
 
-### Option 3: Use Existing DUnitX in RAD Studio
-DUnitX may already be included with your RAD Studio installation:
-- Check: `C:\Program Files (x86)\Embarcadero\Studio\37.0\source\DUnitX\`
-- If present, just add to Library Path
+### Option 3: Use the DUnitX already on this machine (our fork)
+On this machine the only DUnitX is our fork, `D:\gllDUnitX` (sources in `D:\gllDUnitX\Source`).  RAD Studio's bundled DUnitX is not installed here: `C:\Program Files (x86)\Embarcadero\Studio\37.0\source` holds only `DUnit\doc`, and `D:\Tools\Check-DUnitXSingleSet.ps1` reports any second DUnitX as a violation.
+- The suite's `.dproj` sets no unit search path of its own: it compiles against the fork's DCUs through the IDE library path, `$(GLLDUNITX_RAD_STUDIO_13_0_WI)\Release` for Win64 and `$(GLLDUNITX_RAD_STUDIO_13_0_WI_2)\Release` for Win32 ( `D:\gllDUnitX\packages\RAD Studio 13.0\Win64` and `...\Win32` ).
+- `D:\gllDUnitX\Source` is on the browsing path, for stepping into the framework.
 
 ## Compiling the Tests
 

@@ -78,15 +78,20 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 - Disable Alphasort Class Completion
 - Show File Project In Project Manager
 - Structure View Search filter
-- All compile / file-notification subscribers (the IDE notifier is intentionally not registered on Win64 — a multi-interface dispatch ABI issue causes a deterministic AV in `rtl370.bpl` during "Checking project dependencies..." otherwise)
-- Compile Interceptor input-handle redirect
+- All compile / file-notification subscribers (the IDE notifier is intentionally not registered on Win64 — a multi-interface dispatch ABI issue causes a deterministic AV in `rtl370.bpl` during "Checking project dependencies..." otherwise): Compile Progress, Compile Backup, Local Start Parameters, and External Mod Monitor's compile tracking
+- Compile Interceptor: `CompileInterceptorWx64.dll` is built but never loaded (Compile Progress registers no interceptor on Win64), and its `InitCompileInterceptor` exits before patching the compiler's callback table
+- Compile Backup: no backup is written
+- Start Parameter Manager: the parameter list is shown on the toolbar, but the selected parameters are not passed to the program being run (they are applied through `TDebugger.Run` / `GetRunParams` redirects, which `RedirectOrgCall` leaves uninstalled on Win64)
+- Find Unit / Use Unit Replacement Dialog: the IDE's own dialogs stay in use (the `TViewDialog` and Use Unit command redirects are not installed)
+- Tab closing the Code Insight list (`CodeInsightHandling`)
 - Chain-back callers of `RedirectOrgCall` / `CodeRedirect` — hooks whose replacement calls the original function still need a trampoline that does not port to Win64, so they remain inactive.
 
 **Shown as unavailable since 3.24.16.**  Options that cannot work on the 64-bit IDE are disabled there, with the hint "Not available on the 64-bit IDE", rather than left to look as if they work.  Their settings are kept for the 32-bit IDE, which shares the configuration file:
 
 - **Compilation page** (Options > DDevExtensions > Compilation): every option, including Build Statistics, Run style check after compile, Release compiler unit cache, Auto-save after compile and Switch project for file.  The Build Statistics menu item is hidden on the 64-bit IDE.
 - **Extended IDE Settings (DSU) hooks**: Editor tab double-click action, Show project for active file, Structure View search hotkey, Replace Open File At Cursor, Show all frames, Don't break on spawned processes, Confirm Ctrl+F1 while debugging and Disable alpha-sort class completion.
-- **Old Palette**: not offered on the 64-bit IDE, whose palette re-sync hook cannot run there.
+- **Old Palette**: not offered on the 64-bit IDE, whose palette re-sync hook cannot run there.  (`RegisterPlugins.pas` registers it only for Delphi 10.2 and earlier, so no Delphi 12 or 13 build offers it on either IDE.)
+- **Compile Backup**: its option is disabled, since the IDE notifier that triggers a backup is not registered.
 - **Local Start Parameters**: off on the 64-bit IDE, where the run parameters it strips from the `.dproj` are never restored.  (On the 32-bit IDE they are stored per configuration and platform since 3.24.16, together with the single value older builds use, and the `.dproj` is rewritten atomically.)
 - **External Mod Monitor** still runs, with two limits its option hint names: newly opened projects are picked up within a few seconds (a periodic re-sync, not the IDE notifier), and files changed during a compile are not held back until it ends.
 
@@ -111,29 +116,36 @@ A clean shutdown leaves the file unchanged. If you ever see new lines appear aft
 
 ### DDevExtensions Menu Structure
 
-All DDevExtensions tools are organized under a single submenu, ordered by recommended workflow:
+All DDevExtensions tools are organized under a single submenu, ordered by recommended workflow.  This is the order the code creates: `Main.IDELoaded` adds Options... and a separator, runs the late loaders in the order `RegisterPlugins.pas` registers them (each analysis tool appends its item to the submenu), then appends a separator and About...:
 
 ```
 Tools
-  └── DDevExtensions
-        ├── Options...
-        ├── ─────────────
-        ├── Dependency Viewer...        (1. Architecture overview)
-        ├── Code Quality Analyser...    (2. Comprehensive quality check)
-        ├── Unused Unit Detector...     (3. Remove unused units)
-        ├── Dead Code Detector...       (4. Remove dead code)
-        ├── Unreachable Code Detector...(5. Remove unreachable code)
-        ├── Empty Event Handler...      (6. Remove empty handlers)
-        ├── Uses Clause Manager...      (7. Organize uses clauses)
-        ├── Decirculariser...           (8.  Break circular references)
-        ├── DFM/PAS Consistency...      (9.  Check form/code sync)
-        ├── Code Style Checker...       (10.  Style check)
-        └── TODO/FIXME Aggregator...    (11.  Review work items)
-
+  ├── DDevExtensions                    (inserted after Debugger Options...; else before the Tools item; else second)
+  │     ├── Options...
+  │     ├── ─────────────
+  │     ├── Dependency Viewer...        (1. Architecture overview)
+  │     ├── Code Quality Analyser...    (2. Comprehensive quality check)
+  │     ├── Unused Unit Detector...     (3. Remove unused units)
+  │     ├── Dead Code Detector...       (4. Remove dead code)
+  │     ├── Unreachable Code Detector...(5. Remove unreachable code)
+  │     ├── Empty Event Handler Detector... (6. Remove empty handlers)
+  │     ├── Uses Clause Manager...      (7. Organize uses clauses)
+  │     ├── Decirculariser...           (8.  Break circular references)
+  │     ├── DFM/PAS Consistency...      (9.  Check form/code sync)
+  │     ├── Code Style Checker...       (10.  Style check)
+  │     ├── TODO/FIXME Aggregator...    (11.  Review work items)
+  │     ├── ─────────────
+  │     └── About...
+  │
+  ├── (first Tools item whose caption contains "Build")
   ├── IDE Path Sorter...                (IDE path management - separate from DDevExtensions submenu)
+  ├── Sort Projects in Group...         (Alphabetise the open project group's members)
   ├── IDE Path Compactor...             (Shorten the IDE library path strings)
-  └── Sort Projects in Group...         (Alphabetise the open project group's members)
+  │
+  └── Build Statistics...               (appended to the end of the Tools menu; shown only when enabled, never on the 64-bit IDE)
 ```
+
+The three Tools-menu commands are placed by caption, in registration order: IDE Path Sorter goes directly below the first item whose caption contains "Build", IDE Path Compactor directly below IDE Path Sorter, and Sort Projects in Group (registered last) also directly below IDE Path Sorter, which puts it between the Sorter and the Compactor; it falls back to the first "Build" item only when IDE Path Sorter is disabled.  If the only "Build" item is Build Statistics, all three follow it at the end of the menu.
 
 ![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
 
@@ -2396,12 +2408,13 @@ var
 begin
   for I := 1 to 10 do
   begin
-    if I = 5 then
-      Break;
-      DoSomething;  // Unreachable - after Break (missing begin/end)
+    Break;
+    DoSomething;  // Unreachable - after Break
   end;
 end;
 ```
+
+A terminator that follows `then`, `else`, `do` or a case label's `:` is conditional and is NOT reported: after `if I = 5 then Break;` the next statement still runs whenever `I <> 5`, however it is indented.
 
 #### Smart Conditional Detection
 

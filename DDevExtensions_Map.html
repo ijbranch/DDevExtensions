@@ -30,9 +30,10 @@ COMPONENTS INCLUDED:
     PascalParser, IDE Utilities, XML Utilities, General Utilities
 
   Separate DLL (built first):
-    CompileInterceptorW.dll - Intercepts compiler process via Windows API hooks
-                             for real-time progress, timing metrics, error aggregation.
-                             Communicates with main DLL via shared memory.
+    CompileInterceptorW.dll - Loaded into the IDE process; patches the compiler's I/O
+                             callback table (PascalComInOut, in delphicoreide) and
+                             dispatches file and message callbacks to registered
+                             interceptors.  Compile Progress is the only client, Win32 only.
 
   Registration Utility (built last):
     DDevExtensionsReg.exe - Auto-detects Delphi 10.2-13.0, handles multi-version
@@ -40,8 +41,8 @@ COMPONENTS INCLUDED:
 
   Build Order: CompileInterceptor → DDevExtensions → Installer
 
-LAST UPDATED: 2026-09-17
-TOTAL LINES OF CODE: 91,941
+LAST UPDATED: 2026-11-09
+TOTAL LINES OF CODE: 91,376 (2026-11-09)
 ================================================================================
 -->
 <html lang="en">
@@ -801,12 +802,13 @@ TOTAL LINES OF CODE: 91,941
         <div class="tier">
             <div class="box interceptor clickable" onclick="showModal('CompileInterceptor')">
                 <div class="box-title">CompileInterceptorW.dll</div>
-                <div class="box-subtitle">Separate DLL - Intercepts compiler process for real-time progress, timing & metrics</div>
+                <div class="box-subtitle">Separate DLL - Patches the compiler's I/O callbacks inside the IDE; Compile Progress (Win32) is its only client</div>
             </div>
         </div>
     </div>
 
     <h2>Lines of Code by Component</h2>
+    <p>All lines-of-code figures on this page were measured on 2026-11-09 (working tree), as the lines of the .pas files in each component's folder.</p>
     <div class="chart-container">
         <div class="chart" id="locChart"></div>
     </div>
@@ -819,39 +821,39 @@ TOTAL LINES OF CODE: 91,941
             <th>Category</th>
             <th>LOC</th>
         </tr>
-        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing</td><td>Shared Library</td><td>7,177</td></tr>
-        <tr><td><strong>IDE Utilities</strong></td><td>Tools API helpers and IDE integration</td><td>Shared Library</td><td>6,654</td></tr>
-        <tr><td><strong>Core Framework</strong></td><td>Plugin initialization and management</td><td>Core</td><td>4,320</td></tr>
-        <tr><td><strong>Dependency Viewer</strong></td><td>Unit dependency analysis</td><td>Analysis</td><td>4,222</td></tr>
-        <tr><td><strong>Compile Interceptor</strong></td><td>Compiler hooks for metrics</td><td>Build</td><td>4,033</td></tr>
-        <tr><td><strong>Compile Progress</strong></td><td>Build tracking and statistics</td><td>Build</td><td>3,691</td></tr>
-        <tr><td><strong>Project Settings</strong></td><td>Set Versioninfo dialog (the settings manager was removed in 3.24.16)</td><td>Project</td><td>3,375 (2026-01-06); 1,129 (2026-11-09)</td></tr>
-        <tr><td><strong>DSU Features</strong></td><td>Extended IDE settings</td><td>Editor</td><td>3,055</td></tr>
-        <tr><td><strong>IDE Path Compactor</strong></td><td>Shorten IDE library paths via $(MACRO) substitution</td><td>Project</td><td>3,034</td></tr>
-        <tr><td><strong>Old Palette</strong></td><td>Legacy component palette</td><td>UI</td><td>2,755</td></tr>
-        <tr><td><strong>Code Style Checker</strong></td><td>Naming convention enforcement</td><td>Analysis</td><td>2,731</td></tr>
-        <tr><td><strong>IDE Path Sorter</strong></td><td>Sort and de-duplicate IDE library paths</td><td>Project</td><td>2,495</td></tr>
-        <tr><td><strong>Start Parameter Manager</strong></td><td>Debug launch parameters</td><td>Project</td><td>2,418</td></tr>
-        <tr><td><strong>Uses Clause Manager</strong></td><td>Optimize uses clauses</td><td>Analysis</td><td>2,302</td></tr>
-        <tr><td><strong>Editor Features</strong></td><td>Code editing enhancements</td><td>Editor</td><td>2,196</td></tr>
-        <tr><td><strong>File Selector</strong></td><td>File selection dialogs</td><td>UI</td><td>2,152</td></tr>
-        <tr><td><strong>Decirculariser</strong></td><td>Rank and break circular unit references</td><td>Analysis</td><td>2,039</td></tr>
-        <tr><td><strong>Unreachable Code</strong></td><td>Dead path detection</td><td>Analysis</td><td>1,815</td></tr>
-        <tr><td><strong>Code Quality Analyzer</strong></td><td>Quality checks</td><td>Analysis</td><td>1,636</td></tr>
-        <tr><td><strong>Method Separators</strong></td><td>Editor lines between methods (idea: Tulip Method Separators, Samer Assil)</td><td>Editor</td><td>1,577</td></tr>
-        <tr><td><strong>Dead Code Detector</strong></td><td>Unused code finder</td><td>Analysis</td><td>1,555</td></tr>
-        <tr><td><strong>Keybindings</strong></td><td>Keyboard shortcuts</td><td>Editor</td><td>1,480</td></tr>
-        <tr><td><strong>Unused Unit Detector</strong></td><td>Uses clause cleanup</td><td>Analysis</td><td>1,458</td></tr>
-        <tr><td><strong>DFM/PAS Consistency</strong></td><td>Form sync checker</td><td>Analysis</td><td>1,408</td></tr>
-        <tr><td><strong>TODO Aggregator</strong></td><td>Comment scanner</td><td>Analysis</td><td>1,114</td></tr>
-        <tr><td><strong>Component Selector</strong></td><td>Quick component search</td><td>UI</td><td>951</td></tr>
-        <tr><td><strong>Empty Event Handler</strong></td><td>Empty handler finder</td><td>Analysis</td><td>920</td></tr>
-        <tr><td><strong>XML Utilities</strong></td><td>Configuration storage</td><td>Shared Library</td><td>898</td></tr>
-        <tr><td><strong>Form Designer</strong></td><td>Designer helpers</td><td>Editor</td><td>864</td></tr>
-        <tr><td><strong>External Mod Monitor</strong></td><td>Auto-refresh on external file modification</td><td>Editor</td><td>726</td></tr>
-        <tr><td><strong>General Utilities</strong></td><td>Hooking and streams</td><td>Shared Library</td><td>505</td></tr>
-        <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>498</td></tr>
-        <tr><td><strong>Sort Projects in Group</strong></td><td>Alphabetise .groupproj member projects</td><td>Project</td><td>478</td></tr>
+        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing</td><td>Shared Library</td><td>8,719</td></tr>
+        <tr><td><strong>IDE Utilities</strong></td><td>Tools API helpers and IDE integration</td><td>Shared Library</td><td>7,895</td></tr>
+        <tr><td><strong>Core Framework</strong></td><td>Plugin initialization and management</td><td>Core</td><td>5,087</td></tr>
+        <tr><td><strong>Dependency Viewer</strong></td><td>Unit dependency analysis</td><td>Analysis</td><td>4,668</td></tr>
+        <tr><td><strong>Compile Interceptor</strong></td><td>Compiler hooks for metrics</td><td>Build</td><td>4,731</td></tr>
+        <tr><td><strong>Compile Progress</strong></td><td>Build tracking and statistics</td><td>Build</td><td>4,021</td></tr>
+        <tr><td><strong>Project Settings</strong></td><td>Set Versioninfo dialog (the settings manager was removed in 3.24.16)</td><td>Project</td><td>1,128</td></tr>
+        <tr><td><strong>DSU Features</strong></td><td>Extended IDE settings</td><td>Editor</td><td>3,195</td></tr>
+        <tr><td><strong>IDE Path Compactor</strong></td><td>Shorten IDE library paths via $(MACRO) substitution</td><td>Project</td><td>3,924</td></tr>
+        <tr><td><strong>Old Palette</strong></td><td>Legacy component palette</td><td>UI</td><td>2,915</td></tr>
+        <tr><td><strong>Code Style Checker</strong></td><td>Naming convention enforcement</td><td>Analysis</td><td>2,792</td></tr>
+        <tr><td><strong>IDE Path Sorter</strong></td><td>Sort and de-duplicate IDE library paths</td><td>Project</td><td>2,896</td></tr>
+        <tr><td><strong>Start Parameter Manager</strong></td><td>Debug launch parameters</td><td>Project</td><td>2,538</td></tr>
+        <tr><td><strong>Uses Clause Manager</strong></td><td>Optimize uses clauses</td><td>Analysis</td><td>2,972</td></tr>
+        <tr><td><strong>Editor Features</strong></td><td>Code editing enhancements</td><td>Editor</td><td>2,412</td></tr>
+        <tr><td><strong>File Selector</strong></td><td>File selection dialogs</td><td>UI</td><td>2,266</td></tr>
+        <tr><td><strong>Decirculariser</strong></td><td>Rank and break circular unit references</td><td>Analysis</td><td>2,448</td></tr>
+        <tr><td><strong>Unreachable Code</strong></td><td>Dead path detection</td><td>Analysis</td><td>1,789</td></tr>
+        <tr><td><strong>Code Quality Analyzer</strong></td><td>Quality checks</td><td>Analysis</td><td>1,671</td></tr>
+        <tr><td><strong>Method Separators</strong></td><td>Editor lines between methods (idea: Tulip Method Separators, Samer Assil)</td><td>Editor</td><td>1,792</td></tr>
+        <tr><td><strong>Dead Code Detector</strong></td><td>Unused code finder</td><td>Analysis</td><td>1,907</td></tr>
+        <tr><td><strong>Keybindings</strong></td><td>Keyboard shortcuts</td><td>Editor</td><td>1,585</td></tr>
+        <tr><td><strong>Unused Unit Detector</strong></td><td>Uses clause cleanup</td><td>Analysis</td><td>1,816</td></tr>
+        <tr><td><strong>DFM/PAS Consistency</strong></td><td>Form sync checker</td><td>Analysis</td><td>1,528</td></tr>
+        <tr><td><strong>TODO Aggregator</strong></td><td>Comment scanner</td><td>Analysis</td><td>1,190</td></tr>
+        <tr><td><strong>Component Selector</strong></td><td>Quick component search</td><td>UI</td><td>958</td></tr>
+        <tr><td><strong>Empty Event Handler</strong></td><td>Empty handler finder</td><td>Analysis</td><td>1,015</td></tr>
+        <tr><td><strong>XML Utilities</strong></td><td>Configuration storage</td><td>Shared Library</td><td>1,101</td></tr>
+        <tr><td><strong>Form Designer</strong></td><td>Designer helpers</td><td>Editor</td><td>935</td></tr>
+        <tr><td><strong>External Mod Monitor</strong></td><td>Auto-refresh on external file modification</td><td>Editor</td><td>1,029</td></tr>
+        <tr><td><strong>General Utilities</strong></td><td>Hooking and streams</td><td>Shared Library</td><td>4,712</td></tr>
+        <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>585</td></tr>
+        <tr><td><strong>Sort Projects in Group</strong></td><td>Alphabetise .groupproj member projects</td><td>Project</td><td>762</td></tr>
     </table>
 
     <h2>Technical Specifications</h2>
@@ -859,8 +861,8 @@ TOTAL LINES OF CODE: 91,941
         <tr><th>Specification</th><th>Value</th></tr>
         <tr><td>Type</td><td>IDE Expert (DLL Plugin)</td></tr>
         <tr><td>Supported IDEs</td><td>Delphi 10.2 Tokyo through 13.0 Florence (2026-11-09: D_D102 can no longer compile the shared code, which uses inline variables, Delphi 10.3+; only Delphi 13 is built and tested)</td></tr>
-        <tr><td>Total Lines of Code</td><td>97,049 (2026-01-06); 91,077 (re-measured 2026-11-09: tracked .pas files outside the test suite and Backup_MenuStructure)</td></tr>
-        <tr><td>Total Pascal Files</td><td>164 (2026-01-06); 148 (re-measured 2026-11-09, same scope)</td></tr>
+        <tr><td>Total Lines of Code</td><td>91,376 (tracked .pas files outside the DDevExtUnitTests suite)</td></tr>
+        <tr><td>Total Pascal Files</td><td>149 (same scope)</td></tr>
         <tr><td>Output Files</td><td>DDevExtensionsD130.dll / DDevExtensionsD130x64.dll (32-bit / 64-bit IDE), CompileInterceptorW.dll / CompileInterceptorWx64.dll, DDevExtensionsReg.exe</td></tr>
         <tr><td>Configuration</td><td>One XML file per IDE version in %APPDATA%\DDevExtensions\ (DDevExtensions&lt;n&gt;.xml, saved atomically; an unreadable file is moved to .corrupt-&lt;date-time&gt;), plus LibraryPathBackups&lt;n&gt;.v2.xml and LayerConfig.txt</td></tr>
     </table>
@@ -877,13 +879,13 @@ TOTAL LINES OF CODE: 91,941
 
     <div class="warning">
         <div class="warning-title">Build Dependencies &amp; Installation</div>
-        <p><strong>CompileInterceptorW.dll</strong> must be built first. This separate DLL intercepts the Delphi compiler process using Windows API hooks to provide real-time compilation progress, timing metrics, and error aggregation. The main DDevExtensions.dll communicates with it via shared memory.</p>
+        <p><strong>CompileInterceptorW.dll</strong> must be built first. This separate DLL is loaded into the IDE process and patches the compiler's I/O callback table (PascalComInOut in delphicoreide), so the compiler's file and message calls pass through the interceptors registered with it.  DDevExtensions' Compile Progress registers through the ICompileInterceptor interfaces in InterceptIntf.pas, on Win32 only; CompileInterceptorWx64.dll is built but not loaded.</p>
         <p><strong>DDevExtensionsReg.exe</strong> (Installer) handles registration with the IDE. It auto-detects installed Delphi versions (10.2-13.0), allows selective per-version installation, and manages registry entries under HKCU\Software\Embarcadero\BDS\[version]\Experts. No admin rights required.</p>
         <p>Build order: CompileInterceptor &rarr; DDevExtensions &rarr; Installer</p>
     </div>
 
     <div class="footer">
-        <p>DDevExtensions v3.6.0 | Generated: 2026-01-06 | Components and units updated for v3.24.16 on 2026-11-09 (lines-of-code figures are the 2026-01-06 measurement unless dated otherwise)</p>
+        <p>DDevExtensions v3.6.0 | Generated: 2026-01-06 | Components and units updated for v3.24.16 on 2026-11-09</p>
         <p>D:\DDevExtensions\DDevExtensions</p>
     </div>
 
@@ -913,252 +915,252 @@ TOTAL LINES OF CODE: 91,941
                 description: 'The core framework that initializes DDevExtensions and manages all plugins. Handles IDE hook setup, menu creation, and plugin lifecycle management.',
                 features: ['Plugin initialization', 'IDE hook installation', 'Menu creation', 'Component lifecycle', 'Configuration base class'],
                 dependencies: ['Tools API', 'IDE Utilities', 'XML Utilities'],
-                linesOfCode: 3160
+                linesOfCode: 3387
             },
             'RegisterPlugins': {
                 category: 'Core',
                 description: 'Dynamic plugin registration system with conditional compilation support. Loads plugins based on compile-time defines and runtime configuration.  The DDevExtensions.DisabledFeatures list is parsed by FeatureSwitches (3.24.16), which logs and shows once per distinct set any name that matches no feature of any version.',
                 features: ['Dynamic plugin loading', 'Conditional compilation', 'Late loader support', 'Expert loader support'],
                 dependencies: ['Core Framework'],
-                linesOfCode: 236
+                linesOfCode: 449
             },
             'PluginConfig': {
                 category: 'Core',
                 description: 'Base class for all plugin configurations. Provides XML-based storage for persistent settings across IDE sessions.  Since 3.24.16 PluginConfigCore gives the shared settings file brief load retries, moves an unparsable file to .corrupt-<date-time>, blocks saving for the session when the file cannot be opened, and saves atomically through a uniquely named temporary file.',
                 features: ['XML configuration storage', 'Settings persistence', 'Default value management'],
                 dependencies: ['XML Utilities'],
-                linesOfCode: 311
+                linesOfCode: 729
             },
             'ComponentManager': {
                 category: 'Core',
                 description: 'Manages component lifecycle and menu item registration within the IDE.',
                 features: ['Component lifecycle', 'Menu item management', 'Registration tracking'],
                 dependencies: ['Tools API'],
-                linesOfCode: 365
+                linesOfCode: 522
             },
             'DependencyViewer': {
                 category: 'Code Analysis',
                 description: 'Visual unit dependency analysis tool. Shows forward and reverse dependencies, detects circular references, and identifies layer violations.  Since 3.24.16 the scanner, cycle detection and layer rules are in DependencyViewerCore (tested); cycles are reported once per strongly-connected group.',
                 features: ['Forward dependency analysis', 'Reverse dependency analysis', 'Circular reference detection', 'Layer violation detection', 'Export to CSV/TXT'],
                 dependencies: ['Pascal Parser', 'IDE Utilities', 'XML Utilities'],
-                linesOfCode: 4222
+                linesOfCode: 4668
             },
             'CodeQualityAnalyzer': {
                 category: 'Code Analysis',
                 description: 'Comprehensive code quality checker that scans for common issues like magic numbers, hardcoded strings, and potential memory leaks.',
                 features: ['Magic number detection', 'Hardcoded string detection', 'Empty exception handlers', 'Missing try/finally', 'Memory leak detection'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1636
+                linesOfCode: 1671
             },
             'CodeStyleChecker': {
                 category: 'Code Analysis',
                 description: 'Enforces Delphi naming conventions. Checks type prefixes (T, I, E, P), field prefixes (F), and parameter prefixes (A).',
                 features: ['Type prefix rules', 'Field prefix rules', 'Parameter prefix rules', 'Custom variable prefixes', 'Unit scope validation'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 2731
+                linesOfCode: 2792
             },
             'DeadCodeDetector': {
                 category: 'Code Analysis',
                 description: 'Finds unused code elements including procedures, functions, and private fields. Smart filtering ignores virtual methods and event handlers.  Since 3.24.16 the analysis is in DeadCodeCore (tested): unused methods are reported, references from other units, descendants, the project file and include files count, and message handlers and attributed members are ignored.',
                 features: ['Unused procedure detection', 'Unused field detection', 'Smart filtering', 'Wildcard ignore patterns'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1555
+                linesOfCode: 1907
             },
             'UnusedUnitDetector': {
                 category: 'Code Analysis',
                 description: 'Identifies units in uses clauses that are not actually used by the code. Analyses both interface and implementation sections.  Since 3.24.16 the analysis is in UnusedUnitCore (tested) and errs on "used"; a unit needed only for inline expansion (hint H2443) cannot be detected.',
                 features: ['Interface section analysis', 'Implementation section analysis', 'Configurable ignore list'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1458
+                linesOfCode: 1816
             },
             'UnreachableCodeDetector': {
                 category: 'Code Analysis',
                 description: 'Finds code that can never execute, such as statements after Exit, Raise, Break, or Continue.  Since 3.24.16 the scan is in UnreachableCodeCore (tested), with the compiler predefined symbols and {$ELSEIF} evaluated.',
                 features: ['Post-exit code detection', 'Post-raise detection', 'Case statement aware', 'Conditional compilation support'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1815
+                linesOfCode: 1789
             },
             'PathCompactor': {
                 category: 'Project Management',
                 description: 'Shortens the IDE library path strings by proposing $(NAME) macro substitutions for repeated directory prefixes, and reports duplicate, missing and undefined-macro entries.  Remove Unused... (3.24.16) deletes variables it created that nothing refers to any more.  Apply is all-or-nothing, verified by read-back.',
                 features: ['Macro substitution', 'Stored-space scoring', 'Hygiene detection', 'Backup and rollback'],
                 dependencies: ['IDE Utilities', 'XML Utilities'],
-                linesOfCode: 3034
+                linesOfCode: 3924
             },
             'LibraryPathSorter': {
                 category: 'Project Management',
                 description: 'Sorts and de-duplicates the IDE library, browsing and debug-DCU paths, with backup history.  Since 3.24.16 the history shared with the Path Compactor is LibraryPathBackups (tested), stored in LibraryPathBackups<ver>.v2.xml with a one-time read-only import of the old file.',
                 features: ['Path sorting', 'Duplicate removal', 'Backup history', 'Per-platform'],
                 dependencies: ['IDE Utilities', 'XML Utilities'],
-                linesOfCode: 2495
+                linesOfCode: 2896
             },
             'ProjectGroupSorter': {
                 category: 'Project Management',
                 description: 'Alphabetises the member projects of the open project group by rewriting the .groupproj ItemGroup, per-project Targets and CallTarget lists.',
                 features: ['.groupproj rewrite', 'Reload and reselect', 'Backup file', 'No-op when sorted'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 478
+                linesOfCode: 762
             },
             'ExternalModMonitor': {
                 category: 'Editor',
                 description: 'Watches the project tree with ReadDirectoryChangesW and refreshes modules changed outside the IDE.',
                 features: ['Directory watching', 'Auto-refresh', 'Conflict prompt'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 726
+                linesOfCode: 1029
             },
             'MethodSeparators': {
                 category: 'Editor',
                 description: 'Draws a faint line in the code editor above each top-level routine, type declaration and unit section, through INTACodeEditorEvents. Idea from Tulip Method Separators by Samer Assil (MIT); independent implementation.',
                 features: ['Lexer-based block detection', 'DocInsight comments stay below the line', 'Theme-aware colour', 'Throttled per-file cache'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1577
+                linesOfCode: 1792
             },
             'Decirculariser': {
                 category: 'Code Analysis',
                 description: 'Ranks the project\'s circular unit references by risk and removes dead uses entries, the one fix it makes by itself.  Its folder also holds IdeUnitSource (3.24.16), through which the analysis tools read a unit from its editor buffer or disk and never open a module.',
                 features: ['Cycle detection', 'Risk ranking', 'Per-edge symbol attribution', 'Dead-entry removal'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 2039
+                linesOfCode: 2448
             },
             'UsesClauseManager': {
                 category: 'Code Analysis',
                 description: 'Optimizes unit dependencies by analyzing symbol usage and recommending optimal uses clause placement.',
                 features: ['Symbol usage analysis', 'Interface vs implementation placement', 'Auto-apply changes', 'Undo support'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 2302
+                linesOfCode: 2972
             },
             'TodoAggregator': {
                 category: 'Code Analysis',
                 description: 'Centralized comment scanner that finds TODO, FIXME, HACK, BUG, NOTE, and XXX comments across the project.  Since 3.24.16 tag recognition is in TodoAggregatorCore (tested).',
                 features: ['Multi-tag scanning', 'Priority parsing', 'Filterable results', 'Sortable list'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1114
+                linesOfCode: 1190
             },
             'EmptyEventHandler': {
                 category: 'Code Analysis',
                 description: 'Finds event handlers with empty bodies that serve no purpose and can be removed.',
                 features: ['Empty handler detection', 'Form event scanning'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 920
+                linesOfCode: 1015
             },
             'DfmPasConsistency': {
                 category: 'Code Analysis',
                 description: 'Verifies synchronization between DFM files and Pascal source. Finds missing components and type mismatches.  Since 3.24.16 the comparison is in DfmPasConsistencyCore (tested) and covers only the class named by the DFM root object.',
                 features: ['Missing component detection', 'Missing field detection', 'Type mismatch detection'],
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
-                linesOfCode: 1408
+                linesOfCode: 1528
             },
             'CompileProgress': {
                 category: 'Build Tools',
                 description: 'Build progress tracking with per-unit compile times, LOC metrics, and cyclomatic complexity analysis.',
                 features: ['Per-unit compile times', 'LOC metrics', 'Cyclomatic complexity', 'Taskbar integration', 'Auto-save on success'],
                 dependencies: ['Compile Interceptor', 'IDE Utilities'],
-                linesOfCode: 3691
+                linesOfCode: 4021
             },
             'CompileBackup': {
                 category: 'Build Tools',
                 description: 'Creates automatic backups of source files before compilation for safety.',
                 features: ['Pre-compile backup', 'Configurable paths'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 254
+                linesOfCode: 374
             },
             'FileCleaner': {
                 category: 'Build Tools',
                 description: 'Automatically cleans up temporary files like .ddp, Model folders, and History folders.  Removing empty Model folders defaults to off since 3.24.16.',
                 features: ['Auto-cleanup on build', 'Configurable patterns'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 192
+                linesOfCode: 262
             },
             'Editor': {
                 category: 'Editor',
                 description: 'Editor improvement features including enhanced key bindings and navigation.',
                 features: ['Tab indentation', 'Home key enhancement', 'Word navigation', 'Interface/Implementation toggle'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2196
+                linesOfCode: 2412
             },
             'Keybindings': {
                 category: 'Editor',
                 description: 'Enhanced keyboard shortcuts for common IDE operations.',
                 features: ['Custom shortcuts', 'Key binding management'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 1480
+                linesOfCode: 1585
             },
             'FormDesigner': {
                 category: 'Editor',
                 description: 'Form designer helpers that eliminate phantom changes and improve DPI handling.',
                 features: ['Remove ExplicitX properties', 'Remove PixelsPerInch', 'Label margin helper'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 864
+                linesOfCode: 935
             },
             'DSUFeatures': {
                 category: 'Editor',
                 description: 'Extended IDE settings including Structure View search and class completion options.',
                 features: ['Disable alpha-sort', 'Structure View search', 'Project visibility'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 3055
+                linesOfCode: 3195
             },
             'ProjectSettings': {
                 category: 'Project Management',
                 description: 'Set Versioninfo dialog: multi-project version info management for consistent versioning across project groups.  Each version part accepts 0-65535, checked before anything is written; VerInfo_Keys values are split on ";" only (VersionInfoKeys).  The Project Settings manager (ProjectSettings, ProjectSettingsData, FrmProjectSettingManageSettings, FrmProjectSettingsEditOptions) was removed in 3.24.16.',
                 features: ['Version info management', 'Multi-project support', 'Build number automation'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 1129 // re-measured 2026-11-09; 3,375 on 2026-01-06, before the settings manager was removed
+                linesOfCode: 1128
             },
             'StartParameterManager': {
                 category: 'Project Management',
                 description: 'Multiple start parameter configurations for debugging with easy switching.',
                 features: ['Multiple configurations', 'Quick switching', 'Parameter history'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2418
+                linesOfCode: 2538
             },
             'StartParameterTeam': {
                 category: 'Project Management',
                 description: 'Team-based parameter sharing for consistent debug configurations across team members.',
                 features: ['Team parameter sharing', 'Configuration sync'],
                 dependencies: ['IDE Utilities', 'Start Parameter Manager'],
-                linesOfCode: 354
+                linesOfCode: 467
             },
             'ComponentSelector': {
                 category: 'UI Component',
                 description: 'Searchable component selector popup for quick component access.',
                 features: ['Quick search', 'Component filtering', 'Keyboard navigation'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 951
+                linesOfCode: 958
             },
             'OldPalette': {
                 category: 'UI Component',
-                description: 'Legacy-style tabbed component palette, compiled into every IDE version's DLL ( INCLUDE_OLDPALETTE ).  Not offered on the 64-bit IDE (3.24.16), where its palette re-sync hook cannot run.',
+                description: 'Legacy-style tabbed component palette.  Compiled into every IDE version's DLL ( INCLUDE_OLDPALETTE ), but RegisterPlugins registers it only for Delphi 10.2 and older ( CompilerVersion <= 32 ), so the D12 and D13 builds never offer it.  Not offered on the 64-bit IDE (3.24.16), where its palette re-sync hook cannot run.',
                 features: ['Classic palette UI', 'Category organization'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2755
+                linesOfCode: 2915
             },
             'FileSelector': {
                 category: 'UI Component',
                 description: 'Enhanced file selection dialogs with additional features.',
                 features: ['Enhanced file dialogs', 'Recent files'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 2152
+                linesOfCode: 2266
             },
             'UnitSelector': {
                 category: 'UI Component',
                 description: 'Enhanced Find Unit and Use Unit dialogs.',
                 features: ['Enhanced unit dialogs', 'Search improvements'],
                 dependencies: ['IDE Utilities'],
-                linesOfCode: 319
+                linesOfCode: 373
             },
             'IDEMenuHandler': {
                 category: 'Utility',
                 description: 'IDE menu integration for DDevExtensions Tools menu.',
                 features: ['Menu creation', 'Item management'],
                 dependencies: ['Tools API'],
-                linesOfCode: 375
+                linesOfCode: 386
             },
             'ExcelExport': {
                 category: 'Utility',
                 description: 'Export functionality for analysis results to Excel format.',
                 features: ['Excel export', 'CSV export'],
                 dependencies: [],
-                linesOfCode: 156
+                linesOfCode: 254
             },
             'Installer': {
                 category: 'Utility',
@@ -1172,49 +1174,49 @@ TOTAL LINES OF CODE: 91,941
                     'User-mode installation (no admin rights required)'
                 ],
                 dependencies: ['Windows Registry API', 'DDevExtensions.dll', 'CompileInterceptorW.dll'],
-                linesOfCode: 498
+                linesOfCode: 585
             },
             'PascalParser': {
                 category: 'Shared Library',
                 description: 'Pascal source code tokenizer and parser used by all code analysis tools. Handles lexing, expression parsing, and preprocessor directives.  ProjectSources (3.24.16) gives the detectors the units of a project from editor buffers or disk without opening modules; gllDelphiDFMParser is tested but not yet used by the product.',
                 features: ['Tokenization', 'Expression parsing', 'Preprocessor handling', 'DFM parsing'],
                 dependencies: [],
-                linesOfCode: 7177
+                linesOfCode: 8719
             },
             'IDEUtilities': {
                 category: 'Shared Library',
                 description: 'Tools API abstraction layer providing IDE integration helpers, notifications, and project/unit information.  New in 3.24.16: IDEHashLists (Win64-safe string hash lists) and VersionInfoKeys (VerInfo_Keys split on ";" only), both tested.',
                 features: ['Tools API helpers', 'IDE notifications', 'Project data access', 'Module information'],
                 dependencies: ['Tools API'],
-                linesOfCode: 6654
+                linesOfCode: 7895
             },
             'XMLUtilities': {
                 category: 'Shared Library',
                 description: 'XML document handling for configuration storage.',
                 features: ['XML reading/writing', 'Configuration persistence'],
                 dependencies: [],
-                linesOfCode: 898
+                linesOfCode: 1101
             },
             'GeneralUtilities': {
                 category: 'Shared Library',
                 description: 'Low-level utilities including code hooking, import hooking and folder watching (Hooking, ImportHooking, FileWatcher).  Shared\\FileStreams is no longer linked into the D13 DLL (3.24.16); the older IDE projects keep it.',
                 features: ['Code hooking', 'Import hooking', 'Folder watching (I/O completion port)', 'File streams (older IDE projects only)'],
                 dependencies: ['Windows API'],
-                linesOfCode: 505
+                linesOfCode: 4712
             },
             'CompileInterceptor': {
                 category: 'Compiler Hook',
-                description: 'A separate DLL (CompileInterceptorW.dll) that must be built before the main extension. It uses low-level Windows API hooks to intercept the Delphi compiler process, capturing compilation events in real-time. This enables features like compile progress tracking, unit compilation timing, error/warning counting, and build metrics collection. The interceptor injects itself into the compiler pipeline without modifying IDE internals, making it version-independent and more stable across Delphi updates.  Since 3.24.16 interceptor registration and dispatch are in InterceptDispatch (tested), CompileInterceptorW is version 1.5.1, and the compiler callback table is restored at shutdown.',
+                description: 'A separate DLL (CompileInterceptorW.dll) that must be built before the main extension.  DDevExtensions loads it into the IDE process on demand (InterceptLoader).  CompilerHooks patches the compiler's I/O callback table (TPascalComInOut, from delphicoreide's GetDccCallbacks export on Delphi XE and later), so the compiler's file open, read, create, write, seek, status and message calls pass through the DLL.  InterceptImpl and InterceptDispatch hand them to the interceptors registered through the ICompileInterceptor interfaces in InterceptIntf (OpenVirtualFile, AlterFile, InspectFilename, AlterMessage, FileNameDate, and CompileProject from an IDE notifier), each according to the CIO_* options it declares.  DDevExtensions' Compile Progress is the only registered interceptor (file-name inspection only, to follow unit-by-unit progress), and it registers only on Win32.  CompileInterceptorWx64.dll is built but not loaded: Compile Progress does not call it on Win64, and its InitCompileInterceptor exits before patching anything.  Since 3.24.16 interceptor registration and dispatch are in InterceptDispatch (tested), CompileInterceptorW is version 1.5.1, and the compiler callback table is restored at shutdown.',
                 features: [
-                    'Real-time compiler process interception',
-                    'Unit-by-unit compilation progress tracking',
-                    'Build timing and metrics collection',
-                    'Error and warning aggregation',
-                    'Version-independent compiler hooks',
-                    'Thread-safe event notification to main extension'
+                    'Compiler I/O callback table patch (PascalComInOut), restored at shutdown',
+                    'Virtual and altered file content for the compiler',
+                    'File-name inspection (used by Compile Progress)',
+                    'Compiler message alteration',
+                    'Per-interceptor CIO_* options',
+                    'Dispatch on a snapshot, no lock held while interceptors run'
                 ],
-                dependencies: ['Windows API (CreateProcess hooks)', 'Shared memory for IPC'],
-                linesOfCode: 4033
+                dependencies: ['delphicoreide (compiler callback table)', 'Tools API (IDE notifier for CompileProject)'],
+                linesOfCode: 4731
             },
             'DelphiIDE': {
                 category: 'External',

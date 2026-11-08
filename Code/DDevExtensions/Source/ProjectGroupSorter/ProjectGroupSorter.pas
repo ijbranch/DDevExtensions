@@ -264,15 +264,23 @@ begin
     FMenuItem.Caption := '&Sort Projects in Group...';
     FMenuItem.OnClick := MenuItemClick;
 
-    // Place it just after the "IDE Path Sorter" item (or Build Statistics).
+    // Place it just after the "IDE Path &Sorter..." item, else after the first "Build" item.  The caption is
+    // compared without its "&" accelerator: the literal 'Path Sorter' never matched "IDE Path &Sorter...",
+    // so the item always landed after the first "Build" item instead.
     InsertIndex     := -1;
     for I := 0 to ToolsMenu.Count - 1 do
-      if ( Pos( 'Path Sorter', ToolsMenu.Items[ I ].Caption ) > 0 ) or
-        ( Pos( 'Build', ToolsMenu.Items[ I ].Caption ) > 0 ) then
+      if ( Pos( 'Path Sorter', StripHotkey( ToolsMenu.Items[ I ].Caption ) ) > 0 ) then
       begin
         InsertIndex := I + 1;
         Break;
       end;
+    if ( InsertIndex < 0 ) then
+      for I := 0 to ToolsMenu.Count - 1 do
+        if ( Pos( 'Build', ToolsMenu.Items[ I ].Caption ) > 0 ) then
+        begin
+          InsertIndex := I + 1;
+          Break;
+        end;
 
     if InsertIndex > 0 then
       ToolsMenu.Insert( InsertIndex, FMenuItem )
