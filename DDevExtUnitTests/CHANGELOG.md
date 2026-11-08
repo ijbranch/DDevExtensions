@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- (2026-11-09) **Suite documentation updated**: 30 fixtures, 389 tests on Win64 (388 on Win32, one test is Win64-only), corrected paths, the GUI runner is opt-in (`GUI_TEST_RUNNER`), and the characterisation test is now `TestDuplicateUnitNameFirstOneWins` - `README.md`, `STATUS.md`, `TESTS-SUMMARY.md`, `DUNITX-SETUP.md`
 - (2026-11-09) **A doc line over 162 characters wrapped** - `TestPluginConfigCoreDUnitX.pas`
 - (2026-11-09) **GExperts formatter pass over every test unit** (layout only, proved by an identical token stream before and after) - `TestDeadCodeCoreDUnitX.pas`, `TestDecirculariserCoreDUnitX.pas`, `TestDelphiDesignerParserDUnitX.pas`, `TestDelphiExprDUnitX.pas`, `TestDelphiLexerDUnitX.pas`, `TestDelphiParserContainersDUnitX.pas`, `TestDelphiPreprocDUnitX.pas`, `TestDependencyViewerCoreDUnitX.pas`, and the other test units
 - (2026-11-09) **The characterisation test `TestDuplicateUnitNameCurrentlyRaises` became `TestDuplicateUnitNameFirstOneWins`**, pinning the fixed behaviour - `TestUsesClauseManagerCoreDUnitX.pas`

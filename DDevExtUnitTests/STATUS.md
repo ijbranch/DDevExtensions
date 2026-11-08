@@ -3,7 +3,7 @@
 ## What's Been Created
 
 ### 1. Parser Unit
-**File:** `D:\DDevExtensions\Shared\PascalParser\gllDelphiDFMParser.pas`
+**File:** `D:\DDevExtensions\DDevExtensions\Shared\PascalParser\gllDelphiDFMParser.pas`
 - **Status:** ✅ Initial implementation complete
 - **Features:**
   - Parse DFM text into object tree (`TDfmDocument`)
@@ -18,21 +18,16 @@
   - String concatenation (`'Line1' + #13#10 + 'Line2'`) may need refinement
 
 ### 2. Test Project
-**Location:** `D:\DDevExtensions\DDevExtUnitTests\`
+**Location:** `D:\DDevExtensions\DDevExtensions\DDevExtUnitTests\`
 
 **DUnitX VCL GUI Tests (Recommended):**
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX test runner with VCL GUI
-- **TestDfmParserDUnitX.pas** - 32 comprehensive test cases
-  - 4 Basic parsing tests
-  - 2 Round-trip tests
-  - 3 Property manipulation tests
-  - 5 Advanced value type tests
-  - 10 Edge case tests
-  - 5 File round-trip tests
-- **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
-- **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
-- **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`, 3 fixtures)
-- **TestDecirculariserCoreDUnitX.pas** - 21 cases (`DecirculariserCore`, 4 fixtures)
+- **TestDfmParserDUnitX.pas** - 34 test cases (see `README.md` for the breakdown)
+- **TestPathCompactorDUnitX.pas** - 30 cases (`PathCompactorCore`)
+- **TestProjectGroupSorterDUnitX.pas** - 17 cases (`ProjectGroupSorterCore`)
+- **TestUsesClauseManagerCoreDUnitX.pas** - 50 cases (`UsesClauseManagerCore`)
+- **TestDecirculariserCoreDUnitX.pas** - 43 cases (`DecirculariserCore`)
+- 25 further fixtures, 389 tests in all on Win64 (388 on Win32) as of 2026-11-09: the full list is in `README.md`
 
 **Original Console Tests:** retired 2026-10-21.  `DDevExtUnitTests.dpr` and its six `Test*.pas`
 units were ported into the DUnitX fixtures `TestDelphiLexerDUnitX`, `TestDelphiParserContainersDUnitX`,
@@ -100,7 +95,7 @@ Create these in `TestData\`:
 Once stable:
 
 ### Phase 1: Use in DDevExtensions
-1. Enhance **DfmPasConsistency** - Replace fragile line-based parsing with proper parser
+1. Enhance **DfmPasConsistency** - Replace fragile line-based parsing with proper parser (2026-11-09: its analysis moved to `DfmPasConsistencyCore`, which still does not use this parser)
 2. Create **DFM Analysis Tools** - Component usage audits, property reports
 3. Build **Component Replacer** (if community wants it)
 
@@ -118,13 +113,13 @@ Once stable:
 **Prerequisites:** DUnitX must be installed (see DUNITX-SETUP.md)
 
 ```batch
-cd D:\DDevExtensions\DDevExtUnitTests
+cd D:\DDevExtensions\DDevExtensions\DDevExtUnitTests
 dcc32 DDevExtUnitTestsDUnitX.dpr
 DDevExtUnitTestsDUnitX.exe
 ```
 
-Opens VCL GUI showing:
-- 29 tests organized by category
+Opens VCL GUI (only when built with `GUI_TEST_RUNNER` defined; otherwise the exe is the console runner) showing:
+- 389 tests (2026-11-09; 29 when this was first written) organized by category
 - Real-time pass/fail status
 - Detailed failure messages
 - Execution time per test
@@ -135,11 +130,13 @@ Opens VCL GUI showing:
 None open.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` was red from 2026-10-21
 until the same day's fix: the Shared units tested `COMPILER6_UP` and friends, which nothing defined
 for them (`DelphiParser.inc` was empty), so they compiled their Delphi 5 branches.  The conditionals
-are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.
+are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.  (2026-11-09: the suite
+is 389 tests on Win64, all passing.)
 
-`UsesClauseManagerCore` carries one deliberate characterisation test,
-`TestDuplicateUnitNameCurrentlyRaises`, which pins a known defect rather than endorsing it:
-two search-path directories holding units of the same name raise `EListError`. See CHANGELOG.md.
+`UsesClauseManagerCore` carried one deliberate characterisation test,
+`TestDuplicateUnitNameCurrentlyRaises`, which pinned a known defect: two search-path directories holding
+units of the same name raised `EListError`.  The defect was fixed on 2026-11-09 (the first unit found wins)
+and the test became `TestDuplicateUnitNameFirstOneWins`.  See CHANGELOG.md.
 
 ---
 

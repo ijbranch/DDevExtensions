@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.16.5 | Comprehensive Feature Reference
+Version 3.24.16 | Comprehensive Feature Reference
 
 ---
 
@@ -19,7 +19,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 | Feature | Default | Access Method |
 |---------|---------|---------------|
 | Auto-save After Compile | OFF | Options |
-| Build Statistics | OFF | DDevExtensions submenu |
+| Build Statistics | OFF | Tools menu (when enabled; not on the 64-bit IDE) |
 | Code Quality Analyser | ON | DDevExtensions submenu |
 | Code Style Checker | ON | DDevExtensions submenu |
 | Compile Backup | ON | Automatic |
@@ -82,9 +82,17 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 - Compile Interceptor input-handle redirect
 - Chain-back callers of `RedirectOrgCall` / `CodeRedirect` — hooks whose replacement calls the original function still need a trampoline that does not port to Win64, so they remain inactive.
 
+**Shown as unavailable since 3.24.16.**  Options that cannot work on the 64-bit IDE are disabled there, with the hint "Not available on the 64-bit IDE", rather than left to look as if they work.  Their settings are kept for the 32-bit IDE, which shares the configuration file:
+
+- **Compilation page** (Options > DDevExtensions > Compilation): every option, including Build Statistics, Run style check after compile, Release compiler unit cache, Auto-save after compile and Switch project for file.  The Build Statistics menu item is hidden on the 64-bit IDE.
+- **Extended IDE Settings (DSU) hooks**: Editor tab double-click action, Show project for active file, Structure View search hotkey, Replace Open File At Cursor, Show all frames, Don't break on spawned processes, Confirm Ctrl+F1 while debugging and Disable alpha-sort class completion.
+- **Old Palette**: not offered on the 64-bit IDE, whose palette re-sync hook cannot run there.
+- **Local Start Parameters**: off on the 64-bit IDE, where the run parameters it strips from the `.dproj` are never restored.  (On the 32-bit IDE they are stored per configuration and platform since 3.24.16, together with the single value older builds use, and the `.dproj` is rewritten atomically.)
+- **External Mod Monitor** still runs, with two limits its option hint names: newly opened projects are picked up within a few seconds (a periodic re-sync, not the IDE notifier), and files changed during a compile are not held back until it ends.
+
 > **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
-All other features — Dependency Viewer, Code Quality Analyser, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, Method Separators, etc. — run on the 64-bit host.
+All other features — Dependency Viewer, Code Quality Analyser, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, IDE Path Compactor, Sort Projects in Group, External Mod Monitor (with the limits above), Method Separators, etc. — run on the 64-bit host.  Build Statistics does not (see above).
 
 **Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
 
@@ -147,7 +155,9 @@ DDevExtensions stores settings in:
 %APPDATA%\DDevExtensions\
 ```
 
-Each feature has its own XML configuration file (e.g., `KeyBindings.xml`, `CompileProgress.xml`).
+The features' settings share one XML file per IDE version, `DDevExtensions<n>.xml` (for example `DDevExtensions37.xml` for Delphi 13), with one node per feature (`KeyBindings`, `CompileProgress`, ...).  A per-feature file of an older build (e.g. `KeyBindings37.xml`) is migrated into it once and deleted.  Other files kept there: `LibraryPathBackups<n>.v2.xml` (the IDE Path Sorter and Path Compactor backup history), `LayerConfig.txt` (the Dependency Viewer's layers) and `Win64Shutdown.log`.
+
+Since 3.24.16 the settings file is saved by writing a uniquely named temporary file and replacing the original, so a crash cannot truncate it and the 32-bit and 64-bit IDEs cannot collide.  On load it gets brief retries (the other IDE may be saving it).  A file that opens but will not parse is moved aside as `<file>.corrupt-<yyyymmdd-hhnnss>` with one warning, and the defaults are used; a file that cannot be opened at all is left untouched and saving is blocked for the session, so your settings are never overwritten with defaults.
 
 ---
 
@@ -221,7 +231,8 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 ### Key Notes
 
-- All features can be disabled via environment variable: `DDevExtensions.DisabledFeatures` (semicolon-separated list)
+- All features can be disabled via environment variable: `DDevExtensions.DisabledFeatures` (semicolon-separated list).  Since 3.24.16 a name that matches no feature of any DDevExtensions version is logged and shown once per distinct set of names on the machine
+- Since 3.24.16 every project scan can be cancelled (a Cancel Scan button, or the scan button while it runs), stops when the IDE closes or the scanned project is no longer active, reads a unit that is open in the editor from its buffer (so unsaved edits count) and any other from disk, and never opens a module, so no form designer is loaded and no "Class not found" prompt can appear
 - Each feature stores settings independently in `%APPDATA%\DDevExtensions\`
 - No feature depends on another being enabled - use what works for your workflow
 
@@ -235,7 +246,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 **Default:** OFF
 
-**Location:** Options > DDevExtensions > Compile Progress
+**Location:** Options > DDevExtensions > Compilation
 
 ---
 
@@ -245,9 +256,11 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 **Default:** OFF
 
-**Location:** Options > DDevExtensions > Compile Progress
+**64-bit IDE:** not available; the menu item is hidden and the options are disabled with a hint (since 3.24.16).
 
-**Access:** Tools > DDevExtensions > Build Statistics...
+**Location:** Options > DDevExtensions > Compilation
+
+**Access:** Tools > Build Statistics... (added at the end of the Tools menu, not the DDevExtensions submenu)
 
 #### Features
 
@@ -273,7 +286,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 #### How to Enable
 
-1. Go to Options > DDevExtensions > Compile Progress
+1. Go to Options > DDevExtensions > Compilation
 2. Check "Enable Build Statistics"
 3. Optionally check "Show after compile" for automatic display
 4. **New in 3.7.0**: Check "Run style check after compile" to populate the Style Issues tab
@@ -332,7 +345,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 **Access:** Tools > DDevExtensions > Code Quality Analyser...
 
-**Settings File:** `%APPDATA%\DDevExtensions\CodeQualityAnalyzer.xml`
+**Settings:** the `CodeQualityAnalyzer` node of `%APPDATA%\DDevExtensions\DDevExtensions<n>.xml` (see [Configuration Files](#configuration-files))
 
 #### Issue Categories
 
@@ -457,7 +470,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 **Access:** Tools > DDevExtensions > Code Style Checker...
 
-**Settings File:** `%APPDATA%\DDevExtensions\CodeStyleChecker.xml`
+**Settings:** the `CodeStyleChecker` node of `%APPDATA%\DDevExtensions\DDevExtensions<n>.xml` (see [Configuration Files](#configuration-files))
 
 #### Standard Naming Convention Rules
 
@@ -728,7 +741,9 @@ The results can be filtered by category:
 
 **Default:** ON
 
-**Location:** Options > DDevExtensions > Compile Progress
+**64-bit IDE:** every option on the Compilation page is disabled there with the hint "Not available on the 64-bit IDE" (since 3.24.16).
+
+**Location:** Options > DDevExtensions > Compilation
 
 #### Configuration Options
 
@@ -798,9 +813,11 @@ When "Run style check after compile" is enabled:
 
 #### What It Detects
 
-- Unused procedures and functions
+- Unused procedures and functions, including methods (reported since 3.24.16)
 - Unused private fields
 - Unused protected fields
+
+A reference anywhere in the project counts, including other units, descendants elsewhere, properties of interface-section classes, the project file and include files; a method's own implementation header does not.  When a file cannot be read, only private and unit-local symbols are reported, since nothing outside their unit can use them.
 
 #### What It Ignores (Automatically)
 
@@ -809,6 +826,7 @@ When "Run style check after compile" is enabled:
 - Constructors and destructors
 - Event handlers (OnClick, etc.)
 - Published members (used by RTTI)
+- Message handlers, and members carrying an attribute (used through RTTI, not by name)
 - Interface implementations
 
 #### Configuration Options
@@ -836,7 +854,7 @@ Set*
 | Unit | Source file name |
 | Type | Procedure, Function, or Field |
 | Name | The unused element |
-| Scope | Private, Protected, Public |
+| Scope | private, protected, public, published, unit or interface |
 | Line | Line number |
 
 ---
@@ -982,6 +1000,10 @@ PAS Type: TGroupBox
 DFM Type: TPanel
 ```
 The DFM has `object Panel1: TPanel` but the PAS declares `Panel1: TGroupBox`.
+
+#### Comparison Rules (3.24.16)
+
+Only the class named by the DFM's root object is compared, so other classes in the unit, inherited forms and frames, class methods, forward and `class of` declarations and comma-list fields no longer produce false differences.  Binary and UTF-16 DFMs are read, and an open form's unsaved designer changes are used.
 
 #### Dialog Behavior
 
@@ -1350,8 +1372,11 @@ When "Respect conditional compilation" is enabled (default), the Dependency View
    - `{$IF Defined(X) or Defined(Y)}` - includes if X OR Y is defined
    - `{$IF Defined(X) and Defined(Y)}` - includes if X AND Y are defined
    - `{$ELSE}`, `{$ELSEIF}`, `{$ENDIF}` - handled correctly
+   - Since 3.24.16 it also knows the compiler's predefined symbols, follows in-unit `{$DEFINE}` / `{$UNDEF}`, `{$I}` include files and `(*$...*)` directives, binds `NOT` to its own term, includes a unit under an `{$IF}` or `{$ELSEIF}` expression it cannot judge, and counts both branches of `{$IFOPT}`
 
 3. **Excludes inactive code** from dependency analysis
+
+Circular references are reported once per strongly-connected group of units, not once per member (since 3.24.16).
 
 **Example:**
 ```pascal
@@ -1625,7 +1650,7 @@ Click "Defaults" in the Layer Configuration dialog to load a standard 4-layer ar
 
 **Configuration Storage:**
 
-Layer configuration is saved to `DDevExtensions_Layers.json` in the application data directory and persists across IDE sessions.
+Layer configuration is saved to `LayerConfig.txt` in the application data directory (`%APPDATA%\DDevExtensions`) and persists across IDE sessions.  Since 3.24.16 it is written atomically, rule matching is case-insensitive, a fully ticked row is stored as no rule line, rule lines for layers not under `[Layers]` are kept, and Defaults honours Cancel.
 
 **Benefits:**
 - Enforce architectural boundaries automatically
@@ -1754,6 +1779,8 @@ On the 64-bit IDE, when a bound key falls through unhandled, DDevExtensions appl
 
 When a project is opened, the monitor begins watching its directory using the Windows `ReadDirectoryChangesW` API on a background thread. When a monitored file is modified externally (e.g., by an AI assistant, version control operation, or another editor), the change is detected and the file is silently refreshed in the IDE via `IOTAModule.Refresh`.
 
+Since 3.24.16 it watches the folder of every unit in the open projects, not only the project folder (each folder once, however many projects share it), through an I/O completion port, so there is no limit of 62 folders.  It re-syncs with the open projects every 5 seconds, which also attaches save tracking to modules opened since; counts saves made by rename or delete-and-recreate; notices `.dfm`-only changes; and ignores the IDE's own saves.  On the 64-bit IDE, where the IDE notifier is not registered, newly opened projects are picked up by that re-sync within a few seconds, and files changed during a compile are not held back until it ends.
+
 #### Options
 
 - **Active**: Enable or disable the monitor. Turn off if Embarcadero fixes the IDE's own detection.
@@ -1764,7 +1791,7 @@ When a project is opened, the monitor begins watching its directory using the Wi
 
 #### Safety Features
 
-- **Unsaved changes protected**: Files with unsaved editor changes are never silently overwritten.
+- **Unsaved changes protected**: Files with unsaved editor changes are never silently overwritten.  Since 3.24.16 every module editor is checked (form designer and project included), not only source editors.
 - **Compile suppression**: Monitoring is automatically suppressed during compilation to avoid false-positive reloads from intermediate build artifacts.
 - **Project load grace period**: File change events arriving within the grace period after project load are silently discarded, preventing spurious notifications from IDE-initiated file writes.
 - **Reference counting**: Multiple open projects sharing the same directory only create one watch.
@@ -1793,8 +1820,8 @@ When a project is opened, the monitor begins watching its directory using the Wi
 #### Files Removed
 
 - `.ddp` files
-- Empty `Model` folders
-- Empty `History` folders
+- Empty `Model` folders (off by default since 3.24.16: an empty Model folder is usually deliberate; modules not yet saved to disk are skipped)
+- Empty `__history` folders
 
 ---
 
@@ -1838,10 +1865,10 @@ When a project is opened, the monitor begins watching its directory using the Wi
 The IDE has no API for reordering a project group's members and only reads the order from the `.groupproj` when the group is opened. The command therefore:
 
 1. Saves the active project group.
-2. Writes a `.bak` of the `.groupproj`, then rewrites it with the projects sorted — across **all three** places each project is listed (the `<ItemGroup>`, the per-project `<Target>` blocks, and the `Build`/`Clean`/`Make` `CallTarget` lists; the Project Manager order follows the `<Target>`/`CallTarget` sections, so sorting the `<ItemGroup>` alone has no effect).
-3. Closes and reopens the group so the IDE reloads the new order, then reselects the previously active project.
+2. Sorts the text before closing anything, then writes a time-stamped backup (`<name>.groupproj.<yyyymmdd-hhnnss>.bak`; an earlier backup is never overwritten, and if the backup cannot be written nothing is changed) and replaces the `.groupproj` atomically, keeping its BOM — with the projects sorted across **all three** places each project is listed (the `<ItemGroup>`, the per-project `<Target>` blocks, and the `Build`/`Clean`/`Make` `CallTarget` lists; the Project Manager order follows the `<Target>`/`CallTarget` sections, so sorting the `<ItemGroup>` alone has no effect).  Since 3.24.16 whole blocks are moved verbatim and only the names in the `CallTarget` lists are reordered, so `DependsOnTargets` build dependencies, the IDE's sanitised target names, indentation and line breaks are kept.
+3. Closes and reopens the group so the IDE reloads the new order (the group is always reopened, even after a failure), then reselects the previously active project.
 
-A confirmation prompt warns that the group will be reloaded. The command no-ops (with a message) when the projects are already sorted or the group has fewer than two members. Disable via `DDevExtensions.DisabledFeatures=ProjectGroupSorter`.
+A confirmation prompt warns that the group will be reloaded and that the build order changes.  The command no-ops (with a message) when the projects are already sorted or the group has fewer than two members. Disable via `DDevExtensions.DisabledFeatures=ProjectGroupSorter`.
 
 ---
 
@@ -1936,8 +1963,10 @@ A confirmation prompt warns that the group will be reloaded. The command no-ops 
 
 **Backup Storage:**
 ```
-%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml
+%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.v2.xml
 ```
+
+Since 3.24.16 the history lives in this `.v2.xml` file, shared with the IDE Path Compactor.  The old `LibraryPathBackups<DelphiVersion>.xml` is imported into it once, read only, so an older build running beside this one cannot damage it; old entries keep their timestamp exactly as written.  The history is reloaded under a named mutex on every change and saved atomically, an unreadable file is set aside with a warning, and a "Before compaction" backup is never trimmed.  Apply and Restore refuse to overwrite paths changed since the list was loaded, and Restore backs up the value it replaces first.
 
 #### Usage
 
@@ -2017,11 +2046,17 @@ A macro that this IDE cannot resolve but the other one can is therefore **not de
 
 #### Backup and rollback
 
-Every affected value is backed up before anything is written, into the **same history file the IDE Path Sorter uses** - so one Restore list covers both tools. Nothing is written until Apply.
+Every affected value is backed up before anything is written, into the **same history file the IDE Path Sorter uses** (`LibraryPathBackups<DelphiVersion>.v2.xml` since 3.24.16) - so one Restore list covers both tools.  "Before compaction" backups are never trimmed from it.  Nothing is written until Apply.
 
 Apply is refused while the IDE's own Tools > Options dialog is open: that page holds its own in-memory copy of the library path and would write it back over your changes when committed.
 
 An IDE restart is required after Apply. The running IDE captured its environment block at launch and will not see new variables until it restarts.
+
+**Apply is all-or-nothing (since 3.24.16).** Every new value is built first; Apply is refused if any value changed since the analysis (checked again immediately before the first write); only the path sets it changes are backed up, and it stops if a backup fails; each write is verified by reading it back, and everything is undone on a failure.  An unticked proposed variable is not used in any rewritten entry.  Only macros that resolve the same in both IDEs and every session are reused, the other IDE's variable names count as taken, an existing Windows user variable is never overwritten, and relative entries are left alone.
+
+#### Remove Unused... (New in 3.24.16)
+
+Removes the variables the Compactor created that nothing refers to any more.  It searches every IDE registry setting, the Windows user environment and every open project's options, `.dproj` and option sets, and says plainly that closed projects were not searched.  A variable is deleted only from the places the Compactor wrote it.
 
 ### Method Separators (New in 3.23.15)
 
@@ -2073,7 +2108,7 @@ Delphi 11 or later: the code-editor paint API (`ToolsAPI.Editor`) first shipped 
 
 **Default:** OFF
 
-**Location:** Options > DDevExtensions > Compile Progress
+**Location:** Options > DDevExtensions > Compilation
 
 #### Options
 
@@ -2233,7 +2268,7 @@ When enabled, the TextHeight property is read from existing DFM files but never 
 
 **Default:** ON
 
-**Location:** Options > DDevExtensions > Compile Progress
+**Location:** Options > DDevExtensions > Compilation
 
 ---
 
@@ -2255,7 +2290,7 @@ When enabled, the TextHeight property is read from existing DFM files but never 
 
 **Default:** ON
 
-**Location:** Options > DDevExtensions > TODO Aggregator
+**Location:** Options > DDevExtensions > TODO/FIXME Aggregator
 
 **Access:** Tools > DDevExtensions > TODO/FIXME Aggregator...
 
@@ -2294,6 +2329,8 @@ Add priority in parentheses:
 
 Default patterns: `TODO,FIXME,HACK,BUG,NOTE,XXX`
 
+**When a tag counts (since 3.24.16):** it is a whole word written in capitals, or it opens the comment after any decoration or date (`// @todo`, `/// todo`, `//- todo`, `// 2026-11 fixme`), or it is followed by `:` or `(`.  Prose such as "a bug in" is not reported, and the earliest tag in a comment wins.
+
 #### How to Interpret Results
 
 | Column | Description |
@@ -2312,7 +2349,7 @@ Default patterns: `TODO,FIXME,HACK,BUG,NOTE,XXX`
 
 **Default:** ON
 
-**Location:** Options > DDevExtensions > Unreachable Code Detector
+**Location:** Options > DDevExtensions > Unreachable Code
 
 **Access:** Tools > DDevExtensions > Unreachable Code Detector...
 
@@ -2445,10 +2482,13 @@ The detector reads the project's conditional defines and intelligently handles c
 | `{$IFNDEF X}` | If X is NOT defined, scan the block; otherwise skip |
 | `{$IF Defined(X)}` | Evaluates simple conditions; scans if true, skips if false |
 | `{$IF NOT Defined(X)}` | Evaluates negated conditions correctly |
+| `{$ELSEIF}` | Evaluated like `{$IF}`, and taken only when no earlier branch was (since 3.24.16) |
 | `{$ELSE}` | Switches between scanning and skipping appropriately |
 | `{$ENDIF}` | Ends the conditional block |
 
 **Example:** If your project defines `DBiUsers`, then code inside `{$IFDEF DBiUsers}` will be scanned, while code inside `{$IFNDEF DBiUsers}` will be skipped.
+
+Since 3.24.16 the defines are the active configuration's, and the compiler's predefined symbols for the target platform (such as `MSWINDOWS`) are included, so `{$IFNDEF MSWINDOWS}` blocks are skipped.  Code that follows a terminator across a conditional directive (`{$IFDEF}`, `{$ELSE}`, `{$ENDIF}`) is treated as belonging to another configuration and is not reported, and a unit that cannot be read is skipped rather than ending the scan.
 
 #### Known Limitations
 
@@ -2493,6 +2533,17 @@ This is a static analysis tool and is not perfect. It may not catch all cases of
 - Double-click to navigate to the uses clause
 - Right-click to add to ignore list
 - Export to CSV
+
+#### How It Decides (since 3.24.16)
+
+Before 3.24.16 the detector never reported anything (it always found each unit's own name in the uses clause).  It was rewritten to err on "used", because a false "unused" leads you to delete an entry the program needs.  A uses entry is reported only when ALL of these hold:
+
+- the used unit's source can be found;
+- it has no `initialization` / `finalization` section (or `begin..end.` block), class constructor or destructor, `Register` procedure, class or record helper, operator overload, interface-section include file or linked `{$R}` / `{$L}` file;
+- the entry is not inside a `{$IF*}` block;
+- not one name the unit's interface declares appears in the using unit's code (outside its uses clauses, comments and strings) or in its form.
+
+**Inline expansion limit:** a unit can be needed only so that an inline routine from another unit can expand there; nothing names it, so it cannot be detected and may be listed.  Removing it then gives hint H2443 (inline function not expanded): rebuild after removing a unit, and put it back if that hint appears.  The results and the options page show this note.
 
 #### Configuration Options
 
@@ -2586,6 +2637,10 @@ The Uses Clause Manager works in three steps:
    - **"Apply Changes" button** - applies all recommendations at once
    - **Right-click → "Move to Recommended Section"** - moves only selected unit(s)
    - Both methods support undo (Ctrl+Z)
+
+**How changes are written (since 3.24.16):** moves are planned entry by entry against the editor's current text, re-analysed before applying and checked again after the confirmation.  Only the uses-clause text is rewritten, in one undoable edit with the buffer's own line breaks, so `{$IFDEF}` blocks, comments and `in '...'` paths survive, and an entry's own-line `//` comment moves with it.  A missing clause is created (but not after an include directive that may hold one).  A clause shape that cannot be edited safely is refused with the reason, and a write that fails part-way says so and points to Undo.
+
+**Build Database (since 3.24.16):** relative and `$(...)` search-path entries are resolved (macros expanded, relative entries against the project folder), the project folder itself is scanned, and when two directories hold a unit of the same name the first one found wins.
 
 #### Understanding the Results
 
@@ -2781,7 +2836,7 @@ The changed units are left **modified in the editor and not saved**: compile to 
 ### DDevExtensions Menu Items Missing
 
 Features accessed via the Tools > DDevExtensions submenu must be enabled in Options first:
-- Build Statistics
+- Build Statistics (on the Tools menu itself rather than the submenu; never on the 64-bit IDE)
 - Code Style Checker
 - Dead Code Detector
 - DFM/PAS Consistency Checker

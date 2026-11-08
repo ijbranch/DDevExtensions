@@ -5,14 +5,20 @@
 ### New DUnitX Test Infrastructure
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX VCL GUI test runner
 - **TestDfmParserDUnitX.pas** - 34 comprehensive test cases
-- **TestPathCompactorDUnitX.pas** - 25 cases (`PathCompactorCore`)
-- **TestProjectGroupSorterDUnitX.pas** - 11 cases (`ProjectGroupSorterCore`)
-- **TestUsesClauseManagerCoreDUnitX.pas** - 27 cases (`UsesClauseManagerCore`)
+- **TestPathCompactorDUnitX.pas** - 30 cases (`PathCompactorCore`)
+- **TestProjectGroupSorterDUnitX.pas** - 17 cases (`ProjectGroupSorterCore`)
+- **TestUsesClauseManagerCoreDUnitX.pas** - 50 cases (`UsesClauseManagerCore`)
 - **TestDecirculariserCoreDUnitX.pas** - 43 cases (`DecirculariserCore`)
-- **TestMethodSeparatorsCoreDUnitX.pas** - 24 cases (`MethodSeparatorsCore`)
-- **TestDelphiLexerDUnitX.pas** - 9, **TestDelphiParserContainersDUnitX.pas** - 5, **TestDelphiExprDUnitX.pas** - 5,
-  **TestDelphiPreprocDUnitX.pas** - 4, **TestUnitMetricsDUnitX.pas** - 4 (ported 2026-10-21 from the retired console runner)
-- **191 tests in total**, all passing (`TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
+- **TestMethodSeparatorsCoreDUnitX.pas** - 25 cases (`MethodSeparatorsCore`)
+- **TestDelphiLexerDUnitX.pas** - 15, **TestDelphiParserContainersDUnitX.pas** - 5, **TestDelphiExprDUnitX.pas** - 6,
+  **TestDelphiPreprocDUnitX.pas** - 9, **TestUnitMetricsDUnitX.pas** - 4 (ported 2026-10-21 from the retired console runner)
+- Added 2026-11-09: **TestDelphiDesignerParserDUnitX** - 3, **TestDeadCodeCoreDUnitX** - 11, **TestUnreachableCodeCoreDUnitX** - 14,
+  **TestUnusedUnitCoreDUnitX** - 15, **TestTodoAggregatorCoreDUnitX** - 7, **TestDfmPasConsistencyCoreDUnitX** - 9,
+  **TestDependencyViewerCoreDUnitX** - 13, **TestLibraryPathBackupsDUnitX** - 6, **TestExcelExportDUnitX** - 12,
+  **TestVirtTreeHandlerDUnitX** - 5 (4 on Win32), **TestInterceptDispatchDUnitX** - 14, **TestPluginConfigCoreDUnitX** - 11,
+  **TestFeatureSwitchesDUnitX** - 5, **TestIDEHashListsDUnitX** - 5, **TestVersionInfoKeysDUnitX** - 5, **TestSimpleXmlDocDUnitX** - 4,
+  **TestFileWatcherDUnitX** - 3, **TestHookingDUnitX** - 6, **TestImportHookingDUnitX** - 3
+- **389 tests in total on Win64 (388 on Win32)**, all passing on 2026-11-09 (191 on 2026-10-21; `TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)
@@ -87,7 +93,7 @@ See `DUNITX-SETUP.md` for instructions.
 
 ### Step 2: Compile
 ```batch
-cd D:\DDevExtensions\DDevExtUnitTests
+cd D:\DDevExtensions\DDevExtensions\DDevExtUnitTests
 dcc32 DDevExtUnitTestsDUnitX.dpr
 ```
 

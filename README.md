@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.24.16 is the **2026-11-09 audit release**.  It adds **Remove Unused...** to the IDE Path Compactor, which deletes the variables the Compactor created that nothing refers to any more (it searches every IDE registry setting, the Windows user environment and every open project, and says plainly that closed projects were not searched).  It removes dead code no project compiled: the Project Settings manager, Compiler Enhancements, Step Into Skip, an orphan copy of FocusEditor, and the Project > "Set active build configuration" item, which had no action.  Options that cannot work on the 64-bit IDE are now disabled there with a hint (the Compilation page, the DSU hooks, Local Start Parameters), the Old Palette is not offered there, and the Build Statistics menu item is hidden there.  The analysis tools have Cancel Scan, read open units from the editor buffer (unsaved edits included) and never open a module; the Unused Unit Detector, which never reported anything, now reports and errs on "used"; the Dead Code Detector reports unused methods; and the Uses Clause Manager edits uses clauses entry by entry and refuses shapes it cannot edit safely.  Settings files are saved atomically, an unreadable one is moved to `.corrupt-<date-time>` with one warning, and a file that cannot be opened blocks saving for the session.  The library-path backup history moves to `LibraryPathBackups<ver>.v2.xml`, with a one-time read-only import of the old file.  See `CHANGELOG.md` for the full list of fixes.
+
 Version 3.23.15 adds **Method Separators**: a faint dotted, dashed or solid line in the code editor above each top-level routine, type declaration and unit section, with a colour that follows the editor theme.  The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil; this is an independent implementation built on DDevExtensions' own Pascal lexer, with its analysis in an RTL-only `MethodSeparatorsCore` covered by 24 unit tests.  Options > DDevExtensions > Method Separators turns it on or off.  Tested on Delphi 13; built into the Delphi 11 and 12 projects too, untested there.
 
 Version 3.22.15 fixes the IDE Path Compactor's **"Expanded after"** summary column, which was reporting a count of surviving entries rather than a character length: the local it measured was declared but never assigned, so every entry contributed 1. It now measures exactly as the "before" column does, less the entries being dropped. The same release extracts the Uses Clause Manager's analysis into an RTL-only `UsesClauseManagerCore` - matching `PathCompactorCore` and `ProjectGroupSorterCore` - and gives that feature its first 26 unit tests. The extraction is behaviour-preserving and the plugin's published interface is unchanged.
@@ -148,6 +150,8 @@ See `CHANGELOG.md` for the authoritative per-release detail.
 
 ## Supported Delphi Versions
 
+> **Note (2026-11-09):** the shared code now uses inline variables, which need Delphi 10.3 or later, so the `D_D102` project (Delphi 10.2) can no longer compile it.  Only Delphi 13 is installed on the build machine; the `D_D103` to `D_D120` projects are kept but cannot be built or tested there.
+
 - Delphi 10.2 Tokyo
 - Delphi 10.3 Rio
 - Delphi 10.4 Sydney
@@ -263,6 +267,8 @@ Start the InstallDDevExtensions.exe and press the <Uninstall> button.
 ```
 DDevExtensions/
 ├── README.md                      # This file
+├── CHANGELOG.md                   # Record of every change
+├── CLAUDE.md                      # Instructions for Claude Code sessions
 ├── LICENSE                        # License file
 ├── Help.md                        # Help documentation
 ├── DDevExtensions_Map.html        # Interactive project dependency map (open in browser)
@@ -306,7 +312,9 @@ DDevExtensions/
 │   └── Source/                    # Main source code
 │       ├── Main.pas               # Main plugin registration
 │       ├── RegisterPlugins.pas    # Plugin registration
+│       ├── FeatureSwitches.pas    # DDevExtensions.DisabledFeatures parsing (tested)
 │       ├── PluginConfig.pas       # Configuration base class
+│       ├── PluginConfigCore.pas   # Settings-file load retry, quarantine, atomic save (tested)
 │       ├── AppConsts.pas          # Application constants
 │       ├── ComponentManager.pas   # Component management
 │       ├── CtrlUtils.pas          # Control utilities
@@ -321,6 +329,11 @@ DDevExtensions/
 │       ├── version.inc            # Version include
 │       ├── Icon24x24.bmp          # Small icon
 │       ├── Icon32x32.bmp          # Large icon
+│       │
+│       ├── CodeQualityAnalyzer/   # Code Quality Analyser
+│       │   ├── CodeQualityAnalyzer.pas
+│       │   ├── FrmCodeQualityAnalyzer.pas/.dfm
+│       │   └── FrmeOptionPageCodeQuality.pas/.dfm
 │       │
 │       ├── CodeStyleChecker/      # Naming convention checker
 │       │   ├── CodeStyleChecker.pas
@@ -340,23 +353,25 @@ DDevExtensions/
 │       │   ├── FrmSwitchToModuleProject.pas/.dfm
 │       │   └── FrmeOptionPageCompilerProgress.pas/.dfm
 │       │
-│       ├── CompilerEnhancements/  # Compiler enhancements
-│       │   └── FrmeOptionPageCompilerEnhancements.pas/.dfm
-│       │
 │       ├── ComponentSelector/     # Quick component search
 │       │   ├── ComponentSelector.pas
 │       │   └── FrmeOptionPageComponentSelector.pas/.dfm
 │       │
 │       ├── DeadCodeDetector/      # Unused code detection
+│       │   ├── DeadCodeCore.pas   # RTL-only analysis core (tested)
 │       │   ├── DeadCodeDetector.pas
 │       │   ├── FrmDeadCodeDetector.pas/.dfm
 │       │   └── FrmeOptionPageDeadCode.pas/.dfm
 │       │
-│       ├── Debugger/              # Debugger features
-│       │   └── StepIntoSkip/
-│       │       └── DbgStepIntoSkip.pas
+│       ├── Decirculariser/        # Circular unit reference ranking and dead-entry removal
+│       │   ├── DecirculariserCore.pas  # RTL-only analysis core (tested)
+│       │   ├── Decirculariser.pas
+│       │   ├── IdeUnitSource.pas  # Reads a unit from its editor buffer or disk, never opens a module
+│       │   ├── FrmDecirculariser.pas/.dfm
+│       │   └── FrmeOptionPageDecirculariser.pas/.dfm
 │       │
 │       ├── DependencyViewer/      # Unit dependency visualization
+│       │   ├── DependencyViewerCore.pas  # RTL-only scanner, cycles and layer rules (tested)
 │       │   ├── DependencyViewer.pas
 │       │   ├── FrmDependencyViewer.pas/.dfm
 │       │   ├── FrmLayerConfig.pas/.dfm    # Layer configuration dialog
@@ -387,10 +402,8 @@ DDevExtensions/
 │       ├── FileSelector/          # File selector dialog
 │       │   └── FrmFileSelector.pas/.dfm
 │       │
-│       ├── FocusEditor/           # Editor focus handling
-│       │   └── FocusEditor.pas
-│       │
 │       ├── FormDesignerHelpers/   # Form designer enhancements
+│       │   ├── GuideLinesHelper.pas
 │       │   ├── LabelMarginHelper.pas
 │       │   ├── RemoveExplicitProperty.pas
 │       │   ├── RemovePixelsPerInchProperty.pas
@@ -409,18 +422,30 @@ DDevExtensions/
 │       │
 │       ├── LibraryPathSorter/     # IDE path management
 │       │   ├── LibraryPathSorter.pas
+│       │   ├── LibraryPathBackups.pas  # Shared backup history, LibraryPathBackups<ver>.v2.xml (tested)
 │       │   └── FrmLibraryPathSorter.pas/.dfm
+│       │
+│       ├── MethodSeparators/      # Editor lines above routines
+│       │   ├── MethodSeparatorsCore.pas  # RTL-only scan (tested)
+│       │   ├── MethodSeparators.pas
+│       │   └── FrmeOptionPageMethodSeparators.pas/.dfm
 │       │
 │       ├── OldPalette/            # Old-style component palette
 │       │   ├── ComponentPanel.pas/.res
 │       │   ├── OldPalette.pas/.dfm
 │       │   └── FrmeOptionPageOldPalette.pas/.dfm
 │       │
-│       ├── ProjectSettings/       # Project settings management
-│       │   ├── ProjectSettings.pas
-│       │   ├── ProjectSettingsData.pas
-│       │   ├── FrmProjectSettingManageSettings.pas/.dfm
-│       │   ├── FrmProjectSettingsEditOptions.pas/.dfm
+│       ├── PathCompactor/         # IDE Path Compactor
+│       │   ├── PathCompactorCore.pas  # RTL-only compaction logic (tested)
+│       │   ├── PathCompactorEnvVars.pas
+│       │   ├── PathCompactor.pas
+│       │   └── FrmPathCompactor.pas/.dfm
+│       │
+│       ├── ProjectGroupSorter/    # Sort Projects in Group
+│       │   ├── ProjectGroupSorterCore.pas  # RTL-only .groupproj sort (tested)
+│       │   └── ProjectGroupSorter.pas
+│       │
+│       ├── ProjectSettings/       # Set Versioninfo dialog (the settings manager was removed in 3.24.16)
 │       │   └── FrmProjectSettingsSetVersioninfo.pas/.dfm
 │       │
 │       ├── StartParameterManager/ # Start parameter management
@@ -432,6 +457,7 @@ DDevExtensions/
 │       │   └── FrmeOptionPageStartParameterTeam.pas/.dfm
 │       │
 │       ├── TodoAggregator/        # TODO/FIXME comment scanner
+│       │   ├── TodoAggregatorCore.pas  # RTL-only tag recognition (tested)
 │       │   ├── TodoAggregator.pas
 │       │   ├── FrmTodoAggregator.pas/.dfm
 │       │   └── FrmeOptionPageTodoAggregator.pas/.dfm
@@ -440,6 +466,7 @@ DDevExtensions/
 │       │   └── FrmeOptionPageUnitSelector.pas/.dfm
 │       │
 │       ├── UnreachableCodeDetector/  # Unreachable code detection
+│       │   ├── UnreachableCodeCore.pas  # RTL-only scanner (tested)
 │       │   ├── UnreachableCodeDetector.pas
 │       │   ├── FrmUnreachableCodeDetector.pas/.dfm
 │       │   └── FrmeOptionPageUnreachableCode.pas/.dfm
@@ -456,11 +483,13 @@ DDevExtensions/
 │       │   └── FrmeOptionPageEmptyHandler.pas/.dfm
 │       │
 │       ├── DfmPasConsistency/     # DFM/PAS consistency checking
+│       │   ├── DfmPasConsistencyCore.pas  # RTL-only comparison (tested)
 │       │   ├── DfmPasConsistency.pas
 │       │   ├── FrmDfmPasConsistency.pas/.dfm
 │       │   └── FrmeOptionPageDfmPas.pas/.dfm
 │       │
 │       └── UnusedUnitDetector/    # Unused unit detection
+│           ├── UnusedUnitCore.pas # RTL-only analysis core (tested)
 │           ├── UnusedUnitDetector.pas
 │           ├── FrmUnusedUnitDetector.pas/.dfm
 │           └── FrmeOptionPageUnusedUnitDetector.pas/.dfm
@@ -470,7 +499,8 @@ DDevExtensions/
 │   ├── buildAnsi.bat
 │   ├── Bin/                       # Build output
 │   │   ├── CompileInterceptor.dll
-│   │   └── CompileInterceptorW.dll
+│   │   ├── CompileInterceptorW.dll
+│   │   └── CompileInterceptorWx64.dll
 │   ├── Example/                   # Example project
 │   │   └── ExampleCompileInterceptor.dpr
 │   ├── lib/                       # Compiled DCU files
@@ -479,13 +509,14 @@ DDevExtensions/
 │       ├── CompilerHooks.pas
 │       ├── FileStreams.pas
 │       ├── IdeDllNames.pas
+│       ├── InterceptDispatch.pas  # Interceptor registry and dispatch (tested)
 │       ├── InterceptImpl.pas
 │       ├── InterceptIntf.pas
 │       ├── InterceptLoader.pas
 │       └── ToolsAPIIntf.pas
 │
 ├── Shared/                        # Shared utilities
-│   ├── FileStreams.pas
+│   ├── FileStreams.pas            # Not linked into the D13 DLL since 3.24.16; older IDE projects keep it
 │   ├── FileWatcher.pas            # ReadDirectoryChangesW wrapper for file monitoring
 │   ├── Hooking.pas
 │   ├── ImportHooking.pas
@@ -493,6 +524,7 @@ DDevExtensions/
 │   ├── IDE/                       # IDE utilities
 │   │   ├── FrmBase.pas/.dfm
 │   │   ├── HtHint.pas
+│   │   ├── IDEHashLists.pas       # String hash lists (Pascal, Win64-safe; tested)
 │   │   ├── IDEHooks.pas
 │   │   ├── IDENotifiers.pas
 │   │   ├── IDEUtils.pas
@@ -501,6 +533,7 @@ DDevExtensions/
 │   │   ├── ProjectResource.pas
 │   │   ├── ToolsAPIHelpers.pas
 │   │   ├── UnitVersionInfo.pas
+│   │   ├── VersionInfoKeys.pas    # VerInfo_Keys split and join (tested)
 │   │   └── Options/
 │   │       ├── FrmOptions.pas/.dfm
 │   │       └── FrmTreePages.pas/.dfm
@@ -510,7 +543,9 @@ DDevExtensions/
 │   │   ├── DelphiExpr.pas
 │   │   ├── DelphiLexer.pas
 │   │   ├── DelphiParserContainers.pas
-│   │   └── DelphiPreproc.pas
+│   │   ├── DelphiPreproc.pas
+│   │   ├── ProjectSources.pas     # A project's units from editor buffers or disk, for the detectors
+│   │   └── gllDelphiDFMParser.pas # Lossless DFM parser (tested; not used by the product yet)
 │   │
 │   └── Xml/                       # XML utilities
 │       ├── SimpleXmlDoc.pas
@@ -553,16 +588,23 @@ Tools
   └── DDevExtensions
         ├── Options...
         ├── ─────────────
+        ├── Code Quality Analyser...
         ├── Code Style Checker...
         ├── Dead Code Detector...
+        ├── Decirculariser...
         ├── Dependency Viewer...
         ├── DFM/PAS Consistency...
         ├── Empty Event Handler Detector...
         ├── TODO/FIXME Aggregator...
         ├── Unreachable Code Detector...
         ├── Unused Unit Detector...
-        └── Uses Clause Manager...
-  └── IDE Path Sorter...       (new in 3.9.0 - moved from DDevExtensions submenu)
+        ├── Uses Clause Manager...
+        ├── ─────────────
+        └── About...
+  ├── IDE Path Sorter...       (new in 3.9.0 - moved from DDevExtensions submenu)
+  ├── IDE Path Compactor...
+  ├── Sort Projects in Group...
+  └── Build Statistics...      (at the end of the Tools menu, when enabled; hidden on the 64-bit IDE)
 ```
 
 ![Tools Menu Structure](Code/DDevExtensions/Doc/ToolsMenu.jpg)
@@ -631,7 +673,7 @@ Adds a progress bar to the compile dialog and shows compilation progress in the 
 Clears the compiler's internal unit cache before each build. Can help resolve rare caching issues at the cost of slightly longer compile times. A "High" option releases even more aggressively.
 
 **File Cleaner** (default: on)
-Automatically removes unnecessary files after saving, such as .ddp files and empty Model/History folders. Keeps your project directories clean.
+Automatically removes unnecessary files after saving, such as .ddp files and empty Model/History folders. Keeps your project directories clean.  Removing empty Model folders defaults to off since 3.24.16, as an empty Model folder is usually deliberate.
 
 **Compile Backup** (default: on)
 Creates backup copies of files before compilation. Provides a safety net in case compilation modifies files unexpectedly.
@@ -648,7 +690,7 @@ Tracks how long each unit takes to compile and displays the results in a sortabl
 - Copy selected entries to clipboard
 - **New in 3.7.0** - Style Issues tab: Shows all Code Style Checker violations from the last compile when "Run style check after compile" is enabled
 - **New in 3.7.0** - Style Issues features: Category filter (Naming Convention vs Anti-Pattern), sortable columns, double-click navigation, export to CSV, copy to clipboard
-Access via Tools → DDevExtensions → "Build Statistics..." when enabled. Can also auto-show after each compile.
+Access via Tools → "Build Statistics..." when enabled. Can also auto-show after each compile.  Not available on the 64-bit IDE, where the compile notifier and interceptor it relies on are not registered: the menu item is hidden and the Compilation options page is disabled there with a hint.
 
 ### Project Manager
 
@@ -656,7 +698,7 @@ Access via Tools → DDevExtensions → "Build Statistics..." when enabled. Can 
 Highlights and expands the project node in Project Manager that contains the currently active editor file. Makes it easier to locate files in large project groups.
 
 **Set Project Versioninfo dialog**
-Provides a dialog to set version information across multiple projects in a project group simultaneously. Useful for coordinating version numbers across related projects.
+Provides a dialog to set version information across multiple projects in a project group simultaneously. Useful for coordinating version numbers across related projects.  Each version part accepts 0 to 65535, and the final values, resets and increments included, are checked before anything is written.
 
 **Project Start Parameters** (default: off)
 Allows you to define and manage multiple sets of command-line parameters for running your application. Quickly switch between different debug configurations.
@@ -685,6 +727,7 @@ Monitors project directories in real-time for externally modified files and sile
 - Reference-counted directory watches (shared across multiple open projects)
 - Can be disabled via Options if Embarcadero fixes the IDE's own detection
 - **New in 3.13.4** - Windows balloon notification showing which files were refreshed (configurable)
+- **Changed in 3.24.16** - Watches the folder of every unit (each folder once, however many projects share it), not only the project folder; re-syncs with the open projects every 5 seconds; ignores the IDE's own saves; checks every module editor, not only source editors, before refreshing.  On the 64-bit IDE newly opened projects are picked up within a few seconds, and files changed during a compile are not held back until it ends (an option hint says so).
 
 Configure via Tools → DDevExtensions → Options → External Mod Monitor.
 
@@ -732,6 +775,8 @@ Access via Tools → DDevExtensions → "Dependency Viewer..." when enabled.
 Scans your project for units in uses clauses that aren't actually referenced in code. Helps reduce compile times and clean up unnecessary dependencies. Features include:
 
 - Detects unused units in both interface and implementation sections
+- **Rewritten in 3.24.16 to err on "used"** (before that it never reported anything): only units whose source it can find are judged; never a unit with initialization/finalization (or a `begin..end.` block), a class constructor/destructor, `Register`, a class/record helper, an operator, an interface-section include or a linked `{$R}`/`{$L}` file, nor an entry inside `{$IF*}`; a unit is reported only when none of its declarations appears in the code or the form
+- Cannot detect a unit needed only so that an inline routine can expand (removing it gives hint H2443); the results and the options page say so
 - Shows source file, unused unit name, section, and line number
 - Double-click to navigate directly to the uses clause
 - Right-click → "Add to Ignore List" to exclude false positives (e.g., component registration units)
@@ -781,9 +826,10 @@ Access via Tools → DDevExtensions → "Code Style Checker..." when enabled.
 **New in 3.1 - Dead Code Detector** (default: on)
 Detects procedures, functions, and fields that are never referenced in your project. Features include:
 
-- Detects unused procedures and functions
+- Detects unused procedures and functions, including methods (since 3.24.16)
 - Detects unused private and protected fields
-- Automatically ignores: virtual/override methods, constructors/destructors, event handlers, published members
+- Automatically ignores: virtual/override methods, constructors/destructors, event handlers, published members, message handlers and members carrying an attribute (used through RTTI)
+- When a project file cannot be read, reports only private and unit-local symbols, which nothing outside the unit can use
 - Filter by element type (Procedure, Function, Field) and scope
 - Wildcard ignore patterns (e.g., *Click, Get*)
 - Double-click to navigate to source
@@ -799,7 +845,7 @@ Finds code that can never execute because it follows a statement that always exi
 - Case statement aware: recognizes terminators inside case branches (e.g., `0: Exit;` followed by `1: ...`)
 - Handles variables named after keywords (e.g., `Continue := False;` is recognized as an assignment)
 - Properly skips string literals including Delphi 12+ triple-quoted multi-line strings
-- Conditional compilation aware: reads project defines and correctly handles `{$IFDEF}`, `{$IFNDEF}`, `{$IF}`, and `{$ELSE}` blocks
+- Conditional compilation aware: reads the active configuration's project defines plus the compiler's predefined symbols (such as `MSWINDOWS`) and correctly handles `{$IFDEF}`, `{$IFNDEF}`, `{$IF}`, `{$ELSEIF}` and `{$ELSE}` blocks
 - Shows the project name being scanned
 - Shows the reason why the code is unreachable
 - Filter by reason type (After Exit, After Raise, After Break, etc.)
@@ -823,6 +869,7 @@ Automatically analyzes which symbols from each unit are used in the interface vs
 - Recommend optimal uses clause placement for each unit
 - Show which identifiers from each unit are used and where
 - Apply changes with full undo support (Ctrl+Z)
+- **Since 3.24.16, edits entry by entry**: moves are planned against the editor's current text, re-analysed before applying, and written as one undoable edit of the clause bytes only, so `{$IFDEF}` blocks, comments and `in '...'` paths survive; a clause shape it cannot edit safely is refused with the reason
 - **Right-click "Move to Recommended Section"** to move selected unit(s) individually
 - RTL/VCL priority for ambiguous identifiers (when same identifier is exported by multiple units)
 - Export results to CSV or copy to clipboard
@@ -873,7 +920,7 @@ Provides a tool to manage and organize Delphi IDE paths with backup/restore capa
 **Important Notes:**
 - Path order affects unit resolution - the first matching unit found wins
 - Always review changes before applying, especially for Library Path
-- Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.xml`
+- Backups are stored in `%APPDATA%\DDevExtensions\LibraryPathBackups<DelphiVersion>.v2.xml` (since 3.24.16; the old `LibraryPathBackups<DelphiVersion>.xml` is imported once, read only, and left for older builds), shared with the IDE Path Compactor
 - **For the sorted/reworked paths to take effect, you must close and reopen Delphi**
 
 Access via Tools → "IDE Path Sorter..." (below Build Tools...) when enabled.
@@ -921,4 +968,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.23.15 – 21 October 2026*
+*Version: 3.24.16 – 9 November 2026*

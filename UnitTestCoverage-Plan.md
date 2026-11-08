@@ -7,17 +7,39 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | Suite | Unit under test | Tests | Status |
 |-------|-----------------|-------|--------|
 | `TestDfmParser` (DUnitX) | `gllDelphiDFMParser` (parse/serialize round-trip, edits reach the serialised text, every `TestData` file) | 34 cases | green |
-| `TestDelphiLexer` (DUnitX) | `DelphiLexer` (tokenisation + line/column contract) | 9 cases | green |
+| `TestDelphiLexer` (DUnitX) | `DelphiLexer` (tokenisation + line/column contract, Delphi 12 multi-line strings, `&` identifiers, binary literals, digit separators) | 15 cases | green |
 | `TestDelphiParserContainers` (DUnitX) | `DelphiParserContainers` (hashtable/list/dictionary) | 5 cases | all pass (`TestHashtableCaseSensitive` found the defect below) |
-| `TestDelphiExpr` (DUnitX) | `DelphiExpr` (arithmetic/boolean nodes + parser) | 5 cases | green |
-| `TestDelphiPreproc` (DUnitX) | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/nested/$DEFINE) | 4 cases | green |
+| `TestDelphiExpr` (DUnitX) | `DelphiExpr` (arithmetic/boolean nodes + parser, integer/float comparison) | 6 cases | green |
+| `TestDelphiPreproc` (DUnitX) | `DelphiPreproc` ($IFDEF/$IFNDEF/$ELSE/$ELSEIF/$IFOPT/nested/$DEFINE) | 9 cases | green |
+| `TestDelphiDesignerParser` (DUnitX) | `DelphiDesignerParser` (`ParseError` on a bad `{$IF}` or locked include) | 3 cases | green |
 | `TestUnitMetrics` (DUnitX) | `UnitMetrics` (LOC + cyclomatic complexity) | 4 cases | green |
-| `TestProjectGroupSorter` (DUnitX) | `ProjectGroupSorterCore` (`.groupproj` sort: ItemGroup + Targets + CallTargets) | 11 cases | green |
-| `TestPathCompactor` (DUnitX) | `PathCompactorCore` (macro expansion, stored-space scoring, naming, hygiene) | 25 cases | green |
-| `TestUsesClauseManagerCore` (DUnitX) | `UsesClauseManagerCore` (exports DB, identifier usage, placement + rewrite) | 26 cases | green |
-| `TestDecirculariserCore` (DUnitX) | `DecirculariserCore` (SCC detection, fragile/benign classification, edge symbol attribution) | 21 cases | green |
+| `TestProjectGroupSorter` (DUnitX) | `ProjectGroupSorterCore` (`.groupproj` sort: ItemGroup + Targets + CallTargets, `DependsOnTargets`, sanitised names, line breaks) | 17 cases | green |
+| `TestPathCompactor` (DUnitX) | `PathCompactorCore` (macro expansion, stored-space scoring, naming, hygiene, unticked variables, divergent names, relative entries) | 30 cases | green |
+| `TestLibraryPathBackups` (DUnitX) | `LibraryPathBackups` (two writers, pinned backups, timestamps, quarantine, legacy import) | 6 cases | green |
+| `TestUsesClauseManagerCore` (DUnitX) | `UsesClauseManagerCore` (exports DB, identifier usage, placement + entry-by-entry rewrite) | 50 cases | green |
+| `TestDecirculariserCore` (DUnitX) | `DecirculariserCore` (SCC detection, fragile/benign classification, edge symbol attribution, start-up code, `RemoveUsesEntry`) | 43 cases | green |
+| `TestMethodSeparatorsCore` (DUnitX) | `MethodSeparatorsCore` (separator scan, colour rules, paint throttle) | 25 cases | green |
+| `TestDeadCodeCore` (DUnitX) | `DeadCodeCore` (cross-unit references, methods, RTTI members) | 11 cases | green |
+| `TestUnreachableCodeCore` (DUnitX) | `UnreachableCodeCore` (conditional terminators, directives, predefined symbols) | 14 cases | green |
+| `TestUnusedUnitCore` (DUnitX) | `UnusedUnitCore` (errs on "used": start-up code, helpers, conditionals) | 15 cases | green |
+| `TestTodoAggregatorCore` (DUnitX) | `TodoAggregatorCore` (tag recognition) | 7 cases | green |
+| `TestDfmPasConsistencyCore` (DUnitX) | `DfmPasConsistencyCore` (root class only, inherited forms, binary/UTF-16 DFMs) | 9 cases | green |
+| `TestDependencyViewerCore` (DUnitX) | `DependencyViewerCore` (conditionals, cycles once per group, layer rules) | 13 cases | green |
+| `TestExcelExport` (DUnitX) | `FrmExcelExport.ExcelCellText` (formula escaping) | 12 cases | green |
+| `TestVirtTreeHandler` (DUnitX) | `VirtTreeHandler` (Win64 property-accessor decoding) | 5 cases (4 on Win32) | green |
+| `TestInterceptDispatch` (DUnitX) | `InterceptDispatch` (interceptor registry and dispatch, non-native exceptions) | 14 cases | green |
+| `TestPluginConfigCore` (DUnitX) | `PluginConfigCore` (load retry, locked/damaged classification, unique temporary names) | 11 cases | green |
+| `TestFeatureSwitches` (DUnitX) | `FeatureSwitches` (`DisabledFeatures` parsing, other IDE versions' names) | 5 cases | green |
+| `TestIDEHashLists` (DUnitX) | `IDEHashLists` (Win64 string hashing, `Assign`) | 5 cases | green |
+| `TestVersionInfoKeys` (DUnitX) | `VersionInfoKeys` (`;`-only split, empty values kept) | 5 cases | green |
+| `TestSimpleXmlDoc` (DUnitX) | `SimpleXmlDoc` (load/save) | 4 cases | green |
+| `TestFileWatcher` (DUnitX) | `FileWatcher` (more than 62 folders, rename saves) | 3 cases | green |
+| `TestHooking` (DUnitX) | `Hooking` (ModRM/SIB lengths, `CodeRestore` guard, full-replace install/remove, patch bytes) | 6 cases | green |
+| `TestImportHooking` (DUnitX) | `ImportHooking` (redirect, restore by `Unhook` and by freeing the list, failure reporting) | 3 cases | green |
 
-**Tier 1 complete; Tier 2 = `UnitMetrics` only.** **Defect found and fixed (2026-10-21):** the Shared parser units tested `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty and neither the product `.dproj` nor `DDevExtUnitTestsDUnitX.dproj` defines them (the `.dpr`'s `{$I DelphiExtension.inc}` does not reach separately compiled units).  The retired console project defined them at Base level, which hid this: its claim to match the main projects was wrong.  So `THashtable.Create( True, ... )` raises its Delphi-5 assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is compiled out.  Fixed the same day by resolving the conditionals to their modern branches ( see `CHANGELOG.md` ); the test is green. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
+**Suite total (2026-11-09): 389 tests on Win64, 388 on Win32**, all passing (`bin\DDevExtUnitTestsDUnitX-results.xml`, 389 run, 0 failed).
+
+**Tier 1 complete; Tier 2 = `UnitMetrics` only** (Tier 3 partly done on 2026-11-09, see below).  **Defect found and fixed (2026-10-21):** the Shared parser units tested `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty and neither the product `.dproj` nor `DDevExtUnitTestsDUnitX.dproj` defines them (the `.dpr`'s `{$I DelphiExtension.inc}` does not reach separately compiled units).  The retired console project defined them at Base level, which hid this: its claim to match the main projects was wrong.  So `THashtable.Create( True, ... )` raises its Delphi-5 assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is compiled out.  Fixed the same day by resolving the conditionals to their modern branches ( see `CHANGELOG.md` ); the test is green. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
 
 **Feature-core extraction (`ProjectGroupSorterCore`).** The "Sort Projects in Group" feature (v3.21.9) was authored with its pure `.groupproj` rewrite logic (`SortGroupProjectText`, `LeafName`) split into an RTL-only core unit from the start, leaving `ProjectGroupSorter` with only the menu/IDE orchestration. `TestProjectGroupSorter` (DUnitX, 11 cases) covers it — the first feature whose testable core was separated up front rather than retrofitted. `PathCompactorCore` (v3.22.11) followed the same pattern.
 
@@ -45,8 +67,8 @@ Everything depends on these; a regression here silently corrupts every analyzer.
 The remaining four candidates were **attempted under Option A and found to need extraction** (they could not be console-unit-tested as-is), so they are folded into Tier 3:
 - DONE (v3.22.15) **`UsesClauseManager` `GenerateRefactoredSource`/`GetPreferredUnit`** - the extraction that was needed here is done: both now live in `UsesClauseManagerCore` and are covered by `TestUsesClauseManagerCoreDUnitX` (26 cases). See "Retrofitted core extraction" above for the technique.
 - PARTLY SUPERSEDED (v3.22.15) **`DependencyViewer` cycle detection** - `DecirculariserCore` now does RTL-only cycle detection, risk classification and per-edge symbol attribution with 21 tests, so the cycle half of this item no longer needs the DependencyViewer extraction. The layer rules and `MatchesWildcard` still do.
-- MOVED→T3 **`DependencyViewer` layer rules / `MatchesWildcard`** - the unit `uses Main`, and the helpers are private/nested; needs the same core extraction `UsesClauseManagerCore` has now had.
-- MOVED→T3 **`ProjectSettings\ProjectSettingsData` `Compare`/`CopyFrom`** - the unit `uses ToolsAPI` directly (for the `IOTAProject` overloads), so it will not compile in a console test. A `TProjectSetting.Compare`/`CopyFrom` test needs the pure preset model split from the ToolsAPI-coupled overloads. (A trial `AddOption` seam + console test were prototyped and reverted.)
+- DONE (2026-11-09: `DependencyViewerCore`, `TestDependencyViewerCoreDUnitX`) **`DependencyViewer` layer rules / `MatchesWildcard`** - the unit `uses Main`, and the helpers are private/nested; needs the same core extraction `UsesClauseManagerCore` has now had.
+- DROPPED (2026-11-09: `ProjectSettingsData` was deleted with the Project Settings manager, which no project compiled) **`ProjectSettings\ProjectSettingsData` `Compare`/`CopyFrom`** - the unit `uses ToolsAPI` directly (for the `IOTAProject` overloads), so it will not compile in a console test. A `TProjectSetting.Compare`/`CopyFrom` test needs the pure preset model split from the ToolsAPI-coupled overloads. (A trial `AddOption` seam + console test were prototyped and reverted.)
 - MOVED→T3 **`CtrlUtils.TListViewSort.Compare`** - `Compare` reads a real `TListItem`, and a `TListView` cannot add items without a parent window (`EInvalidOperation: has no parent window`) in a console runner. Needs the comparison logic extracted to operate on plain strings (e.g. `CompareValues(S1, S2; Kind)`), or a GUI test runner. Guards the v3.18.8 ragged-row fix.
 
 ## Tier 3 - analyzer cores (need core extraction first)
@@ -55,17 +77,19 @@ These expose pure `class function AnalyzeUnit(const Source...)` cores but share 
 
 - TODO `CodeQualityAnalyzer` -> `CodeQualityCore` - magic numbers incl. **bracket-depth array-index exemption** (v3.19.9), hardcoded strings, commented code, empty/catch-all except, missing try-finally. The unimplemented memory-leak check stays off.
 - TODO `EmptyEventHandlerDetector` -> `EmptyHandlerCore` - empty-body detection, `Sender`-parameter requirement, **declaration line from the keyword token** (v3.19.9).
-- TODO `UnreachableCodeDetector` -> `UnreachableCore` - after-`Exit`/`Raise`/`Break`, conditional terminator not flagged, case-branch awareness, triple-quoted strings, **preview truncation flag** (v3.19.9). (Drop its `uses Main`.)
-- TODO `DfmPasConsistency` -> `DfmPasConsistencyCore` - Missing-in-PAS / Missing-in-DFM / Type-Mismatch (already takes both sources as strings - ideal).
+- DONE (2026-11-09, as `UnreachableCodeCore`, 14 cases) `UnreachableCodeDetector` -> `UnreachableCore` - after-`Exit`/`Raise`/`Break`, conditional terminator not flagged, case-branch awareness, triple-quoted strings, **preview truncation flag** (v3.19.9). (Drop its `uses Main`.)
+- DONE (2026-11-09, 9 cases) `DfmPasConsistency` -> `DfmPasConsistencyCore` - Missing-in-PAS / Missing-in-DFM / Type-Mismatch (already takes both sources as strings - ideal).
 - TODO `CodeStyleChecker` -> `CodeStyleCore` - expose `CheckSource`; formalise the existing throwaway `TestAntiPatterns.pas` fixture (it already documents expected counts) into real assertions.
+
+Also extracted and tested on 2026-11-09, outside this list: `DeadCodeCore` (11), `UnusedUnitCore` (15), `TodoAggregatorCore` (7), `DependencyViewerCore` (13), and the DLL-core seams `PluginConfigCore`, `FeatureSwitches`, `IDEHashLists`, `VersionInfoKeys`, `LibraryPathBackups` and CompileInterceptor's `InterceptDispatch`.
 
 ## DRY + test opportunity
 
-`EvaluateIfCondition` (the `$IF` define evaluator) is **duplicated** in `DependencyViewer.pas` and `UnreachableCodeDetector.pas`. Extract to one shared `ConditionalEvaluator.pas` and test once - removes a maintenance hazard and gives high-value coverage in a single place.
+`EvaluateIfCondition` (the `$IF` define evaluator) is **duplicated** in `DependencyViewer.pas` and `UnreachableCodeDetector.pas` (since 2026-11-09 in their cores, `DependencyViewerCore.pas` and `UnreachableCodeCore.pas`). Extract to one shared `ConditionalEvaluator.pas` and test once - removes a maintenance hazard and gives high-value coverage in a single place.
 
 ## Out of scope (not unit-testable)
 
-`FileWatcher` (threads + `ReadDirectoryChangesW`), `Hooking`/`ImportHooking` (machine-code patching), `FileStreams` (Win32 handles), `SimpleXmlDoc` load/save (file IO), `ProjectData`/`ModuleData` (IOTA + IO), `StartParameterClasses` (XML file IO), and all forms / option-pages / IOTA wrappers / IDE-hook installation.
+`FileStreams` (Win32 handles), `ProjectData`/`ModuleData` (IOTA + IO), `StartParameterClasses` (XML file IO), and all forms / option-pages / IOTA wrappers / IDE-hook installation.
 
 ## Suggested sequencing
 

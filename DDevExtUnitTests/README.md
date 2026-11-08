@@ -6,20 +6,42 @@ VCL and the IDE so they can be tested outside it.
 | Test unit | Unit under test | Tests |
 |-----------|-----------------|-------|
 | `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 34 |
-| `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 25 |
-| `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 11 |
-| `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement | 27 |
+| `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 30 |
+| `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 17 |
+| `TestLibraryPathBackupsDUnitX.pas` | `LibraryPathBackups` - shared backup history, legacy import, quarantine | 6 |
+| `TestUsesClauseManagerCoreDUnitX.pas` | `UsesClauseManagerCore` - uses-clause placement and entry-by-entry rewrite | 50 |
 | `TestDecirculariserCoreDUnitX.pas` | `DecirculariserCore` - circular reference analysis, start-up code, `RemoveUsesEntry` | 43 |
-| `TestMethodSeparatorsCoreDUnitX.pas` | `MethodSeparatorsCore` - method separator scan and colours | 24 |
-| `TestDelphiLexerDUnitX.pas` | `DelphiLexer` - token kinds, line/column contract | 9 |
+| `TestMethodSeparatorsCoreDUnitX.pas` | `MethodSeparatorsCore` - method separator scan and colours | 25 |
+| `TestDelphiLexerDUnitX.pas` | `DelphiLexer` - token kinds, line/column contract | 15 |
 | `TestDelphiParserContainersDUnitX.pas` | `DelphiParserContainers` - hashtable, lists, dictionary | 5 |
-| `TestDelphiExprDUnitX.pas` | `DelphiExpr` - `$IF` expression nodes and parser | 5 |
-| `TestDelphiPreprocDUnitX.pas` | `DelphiPreproc` - conditional branch selection | 4 |
+| `TestDelphiExprDUnitX.pas` | `DelphiExpr` - `$IF` expression nodes and parser | 6 |
+| `TestDelphiPreprocDUnitX.pas` | `DelphiPreproc` - conditional branch selection | 9 |
+| `TestDelphiDesignerParserDUnitX.pas` | `DelphiDesignerParser` - `ParseError` reporting | 3 |
+| `TestDeadCodeCoreDUnitX.pas` | `DeadCodeCore` - Dead Code Detector analysis | 11 |
+| `TestUnreachableCodeCoreDUnitX.pas` | `UnreachableCodeCore` - Unreachable Code Detector scan | 14 |
+| `TestUnusedUnitCoreDUnitX.pas` | `UnusedUnitCore` - Unused Unit Detector analysis | 15 |
 | `TestUnitMetricsDUnitX.pas` | `UnitMetrics` - LOC and cyclomatic complexity | 4 |
-| | **Total** | **191** |
+| `TestExcelExportDUnitX.pas` | `FrmExcelExport.ExcelCellText` - formula escaping | 12 |
+| `TestVirtTreeHandlerDUnitX.pas` | `VirtTreeHandler` - Win64 property-accessor decoding | 5 (4 on Win32) |
+| `TestInterceptDispatchDUnitX.pas` | `InterceptDispatch` - CompileInterceptor registry and dispatch | 14 |
+| `TestPluginConfigCoreDUnitX.pas` | `PluginConfigCore` - settings load retry, damaged-file classification, temporary names | 11 |
+| `TestFeatureSwitchesDUnitX.pas` | `FeatureSwitches` - `DDevExtensions.DisabledFeatures` parsing | 5 |
+| `TestIDEHashListsDUnitX.pas` | `IDEHashLists` - string hash lists (Win64 hashing) | 5 |
+| `TestVersionInfoKeysDUnitX.pas` | `VersionInfoKeys` - `VerInfo_Keys` split and join | 5 |
+| `TestSimpleXmlDocDUnitX.pas` | `SimpleXmlDoc` - load and save | 4 |
+| `TestFileWatcherDUnitX.pas` | `FileWatcher` - more than 62 folders, rename saves | 3 |
+| `TestHookingDUnitX.pas` | `Hooking` - prologue lengths, `CodeRestore`, full-replace hooks, patch bytes | 6 |
+| `TestTodoAggregatorCoreDUnitX.pas` | `TodoAggregatorCore` - TODO/FIXME tag recognition | 7 |
+| `TestDfmPasConsistencyCoreDUnitX.pas` | `DfmPasConsistencyCore` - DFM/PAS comparison | 9 |
+| `TestDependencyViewerCoreDUnitX.pas` | `DependencyViewerCore` - conditionals, cycles, layer rules | 13 |
+| `TestImportHookingDUnitX.pas` | `ImportHooking` - import redirection and restoration | 3 |
+| | **Total** | **389 (388 on Win32)** |
+
+Some of these units are not RTL-only cores (`VirtTreeHandler`, `FrmExcelExport`, `Hooking`, `ImportHooking`, `FileWatcher`):
+the fixtures test them in-process without the IDE.
 
 The hand-rolled console runner `DDevExtUnitTests.dpr` was retired on 2026-10-21; its checks live on in the
-DUnitX fixtures above.  All 191 pass; `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive`, red
+DUnitX fixtures above.  All 389 pass (Win64 run of 2026-11-09); `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive`, red
 when first converted, exposed the missing `COMPILERx_UP` defines, since resolved (see `../UnitTestCoverage-Plan.md`).
 
 The rest of this document describes the DFM parser suite specifically.
@@ -40,7 +62,8 @@ The rest of this document describes the DFM parser suite specifically.
 
 ### VCL GUI (Recommended)
 
-**Double-click** `DDevExtUnitTestsDUnitX.exe` to launch the VCL GUI test runner.
+Build with `GUI_TEST_RUNNER` defined (opt-in; without it the exe is the console runner below), then
+**double-click** `DDevExtUnitTestsDUnitX.exe` to launch the VCL GUI test runner.
 
 Or from RAD Studio IDE:
 1. Open `DDevExtUnitTestsDUnitX.dpr`
@@ -135,7 +158,7 @@ This copies 5 production DFM files from `E:\DBiWorkflow Development` to `TestDat
 
 ## Parser Implementation
 
-**Location:** `D:\DDevExtensions\Shared\PascalParser\gllDelphiDFMParser.pas`
+**Location:** `D:\DDevExtensions\DDevExtensions\Shared\PascalParser\gllDelphiDFMParser.pas`
 
 **Key Classes:**
 - `TDfmDocument` - Root document (line ending, header/trailer)
@@ -150,7 +173,7 @@ This copies 5 production DFM files from `E:\DBiWorkflow Development` to `TestDat
 
 ## Test Results
 
-**✅ All 34 DFM-parser tests passing** (191 tests across the whole suite, 1 red - see above):
+**✅ All 34 DFM-parser tests passing** (389 tests across the whole suite on Win64, all passing, 2026-11-09):
 - Synthetic test cases covering all DFM features
 - Real-world production DFM files from DBiWorkflow (5 files, 67 KB total)
 

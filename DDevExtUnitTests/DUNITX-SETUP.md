@@ -35,13 +35,13 @@ DUnitX may already be included with your RAD Studio installation:
 ## Compiling the Tests
 
 ```batch
-cd D:\DDevExtensions\DDevExtUnitTests
+cd D:\DDevExtensions\DDevExtensions\DDevExtUnitTests
 dcc32 DDevExtUnitTestsDUnitX.dpr
 ```
 
 ## Running the Tests
 
-### GUI Mode (Default)
+### GUI Mode (opt-in: build with `GUI_TEST_RUNNER` defined)
 ```batch
 DDevExtUnitTestsDUnitX.exe
 ```
