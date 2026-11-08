@@ -4,6 +4,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
   ClientWidth = 950
   Position = poScreenCenter
   OnClose = FormClose
+  OnDestroy = FormDestroy
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13

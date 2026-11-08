@@ -99,12 +99,39 @@ type
     /// <summary>Analyse then rewrite then expand yields the original expanded set.</summary>
     [Test]
     procedure TestRoundTripInvariant;
+    /// <summary>
+    /// Unticking an accepted variable removes it from every rewritten entry, so the value
+    /// written never names a variable that is not being defined (audit E1).
+    /// </summary>
+    [Test]
+    procedure TestDisabledVariableIsNotUsed;
+    /// <summary>
+    /// A new variable never takes a name that only the other IDE's list defines; writing it to
+    /// both lists would replace that IDE's value (audit E7).
+    /// </summary>
+    [Test]
+    procedure TestDivergentNameNeverTaken;
+    /// <summary>
+    /// With reuse restricted, a macro outside the reusable set is not reused for its prefix
+    /// (a variable only this IDE defines, or a process-only one, audit E2/E15); a listed one is.
+    /// </summary>
+    [Test]
+    procedure TestReuseRestrictedToReusableNames;
+    /// <summary>
+    /// A relative entry is left exactly as stored: never dropped as missing, never rewritten,
+    /// never counted as a duplicate (audit E16).
+    /// </summary>
+    [Test]
+    procedure TestRelativeEntryLeftAlone;
+    /// <summary>With RemoveMissing on, an absent directory is dropped and an existing one kept.</summary>
+    [Test]
+    procedure TestRemoveMissingDropsOnlyAbsentDirectories;
   end;
 
 implementation
 
 uses
-  System.SysUtils, System.Classes, System.StrUtils,
+  System.SysUtils, System.Classes, System.StrUtils, System.IOUtils,
   PathCompactorCore;
 
 const
@@ -887,6 +914,150 @@ begin
       Original[I] := OriginalExpandedOf( Analysis.Sets[I] );
 
     AssertInvariants( Analysis, Macros, Original );
+  finally
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestDisabledVariableIsNotUsed;
+var
+  Macros: TStringList;
+  Analysis: TPathCompactorAnalysis;
+begin
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  try
+    Analysis.MinNetSaving := 10;
+    Analysis.AddPathSet( 'Win64', lptSearchPath,
+      'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
+    Analysis.Analyse;
+    var Vars := Analysis.AcceptedVariables;
+    Assert.IsTrue( Length( Vars ) > 0, 'the fixture must propose a variable' );
+    Assert.IsTrue( Pos( '$(' + Vars[0].Name + ')', Analysis.Sets[0].BuildResult ) > 0, 'precondition: variable used' );
+
+    Analysis.SetVariableEnabled( 0, False );
+
+    Assert.AreEqual( 0, Pos( '$(' + Vars[0].Name + ')', Analysis.Sets[0].BuildResult ),
+      'an unticked variable must not appear in the value written' );
+    Assert.AreEqual( 'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma',
+      Analysis.Sets[0].BuildResult, 'with its only variable unticked the value is unchanged' );
+  finally
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestDivergentNameNeverTaken;
+var
+  Macros, Divergent: TStringList;
+  Analysis: TPathCompactorAnalysis;
+begin
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  Divergent := TStringList.Create;
+  try
+    Divergent.Add( 'BDS' );
+    Analysis.SetDivergentNames( Divergent );
+    Analysis.MinNetSaving := 10;
+    // The trailing segment derives the name "BDS", which only the other IDE's list defines.
+    Analysis.AddPathSet( 'Win64', lptSearchPath,
+      'D:\Vendor\Tooling\Bds\Alpha;D:\Vendor\Tooling\Bds\Beta;D:\Vendor\Tooling\Bds\Gamma' );
+    Analysis.Analyse;
+
+    var Vars := Analysis.AcceptedVariables;
+    Assert.IsTrue( Length( Vars ) > 0, 'the fixture must propose a variable' );
+    for var Candidate in Vars do
+      Assert.IsFalse( SameText( 'BDS', Candidate.Name ), 'the other IDE''s variable would be overwritten' );
+  finally
+    Divergent.Free;
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestReuseRestrictedToReusableNames;
+var
+  Macros, Reusable: TStringList;
+  Analysis: TPathCompactorAnalysis;
+  Value: string;
+begin
+  Macros := MakeMacros( ['MINEONLY=D:\Vendor\Suite\Lib'] );
+  Reusable := TStringList.Create;
+  try
+    // Restricted, MINEONLY not listed: it must not be reused.
+    Analysis := MakeAnalysis( Macros );
+    try
+      Analysis.SetReusableNames( Reusable );
+      Analysis.MinNetSaving := 10;
+      Analysis.AddPathSet( 'Win64', lptSearchPath,
+        'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
+      Analysis.Analyse;
+      Value := Analysis.Sets[0].BuildResult;
+      Assert.AreEqual( 0, Pos( '$(MINEONLY)', Value ), 'a variable not reusable everywhere was reused' );
+      for var Candidate in Analysis.AcceptedVariables do
+        Assert.IsFalse( SameText( 'MINEONLY', Candidate.Name ), 'the existing name must not be redefined either' );
+    finally
+      Analysis.Free;
+    end;
+
+    // Listed: it is reused.
+    Reusable.Add( 'MINEONLY' );
+    Analysis := MakeAnalysis( Macros );
+    try
+      Analysis.SetReusableNames( Reusable );
+      Analysis.MinNetSaving := 10;
+      Analysis.AddPathSet( 'Win64', lptSearchPath,
+        'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
+      Analysis.Analyse;
+      Assert.IsTrue( Pos( '$(MINEONLY)', Analysis.Sets[0].BuildResult ) > 0, 'a reusable variable was not reused' );
+    finally
+      Analysis.Free;
+    end;
+  finally
+    Reusable.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestRelativeEntryLeftAlone;
+var
+  Macros: TStringList;
+  Analysis: TPathCompactorAnalysis;
+begin
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  try
+    Analysis.CheckExistence := True;
+    Analysis.RemoveMissing := True;
+    Analysis.RemoveDuplicates := True;
+    Analysis.AddPathSet( 'Win64', lptSearchPath, '..\Lib;..\Lib;Source' );
+    Analysis.Analyse;
+    Assert.AreEqual( '..\Lib;..\Lib;Source', Analysis.Sets[0].BuildResult,
+      'relative entries must survive exactly as stored' );
+    Assert.AreEqual( 0, Analysis.DropCount, 'no relative entry may be marked for removal' );
+  finally
+    Analysis.Free;
+    Macros.Free;
+  end;
+end;
+
+procedure TTestPathCompactor.TestRemoveMissingDropsOnlyAbsentDirectories;
+var
+  Macros: TStringList;
+  Analysis: TPathCompactorAnalysis;
+begin
+  var Existing := ExcludeTrailingPathDelimiter( TPath.GetTempPath );
+  var Missing := TPath.Combine( Existing, 'DDevExt-missing-' + TGUID.NewGuid.ToString );
+  Macros := MakeMacros( [] );
+  Analysis := MakeAnalysis( Macros );
+  try
+    Analysis.CheckExistence := True;
+    Analysis.RemoveMissing := True;
+    Analysis.AddPathSet( 'Win64', lptSearchPath, Existing + ';' + Missing );
+    Analysis.Analyse;
+    Assert.AreEqual( 1, Analysis.DropCount, 'exactly the missing directory is marked' );
+    Assert.AreEqual( Existing, Analysis.Sets[0].BuildResult, 'the existing directory is kept, the missing one dropped' );
   finally
     Analysis.Free;
     Macros.Free;

@@ -49,6 +49,14 @@ type
     MissingFromOne: Boolean;
   end;
 
+  /// <summary>Raised when a variable cannot be written, would replace a different value, or reads back differently.</summary>
+  EPathVariableError = class( Exception );
+
+  /// <summary>A place a variable is defined: either IDE list, or the Windows user environment.</summary>
+  TVariableLocation = ( vlIde32, vlIde64, vlUserEnvironment );
+  /// <summary>A set of variable locations.</summary>
+  TVariableLocations = set of TVariableLocation;
+
 /// <summary>Registry sub-key holding the IDE macro overrides for THIS IDE's bitness.</summary>
 function EnvironmentVariablesKey( const ABaseRegistryKey: string ): string;
 
@@ -75,8 +83,15 @@ function FindDivergences( const ABaseRegistryKey: string ): TArray<TEnvVarDiverg
 
 /// <summary>
 /// Writes AName=AValue to <b>both</b> IDE macro-override lists, and — only when
-/// AWriteUserEnvironment is True — to <c>HKCU\Environment</c> as well.
+/// AWriteUserEnvironment is True — to <c>HKCU\Environment</c> as well. Every write is
+/// verified by reading it back. A location that already holds a DIFFERENT value is never
+/// overwritten; one already holding this value is left alone.
 /// </summary>
+/// <returns>The locations this call created, i.e. those to delete to undo it.</returns>
+/// <exception cref="EPathVariableError">
+/// A location holds a different value, a key could not be opened, or a value did not read
+/// back as written. Locations created by this call before the failure are removed again.
+/// </exception>
 /// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
 /// <param name="AName">Variable name, without the surrounding <c>$(</c> and <c>)</c>.</param>
 /// <param name="AValue">Literal absolute path to store.</param>
@@ -85,11 +100,33 @@ function FindDivergences( const ABaseRegistryKey: string ): TArray<TEnvVarDiverg
 /// default in the dialog: command-line MSBuild does not read the IDE library
 /// path, so this only helps a hand-edited <c>.dproj</c>.
 /// </param>
-procedure WriteVariable( const ABaseRegistryKey, AName, AValue: string;
-  AWriteUserEnvironment: Boolean );
+function WriteVariable( const ABaseRegistryKey, AName, AValue: string;
+  AWriteUserEnvironment: Boolean ): TVariableLocations;
 
-/// <summary>Removes AName from both IDE lists and from the Windows user environment.</summary>
-procedure DeleteVariable( const ABaseRegistryKey, AName: string );
+/// <summary>Removes AName from the given locations only.</summary>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <param name="AName">Variable name.</param>
+/// <param name="ALocations">
+/// Where to remove it from. Pass only locations this tool wrote: a same-named
+/// Windows variable the user owns is never touched otherwise.
+/// </param>
+procedure DeleteVariable( const ABaseRegistryKey, AName: string; ALocations: TVariableLocations );
+
+/// <summary>
+/// Builds the names of macros that may safely be REUSED for a library-path prefix: those
+/// that resolve to the same value in both IDE bitnesses and in every future session.
+/// </summary>
+/// <remarks>
+/// A name defined in either IDE list qualifies only when both lists define it with the
+/// same value. Otherwise it qualifies when it is an IDE built-in, a persisted Windows
+/// variable (<c>HKCU\Environment</c>, the machine environment) or a stable system
+/// variable such as <c>USERPROFILE</c>. A variable present only in this process's
+/// environment (set by whatever launched the IDE) never qualifies, and neither does
+/// <c>ProgramFiles</c>, which differs between the 32-bit and 64-bit IDE.
+/// </remarks>
+/// <param name="AList">Receives the names; cleared first.</param>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+procedure BuildReusableNames( AList: TStrings; const ABaseRegistryKey: string );
 
 /// <summary>
 /// Builds the macro table for <c>PathCompactorCore</c>, in the documented
@@ -107,8 +144,10 @@ procedure BuildMacroTable( AList: TStrings; const ABaseRegistryKey, APlatformNam
 
 /// <summary>
 /// Builds the list of names that must never be used for a new variable: the IDE
-/// built-ins plus every process environment variable.
+/// built-ins, every process environment variable, and every persisted Windows
+/// variable (including ones added after the IDE started).
 /// </summary>
+/// <param name="AList">Receives the names; cleared first.</param>
 /// <remarks>
 /// <c>IDEUtils.ExpandDirMacros</c> consults the process environment first, so
 /// shadowing one of its names would break path resolution well beyond this
@@ -129,7 +168,7 @@ procedure BroadcastEnvironmentChange;
 implementation
 
 uses
-  System.Win.Registry, System.StrUtils, IDEUtils;
+  System.Win.Registry, System.StrUtils, System.RegularExpressions, IDEUtils;
 
 function BdsRootDir: string;
 begin
@@ -206,6 +245,133 @@ begin
     AList.Add( 'PLATFORM=' + APlatformName );
 end;
 
+const
+  /// <summary>The IDE's built-in macros.</summary>
+  BuiltInNames: array[0..9] of string = ( 'BDS', 'BCB', 'DELPHI', 'BDSINCLUDE', 'BDSLIB', 'BDSCOMMONDIR',
+    'BDSUSERDIR', 'BDSCATALOGREPOSITORY', 'BDSCATALOGREPOSITORYALLUSERS', 'BDSPROJECTSDIR' );
+  /// <summary>System variables Windows sets for every process, with the same value whatever the bitness.</summary>
+  StableSystemNames: array[0..13] of string = ( 'USERPROFILE', 'PUBLIC', 'APPDATA', 'LOCALAPPDATA', 'ProgramData',
+    'ALLUSERSPROFILE', 'SystemRoot', 'SystemDrive', 'windir', 'ProgramFiles(x86)', 'ProgramW6432',
+    'CommonProgramFiles(x86)', 'CommonProgramW6432', 'HOMEDRIVE' );
+  /// <summary>The machine-wide environment key under HKEY_LOCAL_MACHINE.</summary>
+  MachineEnvironmentKey = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+
+/// <summary>Adds the value names of a registry key to AList.</summary>
+/// <param name="ARoot">HKEY_CURRENT_USER or HKEY_LOCAL_MACHINE.</param>
+/// <param name="AKey">The key path.</param>
+/// <param name="AList">Receives the names.</param>
+procedure AddValueNames( ARoot: HKEY; const AKey: string; AList: TStrings );
+begin
+  var Reg := TRegistry.Create( KEY_READ );
+  try
+    Reg.RootKey := ARoot;
+    if Reg.OpenKeyReadOnly( AKey ) then
+    begin
+      var Names := TStringList.Create;
+      try
+        Reg.GetValueNames( Names );
+        AList.AddStrings( Names );
+      finally
+        Names.Free;
+      end;
+    end;
+  finally
+    Reg.Free;
+  end;
+end;
+
+/// <summary>
+/// Adds the names of the persisted variables under a key whose stored value expands the same in
+/// the 32-bit and the 64-bit IDE. A value built from <c>%ProgramFiles%</c>, <c>%CommonProgramFiles%</c>,
+/// <c>%ProgramW6432%</c> or a <c>%PROCESSOR_*%</c> variable expands differently by bitness, so it
+/// is left out.
+/// </summary>
+/// <param name="ARoot">HKEY_CURRENT_USER or HKEY_LOCAL_MACHINE.</param>
+/// <param name="AKey">The environment key.</param>
+/// <param name="AList">Receives the names.</param>
+procedure AddBitnessNeutralNames( ARoot: HKEY; const AKey: string; AList: TStrings );
+begin
+  var Reg := TRegistry.Create( KEY_READ );
+  try
+    Reg.RootKey := ARoot;
+    if not Reg.OpenKeyReadOnly( AKey ) then
+      Exit;
+    var Names := TStringList.Create;
+    try
+      Reg.GetValueNames( Names );
+      for var Name in Names do
+      begin
+        // ReadString returns REG_EXPAND_SZ data unexpanded, which is what is tested here.
+        var Raw := '';
+        if ( Reg.GetDataType( Name ) in [rdString, rdExpandString] ) then
+          Raw := Reg.ReadString( Name );
+        if not TRegEx.IsMatch( Raw, '%(ProgramFiles(\(x86\))?|CommonProgramFiles[^%]*|ProgramW6432|PROCESSOR_[^%]*)%',
+          [roIgnoreCase] ) then
+          AList.Add( Name );
+      end;
+    finally
+      Names.Free;
+    end;
+  finally
+    Reg.Free;
+  end;
+end;
+
+procedure BuildReusableNames( AList: TStrings; const ABaseRegistryKey: string );
+begin
+  AList.Clear;
+  var List32 := TStringList.Create;
+  var List64 := TStringList.Create;
+  var Persisted := TStringList.Create;
+  var Names := TStringList.Create;
+  try
+    List32.CaseSensitive := False;
+    List64.CaseSensitive := False;
+    Persisted.CaseSensitive := False;
+    Names.CaseSensitive := False;
+    Names.Sorted := True;
+    Names.Duplicates := dupIgnore;
+
+    ReadIdeVariables( EnvironmentVariablesKey32( ABaseRegistryKey ), List32 );
+    ReadIdeVariables( EnvironmentVariablesKey64( ABaseRegistryKey ), List64 );
+    AddBitnessNeutralNames( HKEY_CURRENT_USER, 'Environment', Persisted );
+    AddBitnessNeutralNames( HKEY_LOCAL_MACHINE, MachineEnvironmentKey, Persisted );
+
+    for var Name in BuiltInNames do
+      Names.Add( Name );
+    for var Name in StableSystemNames do
+      Names.Add( Name );
+    for var I := 0 to List32.Count - 1 do
+      Names.Add( List32.Names[I] );
+    for var I := 0 to List64.Count - 1 do
+      Names.Add( List64.Names[I] );
+    Names.AddStrings( Persisted );
+
+    for var I := 0 to Names.Count - 1 do
+    begin
+      var Name := Names[I];
+      if ( Name = '' ) then
+        Continue;
+      var Index32 := List32.IndexOfName( Name );
+      var Index64 := List64.IndexOfName( Name );
+      if ( Index32 >= 0 ) or ( Index64 >= 0 ) then
+      begin
+        // An IDE override decides the value: it must be the same in both IDEs.
+        if ( Index32 >= 0 ) and ( Index64 >= 0 ) and
+           SameText( List32.ValueFromIndex[Index32], List64.ValueFromIndex[Index64] ) then
+          AList.Add( Name );
+      end
+      else
+        AList.Add( Name ); // a built-in, a persisted Windows variable or a stable system one
+    end;
+  finally
+    Names.Free;
+    Persisted.Free;
+    List64.Free;
+    List32.Free;
+  end;
+end;
+
 procedure BuildReservedNames( AList: TStrings );
 var
   EnvBlock, Entry: PChar;
@@ -213,6 +379,11 @@ var
   SepPos: Integer;
 begin
   AList.Clear;
+
+  // Persisted Windows variables, including any added since this IDE started: its own
+  // environment block was captured at launch and does not show them.
+  AddValueNames( HKEY_CURRENT_USER, 'Environment', AList );
+  AddValueNames( HKEY_LOCAL_MACHINE, MachineEnvironmentKey, AList );
 
   AList.Add( 'BDS' );
   AList.Add( 'BCB' );
@@ -350,40 +521,89 @@ begin
   end;
 end;
 
-procedure WriteVariable( const ABaseRegistryKey, AName, AValue: string;
-  AWriteUserEnvironment: Boolean );
+/// <summary>Returns the HKCU key that holds a variable location.</summary>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <param name="ALocation">The location.</param>
+/// <returns>The key path under HKEY_CURRENT_USER.</returns>
+function LocationKey( const ABaseRegistryKey: string; ALocation: TVariableLocation ): string;
 begin
-  // Both IDE lists, always — the path they resolve is shared between the two
-  // IDEs, so defining the variable in only one guarantees a silent break.
-  RegWriteString( HKEY_CURRENT_USER, EnvironmentVariablesKey32( ABaseRegistryKey ),
-    AName, AValue );
-  RegWriteString( HKEY_CURRENT_USER, EnvironmentVariablesKey64( ABaseRegistryKey ),
-    AName, AValue );
-
-  if AWriteUserEnvironment then
-    RegWriteString( HKEY_CURRENT_USER, 'Environment', AName, AValue );
+  case ALocation of
+    vlIde32:
+      Result := EnvironmentVariablesKey32( ABaseRegistryKey );
+    vlIde64:
+      Result := EnvironmentVariablesKey64( ABaseRegistryKey );
+  else
+    Result := 'Environment';
+  end;
 end;
 
-procedure DeleteVariable( const ABaseRegistryKey, AName: string );
+/// <summary>Writes one value unless it is already there, and verifies it by read-back.</summary>
+/// <param name="AKey">Key under HKEY_CURRENT_USER.</param>
+/// <param name="AName">Value name.</param>
+/// <param name="AValue">Value data.</param>
+/// <returns>True when the value was created; False when it already held AValue.</returns>
+/// <exception cref="EPathVariableError">The value exists with other data, the key cannot be opened, or the read-back differs.</exception>
+function WriteOne( const AKey, AName, AValue: string ): Boolean;
+begin
+  var Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
+  try
+    Reg.RootKey := HKEY_CURRENT_USER;
+    if not Reg.OpenKey( AKey, True ) then
+      raise EPathVariableError.CreateFmt( 'The registry key "HKCU\%s" could not be opened for writing.', [AKey] );
 
-  procedure DeleteFrom( const AKey: string );
-  var
-    Reg: TRegistry;
+    if Reg.ValueExists( AName ) then
+    begin
+      var Existing := '';
+      if ( Reg.GetDataType( AName ) in [rdString, rdExpandString] ) then
+        Existing := Reg.ReadString( AName );
+      if SameText( Existing, AValue ) then
+        Exit( False );
+      raise EPathVariableError.CreateFmt( '"%s" is already defined in HKCU\%s with a different value (%s); ' +
+        'it was not replaced.', [AName, AKey, Existing] );
+    end;
+
+    Reg.WriteString( AName, AValue );
+    if not Reg.ValueExists( AName ) or ( Reg.ReadString( AName ) <> AValue ) then
+      raise EPathVariableError.CreateFmt( '"%s" did not read back as written in HKCU\%s.', [AName, AKey] );
+    Result := True;
+  finally
+    Reg.Free;
+  end;
+end;
+
+function WriteVariable( const ABaseRegistryKey, AName, AValue: string;
+  AWriteUserEnvironment: Boolean ): TVariableLocations;
+begin
+  Result := [];
+  try
+    // Both IDE lists, always — the path they resolve is shared between the two
+    // IDEs, so defining the variable in only one guarantees a silent break.
+    if WriteOne( LocationKey( ABaseRegistryKey, vlIde32 ), AName, AValue ) then
+      Include( Result, vlIde32 );
+    if WriteOne( LocationKey( ABaseRegistryKey, vlIde64 ), AName, AValue ) then
+      Include( Result, vlIde64 );
+    if AWriteUserEnvironment and WriteOne( LocationKey( ABaseRegistryKey, vlUserEnvironment ), AName, AValue ) then
+      Include( Result, vlUserEnvironment );
+  except
+    // Leave nothing half-defined.
+    DeleteVariable( ABaseRegistryKey, AName, Result );
+    raise;
+  end;
+end;
+
+procedure DeleteVariable( const ABaseRegistryKey, AName: string; ALocations: TVariableLocations );
+begin
+  for var Location in ALocations do
   begin
-    Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
+    var Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
     try
       Reg.RootKey := HKEY_CURRENT_USER;
-      if Reg.OpenKey( AKey, False ) and Reg.ValueExists( AName ) then
+      if Reg.OpenKey( LocationKey( ABaseRegistryKey, Location ), False ) and Reg.ValueExists( AName ) then
         Reg.DeleteValue( AName );
     finally
       Reg.Free;
     end;
   end;
-
-begin
-  DeleteFrom( EnvironmentVariablesKey32( ABaseRegistryKey ) );
-  DeleteFrom( EnvironmentVariablesKey64( ABaseRegistryKey ) );
-  DeleteFrom( 'Environment' );
 end;
 
 procedure BroadcastEnvironmentChange;

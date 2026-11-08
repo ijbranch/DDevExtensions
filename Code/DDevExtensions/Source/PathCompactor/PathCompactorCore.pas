@@ -125,6 +125,11 @@ type
     Accepted: Boolean;
     /// <summary>An IDE variable or built-in of this name already holds exactly this value.</summary>
     PreExisting: Boolean;
+    /// <summary>
+    /// An accepted variable the user has kept ticked. Only enabled variables are used in
+    /// the rewritten entries; see <see cref="TPathCompactorAnalysis.SetVariableEnabled"/>.
+    /// </summary>
+    Enabled: Boolean;
   end;
 
   /// <summary>One platform/path-type registry value and its parsed entries.</summary>
@@ -198,6 +203,10 @@ type
     FDivergentNames: TStringList;
     /// <summary>When False, existence is not probed (used by tests, which have no disc layout).</summary>
     FCheckExistence: Boolean;
+    /// <summary>Macro names that may be reused as an existing variable; see SetReusableNames.</summary>
+    FReusableNames: TStringList;
+    /// <summary>True once SetReusableNames has been called: only the listed names are then reused.</summary>
+    FRestrictReuse: Boolean;
 
     /// <summary>Expands, normalises and classifies every entry in every set.</summary>
     procedure ExpandEntries;
@@ -220,8 +229,12 @@ type
     /// <summary>Returns the length of the raw prefix of AEntry.Raw that expands to APrefix, or 0.</summary>
     function StoredPrefixLengthFor( const AEntry: TPathEntry; const APrefix: string ): Integer;
     /// <summary>Chooses a unique, legal variable name for APrefix.</summary>
+    /// <returns>A legal variable name not used in either IDE list, the environment or this analysis.</returns>
+    /// <param name="APrefix">The expanded path prefix the variable will stand for.</param>
     function UniqueVariableName( const APrefix: string ): string;
     /// <summary>Returns the name of an existing macro whose value equals APrefix, or an empty string.</summary>
+    /// <returns>The macro's name, or an empty string when none matches.</returns>
+    /// <param name="APrefix">The expanded path prefix to find a macro for.</param>
     function ExistingMacroFor( const APrefix: string ): string;
   public
     /// <summary>Creates an empty analysis with the documented defaults.</summary>
@@ -240,6 +253,25 @@ type
     /// resolves in the other IDE, so deleting it would break that IDE.
     /// </summary>
     procedure SetDivergentNames( ANames: TStrings );
+    /// <summary>
+    /// Restricts which existing macros may be reused for a prefix. Without this call any
+    /// macro in the table is reused. The dialog passes only names that resolve
+    /// identically in BOTH IDE bitnesses and in every future session: the IDE built-ins,
+    /// variables defined with the same value in both IDE lists, and persisted Windows
+    /// variables. A variable only one IDE list defines, or one present only in this
+    /// process's environment, would leave the rewritten entries dead elsewhere.
+    /// </summary>
+    /// <param name="ANames">The reusable names; copied, never retained.</param>
+    procedure SetReusableNames( ANames: TStrings );
+    /// <summary>
+    /// Includes or excludes one accepted variable from the rewrite, and re-runs the
+    /// rewrite so <see cref="TPathSet.BuildResult"/> never refers to a variable that
+    /// will not be defined.
+    /// </summary>
+    /// <param name="AIndex">Index into <see cref="AcceptedVariables"/>.</param>
+    /// <param name="AEnabled">True to use the variable, False to leave its entries as they were.</param>
+    /// <exception cref="EPathCompactorError">AIndex is out of range.</exception>
+    procedure SetVariableEnabled( AIndex: Integer; AEnabled: Boolean );
     /// <summary>Adds one platform/path-type value to the analysis scope.</summary>
     /// <exception cref="EPathCompactorError">
     /// Raised for <c>lptNamespacePrefixes</c>, which is a list of unit-scope
@@ -706,6 +738,16 @@ begin
   Result := Copy( APath, Start + 2, Stop - Start - 2 );
 end;
 
+/// <summary>True for a drive-absolute (<c>C:\x</c>) or UNC (<c>\\server\share</c>) path.</summary>
+/// <param name="APath">An expanded path.</param>
+/// <returns>False for a relative or root-relative (<c>\x</c>) path.</returns>
+function IsAbsolutePath( const APath: string ): Boolean;
+begin
+  var Path := Trim( APath );
+  Result := ( ( Length( Path ) >= 3 ) and CharInSet( Path[1], ['A'..'Z', 'a'..'z'] ) and ( Path[2] = ':' ) and
+    CharInSet( Path[3], ['\', '/'] ) ) or StartsText( '\\', Path );
+end;
+
 { TPathSet }
 
 constructor TPathSet.Create( const APlatformName: string; APathType: TLibraryPathType;
@@ -805,6 +847,12 @@ begin
   FDivergentNames.Duplicates := dupIgnore;
   FDivergentNames.Sorted := True;
 
+  FReusableNames := TStringList.Create;
+  FReusableNames.CaseSensitive := False;
+  FReusableNames.Duplicates := dupIgnore;
+  FReusableNames.Sorted := True;
+  FRestrictReuse := False;
+
   FMaxVariables := 12;
   FMinOccurrences := 2;
   FMinNetSaving := 40;
@@ -817,6 +865,7 @@ end;
 
 destructor TPathCompactorAnalysis.Destroy;
 begin
+  FReusableNames.Free;
   FDivergentNames.Free;
   FReservedNames.Free;
   FMacros.Free;
@@ -855,6 +904,25 @@ begin
   for I := 0 to ANames.Count - 1 do
     if Trim( ANames[I] ) <> '' then
       FDivergentNames.Add( Trim( ANames[I] ) );
+end;
+
+procedure TPathCompactorAnalysis.SetReusableNames( ANames: TStrings );
+begin
+  FReusableNames.Clear;
+  FRestrictReuse := True;
+  if ( ANames = nil ) then
+    Exit;
+  for var I := 0 to ANames.Count - 1 do
+    if ( Trim( ANames[I] ) <> '' ) then
+      FReusableNames.Add( Trim( ANames[I] ) );
+end;
+
+procedure TPathCompactorAnalysis.SetVariableEnabled( AIndex: Integer; AEnabled: Boolean );
+begin
+  if ( AIndex < Low( FAccepted ) ) or ( AIndex > High( FAccepted ) ) then
+    raise EPathCompactorError.CreateFmt( 'No accepted variable has index %d.', [AIndex] );
+  FCandidates[FAccepted[AIndex]].Enabled := AEnabled;
+  RewriteEntries;
 end;
 
 procedure TPathCompactorAnalysis.AddPathSet( const APlatformName: string;
@@ -896,6 +964,20 @@ begin
         ( not FBakePlatformMacro and ContainsText( Entries[I].Raw, '$(Platform)' ) );
 
       Expanded := ExpandLibraryMacros( Entries[I].Raw, FMacros );
+
+      // A relative entry resolves against the directory of whatever is being built,
+      // not against anything known here. Resolving it against this process's current
+      // directory would make it look missing, a duplicate of an unrelated entry, or a
+      // candidate for rewriting into an absolute path - so it is left exactly as it is.
+      if ( Pos( '$(', Expanded ) = 0 ) and not IsAbsolutePath( Expanded ) then
+      begin
+        Entries[I].Opaque := True;
+        Entries[I].UndefinedMacro := False;
+        Entries[I].DivergentMacro := False;
+        Entries[I].Expanded := Trim( Expanded );
+        Entries[I].Exists := False;
+        Continue;
+      end;
 
       // A macro that resolves nowhere is not "deferred", it simply does not
       // exist — but it still cannot be rewritten, so it is opaque as well. The
@@ -1212,6 +1294,7 @@ begin
       FCandidates[Best].Name := UniqueVariableName( FCandidates[Best].Prefix );
 
     FCandidates[Best].Accepted := True;
+    FCandidates[Best].Enabled := True;
     FCandidates[Best].NetSaving := BestGain;
     SetLength( FAccepted, Length( FAccepted ) + 1 );
     FAccepted[High( FAccepted )] := Best;
@@ -1240,7 +1323,7 @@ begin
       BestMatch := -1;
       for J := Low( Entries[I].Matches ) to High( Entries[I].Matches ) do
         for K := Low( FAccepted ) to High( FAccepted ) do
-          if Entries[I].Matches[J].CandidateIndex = FAccepted[K] then
+          if ( Entries[I].Matches[J].CandidateIndex = FAccepted[K] ) and FCandidates[FAccepted[K]].Enabled then
           begin
             if ( BestMatch < 0 ) or
                ( Entries[I].Matches[J].ExpandedPrefixLen >
@@ -1317,6 +1400,11 @@ begin
     if FMacros.Names[I] = '' then
       Continue;
 
+    // Only a macro that resolves the same in both IDEs and in every session may be
+    // reused; anything else would leave the rewritten entries dead somewhere.
+    if FRestrictReuse and ( FReusableNames.IndexOf( FMacros.Names[I] ) < 0 ) then
+      Continue;
+
     // Compare fully expanded, so "InterBase=$(BDS)\InterBase2020" is matched
     // by its resolved value rather than its literal text.
     Value := NormalisePath( ExpandLibraryMacros( FMacros.ValueFromIndex[I], FMacros ) );
@@ -1342,6 +1430,10 @@ var
       Exit;
     // Nor an existing IDE variable holding a different value.
     if FMacros.IndexOfName( AName ) >= 0 then
+      Exit;
+    // Nor a variable only the OTHER IDE bitness defines: the new variable is written
+    // to both lists, and would replace that IDE's value.
+    if ( FDivergentNames.IndexOf( AName ) >= 0 ) then
       Exit;
     // Only ALREADY-ACCEPTED variables can genuinely collide.
     for K := Low( FAccepted ) to High( FAccepted ) do
@@ -1377,6 +1469,10 @@ begin
 
     // Nor an existing IDE variable holding a different value.
     if not Taken and ( FMacros.IndexOfName( Result ) >= 0 ) then
+      Taken := True;
+
+    // Nor a variable only the other IDE bitness defines.
+    if not Taken and ( FDivergentNames.IndexOf( Result ) >= 0 ) then
       Taken := True;
 
     // Only ALREADY-ACCEPTED variables can genuinely collide. Testing every

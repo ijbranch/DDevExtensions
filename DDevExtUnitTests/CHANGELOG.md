@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- (2026-11-09) **`TestLibraryPathBackupsDUnitX`**: two writers sharing one file, pinned backups not trimmed, ISO timestamps, legacy-file ids with raw timestamps that survive a save (locale-independent), corrupt-file quarantine, and an older build's file imported read-only - `TestLibraryPathBackupsDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
+- (2026-11-09) **Group-sorter tests** for `DependsOnTargets`, sanitised target names, tabs, custom targets, unterminated targets and line-break style - `TestProjectGroupSorterDUnitX.pas`
+- (2026-11-09) **Compactor tests** for unticked variables, divergent names, restricted reuse, relative entries and RemoveMissing - `TestPathCompactorDUnitX.pas`
 - (2026-11-09) **23 Uses Clause Manager tests** (IFDEF/comment/in-path preservation, own-line `//` comments, stale placements, clause creation and include refusal, UTF-8 offsets, LF buffers, dotted names, wrapping, program refusal, export precision incl. enumeration values, section tracking, provider check, directory resolution) **and one Method Separators test** (header without a body) - `TestUsesClauseManagerCoreDUnitX.pas`, `TestMethodSeparatorsCoreDUnitX.pas`
 - (2026-11-09) **`TestExcelExportDUnitX`**: 12 cases proving `ExcelCellText` prefixes text Excel would evaluate (`= + - @`, including "-1+2"), leaves names, paths, numbers and empty text unchanged, and keeps signed numbers ("-5", "-0.3", "+1") numeric - `TestExcelExportDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
 - (2026-10-25) **This change log** — `CHANGELOG.md`.  The suite's own record, per the estate rule that every test

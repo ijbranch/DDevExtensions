@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -39,7 +39,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  System.SysUtils, System.UITypes, System.IOUtils,
+  Winapi.Windows, System.SysUtils, System.UITypes, System.IOUtils,
   Vcl.Menus, Vcl.Dialogs,
   ToolsAPI, ToolsAPIHelpers,
   ProjectGroupSorterCore;
@@ -59,125 +59,191 @@ type
     destructor Destroy; override;
   end;
 
+  /// <summary>The decoded text of a <c>.groupproj</c> and how it was encoded on disk.</summary>
+  TGroupFileText = record
+    /// <summary>The file content as text.</summary>
+    Text: string;
+    /// <summary>True when the file began with a UTF-8 byte-order mark.</summary>
+    HasBom: Boolean;
+    /// <summary>The raw bytes as read, used to detect a change made behind our back.</summary>
+    Bytes: TBytes;
+  end;
+
 var
   ProjectGroupSorterPlugin: TProjectGroupSorterPlugin;
 
 { File / IDE helpers }
 
-function ReadFileUtf8NoBom(const AFileName: string): string;
-var
-  Bytes: TBytes;
+/// <summary>Reads a <c>.groupproj</c> as strict UTF-8, remembering whether it carried a BOM.</summary>
+/// <param name="AFileName">The file to read.</param>
+/// <returns>The decoded text, the BOM flag and the raw bytes.</returns>
+/// <exception cref="EEncodingError">The file is not valid UTF-8; decoding it would corrupt its paths.</exception>
+function ReadGroupFile( const AFileName: string ): TGroupFileText;
 begin
-  Bytes := TFile.ReadAllBytes(AFileName);
-  // Strip a UTF-8 BOM if present, then decode as UTF-8.
-  if (Length(Bytes) >= 3) and (Bytes[0] = $EF) and (Bytes[1] = $BB) and (Bytes[2] = $BF) then
-    Result := TEncoding.UTF8.GetString(Bytes, 3, Length(Bytes) - 3)
-  else
-    Result := TEncoding.UTF8.GetString(Bytes);
-end;
-
-procedure WriteFileUtf8NoBom(const AFileName, AText: string);
-begin
-  // GetBytes does not emit a preamble, so this writes UTF-8 without a BOM.
-  TFile.WriteAllBytes(AFileName, TEncoding.UTF8.GetBytes(AText));
+  Result.Bytes := TFile.ReadAllBytes( AFileName );
+  Result.HasBom := ( Length( Result.Bytes ) >= 3 ) and ( Result.Bytes[0] = $EF ) and ( Result.Bytes[1] = $BB ) and
+    ( Result.Bytes[2] = $BF );
+  // Strict decoding: an invalid byte must stop the sort, not turn into U+FFFD in a path.
+  var Strict := TUTF8Encoding.Create( CP_UTF8, MB_ERR_INVALID_CHARS, 0 );
+  try
+    if Result.HasBom then
+      Result.Text := Strict.GetString( Result.Bytes, 3, Length( Result.Bytes ) - 3 )
+    else
+      Result.Text := Strict.GetString( Result.Bytes );
+  finally
+    Strict.Free;
+  end;
 end;
 
 /// <summary>
-/// Reads <paramref name="AGroupFile"/>, writes a single <c>.bak</c> backup
-/// beside it, then rewrites it with the projects sorted. Returns False (and
-/// leaves the file untouched) when the order is already alphabetical.
+/// Replaces <paramref name="AFileName"/> atomically: the text is written to a temporary
+/// file beside it, which is then moved over the original in one step.
 /// </summary>
-function BackupAndSortGroupFile(const AGroupFile: string): Boolean;
-var
-  Original, Sorted: string;
+/// <param name="AFileName">The file to replace.</param>
+/// <param name="AText">The new content.</param>
+/// <param name="AWithBom">Write a UTF-8 byte-order mark, as the original had one.</param>
+/// <exception cref="EOSError">The temporary file could not be written or moved into place; the original is untouched.</exception>
+procedure ReplaceGroupFile( const AFileName, AText: string; AWithBom: Boolean );
 begin
-  Original := ReadFileUtf8NoBom(AGroupFile);
-  Sorted := SortGroupProjectText(Original);
-  Result := Sorted <> Original;
-  if not Result then
-    Exit;
-  try
-    TFile.Copy(AGroupFile, AGroupFile + '.bak', True);
-  except
-    // A failed backup is non-fatal — the IDE regenerates this file on every save.
+  var Bytes := TEncoding.UTF8.GetBytes( AText );
+  if AWithBom then
+    Bytes := TEncoding.UTF8.GetPreamble + Bytes;
+  var TempName := AFileName + '.sorting.tmp';
+  TFile.WriteAllBytes( TempName, Bytes );
+  if not MoveFileEx( PChar( TempName ), PChar( AFileName ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
+  begin
+    var Error := GetLastError;
+    System.SysUtils.DeleteFile( TempName );
+    RaiseLastOSError( Error );
   end;
-  WriteFileUtf8NoBom(AGroupFile, Sorted);
 end;
 
+/// <summary>Reopens a project group in the IDE and makes the previously active project active again.</summary>
+/// <param name="AGroupFile">The group to open.</param>
+/// <param name="AActiveProjFile">The project that was active before, or empty.</param>
+procedure ReopenGroup( const AGroupFile, AActiveProjFile: string );
+var
+  ActionSvc: IOTAActionServices;
+begin
+  if not Supports( BorlandIDEServices, IOTAActionServices, ActionSvc ) then
+    Exit;
+  ActionSvc.OpenProject( AGroupFile, True );
+
+  if ( AActiveProjFile = '' ) then
+    Exit;
+  var NewGroup := GetActiveProjectGroup;
+  if ( NewGroup <> nil ) then
+    for var I := 0 to NewGroup.ProjectCount - 1 do
+      if SameText( NewGroup.Projects[I].FileName, AActiveProjFile ) then
+      begin
+        NewGroup.SetActiveProject( NewGroup.Projects[I] );
+        Break;
+      end;
+end;
+
+/// <summary>
+/// Sorts the members of the active project group. Every step that can fail runs before the
+/// group is closed; the file is replaced atomically, and the group is always reopened.
+/// </summary>
 procedure SortActiveProjectGroup;
 var
-  Group, NewGroup: IOTAProjectGroup;
-  ActionSvc: IOTAActionServices;
-  GroupFile, ActiveProjFile: string;
-  ProjCount, I: Integer;
+  Group: IOTAProjectGroup;
+  GroupFile, ActiveProjFile, Sorted: string;
+  Original, Current: TGroupFileText;
+  ProjCount: Integer;
 begin
   Group := GetActiveProjectGroup;
-  if Group = nil then
+  if ( Group = nil ) then
   begin
-    MessageDlg('No project group is open.', mtInformation, [mbOK], 0);
+    MessageDlg( 'No project group is open.', mtInformation, [mbOK], 0 );
     Exit;
   end;
 
   GroupFile := Group.FileName;
-  if (GroupFile = '') or not FileExists(GroupFile) then
+  if ( GroupFile = '' ) or not FileExists( GroupFile ) then
   begin
-    MessageDlg('Please save the project group to disk before sorting its projects.',
-      mtInformation, [mbOK], 0);
+    MessageDlg( 'Please save the project group to disk before sorting its projects.', mtInformation, [mbOK], 0 );
     Exit;
   end;
 
   ProjCount := Group.ProjectCount;
-  if ProjCount < 2 then
+  if ( ProjCount < 2 ) then
   begin
-    MessageDlg('The project group has fewer than two projects — nothing to sort.',
-      mtInformation, [mbOK], 0);
+    MessageDlg( 'The project group has fewer than two projects, so there is nothing to sort.', mtInformation,
+      [mbOK], 0 );
     Exit;
   end;
 
-  if MessageDlg(Format(
+  if ( MessageDlg( Format(
        'Sort the %d projects in "%s" alphabetically?'#13#10#13#10 +
        'The project group will be saved, then closed and reopened so the IDE ' +
-       'reloads the new order. Any open files will be re-read.',
-       [ProjCount, ExtractFileName(GroupFile)]),
-       mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+       'reloads the new order. Any open files will be re-read.'#13#10#13#10 +
+       'Build All will then build in the new order. Declared project ' +
+       'dependencies still apply, but a group that relies on its current order ' +
+       'without declaring them may build in the wrong order.',
+       [ProjCount, ExtractFileName( GroupFile )] ),
+       mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes ) then
     Exit;
+
+  // Flush the current membership to disk so the file we sort is authoritative.
+  Group.Save( False, True );
+
+  // Everything that can fail happens while the group is still open.
+  try
+    Original := ReadGroupFile( GroupFile );
+    Sorted := SortGroupProjectText( Original.Text );
+  except
+    on E: Exception do
+    begin
+      MessageDlg( 'The project group could not be sorted, and nothing was changed:'#13#10#13#10 + E.Message,
+        mtError, [mbOK], 0 );
+      Exit;
+    end;
+  end;
+
+  if ( Sorted = Original.Text ) then
+  begin
+    MessageDlg( 'The projects are already in alphabetical order.', mtInformation, [mbOK], 0 );
+    Exit;
+  end;
+
+  // The backup is the only way back, so its failure stops the sort. Each sort keeps its
+  // own, time-stamped copy: an earlier backup is never overwritten.
+  var BackupFile := GroupFile + '.' + FormatDateTime( 'yyyymmdd-hhnnss', Now ) + '.bak';
+  if not CopyFile( PChar( GroupFile ), PChar( BackupFile ), True ) then
+  begin
+    MessageDlg( Format( 'The backup "%s" could not be written (%s), so the project group was not sorted.',
+      [BackupFile, SysErrorMessage( GetLastError )] ), mtError, [mbOK], 0 );
+    Exit;
+  end;
 
   // Remember the active project so its selection can be restored after reload.
   ActiveProjFile := '';
-  if Group.ActiveProject <> nil then
+  if ( Group.ActiveProject <> nil ) then
     ActiveProjFile := Group.ActiveProject.FileName;
 
-  // Flush the current membership to disk so the file we sort is authoritative,
-  // then drop the in-memory group (the IDE only re-reads the order on open).
-  Group.Save(False, True);
+  // Drop the in-memory group: the IDE only re-reads the member order on open.
   if not Group.Close then
-    Exit; // user cancelled a save prompt — leave everything as-is
+    Exit; // the user cancelled a save prompt; leave everything as it was
   Group := nil;
 
-  if not BackupAndSortGroupFile(GroupFile) then
-  begin
-    // Already sorted: reopen the group we just closed and stop.
-    if Supports(BorlandIDEServices, IOTAActionServices, ActionSvc) then
-      ActionSvc.OpenProject(GroupFile, True);
-    MessageDlg('The projects are already in alphabetical order.', mtInformation, [mbOK], 0);
-    Exit;
-  end;
+  try
+    try
+      // Closing must not have changed the file; if it did, what we sorted is stale.
+      Current := ReadGroupFile( GroupFile );
+      if ( Length( Current.Bytes ) <> Length( Original.Bytes ) ) or
+        not CompareMem( Pointer( Current.Bytes ), Pointer( Original.Bytes ), Length( Original.Bytes ) ) then
+        raise EGroupProjSortError.Create( 'The project group file changed while it was being closed.' );
 
-  // Reopen — this is a fresh read of the now-sorted file.
-  if Supports(BorlandIDEServices, IOTAActionServices, ActionSvc) then
-    ActionSvc.OpenProject(GroupFile, True);
-
-  // Restore the previously active project.
-  if ActiveProjFile <> '' then
-  begin
-    NewGroup := GetActiveProjectGroup;
-    if NewGroup <> nil then
-      for I := 0 to NewGroup.ProjectCount - 1 do
-        if SameText(NewGroup.Projects[I].FileName, ActiveProjFile) then
-        begin
-          NewGroup.SetActiveProject(NewGroup.Projects[I]);
-          Break;
-        end;
+      ReplaceGroupFile( GroupFile, Sorted, Original.HasBom );
+    except
+      on E: Exception do
+        MessageDlg( Format( 'The project group could not be rewritten, and has been reopened unchanged:'#13#10#13#10 +
+          '%s'#13#10#13#10'A backup is at "%s".', [E.Message, BackupFile] ), mtError, [mbOK], 0 );
+    end;
+  finally
+    // Always reopen, sorted or not: leaving the user with no group open is never right.
+    ReopenGroup( GroupFile, ActiveProjFile );
   end;
 end;
 

@@ -143,6 +143,20 @@ inherited FormPathCompactor: TFormPathCompactor
       TabOrder = 1
       OnClick = btnCloseClick
     end
+    object btnRemoveCreated: TButton
+      Left = 630
+      Top = 14
+      Width = 140
+      Height = 28
+      Hint =
+        'Removes variables this tool created that no library path uses any m' +
+        'ore (for example after restoring a backup)'
+      Caption = '&Remove Unused...'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 2
+      OnClick = btnRemoveCreatedClick
+    end
   end
   object pgcResults: TPageControl
     Left = 0

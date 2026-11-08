@@ -1,4 +1,4 @@
-unit TestProjectGroupSorterDUnitX;
+﻿unit TestProjectGroupSorterDUnitX;
 
 /// <summary>
 /// DUnitX test fixture for <c>ProjectGroupSorterCore.SortGroupProjectText</c> —
@@ -54,6 +54,30 @@ type
     /// <summary><c>LeafName</c> strips the directory and the .dproj extension.</summary>
     [Test]
     procedure TestLeafName;
+    /// <summary>
+    /// The IDE's <c>DependsOnTargets</c> build dependencies survive the sort on all three
+    /// per-project targets; the earlier rewrite regenerated bare targets and dropped them.
+    /// </summary>
+    [Test]
+    procedure TestDependsOnTargetsPreserved;
+    /// <summary>
+    /// Target names the IDE sanitised (<c>Ann.dxe2.dproj</c> -> <c>Ann_dxe2</c>) are kept, and the
+    /// CallTarget lists are reordered by them; the earlier rewrite renamed them to <c>Ann.dxe2</c>.
+    /// </summary>
+    [Test]
+    procedure TestSanitisedTargetNamesKept;
+    /// <summary>A tab-indented group keeps its tabs: only lines move, none is re-indented.</summary>
+    [Test]
+    procedure TestTabIndentationPreserved;
+    /// <summary>A custom, non-project target survives verbatim and keeps its position.</summary>
+    [Test]
+    procedure TestCustomTargetPreserved;
+    /// <summary>An unterminated <c>&lt;Target&gt;</c> raises instead of producing a truncated file.</summary>
+    [Test]
+    procedure TestUnterminatedTargetRaises;
+    /// <summary>LF line breaks and a missing final line break are kept as found.</summary>
+    [Test]
+    procedure TestLineBreakStylePreserved;
   end;
 
 implementation
@@ -309,6 +333,152 @@ procedure TTestProjectGroupSorter.TestLeafName;
 begin
   Assert.AreEqual('DBiAdmin', LeafName('DBiAdmin\DBiAdmin.dproj'));
   Assert.AreEqual('Solo', LeafName('Solo.dproj'));
+end;
+
+/// <summary>Builds a two-project group in which "Beta" depends on "Alpha" and is listed first.</summary>
+/// <param name="AIndent">One level of indentation, e.g. four spaces or a tab.</param>
+/// <returns>The <c>.groupproj</c> text, CRLF line breaks.</returns>
+function BuildDependentGroup( const AIndent: string ): string;
+var
+  I1, I2, I3: string;
+begin
+  I1 := AIndent;
+  I2 := AIndent + AIndent;
+  I3 := I2 + AIndent;
+  Result :=
+    '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'#13#10 +
+    I1 + '<ItemGroup>'#13#10 +
+    I2 + '<Projects Include="Beta\Beta.dproj">'#13#10 +
+    I3 + '<Dependencies>Alpha\Alpha.dproj</Dependencies>'#13#10 +
+    I2 + '</Projects>'#13#10 +
+    I2 + '<Projects Include="Alpha\Alpha.dproj">'#13#10 +
+    I3 + '<Dependencies/>'#13#10 +
+    I2 + '</Projects>'#13#10 +
+    I1 + '</ItemGroup>'#13#10 +
+    I1 + '<Target Name="Beta" DependsOnTargets="Alpha">'#13#10 +
+    I2 + '<MSBuild Projects="Beta\Beta.dproj"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Beta:Clean" DependsOnTargets="Alpha:Clean">'#13#10 +
+    I2 + '<MSBuild Projects="Beta\Beta.dproj" Targets="Clean"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Beta:Make" DependsOnTargets="Alpha:Make">'#13#10 +
+    I2 + '<MSBuild Projects="Beta\Beta.dproj" Targets="Make"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Alpha">'#13#10 +
+    I2 + '<MSBuild Projects="Alpha\Alpha.dproj"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Alpha:Clean">'#13#10 +
+    I2 + '<MSBuild Projects="Alpha\Alpha.dproj" Targets="Clean"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Alpha:Make">'#13#10 +
+    I2 + '<MSBuild Projects="Alpha\Alpha.dproj" Targets="Make"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Build">'#13#10 +
+    I2 + '<CallTarget Targets="Beta;Alpha"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Clean">'#13#10 +
+    I2 + '<CallTarget Targets="Beta:Clean;Alpha:Clean"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Target Name="Make">'#13#10 +
+    I2 + '<CallTarget Targets="Beta:Make;Alpha:Make"/>'#13#10 +
+    I1 + '</Target>'#13#10 +
+    I1 + '<Import Project="x"/>'#13#10 +
+    '</Project>'#13#10;
+end;
+
+procedure TTestProjectGroupSorter.TestDependsOnTargetsPreserved;
+var
+  Output: string;
+begin
+  Output := SortGroupProjectText( BuildDependentGroup( '    ' ) );
+  Assert.IsTrue( Pos( '<Target Name="Beta" DependsOnTargets="Alpha">', Output ) > 0, 'Build dependency lost' );
+  Assert.IsTrue( Pos( '<Target Name="Beta:Clean" DependsOnTargets="Alpha:Clean">', Output ) > 0,
+    'Clean dependency lost' );
+  Assert.IsTrue( Pos( '<Target Name="Beta:Make" DependsOnTargets="Alpha:Make">', Output ) > 0,
+    'Make dependency lost' );
+  Assert.IsTrue( Pos( '<Target Name="Alpha">', Output ) < Pos( '<Target Name="Beta" ', Output ),
+    'Alpha targets must now precede Beta targets' );
+  Assert.IsTrue( Pos( 'Targets="Alpha;Beta"', Output ) > 0, 'Build CallTarget list must be sorted' );
+end;
+
+procedure TTestProjectGroupSorter.TestSanitisedTargetNamesKept;
+var
+  Input, Output: string;
+begin
+  Input :=
+    '<Project>'#13#10 +
+    '    <ItemGroup>'#13#10 +
+    '        <Projects Include="Zed\Zed.dxe2.dproj">'#13#10 +
+    '            <Dependencies/>'#13#10 +
+    '        </Projects>'#13#10 +
+    '        <Projects Include="Ann\Ann.dxe2.dproj">'#13#10 +
+    '            <Dependencies/>'#13#10 +
+    '        </Projects>'#13#10 +
+    '    </ItemGroup>'#13#10 +
+    '    <Target Name="Zed_dxe2">'#13#10 +
+    '        <MSBuild Projects="Zed\Zed.dxe2.dproj"/>'#13#10 +
+    '    </Target>'#13#10 +
+    '    <Target Name="Ann_dxe2">'#13#10 +
+    '        <MSBuild Projects="Ann\Ann.dxe2.dproj"/>'#13#10 +
+    '    </Target>'#13#10 +
+    '    <Target Name="Build">'#13#10 +
+    '        <CallTarget Targets="Zed_dxe2;Ann_dxe2"/>'#13#10 +
+    '    </Target>'#13#10 +
+    '    <Import Project="x"/>'#13#10 +
+    '</Project>'#13#10;
+  Output := SortGroupProjectText( Input );
+  Assert.AreEqual( 0, Pos( 'Name="Ann.dxe2', Output ), 'Target was renamed' );
+  Assert.IsTrue( Pos( 'Targets="Ann_dxe2;Zed_dxe2"', Output ) > 0, 'CallTarget list must use the file''s own names' );
+  Assert.IsTrue( Pos( '<Target Name="Ann_dxe2">', Output ) < Pos( '<Target Name="Zed_dxe2">', Output ),
+    'Ann target must precede Zed target' );
+end;
+
+procedure TTestProjectGroupSorter.TestTabIndentationPreserved;
+var
+  Output: string;
+begin
+  Output := SortGroupProjectText( BuildDependentGroup( #9 ) );
+  Assert.IsTrue( Pos( #9'<Target Name="Alpha">', Output ) > 0, 'Tab indentation was lost' );
+  Assert.AreEqual( 0, Pos( #13#10'<Target', Output ), 'A target was moved to column 0' );
+end;
+
+procedure TTestProjectGroupSorter.TestCustomTargetPreserved;
+var
+  Input, Output: string;
+begin
+  Input := StringReplace( BuildDependentGroup( '    ' ), '    <Target Name="Build">',
+    '    <Target Name="Deploy">'#13#10'        <Exec Command="deploy.cmd"/>'#13#10'    </Target>'#13#10 +
+    '    <Target Name="Build">', [] );
+  Output := SortGroupProjectText( Input );
+  Assert.IsTrue( Pos( '<Target Name="Deploy">'#13#10'        <Exec Command="deploy.cmd"/>', Output ) > 0,
+    'Custom target lost or altered' );
+  Assert.IsTrue( Pos( '<Target Name="Deploy">', Output ) < Pos( '<Target Name="Build">', Output ),
+    'Custom target moved' );
+end;
+
+procedure TTestProjectGroupSorter.TestUnterminatedTargetRaises;
+var
+  Input: string;
+begin
+  Input := StringReplace( BuildDependentGroup( '    ' ), '    </Target>'#13#10'    <Import', '    <Import', [] );
+  Assert.WillRaise(
+    procedure
+    begin
+      SortGroupProjectText( Input );
+    end, EGroupProjSortError );
+end;
+
+procedure TTestProjectGroupSorter.TestLineBreakStylePreserved;
+var
+  Input, Output: string;
+begin
+  Input := StringReplace( BuildGroupProj( ['Beta', 'Alpha'] ), #13#10, #10, [rfReplaceAll] );
+  SetLength( Input, Length( Input ) - 1 ); // no final line break
+  Output := SortGroupProjectText( Input );
+  Assert.AreEqual( 0, Pos( #13, Output ), 'LF file was converted to CRLF' );
+  Assert.AreNotEqual( string( #10 ), string( Output[Length( Output )] ), 'A final line break was added' );
+  Assert.IsTrue( Pos( '<Projects Include="Alpha', Output ) < Pos( '<Projects Include="Beta', Output ),
+    'Not sorted' );
 end;
 
 initialization

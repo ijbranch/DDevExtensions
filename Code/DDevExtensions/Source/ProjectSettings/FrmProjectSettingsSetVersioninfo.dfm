@@ -345,7 +345,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Width = 16
           Height = 21
           Associate = edtMajor
-          Max = 32767
+          Max = 65535
           Position = 1
           TabOrder = 19
           Thousands = False
@@ -365,7 +365,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Width = 16
           Height = 21
           Associate = edtMinor
-          Max = 32767
+          Max = 65535
           TabOrder = 21
           Thousands = False
         end
@@ -384,7 +384,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Width = 16
           Height = 21
           Associate = edtRelease
-          Max = 32767
+          Max = 65535
           TabOrder = 23
           Thousands = False
         end
@@ -448,7 +448,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Width = 16
           Height = 21
           Associate = edtBuild
-          Max = 32767
+          Max = 65535
           Position = 1
           TabOrder = 26
           Thousands = False

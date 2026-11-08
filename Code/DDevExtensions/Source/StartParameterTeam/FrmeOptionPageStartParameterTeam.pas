@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -44,12 +44,19 @@ type
     /// <summary>Initialises Active to False.</summary>
     procedure Init; override;
     /// <summary>BeforeSave handler that captures the project's current RunParams to user storage.</summary>
+    /// <param name="Data">The module data of the project about to be saved.</param>
     procedure DoModuleBeforeSave(Data: TModuleData);
     /// <summary>AfterSave handler that strips the RunParams XML element from the project file.</summary>
+    /// <param name="Data">The module data of the saved project.</param>
     procedure DoModuleAfterSave(Data: TModuleData);
     /// <summary>Reserved hook for module rename (currently a no-op).</summary>
+    /// <param name="NewName">The project's new file name.</param>
+    /// <param name="Data">The module data of the renamed project.</param>
     procedure DoModuleRenamed(Data: TModuleData; const NewName: string);
     /// <summary>OnFileOpened handler that re-applies the saved RunParams to the project.</summary>
+    /// <param name="Cancel">Set True to cancel the operation; left unchanged here.</param>
+    /// <param name="FileName">The file the notification is about.</param>
+    /// <param name="NotifyCode">The IDE file notification.</param>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string;
       var Cancel: Boolean);
   public
@@ -58,8 +65,18 @@ type
     /// <summary>Frees the notifiers and disables the feature.</summary>
     destructor Destroy; override;
 
-    /// <summary>Strips the RunParams/Debugger_RunParams XML element from the project file in place.</summary>
+    /// <summary>
+    /// Strips the content of every RunParams/Debugger_RunParams element from the project file,
+    /// replacing the file atomically. A failure is reported in the Messages view.
+    /// </summary>
+    /// <param name="Project">The project just saved.</param>
     procedure RemoveRunParams(Project: IOTAProject);
+    /// <summary>
+    /// True when the feature can run in this IDE. False in the 64-bit IDE, where the
+    /// file-open notification that restores the run parameters is never registered.
+    /// </summary>
+    /// <returns>True in the 32-bit IDE.</returns>
+    class function IsAvailable: Boolean;
   published
     /// <summary>Enables or disables the team feature.</summary>
     property Active: Boolean read FActive write FActive;
@@ -96,7 +113,7 @@ uses
   {$IF CompilerVersion >= 23.0} // XE2+
   CommonOptionStrs,
   {$IFEND}
-  System.Variants, Main, ProjectData, IDEUtils;
+  System.Variants, System.IOUtils, System.RegularExpressions, Main, ProjectData, IDEUtils;
 
 {$R *.dfm}
 
@@ -121,10 +138,21 @@ end;
 procedure TFrameOptionPageStartParameterTeam.LoadData;
 begin
   cbxActive.Checked := FStartParameterTeam.Active;
+  if not TStartParameterTeam.IsAvailable then
+  begin
+    // The restore half cannot run on the 64-bit IDE, so the feature is off there and
+    // says so, rather than stripping run parameters that nothing puts back.
+    cbxActive.Enabled := False;
+    cbxActive.Hint := 'Not available on the 64-bit IDE';
+    cbxActive.ShowHint := True;
+  end;
 end;
 
 procedure TFrameOptionPageStartParameterTeam.SaveData;
 begin
+  // On the 64-bit IDE the setting is left as the 32-bit IDE has it (the file is shared).
+  if not TStartParameterTeam.IsAvailable then
+    Exit;
   FStartParameterTeam.Active := cbxActive.Checked;
   FStartParameterTeam.Save;
 end;
@@ -167,97 +195,131 @@ begin
   Active := False;
 end;
 
-procedure TStartParameterTeam.RemoveRunParams(Project: IOTAProject);
-var
-  Ext, S: string;
-  StartPos, EndPos: Integer;
-  BOM: TBytes;
-  Encoding: TEncoding;
-  Stream: TFileStream;
-  Filename: string;
-  Lines: TStrings;
-  I: Integer;
-  Modified: Boolean;
-  LastWriteTime: TFileTime;
+const
+  /// <summary>Prefix of the per-level keys in the project data store: "RunParams.&lt;config key&gt;[.&lt;platform&gt;]".</summary>
+  RunParamsKeyPrefix = 'RunParams.';
+  /// <summary>Marks a project whose run parameters were stored per configuration and platform.</summary>
+  RunParamsFormatKey = 'RunParamsFormat';
+  /// <summary>Prefix of a stored value that was set at that level (an empty stored value means "not set there").</summary>
+  RunParamsSetMarker = 'V:';
+
+/// <summary>
+/// Calls AProc for every configuration of the project and every platform beneath it, with
+/// the data-store key that level's run parameters are kept under.
+/// </summary>
+/// <param name="AOptionConfig">The project's configurations.</param>
+/// <param name="AProc">Receives each configuration level and its key.</param>
+procedure ForEachRunParamsLevel( const AOptionConfig: IOTAProjectOptionsConfigurations;
+  const AProc: TProc<IOTABuildConfiguration, string> );
 begin
-  { Remove RunParams from project file }
-
-  {
-     Delphi 2005-2009:
-       bdsproj, dproj: <Parameters Name="RunParams">text</Parameters>
-  }
-
-  Encoding := nil;
-  Modified := False;
-  Lines := TStringList.Create;
-  Stream := nil;
-  try
-    try
-    Filename := Project.FileName;
-    Ext := LowerCase(ExtractFileExt(Filename));
-    if ((Ext = '.dproj') or (Ext = '.cbproj')) and FileExists(Filename) then
+  for var I := 0 to AOptionConfig.ConfigurationCount - 1 do
+  begin
+    var Config := AOptionConfig.Configurations[I];
+    if ( Config = nil ) then
+      Continue;
+    AProc( Config, RunParamsKeyPrefix + Config.Key );
+    for var PlatformName in Config.Platforms do
     begin
-      Stream := TFileStream.Create(Filename, fmOpenReadWrite or fmShareDenyRead);
-      SetLength(BOM, 4);
-      SetLength(BOM, Stream.Read(BOM[0], 4));   // shrink to bytes actually read (short files)
-      TEncoding.GetBufferEncoding(BOM, Encoding);
-      Stream.Position := 0;
-      Lines.LoadFromStream(Stream);
-      for I := 0 to Lines.Count - 1 do
-      begin
-        S := Lines[I];
-        StartPos := Pos('<Parameters Name="RunParams">', S);
-        if StartPos > 0 then
-        begin
-          Inc(StartPos, Length('<Parameters Name="RunParams">'));
-          // Locate the closing tag with Pos to avoid PChar arithmetic walking
-          // past the buffer; if it isn't on this line, leave the line unchanged.
-          EndPos := Pos('</Parameters>', S, StartPos);
-          if EndPos = 0 then
-            EndPos := StartPos;
-          if StartPos <> EndPos then
-          begin
-            S := Copy(S, 1, StartPos - 1) + Copy(S, EndPos, MaxInt);
-            Lines[I] := S;
-            Modified := True;
-          end;
-          Break;
-        end;
+      var PlatformConfig := Config.PlatformConfiguration[PlatformName];
+      if ( PlatformConfig <> nil ) then
+        AProc( PlatformConfig, RunParamsKeyPrefix + Config.Key + '.' + PlatformName );
+    end;
+  end;
+end;
 
-        // XE2+
-        StartPos := Pos('<Debugger_RunParams>', S);
-        if StartPos <> 0 then
+/// <summary>Reports a failure in the IDE's Messages view, where it does not interrupt a save.</summary>
+/// <param name="AText">The message.</param>
+procedure ReportToMessages( const AText: string );
+var
+  MessageServices: IOTAMessageServices;
+begin
+  OutputDebugString( PChar( 'DDevExtensions: ' + AText ) );
+  if Supports( BorlandIDEServices, IOTAMessageServices, MessageServices ) then
+    MessageServices.AddTitleMessage( 'DDevExtensions: ' + AText );
+end;
+
+/// <summary>
+/// Returns AText with the content of every <c>Debugger_RunParams</c> element, and of the
+/// older <c>&lt;Parameters Name="RunParams"&gt;</c> element, removed. Everything else,
+/// line breaks included, is untouched.
+/// </summary>
+/// <param name="AText">The project file text.</param>
+/// <returns>The stripped text.</returns>
+function StripRunParams( const AText: string ): string;
+begin
+  // XML escapes '<' inside a value, so "[^<]*" is exactly the element's content.
+  Result := TRegEx.Replace( AText, '(<Debugger_RunParams>)[^<]*(</Debugger_RunParams>)', '$1$2' );
+  Result := TRegEx.Replace( Result, '(<Parameters Name="RunParams">)[^<]*(</Parameters>)', '$1$2' );
+end;
+
+procedure TStartParameterTeam.RemoveRunParams(Project: IOTAProject);
+begin
+  { Remove RunParams from project file:
+      Delphi 2005-2009: <Parameters Name="RunParams">text</Parameters>
+      XE2+:             <Debugger_RunParams>text</Debugger_RunParams> }
+  var Filename := Project.FileName;
+  var Ext := LowerCase( ExtractFileExt( Filename ) );
+  if not ( ( Ext = '.dproj' ) or ( Ext = '.cbproj' ) ) or not FileExists( Filename ) then
+    Exit;
+
+  var TempName := Filename + '.ddevext.tmp';
+  try
+    var Bytes := TFile.ReadAllBytes( Filename );
+
+    // Keep the file's own encoding: a BOM if it had one, and UTF-8 unless the bytes are not UTF-8.
+    var Encoding: TEncoding := nil;
+    var PreambleSize := TEncoding.GetBufferEncoding( Bytes, Encoding, nil );
+    var OwnsEncoding := False;
+    if ( Encoding = nil ) then
+    begin
+      PreambleSize := 0;
+      Encoding := TUTF8Encoding.Create( CP_UTF8, MB_ERR_INVALID_CHARS, 0 );
+      OwnsEncoding := True;
+    end;
+    try
+      var Text := '';
+      try
+        Text := Encoding.GetString( Bytes, PreambleSize, Length( Bytes ) - PreambleSize );
+      except
+        on EEncodingError do
         begin
-          Inc(StartPos, Length('<Debugger_RunParams>'));
-          EndPos := Pos('</Debugger_RunParams>', S, StartPos);
-          if EndPos = 0 then
-            EndPos := StartPos;
-          if StartPos <> EndPos then
-          begin
-            S := Copy(S, 1, StartPos - 1) + Copy(S, EndPos, MaxInt);
-            Lines[I] := S;
-            Modified := True;
-          end;
+          // Not UTF-8: an ANSI file round-trips through the ANSI code page unchanged.
+          if OwnsEncoding then
+            Encoding.Free;
+          OwnsEncoding := False;
+          Encoding := TEncoding.ANSI;
+          Text := Encoding.GetString( Bytes, PreambleSize, Length( Bytes ) - PreambleSize );
         end;
       end;
-    end;
 
-    if Modified then
+      var Stripped := StripRunParams( Text );
+      if ( Stripped = Text ) then
+        Exit;
+
+      var NewBytes := Encoding.GetBytes( Stripped );
+      if ( PreambleSize > 0 ) then
+        NewBytes := Copy( Bytes, 0, PreambleSize ) + NewBytes;
+
+      // Atomic replacement: a failure part-way leaves the original untouched. The
+      // write time is kept so the IDE does not offer to reload the file it just saved.
+      var WriteTime := TFile.GetLastWriteTimeUtc( Filename );
+      TFile.WriteAllBytes( TempName, NewBytes );
+      TFile.SetLastWriteTimeUtc( TempName, WriteTime );
+      if not MoveFileEx( PChar( TempName ), PChar( Filename ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
+        RaiseLastOSError;
+    finally
+      if OwnsEncoding then
+        Encoding.Free;
+    end;
+  except
+    on E: Exception do
     begin
-      GetFileTime(Stream.Handle, nil, nil, @LastWriteTime);
-      Stream.Position := 0;
-      Lines.SaveToStream(Stream, Encoding);
-      Stream.Size := Stream.Position;
-      SetFileTime(Stream.Handle, nil, nil, @LastWriteTime);
+      // A locked, read-only or network .dproj must not abort the IDE save pipeline,
+      // but the user must know the run parameters are still in the shared file.
+      System.SysUtils.DeleteFile( TempName );
+      ReportToMessages( Format( 'Local Start Parameters could not remove the run parameters from "%s": %s',
+        [Filename, E.Message] ) );
     end;
-    except
-      on E: Exception do
-        // A locked/read-only/network .dproj must not abort the IDE save pipeline.
-        OutputDebugString(PChar('DDevExtensions StartParameterTeam.RemoveRunParams: ' + Filename + ' - ' + E.Message));
-    end;
-  finally
-    Lines.Free;
-    Stream.Free;
   end;
 end;
 
@@ -266,123 +328,138 @@ begin
   Result := TTreePage.Create('Local Start Parameters', TFrameOptionPageStartParameterTeam, Self);
 end;
 
+class function TStartParameterTeam.IsAvailable: Boolean;
+begin
+  // The restore half runs from a file-open notification, and TIDENotifier is never
+  // registered on the 64-bit IDE. Stripping there would remove run parameters that
+  // nothing puts back.
+  {$IFDEF CPUX64}
+  Result := False;
+  {$ELSE}
+  Result := True;
+  {$ENDIF}
+end;
+
 procedure TStartParameterTeam.DoModuleBeforeSave(Data: TModuleData);
 var
   Project: IOTAProject;
-  {$IF CompilerVersion >= 23.0} // XE2+
   OptionConfig: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  {$IFEND}
 begin
-  if Active then
-  begin
-    if Supports(Data.Module, IOTAProject, Project) and
-       not Supports(Data.Module, IOTAProjectGroup) then
-    begin
-      {$IF CompilerVersion >= 23.0} // XE2+
-      // XE2 Update 4 requires this
-      if Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig) then
-      begin
-        BuildConfig := OptionConfig.ActiveConfiguration;
-        if (BuildConfig = nil) and (OptionConfig.ConfigurationCount > 0) then
-          BuildConfig := OptionConfig.Configurations[0];
+  if not Active or not IsAvailable then
+    Exit;
+  if not Supports( Data.Module, IOTAProject, Project ) or Supports( Data.Module, IOTAProjectGroup ) then
+    Exit;
 
-        if BuildConfig <> nil then
-          ProjectDataList[Project].Values['RunParams'] := BuildConfig.GetValue(CommonOptionStrs.sDebugger_RunParams);
-      end
-      else
-      {$IFEND}
-        ProjectDataList[Project].Values['RunParams'] := Project.ProjectOptions.Values['RunParams'];
-    end;
-  end;
+  var ProjData := ProjectDataList[Project];
+  if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig ) then
+  begin
+    // Every configuration and platform keeps its own run parameters: each level is
+    // stored separately, "set here" being distinguished from "inherited".
+    ForEachRunParamsLevel( OptionConfig,
+      procedure( AConfig: IOTABuildConfiguration; AKey: string )
+      begin
+        if AConfig.PropertyExists( sDebugger_RunParams ) then
+          ProjData.Values[AKey] := RunParamsSetMarker + AConfig.GetValue( sDebugger_RunParams, False )
+        else
+          ProjData.Values[AKey] := '';
+      end );
+    ProjData.Values[RunParamsFormatKey] := 2;
+
+    // Also the single value older builds read and write, so rolling back to one, or an
+    // older build in the other IDE, still finds the active configuration's parameters.
+    var Active := OptionConfig.ActiveConfiguration;
+    if ( Active = nil ) and ( OptionConfig.ConfigurationCount > 0 ) then
+      Active := OptionConfig.Configurations[0];
+    if ( Active <> nil ) then
+      ProjData.Values['RunParams'] := Active.GetValue( sDebugger_RunParams );
+  end
+  else
+    ProjData.Values['RunParams'] := Project.ProjectOptions.Values['RunParams'];
 end;
 
 procedure TStartParameterTeam.DoModuleAfterSave(Data: TModuleData);
 var
   Project: IOTAProject;
 begin
-  if Active then
-  begin
-    if Supports(Data.Module, IOTAProject, Project) and
-       not Supports(Data.Module, IOTAProjectGroup) then
-    begin
-      RemoveRunParams(Project);
-    end;
-  end;
+  if not Active or not IsAvailable then
+    Exit;
+  if Supports( Data.Module, IOTAProject, Project ) and not Supports( Data.Module, IOTAProjectGroup ) then
+    RemoveRunParams( Project );
 end;
 
 procedure TStartParameterTeam.DoModuleRenamed(Data: TModuleData; const NewName: string);
-{var
-  Project: IOTAProject;}
 begin
-{  if Active then
-  begin
-    if Supports(Data.Module, IOTAProject, Project) and
-       not Supports(Data.Module, IOTAProjectGroup) then
-    begin
-      if FileExists(Project.FileName + '.localoptions') then
-        RenameFile(Project.FileName + '.localoptions', NewName + '.localoptions');
-    end;
-  end;}
+  // Reserved: the per-user store follows the project through ProjectDataList.
 end;
 
 procedure TStartParameterTeam.FileNotification(NotifyCode: TOTAFileNotification;
   const FileName: string; var Cancel: Boolean);
 var
   Project: IOTAProject;
-  {$IF CompilerVersion >= 23.0} // XE2+
   OptionConfig: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  {$IFEND}
-  WasModified: Boolean;
-  Ext: string;
+  ModuleSvc: IOTAModuleServices;
 begin
-  if (NotifyCode = ofnFileOpened) and Active then
-  begin
-    Ext := AnsiLowerCase(ExtractFileExt(FileName));
-    if (Ext = '.dpr') or (Ext = '.dpk') or (Ext = '.bpr') or
-       (Ext = '.bdsproj') or
-       (Ext = '.dproj') or (Ext = '.cbproj') then
-    begin
-      var ModuleSvc: IOTAModuleServices;
-      if (BorlandIDEServices <> nil) and Supports(BorlandIDEServices, IOTAModuleServices, ModuleSvc) and
-         Supports(ModuleSvc.FindModule(FileName), IOTAProject, Project) then
-      begin
-        if ProjectDataList[Project].HasValue('RunParams') then
-        begin
-          {$IF CompilerVersion >= 23.0} // XE2+
-          // XE2 Update 4 requires this
-          if Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig) then
-          begin
-            BuildConfig := OptionConfig.ActiveConfiguration;
-            if (BuildConfig = nil) and (OptionConfig.ConfigurationCount > 0) then
-              BuildConfig := OptionConfig.Configurations[0];
+  if ( NotifyCode <> ofnFileOpened ) or not Active or not IsAvailable then
+    Exit;
 
-            if BuildConfig <> nil then
-            begin
-              if BuildConfig.GetValue(CommonOptionStrs.sDebugger_RunParams) <> ProjectDataList[Project].Values['RunParams'] then
-              begin
-                WasModified := Project.ProjectOptions.ModifiedState;
-                BuildConfig.SetValue(CommonOptionStrs.sDebugger_RunParams, ProjectDataList[Project].Values['RunParams']);
-                Project.ProjectOptions.ModifiedState := WasModified;
-              end;
-            end;
-          end
-          else
-          {$IFEND}
-          begin
-            if VarToStr(Project.ProjectOptions.Values['RunParams']) <> VarToStr(ProjectDataList[Project].Values['RunParams']) then
-            begin
-              WasModified := Project.ProjectOptions.ModifiedState;
-              Project.ProjectOptions.Values['RunParams'] := ProjectDataList[Project].Values['RunParams'];
-              Project.ProjectOptions.ModifiedState := WasModified;
-            end;
-          end;
-        end;
+  var Ext := AnsiLowerCase( ExtractFileExt( FileName ) );
+  if not ( ( Ext = '.dpr' ) or ( Ext = '.dpk' ) or ( Ext = '.bpr' ) or ( Ext = '.bdsproj' ) or
+     ( Ext = '.dproj' ) or ( Ext = '.cbproj' ) ) then
+    Exit;
+  if ( BorlandIDEServices = nil ) or not Supports( BorlandIDEServices, IOTAModuleServices, ModuleSvc ) or
+     not Supports( ModuleSvc.FindModule( FileName ), IOTAProject, Project ) then
+    Exit;
+
+  var ProjData := ProjectDataList[Project];
+  var WasModified := Project.ProjectOptions.ModifiedState;
+  try
+    if ProjData.HasValue( RunParamsFormatKey ) and
+       Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig ) then
+    begin
+      ForEachRunParamsLevel( OptionConfig,
+        procedure( AConfig: IOTABuildConfiguration; AKey: string )
+        begin
+          if not ProjData.HasValue( AKey ) then
+            Exit;
+          var Stored := VarToStr( ProjData.Values[AKey] );
+          if not Stored.StartsWith( RunParamsSetMarker ) then
+            Exit;
+          var Value := Copy( Stored, Length( RunParamsSetMarker ) + 1, MaxInt );
+          if not AConfig.PropertyExists( sDebugger_RunParams ) or
+             ( AConfig.GetValue( sDebugger_RunParams, False ) <> Value ) then
+            AConfig.SetValue( sDebugger_RunParams, Value );
+        end );
+
+      // An older build stores and edits only the single value. If it differs from what the
+      // per-level values give the active configuration, that build changed it since: it wins.
+      if ProjData.HasValue( 'RunParams' ) then
+      begin
+        var Active := OptionConfig.ActiveConfiguration;
+        if ( Active = nil ) and ( OptionConfig.ConfigurationCount > 0 ) then
+          Active := OptionConfig.Configurations[0];
+        var Legacy := VarToStr( ProjData.Values['RunParams'] );
+        if ( Active <> nil ) and ( Active.GetValue( sDebugger_RunParams ) <> Legacy ) then
+          Active.SetValue( sDebugger_RunParams, Legacy );
       end;
+    end
+    else if ProjData.HasValue( 'RunParams' ) then
+    begin
+      // Stored by an older build: one value, for the active configuration.
+      if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig ) then
+      begin
+        var BuildConfig := OptionConfig.ActiveConfiguration;
+        if ( BuildConfig = nil ) and ( OptionConfig.ConfigurationCount > 0 ) then
+          BuildConfig := OptionConfig.Configurations[0];
+        if ( BuildConfig <> nil ) and
+           ( BuildConfig.GetValue( sDebugger_RunParams ) <> VarToStr( ProjData.Values['RunParams'] ) ) then
+          BuildConfig.SetValue( sDebugger_RunParams, VarToStr( ProjData.Values['RunParams'] ) );
+      end
+      else if ( VarToStr( Project.ProjectOptions.Values['RunParams'] ) <> VarToStr( ProjData.Values['RunParams'] ) ) then
+        Project.ProjectOptions.Values['RunParams'] := ProjData.Values['RunParams'];
     end;
+  finally
+    Project.ProjectOptions.ModifiedState := WasModified;
   end;
 end;
 
 end.
-

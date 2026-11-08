@@ -1,4 +1,4 @@
-unit StartParameterClasses;
+﻿unit StartParameterClasses;
 
 /// <summary>
 /// Defines the data model for the Start Parameter Manager: an XML-backed list of named parameters,
@@ -343,6 +343,7 @@ type
     /// <summary>Loads the list from the supplied .params file.</summary>
     procedure LoadFromFile(const AFileName: string);
     /// <summary>Saves the list to the supplied .params file.</summary>
+    /// <param name="AFileName">The .params file to write.</param>
     procedure SaveToFile(const AFileName: string);
     /// <summary>Saves the list to its currently associated file (or the parent's resolved file).</summary>
     procedure Save;
@@ -1302,7 +1303,7 @@ var
     Result := Item.FNode;
     if Result = nil then
     begin
-      Result := FXmlDoc.CreateNode('Include');
+      Result := FXmlDoc.CreateNode(NodeName);
       RootNode.ChildNodes.Insert(NodeIndex, Result);
       Inc(NodeIndex);
     end

@@ -27,7 +27,7 @@ unit PathCompactor;
 interface
 
 uses
-  System.SysUtils, System.Classes, Vcl.Menus, PluginConfig;
+  System.SysUtils, System.Classes, Vcl.Menus, PluginConfig, PathCompactorEnvVars;
 
 type
   /// <summary>Plugin entry point that owns the Tools-menu item and the settings.</summary>
@@ -43,6 +43,13 @@ type
     FWriteUserEnvironment: Boolean;
     /// <summary>Semicolon-separated names of variables this plugin has created.</summary>
     FCreatedVariables: string;
+    /// <summary>Semicolon-separated names of variables this plugin has written to the Windows user environment.</summary>
+    FCreatedEnvironmentVariables: string;
+    /// <summary>
+    /// Where each created variable was written, as <c>NAME=locations</c> lines, the locations
+    /// being the ordinal bitmask of TVariableLocations. Only these places are ever cleaned up.
+    /// </summary>
+    FCreatedVariableLocations: string;
     /// <summary>OnClick handler for the Tools-menu item.</summary>
     procedure MenuItemClick( Sender: TObject );
   protected
@@ -57,10 +64,24 @@ type
     /// <summary>Opens the compactor dialog.</summary>
     procedure ShowCompactor;
 
-    /// <summary>Records AName as a variable this plugin created, if not already recorded.</summary>
-    procedure RecordCreatedVariable( const AName: string );
+    /// <summary>Records AName as a variable this plugin created, if not already recorded, and saves the settings.</summary>
+    /// <param name="AName">The variable name.</param>
+    /// <param name="ALocations">The places this plugin created it (not those where it already existed).</param>
+    procedure RecordCreatedVariable( const AName: string; ALocations: TVariableLocations );
+    /// <summary>Forgets AName as a created variable (after it has been removed) and saves the settings.</summary>
+    /// <param name="AName">The variable name.</param>
+    procedure ForgetCreatedVariable( const AName: string );
     /// <summary>Returns the names of variables this plugin has created.</summary>
+    /// <returns>The names, in the order they were recorded.</returns>
     function CreatedVariableNames: TArray<string>;
+    /// <summary>The places this plugin created AName, and so the only places it may remove it from.</summary>
+    /// <remarks>
+    /// A variable recorded by an older build, without locations, is taken to be in both IDE lists, and
+    /// in the Windows user environment only if it was recorded as written there.
+    /// </remarks>
+    /// <param name="AName">The variable name.</param>
+    /// <returns>The recorded locations.</returns>
+    function CreatedLocations( const AName: string ): TVariableLocations;
   published
     /// <summary>Persisted enable flag for the plugin.</summary>
     property Enabled: Boolean read FEnabled write FEnabled;
@@ -70,6 +91,10 @@ type
     property WriteUserEnvironment: Boolean read FWriteUserEnvironment write FWriteUserEnvironment;
     /// <summary>Semicolon-separated names of variables this plugin has created.</summary>
     property CreatedVariables: string read FCreatedVariables write FCreatedVariables;
+    /// <summary>Semicolon-separated names of variables this plugin has written to the Windows user environment.</summary>
+    property CreatedEnvironmentVariables: string read FCreatedEnvironmentVariables write FCreatedEnvironmentVariables;
+    /// <summary>Where each created variable was written; see CreatedLocations.</summary>
+    property CreatedVariableLocations: string read FCreatedVariableLocations write FCreatedVariableLocations;
   end;
 
 /// <summary>Plugin entry point that creates or frees PathCompactorPlugin.</summary>
@@ -85,7 +110,7 @@ uses
   Winapi.Windows, System.IOUtils, System.StrUtils,
   Vcl.Forms,
   ToolsAPI, IDEUtils, ToolsAPIHelpers, Main,
-  PathCompactorCore, PathCompactorEnvVars,
+  PathCompactorCore,
   FrmPathCompactor;
 
 { TPathCompactorPlugin }
@@ -172,23 +197,119 @@ begin
   end;
 end;
 
-procedure TPathCompactorPlugin.RecordCreatedVariable( const AName: string );
-var
-  List: TStringList;
+/// <summary>Adds or removes AName in a semicolon-separated name list.</summary>
+/// <param name="AList">The list text.</param>
+/// <param name="AName">The name.</param>
+/// <param name="APresent">True to add it, False to remove it.</param>
+/// <returns>The updated list text.</returns>
+function UpdateNameList( const AList, AName: string; APresent: Boolean ): string;
 begin
-  List := TStringList.Create;
+  var List := TStringList.Create;
   try
     List.Delimiter := ';';
     List.StrictDelimiter := True;
     List.CaseSensitive := False;
-    List.DelimitedText := FCreatedVariables;
-    if List.IndexOf( AName ) < 0 then
-      List.Add( AName );
-    FCreatedVariables := List.DelimitedText;
+    List.DelimitedText := AList;
+    var Index := List.IndexOf( AName );
+    if APresent and ( Index < 0 ) then
+      List.Add( AName )
+    else if not APresent and ( Index >= 0 ) then
+      List.Delete( Index );
+    Result := List.DelimitedText;
   finally
     List.Free;
   end;
+end;
+
+/// <summary>Converts a location set to and from the integer stored in the settings.</summary>
+/// <param name="ALocations">The set.</param>
+/// <returns>Its bitmask.</returns>
+function LocationsToMask( ALocations: TVariableLocations ): Integer;
+begin
+  Result := 0;
+  for var Location in ALocations do
+    Result := Result or ( 1 shl Ord( Location ) );
+end;
+
+/// <summary>Converts a stored bitmask back to a location set.</summary>
+/// <param name="AMask">The bitmask.</param>
+/// <returns>The set.</returns>
+function MaskToLocations( AMask: Integer ): TVariableLocations;
+begin
+  Result := [];
+  for var Location := Low( TVariableLocation ) to High( TVariableLocation ) do
+    if ( AMask and ( 1 shl Ord( Location ) ) ) <> 0 then
+      Include( Result, Location );
+end;
+
+/// <summary>Returns ALines with the NAME=VALUE line for AName replaced, added or (AValue empty) removed.</summary>
+/// <param name="ALines">The lines, separated by semicolons.</param>
+/// <param name="AName">The name.</param>
+/// <param name="AValue">The new value, or empty to remove the line.</param>
+/// <returns>The updated text.</returns>
+function UpdateValueList( const ALines, AName, AValue: string ): string;
+begin
+  var List := TStringList.Create;
+  try
+    List.Delimiter := ';';
+    List.StrictDelimiter := True;
+    List.CaseSensitive := False;
+    List.DelimitedText := ALines;
+    var Index := List.IndexOfName( AName );
+    if ( Index >= 0 ) then
+      List.Delete( Index );
+    if ( AValue <> '' ) then
+      List.Add( AName + '=' + AValue );
+    Result := List.DelimitedText;
+  finally
+    List.Free;
+  end;
+end;
+
+procedure TPathCompactorPlugin.RecordCreatedVariable( const AName: string; ALocations: TVariableLocations );
+begin
+  FCreatedVariables := UpdateNameList( FCreatedVariables, AName, True );
+  if ( vlUserEnvironment in ALocations ) then
+    FCreatedEnvironmentVariables := UpdateNameList( FCreatedEnvironmentVariables, AName, True );
+  // Merge with any earlier record: a later run may have created it in more places.
+  FCreatedVariableLocations := UpdateValueList( FCreatedVariableLocations, AName,
+    IntToStr( LocationsToMask( CreatedLocations( AName ) + ALocations ) ) );
   Save;
+end;
+
+procedure TPathCompactorPlugin.ForgetCreatedVariable( const AName: string );
+begin
+  FCreatedVariables := UpdateNameList( FCreatedVariables, AName, False );
+  FCreatedEnvironmentVariables := UpdateNameList( FCreatedEnvironmentVariables, AName, False );
+  FCreatedVariableLocations := UpdateValueList( FCreatedVariableLocations, AName, '' );
+  Save;
+end;
+
+function TPathCompactorPlugin.CreatedLocations( const AName: string ): TVariableLocations;
+begin
+  Result := [];
+  var List := TStringList.Create;
+  try
+    List.Delimiter := ';';
+    List.StrictDelimiter := True;
+    List.CaseSensitive := False;
+
+    List.DelimitedText := FCreatedVariableLocations;
+    var Index := List.IndexOfName( AName );
+    if ( Index >= 0 ) then
+      Exit( MaskToLocations( StrToIntDef( List.ValueFromIndex[Index], 0 ) ) );
+
+    // Recorded by an older build, which did not keep the locations.
+    List.DelimitedText := FCreatedVariables;
+    if ( List.IndexOf( AName ) < 0 ) then
+      Exit;
+    Result := [vlIde32, vlIde64];
+    List.DelimitedText := FCreatedEnvironmentVariables;
+    if ( List.IndexOf( AName ) >= 0 ) then
+      Include( Result, vlUserEnvironment );
+  finally
+    List.Free;
+  end;
 end;
 
 procedure InitPlugin( Unload: Boolean );

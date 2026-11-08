@@ -1,4 +1,4 @@
-unit StartParameterCtrl;
+﻿unit StartParameterCtrl;
 
 /// <summary>
 /// Defines the toolbar combo-box control (TStartParameterControl) that lets the user pick a Start
@@ -83,6 +83,7 @@ type
     /// <summary>Returns the TProjectParameters tracking the supplied project, or nil.</summary>
     function FindProject(const AProject: IOTAProject): TProjectParameters;
     /// <summary>Popup-menu handler that opens (or creates and opens) the clicked .params file.</summary>
+    /// <param name="Sender">The Edit File menu item.</param>
     procedure DoEditFileClick(Sender: TObject);
   protected
     /// <summary>Performs the initial parameter refresh once the window handle is available.</summary>
@@ -383,9 +384,17 @@ begin
     // Reload Parameters in order to not loose user modification from disk
     if ActiveParamName <> FActiveParams.LocalParameters.ActiveParamName then
     begin
-      Reload;
-      FActiveParams.LocalParameters.ActiveParamName := ActiveParamName;
-      FActiveParams.Save;
+      // A read-only or locked .params file (version control, a network share) must
+      // not raise out of a combo-box change on every selection: report it once.
+      try
+        Reload;
+        FActiveParams.LocalParameters.ActiveParamName := ActiveParamName;
+        FActiveParams.Save;
+      except
+        on E: Exception do
+          MessageDlg( 'The start-parameter selection could not be saved:' + #13#10#13#10 + E.Message, mtWarning,
+            [mbOK], 0 );
+      end;
       UpdateStartParameters(nil); // Reload broke Items.Objects[]
     end;
   end;
@@ -417,13 +426,13 @@ begin
         Lines.Add('');
         Lines.Add('Predefined Macros:');
         Lines.Add('  $(ParamFileName)      Full Filename of the *.params file');
-        Lines.Add('  $(ParamFilePath)      Direcory of the *.params file');
+        Lines.Add('  $(ParamFilePath)      Directory of the *.params file');
         Lines.Add('  $(Year)               Current year');
         Lines.Add('  $(Month)              Current month');
         Lines.Add('  $(Day)                Current day');
-        Lines.Add('  $(MonthShortName)     Short name (3 charaters) of the current month (local settings)');
+        Lines.Add('  $(MonthShortName)     Short name (3 characters) of the current month (local settings)');
         Lines.Add('  $(MonthName)          Full name of the current month (local settings)');
-        Lines.Add('  $(LastMonthShortName) Short name (3 charaters) of the last month (local settings)');
+        Lines.Add('  $(LastMonthShortName) Short name (3 characters) of the last month (local settings)');
         Lines.Add('  $(LastMonthName)      Full name of the last month (local settings)');
         Lines.Add('  $(LastYear)           Last year');
         Lines.Add('');

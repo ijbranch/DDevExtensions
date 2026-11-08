@@ -128,15 +128,27 @@ type
     /// <summary>Deletes the selected working entries after confirmation.</summary>
     procedure mnuDeleteEntryClick( Sender: TObject );
     /// <summary>Validates the working list and writes it back to the registry.</summary>
+    /// <param name="Sender">The Apply button.</param>
     procedure btnApplyClick( Sender: TObject );
     /// <summary>Restores the selected backup snapshot into the registry.</summary>
+    /// <param name="Sender">The Restore button.</param>
     procedure btnRestoreClick( Sender: TObject );
     /// <summary>Creates a manual backup snapshot of the current registry value.</summary>
+    /// <param name="Sender">The Backup button.</param>
     procedure btnBackupClick( Sender: TObject );
     /// <summary>Deletes the selected backup snapshot from the history.</summary>
+    /// <param name="Sender">The Delete Backup button.</param>
     procedure btnDeleteBackupClick( Sender: TObject );
-    /// <summary>Saves the form layout and frees per-form data when the dialog closes.</summary>
+    /// <summary>Saves the form layout and reminds the user to restart when the dialog closes.</summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="Action">Set to caFree: the dialog is modeless and frees itself.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
+    /// <summary>
+    /// Frees the per-form data. Runs however the form goes away, including when
+    /// CloseInstance frees it on package unload without a Close.
+    /// </summary>
+    /// <param name="Sender">The form.</param>
+    procedure FormDestroy( Sender: TObject );
     /// <summary>Initialises form fields, populates the pickers and loads paths.</summary>
     procedure FormCreate( Sender: TObject );
     /// <summary>Reloads the path lists when the path type changes.</summary>
@@ -198,11 +210,15 @@ type
     FPlatformCheckboxes: TList<TCheckBox>;
     /// <summary>Dynamically created "All" checkbox above the category checkboxes.</summary>
     FChkAll: TCheckBox;
+    /// <summary>The backups listed in lvBackups, in list order; Restore and Delete act on these records.</summary>
+    FShownBackups: TArray<TPathBackup>;
     /// <summary>Returns True if the path at Index appears elsewhere in the listbox (case-insensitive).</summary>
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
     /// <summary>Returns True if APath also appears in the working listbox (trimmed compare).</summary>
     function IsPathInWorkingPanel( const APath: string ): Boolean;
     /// <summary>Returns True if APath resolves to an existing directory (results are cached).</summary>
+    /// <returns>True when the expanded path is an existing directory.</returns>
+    /// <param name="APath">The library-path entry to check, macros unexpanded.</param>
     function IsPathValid( const APath: string ): Boolean;
     /// <summary>Clears FPathValidityCache (called on platform/path-type change).</summary>
     procedure InvalidatePathCache;
@@ -237,7 +253,9 @@ type
     /// <summary>Joins listbox items with semicolons (no quoting; matches Delphi's native format).</summary>
     function GetPathsFromListBox( AListBox: TListBox ): string;
     /// <summary>Writes APaths to the registry, performs a read-back verification and reloads.</summary>
-    procedure ApplyPaths( const APaths: string );
+    /// <param name="APaths">The new semicolon-separated value.</param>
+    /// <returns>True when the value was written; False when the user cancelled or the write was refused or failed.</returns>
+    function ApplyPaths( const APaths: string ): Boolean;
     /// <summary>Restores the form geometry and split-pane sizes from the registry.</summary>
     procedure LoadFormSettings;
     /// <summary>Persists the form geometry, split-pane sizes and category-checkbox states.</summary>
@@ -277,7 +295,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Win.Registry, IDEUtils, Main,
+  System.Win.Registry, IDEUtils, Main, LibraryPathBackups,
   // BuildMacroTable lives here: the Sorter needs the same IDE macro table the
   // Compactor uses, so that validity checking resolves what the IDE resolves.
   PathCompactorEnvVars;
@@ -366,17 +384,22 @@ begin
     ShowMessage( 'Library paths have been updated.' + #13#10 + #13#10 +
       'For the changes to take effect, you must close and reopen Delphi.' );
 
-  FPathValidityCache.Free;
-  FMacroTable.Free;
-  FPlatformCheckboxes.Free;
-
-  for var CatList in FPlatformCategories.Values do
-    CatList.Free;
-  FPlatformCategories.Free;
-
-  FAllPlatforms.Free;
   FormLibraryPathSorterInstance := nil;
   Action := caFree;
+end;
+
+procedure TFormLibraryPathSorter.FormDestroy( Sender: TObject );
+begin
+  FreeAndNil( FPathValidityCache );
+  FreeAndNil( FMacroTable );
+  FreeAndNil( FPlatformCheckboxes );
+
+  if ( FPlatformCategories <> nil ) then
+    for var CatList in FPlatformCategories.Values do
+      CatList.Free;
+  FreeAndNil( FPlatformCategories );
+
+  FreeAndNil( FAllPlatforms );
 end;
 
 procedure TFormLibraryPathSorter.LoadPathTypes;
@@ -467,6 +490,17 @@ begin
   if ( LibraryPathSorterPlugin = nil ) or ( FOriginalPaths = '' ) then
     Exit;
 
+  // Namespace prefixes are an ordered list of unit-scope names, not directories:
+  // their order decides which unit an unqualified name resolves to, so they start
+  // in their stored order and are only ever reordered by hand.
+  if ( GetSelectedPathType = lptNamespacePrefixes ) then
+  begin
+    lstWorking.Items.Assign( lstCurrent.Items );
+    lstCurrent.Invalidate;
+    UpdateStatus( 'Namespace prefixes are shown in their stored order: their order decides unit resolution.' );
+    Exit;
+  end;
+
   OriginalCount := lstCurrent.Items.Count;
 
   try
@@ -521,18 +555,33 @@ begin
   if LibraryPathSorterPlugin = nil then
     Exit;
 
-  Backups := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
+  // Read fresh: the Compactor, or the other IDE, may have added backups since.
+  try
+    Backups := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
+  except
+    on E: ELibraryPathBackupError do
+    begin
+      Backups := nil;
+      UpdateStatus( 'Backup history unavailable: ' + E.Message );
+    end;
+  end;
+  FShownBackups := Backups;
+
+  var Notice := LibraryPathSorterPlugin.BackupManager.TakeNotice;
+  if ( Notice <> '' ) then
+    MessageDlg( Notice, mtWarning, [mbOK], 0 );
 
   for Backup in Backups do
   begin
     Item := lvBackups.Items.Add;
-    Item.Caption := DateTimeToStr( Backup.Timestamp );
+    Item.Caption := Backup.DisplayTime;
     Item.SubItems.Add( Backup.PathType.ToDisplayName );
     Item.SubItems.Add( Backup.Platform );
-    Item.SubItems.Add( Backup.Description );
-    // (Item.Data is intentionally not used: Restore/Delete resolve the backup by
-    // ListView index into GetAllBackups, so storing a tag here would be dead and
-    // misleading.)
+    if Backup.Pinned then
+      Item.SubItems.Add( Backup.Description + ' (kept)' )
+    else
+      Item.SubItems.Add( Backup.Description );
+    // Restore and Delete act on FShownBackups[Item.Index], the record shown here.
   end;
 
   btnRestore.Enabled := False;
@@ -617,7 +666,7 @@ begin
   end;
 end;
 
-procedure TFormLibraryPathSorter.ApplyPaths( const APaths: string );
+function TFormLibraryPathSorter.ApplyPaths( const APaths: string ): Boolean;
 var
   VerifyPaths: string;
 
@@ -651,8 +700,22 @@ var
   end;
 
 begin
+  Result := False;
   if LibraryPathSorterPlugin = nil then
     Exit;
+
+  // The working list was built from the value read when this path set was loaded.
+  // Anything that changed it since (the Compactor, an installer, the other IDE) would
+  // be overwritten without trace, so refuse and show the value as it now stands.
+  if ( LibraryPathSorterPlugin.PathHandler.ReadPaths( GetSelectedPathType, GetSelectedPlatform ) <> FOriginalPaths ) then
+  begin
+    MessageDlg( 'This library path has been changed outside the Path Sorter since it was loaded.' + #13#10#13#10 +
+      'Nothing was written. The current value has been reloaded; arrange it again and press Apply.',
+      mtWarning, [mbOK], 0 );
+    LoadCurrentPaths;
+    LoadBackupHistory;
+    Exit;
+  end;
 
   // Create backup if auto-backup is enabled
   if chkAutoBackup.Checked and ( FOriginalPaths <> '' ) then
@@ -660,7 +723,8 @@ begin
     if not LibraryPathSorterPlugin.BackupManager.CreateBackup(
          GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, 'Before apply' ) then
     begin
-      if MessageDlg( 'Failed to create backup. Continue anyway?', mtWarning, [mbYes, mbNo], 0 ) <> mrYes then
+      if MessageDlg( 'Failed to create backup: ' + LibraryPathSorterPlugin.BackupManager.LastError + #13#10#13#10 +
+           'Continue anyway?', mtWarning, [mbYes, mbNo], 0 ) <> mrYes then
         Exit;
     end;
   end;
@@ -697,6 +761,7 @@ begin
 
   FChangesApplied := True;
   UpdateStatus( 'Paths saved successfully' );
+  Result := True;
 end;
 
 procedure TFormLibraryPathSorter.cboPathTypeChange( Sender: TObject );
@@ -883,6 +948,13 @@ begin
   if TrimmedPath = '' then
   begin
     Result := False;
+    Exit;
+  end;
+
+  // A namespace prefix is a unit-scope name, not a directory: never flag it as missing.
+  if ( GetSelectedPathType = lptNamespacePrefixes ) then
+  begin
+    Result := True;
     Exit;
   end;
 
@@ -1365,7 +1437,7 @@ begin
     UpdateStatus( 'Backup created successfully' );
   end
   else
-    ShowMessage( 'Failed to create backup.' );
+    ShowMessage( 'Failed to create backup: ' + LibraryPathSorterPlugin.BackupManager.LastError );
 end;
 
 procedure TFormLibraryPathSorter.btnApplyClick( Sender: TObject );
@@ -1442,14 +1514,13 @@ begin
     'Click OK to proceed.',
     [lstWorking.Items.Count, Length( NewPaths )] ) );
 
-  ApplyPaths( NewPaths );
-  ShowMessage( 'Library paths have been updated.' );
+  if ApplyPaths( NewPaths ) then
+    ShowMessage( 'Library paths have been updated.' );
 end;
 
 procedure TFormLibraryPathSorter.btnRestoreClick( Sender: TObject );
 var
   Backup: TPathBackup;
-  Backups: TArray<TPathBackup>;
   BackupIndex: Integer;
 begin
   if LibraryPathSorterPlugin = nil then
@@ -1461,52 +1532,71 @@ begin
     Exit;
   end;
 
-  Backups := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
   BackupIndex := lvBackups.Selected.Index;
-
-  if ( BackupIndex < 0 ) or ( BackupIndex >= Length( Backups ) ) then
+  if ( BackupIndex < 0 ) or ( BackupIndex >= Length( FShownBackups ) ) then
   begin
     ShowMessage( 'Invalid backup selection.' );
     Exit;
   end;
 
-  Backup := Backups[BackupIndex];
+  Backup := FShownBackups[BackupIndex];
 
   if MessageDlg(
        Format( 'Restore backup from %s?' + #13#10 +
                'Path Type: %s' + #13#10 +
                'Platform: %s' + #13#10 +
-               'Description: %s',
-               [DateTimeToStr( Backup.Timestamp ),
+               'Description: %s' + #13#10#13#10 +
+               'The value it replaces is backed up first.',
+               [Backup.DisplayTime,
                 Backup.PathType.ToDisplayName,
                 Backup.Platform,
                 Backup.Description] ),
        mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
     Exit;
 
-  if LibraryPathSorterPlugin.BackupManager.RestoreBackup( Backup ) then
+  // Restoring the wrong entry must itself be undoable: keep the value being replaced.
+  var Current := LibraryPathSorterPlugin.PathHandler.ReadPaths( Backup.PathType, Backup.Platform );
+  if ( Current <> '' ) and ( Current <> Backup.Paths ) and
+     not LibraryPathSorterPlugin.BackupManager.CreateBackup( Backup.PathType, Backup.Platform, Current,
+       'Before restore' ) then
   begin
-    // Update UI to show the restored path type/platform
-    cboPathType.ItemIndex := Ord( Backup.PathType );
-    cboPlatform.ItemIndex := cboPlatform.Items.IndexOf( Backup.Platform );
-    if cboPlatform.ItemIndex = -1 then
-      // The restored platform isn't currently shown (filtered out or not
-      // installed); warn rather than silently displaying a different platform.
-      ShowMessage( Format( 'Restored the %s paths, but that platform is not currently shown, ' +
-        'so the list below may display a different platform.', [ Backup.Platform ] ) );
+    MessageDlg( 'The current value could not be backed up, so nothing was restored:' + #13#10#13#10 +
+      LibraryPathSorterPlugin.BackupManager.LastError, mtError, [mbOK], 0 );
+    Exit;
+  end;
 
-    LoadCurrentPaths;
-    UpdateStatus( 'Backup restored successfully' );
-    ShowMessage( 'Library paths have been restored from backup.' );
-  end
-  else
-    ShowMessage( 'Failed to restore backup.' );
+  try
+    LibraryPathSorterPlugin.PathHandler.WritePaths( Backup.PathType, Backup.Platform, Backup.Paths );
+  except
+    on E: Exception do
+    begin
+      MessageDlg( 'Failed to restore the backup:' + #13#10#13#10 + E.Message, mtError, [mbOK], 0 );
+      LoadCurrentPaths;
+      LoadBackupHistory;
+      Exit;
+    end;
+  end;
+
+  FChangesApplied := True;
+
+  // Update UI to show the restored path type/platform
+  cboPathType.ItemIndex := Ord( Backup.PathType );
+  cboPlatform.ItemIndex := cboPlatform.Items.IndexOf( Backup.Platform );
+  if cboPlatform.ItemIndex = -1 then
+    // The restored platform isn't currently shown (filtered out or not
+    // installed); warn rather than silently displaying a different platform.
+    ShowMessage( Format( 'Restored the %s paths, but that platform is not currently shown, ' +
+      'so the list below may display a different platform.', [ Backup.Platform ] ) );
+
+  LoadCurrentPaths;
+  LoadBackupHistory;
+  UpdateStatus( 'Backup restored successfully' );
+  ShowMessage( 'Library paths have been restored from backup.' );
 end;
 
 procedure TFormLibraryPathSorter.btnDeleteBackupClick( Sender: TObject );
 var
   Backup: TPathBackup;
-  Backups: TArray<TPathBackup>;
   BackupIndex: Integer;
 begin
   if LibraryPathSorterPlugin = nil then
@@ -1518,30 +1608,28 @@ begin
     Exit;
   end;
 
-  Backups := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
   BackupIndex := lvBackups.Selected.Index;
-
-  if ( BackupIndex < 0 ) or ( BackupIndex >= Length( Backups ) ) then
+  if ( BackupIndex < 0 ) or ( BackupIndex >= Length( FShownBackups ) ) then
   begin
     ShowMessage( 'Invalid backup selection.' );
     Exit;
   end;
 
-  Backup := Backups[BackupIndex];
+  Backup := FShownBackups[BackupIndex];
 
   if MessageDlg(
-       Format( 'Delete backup from %s?', [DateTimeToStr( Backup.Timestamp )] ),
+       Format( 'Delete backup from %s?', [Backup.DisplayTime] ),
        mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
     Exit;
 
-  if LibraryPathSorterPlugin.BackupManager.DeleteBackup( Backup ) then
-  begin
-    LoadBackupHistory;
-    UpdateStatus( 'Backup deleted' );
-  end
+  if LibraryPathSorterPlugin.BackupManager.DeleteBackup( Backup.Id ) then
+    UpdateStatus( 'Backup deleted' )
   else
-    ShowMessage( 'Failed to delete backup.' );
+    MessageDlg( 'Failed to delete the backup: ' + LibraryPathSorterPlugin.BackupManager.LastError, mtError,
+      [mbOK], 0 );
+  LoadBackupHistory;
 end;
+
 
 procedure TFormLibraryPathSorter.lvBackupsSelectItem( Sender: TObject;
   Item: TListItem; Selected: Boolean );

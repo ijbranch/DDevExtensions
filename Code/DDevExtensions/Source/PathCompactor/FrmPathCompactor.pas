@@ -104,24 +104,37 @@ type
     btnApply: TButton;
     /// <summary>Closes the dialog without writing anything.</summary>
     btnClose: TButton;
+    /// <summary>Removes variables this tool created that no library path or IDE variable refers to any more.</summary>
+    btnRemoveCreated: TButton;
     /// <summary>Counts line: sets, characters saved, and each hygiene category.</summary>
     lblStatus: TLabel;
     /// <summary>Creates the registry handler and backup manager, and fills the scope lists.</summary>
+    /// <param name="Sender">The form being created.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Frees the analysis, macro table, backup manager and path handler.</summary>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Clears the singleton and frees the form.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Runs the analysis over the ticked platforms and path types.</summary>
+    /// <param name="Sender">The Analyse button.</param>
     procedure btnAnalyseClick( Sender: TObject );
     /// <summary>Re-verifies removals, confirms, then backs up and writes the changes.</summary>
+    /// <param name="Sender">The Apply button.</param>
     procedure btnApplyClick( Sender: TObject );
     /// <summary>Closes the dialog.</summary>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Refreshes the preview panes for the newly selected path set.</summary>
     procedure cboPreviewSetChange( Sender: TObject );
-    /// <summary>Refreshes the status line when a proposed variable is ticked or unticked.</summary>
+    /// <summary>
+    /// Includes or excludes the ticked variable from the rewrite, so the values written never
+    /// name a variable that is not being defined, and refreshes the figures and preview.
+    /// </summary>
+    /// <param name="Sender">The list view.</param>
+    /// <param name="Item">The item whose tick changed; its index is the accepted-variable index.</param>
     procedure lvVariablesItemChecked( Sender: TObject; Item: TListItem );
+    /// <summary>Removes, after confirmation, created variables that nothing refers to any more.</summary>
+    /// <param name="Sender">The button.</param>
+    procedure btnRemoveCreatedClick( Sender: TObject );
   private
     /// <summary>Registry reader/writer, reused from the Path Sorter.</summary>
     FPathHandler: TLibraryPathHandler;
@@ -133,6 +146,8 @@ type
     FMacros: TStringList;
     /// <summary>True once Apply has written something, so the close hint can mention a restart.</summary>
     FChangesApplied: Boolean;
+    /// <summary>True while FillVariables populates the list, so the item-checked handler ignores it.</summary>
+    FFillingVariables: Boolean;
 
     /// <summary>Fills the platform and path-type check lists.</summary>
     procedure PopulateScope;
@@ -166,6 +181,21 @@ type
     /// is never removed by cleanup.
     /// </summary>
     procedure BuildDivergentNames( AList: TStrings );
+    /// <summary>
+    /// Writes the analysed compaction as one unit: builds every value, refuses if any has
+    /// changed since the analysis, backs every value up (any failure aborts), then writes
+    /// the variables and the paths with read-back verification, undoing all of it on failure.
+    /// </summary>
+    /// <returns>True when the compaction was written in full.</returns>
+    function ApplyCompaction: Boolean;
+    /// <summary>
+    /// Collects, upper-cased, every text that could refer to a variable: all string values under
+    /// the IDE's registry key, the Windows user environment, and every open project's options
+    /// (each configuration and platform), .dproj file and imported option sets.
+    /// </summary>
+    /// <param name="AScanned">Receives a plain description of what was and was not searched.</param>
+    /// <returns>The collected text.</returns>
+    function CollectReferenceText( out AScanned: string ): string;
   public
     /// <summary>Shows the dialog modelessly, reusing the existing instance if there is one.</summary>
     class procedure Execute;
@@ -189,7 +219,8 @@ implementation
 uses
   System.StrUtils, System.Math, System.UITypes, System.IOUtils,
   IDEHooks, Main,
-  PathCompactor, PathCompactorEnvVars;
+  System.Win.Registry, System.RegularExpressions, ToolsAPI,
+  PathCompactor, PathCompactorEnvVars, LibraryPathBackups;
 
 const
   /// <summary>Most removals listed individually in the Apply confirmation.</summary>
@@ -231,6 +262,7 @@ procedure TFormPathCompactor.FormCreate( Sender: TObject );
 begin
   FPathHandler := TLibraryPathHandler.Create;
   FBackupManager := TLibraryPathBackupManager.Create(
+    AppDataDirectory + '\LibraryPathBackups' + DelphiVersion + '.v2.xml',
     AppDataDirectory + '\LibraryPathBackups' + DelphiVersion + '.xml' );
   FMacros := TStringList.Create;
   FChangesApplied := False;
@@ -426,6 +458,15 @@ begin
       Reserved.Free;
     end;
 
+    // Reuse only macros that resolve the same in both IDEs and in every session.
+    Reserved := TStringList.Create;
+    try
+      BuildReusableNames( Reserved, FPathHandler.BaseRegistryKey );
+      FAnalysis.SetReusableNames( Reserved );
+    finally
+      Reserved.Free;
+    end;
+
     FAnalysis.RemoveDuplicates := chkRemoveDuplicates.Checked;
     FAnalysis.RemoveMissing := chkRemoveMissing.Checked;
     FAnalysis.RemoveUndefinedMacros := chkRemoveUndefined.Checked;
@@ -531,6 +572,7 @@ var
   I: Integer;
   Item: TListItem;
 begin
+  FFillingVariables := True;
   lvVariables.Items.BeginUpdate;
   try
     lvVariables.Items.Clear;
@@ -546,10 +588,11 @@ begin
         Item.SubItems.Add( 'reuses existing macro' )
       else
         Item.SubItems.Add( 'new variable' );
-      Item.Checked := True;
+      Item.Checked := Vars[I].Enabled;
     end;
   finally
     lvVariables.Items.EndUpdate;
+    FFillingVariables := False;
   end;
 end;
 
@@ -614,6 +657,15 @@ end;
 
 procedure TFormPathCompactor.lvVariablesItemChecked( Sender: TObject; Item: TListItem );
 begin
+  if FFillingVariables or ( FAnalysis = nil ) or ( Item = nil ) or
+     ( Item.Index >= Length( FAnalysis.AcceptedVariables ) ) then
+    Exit;
+
+  // The rewrite is redone without (or with) this variable: an unticked variable is
+  // never defined, so no entry may be written using it.
+  FAnalysis.SetVariableEnabled( Item.Index, Item.Checked );
+  FillSummary;
+  ShowPreview;
   UpdateStatus;
 end;
 
@@ -658,9 +710,8 @@ procedure TFormPathCompactor.btnApplyClick( Sender: TObject );
 var
   I: Integer;
   Vars: TArray<TVarCandidate>;
-  PathSet: TPathSet;
-  Description, DropList, Generic: string;
-  Rescued, SetCount: Integer;
+  DropList, Generic: string;
+  Rescued: Integer;
   Drops: TArray<string>;
 begin
   if FAnalysis = nil then
@@ -699,7 +750,7 @@ begin
     Generic := '';
     Vars := FAnalysis.AcceptedVariables;
     for I := Low( Vars ) to High( Vars ) do
-      if not Vars[I].PreExisting and IsGenericVariableName( Vars[I].Name ) then
+      if not Vars[I].PreExisting and Vars[I].Enabled and IsGenericVariableName( Vars[I].Name ) then
         Generic := Generic + #13#10 + '    ' + Vars[I].Name + '  =  ' + Vars[I].Prefix;
 
     if Generic <> '' then
@@ -752,71 +803,384 @@ begin
        [FAnalysis.Sets.Count] ), mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
     Exit;
 
+  if ApplyCompaction then
+    // Re-analyse rather than just disabling Apply. Leaving the pre-Apply figures
+    // on screen invites the reader to believe they still describe the registry,
+    // and makes the greyed-out Apply look like a fault rather than a completed
+    // action. A fresh pass shows what (if anything) is still worth doing.
+    btnAnalyseClick( Sender );
+end;
+
+function TFormPathCompactor.ApplyCompaction: Boolean;
+type
+  TCreatedVariable = record
+    Name: string;
+    Locations: TVariableLocations;
+  end;
+var
+  Results: TArray<string>;
+  Written: TList<Integer>;
+  Created: TList<TCreatedVariable>;
+  RewrittenCount: Integer;
+
+  function StillAsAnalysed: Boolean;
+  begin
+    var Changed := '';
+    for var I := 0 to FAnalysis.Sets.Count - 1 do
+    begin
+      var PathSet := FAnalysis.Sets[I];
+      if ( FPathHandler.ReadPaths( PathSet.PathType, PathSet.PlatformName ) <> PathSet.Original ) then
+        Changed := Changed + #13#10 + '    ' + PathSet.PlatformName + ' / ' + PathSet.PathType.ToDisplayName;
+    end;
+    Result := ( Changed = '' );
+    if not Result then
+      MessageDlg( 'These library paths have changed since the analysis, so nothing was written:' + #13#10 + Changed +
+        #13#10#13#10 + 'Press Analyse again, then Apply.', mtWarning, [mbOK], 0 );
+  end;
+
+begin
+  Result := False;
+
+  // 1. Build every value first: a failure here must leave everything untouched.
+  SetLength( Results, FAnalysis.Sets.Count );
+  try
+    for var I := 0 to FAnalysis.Sets.Count - 1 do
+      Results[I] := FAnalysis.Sets[I].BuildResult;
+  except
+    on E: EPathCompactorError do
+    begin
+      MessageDlg( 'The compaction could not be prepared, and nothing was written:' + #13#10#13#10 + E.Message,
+        mtError, [mbOK], 0 );
+      Exit;
+    end;
+  end;
+
+  // 2. Every value must still be what was analysed. Writing over a change made since
+  //    (the Path Sorter, an installer, the other IDE) would lose it without trace.
+  if not StillAsAnalysed then
+    Exit;
+
+  // 3. Back up every value the compaction touches. A backup that fails stops the
+  //    whole compaction: the backups are the only way back. They are pinned, so
+  //    later Path Sorter backups never trim them away.
+  var Description := CompactionBackupPrefix + ' ' + FormatDateTime( 'yyyy-mm-dd hh:nn', Now );
+  for var I := 0 to FAnalysis.Sets.Count - 1 do
+  begin
+    var PathSet := FAnalysis.Sets[I];
+    // Only a value that will change needs (and gets) a pinned backup.
+    if ( Results[I] = PathSet.Original ) then
+      Continue;
+    if not FBackupManager.CreateBackup( PathSet.PathType, PathSet.PlatformName, PathSet.Original, Description,
+      True ) then
+    begin
+      MessageDlg( Format( 'The backup of %s / %s failed, so nothing was written:' + #13#10#13#10 + '%s',
+        [PathSet.PlatformName, PathSet.PathType.ToDisplayName, FBackupManager.LastError] ), mtError, [mbOK], 0 );
+      Exit;
+    end;
+  end;
+
+  // Once more, immediately before the first write: the backups take time.
+  if not StillAsAnalysed then
+    Exit;
+
+  // 4. Variables into BOTH IDE lists, then the paths; every write is verified by
+  //    read-back, and any failure undoes everything already written.
+  var Vars := FAnalysis.AcceptedVariables;
+  Written := TList<Integer>.Create;
+  Created := TList<TCreatedVariable>.Create;
   Screen.Cursor := crHourGlass;
   try
-    // 1. Back up every value the compaction touches, before anything is written.
-    Description := 'Before compaction ' + FormatDateTime( 'yyyy-mm-dd hh:nn', Now );
-    for I := 0 to FAnalysis.Sets.Count - 1 do
-    begin
-      PathSet := FAnalysis.Sets[I];
-      FBackupManager.CreateBackup( PathSet.PathType, PathSet.PlatformName,
-        PathSet.Original, Description );
+    try
+      for var I := Low( Vars ) to High( Vars ) do
+      begin
+        if Vars[I].PreExisting or not Vars[I].Enabled then
+          Continue; // reuses an existing macro, or unticked: nothing to define
+        var Entry := Default( TCreatedVariable );
+        Entry.Name := Vars[I].Name;
+        Entry.Locations := WriteVariable( FPathHandler.BaseRegistryKey, Vars[I].Name, Vars[I].Prefix,
+          chkWriteUserEnv.Checked );
+        Created.Add( Entry );
+      end;
+
+      for var I := 0 to FAnalysis.Sets.Count - 1 do
+      begin
+        var PathSet := FAnalysis.Sets[I];
+        if ( Results[I] = PathSet.Original ) then
+          Continue;
+        Written.Add( I );
+        FPathHandler.WritePaths( PathSet.PathType, PathSet.PlatformName, Results[I] );
+      end;
+    except
+      on E: Exception do
+      begin
+        var RollbackErrors := '';
+        for var I in Written do
+        try
+          FPathHandler.WritePaths( FAnalysis.Sets[I].PathType, FAnalysis.Sets[I].PlatformName,
+            FAnalysis.Sets[I].Original );
+        except
+          on R: Exception do
+            RollbackErrors := RollbackErrors + #13#10 + '    ' + R.Message;
+        end;
+        for var Entry in Created do
+        try
+          DeleteVariable( FPathHandler.BaseRegistryKey, Entry.Name, Entry.Locations );
+        except
+          on R: Exception do
+            RollbackErrors := RollbackErrors + #13#10 + '    ' + R.Message;
+        end;
+
+        if ( RollbackErrors = '' ) then
+          MessageDlg( 'The compaction failed and everything it had written has been undone:' + #13#10#13#10 +
+            E.Message, mtError, [mbOK], 0 )
+        else
+          MessageDlg( 'The compaction failed:' + #13#10#13#10 + E.Message + #13#10#13#10 +
+            'Undoing it was incomplete:' + RollbackErrors + #13#10#13#10 +
+            'Restore the affected values from the "' + Description + '" backups in the IDE Path Sorter.',
+            mtError, [mbOK], 0 );
+        Exit;
+      end;
     end;
 
-    // 3. Variables, into BOTH IDE lists (the path they resolve is shared).
-    Vars := FAnalysis.AcceptedVariables;
-    for I := Low( Vars ) to High( Vars ) do
-    begin
-      if Vars[I].PreExisting then
-        Continue; // reuses an existing macro; nothing to define
+    RewrittenCount := Written.Count;
 
-      if ( I < lvVariables.Items.Count ) and not lvVariables.Items[I].Checked then
-        Continue;
-
-      WriteVariable( FPathHandler.BaseRegistryKey, Vars[I].Name, Vars[I].Prefix,
-        chkWriteUserEnv.Checked );
-
-      if PathCompactorPlugin <> nil then
-        PathCompactorPlugin.RecordCreatedVariable( Vars[I].Name );
+    // 5. Committed: remember what was created, so it can be removed later.
+    var EnvironmentChanged := False;
+    try
+      for var Entry in Created do
+      begin
+        if ( vlUserEnvironment in Entry.Locations ) then
+          EnvironmentChanged := True;
+        if ( PathCompactorPlugin <> nil ) and ( Entry.Locations <> [] ) then
+          PathCompactorPlugin.RecordCreatedVariable( Entry.Name, Entry.Locations );
+      end;
+      if ( PathCompactorPlugin <> nil ) then
+      begin
+        PathCompactorPlugin.WriteUserEnvironment := chkWriteUserEnv.Checked;
+        PathCompactorPlugin.Save;
+      end;
+    except
+      on E: Exception do
+        MessageDlg( 'The compaction was applied, but the Path Compactor settings could not be saved:' + #13#10#13#10 +
+          E.Message, mtWarning, [mbOK], 0 );
     end;
-
-    // 4. The paths themselves.
-    for I := 0 to FAnalysis.Sets.Count - 1 do
-    begin
-      PathSet := FAnalysis.Sets[I];
-      FPathHandler.WritePaths( PathSet.PathType, PathSet.PlatformName,
-        PathSet.BuildResult );
-    end;
-
-    if chkWriteUserEnv.Checked then
+    if EnvironmentChanged then
       BroadcastEnvironmentChange;
-
-    if PathCompactorPlugin <> nil then
-    begin
-      PathCompactorPlugin.WriteUserEnvironment := chkWriteUserEnv.Checked;
-      PathCompactorPlugin.Save;
-    end;
 
     FChangesApplied := True;
   finally
     Screen.Cursor := crDefault;
+    Created.Free;
+    Written.Free;
   end;
-
-  SetCount := FAnalysis.Sets.Count;
 
   MessageDlg( Format(
     'Compaction applied.'#13#10#13#10 +
     '%d path sets rewritten.'#13#10#13#10 +
-    'Restart the IDE for the new library paths and variables to take effect.'#13#10#13#10 +
+    'Restart the IDE for the new library paths and variables to take effect. Until then, do not ' +
+    'open Tools > Options in this IDE or in any other running IDE (32-bit or 64-bit): pressing OK ' +
+    'there can write the old library paths back.'#13#10#13#10 +
     'The results below have been refreshed against the registry as it now ' +
     'stands, so they no longer describe the change you just applied.',
-    [SetCount] ), mtInformation, [mbOK], 0 );
+    [RewrittenCount] ), mtInformation, [mbOK], 0 );
+  Result := True;
+end;
 
-  // Re-analyse rather than just disabling Apply. Leaving the pre-Apply figures
-  // on screen invites the reader to believe they still describe the registry,
-  // and makes the greyed-out Apply look like a fault rather than a completed
-  // action. A fresh pass shows what (if anything) is still worth doing.
-  btnAnalyseClick( Sender );
+/// <summary>Appends every string value under a registry key, and its sub-keys, to AText.</summary>
+/// <param name="ARoot">The root key.</param>
+/// <param name="AKey">The key path.</param>
+/// <param name="AText">Receives the values, one per line.</param>
+/// <param name="ADepth">Remaining sub-key depth to descend.</param>
+procedure AppendRegistryText( ARoot: HKEY; const AKey: string; AText: TStringBuilder; ADepth: Integer );
+begin
+  var SubKeys := TStringList.Create;
+  try
+    var Reg := TRegistry.Create( KEY_READ );
+    try
+      Reg.RootKey := ARoot;
+      if not Reg.OpenKeyReadOnly( AKey ) then
+        Exit;
+      var Names := TStringList.Create;
+      try
+        Reg.GetValueNames( Names );
+        for var Name in Names do
+          if ( Reg.GetDataType( Name ) in [rdString, rdExpandString] ) then
+            AText.AppendLine( Reg.ReadString( Name ) );
+      finally
+        Names.Free;
+      end;
+      if ( ADepth > 0 ) then
+        Reg.GetKeyNames( SubKeys );
+    finally
+      Reg.Free;
+    end;
+    for var SubKey in SubKeys do
+      AppendRegistryText( ARoot, AKey + '\' + SubKey, AText, ADepth - 1 );
+  finally
+    SubKeys.Free;
+  end;
+end;
+
+/// <summary>Appends a text file's content to AText; a file that cannot be read is skipped.</summary>
+/// <param name="AFileName">The file.</param>
+/// <param name="AText">Receives the content.</param>
+/// <returns>True when the file was read.</returns>
+function AppendFileText( const AFileName: string; AText: TStringBuilder ): Boolean;
+begin
+  Result := False;
+  if not FileExists( AFileName ) then
+    Exit;
+  try
+    AText.AppendLine( TFile.ReadAllText( AFileName ) );
+    Result := True;
+  except
+    on EInOutError do
+      ;
+    on EFileStreamError do
+      ;
+    on EOSError do
+      ;
+    on EEncodingError do
+      ;
+  end;
+end;
+
+function TFormPathCompactor.CollectReferenceText( out AScanned: string ): string;
+var
+  ModuleSvc: IOTAModuleServices;
+  Project: IOTAProject;
+  OptionConfig: IOTAProjectOptionsConfigurations;
+begin
+  var Text := TStringBuilder.Create;
+  try
+    // 1. Every string value the IDE keeps under its registry key: the library paths of
+    //    every platform, both IDE variable lists, and every other setting.
+    AppendRegistryText( HKEY_CURRENT_USER, FPathHandler.BaseRegistryKey, Text, 12 );
+
+    // 2. The Windows user environment.
+    AppendRegistryText( HKEY_CURRENT_USER, 'Environment', Text, 0 );
+
+    // 3. Every open project: its option values at every configuration and platform, its
+    //    .dproj file, and the option sets that file imports.
+    var ProjectCount := 0;
+    var OptionSets := 0;
+    if Supports( BorlandIDEServices, IOTAModuleServices, ModuleSvc ) then
+      for var I := 0 to ModuleSvc.ModuleCount - 1 do
+      begin
+        if not Supports( ModuleSvc.Modules[I], IOTAProject, Project ) then
+          Continue;
+        Inc( ProjectCount );
+
+        if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig ) then
+          for var C := 0 to OptionConfig.ConfigurationCount - 1 do
+          begin
+            var Config := OptionConfig.Configurations[C];
+            if ( Config = nil ) then
+              Continue;
+            var Levels: TArray<IOTABuildConfiguration> := [Config];
+            for var PlatformName in Config.Platforms do
+              if ( Config.PlatformConfiguration[PlatformName] <> nil ) then
+                Levels := Levels + [Config.PlatformConfiguration[PlatformName]];
+            for var Level in Levels do
+              for var P := 0 to Level.PropertyCount - 1 do
+                Text.AppendLine( Level.GetValue( Level.Properties[P], False ) );
+          end;
+
+        if AppendFileText( Project.FileName, Text ) then
+          for var Match in TRegEx.Matches( TFile.ReadAllText( Project.FileName ), 'Project="([^"]+\.optset)"',
+            [roIgnoreCase] ) do
+            if AppendFileText( TPath.Combine( ExtractFilePath( Project.FileName ), Match.Groups[1].Value ), Text ) then
+              Inc( OptionSets );
+      end;
+
+    AScanned := Format(
+      'Searched for references in:' + #13#10 +
+      '    every value under the IDE''s registry key (library paths of every platform, both IDE ' +
+      'variable lists, all other IDE settings),' + #13#10 +
+      '    the Windows user environment,' + #13#10 +
+      '    %d open project(s): their options for every configuration and platform, their .dproj ' +
+      'files and %d option set(s) they import.' + #13#10#13#10 +
+      'NOT searched: projects that are not open, and any other file. A variable used only there ' +
+      'would stop resolving.', [ProjectCount, OptionSets] );
+    Result := AnsiUpperCase( Text.ToString );
+  finally
+    Text.Free;
+  end;
+end;
+
+procedure TFormPathCompactor.btnRemoveCreatedClick( Sender: TObject );
+begin
+  if ( PathCompactorPlugin = nil ) then
+    Exit;
+
+  var Names := PathCompactorPlugin.CreatedVariableNames;
+  if ( Length( Names ) = 0 ) then
+  begin
+    MessageDlg( 'The Path Compactor has not created any variables.', mtInformation, [mbOK], 0 );
+    Exit;
+  end;
+
+  var Scanned := '';
+  Screen.Cursor := crHourGlass;
+  var AllText := '';
+  try
+    AllText := CollectReferenceText( Scanned );
+  finally
+    Screen.Cursor := crDefault;
+  end;
+
+  var Unused := TStringList.Create;
+  try
+    for var Name in Names do
+      if ( Name <> '' ) and ( Pos( AnsiUpperCase( '$(' + Name + ')' ), AllText ) = 0 ) and
+         ( PathCompactorPlugin.CreatedLocations( Name ) <> [] ) then
+        Unused.Add( Name );
+
+    if ( Unused.Count = 0 ) then
+    begin
+      MessageDlg( Format( 'All %d variables the Path Compactor created are still in use.' + #13#10#13#10 + '%s',
+        [Length( Names ), Scanned] ), mtInformation, [mbOK], 0 );
+      Exit;
+    end;
+
+    var Listing := '';
+    for var Name in Unused do
+    begin
+      Listing := Listing + #13#10 + '    $(' + Name + ')';
+      if ( vlUserEnvironment in PathCompactorPlugin.CreatedLocations( Name ) ) then
+        Listing := Listing + '   (also in the Windows user environment)';
+    end;
+    if ( MessageDlg( 'These variables were created by the Path Compactor and nothing searched refers to them:' +
+         Listing + #13#10#13#10 + Scanned + #13#10#13#10 +
+         'Remove them from the places the Path Compactor wrote them?', mtConfirmation, [mbYes, mbNo],
+         0 ) <> mrYes ) then
+      Exit;
+
+    var Errors := '';
+    var EnvironmentChanged := False;
+    for var Name in Unused do
+    try
+      // Only where this tool created it: a list in which it already existed keeps it.
+      var Locations := PathCompactorPlugin.CreatedLocations( Name );
+      if ( vlUserEnvironment in Locations ) then
+        EnvironmentChanged := True;
+      DeleteVariable( FPathHandler.BaseRegistryKey, Name, Locations );
+      PathCompactorPlugin.ForgetCreatedVariable( Name );
+    except
+      on E: Exception do
+        Errors := Errors + #13#10 + '    ' + Name + ': ' + E.Message;
+    end;
+    if EnvironmentChanged then
+      BroadcastEnvironmentChange;
+
+    if ( Errors = '' ) then
+      MessageDlg( Format( '%d variable(s) removed. Restart the IDE for the change to take effect.',
+        [Unused.Count] ), mtInformation, [mbOK], 0 )
+    else
+      MessageDlg( 'Some variables could not be removed:' + Errors, mtWarning, [mbOK], 0 );
+  finally
+    Unused.Free;
+  end;
 end;
 
 end.

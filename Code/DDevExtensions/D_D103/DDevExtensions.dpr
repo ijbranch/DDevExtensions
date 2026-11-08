@@ -135,6 +135,7 @@ uses
   FrmCodeQualityAnalyzer in '..\Source\CodeQualityAnalyzer\FrmCodeQualityAnalyzer.pas' {FormCodeQualityAnalyzer},
   FrmeOptionPageCodeQuality in '..\Source\CodeQualityAnalyzer\FrmeOptionPageCodeQuality.pas' {FrameOptionPageCodeQuality: TFrame},
   PathCompactorCore in '..\Source\PathCompactor\PathCompactorCore.pas',
+  LibraryPathBackups in '..\Source\LibraryPathSorter\LibraryPathBackups.pas',
   LibraryPathSorter in '..\Source\LibraryPathSorter\LibraryPathSorter.pas',
   FrmLibraryPathSorter in '..\Source\LibraryPathSorter\FrmLibraryPathSorter.pas' {FormLibraryPathSorter},
   PathCompactorEnvVars in '..\Source\PathCompactor\PathCompactorEnvVars.pas',

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -217,12 +217,14 @@ type
     /// <summary>Generic Apply handler that writes the corresponding string field to the projects.</summary>
     procedure btnApplyStringClick(Sender: TObject);
     /// <summary>Applies the file version triplet (Major/Minor/Release) to the projects.</summary>
+    /// <param name="Sender">The Apply File Version button.</param>
     procedure btnApplyFileVersionClick(Sender: TObject);
     /// <summary>Computes today minus the start day and writes the value to edtDaysBetween.</summary>
     procedure btnDaysbetweenClick(Sender: TObject);
     /// <summary>Hides the "applied" notification when the timer elapses.</summary>
     procedure TimerAppliedHideTimer(Sender: TObject);
     /// <summary>Applies the Build component of the file version to the projects.</summary>
+    /// <param name="Sender">The Apply Build button.</param>
     procedure btnApplyBuildClick(Sender: TObject);
     /// <summary>Initialises FIcon, sets default tab and adjusts platform check visibility.</summary>
     procedure FormCreate(Sender: TObject);
@@ -231,6 +233,7 @@ type
     /// <summary>Enables/disables Minor-related sub-options based on cbxIncMinor.</summary>
     procedure cbxIncMinorClick(Sender: TObject);
     /// <summary>Performs the configured version increment across the eligible projects.</summary>
+    /// <param name="Sender">The Execute Increment button.</param>
     procedure btnExecuteIncrementClick(Sender: TObject);
     /// <summary>Toggles the apply-to-selected-only mode and updates UI accordingly.</summary>
     procedure cbxApplyToSelectedOnlyClick(Sender: TObject);
@@ -781,9 +784,9 @@ begin
   begin
     Version := GetProjectVersion(Project);
     if Version.Valid and
-      ((udMajor.Position <> SmallInt(Version.FileVersion.Major)) or
-       (udMinor.Position <> SmallInt(Version.FileVersion.Minor)) or
-       (udRelease.Position <> SmallInt(Version.FileVersion.Release))) then
+      (( udMajor.Position <> Version.FileVersion.Major ) or
+       ( udMinor.Position <> Version.FileVersion.Minor ) or
+       ( udRelease.Position <> Version.FileVersion.Release )) then
     begin
       Version.FileVersion.Major := udMajor.Position;
       Version.FileVersion.Minor := udMinor.Position;
@@ -843,7 +846,7 @@ begin
   for Project in GetValidApplyProjects() do
   begin
     Version := GetProjectVersion(Project);
-    if Version.Valid and (SmallInt(Version.FileVersion.Build) <> Value) then
+    if Version.Valid and ( Version.FileVersion.Build <> Value ) then
     begin
       Version.FileVersion.Build := Value;
       with Version.FileVersion do
@@ -992,37 +995,59 @@ var
   Project: IOTAProject;
   Version: TProjectVersion;
 begin
+  var Skipped := '';
   for Project in GetValidApplyProjects() do
   begin
     Version := GetProjectVersion(Project);
     if Version.Valid then
     begin
+      // Work out the final parts in Integer first, resets included: a version part is a
+      // Word, and a value past 65535 would silently wrap to a small number.
+      var NewMajor: Integer := Version.FileVersion.Major;
+      var NewMinor: Integer := Version.FileVersion.Minor;
+      var NewRelease: Integer := Version.FileVersion.Release;
+      var NewBuild: Integer := Version.FileVersion.Build;
       if cbxIncBuild.Checked then
-        Inc(Version.FileVersion.Build, udIncBuild.Position);
+        Inc( NewBuild, udIncBuild.Position );
       if cbxIncRelease.Checked then
-        Inc(Version.FileVersion.Release, udIncRelease.Position);
+        Inc( NewRelease, udIncRelease.Position );
       if cbxIncMinor.Checked then
       begin
-        Inc(Version.FileVersion.Minor, udIncMinor.Position);
+        Inc( NewMinor, udIncMinor.Position );
         if cbxZeroRelease2.Checked then
-          Version.FileVersion.Release := 0;
+          NewRelease := 0;
       end;
       if cbxIncMajor.Checked then
       begin
-        Inc(Version.FileVersion.Major, udIncMajor.Position);
+        Inc( NewMajor, udIncMajor.Position );
         if cbxZeroMinor.Checked then
-          Version.FileVersion.Minor := 0;
+          NewMinor := 0;
         if cbxZeroRelease.Checked then
-          Version.FileVersion.Release := 0;
+          NewRelease := 0;
       end;
 
+      if ( NewMajor > High( Word ) ) or ( NewMinor > High( Word ) ) or ( NewRelease > High( Word ) ) or
+         ( NewBuild > High( Word ) ) then
+      begin
+        Skipped := Skipped + #13#10 + '    ' + ExtractFileName( Project.FileName );
+        Continue;
+      end;
+
+      Version.FileVersion.Major := NewMajor;
+      Version.FileVersion.Minor := NewMinor;
+      Version.FileVersion.Release := NewRelease;
+      Version.FileVersion.Build := NewBuild;
       with Version.FileVersion do
         Version.FileVersionStr := Format('%d.%d.%d.%d', [Major, Minor, Release, Build]);
       SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
     end;
   end;
   ApplyFinished;
+  if ( Skipped <> '' ) then
+    MessageDlg( 'These projects were left unchanged, because the increment would take a version part past ' +
+      '65535:' + Skipped, mtWarning, [mbOK], 0 );
 end;
+
 
 procedure TFormProjectSettingsSetVersioninfo.cbxApplyToSelectedOnlyClick(Sender: TObject);
 var
