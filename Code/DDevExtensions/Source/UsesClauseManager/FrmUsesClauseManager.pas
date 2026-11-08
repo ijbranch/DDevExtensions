@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -73,8 +73,10 @@ type
     /// <summary>Closes the form.</summary>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Runs the analyser on the currently active editor source.</summary>
+    /// <param name="Sender">The Analyze button.</param>
     procedure btnAnalyzeClick( Sender: TObject );
     /// <summary>Applies all recommended placement changes to the active editor.</summary>
+    /// <param name="Sender">The Apply button.</param>
     procedure btnApplyClick( Sender: TObject );
     /// <summary>Builds the exports database from the active project's search path.</summary>
     procedure btnBuildDBClick( Sender: TObject );
@@ -83,6 +85,7 @@ type
     /// <summary>Form OnCreate handler: initialises sort and current-file state.</summary>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: frees placement string lists.</summary>
+    /// <param name="Sender">The form being destroyed.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Re-opens the source file when a row is double-clicked.</summary>
     procedure ListViewDblClick( Sender: TObject );
@@ -91,6 +94,7 @@ type
     /// <summary>Copies selected rows (or all rows) to the clipboard as TSV.</summary>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Moves only the selected units to their recommended sections.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuMoveUnitClick( Sender: TObject );
     /// <summary>Re-opens the source file in the editor.</summary>
     procedure mnuOpenFileClick( Sender: TObject );
@@ -120,9 +124,28 @@ type
     procedure ShowDetails( const Placement: TUnitPlacement );
     /// <summary>Re-opens <see cref="FCurrentFileName"/> in the IDE editor.</summary>
     procedure OpenSelectedFile;
+    /// <summary>Frees the string lists of <see cref="FPlacements"/> and empties it.</summary>
+    procedure ClearPlacements;
+    /// <summary>Returns the source editor of the current module, or nil after telling the user why.</summary>
+    /// <param name="AAction">What the caller is about to do, for the messages ( "apply", "move" ).</param>
+    /// <returns>The source editor of the analysed file, or nil when there is none, it is another file,
+    /// or its buffer is read-only.</returns>
+    function AnalysedSourceEditor( const AAction: string ): IOTASourceEditor;
+    /// <summary>
+    /// Re-analyses the editor's CURRENT text and moves units to their recommended clauses, one
+    /// entry at a time, through a single undoable edit of the clause text only.
+    /// </summary>
+    /// <param name="ASelectedOnly">True to move only the units selected in the list; False to move
+    /// every unit whose recommendation differs from its clause.</param>
+    /// <remarks>When the re-analysis differs from what the list shows ( the unit was edited ), the
+    /// list is refreshed and nothing is changed, so the user always confirms what is applied.</remarks>
+    procedure MoveUnits( ASelectedOnly: Boolean );
   public
     /// <summary>Shows or focuses the singleton manager form.</summary>
     class procedure Execute;
+    /// <summary>Frees the singleton form, if open; called when the plug-in unloads so no form whose
+    /// code lives in the expert DLL outlives it.</summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -159,6 +182,13 @@ begin
 
 end;
 
+class procedure TFormUsesClauseManager.CloseInstance;
+begin
+  // FormClose clears FormInstance only on a user close; freeing here leaves nothing behind.
+  if FormInstance <> nil then
+    FreeAndNil( FormInstance );
+end;
+
 procedure TFormUsesClauseManager.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
@@ -184,15 +214,10 @@ begin
 end;
 
 procedure TFormUsesClauseManager.FormDestroy( Sender: TObject );
-var
-  I: Integer;
 begin
-  // Free StringLists in placements
-  for I := 0 to Length( FPlacements ) - 1 do
-  begin
-    FPlacements[ I ].IdentifiersUsedInInterface.Free;
-    FPlacements[ I ].IdentifiersUsedInImplementation.Free;
-  end;
+  ClearPlacements;
+  if FormInstance = Self then
+    FormInstance := nil;
 end;
 
 procedure TFormUsesClauseManager.DBProgress( Sender: TObject );
@@ -301,6 +326,8 @@ begin
 
     Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
     try
+      // The previous result's string lists are freed, not leaked, when a unit is analysed again.
+      ClearPlacements;
       FPlacements := Refactorer.Analyze( Source );
     finally
       Refactorer.Free;
@@ -319,133 +346,8 @@ begin
 end;
 
 procedure TFormUsesClauseManager.btnApplyClick( Sender: TObject );
-var
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I: Integer;
-  Source, NewSource: UTF8String;
-  Refactorer: TUsesClauseRefactorer;
-  EditWriter: IOTAEditWriter;
-  ChangedCount: Integer;
-  MovedNames: string;
 begin
-  if UsesClauseManagerPlugin = nil then
-    Exit;
-
-  if Length( FPlacements ) = 0 then
-  begin
-    ShowMessage( 'No analysis results. Please analyze a unit first.' );
-    Exit;
-  end;
-
-  // Count how many units will be moved. Never auto-move a unit the analyser
-  // could not classify ('No direct usage detected - review manually'): leave it
-  // where it is, since moving an undetected dependency can break compilation.
-  ChangedCount := 0;
-  MovedNames := '';
-  for I := 0 to High( FPlacements ) do
-  begin
-    if Pos( 'No direct usage', FPlacements[ I ].Reason ) > 0 then
-      FPlacements[ I ].RecommendedSection := FPlacements[ I ].CurrentSection;
-
-    if FPlacements[ I ].CurrentSection <> FPlacements[ I ].RecommendedSection then
-    begin
-      Inc( ChangedCount );
-      if MovedNames <> '' then
-        MovedNames := MovedNames + ', ';
-      MovedNames := MovedNames + FPlacements[ I ].UnitName;
-    end;
-  end;
-
-  if ChangedCount = 0 then
-  begin
-    ShowMessage( 'No changes needed - all units are already in their optimal sections.' );
-    Exit;
-  end;
-
-  if MessageDlg( Format( 'This will move %d unit(s) between uses clauses:'#13#10#13#10 +
-    '%s'#13#10#13#10 + 'Do you want to continue?', [ ChangedCount, MovedNames ] ),
-    mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
-    Exit;
-
-  // Get current editor
-  Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
-  if Module = nil then
-  begin
-    ShowMessage( 'No file open in editor.' );
-    Exit;
-  end;
-
-  SourceEditor := nil;
-  for I := 0 to Module.ModuleFileCount - 1 do
-  begin
-    if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-      Break;
-  end;
-
-  if SourceEditor = nil then
-  begin
-    ShowMessage( 'No source editor found.' );
-    Exit;
-  end;
-
-  // The active module may have changed since Analyze ran; refuse to rewrite a
-  // file other than the one that was analysed.
-  if ( FCurrentFileName <> '' ) and not SameText( SourceEditor.FileName, FCurrentFileName ) then
-  begin
-    ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
-      'Please re-analyse before applying changes.',
-      [ ExtractFileName( FCurrentFileName ), ExtractFileName( SourceEditor.FileName ) ] ) );
-    Exit;
-  end;
-
-  Screen.Cursor := crHourGlass;
-  btnApply.Enabled := False;
-  try
-    // Get current source
-    Source := GetEditorSource( SourceEditor );
-
-    // Generate refactored source
-    Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
-    try
-      NewSource := Refactorer.GenerateRefactoredSource( Source, FPlacements );
-    finally
-      Refactorer.Free;
-    end;
-
-    // Check if anything changed
-    if NewSource = Source then
-    begin
-      ShowMessage( 'No changes were made to the source.' );
-      Exit;
-    end;
-
-    // Write the new source back to the editor
-    EditWriter := SourceEditor.CreateUndoableWriter;
-    try
-      EditWriter.DeleteTo( MaxInt );
-      EditWriter.Insert( PAnsiChar( NewSource ) );
-    finally
-      EditWriter := nil;
-    end;
-
-    ShowMessage( Format( 'Successfully reorganized uses clauses. %d unit(s) moved.', [ ChangedCount ] ) );
-
-    // Clear the analysis results since they're now stale
-    for I := 0 to Length( FPlacements ) - 1 do
-    begin
-      FPlacements[ I ].IdentifiersUsedInInterface.Free;
-      FPlacements[ I ].IdentifiersUsedInImplementation.Free;
-    end;
-    SetLength( FPlacements, 0 );
-    ListView.Items.Clear;
-    memoDetails.Lines.Clear;
-    lblSummary.Caption := 'Changes applied. Re-analyze to see current state.';
-
-  finally
-    btnApply.Enabled := True;
-    Screen.Cursor := crDefault;
-  end;
+  MoveUnits( False );
 end;
 
 procedure TFormUsesClauseManager.PopulateList;
@@ -599,145 +501,217 @@ begin
 end;
 
 procedure TFormUsesClauseManager.mnuMoveUnitClick( Sender: TObject );
-var
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I: Integer;
-  Source, NewSource: UTF8String;
-  Refactorer: TUsesClauseRefactorer;
-  EditWriter: IOTAEditWriter;
-  SelectedPlacements: TArray<TUnitPlacement>;
-  Item: TListItem;
-  SelectedUnits: TStringList;
-  MoveCount: Integer;
 begin
-  if UsesClauseManagerPlugin = nil then
-    Exit;
-
   if ListView.SelCount = 0 then
   begin
     ShowMessage( 'Please select one or more units to move.' );
     Exit;
   end;
+  MoveUnits( True );
+end;
 
-  // Collect selected unit names that need moving
-  SelectedUnits := TStringList.Create;
+procedure TFormUsesClauseManager.ClearPlacements;
+begin
+  for var Placement in FPlacements do
+  begin
+    Placement.IdentifiersUsedInInterface.Free;
+    Placement.IdentifiersUsedInImplementation.Free;
+  end;
+  FPlacements := nil;
+end;
+
+function TFormUsesClauseManager.AnalysedSourceEditor( const AAction: string ): IOTASourceEditor;
+var
+  Module: IOTAModule;
+  Buffer: IOTAEditBuffer;
+begin
+  Result := nil;
+  Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
+  if Module = nil then
+  begin
+    ShowMessage( 'No file open in editor.' );
+    Exit;
+  end;
+
+  for var I := 0 to Module.ModuleFileCount - 1 do
+    if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, Result ) then
+      Break;
+  if Result = nil then
+  begin
+    ShowMessage( 'No source editor found.' );
+    Exit;
+  end;
+
+  // Refuse to rewrite a file other than the one that was analysed.
+  if ( FCurrentFileName <> '' ) and not SameText( Result.FileName, FCurrentFileName ) then
+  begin
+    ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
+      'Please analyse it again before you %s.', [ ExtractFileName( FCurrentFileName ), ExtractFileName( Result.FileName ), AAction ] ) );
+    Exit( nil );
+  end;
+
+  if Supports( Result, IOTAEditBuffer, Buffer ) and Buffer.IsReadOnly then
+  begin
+    ShowMessage( Format( '%s is read-only; no changes were made.', [ ExtractFileName( Result.FileName ) ] ) );
+    Exit( nil );
+  end;
+end;
+
+procedure TFormUsesClauseManager.MoveUnits( ASelectedOnly: Boolean );
+var
+  SourceEditor: IOTASourceEditor;
+  Source: UTF8String;
+  Refactorer: TUsesClauseRefactorer;
+  Fresh, Moves: TArray<TUnitPlacement>;
+  Selected: TStringList;
+  Edits: TArray<TUsesEdit>;
+  ErrorMessage, MovedNames: string;
+  Writer: IOTAEditWriter;
+  Stale: Boolean;
+  MoveCount: Integer;
+begin
+  if ( UsesClauseManagerPlugin = nil ) or FBusy then
+    Exit;
+
+  if Length( FPlacements ) = 0 then
+  begin
+    ShowMessage( 'No analysis results. Please analyse a unit first.' );
+    Exit;
+  end;
+
+  if ASelectedOnly then
+    SourceEditor := AnalysedSourceEditor( 'move units' )
+  else
+    SourceEditor := AnalysedSourceEditor( 'apply changes' );
+  if SourceEditor = nil then
+    Exit;
+
+  Selected := TStringList.Create;
+  Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
   try
-    SelectedUnits.CaseSensitive := False;
-    for Item in ListView.Items do
-    begin
-      if Item.Selected then
-      begin
-        // Check if this unit needs moving (Current <> Recommended)
-        if SafeGetSubItem( Item, 0 ) <> SafeGetSubItem( Item, 1 ) then
-          SelectedUnits.Add( Item.Caption );
-      end;
-    end;
+    Selected.CaseSensitive := False;
+    if ASelectedOnly then
+      for var Item in ListView.Items do
+        if Item.Selected then
+          Selected.Add( Item.Caption );
 
-    if SelectedUnits.Count = 0 then
+    { Re-analyse the buffer as it is NOW.  Edits made since the list was built ( a unit added to or
+      removed from a clause ) would otherwise be undone by applying the old result. }
+    Source := GetEditorSource( SourceEditor );
+    Fresh := Refactorer.Analyze( Source );
+
+    Stale := Length( Fresh ) <> Length( FPlacements );
+    if not Stale then
+      for var I := 0 to High( Fresh ) do
+        if not SameText( Fresh[ I ].UnitName, FPlacements[ I ].UnitName ) or
+           ( Fresh[ I ].CurrentSection <> FPlacements[ I ].CurrentSection ) or
+           ( Fresh[ I ].RecommendedSection <> FPlacements[ I ].RecommendedSection ) then
+          Stale := True;
+    if Stale then
     begin
-      ShowMessage( 'Selected unit(s) are already in their recommended sections.' );
+      ClearPlacements;
+      FPlacements := Fresh;
+      PopulateList;
+      memoDetails.Lines.Clear;
+      lblSummary.Caption := Format( 'Found %d units to analyse', [ Length( FPlacements ) ] );
+      ShowMessage( 'The unit has changed since it was analysed.  The list now shows the current '
+        + 'analysis; review it and try again.  No changes were made.' );
       Exit;
     end;
 
-    // Create a modified placements array - only move selected units
-    SetLength( SelectedPlacements, Length( FPlacements ) );
-    for I := 0 to Length( FPlacements ) - 1 do
-    begin
-      SelectedPlacements[ I ] := FPlacements[ I ];
-      // Create new TStringList instances to avoid double-free
-      SelectedPlacements[ I ].IdentifiersUsedInInterface := TStringList.Create;
-      SelectedPlacements[ I ].IdentifiersUsedInInterface.Assign( FPlacements[ I ].IdentifiersUsedInInterface );
-      SelectedPlacements[ I ].IdentifiersUsedInImplementation := TStringList.Create;
-      SelectedPlacements[ I ].IdentifiersUsedInImplementation.Assign( FPlacements[ I ].IdentifiersUsedInImplementation );
-
-      // If not selected, set CurrentSection = RecommendedSection so it won't be moved
-      if SelectedUnits.IndexOf( FPlacements[ I ].UnitName ) < 0 then
-        SelectedPlacements[ I ].CurrentSection := SelectedPlacements[ I ].RecommendedSection;
-    end;
-
-    // Get current editor
-    Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
-    if Module = nil then
-    begin
-      ShowMessage( 'No file open in editor.' );
-      Exit;
-    end;
-
-    SourceEditor := nil;
-    for I := 0 to Module.ModuleFileCount - 1 do
-    begin
-      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        Break;
-    end;
-
-    if SourceEditor = nil then
-    begin
-      ShowMessage( 'No source editor found.' );
-      Exit;
-    end;
-
-    // Refuse to rewrite a file other than the one that was analysed.
-    if ( FCurrentFileName <> '' ) and not SameText( SourceEditor.FileName, FCurrentFileName ) then
-    begin
-      ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
-        'Please re-analyse before moving units.',
-        [ ExtractFileName( FCurrentFileName ), ExtractFileName( SourceEditor.FileName ) ] ) );
-      Exit;
-    end;
-
-    Screen.Cursor := crHourGlass;
     try
-      Source := GetEditorSource( SourceEditor );
-
-      Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
-      try
-        NewSource := Refactorer.GenerateRefactoredSource( Source, SelectedPlacements );
-      finally
-        Refactorer.Free;
+      // The moves: never a unit the analyser could not classify, and, for "move selected", only
+      // the selected units.  Moves shares Fresh's string lists; only Fresh frees them.
+      Moves := Copy( Fresh );
+      MoveCount := 0;
+      MovedNames := '';
+      for var I := 0 to High( Moves ) do
+      begin
+        if ( Pos( 'No direct usage', Moves[ I ].Reason ) > 0 ) or
+           ( ASelectedOnly and ( Selected.IndexOf( Moves[ I ].UnitName ) < 0 ) ) then
+          Moves[ I ].RecommendedSection := Moves[ I ].CurrentSection;
+        if Moves[ I ].CurrentSection <> Moves[ I ].RecommendedSection then
+        begin
+          Inc( MoveCount );
+          if MovedNames <> '' then
+            MovedNames := MovedNames + ', ';
+          MovedNames := MovedNames + Moves[ I ].UnitName;
+        end;
       end;
 
-      if NewSource = Source then
+      if MoveCount = 0 then
       begin
-        ShowMessage( 'No changes were made to the source.' );
+        if ASelectedOnly then
+          ShowMessage( 'Selected unit(s) are already in their recommended sections.' )
+        else
+          ShowMessage( 'No changes needed - all units are already in their optimal sections.' );
         Exit;
       end;
 
-      // Write the new source back
-      EditWriter := SourceEditor.CreateUndoableWriter;
+      if not ASelectedOnly and ( MessageDlg( Format( 'This will move %d unit(s) between uses clauses:'#13#10#13#10 +
+        '%s'#13#10#13#10 + 'Do you want to continue?', [ MoveCount, MovedNames ] ),
+        mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
+        Exit;
+
+      // The buffer can change while the dialog is up ( the IDE reloading a file changed on disk ),
+      // and the edits are byte offsets into the text read above: refuse unless it is unchanged.
+      if GetEditorSource( SourceEditor ) <> Source then
+      begin
+        ShowMessage( 'The unit changed while the confirmation was open.  No changes were made; '
+          + 'analyse it again.' );
+        Exit;
+      end;
+
+      if not Refactorer.PlanMoves( Source, Moves, Edits, ErrorMessage ) then
+      begin
+        ShowMessage( 'No changes were made: ' + ErrorMessage );
+        Exit;
+      end;
+
+      { One undoable writer, touching only the clause text: each edit copies up to its offset, then
+        deletes and inserts.  Offsets are UTF-8 byte offsets of the buffer read above, which is the
+        unit IOTAEditWriter works in. }
+      Screen.Cursor := crHourGlass;
       try
-        EditWriter.DeleteTo( MaxInt );
-        EditWriter.Insert( PAnsiChar( NewSource ) );
+        try
+          Writer := SourceEditor.CreateUndoableWriter;
+          for var Edit in Edits do
+          begin
+            Writer.CopyTo( Edit.Offset );
+            if Edit.DeleteCount > 0 then
+              Writer.DeleteTo( Edit.Offset + Edit.DeleteCount );
+            if Edit.Text <> '' then
+              Writer.Insert( PAnsiChar( Edit.Text ) );
+          end;
+          Writer := nil;
+        except
+          // Releasing the writer ends its undo group, so whatever was written is one Undo step.
+          Writer := nil;
+          ShowMessage( 'The uses-clause edit stopped part-way, so the unit may be only partly '
+            + 'changed.  Use Undo ( Ctrl+Z ) to restore it.' );
+          raise;
+        end;
       finally
-        EditWriter := nil;
+        Screen.Cursor := crDefault;
       end;
-
-      MoveCount := SelectedUnits.Count;
-      ShowMessage( Format( 'Moved %d unit(s) to recommended section.', [ MoveCount ] ) );
-
-      // Clear results - they're now stale
-      for I := 0 to Length( FPlacements ) - 1 do
-      begin
-        FPlacements[ I ].IdentifiersUsedInInterface.Free;
-        FPlacements[ I ].IdentifiersUsedInImplementation.Free;
-      end;
-      SetLength( FPlacements, 0 );
-      ListView.Items.Clear;
-      memoDetails.Lines.Clear;
-      lblSummary.Caption := 'Changes applied. Re-analyze to see current state.';
-
     finally
-      // Free the temporary placements' string lists
-      for I := 0 to Length( SelectedPlacements ) - 1 do
+      for var Placement in Fresh do
       begin
-        SelectedPlacements[ I ].IdentifiersUsedInInterface.Free;
-        SelectedPlacements[ I ].IdentifiersUsedInImplementation.Free;
+        Placement.IdentifiersUsedInInterface.Free;
+        Placement.IdentifiersUsedInImplementation.Free;
       end;
-      Screen.Cursor := crDefault;
     end;
 
+    ShowMessage( Format( 'Moved %d unit(s): %s.', [ MoveCount, MovedNames ] ) );
+
+    // The results are now stale.
+    ClearPlacements;
+    ListView.Items.Clear;
+    memoDetails.Lines.Clear;
+    lblSummary.Caption := 'Changes applied. Analyse again to see the current state.';
   finally
-    SelectedUnits.Free;
+    Refactorer.Free;
+    Selected.Free;
   end;
 end;
 

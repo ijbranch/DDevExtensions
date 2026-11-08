@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -52,7 +52,10 @@ begin
   UnhookFunction(LoadDesktopHook);
   try
     try
-      TLoadDesktopProc(LoadDesktopHook.RealProc)(Instance, Desktop);
+      // RealProc is nil when the prologue was never patched ( a failed or no-op install, e.g. on
+      // Win64 ); calling through it would AV.
+      if Assigned(LoadDesktopHook.RealProc) then
+        TLoadDesktopProc(LoadDesktopHook.RealProc)(Instance, Desktop);
     finally
       for I := 0 to Screen.FormCount - 1 do
       begin

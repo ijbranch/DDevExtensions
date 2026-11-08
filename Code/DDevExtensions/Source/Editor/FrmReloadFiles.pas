@@ -1,4 +1,4 @@
-unit FrmReloadFiles;
+﻿unit FrmReloadFiles;
 
 /// <summary>
 /// Replaces Delphi's built-in per-file CheckFileDates dialog with a single multi-file dialog
@@ -85,6 +85,7 @@ type
     /// <summary>Posts WM_LISTVIEWSELCHANGED to refresh the diff controls.</summary>
     procedure ListViewModulesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     /// <summary>Spawns the configured diff tool against the selected editor's content.</summary>
+    /// <param name="Sender">The Diff button.</param>
     procedure btnDiffClick(Sender: TObject);
     /// <summary>Opens Windows Explorer with the selected file pre-selected.</summary>
     procedure mniShowInExplorerClick(Sender: TObject);
@@ -428,7 +429,7 @@ begin
 
   if btnDiff.Enabled and (ComboBoxDiff.ItemIndex <> -1) and (ListViewModules.SelCount = 1) then
   begin
-    Index := Integer(ComboBoxDiff.Items.Objects[ComboBoxDiff.ItemIndex]);
+    Index := NativeInt(ComboBoxDiff.Items.Objects[ComboBoxDiff.ItemIndex]);
     Module := nil;
     if Supports(TDocModule(ListViewModules.Selected.Data).GetCodeIDocModule, IOTAModule, Module) then
     begin

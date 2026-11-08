@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -141,7 +141,7 @@ type
     FTimerFilterUpdate: TTimer;
     /// <summary>Reference to the IDE component palette being mirrored.</summary>
     FPalette: TCategoryButtons;
-    /// <summary>Owns the per-result <see cref="TPaletteItemHolder"/> instances.</summary>
+    /// <summary>Owns the per-result <see cref="TCompItem"/> instances ( each owns its <see cref="TPaletteItemHolder"/> ).</summary>
     FCompObjects: TObjectList;
     /// <summary>IDE action providing the configurable focus hotkey.</summary>
     FHotkeyAction: TAction;
@@ -374,7 +374,7 @@ var
   PalGroup: TButtonCategory;
   PalGroupItems: TButtonCollection;
   PalItem: TButtonItem;
-  Holder: TPaletteItemHolder;
+  Item: TCompItem;
   SelText: string;
   EditTextLen: Integer;
   Len: Integer;
@@ -386,45 +386,48 @@ begin
   if FEdit.ListBox.ItemIndex <> -1 then
     SelText := FEdit.ListBox.Items[FEdit.ListBox.ItemIndex];
 
-  List := TStringList.Create;
+  FEdit.ListBox.Items.BeginUpdate;
   try
+    // The list box holds the items: empty it before they are freed.  FCompObjects owns every
+    // TCompItem ( which frees its palette holder ); they used to leak on every refresh.
+    FEdit.ListBox.ClearList;
     FCompObjects.Clear;
-    FPalette := GetComponentPalette;
-    if FPalette <> nil then
-    begin
-      Categories := GetPaletteCategories(FPalette);
-      for PalIndex := 0 to Categories.Count - 1 do
+
+    List := TStringList.Create;
+    try
+      FPalette := GetComponentPalette;
+      if FPalette <> nil then
       begin
-        PalGroup := Categories.Items[PalIndex];
-        PalGroupItems := PalGroup.Items;
-        PaletteName := PalGroup.Caption;
-        for i := 0 to PalGroupItems.Count - 1 do
+        Categories := GetPaletteCategories(FPalette);
+        for PalIndex := 0 to Categories.Count - 1 do
         begin
-          PalItem := PalGroupItems[i];
-          CompName := PalItem.Caption;
-          if Filter(CompName) then
+          PalGroup := Categories.Items[PalIndex];
+          PalGroupItems := PalGroup.Items;
+          PaletteName := PalGroup.Caption;
+          for i := 0 to PalGroupItems.Count - 1 do
           begin
-            Holder := TPaletteItemHolder.Create(PalItem);
-            FCompObjects.Add(Holder);
-            List.AddObject(CompName, TCompItem.Create(0, PaletteName, CompName, nil, Holder));
+            PalItem := PalGroupItems[i];
+            CompName := PalItem.Caption;
+            if Filter(CompName) then
+            begin
+              Item := TCompItem.Create(0, PaletteName, CompName, nil, TPaletteItemHolder.Create(PalItem));
+              FCompObjects.Add(Item);
+              List.AddObject(CompName, Item);
+            end;
           end;
         end;
       end;
-    end;
-    if FEdit.CheckBoxPaletteSort.Checked then
-      TStringList(List).CustomSort(PaletteSortCompare)
-    else
-      TStringList(List).Sort;
+      if FEdit.CheckBoxPaletteSort.Checked then
+        TStringList(List).CustomSort(PaletteSortCompare)
+      else
+        TStringList(List).Sort;
 
-    if List.Count = 1 then
-      FEdit.PanelBottom.Caption := '1 component  '
-    else
-      FEdit.PanelBottom.Caption := Format('%d components  ', [List.Count]);
+      if List.Count = 1 then
+        FEdit.PanelBottom.Caption := '1 component  '
+      else
+        FEdit.PanelBottom.Caption := Format('%d components  ', [List.Count]);
 
-    // transfer list to ListBox
-    FEdit.ListBox.Items.BeginUpdate;
-    try
-      FEdit.ListBox.ClearList;
+      // transfer list to ListBox
       FEdit.ListBox.Items.Assign(List);
 
       if SelText <> '' then
@@ -466,11 +469,11 @@ begin
         FEdit.ListBox.ItemIndex := MinLenDiffIndex;
       end;
     finally
-      FEdit.UpdateDropDownBounds;
-      FEdit.ListBox.Items.EndUpdate;
+      List.Free;
     end;
   finally
-    List.Free;
+    FEdit.UpdateDropDownBounds;
+    FEdit.ListBox.Items.EndUpdate;
   end;
 end;
 

@@ -11,9 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- (2026-11-09) **23 Uses Clause Manager tests** (IFDEF/comment/in-path preservation, own-line `//` comments, stale placements, clause creation and include refusal, UTF-8 offsets, LF buffers, dotted names, wrapping, program refusal, export precision incl. enumeration values, section tracking, provider check, directory resolution) **and one Method Separators test** (header without a body) - `TestUsesClauseManagerCoreDUnitX.pas`, `TestMethodSeparatorsCoreDUnitX.pas`
 - (2026-11-09) **`TestExcelExportDUnitX`**: 12 cases proving `ExcelCellText` prefixes text Excel would evaluate (`= + - @`, including "-1+2"), leaves names, paths, numbers and empty text unchanged, and keeps signed numbers ("-5", "-0.3", "+1") numeric - `TestExcelExportDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
 - (2026-10-25) **This change log** — `CHANGELOG.md`.  The suite's own record, per the estate rule that every test
   suite has one; test-only history moved in from `..\CHANGELOG.md` ( 9 entries ).
+
+### Changed
+
+- (2026-11-09) **The characterisation test `TestDuplicateUnitNameCurrentlyRaises` became `TestDuplicateUnitNameFirstOneWins`**, pinning the fixed behaviour - `TestUsesClauseManagerCoreDUnitX.pas`
 
 ## [3.23.15] - 2026-10-21
 

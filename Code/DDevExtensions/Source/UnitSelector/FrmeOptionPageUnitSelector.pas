@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -218,10 +218,12 @@ begin
   begin
     try
       TFormFileSelector.Execute(False);
-      Exit;
     except
+      // The error is shown; opening the IDE's own Use Unit dialog as well would answer one
+      // keystroke with two dialogs.
       Application.HandleException(Self);
     end;
+    Exit;
   end;
 
   // failsafe code

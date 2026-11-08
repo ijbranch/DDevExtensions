@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -50,6 +50,8 @@ type
   TIdentifierUsageAnalyzer = UsesClauseManagerCore.TIdentifierUsageAnalyzer;
   /// <summary>Computes placement recommendations and rewrites the uses clauses.</summary>
   TUsesClauseRefactorer = UsesClauseManagerCore.TUsesClauseRefactorer;
+  /// <summary>One planned uses-clause edit, in UTF-8 byte offsets of the source.</summary>
+  TUsesEdit = UsesClauseManagerCore.TUsesEdit;
 
 const
   { An enumerated type alias does not bring its values into scope, so the values are
@@ -123,7 +125,7 @@ var
 implementation
 
 uses
-  FrmUsesClauseManager, FrmeOptionPageUsesClause;
+  IDEUtils, FrmUsesClauseManager, FrmeOptionPageUsesClause;
 
 { TUnitExportsDatabaseIDEHelper }
 
@@ -131,34 +133,34 @@ procedure TUnitExportsDatabaseIDEHelper.BuildFromSearchPath( Project: IOTAProjec
   OnProgress: TNotifyEvent );
 var
   Options: IOTAProjectOptions;
-  SearchPath: string;
-  Paths: TStringList;
+  ProjectDir: string;
+  Paths, SearchPaths: TStringList;
 begin
   Clear;
 
   if Project = nil then
     Exit;
 
+  ProjectDir := ExtractFileDir( Project.FileName );
   Paths := TStringList.Create;
+  SearchPaths := TStringList.Create;
   try
-    // Add project directory
-    Paths.Add( ExtractFileDir( Project.FileName ) );
+    // The project's own folder first, as the compiler searches it first; it used to be dropped
+    // whenever the project had options, which left the project's own units out of the database.
+    Paths.Add( ProjectDir );
 
-    // Get search paths from project options.
-    // NOTE: assigning DelimitedText REPLACES the list, so the project directory added above is
-    // discarded whenever the project has options. That is the behaviour this extraction preserves
-    // deliberately - changing it is a separate, now-testable decision.
+    // Then the search path, with $(...) macros expanded; a relative entry is relative to the
+    // project folder ( BuildFromDirectories resolves it against ProjectDir ).
     Options := Project.ProjectOptions;
     if Options <> nil then
     begin
-      SearchPath := VarToStr( Options.Values[ 'UnitDir' ] );
-      Paths.Delimiter := ';';
-      Paths.StrictDelimiter := True;
-      Paths.DelimitedText := SearchPath;
+      SplitPaths( SearchPaths, ExpandDirMacros( VarToStr( Options.Values[ 'UnitDir' ] ), Project ), True );
+      Paths.AddStrings( SearchPaths );
     end;
 
-    BuildFromDirectories( Paths, OnProgress );
+    BuildFromDirectories( Paths, OnProgress, ProjectDir );
   finally
+    SearchPaths.Free;
     Paths.Free;
   end;
 end;
@@ -214,6 +216,9 @@ begin
     UsesClauseManagerPlugin := TUsesClauseManagerPlugin.Create
   else
   begin
+    // The form is owned by Application, which outlives this DLL: free it now, before the plug-in
+    // it reads, so no form whose code lives in the unloaded expert is left for Application to free.
+    TFormUsesClauseManager.CloseInstance;
     UsesClauseManagerPlugin.Free;
     UsesClauseManagerPlugin := nil;
   end;

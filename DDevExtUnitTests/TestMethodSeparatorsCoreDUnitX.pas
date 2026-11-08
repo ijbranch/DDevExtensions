@@ -110,6 +110,12 @@ type
     [Test]
     procedure TestMalformedSourceTerminates;
     /// <summary>
+    /// Proves a routine header typed without its body yet does not swallow the method
+    /// implementations below it: each method still gets its separator while the user types.
+    /// </summary>
+    [Test]
+    procedure TestBodilessHeaderDoesNotSwallowMethods;
+    /// <summary>
     /// Proves nested types, record and class helpers, packed variant records with an
     /// embedded record, GUID interfaces and old-style objects each get exactly one
     /// separator and are skipped as a whole, so the routine after them is found.
@@ -461,6 +467,30 @@ begin
   Options := TSeparatorOptions.Default;
   Options.IncludeInterface := True;
   Assert.AreEqual( '4,5,8,9,11,13', ScanWith( Lines, Options ), 'interface on' );
+end;
+
+procedure TTestMethodSeparatorsCore.TestBodilessHeaderDoesNotSwallowMethods;
+begin
+  Assert.AreEqual( '10,12,16', Scan( [
+    'unit U;',                       // 1
+    'interface',                     // 2
+    'type',                          // 3
+    '  TFoo = class',                // 4
+    '    procedure A;',              // 5
+    '    procedure B;',              // 6
+    '  end;',                        // 7
+    'implementation',                // 8
+    '',                              // 9
+    'procedure Typing;',             // 10 - no body yet
+    '',                              // 11
+    'procedure TFoo.A;',             // 12
+    'begin',                         // 13
+    'end;',                          // 14
+    '',                              // 15
+    'procedure TFoo.B;',             // 16
+    'begin',                         // 17
+    'end;',                          // 18
+    'end.' ] ) );
 end;
 
 procedure TTestMethodSeparatorsCore.TestMalformedSourceTerminates;

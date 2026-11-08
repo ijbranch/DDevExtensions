@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -71,13 +71,21 @@ type
     /// <param name="EditBuffer">The active editor buffer to navigate.</param>
     /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section (so the Up/Down shortcuts are directional).</param>
     procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
-    /// <summary>IOTAKeyboardBinding callback that dispatches each registered shortcut.
+    /// <summary>IOTAKeyboardBinding callback: runs <see cref="HandleKeyBinding"/> and lets no exception
+    /// leave it, because one unwinding out of the IDE's ProcessKeyStroke wedged every later keystroke
+    /// in the 64-bit IDE.  A fault is shown to the user and the key counts as handled.</summary>
+    /// <param name="Context">Editor context for the keystroke.</param>
+    /// <param name="KeyCode">The shortcut that was pressed.</param>
+    /// <param name="BindingResult">Set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
+    procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
+      var BindingResult: TKeyBindingResult);
+    /// <summary>Dispatches each registered shortcut.
     /// On the 64-bit IDE the next-binding probe is skipped (GetNextBindingRec AVs there),
     /// so unhandled keys always use the built-in HOME/TAB fallback instead of krNextProc.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
     /// <param name="KeyCode">The shortcut that was pressed.</param>
-    /// <param name="BindingResult">Out parameter set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
-    procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
+    /// <param name="BindingResult">Set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
+    procedure HandleKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
       var BindingResult: TKeyBindingResult);
     /// <summary>Internal worker for CtrlMoveCursor that consumes a single token starting at the caret.</summary>
     procedure InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
@@ -87,6 +95,7 @@ type
     /// <summary>Moves the current line or selected block up or down within the buffer.</summary>
     /// <param name="EditBuffer">Buffer to operate on.</param>
     /// <param name="Down">True to move down, False to move up.</param>
+    /// <exception cref="Exception">Raised when the buffer's writer is not the IDE's own edit writer.</exception>
     procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
     /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
     /// <param name="EditBuffer">The active editor buffer (resolution itself uses the IDE's active control).</param>
@@ -236,7 +245,7 @@ procedure InitPlugin(Unload: Boolean);
 implementation
 
 uses
-  Main, IDEHooks, Hooking, ToolsAPIHelpers, IDEUtils;
+  System.Generics.Collections, Main, IDEHooks, Hooking, ToolsAPIHelpers, IDEUtils, DelphiLexer;
 
 {$R *.dfm}
 
@@ -263,6 +272,29 @@ begin
     Keybindings := TKeybindings.Create
   else
     FreeAndNil(Keybindings);
+end;
+
+var
+  /// <summary>True once a key-binding fault has been shown; later faults are only logged, so a
+  /// fault that repeats on every keystroke cannot raise a dialog per key.</summary>
+  KeyFaultShown: Boolean = False;
+
+/// <summary>Returns the tab width of an editor tab-stop setting ( "2", or "3 5" for stops at 3 and 5 ).</summary>
+/// <param name="ATabStops">The buffer's TabStops option.</param>
+/// <returns>The distance to the first tab stop, at least 1; 2 when the setting cannot be read.</returns>
+function TabWidthOf(const ATabStops: string): Integer;
+var
+  Parts: TArray<string>;
+begin
+  Parts := ATabStops.Trim.Split([' '], TStringSplitOptions.ExcludeEmpty);
+  if (Length(Parts) = 0) or not TryStrToInt(Parts[0], Result) then
+    Exit(2);
+  // A first stop at column N is a width of N - 1 when N is given as a column ( "3 5" ), and N
+  // itself when only a width is given ( "2" ).
+  if Length(Parts) > 1 then
+    Dec(Result);
+  if Result < 1 then
+    Result := 1;
 end;
 
 function GetEndColumn(EditPosition: IOTAEditPosition): Integer;
@@ -361,7 +393,49 @@ begin
 end;
 
 procedure TFrameOptionPageKeybindings.SaveData;
+type
+  TKeyUse = record
+    Name: string;
+    Key: TShortCut;
+  end;
+var
+  KeyUses: TList<TKeyUse>;
+  Clashes: string;
+
+  procedure AddUse( AEnabled: Boolean; const AName: string; AKey: TShortCut );
+  var
+    Use: TKeyUse;
+  begin
+    if not AEnabled or ( AKey = scNone ) then
+      Exit;
+    Use.Name := AName;
+    Use.Key := AKey;
+    KeyUses.Add( Use );
+  end;
+
 begin
+  // The same shortcut on two features means the later one in DoKeyBinding's order never fires;
+  // say so instead of saving a binding that silently does nothing.  Listed in dispatch order.
+  Clashes := '';
+  KeyUses := TList<TKeyUse>.Create;
+  try
+    AddUse( cbxActive.Checked and chkMoveLineBlock.Checked, 'Move line/block up', hkMoveLineUp.HotKey );
+    AddUse( cbxActive.Checked and chkMoveLineBlock.Checked, 'Move line/block down', hkMoveLineDown.HotKey );
+    AddUse( cbxActive.Checked and chkFindDeclOnCaret.Checked, 'Find declaration', ShortCut( VK_PRIOR, [ ssCtrl, ssAlt ] ) );
+    AddUse( cbxActive.Checked and chkSectionToggle.Checked, 'Section toggle up', hkSectionUp.HotKey );
+    AddUse( cbxActive.Checked and chkSectionToggle.Checked, 'Section toggle down', hkSectionDown.HotKey );
+    for var I := 0 to KeyUses.Count - 1 do
+      for var J := I + 1 to KeyUses.Count - 1 do
+        if KeyUses[ I ].Key = KeyUses[ J ].Key then
+          Clashes := Clashes + Format( '%s and %s both use %s; only %s will work.'#13#10,
+            [ KeyUses[ I ].Name, KeyUses[ J ].Name, ShortCutToText( KeyUses[ I ].Key ), KeyUses[ I ].Name ] );
+  finally
+    KeyUses.Free;
+  end;
+  if Clashes <> '' then
+    MessageDlg( 'Key Bindings: shortcut clash'#13#10#13#10 + Clashes + #13#10'Choose different shortcuts to use both.',
+      mtWarning, [ mbOK ], 0 );
+
   FKeybindings.Active := False; // => remove all key bindings
   FKeybindings.TabIndent := cbxTabIndent.Checked;
   FKeyBindings.IndentSingleLine := cbxIndentSingleLine.Checked;
@@ -683,7 +757,12 @@ begin
       #0:
         Break;
       #10:
-        Inc(Result);
+        begin
+          // A lone LF ends the line too.  The old code stepped over it AND the byte after it
+          // without stopping, which miscounted rows and, with the LF last, ran past the #0.
+          Inc(Result);
+          Break;
+        end;
       #13:
         begin
           Inc(Result);
@@ -822,6 +901,10 @@ var
   EditWriter: TEditWriter;
   {$ENDIF}
 begin
+  // A read-only buffer refuses the writer; do nothing rather than raise into the key handler.
+  if EditBuffer.IsReadOnly then
+    Exit;
+
   EditPosition := EditBuffer.EditPosition;
   EditBlock := EditBuffer.EditBlock;
   StartRow := EditPosition.Row;
@@ -1030,6 +1113,33 @@ end;*)
 
 procedure TKeybindings.DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
   var BindingResult: TKeyBindingResult);
+begin
+  BindingResult := krUnhandled;
+  try
+    HandleKeyBinding( Context, KeyCode, BindingResult );
+  except
+    on E: Exception do
+    begin
+      // Never let an exception unwind into the IDE's keystroke processing ( CHANGELOG
+      // 2026-07-13: in the 64-bit IDE that wedged every later keystroke until a restart ).
+      // The first fault of the session is shown, so it is not hidden, and its key is consumed;
+      // later ones are only logged and their keys left to the IDE, so a fault that repeats on
+      // every keystroke cannot open a dialog per key.
+      OutputDebugString( PChar( Format( 'DDevExtensions Keybindings: %s: %s', [ E.ClassName, E.Message ] ) ) );
+      if KeyFaultShown then
+        BindingResult := krUnhandled
+      else
+      begin
+        KeyFaultShown := True;
+        BindingResult := krHandled;
+        Application.ShowException( E );
+      end;
+    end;
+  end;
+end;
+
+procedure TKeybindings.HandleKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
+  var BindingResult: TKeyBindingResult);
 
   function GetIndentSize: Integer;
   begin
@@ -1041,6 +1151,8 @@ var
   EditBuffer: IOTAEditBuffer;
   EditBlock: IOTAEditBlock;
   Column: Integer;
+  BufferOptions: IOTABufferOptions;
+  Distance: Integer;
   {$IFNDEF CPUX64}
   BindingRec: TKeyBindingRec;
   {$ENDIF}
@@ -1061,6 +1173,11 @@ begin
       BindingResult := krUnhandled;
       Exit;
     end;
+    // A read-only buffer refuses every edit: leave Tab and Shift+Tab unhandled before any branch
+    // that indents or inserts ( on Win64 every unhandled Tab reaches the inserting fallback below,
+    // so each Tab in a read-only file raised ).
+    if EditBuffer.IsReadOnly and ( ( KeyCode = ShortCut( VK_TAB, [] ) ) or ( KeyCode = ShortCut( VK_TAB, [ ssShift ] ) ) ) then
+      Exit;
     if Active then
     begin
       EditBlock := EditBuffer.EditBlock;
@@ -1221,17 +1338,24 @@ begin
       else
       if KeyCode = ShortCut(VK_TAB, []) then
       begin
-        { The TAB key isn't processed when bound to a method }
-        if not (BorlandIDEServices as IOTAEditorServices).EditOptions.BufferOptions.SmartTab then
-        begin
-          EditPosition.InsertCharacter(#9);
-          BindingResult := krHandled;
-        end
+        { The TAB key isn't processed when bound to a method.  Honour the buffer's options:
+          smart tab aligns; otherwise a hard tab only when "Use tab character" is on, else spaces
+          to the next tab stop ( InsertCharacter( #9 ) always typed a raw tab, which on Win64 -
+          where every unhandled Tab ends here - put hard tabs into space-indented code ). }
+        BufferOptions := (BorlandIDEServices as IOTAEditorServices).EditOptions.BufferOptions;
+        if BufferOptions.SmartTab then
+          EditPosition.Align(1)
+        else if BufferOptions.UseTabCharacter then
+          EditPosition.InsertCharacter(#9)
         else
         begin
-          EditPosition.Align(1);
-          BindingResult := krHandled;
+          // On a tab stop the distance to the next one can be 0: use the buffer's tab width then.
+          Distance := EditPosition.DistanceToTab( sdForward );
+          if Distance <= 0 then
+            Distance := TabWidthOf( BufferOptions.TabStops );
+          EditPosition.InsertText( StringOfChar( ' ', Distance ) );
         end;
+        BindingResult := krHandled;
       end;
     end;
   end;
@@ -1266,26 +1390,9 @@ var
   Source: UTF8String;
   EditPosition: IOTAEditPosition;
   InterfaceRow, ImplementationRow: Integer;
-  P: PAnsiChar;
-  LineNum: Integer;
   TargetRow: Integer;
-
-  function SkipWhitespace(P: PAnsiChar): PAnsiChar;
-  begin
-    Result := P;
-    while Result^ in [' ', #9] do
-      Inc(Result);
-  end;
-
-  function MatchKeyword(P: PAnsiChar; const Keyword: AnsiString): Boolean;
-  var
-    Len: Integer;
-  begin
-    Len := Length(Keyword);
-    Result := (System.AnsiStrings.StrLIComp(P, PAnsiChar(Keyword), Len) = 0) and
-              not (P[Len] in ['A'..'Z', 'a'..'z', '0'..'9', '_']);
-  end;
-
+  Lexer: TDelphiLexer;
+  Token: TToken;
 begin
   if EditBuffer = nil then
     Exit;
@@ -1298,38 +1405,23 @@ begin
   if EditPosition = nil then
     Exit;
 
-  // Find interface and implementation line numbers
+  // Find the section keywords as tokens, so a comment or string line that merely starts with
+  // "interface" or "implementation" is not taken for the section.  The first "interface" token is
+  // the section keyword: a type's "= interface" can only follow it.
   InterfaceRow := 0;
   ImplementationRow := 0;
-  P := PAnsiChar(Source);
-  LineNum := 1;
-
-  while P^ <> #0 do
-  begin
-    // Skip to start of line content
-    P := SkipWhitespace(P);
-
-    // Check for interface keyword (not 'interface' as type modifier)
-    if (InterfaceRow = 0) and MatchKeyword(P, 'interface') then
-    begin
-      // Make sure it's not inside a type declaration (check if previous non-space is '=')
-      // Simple check: interface at start of line or after only whitespace
-      InterfaceRow := LineNum;
-    end
-    else if MatchKeyword(P, 'implementation') then
-    begin
-      ImplementationRow := LineNum;
-      Break; // We have both, no need to continue
-    end;
-
-    // Skip to next line
-    while (P^ <> #0) and (P^ <> #10) and (P^ <> #13) do
-      Inc(P);
-    if P^ = #13 then
-      Inc(P);
-    if P^ = #10 then
-      Inc(P);
-    Inc(LineNum);
+  Lexer := TDelphiLexer.Create( '', Source );
+  try
+    while ( ImplementationRow = 0 ) and Lexer.NextToken( Token ) do
+      case Token.Kind of
+        tkI_interface:
+          if InterfaceRow = 0 then
+            InterfaceRow := Token.Line + 1; // The lexer counts lines from 0.
+        tkI_implementation:
+          ImplementationRow := Token.Line + 1;
+      end;
+  finally
+    Lexer.Free;
   end;
 
   // If we didn't find both sections, nothing to do

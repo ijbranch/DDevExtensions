@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -92,22 +92,35 @@ type
     /// <summary>Empties the exports and reverse-lookup dictionaries.</summary>
     procedure Clear;
     /// <summary>Builds the database by scanning every .pas file in each of the supplied directories.</summary>
-    /// <param name="ADirectories">Directories to scan. Entries are trimmed and expanded; missing ones are skipped.</param>
+    /// <param name="ADirectories">Directories to scan, in search order. Entries are trimmed and expanded,
+    /// a relative entry against <paramref name="ABaseDirectory"/>; missing and repeated ones are skipped.</param>
     /// <param name="AOnProgress">Optional callback fired per file (read <see cref="ProgressFileName"/> for the current file).</param>
+    /// <param name="ABaseDirectory">Directory relative entries are resolved against ( the project's
+    /// folder ); empty to resolve them against the process's current directory.</param>
     /// <remarks>The IDE-facing <c>BuildFromSearchPath</c>, which derives these directories from an
     /// <c>IOTAProject</c>, is a class helper in the <c>UsesClauseManager</c> unit. Keeping it there is
-    /// what leaves this unit free of ToolsAPI, and therefore testable outside the IDE.</remarks>
-    procedure BuildFromDirectories( ADirectories: TStrings; AOnProgress: TNotifyEvent );
+    /// what leaves this unit free of ToolsAPI, and therefore testable outside the IDE.  When two
+    /// directories hold a unit of the same name, the first one found wins, as it does for the compiler.</remarks>
+    procedure BuildFromDirectories( ADirectories: TStrings; AOnProgress: TNotifyEvent; const ABaseDirectory: string = '' );
+    /// <summary>Returns the absolute form of one search-path entry.</summary>
+    /// <param name="ADirectory">The entry, absolute or relative.</param>
+    /// <param name="ABaseDirectory">Directory a relative entry is resolved against; empty for the current directory.</param>
+    /// <returns>The expanded directory without a trailing delimiter, or an empty string for a blank entry.</returns>
+    class function ResolveDirectory( const ADirectory, ABaseDirectory: string ): string;
     /// <summary>Scans a single unit file and adds its interface exports to the database.</summary>
-    /// <param name="UnitPath">Full path of the .pas file. A file that does not exist, or that fails to
-    /// load, is skipped and reported through OutputDebugString rather than raising.</param>
+    /// <param name="UnitPath">Full path of the .pas file. A file that does not exist, that fails to
+    /// load, or whose unit name was already scanned, is skipped and reported through
+    /// OutputDebugString rather than raising.</param>
     procedure ScanUnit( const UnitPath: string );
     /// <summary>Adds the interface exports of an already-loaded unit source to the database.</summary>
     /// <param name="UnitName">Name to record the exports under, without path or extension.</param>
     /// <param name="UnitPath">Path the lexer reports in diagnostics. Any label will do when the source
     /// did not come from disk.</param>
     /// <param name="Source">UTF-8 source text of the unit.</param>
-    /// <remarks>This is the seam the unit tests use: it needs no file on disk.</remarks>
+    /// <remarks>This is the seam the unit tests use: it needs no file on disk.  Only declared names
+    /// are recorded: the name starting each type, const and var declaration and each routine's
+    /// name, never a parameter, return, field or member.  A second unit of a name already in the
+    /// database is skipped and logged, never added.</remarks>
     procedure ScanSource( const UnitName, UnitPath: string; const Source: UTF8String );
     /// <summary>Returns the list of exports for a unit, or nil if the unit was not scanned.</summary>
     function GetExports( const UnitName: string ): TList<TUnitExport>;
@@ -172,6 +185,22 @@ type
   end;
 
   /// <summary>
+  /// One text edit of a uses clause: <see cref="DeleteCount"/> bytes at byte offset
+  /// <see cref="Offset"/> of the UTF-8 source are replaced by <see cref="Text"/>.
+  /// </summary>
+  /// <remarks>Offsets are 0-based UTF-8 byte offsets into the ORIGINAL source, which is what an
+  /// <c>IOTAEditWriter</c> takes, so a list sorted by offset can be replayed through one writer
+  /// ( CopyTo, DeleteTo, Insert ) without touching any other part of the buffer.</remarks>
+  TUsesEdit = record
+    /// <summary>0-based byte offset of the first byte replaced ( or of the insertion point ).</summary>
+    Offset: Integer;
+    /// <summary>Number of bytes removed at <see cref="Offset"/>; 0 for a pure insertion.</summary>
+    DeleteCount: Integer;
+    /// <summary>UTF-8 text inserted at <see cref="Offset"/>; empty for a pure deletion.</summary>
+    Text: UTF8String;
+  end;
+
+  /// <summary>
   /// Combines the exports database and a usage analyser to compute placement
   /// recommendations for each used unit and to rewrite the source's uses clauses.
   /// </summary>
@@ -181,6 +210,18 @@ type
     FExportsDB: TUnitExportsDatabase;
     /// <summary>Owned analyser used to inspect the source.</summary>
     FUsageAnalyzer: TIdentifierUsageAnalyzer;
+    /// <summary>True when an identifier used by the analysed source comes from the named used unit.</summary>
+    /// <param name="AIdentifier">The identifier, as the source spells it.</param>
+    /// <param name="AUnitName">The used unit's name as the uses clause spells it ( may be dotted ).</param>
+    /// <param name="ALeafName">The last part of a dotted unit name; the name itself when undotted.</param>
+    /// <returns>True when a qualified reference names the unit, or, without one, when the unit
+    /// declares the identifier in its interface.</returns>
+    function IdentifierComesFrom( const AIdentifier, AUnitName, ALeafName: string ): Boolean;
+    /// <summary>Returns the exports of a used unit, looked up by its full and then its leaf name.</summary>
+    /// <param name="AUnitName">The used unit's name as the uses clause spells it.</param>
+    /// <param name="ALeafName">The last part of a dotted unit name.</param>
+    /// <returns>The unit's exports, or nil when the database does not know it.</returns>
+    function ExportsOfUsedUnit( const AUnitName, ALeafName: string ): TList<TUnitExport>;
   public
     /// <summary>Creates a refactorer that consults the supplied exports database.</summary>
     /// <param name="AExportsDB">Database to consult; not owned by this instance.</param>
@@ -189,16 +230,48 @@ type
     destructor Destroy; override;
     /// <summary>Analyses the source and returns one <see cref="TUnitPlacement"/> per used unit.</summary>
     /// <remarks>The caller takes ownership of the TStringList fields inside each returned record.</remarks>
+    /// <returns>One placement per unit in either uses clause.</returns>
+    /// <param name="Source">The unit's source as UTF-8.</param>
     function Analyze( const Source: UTF8String ): TArray<TUnitPlacement>;
+    /// <summary>
+    /// Plans the uses-clause edits that move every unit whose placement differs from its current
+    /// section, entry by entry: the entry's own text ( a dotted name, an <c>in '...'</c> path ) is
+    /// moved, and every other part of both clauses - comments, compiler directives, layout - is kept.
+    /// </summary>
+    /// <param name="Source">UTF-8 source the placements were computed from.</param>
+    /// <param name="Placements">Placements; those with CurrentSection &lt;&gt; RecommendedSection move.</param>
+    /// <param name="Edits">On success, the edits sorted by offset, non-overlapping; empty when nothing moves.</param>
+    /// <param name="ErrorMessage">On refusal, why the source cannot be edited safely.</param>
+    /// <returns>True with the edits, or False ( and no edits ) when the clause shape cannot be edited
+    /// safely: a moved unit inside a conditional block or missing from the source, a deletion that
+    /// would swallow a comment or directive, or a clause whose conditional blocks do not balance.</returns>
+    function PlanMoves( const Source: UTF8String; const Placements: TArray<TUnitPlacement>;
+      out Edits: TArray<TUsesEdit>; out ErrorMessage: string ): Boolean;
+    /// <summary>Applies planned edits to a copy of the source.</summary>
+    /// <param name="Source">The source the edits were planned against.</param>
+    /// <param name="Edits">Edits sorted by offset, as <see cref="PlanMoves"/> returns them.</param>
+    /// <returns>The edited source.</returns>
+    class function ApplyEdits( const Source: UTF8String; const Edits: TArray<TUsesEdit> ): UTF8String;
     /// <summary>Returns a rewritten copy of <paramref name="Source"/> with uses clauses adjusted to match the placements.</summary>
+    /// <param name="Source">UTF-8 source the placements were computed from.</param>
+    /// <param name="Placements">Placements; those with CurrentSection &lt;&gt; RecommendedSection move.</param>
+    /// <param name="ErrorMessage">Empty on success; on refusal, why the source was left unchanged.</param>
+    /// <returns>The rewritten source, or <paramref name="Source"/> itself when nothing moves or the
+    /// edit was refused.</returns>
     function GenerateRefactoredSource( const Source: UTF8String;
-      const Placements: TArray<TUnitPlacement> ): UTF8String;
+      const Placements: TArray<TUnitPlacement>; out ErrorMessage: string ): UTF8String; overload;
+    /// <summary>As the three-parameter overload, discarding the refusal reason.</summary>
+    /// <param name="Source">UTF-8 source the placements were computed from.</param>
+    /// <param name="Placements">Placements; those with CurrentSection &lt;&gt; RecommendedSection move.</param>
+    /// <returns>The rewritten source, or <paramref name="Source"/> unchanged.</returns>
+    function GenerateRefactoredSource( const Source: UTF8String;
+      const Placements: TArray<TUnitPlacement> ): UTF8String; overload;
   end;
 
 implementation
 
 uses
-  Winapi.Windows, DelphiLexer;
+  Winapi.Windows, System.Generics.Defaults, DelphiLexer;
 
 { TUnitExportsDatabase }
 
@@ -280,6 +353,15 @@ begin
   if not FileExists( UnitPath ) then
     Exit;
 
+  // The first unit of a name found on the search path is the one the compiler uses; a later
+  // one of the same name is not read at all.
+  if FExports.ContainsKey( LowerCase( ChangeFileExt( ExtractFileName( UnitPath ), '' ) ) ) then
+  begin
+    OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - a unit of that name was found earlier on the path',
+      [ UnitPath ] ) ) );
+    Exit;
+  end;
+
   try
     Source := LoadTextFileToUtf8String( UnitPath, 0 );
   except
@@ -298,157 +380,318 @@ end;
 
 procedure TUnitExportsDatabase.ScanSource( const UnitName, UnitPath: string;
   const Source: UTF8String );
+type
+  TScanSection = ( ssNone, ssType, ssConst, ssVar );
 var
   Lexer: TDelphiLexer;
   Token: TToken;
+  Sig: TList<TToken>;
   InInterface: Boolean;
-  InType, InConst, InVar: Boolean;
-  BraceDepth: Integer;
-  Export: TUnitExport;
+  Section: TScanSection;
+  P: Integer;
   ExportList: TList<TUnitExport>;
   UnitList: TStringList;
   LowerIdent: string;
-begin
-  ExportList := TList<TUnitExport>.Create;
+  Stored: Boolean;
 
-  Lexer := TDelphiLexer.Create( UnitPath, Source );
-  try
-    InInterface := False;
-    InType := False;
-    InConst := False;
-    InVar := False;
-    BraceDepth := 0;
+  function Kind( AIndex: Integer ): TTokenKind;
+  begin
+    if ( AIndex >= 0 ) and ( AIndex < Sig.Count ) then
+      Result := Sig[ AIndex ].Kind
+    else
+      Result := tkNone;
+  end;
 
-    while Lexer.NextToken( Token ) do
+  procedure AddExport( const AIdentifier: string; AKind: TExportKind );
+  var
+    Item: TUnitExport;
+  begin
+    Item.Identifier := AIdentifier;
+    Item.Kind := AKind;
+    ExportList.Add( Item );
+  end;
+
+  // AIndex is on AOpen; returns the index after the matching AClose.
+  function SkipPair( AIndex: Integer; AOpen, AClose: TTokenKind ): Integer;
+  var
+    Depth: Integer;
+  begin
+    Depth := 0;
+    Result := AIndex;
+    while Result < Sig.Count do
     begin
-      // Skip comments and directives
-      if Token.Kind in [ tkComment, tkDirective ] then
-        Continue;
-
-      // Track interface/implementation sections
-      if Token.Kind = tkI_interface then
+      if Kind( Result ) = AOpen then
+        Inc( Depth )
+      else if Kind( Result ) = AClose then
       begin
-        InInterface := True;
+        Dec( Depth );
+        if Depth = 0 then
+          Exit( Result + 1 );
+      end;
+      Inc( Result );
+    end;
+  end;
+
+  // AIndex is just after a routine keyword; returns the index of the ";" ending the header.
+  function SkipHeader( AIndex: Integer ): Integer;
+  begin
+    Result := AIndex;
+    while ( Result < Sig.Count ) and ( Kind( Result ) <> tkSemicolon ) do
+      if Kind( Result ) = tkLParan then
+        Result := SkipPair( Result, tkLParan, tkRParan )
+      else
+        Inc( Result );
+  end;
+
+  // True when "record" at AIndex opens a body ( not the generic constraint "<T: record>" ).
+  function IsRecordBody( AIndex: Integer ): Boolean;
+  begin
+    Result := ( Kind( AIndex ) = tkI_record ) and not ( Kind( AIndex + 1 ) in [ tkGreaterThan, tkComma, tkSemicolon ] );
+  end;
+
+  // True when the structured-type keyword at AIndex follows "=" or "= packed".
+  function FollowsEqual( AIndex: Integer ): Boolean;
+  begin
+    Result := ( Kind( AIndex - 1 ) = tkEqual ) or ( ( Kind( AIndex - 1 ) = tkI_packed ) and ( Kind( AIndex - 2 ) = tkEqual ) );
+  end;
+
+  // AIndex is on class / object / interface / dispinterface / record after "=".  Returns the
+  // index after the body's "end", or of the token ending a body-less declaration.
+  function SkipTypeBody( AIndex: Integer ): Integer;
+  var
+    Depth: Integer;
+  begin
+    Result := AIndex + 1;
+    if Kind( AIndex ) <> tkI_record then
+    begin
+      if ( Kind( AIndex ) = tkI_class ) and ( Kind( Result ) = tkI_of ) then
+        Exit; // "class of TFoo"
+      // Modifiers: sealed, abstract, "helper for TType".
+      while ( ( Kind( Result ) >= tkIdent ) and ( Kind( Result ) < tkIdentStrictReserved ) ) or ( Kind( Result ) in [ tkI_for, tkQualifier ] ) do
+      begin
+        if Kind( Result + 1 ) = tkColon then
+          Break; // A field directly after "class": the body has started.
+        Inc( Result );
+      end;
+      if Kind( Result ) = tkLParan then
+        Result := SkipPair( Result, tkLParan, tkRParan );
+      if Kind( Result ) = tkSemicolon then
+        Exit; // Forward declaration or "TFoo = class( TBar );"
+    end;
+
+    Depth := 1;
+    while Result < Sig.Count do
+    begin
+      case Kind( Result ) of
+        tkLParan:
+          begin
+            Result := SkipPair( Result, tkLParan, tkRParan );
+            Continue;
+          end;
+        tkLBracket:
+          begin
+            Result := SkipPair( Result, tkLBracket, tkRBracket );
+            Continue;
+          end;
+        tkI_end:
+          begin
+            Dec( Depth );
+            if Depth = 0 then
+              Exit( Result + 1 );
+          end;
+        tkI_record:
+          if IsRecordBody( Result ) and not FollowsEqual( Result ) then
+            Inc( Depth ); // An anonymous record field type.
+      end;
+      if ( Kind( Result ) in [ tkI_class, tkI_object, tkI_interface, tkI_dispinterface, tkI_record ] ) and FollowsEqual( Result ) then
+      begin
+        // A nested type declaration with a body of its own.
+        Result := SkipTypeBody( Result );
         Continue;
       end;
+      Inc( Result );
+    end;
+  end;
 
-      if Token.Kind = tkI_implementation then
-        Break;  // Stop at implementation
+  // True when the identifier at AIndex starts a declaration of the current section.
+  function IsDeclarationStart( AIndex: Integer ): Boolean;
+  begin
+    case Kind( AIndex - 1 ) of
+      tkNone, tkSemicolon, tkRBracket, tkI_type, tkI_const, tkI_resourcestring, tkI_var, tkI_threadvar:
+        Result := True;
+      tkComma:
+        Result := Section = ssVar; // "A, B: Integer;"
+    else
+      Result := False;
+    end;
+  end;
 
-      if not InInterface then
-        Continue;
-
-      { Brace depth is tracked BEFORE the section keywords, and everything inside
-        parentheses is skipped - section keywords included.
-
-        A parameter list may contain const, var and out. Honouring those as section
-        keywords left the scanner believing that whatever FOLLOWED the parameter list was
-        still inside a var or const section, so a routine's return type was recorded as an
-        exported identifier of the unit. "function Parse( var AValue: string ): Boolean"
-        exported Boolean. That in turn made the placement analysis, and the Decirculariser
-        built on top of it, believe an edge carried an identifier that does not exist. }
-      if Token.Kind = tkLParan then
-      begin
-        Inc( BraceDepth );
-        Continue;
+  // AIndex is on "(" of an enumerated type; exports each value and returns the index after ")".
+  // A unit's enumeration values are as much its exports as its types: an interface that uses
+  // only [fsBold] needs Vcl.Graphics.
+  function ExportEnumValues( AIndex: Integer ): Integer;
+  var
+    Depth: Integer;
+  begin
+    Depth := 0;
+    Result := AIndex;
+    while Result < Sig.Count do
+    begin
+      case Kind( Result ) of
+        tkLParan:
+          Inc( Depth );
+        tkRParan:
+          begin
+            Dec( Depth );
+            if Depth = 0 then
+              Exit( Result + 1 );
+          end;
+        tkIdent:
+          // A value name follows "(" or "," at the enumeration's own level ( not "= Expression" ).
+          if ( Depth = 1 ) and ( Kind( Result - 1 ) in [ tkLParan, tkComma ] ) then
+            AddExport( Sig[ Result ].Value, ekConst );
       end;
+      Inc( Result );
+    end;
+  end;
 
-      if Token.Kind = tkRParan then
+  // AIndex is on a declared type name; returns the index to resume scanning at.
+  function SkipTypeDeclaration( AIndex: Integer ): Integer;
+  begin
+    Result := AIndex + 1;
+    if Kind( Result ) = tkLessThan then
+      Result := SkipPair( Result, tkLessThan, tkGreaterThan );
+    if Kind( Result ) <> tkEqual then
+      Exit;
+    Inc( Result );
+    if Kind( Result ) = tkI_packed then
+      Inc( Result );
+    if Kind( Result ) = tkLParan then
+      Result := ExportEnumValues( Result )
+    else if Kind( Result ) in [ tkI_class, tkI_object, tkI_interface, tkI_dispinterface, tkI_record ] then
+      Result := SkipTypeBody( Result );
+  end;
+
+begin
+  // The first unit of a name is the one the compiler finds; a second one is reported and skipped,
+  // never added twice ( which raised EListError into the IDE ).
+  if FExports.ContainsKey( LowerCase( UnitName ) ) then
+  begin
+    OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - a unit named %s was already scanned',
+      [ UnitPath, UnitName ] ) ) );
+    Exit;
+  end;
+
+  Stored := False;
+  ExportList := TList<TUnitExport>.Create;
+  Sig := TList<TToken>.Create;
+  try
+    Lexer := TDelphiLexer.Create( UnitPath, Source );
+    try
+      // The interface section's significant tokens.  The lexer owns them, so they are used
+      // before it is freed.
+      InInterface := False;
+      while Lexer.NextToken( Token ) do
       begin
-        if BraceDepth > 0 then
-          Dec( BraceDepth );
-        Continue;
-      end;
-
-      if BraceDepth > 0 then
-        Continue;
-
-      // Track section keywords
-      if Token.Kind = tkI_type then
-      begin
-        InType := True;
-        InConst := False;
-        InVar := False;
-        Continue;
-      end;
-
-      if Token.Kind = tkI_const then
-      begin
-        InType := False;
-        InConst := True;
-        InVar := False;
-        Continue;
-      end;
-
-      if Token.Kind = tkI_var then
-      begin
-        InType := False;
-        InConst := False;
-        InVar := True;
-        Continue;
-      end;
-
-      // End of section
-      if Token.Kind in [ tkI_procedure, tkI_function, tkI_uses ] then
-      begin
-        InType := False;
-        InConst := False;
-        InVar := False;
-      end;
-
-      // Collect exports based on current section
-      if Token.Kind = tkIdent then  // Identifier tokens
-      begin
-        if InType then
+        if Token.Kind in [ tkComment, tkDirective ] then
+          Continue;
+        if not InInterface then
         begin
-          Export.Identifier := Token.Value;
-          Export.Kind := ekType;
-          ExportList.Add( Export );
-        end
-        else if InConst then
-        begin
-          Export.Identifier := Token.Value;
-          Export.Kind := ekConst;
-          ExportList.Add( Export );
-        end
-        else if InVar then
-        begin
-          Export.Identifier := Token.Value;
-          Export.Kind := ekVar;
-          ExportList.Add( Export );
+          InInterface := Token.Kind = tkI_interface;
+          Continue;
         end;
+        if Token.Kind = tkI_implementation then
+          Break;
+        Sig.Add( Token );
       end;
 
-      // Procedures and functions
-      if Token.Kind = tkI_procedure then
+      { Only DECLARED names are exports: the name that starts each declaration of a type, const or
+        var section, and each routine's name.  Everything inside parentheses, brackets and type
+        bodies is skipped, so a parameter type, a return type, a field type or a member name is
+        never recorded.  "FCount: Integer" inside a class used to export Integer, which made the
+        placement analysis believe any unit with an Integer field provided Integer. }
+      Section := ssNone;
+      P := 0;
+      while P < Sig.Count do
       begin
-        if Lexer.NextToken( Token ) and ( Token.Kind = tkIdent ) then
-        begin
-          Export.Identifier := Token.Value;
-          Export.Kind := ekProcedure;
-          ExportList.Add( Export );
+        case Kind( P ) of
+          tkLParan:
+            begin
+              P := SkipPair( P, tkLParan, tkRParan );
+              Continue;
+            end;
+          tkLBracket:
+            begin
+              P := SkipPair( P, tkLBracket, tkRBracket );
+              Continue;
+            end;
+          tkI_type:
+            Section := ssType;
+          tkI_const, tkI_resourcestring:
+            Section := ssConst;
+          tkI_var, tkI_threadvar:
+            Section := ssVar;
+          tkI_uses:
+            begin
+              Section := ssNone;
+              while ( P < Sig.Count ) and ( Kind( P ) <> tkSemicolon ) do
+                Inc( P );
+            end;
+          tkI_record:
+            if IsRecordBody( P ) then
+            begin
+              // An anonymous record type of a var or typed constant.
+              P := SkipTypeBody( P );
+              Continue;
+            end;
+          tkI_procedure, tkI_function:
+            begin
+              if Kind( P - 1 ) in [ tkEqual, tkColon, tkI_to, tkI_of ] then
+              begin
+                // A procedural type ( "= procedure", "reference to function", ": procedure" ).
+                P := SkipHeader( P + 1 );
+                Continue;
+              end;
+              Section := ssNone;
+              if Kind( P + 1 ) = tkIdent then
+                if Kind( P ) = tkI_procedure then
+                  AddExport( Sig[ P + 1 ].Value, ekProcedure )
+                else
+                  AddExport( Sig[ P + 1 ].Value, ekFunction );
+              P := SkipHeader( P + 1 );
+              Continue;
+            end;
+          tkIdent:
+            if ( Section <> ssNone ) and IsDeclarationStart( P ) then
+              case Section of
+                ssType:
+                  begin
+                    AddExport( Sig[ P ].Value, ekType );
+                    P := SkipTypeDeclaration( P );
+                    Continue;
+                  end;
+                ssConst:
+                  AddExport( Sig[ P ].Value, ekConst );
+                ssVar:
+                  AddExport( Sig[ P ].Value, ekVar );
+              end;
         end;
-      end
-      else if Token.Kind = tkI_function then
-      begin
-        if Lexer.NextToken( Token ) and ( Token.Kind = tkIdent ) then
-        begin
-          Export.Identifier := Token.Value;
-          Export.Kind := ekFunction;
-          ExportList.Add( Export );
-        end;
+        Inc( P );
       end;
+    finally
+      Lexer.Free;
     end;
 
     // Store in exports dictionary
     if ExportList.Count > 0 then
     begin
       FExports.Add( LowerCase( UnitName ), ExportList );
+      Stored := True;
 
       // Build reverse lookup
-      for Export in ExportList do
+      for var Item in ExportList do
       begin
-        LowerIdent := LowerCase( Export.Identifier );
+        LowerIdent := LowerCase( Item.Identifier );
         if not FIdentifierToUnits.TryGetValue( LowerIdent, UnitList ) then
         begin
           UnitList := TStringList.Create;
@@ -458,49 +701,73 @@ begin
         end;
         UnitList.Add( UnitName );
       end;
-    end
-    else
-      ExportList.Free;
+    end;
   finally
-    Lexer.Free;
+    Sig.Free;
+    if not Stored then
+      ExportList.Free;
   end;
 end;
 
 procedure TUnitExportsDatabase.BuildFromDirectories( ADirectories: TStrings;
-  AOnProgress: TNotifyEvent );
+  AOnProgress: TNotifyEvent; const ABaseDirectory: string );
 var
   I: Integer;
   SR: TSearchRec;
   Path: string;
+  Seen: TStringList;
 begin
   Clear;
 
   if ADirectories = nil then
     Exit;
 
-  // Scan all .pas files in the supplied directories
-  for I := 0 to ADirectories.Count - 1 do
-  begin
-    Path := ExpandFileName( Trim( ADirectories[ I ] ) );
-    if not DirectoryExists( Path ) then
-      Continue;
+  Seen := TStringList.Create;
+  try
+    Seen.CaseSensitive := False;
+    Seen.Sorted := True;
 
-    if FindFirst( IncludeTrailingPathDelimiter( Path ) + '*.pas', faAnyFile, SR ) = 0 then
-    try
-      repeat
-        FProgressFileName := SR.Name;
-        if Assigned( AOnProgress ) then
-          AOnProgress( Self );
+    // Scan all .pas files in the supplied directories, in order: the first unit of a name wins.
+    for I := 0 to ADirectories.Count - 1 do
+    begin
+      Path := ResolveDirectory( ADirectories[ I ], ABaseDirectory );
+      if ( Path = '' ) or not DirectoryExists( Path ) then
+        Continue;
+      // A directory listed twice ( Base and configuration search paths concatenated ) is scanned once.
+      if Seen.IndexOf( Path ) >= 0 then
+        Continue;
+      Seen.Add( Path );
 
-        ScanUnit( IncludeTrailingPathDelimiter( Path ) + SR.Name );
-      until FindNext( SR ) <> 0;
-    finally
-      // Qualified: Winapi.Windows also exports FindClose, taking a THandle, and it is in
-      // this unit's implementation uses clause - so an unqualified call resolves to the
-      // wrong overload. The original unit was shielded by its uses-clause order.
-      System.SysUtils.FindClose( SR );
+      if FindFirst( IncludeTrailingPathDelimiter( Path ) + '*.pas', faAnyFile, SR ) = 0 then
+      try
+        repeat
+          FProgressFileName := SR.Name;
+          if Assigned( AOnProgress ) then
+            AOnProgress( Self );
+
+          ScanUnit( IncludeTrailingPathDelimiter( Path ) + SR.Name );
+        until FindNext( SR ) <> 0;
+      finally
+        // Qualified: Winapi.Windows also exports FindClose, taking a THandle, and it is in
+        // this unit's implementation uses clause - so an unqualified call resolves to the
+        // wrong overload. The original unit was shielded by its uses-clause order.
+        System.SysUtils.FindClose( SR );
+      end;
     end;
+  finally
+    Seen.Free;
   end;
+end;
+
+class function TUnitExportsDatabase.ResolveDirectory( const ADirectory, ABaseDirectory: string ): string;
+begin
+  Result := Trim( ADirectory );
+  if Result = '' then
+    Exit;
+  // A relative search-path entry is relative to the project, not to the IDE's current directory.
+  if ( ABaseDirectory <> '' ) and ( ExtractFileDrive( Result ) = '' ) and not Result.StartsWith( PathDelim ) then
+    Result := IncludeTrailingPathDelimiter( ABaseDirectory ) + Result;
+  Result := ExcludeTrailingPathDelimiter( ExpandFileName( Result ) );
 end;
 
 function TUnitExportsDatabase.GetExports( const UnitName: string ): TList<TUnitExport>;
@@ -652,7 +919,10 @@ begin
       end;
 
       // Track sections
-      if Token.Kind = tkI_interface then
+      // Only the first "interface" is the section keyword: a later one is a type ( IFoo = interface ),
+      // and one in the implementation section used to switch the analyser back to the interface.
+      if ( Token.Kind = tkI_interface ) and not InInterface and not InImplementation and
+         not ( ( I > 0 ) and ( TokenList[ I - 1 ].Kind in [ tkEqual, tkI_packed ] ) ) then
       begin
         InInterface := True;
         InImplementation := False;
@@ -765,139 +1035,96 @@ begin
   inherited Destroy;
 end;
 
+function TUsesClauseRefactorer.ExportsOfUsedUnit( const AUnitName, ALeafName: string ): TList<TUnitExport>;
+begin
+  Result := FExportsDB.GetExports( AUnitName );
+  if ( Result = nil ) and not SameText( AUnitName, ALeafName ) then
+    Result := FExportsDB.GetExports( ALeafName );
+end;
+
+function TUsesClauseRefactorer.IdentifierComesFrom( const AIdentifier, AUnitName, ALeafName: string ): Boolean;
+var
+  Qualifier: string;
+begin
+  // The caller has established that the unit declares AIdentifier; only a qualified reference to
+  // another unit ( Other.AIdentifier ) says the source means someone else's.
+  if FUsageAnalyzer.QualifiedReferences.TryGetValue( LowerCase( AIdentifier ), Qualifier ) then
+    Result := SameText( Qualifier, AUnitName ) or SameText( Qualifier, ALeafName )
+  else
+    Result := True;
+end;
+
 function TUsesClauseRefactorer.Analyze( const Source: UTF8String ): TArray<TUnitPlacement>;
 var
   ResultList: TList<TUnitPlacement>;
   UsedUnit: TUsedUnitInfo;
   Placement: TUnitPlacement;
-  UnitExports: TList<TUnitExport>;
-  Export: TUnitExport;
-  I: Integer;
-  LowerUnitName, LowerIdent: string;
+  LeafName: string;
   UsedInInterface, UsedInImplementation: Boolean;
-  QualifyingUnit: string;
-  CandidateUnits: TStringList;
-  AllUnits: TDictionary<string, TUsedUnitInfo>;
+
+  // Records in Placement which identifiers of the unit each section uses.  The same rule serves
+  // a unit of either clause, so an implementation-clause unit is no longer judged by a bare name
+  // match that ignored qualified references.
+  procedure CollectUsage( const AUnitName: string );
+  var
+    I: Integer;
+    UnitExports: TList<TUnitExport>;
+  begin
+    // Qualified references to the unit itself ( SysUtils.Format ).
+    for I := 0 to FUsageAnalyzer.InterfaceIdentifiers.Count - 1 do
+      if SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], AUnitName ) or
+         SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], LeafName ) then
+      begin
+        UsedInInterface := True;
+        Placement.IdentifiersUsedInInterface.Add( '(qualified reference)' );
+      end;
+    for I := 0 to FUsageAnalyzer.ImplementationIdentifiers.Count - 1 do
+      if SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], AUnitName ) or
+         SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], LeafName ) then
+      begin
+        UsedInImplementation := True;
+        Placement.IdentifiersUsedInImplementation.Add( '(qualified reference)' );
+      end;
+
+    UnitExports := ExportsOfUsedUnit( AUnitName, LeafName );
+    if UnitExports = nil then
+      Exit;
+    for var Item in UnitExports do
+    begin
+      if ( FUsageAnalyzer.InterfaceIdentifiers.IndexOf( Item.Identifier ) >= 0 ) and
+         IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
+      begin
+        UsedInInterface := True;
+        Placement.IdentifiersUsedInInterface.Add( Item.Identifier );
+      end;
+      if ( FUsageAnalyzer.ImplementationIdentifiers.IndexOf( Item.Identifier ) >= 0 ) and
+         IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
+      begin
+        UsedInImplementation := True;
+        Placement.IdentifiersUsedInImplementation.Add( Item.Identifier );
+      end;
+    end;
+  end;
+
 begin
   // Step 1: Analyze the source to extract uses clauses and identifier usage
   FUsageAnalyzer.Analyze( Source );
 
   ResultList := TList<TUnitPlacement>.Create;
-  AllUnits := TDictionary<string, TUsedUnitInfo>.Create;
   try
-    // Collect all units from both interface and implementation uses clauses
-    for UsedUnit in FUsageAnalyzer.InterfaceUsedUnits do
-      AllUnits.AddOrSetValue( LowerCase( UsedUnit.UnitName ), UsedUnit );
-
-    for UsedUnit in FUsageAnalyzer.ImplementationUsedUnits do
-      if not AllUnits.ContainsKey( LowerCase( UsedUnit.UnitName ) ) then
-        AllUnits.AddOrSetValue( LowerCase( UsedUnit.UnitName ), UsedUnit );
-
-    // Step 2: For each unit in uses clauses, determine optimal placement
+    // Step 2: For each unit in the interface uses clause, determine optimal placement
     for UsedUnit in FUsageAnalyzer.InterfaceUsedUnits do
     begin
       Placement.UnitName := UsedUnit.UnitName;
       Placement.CurrentSection := usInterface;
       Placement.IdentifiersUsedInInterface := TStringList.Create;
       Placement.IdentifiersUsedInImplementation := TStringList.Create;
-
-      LowerUnitName := LowerCase( UsedUnit.UnitName );
-      // Also handle dotted names - get just the last part for matching
-      if Pos( '.', LowerUnitName ) > 0 then
-        LowerUnitName := LowerCase( Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt ) );
-
+      LeafName := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
       UsedInInterface := False;
       UsedInImplementation := False;
 
-      // Check for qualified references to this unit (e.g., SysUtils.Format)
-      for I := 0 to FUsageAnalyzer.InterfaceIdentifiers.Count - 1 do
-      begin
-        if SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], UsedUnit.UnitName ) or
-           SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], LowerUnitName ) then
-        begin
-          UsedInInterface := True;
-          Placement.IdentifiersUsedInInterface.Add( '(qualified reference)' );
-        end;
-      end;
+      CollectUsage( UsedUnit.UnitName );
 
-      for I := 0 to FUsageAnalyzer.ImplementationIdentifiers.Count - 1 do
-      begin
-        if SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], UsedUnit.UnitName ) or
-           SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], LowerUnitName ) then
-        begin
-          UsedInImplementation := True;
-          Placement.IdentifiersUsedInImplementation.Add( '(qualified reference)' );
-        end;
-      end;
-
-      // Check exported identifiers from this unit
-      UnitExports := FExportsDB.GetExports( LowerUnitName );
-      if UnitExports <> nil then
-      begin
-        for Export in UnitExports do
-        begin
-          LowerIdent := LowerCase( Export.Identifier );
-
-          // Check if this identifier is used in interface section
-          if FUsageAnalyzer.InterfaceIdentifiers.IndexOf( Export.Identifier ) >= 0 then
-          begin
-            // Verify it's from this unit (check qualified refs or use heuristics)
-            if FUsageAnalyzer.QualifiedReferences.TryGetValue( LowerIdent, QualifyingUnit ) then
-            begin
-              // Only count if qualified reference points to this unit
-              if SameText( QualifyingUnit, UsedUnit.UnitName ) or
-                 SameText( QualifyingUnit, LowerUnitName ) then
-              begin
-                UsedInInterface := True;
-                Placement.IdentifiersUsedInInterface.Add( Export.Identifier );
-              end;
-            end
-            else
-            begin
-              // No qualified reference - check if this unit is the preferred source
-              CandidateUnits := FExportsDB.FindUnitsForIdentifier( Export.Identifier );
-              if ( CandidateUnits <> nil ) and ( CandidateUnits.Count > 0 ) then
-              begin
-                if SameText( FExportsDB.GetPreferredUnit( Export.Identifier, CandidateUnits ), UsedUnit.UnitName ) or
-                   ( CandidateUnits.IndexOf( UsedUnit.UnitName ) >= 0 ) then
-                begin
-                  UsedInInterface := True;
-                  Placement.IdentifiersUsedInInterface.Add( Export.Identifier );
-                end;
-              end;
-            end;
-          end;
-
-          // Check if this identifier is used in implementation section
-          if FUsageAnalyzer.ImplementationIdentifiers.IndexOf( Export.Identifier ) >= 0 then
-          begin
-            if FUsageAnalyzer.QualifiedReferences.TryGetValue( LowerIdent, QualifyingUnit ) then
-            begin
-              if SameText( QualifyingUnit, UsedUnit.UnitName ) or
-                 SameText( QualifyingUnit, LowerUnitName ) then
-              begin
-                UsedInImplementation := True;
-                Placement.IdentifiersUsedInImplementation.Add( Export.Identifier );
-              end;
-            end
-            else
-            begin
-              CandidateUnits := FExportsDB.FindUnitsForIdentifier( Export.Identifier );
-              if ( CandidateUnits <> nil ) and ( CandidateUnits.Count > 0 ) then
-              begin
-                if SameText( FExportsDB.GetPreferredUnit( Export.Identifier, CandidateUnits ), UsedUnit.UnitName ) or
-                   ( CandidateUnits.IndexOf( UsedUnit.UnitName ) >= 0 ) then
-                begin
-                  UsedInImplementation := True;
-                  Placement.IdentifiersUsedInImplementation.Add( Export.Identifier );
-                end;
-              end;
-            end;
-          end;
-        end;
-      end;
-
-      // Determine recommended section
       if UsedInInterface then
       begin
         Placement.RecommendedSection := usInterface;
@@ -921,37 +1148,18 @@ begin
       ResultList.Add( Placement );
     end;
 
-    // Also analyze implementation uses clause units
+    // Step 3: units of the implementation uses clause move up only when the interface uses them.
     for UsedUnit in FUsageAnalyzer.ImplementationUsedUnits do
     begin
       Placement.UnitName := UsedUnit.UnitName;
       Placement.CurrentSection := usImplementation;
-      Placement.RecommendedSection := usImplementation;
       Placement.IdentifiersUsedInInterface := TStringList.Create;
       Placement.IdentifiersUsedInImplementation := TStringList.Create;
-
-      LowerUnitName := LowerCase( UsedUnit.UnitName );
-      if Pos( '.', LowerUnitName ) > 0 then
-        LowerUnitName := LowerCase( Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt ) );
-
-      // Check if any exports are used in interface (would indicate it should be moved up)
+      LeafName := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
       UsedInInterface := False;
+      UsedInImplementation := False;
 
-      UnitExports := FExportsDB.GetExports( LowerUnitName );
-      if UnitExports <> nil then
-      begin
-        for Export in UnitExports do
-        begin
-          if FUsageAnalyzer.InterfaceIdentifiers.IndexOf( Export.Identifier ) >= 0 then
-          begin
-            UsedInInterface := True;
-            Placement.IdentifiersUsedInInterface.Add( Export.Identifier );
-          end;
-
-          if FUsageAnalyzer.ImplementationIdentifiers.IndexOf( Export.Identifier ) >= 0 then
-            Placement.IdentifiersUsedInImplementation.Add( Export.Identifier );
-        end;
-      end;
+      CollectUsage( UsedUnit.UnitName );
 
       if UsedInInterface then
       begin
@@ -959,240 +1167,662 @@ begin
         Placement.Reason := 'Identifiers used in interface section';
       end
       else
+      begin
+        Placement.RecommendedSection := usImplementation;
         Placement.Reason := 'OK - only used in implementation';
+      end;
 
       ResultList.Add( Placement );
     end;
 
     Result := ResultList.ToArray;
   finally
-    AllUnits.Free;
     ResultList.Free;
   end;
+end;
+
+{ Uses-clause editing }
+
+type
+  /// <summary>An inclusive range of 1-based byte indexes.</summary>
+  TByteRange = record
+    /// <summary>First byte of the range.</summary>
+    First: Integer;
+    /// <summary>Last byte of the range.</summary>
+    Last: Integer;
+    /// <summary>True for a "//" comment, which runs to the end of its line.</summary>
+    LineComment: Boolean;
+  end;
+
+  /// <summary>One entry of a uses clause.</summary>
+  TClauseEntry = record
+    /// <summary>The unit name, dotted parts joined with ".".</summary>
+    Name: string;
+    /// <summary>1-based byte index of the entry's first byte.</summary>
+    StartIdx: Integer;
+    /// <summary>1-based byte index of the entry's last byte ( the name, or the "in" path string ).</summary>
+    EndIdx: Integer;
+    /// <summary>Conditional-directive nesting depth at the entry, relative to the clause.</summary>
+    Depth: Integer;
+    /// <summary>1-based byte index of the "," after the entry; 0 when the ";" follows it.</summary>
+    CommaIdx: Integer;
+  end;
+
+  /// <summary>What the editor needs to know about one section's uses clause.</summary>
+  TClauseInfo = record
+    /// <summary>True when the section keyword exists.</summary>
+    SectionFound: Boolean;
+    /// <summary>1-based byte index of the section keyword's last byte.</summary>
+    SectionEnd: Integer;
+    /// <summary>True when the section starts with a uses clause.</summary>
+    Present: Boolean;
+    /// <summary>1-based byte index of "uses".</summary>
+    UsesIdx: Integer;
+    /// <summary>1-based byte index of the terminating ";" ( 0 when none was found ).</summary>
+    SemicolonIdx: Integer;
+    /// <summary>Conditional depth at the ";", relative to the clause.</summary>
+    SemicolonDepth: Integer;
+    /// <summary>True when the clause can be edited at all: its conditional blocks balance, no
+    /// {$ELSE} sits at its own level, its entries have the expected shape, and the clause itself
+    /// is not inside a conditional block.</summary>
+    Editable: Boolean;
+    /// <summary>The entries, in source order.</summary>
+    Entries: TArray<TClauseEntry>;
+    /// <summary>Byte ranges of the comments and directives inside the clause.</summary>
+    Noise: TArray<TByteRange>;
+    /// <summary>True when an include directive ( {$I file} ) sits between the section keyword and
+    /// its first significant token: the included file may hold the section's uses clause.</summary>
+    IncludeBeforeClause: Boolean;
+  end;
+
+/// <summary>Classifies a compiler directive for conditional nesting.</summary>
+/// <param name="AValue">The directive token's text, braces included.</param>
+/// <param name="IsElse">Set when the directive is {$ELSE} or {$ELSEIF}.</param>
+/// <returns>+1 for a directive opening a conditional block, -1 for one closing it, 0 otherwise.</returns>
+function DirectiveNesting( const AValue: string; out IsElse: Boolean ): Integer;
+var
+  S: string;
+begin
+  S := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$', ' ' ] );
+  IsElse := S.StartsWith( 'ELSE' );
+  if S.StartsWith( 'ENDIF' ) or S.StartsWith( 'IFEND' ) then
+    Result := -1
+  else if S.StartsWith( 'IFDEF' ) or S.StartsWith( 'IFNDEF' ) or S.StartsWith( 'IFOPT' ) or
+          ( S.StartsWith( 'IF' ) and ( Length( S ) > 2 ) and CharInSet( S[ 3 ], [ ' ', '(', #9 ] ) ) then
+    Result := 1
+  else
+    Result := 0;
+end;
+
+/// <summary>True for an include directive ( {$I file}, {$INCLUDE file} ), not the {$I+} / {$I-} switch.</summary>
+/// <param name="AValue">The directive token's text, braces included.</param>
+/// <returns>True when the directive includes a file.</returns>
+function IsIncludeDirective( const AValue: string ): Boolean;
+var
+  S: string;
+begin
+  S := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$' ] );
+  Result := S.StartsWith( 'INCLUDE' ) or ( ( Length( S ) > 1 ) and ( S[ 1 ] = 'I' ) and CharInSet( S[ 2 ], [ ' ', #9 ] ) );
+end;
+
+/// <summary>True when a token kind can be part of a unit name.</summary>
+/// <param name="AKind">The token kind.</param>
+/// <returns>True for an identifier, including the directive words ( name, index, ... ).</returns>
+function IsNameKind( AKind: TTokenKind ): Boolean;
+begin
+  Result := ( AKind >= tkIdent ) and ( AKind < tkIdentStrictReserved );
+end;
+
+/// <summary>Reads the uses clause that starts a section.</summary>
+/// <param name="Tokens">Every token of the source, comments and directives included.</param>
+/// <param name="ASection">tkI_interface or tkI_implementation.</param>
+/// <returns>The clause description; SectionFound is False for a program, library or package.</returns>
+function ReadClause( Tokens: TList<TToken>; ASection: TTokenKind ): TClauseInfo;
+type
+  TEntryState = ( esExpectName, esInName, esExpectPart, esExpectPath, esAfterEntry );
+var
+  I, K: Integer;
+  OuterDepth, Depth, Delta: Integer;
+  IsElse: Boolean;
+  Token: TToken;
+  State: TEntryState;
+  Entry: TClauseEntry;
+  Entries: TList<TClauseEntry>;
+  Noise: TList<TByteRange>;
+  Range: TByteRange;
+begin
+  Result := Default( TClauseInfo );
+
+  // Only a unit has sections.
+  I := 0;
+  while ( I < Tokens.Count ) and ( Tokens[ I ].Kind in [ tkComment, tkDirective ] ) do
+    Inc( I );
+  if ( I >= Tokens.Count ) or ( Tokens[ I ].Kind <> tkI_unit ) then
+    Exit;
+
+  // The section keyword, tracking the conditional depth around it.
+  OuterDepth := 0;
+  while ( I < Tokens.Count ) and ( Tokens[ I ].Kind <> ASection ) do
+  begin
+    if Tokens[ I ].Kind = tkDirective then
+      Inc( OuterDepth, DirectiveNesting( Tokens[ I ].Value, IsElse ) );
+    Inc( I );
+  end;
+  if I >= Tokens.Count then
+    Exit;
+  Result.SectionFound := True;
+  Result.SectionEnd := Tokens[ I ].EndIndex;
+
+  // A uses clause is the first significant token of the section.
+  Inc( I );
+  while ( I < Tokens.Count ) and ( Tokens[ I ].Kind in [ tkComment, tkDirective ] ) do
+  begin
+    if Tokens[ I ].Kind = tkDirective then
+    begin
+      Inc( OuterDepth, DirectiveNesting( Tokens[ I ].Value, IsElse ) );
+      if IsIncludeDirective( Tokens[ I ].Value ) then
+        Result.IncludeBeforeClause := True;
+    end;
+    Inc( I );
+  end;
+  if ( I >= Tokens.Count ) or ( Tokens[ I ].Kind <> tkI_uses ) then
+    Exit;
+  Result.Present := True;
+  Result.UsesIdx := Tokens[ I ].Index;
+  Result.Editable := OuterDepth = 0;
+
+  Entries := TList<TClauseEntry>.Create;
+  Noise := TList<TByteRange>.Create;
+  try
+    Depth := 0;
+    State := esExpectName;
+    Entry := Default( TClauseEntry );
+    for K := I + 1 to Tokens.Count - 1 do
+    begin
+      Token := Tokens[ K ];
+      case Token.Kind of
+        tkComment, tkDirective:
+          begin
+            Range.First := Token.Index;
+            Range.Last := Token.EndIndex;
+            Range.LineComment := ( Token.Kind = tkComment ) and Token.Value.StartsWith( '//' );
+            Noise.Add( Range );
+            if Token.Kind = tkDirective then
+            begin
+              Delta := DirectiveNesting( Token.Value, IsElse );
+              if IsElse and ( Depth = 0 ) then
+                Result.Editable := False; // An {$ELSE} of a block opened outside the clause.
+              Inc( Depth, Delta );
+              if Depth < 0 then
+                Result.Editable := False;
+            end;
+          end;
+        tkSemicolon, tkComma:
+          begin
+            if State in [ esInName, esAfterEntry ] then
+            begin
+              if Token.Kind = tkComma then
+                Entry.CommaIdx := Token.Index
+              else
+                Entry.CommaIdx := 0;
+              Entries.Add( Entry );
+            end
+            else
+              Result.Editable := False; // ",," or a dangling "in".
+            State := esExpectName;
+            if Token.Kind = tkSemicolon then
+            begin
+              Result.SemicolonIdx := Token.Index;
+              Result.SemicolonDepth := Depth;
+              Break;
+            end;
+          end;
+        tkQualifier:
+          if State = esInName then
+            State := esExpectPart
+          else
+            Result.Editable := False;
+        tkI_in:
+          if State = esInName then
+            State := esExpectPath
+          else
+            Result.Editable := False;
+        tkString:
+          if State = esExpectPath then
+          begin
+            Entry.EndIdx := Token.EndIndex;
+            State := esAfterEntry;
+          end
+          else
+            Result.Editable := False;
+      else
+        if IsNameKind( Token.Kind ) and ( State = esExpectName ) then
+        begin
+          Entry.Name := Token.Value;
+          Entry.StartIdx := Token.Index;
+          Entry.EndIdx := Token.EndIndex;
+          Entry.Depth := Depth;
+          State := esInName;
+        end
+        else if IsNameKind( Token.Kind ) and ( State = esExpectPart ) then
+        begin
+          Entry.Name := Entry.Name + '.' + Token.Value;
+          Entry.EndIdx := Token.EndIndex;
+          State := esInName;
+        end
+        else
+          Result.Editable := False; // Not a shape this editor understands.
+      end;
+    end;
+    if Result.SemicolonIdx = 0 then
+      Result.Editable := False;
+    Result.Entries := Entries.ToArray;
+    Result.Noise := Noise.ToArray;
+  finally
+    Noise.Free;
+    Entries.Free;
+  end;
+end;
+
+/// <summary>True when no comment or directive of the clause overlaps a byte range.</summary>
+/// <param name="AInfo">The clause.</param>
+/// <param name="AFirst">First byte of the range ( 1-based ).</param>
+/// <param name="ALast">Last byte of the range ( 1-based ).</param>
+/// <returns>True when the range holds code and white space only.</returns>
+function RangeIsPlain( const AInfo: TClauseInfo; AFirst, ALast: Integer ): Boolean;
+begin
+  for var Range in AInfo.Noise do
+    if ( Range.First <= ALast ) and ( Range.Last >= AFirst ) then
+      Exit( False );
+  Result := True;
+end;
+
+/// <summary>Returns an edit replacing the 1-based inclusive byte range with a text.</summary>
+/// <param name="AFirst">First byte replaced ( 1-based ).</param>
+/// <param name="ALast">Last byte replaced; AFirst - 1 for a pure insertion before AFirst.</param>
+/// <param name="AText">The replacement text.</param>
+/// <returns>The edit, in 0-based offsets.</returns>
+function MakeEdit( AFirst, ALast: Integer; const AText: UTF8String ): TUsesEdit;
+begin
+  Result.Offset := AFirst - 1;
+  Result.DeleteCount := ALast - AFirst + 1;
+  Result.Text := AText;
+end;
+
+/// <summary>Joins unit entry texts with ", ".</summary>
+/// <param name="ATexts">The entry texts.</param>
+/// <returns>The joined text.</returns>
+function JoinEntries( ATexts: TList<UTF8String> ): UTF8String;
+begin
+  Result := '';
+  for var I := 0 to ATexts.Count - 1 do
+  begin
+    if I > 0 then
+      Result := Result + UTF8String( ', ' );
+    Result := Result + ATexts[ I ];
+  end;
+end;
+
+function TUsesClauseRefactorer.PlanMoves( const Source: UTF8String; const Placements: TArray<TUnitPlacement>;
+  out Edits: TArray<TUsesEdit>; out ErrorMessage: string ): Boolean;
+const
+  SectionNames: array[ TUsesSection ] of string = ( 'interface', 'implementation' );
+var
+  Tokens: TList<TToken>;
+  Lexer: TDelphiLexer;
+  Token: TToken;
+  Clauses: array[ TUsesSection ] of TClauseInfo;
+  Removed: array[ TUsesSection ] of TArray<Boolean>;
+  Incoming: array[ TUsesSection ] of TList<UTF8String>;
+  EditList: TList<TUsesEdit>;
+  Section, Target: TUsesSection;
+  Placement: TUnitPlacement;
+  Index, Found, I, J, K, Last: Integer;
+  AnyMove: Boolean;
+  LineBreak: UTF8String;
+
+  function Fail( const AMessage: string ): Boolean;
+  begin
+    ErrorMessage := AMessage;
+    Edits := nil;
+    Result := False;
+  end;
+
+  function EntryText( const AEntry: TClauseEntry ): UTF8String;
+  begin
+    Result := Copy( Source, AEntry.StartIdx, AEntry.EndIdx - AEntry.StartIdx + 1 );
+  end;
+
+  function FindEntry( const AInfo: TClauseInfo; const AName: string; out AIndex: Integer ): Integer;
+  begin
+    AIndex := -1;
+    Result := 0;
+    for var N := 0 to High( AInfo.Entries ) do
+      if SameText( AInfo.Entries[ N ].Name, AName ) then
+      begin
+        AIndex := N;
+        Inc( Result );
+      end;
+  end;
+
+  // Column ( in bytes ) of a 1-based byte index on its line.
+  function ColumnOf( AIdx: Integer ): Integer;
+  var
+    P: Integer;
+  begin
+    P := AIdx - 1;
+    while ( P >= 1 ) and not ( Source[ P ] in [ #10, #13 ] ) do
+      Dec( P );
+    Result := AIdx - P;
+  end;
+
+  // 1-based index of the first byte of the line holding AIdx.
+  function LineStartOf( AIdx: Integer ): Integer;
+  begin
+    Result := AIdx;
+    while ( Result > 1 ) and not ( Source[ Result - 1 ] in [ #10, #13 ] ) do
+      Dec( Result );
+  end;
+
+  // 1-based index of the last byte of the line holding AIdx, its line break included.
+  function LineEndOf( AIdx: Integer ): Integer;
+  begin
+    Result := AIdx;
+    while ( Result < Length( Source ) ) and not ( Source[ Result + 1 ] in [ #10, #13 ] ) do
+      Inc( Result );
+    if ( Result < Length( Source ) ) and ( Source[ Result + 1 ] = #13 ) then
+      Inc( Result );
+    if ( Result < Length( Source ) ) and ( Source[ Result + 1 ] = #10 ) then
+      Inc( Result );
+  end;
+
+  // True when bytes AFirst..ALast are spaces and tabs only ( an empty range included ).
+  function IsBlank( AFirst, ALast: Integer ): Boolean;
+  begin
+    for var P := AFirst to ALast do
+      if not ( Source[ P ] in [ #9, ' ' ] ) then
+        Exit( False );
+    Result := True;
+  end;
+
+  // True when a "//" comment follows one of the entries AFirst..ALast on that entry's own line.
+  function RunHasLineComment( const AInfo: TClauseInfo; AFirst, ALast: Integer ): Boolean;
+  begin
+    for var N := AFirst to ALast do
+    begin
+      var LineEnd := LineEndOf( AInfo.Entries[ N ].EndIdx );
+      for var Range in AInfo.Noise do
+        if Range.LineComment and ( Range.First > AInfo.Entries[ N ].EndIdx ) and ( Range.First <= LineEnd ) then
+          Exit( True );
+    end;
+    Result := False;
+  end;
+
+  // True when every comment or directive overlapping AFirst..ALast is a "//" comment.
+  function OnlyLineComments( const AInfo: TClauseInfo; AFirst, ALast: Integer ): Boolean;
+  begin
+    for var Range in AInfo.Noise do
+      if ( Range.First <= ALast ) and ( Range.Last >= AFirst ) and not Range.LineComment then
+        Exit( False );
+    Result := True;
+  end;
+
+begin
+  Edits := nil;
+  ErrorMessage := '';
+
+  // Inserted text uses the buffer's own line break, so an LF buffer does not get mixed endings.
+  LineBreak := #13#10;
+  for var P := 1 to Length( Source ) do
+    if Source[ P ] = #10 then
+    begin
+      if ( P = 1 ) or ( Source[ P - 1 ] <> #13 ) then
+        LineBreak := #10;
+      Break;
+    end;
+
+  AnyMove := False;
+  for Placement in Placements do
+    if Placement.CurrentSection <> Placement.RecommendedSection then
+      AnyMove := True;
+  if not AnyMove then
+    Exit( True );
+
+  Incoming[ usInterface ] := nil;
+  Incoming[ usImplementation ] := nil;
+  Tokens := TList<TToken>.Create;
+  Lexer := TDelphiLexer.Create( '', Source );
+  try
+    while Lexer.NextToken( Token ) do
+      Tokens.Add( Token );
+    Clauses[ usInterface ] := ReadClause( Tokens, tkI_interface );
+    Clauses[ usImplementation ] := ReadClause( Tokens, tkI_implementation );
+  finally
+    // The clause descriptions hold copies, not tokens, so the lexer can go.
+    Lexer.Free;
+    Tokens.Free;
+  end;
+
+  if not ( Clauses[ usInterface ].SectionFound and Clauses[ usImplementation ].SectionFound ) then
+    Exit( Fail( 'The source has no interface and implementation sections, so no unit can be moved between them.' ) );
+
+  Incoming[ usInterface ] := TList<UTF8String>.Create;
+  Incoming[ usImplementation ] := TList<UTF8String>.Create;
+  EditList := TList<TUsesEdit>.Create;
+  try
+    for Section := Low( TUsesSection ) to High( TUsesSection ) do
+      SetLength( Removed[ Section ], Length( Clauses[ Section ].Entries ) );
+
+    // Which entries leave which clause, and what each target clause receives.
+    for Placement in Placements do
+    begin
+      if Placement.CurrentSection = Placement.RecommendedSection then
+        Continue;
+      Section := Placement.CurrentSection;
+      Target := Placement.RecommendedSection;
+      if not Clauses[ Section ].Present then
+        Exit( Fail( Format( '%s is not in the %s uses clause any more; analyse the unit again.',
+          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+      Found := FindEntry( Clauses[ Section ], Placement.UnitName, Index );
+      if Found = 0 then
+        Exit( Fail( Format( '%s is not in the %s uses clause any more; analyse the unit again.',
+          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+      if Found > 1 then
+        Exit( Fail( Format( '%s is listed more than once in the %s uses clause; tidy the clause first.',
+          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+      if not Clauses[ Section ].Editable then
+        Exit( Fail( Format( 'The %s uses clause has conditional blocks ( {$IFDEF} ... ) or a layout that '
+          + 'cannot be edited safely; move %s by hand.', [ SectionNames[ Section ], Placement.UnitName ] ) ) );
+      if Clauses[ Section ].Entries[ Index ].Depth <> 0 then
+        Exit( Fail( Format( '%s sits inside a conditional block ( {$IFDEF} ... ) of the %s uses clause; move it by hand.',
+          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+      Removed[ Section ][ Index ] := True;
+      // A unit already listed in the target clause is only removed from the source clause.
+      if FindEntry( Clauses[ Target ], Placement.UnitName, J ) = 0 then
+        Incoming[ Target ].Add( EntryText( Clauses[ Section ].Entries[ Index ] ) );
+    end;
+
+    for Section := Low( TUsesSection ) to High( TUsesSection ) do
+    begin
+      var Info := Clauses[ Section ];
+      Last := High( Info.Entries );
+
+      var AllRemoved := Info.Present;
+      for I := 0 to Last do
+        if not Removed[ Section ][ I ] then
+          AllRemoved := False;
+
+      if Info.Present and ( Incoming[ Section ].Count > 0 ) and not Info.Editable then
+        Exit( Fail( Format( 'The %s uses clause has conditional blocks ( {$IFDEF} ... ) or a layout that '
+          + 'cannot be edited safely; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+
+      if AllRemoved and ( Last >= 0 ) then
+      begin
+        if Incoming[ Section ].Count > 0 then
+        begin
+          // Every entry leaves and others arrive: replace the entries, keeping "uses" and ";".
+          if not RangeIsPlain( Info, Info.Entries[ 0 ].StartIdx, Info.Entries[ Last ].EndIdx ) then
+            Exit( Fail( Format( 'Moving the units of the %s uses clause would delete a comment or compiler '
+              + 'directive inside it; move them by hand.', [ SectionNames[ Section ] ] ) ) );
+          EditList.Add( MakeEdit( Info.Entries[ 0 ].StartIdx, Info.Entries[ Last ].EndIdx, JoinEntries( Incoming[ Section ] ) ) );
+        end
+        else
+        begin
+          // The clause empties: delete it, with the white space that follows it.
+          if not RangeIsPlain( Info, Info.UsesIdx, Info.SemicolonIdx ) then
+            Exit( Fail( Format( 'Emptying the %s uses clause would delete a comment or compiler directive '
+              + 'inside it; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+          K := Info.SemicolonIdx;
+          while ( K < Length( Source ) ) and ( Source[ K + 1 ] in [ #9, #10, #13, ' ' ] ) do
+            Inc( K );
+          EditList.Add( MakeEdit( Info.UsesIdx, K, '' ) );
+        end;
+        Continue;
+      end;
+
+      // Remove each run of consecutive leaving entries with one separating comma.
+      I := 0;
+      while I <= Last do
+      begin
+        if not Removed[ Section ][ I ] then
+        begin
+          Inc( I );
+          Continue;
+        end;
+        J := I;
+        while ( J < Last ) and Removed[ Section ][ J + 1 ] do
+          Inc( J );
+
+        // A "//" comment after an entry on its line describes that entry: it goes with it, and
+        // then only when the entries have their lines to themselves; otherwise the comment would
+        // be left describing the next unit, so the move is refused.
+        if RunHasLineComment( Info, I, J ) then
+        begin
+          var LineFirst := LineStartOf( Info.Entries[ I ].StartIdx );
+          var LineLast := LineEndOf( Info.Entries[ J ].EndIdx );
+          if ( J < Last ) and ( Info.Entries[ J ].CommaIdx > 0 ) and ( Info.Entries[ J ].CommaIdx <= LineLast ) and
+             ( Info.Entries[ J + 1 ].StartIdx > LineLast ) and IsBlank( LineFirst, Info.Entries[ I ].StartIdx - 1 ) and
+             OnlyLineComments( Info, LineFirst, LineLast ) then
+            EditList.Add( MakeEdit( LineFirst, LineLast, '' ) )
+          else
+            Exit( Fail( Format( 'Removing %s from the %s uses clause would leave its trailing // comment behind; '
+              + 'move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
+        end
+        // Forward: the run, the "," after it and the white space after that ( "B, " of "A, B, C" ),
+        // so a comment or directive before the next entry stays.  Backward: the "," after the kept
+        // entry before the run, and the run ( ", B" ); the only choice for a run ending the clause.
+        else if ( J < Last ) and ( Info.Entries[ J ].CommaIdx > 0 ) and
+           RangeIsPlain( Info, Info.Entries[ I ].StartIdx, Info.Entries[ J ].CommaIdx ) then
+        begin
+          K := Info.Entries[ J ].CommaIdx;
+          while ( K < Length( Source ) ) and ( Source[ K + 1 ] in [ #9, #10, #13, ' ' ] ) do
+            Inc( K );
+          EditList.Add( MakeEdit( Info.Entries[ I ].StartIdx, K, '' ) );
+        end
+        else if ( I > 0 ) and ( Info.Entries[ I - 1 ].CommaIdx > 0 ) and
+                RangeIsPlain( Info, Info.Entries[ I - 1 ].CommaIdx, Info.Entries[ J ].EndIdx ) then
+          EditList.Add( MakeEdit( Info.Entries[ I - 1 ].CommaIdx, Info.Entries[ J ].EndIdx, '' ) )
+        else
+          Exit( Fail( Format( 'Removing %s from the %s uses clause would delete a comment or compiler directive '
+            + 'next to it; move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
+        I := J + 1;
+      end;
+
+      if Incoming[ Section ].Count = 0 then
+        Continue;
+
+      if Info.Present then
+      begin
+        // Append before the ";", which must not sit inside a conditional block.
+        if Info.SemicolonDepth <> 0 then
+          Exit( Fail( Format( 'The %s uses clause ends inside a conditional block ( {$IFDEF} ... ); move the units by hand.',
+            [ SectionNames[ Section ] ] ) ) );
+        var Added := JoinEntries( Incoming[ Section ] );
+        if ColumnOf( Info.SemicolonIdx ) + Length( Added ) + 2 > 160 then
+          Added := UTF8String( ',' ) + LineBreak + UTF8String( '  ' ) + Added
+        else
+          Added := UTF8String( ', ' ) + Added;
+        EditList.Add( MakeEdit( Info.SemicolonIdx, Info.SemicolonIdx - 1, Added ) );
+      end
+      else
+      begin
+        // No clause yet: create one straight after the section keyword - unless an include file
+        // there may hold the section's clause, which a second clause would duplicate.
+        if Info.IncludeBeforeClause then
+          Exit( Fail( Format( 'An include file ( {$I ...} ) starts the %s section and may hold its uses clause; '
+            + 'move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+        EditList.Add( MakeEdit( Info.SectionEnd + 1, Info.SectionEnd,
+          LineBreak + LineBreak + UTF8String( 'uses' ) + LineBreak + UTF8String( '  ' ) + JoinEntries( Incoming[ Section ] ) + UTF8String( ';' ) ) );
+      end;
+    end;
+
+    // Sorted by offset, an insertion before a deletion at the same offset.
+    EditList.Sort( TComparer<TUsesEdit>.Construct(
+      function( const ALeft, ARight: TUsesEdit ): Integer
+      begin
+        Result := ALeft.Offset - ARight.Offset;
+        if Result = 0 then
+          Result := ALeft.DeleteCount - ARight.DeleteCount;
+      end ) );
+    for I := 1 to EditList.Count - 1 do
+      if EditList[ I - 1 ].Offset + EditList[ I - 1 ].DeleteCount > EditList[ I ].Offset then
+        Exit( Fail( 'The planned uses-clause edits overlap; nothing was changed.' ) );
+
+    Edits := EditList.ToArray;
+    Result := True;
+  finally
+    EditList.Free;
+    Incoming[ usInterface ].Free;
+    Incoming[ usImplementation ].Free;
+  end;
+end;
+
+class function TUsesClauseRefactorer.ApplyEdits( const Source: UTF8String; const Edits: TArray<TUsesEdit> ): UTF8String;
+var
+  Size, Done, Written: Integer;
+begin
+  Size := Length( Source );
+  for var Edit in Edits do
+    Inc( Size, Length( Edit.Text ) - Edit.DeleteCount );
+  SetLength( Result, Size );
+
+  Done := 0; // Bytes of Source consumed.
+  Written := 0; // Bytes of Result written.
+  for var Edit in Edits do
+  begin
+    if Edit.Offset > Done then
+    begin
+      Move( Source[ Done + 1 ], Result[ Written + 1 ], Edit.Offset - Done );
+      Inc( Written, Edit.Offset - Done );
+    end;
+    if Edit.Text <> '' then
+    begin
+      Move( Edit.Text[ 1 ], Result[ Written + 1 ], Length( Edit.Text ) );
+      Inc( Written, Length( Edit.Text ) );
+    end;
+    Done := Edit.Offset + Edit.DeleteCount;
+  end;
+  if Done < Length( Source ) then
+    Move( Source[ Done + 1 ], Result[ Written + 1 ], Length( Source ) - Done );
+end;
+
+function TUsesClauseRefactorer.GenerateRefactoredSource( const Source: UTF8String;
+  const Placements: TArray<TUnitPlacement>; out ErrorMessage: string ): UTF8String;
+var
+  Edits: TArray<TUsesEdit>;
+begin
+  if PlanMoves( Source, Placements, Edits, ErrorMessage ) and ( Length( Edits ) > 0 ) then
+    Result := ApplyEdits( Source, Edits )
+  else
+    Result := Source;
 end;
 
 function TUsesClauseRefactorer.GenerateRefactoredSource( const Source: UTF8String;
   const Placements: TArray<TUnitPlacement> ): UTF8String;
 var
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  TokenList: TList<TToken>;
-  InterfaceUsesStart, InterfaceUsesEnd: Integer;
-  ImplUsesStart, ImplUsesEnd: Integer;
-  ImplKeywordPos: Integer;
-  InInterface, InImplementation, InUses: Boolean;
-  NewInterfaceUnits, NewImplUnits: TStringList;
-  OrigInterfaceUnits, OrigImplUnits: TStringList;
-  Placement: TUnitPlacement;
-  ResultStr: UTF8String;
-  I: Integer;
-  HasInterfaceUses, HasImplUses: Boolean;
-  NewInterfaceUsesStr, NewImplUsesStr: UTF8String;
-  InsertPos: Integer;
-
-  function BuildUsesClause( const Units: TStringList; const Indent: string ): UTF8String;
-  var
-    J: Integer;
-    LineLen: Integer;
-  begin
-    if Units.Count = 0 then
-    begin
-      Result := '';
-      Exit;
-    end;
-
-    Result := UTF8String( 'uses' + #13#10 + Indent );
-    LineLen := Length( Indent );
-
-    for J := 0 to Units.Count - 1 do
-    begin
-      if J > 0 then
-      begin
-        Result := Result + ',';
-        // Wrap to keep uses-clause lines within the GITLAK 162-char limit.
-        if LineLen + Length( Units[ J ] ) + 2 > 160 then
-        begin
-          Result := Result + UTF8String( #13#10 + Indent );
-          LineLen := Length( Indent );
-        end
-        else
-        begin
-          Result := Result + ' ';
-          Inc( LineLen );
-        end;
-      end;
-
-      Result := Result + UTF8String( Units[ J ] );
-      Inc( LineLen, Length( Units[ J ] ) );
-    end;
-
-    Result := Result + ';' + #13#10;
-  end;
-
+  Ignored: string;
 begin
-  // Collect units for each section based on recommendations
-  NewInterfaceUnits := TStringList.Create;
-  NewImplUnits := TStringList.Create;
-  OrigInterfaceUnits := TStringList.Create;
-  OrigImplUnits := TStringList.Create;
-  TokenList := TList<TToken>.Create;
-
-  try
-    // Separate units by recommended section
-    for Placement in Placements do
-    begin
-      if Placement.RecommendedSection = usInterface then
-        NewInterfaceUnits.Add( Placement.UnitName )
-      else
-        NewImplUnits.Add( Placement.UnitName );
-
-      // Track original placement
-      if Placement.CurrentSection = usInterface then
-        OrigInterfaceUnits.Add( Placement.UnitName )
-      else
-        OrigImplUnits.Add( Placement.UnitName );
-    end;
-
-    // Check if anything changed
-    if ( NewInterfaceUnits.CommaText = OrigInterfaceUnits.CommaText ) and
-       ( NewImplUnits.CommaText = OrigImplUnits.CommaText ) then
-    begin
-      // No changes needed
-      Result := Source;
-      Exit;
-    end;
-
-    // Parse source to find uses clause positions
-    Lexer := TDelphiLexer.Create( '', Source );
-    try
-      while Lexer.NextToken( Token ) do
-      begin
-        if Token.Kind <> tkComment then
-          TokenList.Add( Token );
-      end;
-    finally
-      Lexer.Free;
-    end;
-
-    // Find positions of uses clauses
-    InterfaceUsesStart := 0;
-    InterfaceUsesEnd := 0;
-    ImplUsesStart := 0;
-    ImplUsesEnd := 0;
-    ImplKeywordPos := 0;
-    InInterface := False;
-    InImplementation := False;
-    InUses := False;
-    HasInterfaceUses := False;
-    HasImplUses := False;
-
-    I := 0;
-    while I < TokenList.Count do
-    begin
-      Token := TokenList[ I ];
-
-      if Token.Kind = tkI_interface then
-      begin
-        InInterface := True;
-        InImplementation := False;
-      end
-      else if Token.Kind = tkI_implementation then
-      begin
-        InInterface := False;
-        InImplementation := True;
-        ImplKeywordPos := Token.Index;
-      end
-      else if Token.Kind = tkI_uses then
-      begin
-        InUses := True;
-        if InInterface and not InImplementation then
-        begin
-          InterfaceUsesStart := Token.Index;
-          HasInterfaceUses := True;
-        end
-        else if InImplementation then
-        begin
-          ImplUsesStart := Token.Index;
-          HasImplUses := True;
-        end;
-      end
-      else if InUses and ( Token.Kind = tkSemicolon ) then
-      begin
-        if InInterface and not InImplementation and ( InterfaceUsesStart > 0 ) then
-          InterfaceUsesEnd := Token.Index + 1  // Include the semicolon
-        else if InImplementation and ( ImplUsesStart > 0 ) then
-          ImplUsesEnd := Token.Index + 1;
-        InUses := False;
-      end;
-
-      Inc( I );
-    end;
-
-    // Build the result string
-    ResultStr := Source;
-
-    // Process from end to start so positions remain valid
-    // Handle implementation uses clause first (it comes later in the file)
-    if HasImplUses and ( ImplUsesStart > 0 ) and ( ImplUsesEnd > 0 ) then
-    begin
-      if NewImplUnits.Count > 0 then
-      begin
-        // Replace implementation uses clause
-        NewImplUsesStr := BuildUsesClause( NewImplUnits, '  ' );
-        Delete( ResultStr, ImplUsesStart, ImplUsesEnd - ImplUsesStart );
-        Insert( NewImplUsesStr, ResultStr, ImplUsesStart );
-      end
-      else
-      begin
-        // Remove implementation uses clause entirely (skip any trailing whitespace)
-        Delete( ResultStr, ImplUsesStart, ImplUsesEnd - ImplUsesStart );
-        // Also try to remove the trailing newline
-        while ( ImplUsesStart <= Length( ResultStr ) ) and
-              CharInSet( ResultStr[ ImplUsesStart ], [ #13, #10, ' ' ] ) do
-          Delete( ResultStr, ImplUsesStart, 1 );
-      end;
-    end
-    else if ( not HasImplUses ) and ( NewImplUnits.Count > 0 ) and ( ImplKeywordPos > 0 ) then
-    begin
-      // Need to insert implementation uses clause after 'implementation' keyword
-      NewImplUsesStr := UTF8String( #13#10 + #13#10 ) + BuildUsesClause( NewImplUnits, '  ' );
-
-      // Find position after 'implementation' keyword
-      InsertPos := ImplKeywordPos + Length( 'implementation' );
-      Insert( NewImplUsesStr, ResultStr, InsertPos );
-
-      // Adjust interface uses end position since we inserted before potential changes
-      // (not needed since we process from end to start)
-    end;
-
-    // Handle interface uses clause
-    if HasInterfaceUses and ( InterfaceUsesStart > 0 ) and ( InterfaceUsesEnd > 0 ) then
-    begin
-      if NewInterfaceUnits.Count > 0 then
-      begin
-        // Replace interface uses clause
-        NewInterfaceUsesStr := BuildUsesClause( NewInterfaceUnits, '  ' );
-        Delete( ResultStr, InterfaceUsesStart, InterfaceUsesEnd - InterfaceUsesStart );
-        Insert( NewInterfaceUsesStr, ResultStr, InterfaceUsesStart );
-      end
-      else
-      begin
-        // Remove interface uses clause entirely
-        Delete( ResultStr, InterfaceUsesStart, InterfaceUsesEnd - InterfaceUsesStart );
-        while ( InterfaceUsesStart <= Length( ResultStr ) ) and
-              CharInSet( ResultStr[ InterfaceUsesStart ], [ #13, #10, ' ' ] ) do
-          Delete( ResultStr, InterfaceUsesStart, 1 );
-      end;
-    end;
-
-    Result := ResultStr;
-  finally
-    NewInterfaceUnits.Free;
-    NewImplUnits.Free;
-    OrigInterfaceUnits.Free;
-    OrigImplUnits.Free;
-    TokenList.Free;
-  end;
+  Result := GenerateRefactoredSource( Source, Placements, Ignored );
 end;
 
 end.

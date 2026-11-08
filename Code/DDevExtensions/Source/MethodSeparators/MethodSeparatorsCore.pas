@@ -142,6 +142,10 @@ type
     function SkipBackOverAttributes( SigIndex: Integer ): Integer;
     function IsDeclarationBoundary( SigIndex: Integer ): Boolean;
     function IsRoutineStart( SigIndex: Integer ): Boolean;
+    /// <summary>True when the routine header at SigIndex names a method ( TFoo.Bar ), which never nests.</summary>
+    /// <param name="SigIndex">Index of a header accepted by IsRoutineStart.</param>
+    /// <returns>True for a qualified or generic-qualified routine name.</returns>
+    function IsMethodHeader( SigIndex: Integer ): Boolean;
     function IsRecordOpener( SigIndex: Integer ): Boolean;
     function IsStructureOpener( SigIndex: Integer ): Boolean;
     function TypeDeclarationStart( OpenerIndex: Integer ): Integer;
@@ -344,6 +348,18 @@ begin
   else
     Result := False;
   end;
+
+end;
+
+function TSeparatorScanner.IsMethodHeader( SigIndex: Integer ): Boolean;
+var
+  NameIndex: Integer;
+begin
+
+  NameIndex := SigIndex + 1;
+  if Kind( SigIndex ) = tkI_class then
+    Inc( NameIndex );
+  Result := ( Kind( NameIndex ) >= tkIdent ) and ( Kind( NameIndex + 1 ) in [tkQualifier, tkLessThan] );
 
 end;
 
@@ -602,6 +618,10 @@ begin
       tkI_implementation, tkI_initialization, tkI_finalization:
         Exit; // Lost sync: let the caller resume at the section keyword.
     end;
+    // A method implementation is never a nested routine: the header before it has no body yet
+    // ( it is being typed ), so stop here rather than swallow every method that follows.
+    if IsRoutineStart( Result ) and IsMethodHeader( Result ) then
+      Exit;
     if IsRoutineStart( Result ) then
       Result := SkipRoutine( Result, True )
     else if IsStructureOpener( Result ) then

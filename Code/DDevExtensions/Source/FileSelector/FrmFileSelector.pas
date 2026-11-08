@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -88,6 +88,9 @@ type
   private
     /// <summary>The owning selector form whose data is being enriched.</summary>
     FForm: TFormFileSelector;
+    /// <summary>The rows to classify, copied when the thread starts: the form's own list is
+    /// re-sorted on the main thread ( a column click ) while the thread walks it.</summary>
+    FItems: TArray<TInfo>;
   protected
     /// <summary>Synchronised callback that updates a row's image index on the UI thread.</summary>
     procedure UpdateImageIndex;
@@ -541,6 +544,9 @@ end;
 constructor TResourceTypeThread.Create(AForm: TFormFileSelector);
 begin
   FForm := AForm;
+  SetLength(FItems, AForm.FAllData.Count);
+  for var I := 0 to AForm.FAllData.Count - 1 do
+    FItems[I] := AForm.FAllData[I];
   inherited Create(False);
 end;
 
@@ -550,9 +556,9 @@ var
   Info: TInfo;
 begin
   Index := 0;
-  while not Terminated and (Index < FForm.FAllData.Count) do
+  while not Terminated and (Index < Length(FItems)) do
   begin
-    Info := FForm.FAllData[Index];
+    Info := FItems[Index];
     if not Info.FormTypeDetected and (Info.ImageIndex = imgModuleForm) then
     begin
       Info.FormTypeDetected := True;
@@ -1318,7 +1324,9 @@ var
         if Filename <> '' then
         begin
           { Project files are prioritized }
-          Index := Files.Add(Filename);
+          // A project file is a source file: without the flag the "source for a DCU" lookup below
+          // replaced it with a same-named unit from the Browsing Path.
+          Index := Files.AddObject(Filename, TObject(True));
           FilesHash.Add(AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), '')), Index);
         end;
       end;
@@ -1423,7 +1431,9 @@ begin
             if Filename <> '' then
             begin
               { Project files are prioritized }
-              Index := Files.Add(Filename);
+              // A project file is a source file: without the flag the "source for a DCU" lookup below
+              // replaced it with a same-named unit from the Browsing Path.
+              Index := Files.AddObject(Filename, TObject(True));
               FilesHash.Add(AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), '')), Index);
             end;
             Break;
