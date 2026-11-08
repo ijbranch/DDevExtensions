@@ -1,4 +1,4 @@
-unit ImportHooking;
+﻿unit ImportHooking;
 
 /// <summary>
 /// Reduced JCL-derived helpers for inspecting and patching the PE import table of a loaded
@@ -217,16 +217,20 @@ type
   end;
 
 /// <summary>Returns True when the host operating system is Windows NT or later.</summary>
+/// <returns>True when GetVersionEx reports a Windows NT platform; False when it fails or reports Windows 9x.</returns>
 function IsWinNT: Boolean;
 /// <summary>Returns the IMAGE_NT_HEADERS structure of a loaded PE image, or nil on failure.</summary>
 /// <param name="BaseAddress">Module base address.</param>
+/// <returns>The NT headers, or nil when BaseAddress is unreadable or carries no valid DOS/NT signature.</returns>
 function PeMapImgNtHeaders(const BaseAddress: Pointer): PImageNtHeaders;
 /// <summary>Returns a pointer to the first IMAGE_SECTION_HEADER following the optional header.</summary>
 /// <param name="NtHeaders">NT headers pointer obtained from PeMapImgNtHeaders.</param>
+/// <returns>The first section header, or nil when NtHeaders is nil.</returns>
 function PeMapImgSections(NtHeaders: PImageNtHeaders): PImageSectionHeader;
 /// <summary>Returns the section header whose name matches SectionName, or nil when not present.</summary>
 /// <param name="NtHeaders">NT headers pointer.</param>
 /// <param name="SectionName">Eight-character section name (such as ".text").</param>
+/// <returns>The matching section header, or nil when there is none or NtHeaders is nil.</returns>
 function PeMapImgFindSection(NtHeaders: PImageNtHeaders;
   const SectionName: string): PImageSectionHeader;
 /// <summary>Builds a deduplicated TStringList containing the names of every imported DLL (regular and delay-loaded).</summary>

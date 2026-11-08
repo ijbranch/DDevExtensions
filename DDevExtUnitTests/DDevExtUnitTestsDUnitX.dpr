@@ -94,7 +94,16 @@ uses
   PluginConfigCore in '..\Code\DDevExtensions\Source\PluginConfigCore.pas',
   TestPluginConfigCoreDUnitX in 'TestPluginConfigCoreDUnitX.pas',
   FeatureSwitches in '..\Code\DDevExtensions\Source\FeatureSwitches.pas',
-  TestFeatureSwitchesDUnitX in 'TestFeatureSwitchesDUnitX.pas';
+  TestFeatureSwitchesDUnitX in 'TestFeatureSwitchesDUnitX.pas',
+  IDEHashLists in '..\Shared\IDE\IDEHashLists.pas',
+  TestIDEHashListsDUnitX in 'TestIDEHashListsDUnitX.pas',
+  VersionInfoKeys in '..\Shared\IDE\VersionInfoKeys.pas',
+  TestVersionInfoKeysDUnitX in 'TestVersionInfoKeysDUnitX.pas',
+  TestSimpleXmlDocDUnitX in 'TestSimpleXmlDocDUnitX.pas',
+  FileWatcher in '..\Shared\FileWatcher.pas',
+  TestFileWatcherDUnitX in 'TestFileWatcherDUnitX.pas',
+  Hooking in '..\Shared\Hooking.pas',
+  TestHookingDUnitX in 'TestHookingDUnitX.pas';
 
 {$R *.res}
 

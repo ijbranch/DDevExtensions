@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -37,25 +37,40 @@ type
     /// <summary>Plug-in version string displayed alongside Label1.</summary>
     lblVersion: TLabel;
     /// <summary>Opens the URL stored in the label's Hint via ShellExecute.</summary>
+    /// <param name="Sender">The clicked label; its Hint holds the URL.</param>
     procedure lblURLClick(Sender: TObject);
   private
     { Private-Deklarationen }
   protected
     /// <summary>Returns the global registry of page providers; overridable for subclassed dialogs.</summary>
+    /// <returns>The registry list, or nil when no provider has been registered (or after finalization).</returns>
     class function GetGlobalOptionPages: TObjectList; virtual;
     /// <summary>Replaces the global registry of page providers.</summary>
+    /// <param name="Value">New registry list; nil clears the reference without freeing the old list.</param>
     class procedure SetGlobalOptionPages(Value: TObjectList); virtual;
     /// <summary>Invokes every registered page provider and adds the returned pages to Root.</summary>
+    /// <param name="Root">Root page that receives the pages the providers return.</param>
     procedure PopulateRootPage(Root: TTreePage); override;
   public
     { Public-Deklarationen }
     /// <summary>Registers a method-typed page provider so it is invoked the next time the dialog is opened.</summary>
+    /// <param name="OptionPages">Method that returns the provider's page tree each time the dialog opens.</param>
     class procedure RegisterPages(const OptionPages: TOptionPagesEvent);
-    /// <summary>Removes a previously registered method-typed page provider.</summary>
+    /// <summary>
+    /// Removes a previously registered method-typed page provider (the first entry with the same
+    /// code and data).  Safe to call when nothing is registered and after this unit's
+    /// finalization has freed the registry.
+    /// </summary>
+    /// <param name="OptionPages">The provider passed to RegisterPages.</param>
     class procedure UnregisterPages(const OptionPages: TOptionPagesEvent);
     /// <summary>Registers a function-typed page provider.</summary>
+    /// <param name="OptionPages">Routine that returns the provider's page tree each time the dialog opens.</param>
     class procedure RegisterPagesEx(const OptionPages: TOptionPagesProc);
-    /// <summary>Removes a previously registered function-typed page provider.</summary>
+    /// <summary>
+    /// Removes a previously registered function-typed page provider (the first entry with the
+    /// same routine).  Safe to call when nothing is registered and after finalization.
+    /// </summary>
+    /// <param name="OptionPages">The provider passed to RegisterPagesEx.</param>
     class procedure UnregisterPagesEx(const OptionPages: TOptionPagesProc);
   end;
 
@@ -133,7 +148,9 @@ begin
   begin
     for i := GetGlobalOptionPages.Count - 1 downto 0 do
     begin
-      if Addr(TOptionPages(GetGlobalOptionPages[i]).Proc) <> Addr(OptionPages) then
+      // Compare the routine addresses, not the addresses of the two variables holding them
+      // (which always differ, so the old "<>" deleted whichever provider came first).
+      if @TOptionPages( GetGlobalOptionPages[i] ).Proc = @OptionPages then
       begin
         GetGlobalOptionPages.Delete(i);
         Break;
@@ -155,8 +172,10 @@ begin
       OptionPages := TOptionPages(GetGlobalOptionPages[i]);
       if Assigned(OptionPages.Event) then
         Page := OptionPages.Event()
+      else if Assigned( OptionPages.Proc ) then
+        Page := OptionPages.Proc()
       else
-        Page := OptionPages.Proc();
+        Page := nil;
 
       if Page <> nil then
         Root.Add(Page);

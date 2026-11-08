@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* (C) 2005,2006 Andreas Hausladen                                            *}
 {*                                                                            *}
@@ -46,45 +46,75 @@ type
     FRefCount: Integer;
   protected
     /// <summary>IInterface AddRef using a manual InterlockedIncrement on FRefCount.</summary>
+    /// <returns>The new reference count.</returns>
     function _AddRef: Integer; stdcall;
     /// <summary>IInterface Release; frees the instance when FRefCount drops to zero.</summary>
+    /// <returns>The new reference count; the instance is destroyed when it reaches 0 and the document has no owner.</returns>
     function _Release: Integer; stdcall;
   public
     /// <summary>Creates the wrapper and the underlying backend document.</summary>
+    /// <param name="AOwner">Owner component; when set, reference counting never frees the document.</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>Releases the underlying backend document.</summary>
     destructor Destroy; override;
 
     /// <summary>IXmlDocument: returns whether the backend document is active.</summary>
+    /// <returns>True when the document is active.</returns>
     function GetActive: Boolean;
     /// <summary>IXmlDocument: activates or deactivates the backend document.</summary>
+    /// <param name="Value">True to activate, False to deactivate.</param>
     procedure SetActive(Value: Boolean);
     /// <summary>IXmlDocument: returns the XML version string.</summary>
+    /// <returns>The XML version string.</returns>
     function GetVersion: string;
     /// <summary>IXmlDocument: sets the XML version string.</summary>
+    /// <param name="Value">New XML version string.</param>
     procedure SetVersion(const Value: string);
     /// <summary>IXmlDocument: returns the document element.</summary>
+    /// <returns>A wrapper for the root element.</returns>
     function GetDocumentElement: IXmlNode;
     /// <summary>IXmlDocument: replaces the document element.</summary>
+    /// <param name="Value">New root element; nil removes it.</param>
     procedure SetDocumentElement(Value: IXmlNode);
     /// <summary>IXmlDocument: returns the synthetic root node.</summary>
+    /// <returns>A wrapper for the document element.</returns>
     function GetRoot: IXmlNode;
     /// <summary>IXmlDocument: returns the active document options.</summary>
+    /// <returns>Always an empty set.</returns>
     function GetOptions: TXmlDocOptions;
     /// <summary>IXmlDocument: sets the active document options.</summary>
+    /// <param name="Value">New document options.</param>
     procedure SetOptions(const Value: TXmlDocOptions);
     /// <summary>IXmlDocument: returns the document's child-node collection.</summary>
+    /// <returns>The child nodes of the root element.</returns>
     function GetChildNodes: IXmlChildNodes;
 
     /// <summary>IXmlDocument: creates a new element with the supplied tag and namespace URI.</summary>
+    /// <param name="Tag">Element name.</param>
+    /// <param name="NamespaceURI">Namespace URI; may be empty.</param>
+    /// <returns>The new, unattached element.</returns>
     function CreateElement(const Tag, NamespaceURI: string): IXmlNode;
-    /// <summary>IXmlDocument: creates a new node of the requested type.</summary>
+    /// <summary>IXmlDocument: not implemented; ignores its arguments and returns the root node.</summary>
+    /// <param name="Name">Ignored.</param>
+    /// <param name="NodeType">Ignored.</param>
+    /// <param name="AddlData">Ignored.</param>
+    /// <returns>The root node.</returns>
     function CreateNode(const Name: string; NodeType: TNodeType = ntElement;
       const AddlData: string = ''): IXmlNode;
 
-    /// <summary>Loads the document from Filename via the backend.</summary>
+    /// <summary>
+    /// Loads the document from Filename via the backend.  A JclSimpleXml-style declaration
+    /// ( encoding before version ) is repaired in memory; the file itself is never modified.
+    /// </summary>
+    /// <param name="Filename">XML file to load.</param>
+    /// <exception cref="EDOMParseError">Raised when the file is not well-formed XML (MSXML backend).</exception>
     procedure LoadFromFile(const Filename: string);
-    /// <summary>Saves the document to Filename via the backend.</summary>
+    /// <summary>
+    /// Saves the document to Filename via the backend, writing a uniquely named sibling <c>.saving</c> file first
+    /// and then replacing Filename with it, so the target is never left half-written.
+    /// </summary>
+    /// <param name="Filename">Destination file.</param>
+    /// <exception cref="EInOutError">Raised when the finished file cannot replace Filename (for example, it is read-only).</exception>
     procedure SaveToFile(const Filename: string);
 
     /// <summary>Whether the document is parsed and ready for use.</summary>
@@ -102,20 +132,24 @@ type
   end;
 
 /// <summary>Loads an XML file from disk and returns it as an IXmlDocument.</summary>
+/// <param name="Filename">XML file to load.</param>
+/// <returns>The loaded, active document.</returns>
 function LoadXmlDocument(const Filename: string): IXmlDocument;
 /// <summary>Creates an empty IXmlDocument with the supplied (optional) XML version string.</summary>
+/// <param name="Version">XML version string; empty keeps the default.</param>
+/// <returns>The new, active document.</returns>
 function NewXmlDocument(const Version: string = ''): IXmlDocument;
 
 implementation
 
 uses
   {$IFDEF MSWINDOWS}
-  Windows,
+  Winapi.Windows,
   {$ENDIF MSWINDOWS}
   {$IFDEF LINUX}
   Libc,
   {$ENDIF LINUX}
-  SysUtils, Contnrs;
+  System.SysUtils, System.Contnrs, System.IOUtils;
 
 {$IFDEF COMPILER5}
 function InterlockedIncrement(var Addend: Integer): Integer; stdcall;
@@ -295,7 +329,7 @@ end;
 
 procedure TXmlDocument.SetVersion(const Value: string);
 begin
-  FXml.Prolog.Version := Version;
+  FXml.Prolog.Version := Value;
 end;
 
 function TXmlDocument._AddRef: Integer;
@@ -594,10 +628,32 @@ begin
   Result := FXml.Version;
 end;
 
+/// <summary>
+/// Repairs the XML declaration written by JclSimpleXml ( <c>&lt;?xml encoding="UTF-8" version="1.0"?&gt;</c> ),
+/// which MSXML rejects because <c>version</c> must come first.
+/// </summary>
+/// <param name="AText">Whole document text.</param>
+/// <param name="AFixed">Receives the text with the declaration replaced by a standard one.</param>
+/// <returns>True when AText starts with an XML declaration whose first attribute is not
+/// <c>version</c>, so AFixed differs from AText.</returns>
+function RepairXmlDeclaration( const AText: string; out AFixed: string ): Boolean;
+begin
+  Result := False;
+  AFixed := AText;
+  var sTrimmed := AText.TrimLeft;
+  if not sTrimmed.StartsWith( '<?xml', True ) then
+    Exit;
+  var iEnd := sTrimmed.IndexOf( '?>' );
+  if ( iEnd < 0 ) then
+    Exit;
+  var sDeclaration := sTrimmed.Substring( 0, iEnd + 2 );
+  if sDeclaration.Substring( 5 ).TrimLeft.StartsWith( 'version', True ) then
+    Exit; // a well-formed declaration: the parse error lies elsewhere
+  AFixed := '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + sTrimmed.Substring( iEnd + 2 );
+  Result := True;
+end;
+
 procedure TXmlDocument.LoadFromFile(const Filename: string);
-var
-  Lines: TStrings;
-  S: string;
 begin
   try
     FXml.LoadFromFile(Filename);
@@ -606,33 +662,33 @@ begin
     begin
       // The JclSimpleXml writes '<?xml encoding="UTF-8" version="1.0" ...' but that isn't valid
       // XML, because it must be '<?xml version="1.0" encoding="UTF-8" ...' according to MSXML.
-      Lines := TStringList.Create;
-      try
-        Lines.LoadFromFile(FileName);
-        while (Lines.Count > 0) and (Trim(Lines[0]) = '') do
-          Lines.Delete(0);
-        if Lines.Count > 0 then
-        begin
-          S := Trim(Lines[0]);
-          if StrLIComp('<?xml', PChar(S), 5) = 0 then
-          begin
-            Lines[0] := '<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
-            Lines.SaveToFile(Filename);
-            FXml.LoadFromFile(Filename);
-            Exit;
-          end;
-        end;
-      finally
-        Lines.Free;
-      end;
-      raise;
+      // The repair is made in memory only: the file on disk is never rewritten while loading.
+      var sFixed: string;
+      if not RepairXmlDeclaration( TFile.ReadAllText( Filename, TEncoding.UTF8 ), sFixed ) then
+        raise;
+      FXml.LoadFromXML( sFixed );
     end;
   end;
 end;
 
 procedure TXmlDocument.SaveToFile(const Filename: string);
 begin
-  FXml.SaveToFile(Filename);
+  // Write a sibling file and swap it in, so a crash or a full disk mid-write cannot leave the
+  // settings file truncated.
+  // Unique per process and call: both IDEs ( 32- and 64-bit ) can save the same settings file.
+  var sTempName := Format( '%s.%d.%x.saving', [Filename, GetCurrentProcessId, GetTickCount64] );
+  try
+    FXml.SaveToFile( sTempName );
+  except
+    System.SysUtils.DeleteFile( sTempName );
+    raise;
+  end;
+  if not MoveFileEx( PChar( sTempName ), PChar( Filename ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
+  begin
+    var iError := GetLastError;
+    System.SysUtils.DeleteFile( sTempName );
+    raise EInOutError.CreateFmt( 'Cannot replace "%s": %s', [Filename, SysErrorMessage( iError )] );
+  end;
 end;
 
 procedure TXmlDocument.SetActive(Value: Boolean);
@@ -655,7 +711,7 @@ end;
 
 procedure TXmlDocument.SetVersion(const Value: string);
 begin
-  FXml.Version := Version;
+  FXml.Version := Value;
 end;
 
 function TXmlDocument._AddRef: Integer;

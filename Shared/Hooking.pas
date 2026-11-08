@@ -85,14 +85,19 @@ type
 /// </remarks>
 /// <param name="Proc">Function to redirect.</param>
 /// <param name="NewProc">Replacement function.</param>
-/// <param name="Data">Receives the saved prologue and ref-count.</param>
-procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <param name="Data">Saved prologue and ref-count.  Must be zero-initialised before the first
+/// call (a global or a field is; a local record must be cleared): a non-zero Count means "already
+/// redirected" and only increments it.</param>
+procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode); overload;
 /// <summary>Convenience overload of CodeRedirect that returns the redirection record by value.</summary>
 /// <param name="Proc">Function to redirect.</param>
 /// <param name="NewProc">Replacement function.</param>
 /// <returns>Redirection record holding the saved prologue.</returns>
 function CodeRedirect(Proc: Pointer; NewProc: Pointer): TRedirectCode; overload;
-/// <summary>Restores the original prologue captured in Data, decrementing the redirection ref-count.</summary>
+/// <summary>
+/// Restores the original prologue captured in Data, decrementing the redirection ref-count.  A
+/// call with Count already 0 (never redirected, or restored already) does nothing.
+/// </summary>
 /// <param name="Data">State previously populated by CodeRedirect.</param>
 procedure CodeRestore(var Data: TRedirectCode);
 
@@ -104,14 +109,14 @@ procedure RehookFunction(NewProc: Pointer; var Data: TRedirectCode);
 /// <param name="ModuleHandle">Loaded module handle.</param>
 /// <param name="SymbolName">Exported symbol name.</param>
 /// <param name="NewProc">Replacement function.</param>
-/// <param name="Data">Receives the redirection state.</param>
-procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <param name="Data">Redirection state; must be zero-initialised before the first call.</param>
+procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode); overload;
 /// <summary>Looks up SymbolName in ModuleName via GetProcAddress and redirects it to NewProc.</summary>
 /// <param name="ModuleName">DLL/module name.</param>
 /// <param name="SymbolName">Exported symbol name.</param>
 /// <param name="NewProc">Replacement function.</param>
-/// <param name="Data">Receives the redirection state.</param>
-procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; out Data: TRedirectCode); overload;
+/// <param name="Data">Redirection state; must be zero-initialised before the first call.</param>
+procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode); overload;
 /// <summary>Restores the prologue captured by HookFunction.</summary>
 /// <param name="Data">Existing redirection state.</param>
 procedure UnhookFunction(var Data: TRedirectCode);
@@ -127,7 +132,9 @@ procedure UnhookFunction(var Data: TRedirectCode);
 /// </summary>
 /// <param name="Proc">Function to redirect (its entry is overwritten).</param>
 /// <param name="NewProc">Replacement function; must not chain back into Proc.</param>
-/// <param name="Hook">Receives the saved state needed to revert the redirect.</param>
+/// <param name="Hook">Receives the saved state needed to revert the redirect.  A second install on
+/// a Hook that is still installed does nothing, so it can never capture the already-patched bytes
+/// as the "original" ones.</param>
 procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceHook);
 /// <summary>Reverts a redirect installed by InstallFullReplaceHook, restoring the original entry bytes.</summary>
 /// <param name="Hook">State previously populated by InstallFullReplaceHook.</param>
@@ -198,8 +205,12 @@ function FindMethodPtr(Start: Pointer; const Bytes: array of SmallInt; MaxOffset
 /// <param name="MaxOffset">Optional limit on scan distance from Start.</param>
 /// <returns>Matching address, or nil when no match is found.</returns>
 function FindMethodPtr(Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer; overload;
-/// <summary>Enables or disables caching of VirtualQuery results inside FindMethodPtr to speed up repeated DLL scans.</summary>
-/// <param name="Enable">True to enable caching.</param>
+/// <summary>
+/// Formerly enabled a VirtualQuery cache inside FindMethodPtr.  The cache never worked (its hit
+/// test was inverted and its base address never recorded) and nothing enabled it, so it was
+/// removed; this routine is kept for source compatibility and does nothing.
+/// </summary>
+/// <param name="Enable">Ignored.</param>
 procedure EnableFindMethodPtrDllVirtualQueryCache(Enable: Boolean);
 
 type
@@ -303,7 +314,8 @@ type
 /// <param name="ANewProc">Replacement function.</param>
 /// <param name="AHookInfo">Receives state required to undo the hook.</param>
 /// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
-/// <returns>Trampoline pointer for invoking the original function, or nil on failure.</returns>
+/// <returns>Trampoline pointer for invoking the original function, or nil on failure (including
+/// a target that cannot be patched on Win64).</returns>
 function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Pointer; overload;
 /// <summary>Hooks AWinApiProc and writes the original-call pointer into the supplied untyped variable.</summary>
 /// <param name="AWinApiProc">WinAPI function to hook.</param>
@@ -311,7 +323,8 @@ function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHo
 /// <param name="AOrgCallProc">Untyped variable that receives a pointer to the original implementation.</param>
 /// <param name="AHookInfo">Receives state required to undo the hook.</param>
 /// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
-/// <returns>True on success.</returns>
+/// <returns>True when the hook was installed; False when it could not be (on Win64 only an
+/// import-thunk target can be hooked).</returns>
 function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Boolean; overload;
 /// <summary>Reverses a hook installed by HookWinApiProc using the captured AHookInfo.</summary>
 /// <param name="AHookInfo">State produced by HookWinApiProc.</param>
@@ -332,6 +345,83 @@ function ReadProtectedMemory(BaseAddress, Buffer: Pointer; Size: SIZE_T;
   var ReadBytes: SIZE_T): Boolean;
 begin
   Result := ReadProcessMemory(GetCurrentProcess, BaseAddress, Buffer, Size, ReadBytes);
+end;
+
+/// <summary>
+/// Replaces the first eight bytes at Dest with the first eight of ANew using one locked 8-byte
+/// compare-exchange, keeping whatever bytes ANew does not cover ( AHeadSize below 8 ).
+/// </summary>
+/// <param name="Dest">Code address.</param>
+/// <param name="ANew">New bytes.</param>
+/// <param name="AHeadSize">Number of bytes of ANew to place, 1..8.</param>
+procedure ExchangeHead( Dest: Pointer; const ANew; AHeadSize: Integer );
+begin
+  repeat
+    var iOld: Int64 := PInt64( Dest )^;
+    var iNew: Int64 := iOld;
+    Move( ANew, iNew, AHeadSize );
+    if ( AtomicCmpExchange( PInt64( Dest )^, iNew, iOld ) = iOld ) then
+      Break;
+  until False;
+end;
+
+/// <summary>
+/// Overwrites Size bytes of live code at Dest with Source so that a thread entering the code
+/// never executes a mix of old and new bytes.
+/// <para>Up to eight bytes: one locked 8-byte compare-exchange.</para>
+/// <para>More than eight ( the 14-byte absolute jump, padded jumps and calls ): the hot-patch
+/// self-loop sequence - (a) the first two bytes become <c>EB FE</c> ( jmp $-0 ), so a thread that
+/// enters spins there; (b) bytes 2..Size-1 are written; (c) bytes 0..7 are exchanged for the
+/// final head, releasing any spinning thread into complete new code.</para>
+/// </summary>
+/// <remarks>
+/// The compare-exchange is unaligned.  x86/x64 keep a locked access atomic even when it spans a
+/// cache line ( a "split lock", which costs a bus lock; an OS that enables split-lock detection
+/// may log it ).  The eight bytes may also run past the end of a short function into the next
+/// page: when that range cannot be made writable, the patch falls back to the old non-atomic
+/// WriteProcessMemory of exactly Size bytes rather than failing the hook.
+/// </remarks>
+/// <param name="Dest">Code address to patch.</param>
+/// <param name="Source">New bytes.</param>
+/// <param name="Size">Number of bytes to write (at least 1).</param>
+/// <returns>True when the bytes were written.</returns>
+function PatchCodeAtomic( Dest: Pointer; const Source; Size: Integer ): Boolean;
+const
+  cHead = SizeOf( Int64 );
+  cSelfLoop: array[0..1] of Byte = ( $EB, $FE ); // jmp $-0
+begin
+  Result := False;
+  if ( Dest = nil ) or ( Size <= 0 ) then
+    Exit;
+
+  var iSpan: Integer := Size;
+  if ( iSpan < cHead ) then
+    iSpan := cHead;
+  var iOldProtect: DWORD;
+  if not VirtualProtect( Dest, iSpan, PAGE_EXECUTE_READWRITE, iOldProtect ) then
+  begin
+    // The 8-byte window reaches memory that cannot be made writable: fall back to the old write.
+    var iWritten: SIZE_T := 0;
+    Result := WriteProcessMemory( GetCurrentProcess, Dest, @Source, Size, iWritten ) and ( iWritten = SIZE_T( Size ) );
+    FlushInstructionCache( GetCurrentProcess, Dest, Size );
+    Exit;
+  end;
+  try
+    if ( Size <= cHead ) then
+      ExchangeHead( Dest, Source, Size )
+    else
+    begin
+      ExchangeHead( Dest, cSelfLoop, SizeOf( cSelfLoop ) );                         // (a)
+      FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
+      Move( PByte( @Source )[2], PByte( Dest )[2], Size - 2 );                      // (b)
+      FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
+      ExchangeHead( Dest, Source, cHead );                                          // (c)
+    end;
+    Result := True;
+  finally
+    VirtualProtect( Dest, iSpan, iOldProtect, iOldProtect );
+    FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
+  end;
 end;
 
 type
@@ -466,9 +556,7 @@ begin
   end;
 end;
 
-procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; out Data: TRedirectCode);
-var
-  OldProtect: Cardinal;
+procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode);
 begin
   if Proc = nil then
   begin
@@ -494,15 +582,15 @@ begin
   if Data.Count = 0 then // do not overwrite an already backuped code
   begin
     Proc := GetActualAddr(Proc);
-    if VirtualProtectEx(GetCurrentProcess, Proc, SizeOf(Data.Code) + 1, PAGE_EXECUTE_READWRITE, OldProtect) then
-    begin
-      Data.RealProc := Proc;
-      Data.Code2 := Int64(Proc^);
-      TXRedirCode(Proc^).Jump := $E9;
-      TXRedirCode(Proc^).Offset := PAnsiChar(NewProc) - PAnsiChar(Proc) - (SizeOf(Data.Code));
-      VirtualProtectEx(GetCurrentProcess, Proc, SizeOf(Data.Code) + 1, OldProtect, @OldProtect);
-      FlushInstructionCache(GetCurrentProcess, Proc, SizeOf(Data.Code) + 1);
-    end;
+    var rJump: TXRedirCode;
+    rJump.Jump := $E9;
+    rJump.Offset := PAnsiChar(NewProc) - PAnsiChar(Proc) - (SizeOf(Data.Code));
+    var iOriginal: Int64 := PInt64(Proc)^;
+    // One locked write, so a thread entering Proc never sees a half-written jump.
+    if not PatchCodeAtomic( Proc, rJump, SizeOf( rJump ) ) then
+      Exit; // nothing patched: leave Count at 0 so a paired CodeRestore stays harmless
+    Data.RealProc := Proc;
+    Data.Code2 := iOriginal;
   end;
   Inc(Data.Count);
 end;
@@ -515,11 +603,13 @@ begin
 end;
 
 procedure CodeRestore(var Data: TRedirectCode);
-var
-  n: SIZE_T;
 begin
+  // A restore without a matching redirect used to drive Count negative, after which the next
+  // CodeRedirect only incremented it and silently installed nothing.
+  if ( Data.Count <= 0 ) then
+    Exit;
   if (Data.RealProc <> nil) and (Data.Count = 1) then
-    WriteProtectedMemory(Data.RealProc, @Data.Code, SizeOf(Data.Code), n);
+    PatchCodeAtomic( Data.RealProc, Data.Code, SizeOf( Data.Code ) );
   Dec(Data.Count);
 end;
 
@@ -528,12 +618,12 @@ begin
   CodeRedirect(Data.RealProc, NewProc, Data);
 end;
 
-procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; out Data: TRedirectCode);
+procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode);
 begin
   CodeRedirect(GetProcAddress(ModuleHandle, PAnsiChar(AnsiString(SymbolName))), NewProc, Data);
 end;
 
-procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; out Data: TRedirectCode);
+procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode);
 begin
   CodeRedirect(GetProcAddress(GetModuleHandle(PChar(ModuleName)), PAnsiChar(AnsiString(SymbolName))), NewProc, Data);
 end;
@@ -548,15 +638,16 @@ procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceH
 const
   JmpSize = 14; // FF 25 <rel32=0> <abs64 target>
 var
-  OldProtect: Cardinal;
-  Written: SIZE_T;
   Patch: packed record
     OpCode: Word;    // byte stream FF 25  (JMP qword ptr [rip+rel32])
     Rel: Integer;    // 0 -> operand follows the instruction immediately
     Target: Pointer; // absolute 64-bit destination
   end;
 begin
-  Hook.RealProc := nil;
+  // Still installed: a second install would capture our own jump as the "original" bytes, and
+  // RemoveFullReplaceHook would then leave the jump in place, pointing into this DLL.
+  if ( Hook.RealProc <> nil ) then
+    Exit;
   FillChar(Hook.OrgBytes, SizeOf(Hook.OrgBytes), 0);
   if (Proc = nil) or (NewProc = nil) then
     Exit;
@@ -571,16 +662,15 @@ begin
   Patch.Rel := 0;
   Patch.Target := NewProc;
 
-  if VirtualProtectEx(GetCurrentProcess, Proc, JmpSize, PAGE_EXECUTE_READWRITE, OldProtect) then
-  begin
-    if WriteProtectedMemory(Proc, @Patch, JmpSize, Written) and (Written = JmpSize) then
-      Hook.RealProc := Proc;
-    VirtualProtectEx(GetCurrentProcess, Proc, JmpSize, OldProtect, @OldProtect);
-    FlushInstructionCache(GetCurrentProcess, Proc, JmpSize);
-  end;
+  // PatchCodeAtomic parks entering threads on a self-loop while bytes 2..13 ( including the whole
+  // 8-byte target ) are written, so no thread can jump through a half-written target.
+  if PatchCodeAtomic( Proc, Patch, JmpSize ) then
+    Hook.RealProc := Proc;
 end;
 {$ELSE}
 begin
+  if ( Hook.Redir.Count > 0 ) then
+    Exit; // already installed: see the Win64 branch
   CodeRedirect(Proc, NewProc, Hook.Redir);
 end;
 {$ENDIF CPUX64}
@@ -589,19 +679,11 @@ procedure RemoveFullReplaceHook(var Hook: TFullReplaceHook);
 {$IFDEF CPUX64}
 const
   JmpSize = 14;
-var
-  OldProtect: Cardinal;
-  Written: SIZE_T;
 begin
   if Hook.RealProc = nil then
     Exit;
 
-  if VirtualProtectEx(GetCurrentProcess, Hook.RealProc, JmpSize, PAGE_EXECUTE_READWRITE, OldProtect) then
-  begin
-    WriteProtectedMemory(Hook.RealProc, @Hook.OrgBytes[0], JmpSize, Written);
-    VirtualProtectEx(GetCurrentProcess, Hook.RealProc, JmpSize, OldProtect, @OldProtect);
-    FlushInstructionCache(GetCurrentProcess, Hook.RealProc, JmpSize);
-  end;
+  PatchCodeAtomic( Hook.RealProc, Hook.OrgBytes[0], JmpSize );
   Hook.RealProc := nil;
 end;
 {$ELSE}
@@ -834,13 +916,9 @@ begin
   Result := nil;
 end;
 
-var
-  AllowCachedDllVirtualQuery: Boolean = False;
-  LastDllVirtualQueryInfo: TMemoryBasicInformation;
-
 procedure EnableFindMethodPtrDllVirtualQueryCache(Enable: Boolean);
 begin
-  AllowCachedDllVirtualQuery := Enable;
+  // No-op: see the declaration.
 end;
 
 function FindMethodPtr(Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer;
@@ -869,33 +947,9 @@ begin
     try
       Address := PAnsiChar(Start);
 
-      if AllowCachedDllVirtualQuery then
-      begin
-        if (LastDllVirtualQueryInfo.BaseAddress <= Address) or (Address >= PAnsiChar(LastDllVirtualQueryInfo.BaseAddress) + LastDllVirtualQueryInfo.RegionSize) then
-        begin
-          if not VirtualQuery(Address, MemInfo, SizeOf(MemInfo)) = SizeOf(MemInfo) then
-            Exit;
-          if MemInfo.Protect and $000000F0 = 0 then // not PAGE_EXECUTE | ...
-          begin
-            Inc(Address, MemInfo.RegionSize);
-            if VirtualQuery(Address, MemInfo, SizeOf(MemInfo)) <> SizeOf(MemInfo) then
-              Exit;
-            //Move(MemInfo, LastDllVirtualQueryInfo, SizeOf(LastDllVirtualQueryInfo));
-            LastDllVirtualQueryInfo.AllocationBase := MemInfo.AllocationBase;
-            LastDllVirtualQueryInfo.RegionSize := MemInfo.RegionSize;
-            LastDllVirtualQueryInfo.Protect := MemInfo.Protect;
-          end;
-        end
-        else
-        begin
-          //Move(LastDllVirtualQueryInfo, MemInfo, SizeOf(MemInfo));
-          MemInfo.AllocationBase := LastDllVirtualQueryInfo.AllocationBase;
-          MemInfo.RegionSize := LastDllVirtualQueryInfo.RegionSize;
-          MemInfo.Protect := LastDllVirtualQueryInfo.Protect;
-        end;
-      end
-      else
-      if not VirtualQuery(Address, MemInfo, SizeOf(MemInfo)) = SizeOf(MemInfo) then
+      // "not VirtualQuery(...) = SizeOf(...)" parsed as "(not VirtualQuery(...)) = ...", so a
+      // failed query went on with an uninitialised MemInfo.
+      if ( VirtualQuery( Address, MemInfo, SizeOf( MemInfo ) ) <> SizeOf( MemInfo ) ) then
         Exit;
 
       AllocBase := MemInfo.AllocationBase;
@@ -967,15 +1021,20 @@ begin
     Result := 1 // ModRm
   else if ModRm and $07 = $04 then
   begin
-    if P[1] and $07 = $05 then // SIB
-    begin
-      if ModRm and $C0 = $40 then
-        Result := 3 // 1 + 1 + 1 // ModRm + SIB + Byte displacement
-      else
-        Result := 6; // 1 + 1 + 4; // ModRm + SIB + DWord displacement
-    end
+    // A SIB byte follows.  The displacement depends on Mod, and for Mod 00 on the SIB base:
+    // base 101 then means "no base, disp32".  ( The old code returned 1 for every SIB whose
+    // base was not 101, so "movzx eax, byte ptr [esp+4]" measured 3 bytes instead of 5. )
+    case ModRm and $C0 of
+      $40:
+        Result := 3; // ModRm + SIB + Byte displacement
+      $80:
+        Result := 6; // ModRm + SIB + DWord displacement
     else
-      Result := 1;
+      if P[1] and $07 = $05 then
+        Result := 6 // ModRm + SIB + DWord displacement (no base)
+      else
+        Result := 2; // ModRm + SIB
+    end;
   end
   else
   begin
@@ -1477,7 +1536,6 @@ var
   StartCodeSize: Integer;
   Buffer: array[0..63] of Byte;
   I: Integer;
-  n: SIZE_T;
 begin
   OrgProc := GetActualAddr(OrgProc);
   NewProc := GetActualAddr(NewProc);
@@ -1492,7 +1550,12 @@ begin
   {$IFEND}
   for I := 5 to StartCodeSize - 1 do
     Buffer[I] := $90;
-  if not WriteProcessMemory(GetCurrentProcess, OrgProc, @Buffer[0], StartCodeSize, n) then
+  // Only the jump and the padding inside the first eight bytes are written, in one locked
+  // write: padding beyond that is unreachable after the jump, and leaving it untouched means no
+  // thread still executing the old instructions there sees them change.
+  if StartCodeSize > SizeOf( Int64 ) then
+    StartCodeSize := SizeOf( Int64 );
+  if not PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize ) then
     RaiseLastOSError;
 end;
 {$ENDIF}
@@ -1500,8 +1563,7 @@ end;
 procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
 var
   StartCodeSize: Integer;
-  n: SIZE_T;
-  Buffer: array[0..4 + 4] of Byte; // if Buffer[4] = $E8/$E9 we need another 4 bytes
+  Buffer: array[0..63] of Byte;
   RelPos: Integer;
   OffsetTable: TOffsetTable;
 begin
@@ -1511,16 +1573,14 @@ begin
   OrgProc := GetActualAddr(OrgProc);
 
   StartCodeSize := GetStartCodeSize(OrgCall, 5, @OffsetTable);
+  Move(OrgCall^, Buffer[0], StartCodeSize);
   if OffsetTable.Offsets <> nil then // in 5 bytes only 1 call/jmp can be in it
   begin
     // Adjust the relative address to the original code position
-    Move(OrgCall^, Buffer[0], StartCodeSize);
     RelPos := PByte(OffsetTable.Offsets[0]) - PByte(OrgCall);
     PInteger(@Buffer[RelPos])^ := OffsetTable.Offsets[0]^ - (PByte(OrgProc) - PByte(OrgCall));
-    WriteProcessMemory(GetCurrentProcess, OrgProc, @Buffer, StartCodeSize, n);
-  end
-  else
-    WriteProcessMemory(GetCurrentProcess, OrgProc, OrgCall, StartCodeSize, n);
+  end;
+  PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize );
 end;
 
 procedure RedirectOrg(OrgProc, NewProc: Pointer);
@@ -1528,7 +1588,6 @@ var
   StartCodeSize: Integer;
   Buffer: array[0..63] of Byte;
   I: Integer;
-  n: SIZE_T;
 begin
   OrgProc := GetActualAddr(OrgProc);
   NewProc := GetActualAddr(NewProc);
@@ -1542,22 +1601,28 @@ begin
   {$IFEND}
   for I := 5 to StartCodeSize - 1 do
     Buffer[I] := $90;
-  if not WriteProcessMemory(GetCurrentProcess, OrgProc, @Buffer[0], StartCodeSize, n) then
+  // Only the jump and the padding inside the first eight bytes are written, in one locked
+  // write: padding beyond that is unreachable after the jump, and leaving it untouched means no
+  // thread still executing the old instructions there sees them change.
+  if StartCodeSize > SizeOf( Int64 ) then
+    StartCodeSize := SizeOf( Int64 );
+  if not PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize ) then
     RaiseLastOSError;
 end;
 
 function ReplaceRelCallOffset(CallJmpPtr: PByte; NewFunction: Pointer): Pointer;
-var
-  n: SIZE_T;
-  Offset: Integer;
 begin
   Result := GetCallTargetAddress(CallJmpPtr);
   if Result <> nil then
   begin
     if Result <> NewFunction then
     begin
-      Offset := PByte(NewFunction) - (CallJmpPtr + 5);
-      if not WriteProcessMemory(GetCurrentProcess, @CallJmpPtr[1], @Offset, SizeOf(Offset), n) then
+      // Rewrite opcode and offset together in one locked write, so a thread executing the
+      // call never sees half an offset.
+      var aInstruction: array[0..4] of Byte;
+      aInstruction[0] := CallJmpPtr^;
+      PInteger( @aInstruction[1] )^ := PByte(NewFunction) - (CallJmpPtr + 5);
+      if not PatchCodeAtomic( CallJmpPtr, aInstruction[0], SizeOf( aInstruction ) ) then
         Result := nil;
     end;
   end
@@ -1576,13 +1641,12 @@ end;
 function ReplaceOpCodeByRelCall(FiveByteStart: PByte; CallFunction: Pointer): Boolean;
 var
   Buffer: array[0..4] of Byte;
-  n: SIZE_T;
 begin
   if FiveByteStart <> nil then
   begin
     Buffer[0] := $E8;
     PInteger(@Buffer[1])^ := PByte(CallFunction) - (FiveByteStart + 5);
-    Result := WriteProcessMemory(GetCurrentProcess, FiveByteStart, @Buffer, SizeOf(Buffer), n);
+    Result := PatchCodeAtomic( FiveByteStart, Buffer[0], SizeOf( Buffer ) );
   end
   else
     Result := False;
@@ -1591,7 +1655,6 @@ end;
 function ReplaceOpCodeByRelJump(FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean): Boolean;
 var
   Buffer: array[0..63] of Byte;
-  n: SIZE_T;
   StartCodeSize, I: Integer;
 begin
   if FiveByteStart <> nil then
@@ -1605,7 +1668,7 @@ begin
       for I := 5 to StartCodeSize - 1 do
         Buffer[I] := $90;
     end;
-    Result := WriteProcessMemory(GetCurrentProcess, FiveByteStart, @Buffer, StartCodeSize, n);
+    Result := PatchCodeAtomic( FiveByteStart, Buffer[0], StartCodeSize );
   end
   else
     Result := False;
@@ -1616,7 +1679,6 @@ var
   StartCodeSize: Integer;
   Buffer: array[0..63] of Byte;
   I: Integer;
-  n: SIZE_T;
 begin
   if IntructionStart <> nil then
   begin
@@ -1629,7 +1691,7 @@ begin
     {$IFEND}
     for I := 5 to StartCodeSize - 1 do
       Buffer[I] := $90;
-    if not WriteProcessMemory(GetCurrentProcess, IntructionStart, @Buffer[0], StartCodeSize, n) then
+    if not PatchCodeAtomic( IntructionStart, Buffer[0], StartCodeSize ) then
       RaiseLastOSError;
     Result := True;
   end
@@ -1731,6 +1793,12 @@ begin
   begin
     // unknown patch type
     P := RedirectOrgCall(AWinApiProc, ANewProc);
+    if ( P = nil ) then
+    begin
+      // RedirectOrgCall cannot patch on Win64: report failure instead of a hook that is not there.
+      FillChar(AHookInfo, SizeOf(AHookInfo), 0);
+      Exit;
+    end;
     Pointer(AOrgCallProc) := P;
 
     AHookInfo.Mode := 3;

@@ -20,7 +20,8 @@ unit ProjectData;
 interface
 
 uses
-  Variants, SysUtils, Classes, Contnrs, ToolsAPI, Forms, SimpleXmlImport, SimpleXmlIntf;
+  System.Variants, System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, Vcl.Forms, SimpleXmlImport, SimpleXmlIntf,
+  IDENotifiers;
 
 type
   /// <summary>Forward declaration of the project-data registry.</summary>
@@ -33,6 +34,7 @@ type
     FValue: Variant;
   public
     /// <summary>Initialises the wrapper with the supplied value.</summary>
+    /// <param name="AValue">Initial value.</param>
     constructor Create(const AValue: Variant);
     /// <summary>Wrapped Variant value.</summary>
     property Value: Variant read FValue write FValue;
@@ -61,12 +63,20 @@ type
     /// <summary>True while Reload is parsing the side-car so SetValue does not mark the project modified.</summary>
     FLoading: Boolean;
     /// <summary>Reads a Variant value by name; returns Null when missing.</summary>
+    /// <param name="Name">Value name.</param>
+    /// <returns>The stored value, or Null when Name has none.</returns>
     function GetValue(const Name: string): Variant;
     /// <summary>Writes a Variant value by name and marks the project modified outside Loading.</summary>
+    /// <param name="Name">Value name.</param>
+    /// <param name="Value">New value.</param>
     procedure SetValue(const Name: string; const Value: Variant);
     /// <summary>Reads a non-persistent object reference by name.</summary>
+    /// <param name="Name">Object name.</param>
+    /// <returns>The stored object, or nil.</returns>
     function GetNonPersistent(const Name: string): TObject;
     /// <summary>Stores or replaces a non-persistent object reference by name.</summary>
+    /// <param name="Name">Object name.</param>
+    /// <param name="Value">Object to store; not owned.</param>
     procedure SetNonPersistent(const Name: string; const Value: TObject);
   protected
     /// <summary>Frees and removes every TDataVariantItem in FItems.</summary>
@@ -78,24 +88,36 @@ type
     /// <summary>IOTAModuleNotifier no-op.</summary>
     procedure BeforeSave;
     /// <summary>IOTAModuleNotifier: always returns True.</summary>
+    /// <returns>Always True: the project may be overwritten.</returns>
     function CheckOverwrite: Boolean;
     /// <summary>IOTANotifier: handles Destroyed, broadcasts to subscribers and detaches.</summary>
     procedure Destroyed;
     /// <summary>IOTAModuleNotifier no-op.</summary>
     procedure Modified;
     /// <summary>Renames the .projdata side-car file alongside the project rename.</summary>
+    /// <param name="NewName">New project file name.</param>
     procedure ModuleRenamed(const NewName: String);
 
     /// <summary>True while a Reload pass is in progress.</summary>
     property Loading: Boolean read FLoading;
   public
     /// <summary>Registers as a notifier on AProject and announces the new entry to subscribers.</summary>
+    /// <param name="AOwner">Registry that lists this entry.</param>
+    /// <param name="AProject">Project to watch.</param>
     constructor Create(AOwner: TProjectDataList; AProject: IOTAProject);
     /// <summary>Detaches from the project and frees value/non-persistent maps.</summary>
     destructor Destroy; override;
+    /// <summary>
+    /// Raises the Destroying event once and unregisters from the IDE.  The IDE then drops its
+    /// reference, which normally frees this object, so the caller must hold its own interface
+    /// reference across the call and must not touch the object afterwards without one.
+    /// </summary>
+    procedure Detach;
     /// <summary>Reloads persistent values from the .projdata side-car (if present).</summary>
     procedure Reload;
     /// <summary>True when Name has a stored persistent value (even if Null).</summary>
+    /// <param name="Name">Value name.</param>
+    /// <returns>True when Name has a stored value.</returns>
     function HasValue(const Name: string): Boolean;
 
     /// <summary>The wrapped project.</summary>
@@ -120,6 +142,7 @@ type
     FItems: TObjectList;
   public
     /// <summary>Snapshots the current project list.</summary>
+    /// <param name="AOwner">Registry whose projects are captured.</param>
     constructor Create(AOwner: TProjectDataList);
     /// <summary>Releases the snapshot.</summary>
     destructor Destroy; override;
@@ -159,29 +182,55 @@ type
   /// <summary>Registry of TProjectData entries plus a subscriber list and a transaction stack.</summary>
   TProjectDataList = class(TObject)
   private
-    /// <summary>Owned list of TProjectData entries.</summary>
+    /// <summary>
+    /// Non-owning list of the live TProjectData entries.  They are reference-counted (the IDE
+    /// holds each one through AddNotifier) and remove themselves when freed, so the list must never
+    /// free them: freeing one the IDE still references raised EInvalidPointer.
+    /// </summary>
     FList: TObjectList;
     /// <summary>Active TProjectDataTransaction stack.</summary>
     FTransactions: TObjectList;
     /// <summary>Subscriber list of TProjectDataNotifier objects.</summary>
     FNotifiers: TList;
     /// <summary>Indexed accessor; lazily creates a TProjectData and reloads its side-car.</summary>
+    /// <param name="Project">Project to look up.</param>
+    /// <returns>The project's entry; created, registered and loaded from its side-car on first use.</returns>
     function GetProjectData(const Project: IOTAProject): TProjectData;
     /// <summary>Subscriber accessor.</summary>
+    /// <param name="Index">Zero-based subscriber index.</param>
+    /// <returns>The subscriber at Index.</returns>
     function GetNotifier(Index: Integer): TProjectDataNotifier;
     /// <summary>Number of registered subscribers.</summary>
+    /// <returns>Number of registered subscribers.</returns>
     function GetNotifierCount: Integer;
   protected
     /// <summary>Broadcasts the Saving event to every subscriber.</summary>
+    /// <param name="Data">The project whose side-car is processed.</param>
+    /// <param name="Node">Document element of the .projdata file.</param>
     procedure Saving(Data: TProjectData; Node: IXmlNode); virtual;
     /// <summary>Broadcasts the Loading event to every subscriber.</summary>
+    /// <param name="Data">The project whose side-car is processed.</param>
+    /// <param name="Node">Document element of the .projdata file.</param>
     procedure Loading(Data: TProjectData; Node: IXmlNode); virtual;
     /// <summary>Broadcasts the Added event to every subscriber.</summary>
+    /// <param name="Data">The project the event concerns.</param>
     procedure ProjectAdded(Data: TProjectData); virtual;
     /// <summary>Broadcasts the Destroying event to every subscriber.</summary>
+    /// <param name="Data">The project the event concerns.</param>
     procedure ProjectDestroying(Data: TProjectData); virtual;
     /// <summary>Broadcasts the Renamed event to every subscriber.</summary>
+    /// <param name="Data">The project being renamed.</param>
+    /// <param name="Filename">Old project file name.</param>
+    /// <param name="NewName">New project file name.</param>
     procedure ProjectRenamed(Data: TProjectData; const Filename, NewName: string); virtual;
+
+    /// <summary>
+    /// Copy of the subscriber list for a broadcast: a handler may free a subscriber (its own or
+    /// another) and shrink FNotifiers, so broadcasts iterate the copy and skip any subscriber that
+    /// is no longer registered.
+    /// </summary>
+    /// <returns>The subscribers registered when the broadcast started.</returns>
+    function NotifierSnapshot: TArray<TProjectDataNotifier>;
 
     /// <summary>Number of registered subscribers.</summary>
     property NotifierCount: Integer read GetNotifierCount;
@@ -189,8 +238,10 @@ type
     property Notifiers[Index: Integer]: TProjectDataNotifier read GetNotifier;
 
     /// <summary>Adds a subscriber; usually invoked by TProjectDataNotifier.Create.</summary>
+    /// <param name="ANotifier">Subscriber to add.</param>
     procedure AddNotifier(ANotifier: TProjectDataNotifier);
     /// <summary>Removes a subscriber; usually invoked by TProjectDataNotifier.Destroy.</summary>
+    /// <param name="ANotifier">Subscriber to remove; not freed.</param>
     procedure RemoveNotifier(ANotifier: TProjectDataNotifier);
 
     // not working yet
@@ -211,6 +262,7 @@ type
   end;
 
 /// <summary>Returns the lazily-instantiated project-registry singleton.</summary>
+/// <returns>The registry, created on first use.</returns>
 function ProjectDataList: TProjectDataList;
 
 implementation
@@ -241,15 +293,32 @@ end;
 constructor TProjectDataList.Create;
 begin
   inherited Create;
-  FList := TObjectList.Create;
+  FList := TObjectList.Create( False );
   FTransactions := TObjectList.Create;
   FNotifiers := TList.Create;
 end;
 
 destructor TProjectDataList.Destroy;
 begin
+  // Unregister every entry the IDE still holds; dropping the IDE's reference frees it, and it
+  // extracts itself from FList.
+  // Downwards, because each entry extracts itself from FList when it is freed.
+  for var iIndex: Integer := FList.Count - 1 downto 0 do
+  begin
+    if ( iIndex >= FList.Count ) then
+      Continue;
+    var oData := TProjectData( FList[iIndex] );
+    var oKeepAlive: IInterface := oData;
+    oData.Detach;
+    oKeepAlive := nil; // may free oData now, while FList still exists
+  end;
+
   FNotifiers.Free;
   FTransactions.Free;
+  // Anything left is still referenced by the IDE and must not be freed here; cut its link to this
+  // list, so its later Destroy ( or a late notification ) does not reach freed memory.
+  for var iIndex: Integer := 0 to FList.Count - 1 do
+    TProjectData( FList[iIndex] ).FOwner := nil;
   FList.Free;
   inherited Destroy;
 end;
@@ -284,49 +353,84 @@ begin
 end;
 
 procedure TProjectDataList.Loading(Data: TProjectData; Node: IXmlNode);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[I].Loading) then
-      Notifiers[I].Loading(Data, Node);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Loading ) then
+    try
+      oNotifier.Loading( Data, Node );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Loading', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TProjectDataList.Saving(Data: TProjectData; Node: IXmlNode);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[I].Saving) then
-      Notifiers[I].Saving(Data, Node);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Saving ) then
+    try
+      oNotifier.Saving( Data, Node );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Saving', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TProjectDataList.ProjectAdded(Data: TProjectData);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[I].Added) then
-      Notifiers[I].Added(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Added ) then
+    try
+      oNotifier.Added( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Added', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TProjectDataList.ProjectDestroying(Data: TProjectData);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[I].Destroying) then
-      Notifiers[I].Destroying(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Destroying ) then
+    try
+      oNotifier.Destroying( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Destroying', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TProjectDataList.ProjectRenamed(Data: TProjectData;
   const Filename, NewName: string);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[I].Renamed) then
-      Notifiers[I].Renamed(Data, Filename, NewName);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Renamed ) then
+    try
+      oNotifier.Renamed( Data, Filename, NewName );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Renamed', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TProjectDataList.AddNotifier(ANotifier: TProjectDataNotifier);
@@ -344,6 +448,13 @@ begin
   Result := TProjectDataNotifier(FNotifiers[Index]);
 end;
 
+function TProjectDataList.NotifierSnapshot: TArray<TProjectDataNotifier>;
+begin
+  SetLength( Result, FNotifiers.Count );
+  for var iIndex: Integer := 0 to FNotifiers.Count - 1 do
+    Result[iIndex] := TProjectDataNotifier( FNotifiers[iIndex] );
+end;
+
 function TProjectDataList.GetNotifierCount: Integer;
 begin
   Result := FNotifiers.Count;
@@ -354,6 +465,7 @@ end;
 constructor TProjectData.Create(AOwner: TProjectDataList; AProject: IOTAProject);
 begin
   inherited Create;
+  FId := -1; // not registered yet: a failed AddNotifier must not make Destroy remove notifier 0
   FOwner := AOwner;
   FOwner.FList.Add(Self);
   FProject := AProject;
@@ -374,12 +486,14 @@ begin
   if FId <> -1 then
   begin
     try
-      FOwner.ProjectDestroying(Self);
+      if ( FOwner <> nil ) then
+        FOwner.ProjectDestroying(Self);
     except
       Application.HandleException(Self);
     end;
   end;
-  FOwner.FList.Extract(Self);
+  if ( FOwner <> nil ) then
+    FOwner.FList.Extract(Self);
   Clear;
   FItems.Free;
   FNonPersistents.Free;
@@ -415,7 +529,8 @@ begin
   if FileExists(Filename) then
     RenameFile(Filename, ChangeFileExt(NewName, sSuffix));
   try
-    FOwner.ProjectRenamed(Self, FFilename, NewName);
+    if ( FOwner <> nil ) then
+      FOwner.ProjectRenamed(Self, FFilename, NewName);
   finally
     FFilename := NewName;
   end;
@@ -426,19 +541,32 @@ begin
   Result := True;
 end;
 
+procedure TProjectData.Detach;
+begin
+  if ( FId = -1 ) then
+    Exit;
+
+  // Clear FId first: if RemoveNotifier drops the last reference, Destroy must not raise the
+  // event or unregister a second time.
+  var iId := FId;
+  FId := -1;
+  try
+    if ( FOwner <> nil ) then
+      FOwner.ProjectDestroying(Self);
+  except
+    Application.HandleException(Self);
+  end;
+  if ( FProject <> nil ) then
+    FProject.RemoveNotifier(iId);
+end;
+
 procedure TProjectData.Destroyed;
 begin
-  if FId <> -1 then
-  begin
-    try
-      FOwner.ProjectDestroying(Self);
-    except
-      Application.HandleException(Self);
-    end;
-    Project.RemoveNotifier(FId);
-  end;
+  // Hold a reference until this method returns: RemoveNotifier may drop the IDE's last one,
+  // and the field below must not be written after the object has been freed.
+  var oKeepAlive: IInterface := Self;
+  Detach;
   FProject := nil;
-  FId := -1;
 end;
 
 procedure TProjectData.AfterSave;
@@ -461,7 +589,8 @@ begin
     Node := Doc.DocumentElement.AddChild('Options');
     for I := 0 to FItems.Count - 1 do
       Node.AddChild(FItems[I]).Attributes['Value'] := (FItems.Objects[I] as TDataVariantItem).Value;
-    FOwner.Saving(Self, Doc.DocumentElement);
+    if ( FOwner <> nil ) then
+      FOwner.Saving(Self, Doc.DocumentElement);
 
     if (Node.ChildNodes.Count > 0) or (Doc.DocumentElement.ChildNodes.Count > 1) then
       Doc.SaveToFile(Filename)
@@ -496,7 +625,8 @@ begin
           for I := 0 to Node.ChildNodes.Count - 1 do
             Values[Node.ChildNodes[I].NodeName] := Node.ChildNodes[I].Attributes['Value'];
         end;
-        FOwner.Loading(Self, Doc.DocumentElement);
+        if ( FOwner <> nil ) then
+          FOwner.Loading(Self, Doc.DocumentElement);
       finally
         FLoading := False;
       end;

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -33,13 +33,13 @@ unit IDEUtils;
 interface
 
 uses
-  Windows, ShlObj, SysUtils, Contnrs, Classes,
-  Variants, StrUtils, Graphics,
+  Winapi.Windows, Winapi.ShlObj, System.SysUtils, System.Contnrs, System.Classes,
+  System.Variants, System.StrUtils, Vcl.Graphics,
   {$IF CompilerVersion >= 23.0} // XE2+
   PlatformAPI,
   {$IFEND}
   ToolsAPI,
-  Forms;
+  Vcl.Forms, IDEHashLists;
 
 {$IFNDEF COMPILER11_UP}
 type
@@ -57,300 +57,284 @@ type
 function SupportsEx(const Instance: TObject; const IID: TGUID; out Intf): Boolean;
 
 /// <summary>Faster alternative to SysUtils.FileExists that excludes directories and avoids exception cost.</summary>
+/// <param name="Filename">Path to test; empty gives False.</param>
+/// <returns>True when Filename exists and is not a directory.</returns>
 function FastFileExists(const Filename: string): Boolean;
 /// <summary>Returns Dir with a trailing path delimiter appended when missing.</summary>
+/// <param name="Dir">Directory path; may be empty.</param>
+/// <returns>Dir ending in a path delimiter, or empty when Dir is empty.</returns>
 function IncludeTrailingPathDelimiter(const Dir: string): string;
 /// <summary>Returns Dir with any trailing path delimiter removed (preserving "C:\").</summary>
+/// <param name="Dir">Directory path.</param>
+/// <returns>Dir without a trailing delimiter; a bare drive keeps its "\".</returns>
 function ExcludeTrailingPathDelimiter(const Dir: string): string;
 /// <summary>Returns the DOS-format last-write timestamp of Filename, or -1 when the file is missing.</summary>
+/// <param name="Filename">File to query.</param>
+/// <returns>The local last-write time as a DOS date/time, or -1 when the file is missing.</returns>
 function FileAgeFindFile(const Filename: string): Integer;
 /// <summary>Returns the size in bytes of Filename without opening it.</summary>
+/// <param name="Filename">File to query.</param>
+/// <returns>The low 32 bits of the file size, or 0 when the file is missing.</returns>
 function GetFileSize(const Filename: string): Cardinal;
 /// <summary>Generates a unique temporary filename in the user temp directory using Base as the prefix.</summary>
 /// <exception cref="EOSError">Raised when GetTempFileName fails.</exception>
+/// <param name="Base">Prefix for the temporary file name.</param>
+/// <returns>Full path of the new, empty temporary file.</returns>
 function GetTempName(const Base: string): string;
 
 /// <summary>Case-insensitive AnsiStartsText wrapper.</summary>
+/// <param name="SubStr">Prefix to look for.</param>
+/// <param name="S">String to test.</param>
+/// <returns>True when S starts with SubStr, ignoring case.</returns>
 function StartsText(const SubStr, S: string): Boolean;
 /// <summary>Case-insensitive AnsiEndsText wrapper.</summary>
+/// <param name="SubStr">Suffix to look for.</param>
+/// <param name="S">String to test.</param>
+/// <returns>True when S ends with SubStr, ignoring case.</returns>
 function EndsText(const SubStr, S: string): Boolean;
 
 /// <summary>True when Value matches any element of Values (case-insensitive).</summary>
+/// <param name="Value">String to look for.</param>
+/// <param name="Values">Candidates.</param>
+/// <returns>True when Value equals one of Values, ignoring case.</returns>
 function InArray(const Value: string; const Values: array of string): Boolean;
 /// <summary>Strips matching surrounding double-quote characters from S.</summary>
+/// <param name="S">String to dequote.</param>
+/// <returns>S without its surrounding double quotes, or S unchanged.</returns>
 function DequoteStr(const S: string): string;
 
 /// <summary>Reads a Boolean option from the IDE's Globals registry key.</summary>
 /// <param name="ValueName">Name of the registry value.</param>
 /// <param name="DefaultValue">Returned when the key is missing.</param>
+/// <returns>The option, or DefaultValue when the IDE services, the key or the value are missing.</returns>
 function ReadGlobalRegOption(const ValueName: string; DefaultValue: Boolean = False): Boolean;
 /// <summary>Reads a string registry value, accepting integer/expand_string variants and returning DefaultValue when absent.</summary>
+/// <param name="RootKey">Registry root, such as HKEY_CURRENT_USER.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value.</param>
+/// <param name="DefaultValue">Returned when the key or value is missing, empty or of another type.</param>
+/// <returns>The value as a string.</returns>
 function RegReadStringDef(RootKey: HKEY; const Key, ValueName, DefaultValue: string): string;
 /// <summary>Reads a Boolean registry value, accepting string/integer variants and returning DefaultValue when absent.</summary>
+/// <param name="RootKey">Registry root, such as HKEY_CURRENT_USER.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value.</param>
+/// <param name="DefaultValue">Returned when the key or value is missing, empty or of another type.</param>
+/// <returns>The value; a string value is True unless it is "0".</returns>
 function RegReadBoolDef(RootKey: HKEY; const Key, ValueName: string; DefaultValue: Boolean): Boolean;
 /// <summary>Writes Value as a string registry value at Key/ValueName, creating the key when needed.</summary>
+/// <param name="RootKey">Registry root, such as HKEY_CURRENT_USER.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value to write.</param>
+/// <param name="Value">String data to store.</param>
+/// <returns>True when the key could be opened (or created) and the value was written; never raises.</returns>
+function TryRegWriteString(RootKey: HKEY; const Key, ValueName, Value: string): Boolean;
+/// <summary>Writes Value as a string registry value at Key/ValueName, creating the key when needed.</summary>
+/// <param name="RootKey">Registry root, such as HKEY_CURRENT_USER.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value to write.</param>
+/// <param name="Value">String data to store.</param>
+/// <remarks>Never raises: a failure is reported with OutputDebugString only.  Use TryRegWriteString to detect it.</remarks>
 procedure RegWriteString(RootKey: HKEY; const Key, ValueName, Value: string);
 /// <summary>Deletes the registry value at Key/ValueName when it exists.</summary>
+/// <param name="RootKey">Registry root, such as HKEY_CURRENT_USER.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value.</param>
 procedure RegDeleteEntry(RootKey: HKEY; const Key, ValueName: string);
 
 /// <summary>Locates a TCustomForm by name and/or class name. Pass empty strings to match any.</summary>
+/// <param name="AFormName">Form Name to match, ignoring case; empty matches any.</param>
+/// <param name="AFormClassName">Class name to match; empty matches any.</param>
+/// <returns>The first matching form, or nil.</returns>
 function FindForm(const AFormName, AFormClassName: string): TCustomForm;
 /// <summary>True when AObject's class hierarchy contains a class whose name matches AClassName.</summary>
+/// <param name="AObject">Object to test; nil gives False.</param>
+/// <param name="AClassName">Class name to look for.</param>
+/// <returns>True when the class of AObject, or one of its ancestors, has that name.</returns>
 function InheritsFromClassName(AObject: TObject; const AClassName: string): Boolean;
 
 const
-  /// <summary>Number of preallocated cache slots used by the string hash tables.</summary>
-  MaxCacheItems = $1000;
+  /// <summary>Number of preallocated cache slots used by the string hash tables (see IDEHashLists).</summary>
+  MaxCacheItems = IDEHashLists.MaxCacheItems;
+  /// <summary>Number of buckets used by TCustomBucketList (see IDEHashLists).</summary>
+  MaxBucketItems = IDEHashLists.MaxBucketItems;
+  /// <summary>Re-export of IDEHashLists.bl2.</summary>
+  bl2 = IDEHashLists.bl2;
+  /// <summary>Re-export of IDEHashLists.bl4.</summary>
+  bl4 = IDEHashLists.bl4;
+  /// <summary>Re-export of IDEHashLists.bl8.</summary>
+  bl8 = IDEHashLists.bl8;
+  /// <summary>Re-export of IDEHashLists.bl16.</summary>
+  bl16 = IDEHashLists.bl16;
+  /// <summary>Re-export of IDEHashLists.bl32.</summary>
+  bl32 = IDEHashLists.bl32;
+  /// <summary>Re-export of IDEHashLists.bl64.</summary>
+  bl64 = IDEHashLists.bl64;
+  /// <summary>Re-export of IDEHashLists.bl128.</summary>
+  bl128 = IDEHashLists.bl128;
+  /// <summary>Re-export of IDEHashLists.bl256.</summary>
+  bl256 = IDEHashLists.bl256;
 
 type
-  /// <summary>Strongly-typed Cardinal used as a hash bucket index.</summary>
-  THashValue = type Cardinal;
+  /// <summary>Re-export of IDEHashLists.THashValue.</summary>
+  THashValue = IDEHashLists.THashValue;
+  /// <summary>Re-export of IDEHashLists.PStringIntegerItem.</summary>
+  PStringIntegerItem = IDEHashLists.PStringIntegerItem;
+  /// <summary>Re-export of IDEHashLists.TStringIntegerItem.</summary>
+  TStringIntegerItem = IDEHashLists.TStringIntegerItem;
+  /// <summary>Re-export of IDEHashLists.TStringIntegerHash.</summary>
+  TStringIntegerHash = IDEHashLists.TStringIntegerHash;
+  /// <summary>Re-export of IDEHashLists.PStringStringItem.</summary>
+  PStringStringItem = IDEHashLists.PStringStringItem;
+  /// <summary>Re-export of IDEHashLists.TStringStringItem.</summary>
+  TStringStringItem = IDEHashLists.TStringStringItem;
+  /// <summary>Re-export of IDEHashLists.TStringStringHash.</summary>
+  TStringStringHash = IDEHashLists.TStringStringHash;
+  /// <summary>Re-export of IDEHashLists.PBucketListItem.</summary>
+  PBucketListItem = IDEHashLists.PBucketListItem;
+  /// <summary>Re-export of IDEHashLists.TBucketListItem.</summary>
+  TBucketListItem = IDEHashLists.TBucketListItem;
+  /// <summary>Re-export of IDEHashLists.TBucketProc.</summary>
+  TBucketProc = IDEHashLists.TBucketProc;
+  /// <summary>Re-export of IDEHashLists.TCustomBucketList.</summary>
+  TCustomBucketList = IDEHashLists.TCustomBucketList;
+  /// <summary>Re-export of IDEHashLists.TBucketListSizes.</summary>
+  TBucketListSizes = IDEHashLists.TBucketListSizes;
+  /// <summary>Re-export of IDEHashLists.TBucketList.</summary>
+  TBucketList = IDEHashLists.TBucketList;
+  /// <summary>Re-export of IDEHashLists.TModuleBucketList.</summary>
+  TModuleBucketList = IDEHashLists.TModuleBucketList;
 
-  { The hash tables cannot be used with Key='' }
-  /// <summary>Pointer to a TStringIntegerItem.</summary>
-  PStringIntegerItem = ^TStringIntegerItem;
-  /// <summary>Bucket entry storing a string key and Integer value plus a chain pointer.</summary>
-  TStringIntegerItem = record
-    /// <summary>String key (must not be empty).</summary>
-    Key: string;
-    /// <summary>Integer value associated with Key.</summary>
-    Value: Integer;
-    /// <summary>Next entry in the same bucket chain.</summary>
-    Next: PStringIntegerItem;
-  end;
-
-  /// <summary>Open-addressing string-to-Integer hash with a static $1000-bucket table and a preallocated cache pool.</summary>
-  TStringIntegerHash = class(TObject)
-  private
-    /// <summary>Bucket array.</summary>
-    FItems: array[0..$1000 - 1] of PStringIntegerItem;
-    /// <summary>Total number of stored entries.</summary>
-    FCount: Integer;
-    /// <summary>Preallocated entry pool to avoid GetMem on every Add.</summary>
-    FCacheItems: array[0..MaxCacheItems] of TStringIntegerItem;
-    /// <summary>Index of the next free entry in FCacheItems.</summary>
-    FCacheIndex: Integer;
-  public
-    /// <summary>Frees every chained entry that was allocated from the heap.</summary>
-    destructor Destroy; override;
-    /// <summary>Empties the table.</summary>
-    procedure Clear; virtual;
-
-    /// <summary>Looks up AItem and returns its value via Value.</summary>
-    function Find(const AItem: string; out Value: Integer): Boolean; overload;
-    /// <summary>True when AItem is present in the table.</summary>
-    function HasKey(const AItem: string): Boolean; overload;
-
-    /// <summary>Find overload that accepts a precomputed hash to avoid recomputation.</summary>
-    function Find(AHash: Integer; const AItem: string; out Value: Integer): Boolean; overload;
-    /// <summary>HasKey overload that accepts a precomputed hash.</summary>
-    function HasKey(AHash: Integer; const AItem: string): Boolean; overload;
-
-    /// <summary>Adds (AItem, AData) without checking for duplicates.</summary>
-    function Add(const AItem: string; AData: Integer): Integer; overload;
-    /// <summary>Add overload that accepts a precomputed hash.</summary>
-    function Add(AHash: Integer; const AItem: string; AData: Integer): Integer; overload;
-    /// <summary>Removes the entry for AItem, returning its previous value (0 when absent).</summary>
-    function Remove(const AItem: string): Integer;
-    /// <summary>Updates AItem's value, adding it when not already present.</summary>
-    procedure SetValue(const AItem: string; AData: Integer); overload;
-    /// <summary>SetValue overload accepting a precomputed hash.</summary>
-    procedure SetValue(AHash: Integer; const AItem: string; AData: Integer); overload;
-
-    /// <summary>Number of stored entries.</summary>
-    property Count: Integer read FCount;
-  end;
-
-type
-  /// <summary>Pointer to a TStringStringItem.</summary>
-  PStringStringItem = ^TStringStringItem;
-  /// <summary>Bucket entry storing a string key and string value plus a chain pointer.</summary>
-  TStringStringItem = record
-    /// <summary>String key (must not be empty).</summary>
-    Key: string;
-    /// <summary>String value associated with Key.</summary>
-    Value: string;
-    /// <summary>Next entry in the same bucket chain.</summary>
-    Next: PStringStringItem;
-  end;
-
-  /// <summary>String-to-string variant of TStringIntegerHash.</summary>
-  TStringStringHash = class(TObject)
-  private
-    /// <summary>Bucket array.</summary>
-    FItems: array[0..$1000 - 1] of PStringStringItem;
-    /// <summary>Total number of stored entries.</summary>
-    FCount: Integer;
-    /// <summary>Preallocated entry pool.</summary>
-    FCacheItems: array[0..MaxCacheItems] of TStringStringItem;
-    /// <summary>Index of the next free entry in FCacheItems.</summary>
-    FCacheIndex: Integer;
-  public
-    /// <summary>Frees every chained entry that was allocated from the heap.</summary>
-    destructor Destroy; override;
-    /// <summary>Empties the table.</summary>
-    procedure Clear; virtual;
-
-    /// <summary>Looks up AItem and returns its value via Value.</summary>
-    function Find(const AItem: string; out Value: string): Boolean; overload;
-    /// <summary>True when AItem is present in the table.</summary>
-    function HasKey(const AItem: string): Boolean; overload;
-
-    /// <summary>Find overload accepting a precomputed hash.</summary>
-    function Find(AHash: Integer; const AItem: string; out Value: string): Boolean; overload;
-    /// <summary>HasKey overload accepting a precomputed hash.</summary>
-    function HasKey(AHash: Integer; const AItem: string): Boolean; overload;
-
-    /// <summary>Adds (AItem, AData) without checking for duplicates.</summary>
-    function Add(const AItem: string; const AData: string): string; overload;
-    /// <summary>Add overload accepting a precomputed hash.</summary>
-    function Add(AHash: Integer; const AItem: string; const AData: string): string; overload;
-    /// <summary>Removes the entry for AItem and returns its previous value (empty when absent).</summary>
-    function Remove(const AItem: string): string;
-
-    /// <summary>Number of stored entries.</summary>
-    property Count: Integer read FCount;
-  end;
-
-/// <summary>Computes a fast hash of AItem in the range 0..MaxBucketItems-1.</summary>
+/// <summary>Computes a hash of AItem in the range 0..MaxBucketItems-1 (delegates to IDEHashLists.HashString).</summary>
+/// <param name="AItem">String to hash.</param>
+/// <returns>Bucket index in 0..MaxBucketItems-1.</returns>
 function HashString(const AItem: string): Integer;
 
-const
-  /// <summary>Number of buckets used by TCustomBucketList.</summary>
-  MaxBucketItems = $1000;
-
-type
-  { The hash tables cannot be used with Key='' }
-  /// <summary>Pointer to a TBucketListItem.</summary>
-  PBucketListItem = ^TBucketListItem;
-  /// <summary>Bucket entry mapping a Pointer key to a Pointer value with a chain link.</summary>
-  TBucketListItem = record
-    /// <summary>Pointer-typed key.</summary>
-    Key: Pointer;
-    /// <summary>Pointer-typed value.</summary>
-    Value: Pointer;
-    /// <summary>Next entry in the same bucket chain.</summary>
-    Next: PBucketListItem;
-  end;
-
-  /// <summary>Callback used by TCustomBucketList.ForEach. Set AContinue to False to stop the iteration.</summary>
-  TBucketProc = procedure(AInfo, AItem, AData: Pointer; out AContinue: Boolean);
-
-  /// <summary>Pointer-to-Pointer hash list with $1000 buckets.</summary>
-  TCustomBucketList = class(TObject)
-  private
-    /// <summary>Bucket array.</summary>
-    FItems: array[0..MaxBucketItems - 1] of PBucketListItem;
-    /// <summary>Total number of stored entries.</summary>
-    FCount: Integer;
-    /// <summary>Indexed-property getter; raises when AItem is absent.</summary>
-    function GetData(AItem: Pointer): Pointer;
-    /// <summary>Indexed-property setter; raises when AItem is absent.</summary>
-    procedure SetData(AItem: Pointer; const Value: Pointer);
-  protected
-    /// <summary>Returns the bucket index for AItem (overridable for custom hashing).</summary>
-    function BucketFor(AItem: Pointer): THashValue; virtual;
-  public
-    /// <summary>Frees every chained entry.</summary>
-    destructor Destroy; override;
-    /// <summary>Empties the list.</summary>
-    procedure Clear; virtual;
-
-    /// <summary>Adds (AItem, AData); duplicates are not detected.</summary>
-    function Add(AItem, AData: Pointer): Pointer;
-    /// <summary>Removes the entry whose key matches AItem and returns the associated value.</summary>
-    function Remove(AItem: Pointer): Pointer;
-
-    /// <summary>Iterates over every entry calling AProc; iteration stops when AProc sets AContinue to False.</summary>
-    function ForEach(AProc: TBucketProc; AInfo: Pointer = nil): Boolean;
-    /// <summary>Replaces this list's contents with a copy of AList.</summary>
-    procedure Assign(AList: TCustomBucketList);
-
-    /// <summary>True when the list contains AItem.</summary>
-    function Exists(AItem: Pointer): Boolean;
-    /// <summary>Looks up AItem and returns its value via AData.</summary>
-    function Find(AItem: Pointer; out AData: Pointer): Boolean;
-    /// <summary>Indexed accessor by key.</summary>
-    property Data[AItem: Pointer]: Pointer read GetData write SetData; default;
-  end;
-
-  /// <summary>Bucket-size selector accepted by TBucketList.Create (currently informational only).</summary>
-  TBucketListSizes = (bl2, bl4, bl8, bl16, bl32, bl64, bl128, bl256);
-
-  /// <summary>TCustomBucketList descendant exposing the standard "buckets" constructor signature.</summary>
-  TBucketList = class(TCustomBucketList)
-  public
-    /// <summary>Initialises the list. ABuckets is currently informational.</summary>
-    constructor Create(ABuckets: TBucketListSizes = bl16);
-  end;
-
-  /// <summary>TBucketList variant whose hash function is tuned for module-handle keys.</summary>
-  TModuleBucketList = class(TBucketList)
-  protected
-    /// <summary>Hashes AItem by shifting away the low 16 bits typical of HMODULE addresses.</summary>
-    function BucketFor(AItem: Pointer): THashValue; override;
-  end;
-
 /// <summary>Performs a colour-keyed StretchBlt by composing the foreground onto the destination through a mask.</summary>
+/// <param name="DstDC">Destination device context.</param>
+/// <param name="DstX">Destination left.</param>
+/// <param name="DstY">Destination top.</param>
+/// <param name="DstW">Destination width.</param>
+/// <param name="DstH">Destination height.</param>
+/// <param name="SrcDC">Source device context; its map mode is set to the destination's.</param>
+/// <param name="SrcX">Source left.</param>
+/// <param name="SrcY">Source top.</param>
+/// <param name="SrcW">Source width.</param>
+/// <param name="SrcH">Source height.</param>
+/// <param name="Palette">Palette to realise, or 0 for none.</param>
+/// <param name="TransparentColor">Source colour drawn as transparent.</param>
 procedure StretchBltTransparent(DstDC: HDC; DstX, DstY, DstW, DstH: Integer;
   SrcDC: HDC; SrcX, SrcY, SrcW, SrcH: Integer; Palette: HPALETTE;
   TransparentColor: TColorRef);
 
 /// <summary>Returns the module handle that owns the specified code address.</summary>
+/// <param name="Addr">Code or data address.</param>
+/// <returns>Handle of the module containing Addr, or 0 when Addr is nil or in no module.</returns>
 function ModuleFromAddr(const Addr: Pointer): HMODULE;
 /// <summary>Walks the call stack and returns the address of the caller at the requested level.</summary>
 /// <param name="Level">0 returns the immediate caller; positive values look further up.</param>
+/// <returns>The return address at that level minus 1, or nil when the stack is shallower or cannot be walked.</returns>
 function Caller(Level: Integer): Pointer;
 /// <summary>Builds a TNotifyEvent value from raw Data and Code pointers.</summary>
+/// <param name="Data">Instance pointer ( Self ).</param>
+/// <param name="Code">Method address.</param>
+/// <returns>The combined method pointer.</returns>
 function MakeNotifyEvent(Data, Code: Pointer): TNotifyEvent;
 
 /// <summary>
 /// Recovers the underlying Delphi TObject from an interface reference by inspecting the
 /// thunk that QueryInterface uses to compute Self.
 /// </summary>
+/// <param name="Intf">Interface reference; may be nil.</param>
+/// <returns>The implementing object, or nil when Intf is nil or not implemented by a Delphi object.</returns>
 function DelphiInterfaceToObject(const Intf: IInterface): TObject;
 /// <summary>Returns the address of the QueryInterface implementation referenced by Intf's vtable.</summary>
+/// <param name="Intf">Interface reference.</param>
+/// <returns>The QueryInterface implementation, or nil when the thunk is not recognised (x86 thunks only).</returns>
 function GetQueryInterfaceImplFromDelphiInterface(const Intf: IInterface): Pointer;
 /// <summary>Returns the address of the method at VmtOffset in the vtable referenced by Intf.</summary>
+/// <param name="Intf">Interface reference.</param>
+/// <param name="VmtOffset">Byte offset of the method in the interface table.</param>
+/// <returns>The method implementation, or nil when the thunk is not recognised (x86 thunks only).</returns>
 function GetMethodImplFromDelphiInterface(const Intf: IInterface; VmtOffset: Integer): Pointer;
 /// <summary>Scans Obj's fields and returns the first (or last) one whose object's class hierarchy contains AClassName.</summary>
 /// <exception cref="Exception">Raised when no matching field is found.</exception>
+/// <param name="Obj">Object whose fields are scanned.</param>
+/// <param name="AClassName">Class name the field's object must have or inherit.</param>
+/// <param name="FindLast">True to scan from the last field backwards.</param>
+/// <returns>The object held in the matching field.</returns>
+/// <exception cref="Exception">Raised when no field holds such an object.</exception>
 function FindObjectField(Obj: TObject; const AClassName: string; FindLast: Boolean = False): TObject;
 /// <summary>Returns the byte offset within Obj of a field whose object inherits from AClassName, or 0 when not found.</summary>
+/// <param name="Obj">Object whose fields are scanned; nil gives 0.</param>
+/// <param name="AClassName">Class name the field's object must have or inherit.</param>
+/// <param name="FindLast">True to scan from the last field backwards.</param>
+/// <returns>Byte offset of the matching field, or 0 when none matches.</returns>
 function FindObjectFieldOffset(Obj: TObject; const AClassName: string; FindLast: Boolean): Cardinal; // Result=0 => not found
 
 /// <summary>Variant-to-Integer conversion that returns Default on null/empty/invalid values.</summary>
+/// <param name="V">Value to convert.</param>
+/// <param name="Default">Returned for empty, null, empty-string or unconvertible values.</param>
+/// <returns>The converted value.</returns>
 function VarToIntDef(const V: Variant; Default: Integer): Integer;
 /// <summary>Variant-to-Boolean conversion that returns Default on null/empty/invalid values.</summary>
+/// <param name="V">Value to convert.</param>
+/// <param name="Default">Returned for empty, null, empty-string or unconvertible values.</param>
+/// <returns>The converted value.</returns>
 function VarToBoolDef(const V: Variant; Default: Boolean): Boolean;
 /// <summary>Variant-to-string conversion that returns Default on null/empty/invalid values.</summary>
+/// <param name="V">Value to convert.</param>
+/// <param name="Default">Returned for empty, null or unconvertible values.</param>
+/// <returns>The converted value.</returns>
 function VarToStrDef(const V: Variant; const Default: string): string;
 
 /// <summary>Wraps Filename in double quotes when it contains spaces, dashes or pluses.</summary>
+/// <param name="Filename">File name to quote.</param>
+/// <returns>Filename in double quotes when it needs them and is not already quoted; otherwise unchanged.</returns>
 function QuoteFilename(const Filename: string): string;
 /// <summary>Strips matching surrounding double quotes from S.</summary>
+/// <param name="S">String to dequote.</param>
+/// <returns>S without its surrounding double quotes, or S unchanged.</returns>
 function Dequote(const S: string): string;
 
 /// <summary>Splits a semicolon-delimited path list into List, optionally skipping duplicates and stripping quotes.</summary>
+/// <param name="List">Receives the paths; existing lines are kept.</param>
+/// <param name="Paths">Semicolon-separated path list.</param>
+/// <param name="DeleteDuplicates">True to skip a path already in List.</param>
 procedure SplitPaths(List: TStrings; const Paths: string; DeleteDuplicates: Boolean = False); // removes quotes
 /// <summary>Joins List using Delim, quoting individual paths that contain spaces.</summary>
+/// <param name="List">Paths to join.</param>
+/// <param name="Delim">Separator.</param>
+/// <returns>The joined list.</returns>
 function ConcatPaths(List: TStrings; const Delim: string): string; // add quotes where necessary
 /// <summary>Convenience helper that splits Paths and re-joins it with Separator while removing duplicates.</summary>
+/// <param name="Paths">Semicolon-separated path list.</param>
+/// <param name="Separator">Separator for the result.</param>
+/// <returns>The de-duplicated, re-joined list.</returns>
 function SplitAndConcatPaths(const Paths, Separator: string): string;
 /// <summary>Joins List using Delim without quoting any of the entries.</summary>
+/// <param name="List">Items to join.</param>
+/// <param name="Delim">Separator.</param>
+/// <returns>The joined list.</returns>
 function ConcatList(List: TStrings; const Delim: string): string;
 /// <summary>Convenience helper that splits Paths and re-joins it with Separator (no quoting, duplicates removed).</summary>
+/// <param name="Paths">Semicolon-separated path list.</param>
+/// <param name="Separator">Separator for the result.</param>
+/// <returns>The de-duplicated, re-joined list.</returns>
 function SplitAndConcatList(const Paths, Separator: string): string;
 
 /// <summary>Returns the BDS Projects directory, honouring the BDSPROJECTSDIR environment variable when set.</summary>
+/// <returns>The projects directory; empty when the Documents folder cannot be found.</returns>
 function GetBDSProjectsDir: string;
 /// <summary>Expands $(NAME) macros (BDS, PLATFORM, CONFIG, BDSPROJECTSDIR, environment variables) inside Path.</summary>
 /// <param name="Path">Source path containing $(NAME) tokens.</param>
 /// <param name="Project">Optional project used to resolve PLATFORM/CONFIG; defaults to the active project.</param>
+/// <returns>Path with every macro replaced; an unknown macro becomes an empty string.</returns>
 function ExpandDirMacros(const Path: string; Project: IOTAProject = nil): string;
 /// <summary>Expands $(NAME) macros inside Expression using the supplied name/value array.</summary>
 /// <param name="Expression">Source expression.</param>
 /// <param name="MacroNameValue">Flat array of alternating name/value pairs.</param>
+/// <returns>Expression with every listed macro replaced; unlisted macros are left as they are.</returns>
 function ExpandMacros(const Expression: string; const MacroNameValue: array of string): string;
 
 type
@@ -361,18 +345,24 @@ type
   TIDEEvent = class(TObject)
   public
     /// <summary>Adds AHandler to the event subscriber list.</summary>
+    /// <param name="AHandler">Event handler (method pointer).</param>
     procedure Add(AHandler: TNotifyEvent);
     /// <summary>Adds AHandler even when the event is currently being raised.</summary>
+    /// <param name="AHandler">Event handler (method pointer).</param>
     procedure ForceAdd(AHandler: TNotifyEvent);
     /// <summary>Removes AHandler from the event subscriber list.</summary>
+    /// <param name="AHandler">Event handler (method pointer).</param>
     procedure Remove(AHandler: TNotifyEvent);
   end;
 
 /// <summary>Returns the IDE's MainFormShown event object (raised once after the IDE main form first appears).</summary>
+/// <returns>The IDE's MainFormShown event object.</returns>
 function MainFormShown: TIDEEvent;
 /// <summary>Returns the IDE's MainFormCreated event object (raised when the IDE main form is constructed).</summary>
+/// <returns>The IDE's MainFormCreated event object.</returns>
 function MainFormCreated: TIDEEvent;
 /// <summary>Returns the IDE's MainFormDestroyed event object (raised when the IDE main form is destroyed).</summary>
+/// <returns>The IDE's MainFormDestroyed event object.</returns>
 function MainFormDestroyed: TIDEEvent;
 
 var
@@ -412,9 +402,12 @@ begin
             rdInteger:
               Result := Reg.ReadBool(ValueName);
             rdBinary:
+              if ( DataInfo.DataSize > 0 ) then
               begin
-                Result := Boolean(0);
-                Reg.ReadBinaryData(ValueName, Result, SizeOf(Result));
+                var aData: TBytes;
+                SetLength( aData, DataInfo.DataSize );
+                Reg.ReadBinaryData( ValueName, aData[0], DataInfo.DataSize );
+                Result := aData[0] <> 0;
               end;
           end;
         end;
@@ -481,18 +474,51 @@ begin
   end;
 end;
 
-procedure RegWriteString(RootKey: HKEY; const Key, ValueName, Value: string);
-var
-  Reg: TRegistry;
+/// <summary>Writes a string registry value and reports why it failed.</summary>
+/// <param name="RootKey">Registry root.</param>
+/// <param name="Key">Key path below RootKey.</param>
+/// <param name="ValueName">Name of the value to write.</param>
+/// <param name="Value">String data to store.</param>
+/// <param name="AError">Receives the reason on failure: TRegistry's own error text ( TRegistry does
+/// not set GetLastError ) or the message of the exception WriteString raised.</param>
+/// <returns>True when the value was written.</returns>
+function WriteRegString( RootKey: HKEY; const Key, ValueName, Value: string; out AError: string ): Boolean;
 begin
-  Reg := TRegistry.Create;
+  Result := False;
+  AError := '';
+  var oReg := TRegistry.Create;
   try
-    Reg.RootKey := RootKey;
-    if Reg.OpenKey(Key, True) then
-      Reg.WriteString(ValueName, Value);
+    oReg.RootKey := RootKey;
+    if not oReg.OpenKey( Key, True ) then
+    begin
+      AError := oReg.LastErrorMsg;
+      Exit;
+    end;
+    try
+      oReg.WriteString( ValueName, Value );
+      Result := True;
+    except
+      on E: ERegistryException do
+        AError := E.Message;
+    end;
   finally
-    Reg.Free;
+    oReg.Free;
   end;
+end;
+
+function TryRegWriteString(RootKey: HKEY; const Key, ValueName, Value: string): Boolean;
+begin
+  var sError: string;
+  Result := WriteRegString( RootKey, Key, ValueName, Value, sError );
+end;
+
+procedure RegWriteString(RootKey: HKEY; const Key, ValueName, Value: string);
+begin
+  // Callers run on IDE paths without a guard, so a failure is logged, never raised.
+  var sError: string;
+  if not WriteRegString( RootKey, Key, ValueName, Value, sError ) then
+    OutputDebugString( PChar( Format( 'DDevExtensions: cannot write registry value "%s" under "%s": %s',
+      [ValueName, Key, sError] ) ) );
 end;
 
 procedure RegDeleteEntry(RootKey: HKEY; const Key, ValueName: string);
@@ -606,7 +632,12 @@ begin
   Result := GetMethodImplFromDelphiInterface(Intf, 0);
 end;
 
+const
+  /// <summary>The RTL's object-cast interface ID; System.ObjCastGUID is implementation-private.</summary>
+  cObjCastGUID: TGUID = '{CEDF24DE-80A4-447D-8C75-EB871DC121FD}';
+
 function DelphiInterfaceToObject(const Intf: IInterface): TObject;
+{$IFDEF CPUX86}
 //{$IFDEF COMPILER14_UP}
 //begin
 //  Result := Intf as TObject;    uses QueryInterface which is slow and goes through all supported interfaces before matching with ObjCastGUID
@@ -643,43 +674,55 @@ type
 
 var
   P: PEntry;
+{$ENDIF CPUX86}
 begin
   Result := nil;
-  if Intf <> nil then
+  if ( Intf = nil ) then
+    Exit;
+
+  {$IFDEF CPUX86}
+  // Fast path on Win32: decode the x86 interface thunk that adjusts Self.
+  P := PEntry(Pointer(Pointer(Intf)^)^);
+  if P <> nil then
   begin
-    P := PEntry(Pointer(Pointer(Intf)^)^);
-    if P <> nil then
-    begin
-      // stdcall, safecall, cdecl, pascal:
-      if P^.AddArgShort = $04244483 then
-        Result := TObject(PAnsiChar(Intf) + P^.ArgShortOffset)
-      else if P^.AddArgLong = $04244481 then
-        Result := TObject(PAnsiChar(Intf) + P^.ArgLongOffset)
+    // stdcall, safecall, cdecl, pascal:
+    if P^.AddArgShort = $04244483 then
+      Result := TObject(PAnsiChar(Intf) + P^.ArgShortOffset)
+    else if P^.AddArgLong = $04244481 then
+      Result := TObject(PAnsiChar(Intf) + P^.ArgLongOffset)
 
-      // register:
-      else if P^.AddEAXShort = $C083 then
-        Result := TObject(PAnsiChar(Intf) + P^.ShortOffset)
-      else if P^.AddEAXLong = $05 then
-        Result := TObject(PAnsiChar(Intf) + P^.LongOffset)
+    // register:
+    else if P^.AddEAXShort = $C083 then
+      Result := TObject(PAnsiChar(Intf) + P^.ShortOffset)
+    else if P^.AddEAXLong = $05 then
+      Result := TObject(PAnsiChar(Intf) + P^.LongOffset)
 
-      // abstract class (mostly a C++ class)
-      else if (P^.PushEbp = $55) and (p^.MovEbpEsp = $EC8B) then
-        Result := TObject(Intf);
-    end;
+    // abstract class (mostly a C++ class)
+    else if (P^.PushEbp = $55) and (p^.MovEbpEsp = $EC8B) then
+      Result := TObject(Intf);
   end;
-end;
-//{$ENDIF COMPILER14_UP}
+  if ( Result <> nil ) then
+    Exit;
+  {$ENDIF CPUX86}
 
+  // Every Delphi object answers the RTL cast GUID; this is the only path on Win64, whose
+  // interface thunks ( add rcx, ... ) the x86 decoder above does not recognise.
+  var oObject: TObject := nil;
+  if ( Intf.QueryInterface( cObjCastGUID, oObject ) = S_OK ) then
+    Result := oObject;
+end;
+
+/// <summary>
+/// Tests whether Address points at a Delphi object, by checking that the VMT pointer it starts
+/// with points back at itself through <c>vmtSelfPtr</c>.  Full-width pointer arithmetic, so it is
+/// correct on Win64 as well as Win32.
+/// </summary>
+/// <param name="Address">Candidate object address; the caller has checked it is readable.</param>
+/// <returns>True when Address looks like a Delphi object.</returns>
 function IsObject(Address: Pointer): Boolean;
-asm
-        MOV     EAX, [Address]
-        CMP     EAX, EAX.vmtSelfPtr
-        JNZ     @False
-        MOV     Result, True
-        JMP     @Exit
-@False:
-        MOV     Result, False
-@Exit:
+begin
+  var pVmt: Pointer := PPointer( Address )^;
+  Result := ( pVmt <> nil ) and ( PPointer( PByte( pVmt ) + vmtSelfPtr )^ = pVmt );
 end;
 
 function ClassIsOfClass(AClass: TClass; const AClassName: string): Boolean;
@@ -690,50 +733,49 @@ begin
     Result := False;
 end;
 
-function FindObjectFieldOffset(Obj: TObject; const AClassName: string; FindLast: Boolean): Cardinal;
-var
-  InstSize: Cardinal;
-  Field: TObject;
+/// <summary>
+/// Tests whether the pointer-sized field at Offset inside Obj holds an object whose class (or an
+/// ancestor) is named AClassName.  Every pointer is validated before it is dereferenced.
+/// </summary>
+/// <param name="Obj">Object whose fields are probed.</param>
+/// <param name="Offset">Byte offset of the field inside Obj.</param>
+/// <param name="AClassName">Class name to look for.</param>
+/// <returns>True when the field holds a matching object.</returns>
+function FieldHoldsClass( Obj: TObject; Offset: Cardinal; const AClassName: string ): Boolean;
 begin
-  if Obj <> nil then
+  Result := False;
+  var oField := TObject( PPointer( PByte( Obj ) + Offset )^ );
+  if ( NativeUInt( oField ) < $00010000 ) or IsBadReadPtr( oField, SizeOf( Pointer ) ) then
+    Exit;
+  var pVmt: Pointer := PPointer( oField )^;
+  if ( pVmt = nil ) or IsBadReadPtr( PByte( pVmt ) + vmtSelfPtr, SizeOf( Pointer ) ) then
+    Exit;
+  Result := IsObject( oField ) and ClassIsOfClass( oField.ClassType, AClassName );
+end;
+
+function FindObjectFieldOffset(Obj: TObject; const AClassName: string; FindLast: Boolean): Cardinal;
+begin
+  if ( Obj <> nil ) then
   begin
+    var iInstSize: Cardinal := Cardinal( Obj.InstanceSize );
     if FindLast then
     begin
-      Result := Obj.InstanceSize - SizeOf(Pointer);
-      while Result > SizeOf(Pointer) do // omit VMT
+      Result := iInstSize - SizeOf( Pointer );
+      while ( Result >= SizeOf( Pointer ) ) do // omit the VMT pointer at offset 0
       begin
-        try
-          Field := TObject(Pointer(Cardinal(Obj) + Result)^);
-          if (Cardinal(Field) >= $00010000) and
-             not IsBadReadPtr(Field, SizeOf(TClass)) and
-             not IsBadReadPtr(PPointer(Field)^, {TObject.InstanceSize} SizeOf(Pointer)) and
-             not IsBadReadPtr(Pointer(INT_PTR(PPointer(Field)^) + vmtSelfPtr), SizeOf(Pointer)) and
-             IsObject(Field) then
-            if ClassIsOfClass(Field.ClassType, AClassName) then
-              Exit;
-        except
-        end;
-        Dec(Result, SizeOf(Pointer));
+        if FieldHoldsClass( Obj, Result, AClassName ) then
+          Exit;
+        Dec( Result, SizeOf( Pointer ) );
       end;
     end
     else
     begin
-      InstSize := Obj.InstanceSize;
-      Result := SizeOf(Pointer); // start after TObject fields (VMT)
-      while Result < InstSize do
+      Result := SizeOf( Pointer ); // start after the VMT pointer
+      while ( Result + SizeOf( Pointer ) <= iInstSize ) do
       begin
-        try
-          Field := TObject(Pointer(Cardinal(Obj) + Result)^);
-          if (Cardinal(Field) >= $00010000) and
-             not IsBadReadPtr(Field, SizeOf(TClass)) and
-             not IsBadReadPtr(PPointer(Field)^, {TObject.InstanceSize} SizeOf(Pointer)) and
-             not IsBadReadPtr(Pointer(INT_PTR(PPointer(Field)^) + vmtSelfPtr), SizeOf(Pointer)) and
-             IsObject(Field) then
-            if ClassIsOfClass(Field.ClassType, AClassName) then
-              Exit;
-        except
-        end;
-        Inc(Result, SizeOf(Pointer));
+        if FieldHoldsClass( Obj, Result, AClassName ) then
+          Exit;
+        Inc( Result, SizeOf( Pointer ) );
       end;
     end;
   end;
@@ -741,14 +783,11 @@ begin
 end;
 
 function FindObjectField(Obj: TObject; const AClassName: string; FindLast: Boolean): TObject;
-var
-  Offset: Cardinal;
 begin
-  Offset := FindObjectFieldOffset(Obj, AClassName, FindLast);
-  if Offset = 0 then
-    raise Exception.CreateFmt('%s object field not found', [AClassName])
-  else
-    Result := TObject(Pointer(Cardinal(Obj) + Offset)^);
+  var iOffset := FindObjectFieldOffset( Obj, AClassName, FindLast );
+  if ( iOffset = 0 ) then
+    raise Exception.CreateFmt( '%s object field not found', [AClassName] );
+  Result := TObject( PPointer( PByte( Obj ) + iOffset )^ );
 end;
 
 function MakeNotifyEvent(Data, Code: Pointer): TNotifyEvent;
@@ -807,354 +846,8 @@ begin
 end;
 
 function HashString(const AItem: string): Integer;
-asm
-  test eax, eax
-  jz @@Leave
-
-  xchg eax, edx
-  mov eax, [edx-$04] // Length(AItem)
-  xor ecx, ecx
-
-@@HasStringNextChar:
-  {$IFDEF UNICODE}
-  mov cx, [edx]
-  {ror cx, 4
-  shl ecx, 1}
-  add edx, 2
-  add eax, ecx
-  //and ecx, $0000ffff
-  {$ELSE}
-  mov cl, [edx]
-  {ror cl, 4
-  shl ecx, 1}
-  add edx, 1
-  add eax, ecx
-  //and ecx, $000000ff
-  {$ENDIF UNICODE}
-  test ecx, ecx
-  jnz @@HasStringNextChar
-
-  and eax, MaxBucketItems-1
-@@Leave:
-end;
-
-{ TStringIntegerHash }
-
-destructor TStringIntegerHash.Destroy;
 begin
-  Clear;
-  inherited Destroy;
-end;
-
-procedure TStringIntegerHash.Clear;
-var
-  P, N: PStringIntegerItem;
-  i: Integer;
-begin
-  if FCount > 0 then
-  begin
-    for i := 0 to High(FItems) do
-    begin
-      P := FItems[i];
-      while P <> nil do
-      begin
-        N := P.Next;
-        if (Cardinal(P) < Cardinal(@FCacheItems[0])) or (Cardinal(P) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-          Dispose(P);
-        P := N;
-        Dec(FCount);
-      end;
-      FItems[i] := nil;
-      if FCount = 0 then
-        Break;
-    end;
-  end;
-  FCount := 0;
-  FCacheIndex := 0;
-end;
-
-function TStringIntegerHash.Add(const AItem: string; AData: Integer): Integer;
-begin
-  Result := Add(HashString(AItem), AItem, AData);
-end;
-
-function TStringIntegerHash.Add(AHash: Integer; const AItem: string; AData: Integer): Integer;
-var
-  N: PStringIntegerItem;
-begin
-  if FCacheIndex < Length(FCacheItems) then
-  begin
-    N := @FCacheItems[FCacheIndex];
-    Inc(FCacheIndex);
-  end
-  else
-    New(N);
-  N.Next := FItems[AHash];
-  FItems[AHash] := N;
-  Inc(FCount);
-  N.Key := AItem;
-  N.Value := AData;
-  Result := AData;
-end;
-
-function TStringIntegerHash.Remove(const AItem: string): Integer;
-var
-  Index: Integer;
-  P, N: PStringIntegerItem;
-begin
-  Index := HashString(AItem);
-  N := FItems[Index];
-  if N <> nil then
-  begin
-    if N.Key = AItem then
-    begin
-      Result := N.Value;
-      P := N.Next;
-      if (Cardinal(N) < Cardinal(@FCacheItems[0])) or (Cardinal(N) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-        Dispose(N);
-      FItems[Index] := P;
-      Dec(FCount);
-      Exit;
-    end
-    else
-    begin
-      P := N;
-      N := N.Next;
-      while N <> nil do
-      begin
-        if N.Key = AItem then
-        begin
-          Result := N.Value;
-          P.Next := N.Next;
-          if (Cardinal(N) < Cardinal(@FCacheItems[0])) or (Cardinal(N) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-            Dispose(N);
-          Dec(FCount);
-          Exit;
-        end;
-        P := N;
-        N := N.Next;
-      end;
-    end;
-  end;
-  Result := 0;
-end;
-
-function TStringIntegerHash.Find(const AItem: string; out Value: Integer): Boolean;
-begin
-  Result := Find(HashString(AItem), AItem, Value);
-end;
-
-function TStringIntegerHash.Find(AHash: Integer; const AItem: string; out Value: Integer): Boolean;
-var
-  N: PStringIntegerItem;
-begin
-  Value := 0;
-  N := FItems[AHash];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      Value := N.Value;
-      Result := True;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Result := False;
-end;
-
-function TStringIntegerHash.HasKey(const AItem: string): Boolean;
-var
-  Value: Integer;
-begin
-  Result := Find(HashString(AItem), AItem, Value);
-end;
-
-function TStringIntegerHash.HasKey(AHash: Integer; const AItem: string): Boolean;
-var
-  N: PStringIntegerItem;
-begin
-  N := FItems[AHash];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      Result := True;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Result := False;
-end;
-
-procedure TStringIntegerHash.SetValue(const AItem: string; AData: Integer);
-begin
-  SetValue(HashString(AItem), AItem, AData);
-end;
-
-procedure TStringIntegerHash.SetValue(AHash: Integer; const AItem: string; AData: Integer);
-var
-  N: PStringIntegerItem;
-begin
-  N := FItems[AHash];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      N.Value := AData;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Add(AHash, AItem, AData);
-end;
-
-{ TStringStringHash }
-
-destructor TStringStringHash.Destroy;
-begin
-  Clear;
-  inherited Destroy;
-end;
-
-procedure TStringStringHash.Clear;
-var
-  P, N: PStringStringItem;
-  i: Integer;
-begin
-  if FCount > 0 then
-  begin
-    for i := 0 to High(FItems) do
-    begin
-      P := FItems[i];
-      while P <> nil do
-      begin
-        N := P.Next;
-        if (Cardinal(P) < Cardinal(@FCacheItems[0])) or (Cardinal(P) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-          Dispose(P);
-        P := N;
-        Dec(FCount);
-      end;
-      FItems[i] := nil;
-      if FCount = 0 then
-        Break;
-    end;
-  end;
-  FCount := 0;
-end;
-
-function TStringStringHash.Add(const AItem: string; const AData: string): string;
-begin
-  Result := Add(HashString(AItem), AItem, AData);
-end;
-
-function TStringStringHash.Add(AHash: Integer; const AItem: string; const AData: string): string;
-var
-  N: PStringStringItem;
-begin
-  if FCacheIndex < Length(FCacheItems) then
-  begin
-    N := @FCacheItems[FCacheIndex];
-    Inc(FCacheIndex);
-  end
-  else
-    New(N);
-  N.Next := FItems[AHash];
-  FItems[AHash] := N;
-  Inc(FCount);
-  N.Key := AItem;
-  N.Value := AData;
-  Result := AData;
-end;
-
-function TStringStringHash.Remove(const AItem: string): string;
-var
-  Index: Integer;
-  P, N: PStringStringItem;
-begin
-  Index := HashString(AItem);
-  N := FItems[Index];
-  if N <> nil then
-  begin
-    if N.Key = AItem then
-    begin
-      Result := N.Value;
-      P := N.Next;
-      if (Cardinal(N) < Cardinal(@FCacheItems[0])) or (Cardinal(N) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-        Dispose(N);
-      FItems[Index] := P;
-      Dec(FCount);
-      Exit;
-    end
-    else
-    begin
-      P := N;
-      N := N.Next;
-      while N <> nil do
-      begin
-        if N.Key = AItem then
-        begin
-          Result := N.Value;
-          P.Next := N.Next;
-          if (Cardinal(N) < Cardinal(@FCacheItems[0])) or (Cardinal(N) > Cardinal(@FCacheItems[High(FCacheItems)])) then
-            Dispose(N);
-          Dec(FCount);
-          Exit;
-        end;
-        P := N;
-        N := N.Next;
-      end;
-    end;
-  end;
-  Result := '';
-end;
-
-function TStringStringHash.Find(const AItem: string; out Value: string): Boolean;
-begin
-  Result := Find(HashString(AItem), AItem, Value);
-end;
-
-function TStringStringHash.Find(AHash: Integer; const AItem: string; out Value: string): Boolean;
-var
-  N: PStringStringItem;
-begin
-  Value := '';
-  N := FItems[AHash];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      Value := N.Value;
-      Result := True;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Result := False;
-end;
-
-function TStringStringHash.HasKey(const AItem: string): Boolean;
-var
-  Value: string;
-begin
-  Result := Find(HashString(AItem), AItem, Value);
-end;
-
-function TStringStringHash.HasKey(AHash: Integer; const AItem: string): Boolean;
-var
-  N: PStringStringItem;
-begin
-  N := FItems[AHash];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      Result := True;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Result := False;
+  Result := IDEHashLists.HashString( AItem );
 end;
 
 {------------------------------------------------------------------------------}
@@ -1194,7 +887,7 @@ begin
   Handle := FindFirstFile(Pointer(FileName), FindData);
   if Handle <> INVALID_HANDLE_VALUE then
   begin
-    Windows.FindClose(Handle);
+    Winapi.Windows.FindClose(Handle);
 //    if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
     begin
       FileTimeToLocalFileTime(FindData.ftLastWriteTime, LocalFileTime);
@@ -1213,7 +906,7 @@ begin
   Handle := FindFirstFile(Pointer(FileName), FindData);
   if Handle <> INVALID_HANDLE_VALUE then
   begin
-    Windows.FindClose(Handle);
+    Winapi.Windows.FindClose(Handle);
     Result := FindData.nFileSizeLow;
   end
   else
@@ -1329,6 +1022,29 @@ begin
     Result := HMODULE(FindHInstance(Addr)); // optimized by IDE Fix Pack
 end;
 
+{$IFDEF CPUX64}
+/// <summary>Captures return addresses of the current thread's call stack (kernel32).</summary>
+/// <param name="FramesToSkip">Number of frames to skip, counted from the caller of this routine.</param>
+/// <param name="FramesToCapture">Maximum number of addresses to store.</param>
+/// <param name="BackTrace">Receives the return addresses.</param>
+/// <param name="BackTraceHash">Optional hash of the trace; nil when not wanted.</param>
+/// <returns>Number of addresses stored.</returns>
+function CaptureStackBackTrace( FramesToSkip, FramesToCapture: Cardinal; BackTrace: Pointer;
+  BackTraceHash: PCardinal ): Word; stdcall; external kernel32 name 'RtlCaptureStackBackTrace';
+
+function Caller(Level: Integer): Pointer;
+begin
+  Result := nil;
+  if ( Level < 0 ) then
+    Exit;
+
+  // Frame 0 is the return address into Caller itself; frame 1 lies in Caller's caller, which is
+  // what Level 0 returns on Win32.
+  var pAddress: Pointer := nil;
+  if ( CaptureStackBackTrace( Cardinal( Level ) + 1, 1, @pAddress, nil ) = 1 ) and ( pAddress <> nil ) then
+    Result := PByte( pAddress ) - 1;
+end;
+{$ELSE}
 {$STACKFRAMES ON}
 
 type
@@ -1373,6 +1089,7 @@ begin
     Result := nil;
   end;
 end;
+{$ENDIF CPUX64}
 
 function SupportsEx(const Instance: TObject; const IID: TGUID; out Intf): Boolean;
 begin
@@ -1396,201 +1113,6 @@ begin
     Result := Copy(S, 2, Length(S) - 2)
   else
     Result := S;
-end;
-
-{ TCustomBucketList }
-
-destructor TCustomBucketList.Destroy;
-begin
-  Clear;
-  inherited Destroy;
-end;
-
-function TCustomBucketList.Add(AItem, AData: Pointer): Pointer;
-var
-  N: PBucketListItem;
-  Hash: THashValue;
-begin
-  New(N);
-  Hash := BucketFor(AItem);
-  N.Next := FItems[Hash];
-  FItems[Hash] := N;
-  Inc(FCount);
-  N.Key := AItem;
-  N.Value := AData;
-  Result := AData;
-end;
-
-procedure AssignProc(AInfo: Pointer; AItem, AData: Pointer; out AContinue: Boolean);
-begin
-  AContinue := True;
-  TCustomBucketList(AInfo).Add(AItem, AData);
-end;
-
-procedure TCustomBucketList.Assign(AList: TCustomBucketList);
-begin
-  Clear;
-  ForEach(AssignProc, Self);
-end;
-
-procedure TCustomBucketList.Clear;
-var
-  P, N: PBucketListItem;
-  i: Integer;
-begin
-  if FCount > 0 then
-  begin
-    for i := 0 to High(FItems) do
-    begin
-      P := FItems[i];
-      while P <> nil do
-      begin
-        N := P.Next;
-        Dispose(P);
-        P := N;
-        Dec(FCount);
-      end;
-      FItems[i] := nil;
-      if FCount = 0 then
-        Break;
-    end;
-  end;
-  FCount := 0;
-end;
-
-function TCustomBucketList.Exists(AItem: Pointer): Boolean;
-var
-  Data: Pointer;
-begin
-  Result := Find(AItem, Data);
-end;
-
-function TCustomBucketList.Find(AItem: Pointer; out AData: Pointer): Boolean;
-var
-  N: PBucketListItem;
-begin
-  AData := nil;
-  N := FItems[BucketFor(AItem)];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      AData := N.Value;
-      Result := True;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  Result := False;
-end;
-
-function TCustomBucketList.ForEach(AProc: TBucketProc; AInfo: Pointer): Boolean;
-var
-  P, N: PBucketListItem;
-  i: Integer;
-begin
-  Result := False;
-  if FCount > 0 then
-  begin
-    for i := 0 to High(FItems) do
-    begin
-      P := FItems[i];
-      while P <> nil do
-      begin
-        N := P.Next;
-        AProc(AInfo, P.Key, P.Value, Result);
-        if not Result then
-          Exit;
-        P := N;
-      end;
-    end;
-  end;
-end;
-
-function TCustomBucketList.GetData(AItem: Pointer): Pointer;
-begin
-  if not Find(AItem, Result) then
-  begin
-    SetLastError(ERROR_INVALID_PARAMETER);
-    RaiseLastOSError;
-  end;
-end;
-
-function TCustomBucketList.Remove(AItem: Pointer): Pointer;
-var
-  Index: THashValue;
-  P, N: PBucketListItem;
-begin
-  Index := BucketFor(AItem);
-  N := FItems[Index];
-  if N <> nil then
-  begin
-    if N.Key = AItem then
-    begin
-      Result := N.Value;
-      P := N.Next;
-      Dispose(N);
-      FItems[Index] := P;
-      Dec(FCount);
-      Exit;
-    end
-    else
-    begin
-      P := N;
-      N := N.Next;
-      while N <> nil do
-      begin
-        if N.Key = AItem then
-        begin
-          Result := N.Value;
-          P.Next := N.Next;
-          Dispose(N);
-          Dec(FCount);
-          Exit;
-        end;
-        P := N;
-        N := N.Next;
-      end;
-    end;
-  end;
-  Result := nil;
-end;
-
-procedure TCustomBucketList.SetData(AItem: Pointer; const Value: Pointer);
-var
-  N: PBucketListItem;
-begin
-  N := FItems[BucketFor(AItem)];
-  while N <> nil do
-  begin
-    if N.Key = AItem then
-    begin
-      N.Value := Value;
-      Exit;
-    end;
-    N := N.Next;
-  end;
-  SetLastError(ERROR_INVALID_PARAMETER);
-  RaiseLastOSError;
-end;
-
-function TCustomBucketList.BucketFor(AItem: Pointer): THashValue;
-begin
-  Result := THashValue(Cardinal(AItem) mod MaxBucketItems);
-end;
-
-{ TBucketList }
-
-constructor TBucketList.Create(ABuckets: TBucketListSizes);
-begin
-  inherited Create;
-end;
-
-{ TModuleBucketList }
-
-function TModuleBucketList.BucketFor(AItem: Pointer): THashValue;
-begin
-  Result := THashValue((Cardinal(AItem) shr 16) mod MaxBucketItems);
 end;
 
 {$IFDEF COMPILER10}

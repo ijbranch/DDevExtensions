@@ -1,4 +1,4 @@
-{ The contents of this file are subject to the Mozilla Public License
+﻿{ The contents of this file are subject to the Mozilla Public License
   Version 1.1 (the "License"); you may not use this file except in
   compliance with the License. You may obtain a copy of the License
   at http://www.mozilla.org/MPL/
@@ -54,17 +54,29 @@ type
 
   private
     /// <summary>Lazily parses the resource buffer; returns False on parse failure.</summary>
+    /// <returns>True when the resource has been parsed successfully (now or earlier); False when it is malformed.</returns>
+    /// <exception cref="Exception">Raised internally for an invalid resource and handled here: the function then returns False.</exception>
     function GetInfo : boolean;
     /// <summary>Returns the number of StringFileInfo entries.</summary>
+    /// <returns>Number of StringFileInfo entries; 0 when the resource cannot be parsed.</returns>
     function GetKeyCount: Integer;
     /// <summary>Returns the key name at the supplied StringFileInfo index.</summary>
+    /// <param name="idx">Zero-based entry index.</param>
+    /// <returns>The key name at idx.</returns>
+    /// <exception cref="ERangeError">Raised when idx is not below KeyCount.</exception>
     function GetKeyName(idx: Integer): string;
     /// <summary>Returns the value associated with the supplied StringFileInfo key.</summary>
-    /// <exception cref="Exception">Raised when the key cannot be found.</exception>
+    /// <exception cref="Exception">Raised when the key cannot be found or the resource cannot be parsed.</exception>
+    /// <param name="idx">Key name to look up.</param>
+    /// <returns>The value stored for the key.</returns>
     function GetKeyValue(const idx: string): string;
     /// <summary>Sets or appends a StringFileInfo entry.</summary>
+    /// <param name="idx">Key name; a missing key is appended.</param>
+    /// <param name="Value">New value.</param>
+    /// <exception cref="Exception">Raised when the resource cannot be parsed.</exception>
     procedure SetKeyValue(const idx, Value: string);
     /// <summary>Returns the fixed file info pointer or nil when the resource cannot be parsed.</summary>
+    /// <returns>The fixed file info, or nil when the resource has none or cannot be parsed.</returns>
     function GetFixedInfo: PVSFixedFileInfo;
   public
     /// <summary>Loads the VS_VERSION_INFO resource from the supplied module handle.</summary>
@@ -267,9 +279,9 @@ begin
 
     if wValueLength <> 0 then
     begin
-      fFixedInfo := PVSFixedFileInfo (p);
-      if fFixedInfo^.dwSignature <> $feef04bd then
+      if PVSFixedFileInfo (p)^.dwSignature <> $feef04bd then
         raise Exception.Create ('Invalid version resource');
+      fFixedInfo := PVSFixedFileInfo (p);
 
       Inc (p, wValueLength);
       while Integer (p) mod 4 <> 0 do
@@ -294,6 +306,9 @@ begin
 
     result := True;
   except
+    // A malformed resource: forget any part already parsed, so the next call does not take the
+    // half-set fFixedInfo as proof of a valid resource ( it used to return True from then on ).
+    fFixedInfo := nil;
   end
   else
     result := True

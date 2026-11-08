@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -19,7 +19,7 @@ unit IDENotifiers;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, ToolsAPI;
+  System.SysUtils, System.Classes, System.Contnrs, ToolsAPI;
 
 type
   /// <summary>Event raised before the IDE starts compiling Project. Set Cancel to True to abort.</summary>
@@ -45,10 +45,19 @@ type
     FOnAfterCompile: TAfterCompileEvent;
   protected
     /// <summary>Calls FOnBeforeCompile if assigned. Override to extend behaviour.</summary>
+    /// <param name="Project">Project about to be compiled.</param>
+    /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
+    /// <param name="Cancel">Set to True to cancel the compile.</param>
     procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean); virtual;
     /// <summary>Calls FOnAfterCompile if assigned. Override to extend behaviour.</summary>
+    /// <param name="Project">Project that was compiled.</param>
+    /// <param name="Succeeded">True when the compile succeeded.</param>
+    /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
     procedure AfterCompile(Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean); virtual;
     /// <summary>Calls FOnFileNotification if assigned. Override to extend behaviour.</summary>
+    /// <param name="NotifyCode">The kind of file event.</param>
+    /// <param name="FileName">File the event concerns.</param>
+    /// <param name="Cancel">Set to True to cancel the operation, where the IDE allows it.</param>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
   public
     /// <summary>
@@ -74,7 +83,29 @@ type
     property OnFileNotification: TFileNotificationEvent read FOnFileNotification write FOnFileNotification;
   end;
 
+/// <summary>
+/// Collects subscriber exceptions during a broadcast so every subscriber is still called: the
+/// first exception is kept ( taken over with AcquireExceptionObject ) for the caller to re-raise
+/// after the loop, so EurekaLog and the IDE still see it; later ones are written to the debugger
+/// output.  Call it only from inside an exception handler, passing the handled exception.
+/// </summary>
+/// <param name="AFirst">Holds the first exception; nil until one is kept.  The caller raises it after the loop.</param>
+/// <param name="AEvent">Name of the notification being broadcast, for the log.</param>
+/// <param name="E">The exception being handled.</param>
+procedure KeepFirstSubscriberError(var AFirst: Exception; const AEvent: string; E: Exception);
+
 implementation
+
+uses
+  Winapi.Windows;
+
+procedure KeepFirstSubscriberError(var AFirst: Exception; const AEvent: string; E: Exception);
+begin
+  if ( AFirst = nil ) then
+    AFirst := Exception( AcquireExceptionObject )
+  else
+    OutputDebugString( PChar( Format( 'DDevExtensions: %s subscriber raised %s: %s', [AEvent, E.ClassName, E.Message] ) ) );
+end;
 
 type
   TIDENotifierList = class(TComponent, IOTANotifier, IOTAIDENotifier80, IOTAIDENotifier, IOTAIDENotifier50)
@@ -83,6 +114,8 @@ type
     FNotifiers: TList;
     function GetNotifier(Index: Integer): TIDENotifier;
     function GetNotifierCount: Integer;
+    function Snapshot: TArray<TIDENotifier>;
+    function IsLive(ANotifier: TIDENotifier): Boolean;
   protected
     property NotifierCount: Integer read GetNotifierCount;
     property Notifiers[Index: Integer]: TIDENotifier read GetNotifier;
@@ -161,17 +194,40 @@ begin
   Result := FNotifiers.Count;
 end;
 
+function TIDENotifierList.Snapshot: TArray<TIDENotifier>;
+begin
+  // A subscriber may free itself, or another, from inside its handler and shrink FNotifiers;
+  // broadcasting over a copy keeps the loop's indexes valid.
+  SetLength(Result, FNotifiers.Count);
+  for var iIndex: Integer := 0 to FNotifiers.Count - 1 do
+    Result[iIndex] := TIDENotifier(FNotifiers[iIndex]);
+end;
+
+function TIDENotifierList.IsLive(ANotifier: TIDENotifier): Boolean;
+begin
+  // Skip a subscriber that an earlier handler of the same broadcast has freed.
+  Result := FNotifiers.IndexOf(ANotifier) >= 0;
+end;
+
 procedure TIDENotifierList.FileNotification(NotifyCode: TOTAFileNotification;
   const FileName: string; var Cancel: Boolean);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
+  var oFirstError: Exception := nil;
+  for var oNotifier in Snapshot do
   begin
-    Notifiers[i].FileNotification(NotifyCode, FileName, Cancel);
+    if not IsLive(oNotifier) then
+      Continue;
+    try
+      oNotifier.FileNotification(NotifyCode, FileName, Cancel);
+    except
+      on E: Exception do
+        KeepFirstSubscriberError(oFirstError, 'FileNotification', E);
+    end;
     if Cancel then
       Break;
   end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TIDENotifierList.AfterCompile(Succeeded: Boolean);
@@ -205,23 +261,41 @@ end;
 
 procedure TIDENotifierList.BeforeCompile(const Project: IOTAProject;
   IsCodeInsight: Boolean; var Cancel: Boolean);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
+  var oFirstError: Exception := nil;
+  for var oNotifier in Snapshot do
   begin
-    Notifiers[I].BeforeCompile(Project, IsCodeInsight, Cancel);
+    if not IsLive(oNotifier) then
+      Continue;
+    try
+      oNotifier.BeforeCompile(Project, IsCodeInsight, Cancel);
+    except
+      on E: Exception do
+        KeepFirstSubscriberError(oFirstError, 'BeforeCompile', E);
+    end;
     if Cancel then
       Break;
   end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TIDENotifierList.AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean);
-var
-  I: Integer;
 begin
-  for I := 0 to NotifierCount - 1 do
-    Notifiers[I].AfterCompile(Project, Succeeded, IsCodeInsight);
+  var oFirstError: Exception := nil;
+  for var oNotifier in Snapshot do
+  begin
+    if not IsLive(oNotifier) then
+      Continue;
+    try
+      oNotifier.AfterCompile(Project, Succeeded, IsCodeInsight);
+    except
+      on E: Exception do
+        KeepFirstSubscriberError(oFirstError, 'AfterCompile', E);
+    end;
+  end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 { TIDENotifier }

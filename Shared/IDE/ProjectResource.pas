@@ -53,10 +53,16 @@ type
     /// <summary>Last loaded source filename (used by SaveToProjectResource on XE2+).</summary>
     FFileName: string;
     /// <summary>Returns the number of images in the icon directory.</summary>
+    /// <returns>Number of images the icon directory declares; 0 when the stream is shorter than the header.</returns>
     function GetCount: Integer;
     /// <summary>Returns the start pointer of the underlying memory buffer.</summary>
+    /// <returns>Start of the icon bytes, or nil when the stream is empty.</returns>
     function GetData: Pointer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
     /// <summary>Decodes the icon directory entry at Index.</summary>
+    /// <param name="Index">Image index within the icon directory.</param>
+    /// <returns>The decoded metadata, with ImageData pointing into the stream.</returns>
+    /// <exception cref="EListError">Raised when Index is outside 0..Count-1.</exception>
+    /// <exception cref="EReadError">Raised when the entry or its image lies outside the icon data.</exception>
     function GetImage(Index: Integer): TIconResourceItem;
     /// <summary>Releases the cached HICON and resets FPaintIconIndex to -1.</summary>
     procedure DestroyPaintIcon;
@@ -71,14 +77,18 @@ type
 
     /// <summary>Returns (and caches) an HICON for the image at Index.</summary>
     /// <param name="Index">Image index within the icon directory.</param>
+    /// <returns>The icon handle (owned by this object; 0 when the image could not be converted).</returns>
     function GetPaintIcon(Index: Integer): HICON;
 
     //procedure LoadFromMemory(P: PByte; Size: Integer);
     /// <summary>Replaces the contents with the bytes of an .ico file on disk.</summary>
+    /// <param name="FileName">Path of the .ico file.</param>
     procedure LoadFromIconFile(const FileName: string);
     /// <summary>Loads the project's MAINICON resource into this object.</summary>
+    /// <param name="AProject">Project whose MainIcon option names the icon file.</param>
     procedure LoadFromProjectResource(AProject: IOTAProject);
     /// <summary>Writes this icon back into the project as MAINICON, updating IDE settings as needed.</summary>
+    /// <param name="AProject">Project whose MainIcon option is updated.</param>
     procedure SaveToProjectResource(AProject: IOTAProject);
     /// <summary>Empties the buffer and releases the cached HICON.</summary>
     procedure Clear;
@@ -132,20 +142,29 @@ type
   end;
 
 /// <summary>Reads the version-info block from Project's options or .res file (depending on Delphi version).</summary>
+/// <param name="Project">Project to read.</param>
+/// <returns>The version data; Valid is False when the project has no version information.</returns>
 function GetProjectVersion(Project: IOTAProject): TProjectVersion;
 /// <summary>Writes Version back into Project; pass UpdateAllPlatforms=True to mirror across every platform/configuration.</summary>
 /// <returns>True when at least one configuration was updated.</returns>
+/// <param name="Project">Project to update.</param>
+/// <param name="Version">Data to write; nothing is written unless Valid is True.</param>
+/// <param name="UpdateAllPlatforms">True to write every platform, False for the active platform only.</param>
 function SetProjectVersion(Project: IOTAProject; const Version: TProjectVersion; UpdateAllPlatforms: Boolean): Boolean;
 /// <summary>Increments the build number of Project's file version and writes it back to all platforms.</summary>
+/// <param name="Project">Project to update; nil is ignored.</param>
 procedure IncrementBuildVersion(Project: IOTAProject);
 /// <summary>Adds or updates an extra StringFileInfo key (such as a custom field) across every configuration.</summary>
 /// <returns>True when at least one configuration accepted the change.</returns>
+/// <param name="AProject">Project to update.</param>
+/// <param name="AKey">Key name.</param>
+/// <param name="AValue">New value; may be empty.</param>
 function SetVersionInfoExtraKey(AProject: IOTAProject; const AKey, AValue: string): Boolean;
 
 implementation
 
 uses
-  Variants, CommonOptionStrs, Consts, RTLConsts, IDEUtils, IDEHooks;
+  System.Variants, CommonOptionStrs, Vcl.Consts, System.RTLConsts, System.IOUtils, IDEUtils, IDEHooks, VersionInfoKeys;
 
 procedure IncrementBuildVersion(Project: IOTAProject);
 var
@@ -233,7 +252,7 @@ begin
 
       VerInfoKeys := TStringList.Create;
       try
-        ExtractStrings([';'], [], PChar(BuildConfig.Value[sVerInfo_Keys]), VerInfoKeys);
+        SplitVersionInfoKeys( BuildConfig.Value[sVerInfo_Keys], VerInfoKeys );
         Result.FileVersionStr := VerInfoKeys.Values['FileVersion'];
         Result.ProductVersionStr := VerInfoKeys.Values['ProductVersion'];
         Result.ProductName := VerInfoKeys.Values['ProductName'];
@@ -255,7 +274,6 @@ function SetProjectVersion(Project: IOTAProject; const Version: TProjectVersion;
 var
   Configurations: IOTAProjectOptionsConfigurations;
   BuildConfig: IOTABuildConfiguration;
-  KeysIndex: Integer;
   VerInfoKeys: TStrings;
   OrgKeys, Keys: string;
   Modified: Boolean;
@@ -290,27 +308,21 @@ begin
           VerInfoKeys := TStringList.Create;
           try
             OrgKeys := BuildConfig.Value[sVerInfo_Keys];
-            ExtractStrings([';'], [], PChar(OrgKeys), VerInfoKeys);
+            SplitVersionInfoKeys( OrgKeys, VerInfoKeys );
 
-            VerInfoKeys.Values['FileVersion'] := Version.FileVersionStr;
-            VerInfoKeys.Values['ProductVersion'] := Version.ProductVersionStr;
-            VerInfoKeys.Values['ProductName'] := Version.ProductName;
-            VerInfoKeys.Values['CompanyName'] := Version.CompanyName;
-            VerInfoKeys.Values['FileDescription'] := Version.FileDescription;
-            VerInfoKeys.Values['LegalCopyright'] := Version.LegalCopyright;
-            VerInfoKeys.Values['LegalTrademarks'] := Version.LegalTrademarks;
-            VerInfoKeys.Values['InternalName'] := Version.InternalName;
-            VerInfoKeys.Values['OriginalFilename'] := Version.OriginalFilename;
-            VerInfoKeys.Values['Comments'] := Version.Comments;
+            // SetVersionInfoKey keeps a key whose value is empty; TStrings.Values deleted it.
+            SetVersionInfoKey( VerInfoKeys, 'FileVersion', Version.FileVersionStr );
+            SetVersionInfoKey( VerInfoKeys, 'ProductVersion', Version.ProductVersionStr );
+            SetVersionInfoKey( VerInfoKeys, 'ProductName', Version.ProductName );
+            SetVersionInfoKey( VerInfoKeys, 'CompanyName', Version.CompanyName );
+            SetVersionInfoKey( VerInfoKeys, 'FileDescription', Version.FileDescription );
+            SetVersionInfoKey( VerInfoKeys, 'LegalCopyright', Version.LegalCopyright );
+            SetVersionInfoKey( VerInfoKeys, 'LegalTrademarks', Version.LegalTrademarks );
+            SetVersionInfoKey( VerInfoKeys, 'InternalName', Version.InternalName );
+            SetVersionInfoKey( VerInfoKeys, 'OriginalFilename', Version.OriginalFilename );
+            SetVersionInfoKey( VerInfoKeys, 'Comments', Version.Comments );
 
-            Keys := '';
-            for KeysIndex := 0 to VerInfoKeys.Count - 1 do
-            begin
-              if Keys = '' then
-                Keys := VerInfoKeys[KeysIndex]
-              else
-                Keys := Keys + ';' + VerInfoKeys[KeysIndex];
-            end;
+            Keys := JoinVersionInfoKeys( VerInfoKeys );
 
             if Keys <> OrgKeys then
             begin
@@ -332,8 +344,6 @@ end;
 function SetVersionInfoExtraKey(AProject: IOTAProject; const AKey, AValue: string): Boolean;
 var
   BuildConfig: IOTABuildConfiguration;
-  KeysIndex: Integer;
-  VerInfoKeys: TStrings;
   OrgKeys, Keys: string;
   Modified: Boolean;
 begin
@@ -344,28 +354,14 @@ begin
     if BuildConfig.AsBoolean[sVerInfo_IncludeVerInfo]
       {and BuildConfig.PropertyExists(sVerInfo_Keys)} then // XE3: Exists(sVerInfo_Keys)=False but, Value[sVerInfo_Keys] returns value
     begin
-      VerInfoKeys := TStringList.Create;
-      try
-        OrgKeys := BuildConfig.Value[sVerInfo_Keys];
-        ExtractStrings([';'], [], PChar(OrgKeys), VerInfoKeys);
-
-        VerInfoKeys.Values[AKey] := AValue;
-
-        Keys := '';
-        for KeysIndex := 0 to VerInfoKeys.Count - 1 do
-        begin
-          if Keys = '' then
-            Keys := VerInfoKeys[KeysIndex]
-          else
-            Keys := Keys + ';' + VerInfoKeys[KeysIndex];
-        end;
-        if Keys <> OrgKeys then
-        begin
-          BuildConfig.Value[sVerInfo_Keys] := Keys;
-          Modified := True;
-        end;
-      finally
-        VerInfoKeys.Free;
+      OrgKeys := BuildConfig.Value[sVerInfo_Keys];
+      // Split on ';' only: ExtractStrings treated an apostrophe in any value as a quote, merged
+      // every later key into it and so appended another AKey entry on each call.
+      Keys := UpdateVersionInfoKey( OrgKeys, AKey, AValue );
+      if Keys <> OrgKeys then
+      begin
+        BuildConfig.Value[sVerInfo_Keys] := Keys;
+        Modified := True;
       end;
       Result := True;
     end;
@@ -470,6 +466,14 @@ begin
     P := PIconDirectory(Directory);
     Inc(P, Index);
 
+    // The directory entry and the image it points to come from the .ico file: check both lie
+    // inside the stream before anything is read through them.
+    if ( SizeOf( TIconHeader ) + Int64( Index + 1 ) * SizeOf( TIconDirectory ) > Stream.Size ) or
+       ( P.lDIBOffset < 0 ) or ( P.lDIBSize <= 0 ) or
+       ( Int64( P.lDIBOffset ) + P.lDIBSize > Stream.Size ) or
+       ( P.lDIBSize < SizeOf( TBitmapInfoHeader ) ) then
+      raise EReadError.CreateFmt( 'Icon image %d lies outside the icon data (corrupt icon file)', [Index] );
+
     Result.Width := P.bWidth;
     if Result.Width = 0 then
       Result.Width := 256;
@@ -539,7 +543,7 @@ procedure TIconResource.LoadFromProjectResource(AProject: IOTAProject);
 var
   Configurations: IOTAProjectOptionsConfigurations;
   BuildConfig: IOTABuildConfiguration;
-  IconFileName, Dir: string;
+  IconFileName: string;
 begin
   Clear;
   if Supports(AProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
@@ -557,13 +561,11 @@ begin
     if IconFileName <> '' then
     begin
       IconFileName := ExpandRootMacro(IconFileName);
-      Dir := GetCurrentDir;
-      try
-        SetCurrentDir(ExtractFilePath(AProject.FileName));
-        LoadFromIconFile(IconFileName);
-      finally
-        SetCurrentDir(Dir);
-      end;
+      // Resolve a relative path against the project folder without changing the process-wide
+      // current directory, which every other IDE thread shares.
+      if not TPath.IsPathRooted( IconFileName ) then
+        IconFileName := ExpandFileName( IncludeTrailingPathDelimiter( ExtractFilePath( AProject.FileName ) ) + IconFileName );
+      LoadFromIconFile(IconFileName);
     end;
   end;
 end;

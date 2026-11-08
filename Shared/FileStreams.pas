@@ -121,10 +121,19 @@ type
     constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData = nil);
 
     /// <summary>Reads up to Count bytes from the underlying handle.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Integer): Integer; override;
     /// <summary>Writes up to Count bytes to the underlying handle.</summary>
+    /// <param name="Buffer">Bytes to write.</param>
+    /// <param name="Count">Number of bytes to write.</param>
+    /// <returns>Number of bytes actually written.</returns>
     function Write(const Buffer; Count: Integer): Integer; override;
     /// <summary>Seeks within the underlying handle (Delphi 6+ Int64 overload).</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
 
     /// <summary>Underlying file handle.</summary>
@@ -151,8 +160,10 @@ type
     FOwnsStream: Boolean;
   protected
     /// <summary>Flushes pending writes and resizes the wrapped stream.</summary>
+    /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(NewSize: Longint); override;
     /// <summary>Int64 overload of SetSize.</summary>
+    /// <param name="NewSize">Required size, in bytes.</param>
     procedure SetSize(const NewSize: Int64); override;
   public
     /// <summary>Wraps a file handle behind a fresh TOrgStream.</summary>
@@ -166,8 +177,14 @@ type
     /// <summary>Flushes pending writes, releases the buffer and (optionally) frees the wrapped stream.</summary>
     destructor Destroy; override;
     /// <summary>Flushes the buffer and reads from the wrapped stream.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Buffers Count bytes; flushes automatically when the buffer fills up.</summary>
+    /// <param name="Buffer">Bytes to write.</param>
+    /// <param name="Count">Number of bytes to write.</param>
+    /// <returns>Number of bytes actually written.</returns>
     function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Seeks within the wrapped stream, flushing the buffer as needed.</summary>
     /// <param name="Offset">Distance to move, relative to Origin.</param>
@@ -206,8 +223,12 @@ type
     FBOMType: TBOMType;
   protected
     /// <summary>Always raises; injecting streams are read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(NewSize: Longint); override;
     /// <summary>Always raises; injecting streams are read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(const NewSize: Int64); override;
   public
     /// <summary>Creates the stream and decodes the BOM, transcoding the file payload when necessary.</summary>
@@ -216,10 +237,20 @@ type
     /// <param name="AOrgStreamData">Optional original-routine table.</param>
     constructor Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData = nil);
     /// <summary>Reads from the inject buffer and then transparently from the underlying file.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
-    /// <summary>Always raises EAbort; the stream is read-only.</summary>
+    /// <summary>Not supported: the stream is read-only.</summary>
+    /// <param name="Buffer">Ignored.</param>
+    /// <param name="Count">Ignored.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="Exception">Always ("Operation "Write" not supported"): the stream is read-only.</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Seeks within the combined view of inject buffer and underlying file.</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
 
     /// <summary>Length of the UTF-8 conversion result when the source had a UCS2/UCS4 BOM.</summary>
@@ -240,11 +271,16 @@ type
     FPosition: Integer;
   protected
     /// <summary>Always raises; reader streams are read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(NewSize: Longint); override;
     /// <summary>Always raises; reader streams are read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(const NewSize: Int64); override;
   public
     /// <summary>Custom allocator that uses GetMem for direct instances to avoid GetMemoryManager overhead.</summary>
+    /// <returns>The new instance: for this exact class, GetMem memory with only the VMT pointer set (fields are not zeroed); for a descendant, the inherited allocation.</returns>
     class function NewInstance: TObject; override;
     /// <summary>Custom deallocator paired with NewInstance.</summary>
     procedure FreeInstance; override;
@@ -254,10 +290,20 @@ type
     /// <summary>Removes the reader from the cache's reader list.</summary>
     destructor Destroy; override;
     /// <summary>Reads up to Count bytes from the cache.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
-    /// <summary>Always raises EAbort; the stream is read-only.</summary>
+    /// <summary>Not supported: the stream is read-only.</summary>
+    /// <param name="Buffer">Ignored.</param>
+    /// <param name="Count">Ignored.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="Exception">Always ("Operation "Write" not supported"): the stream is read-only.</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Adjusts the reader's position within the cache.</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
 
     /// <summary>Owning cache.</summary>
@@ -277,11 +323,15 @@ type
     /// <summary>List of currently registered TFileCacheReaderStream instances.</summary>
     FReaders: TObjectList;
     /// <summary>Returns the reader at the specified index.</summary>
+    /// <param name="Index">Zero-based reader index.</param>
+    /// <returns>The registered reader at Index.</returns>
     function GetReader(Index: Integer): TFileCacheReaderStream;
     /// <summary>Returns the number of currently registered readers.</summary>
+    /// <returns>Number of readers currently registered with the cache.</returns>
     function GetReaderCount: Integer;
   public
     /// <summary>Custom allocator analogous to TFileCacheReaderStream.NewInstance.</summary>
+    /// <returns>The new instance: for this exact class, GetMem memory with only the VMT pointer set (fields are not zeroed); for a descendant, the inherited allocation.</returns>
     class function NewInstance: TObject; override;
     /// <summary>Custom deallocator paired with NewInstance.</summary>
     procedure FreeInstance; override;
@@ -325,8 +375,12 @@ type
     FPosition: Integer;
   protected
     /// <summary>Always raises; the stream is read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(NewSize: Longint); override;
     /// <summary>Always raises; the stream is read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(const NewSize: Int64); override;
   public
     /// <summary>Wraps a buffer for reading.</summary>
@@ -334,10 +388,20 @@ type
     /// <param name="ASize">Number of valid bytes in ABuffer.</param>
     constructor Create(ABuffer: PByteArray; ASize: Integer);
     /// <summary>Reads up to Count bytes from the buffer.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
-    /// <summary>Always raises EAbort; the stream is read-only.</summary>
+    /// <summary>Not supported: the stream is read-only.</summary>
+    /// <param name="Buffer">Ignored.</param>
+    /// <param name="Count">Ignored.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="Exception">Always ("Operation "Write" not supported"): the stream is read-only.</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Repositions the read cursor within the buffer.</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
   end;
 
@@ -367,11 +431,16 @@ type
     /// <summary>Cached file size; -1 until first computed.</summary>
     FSize: Int64;
     /// <summary>True when the logical position has reached or passed end-of-file.</summary>
+    /// <returns>True when the logical position is at or past end of file.</returns>
     function GetEof: Boolean;
   protected
     /// <summary>Always raises; the stream is read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(NewSize: Longint); override;
     /// <summary>Always raises; the stream is read-only.</summary>
+    /// <param name="NewSize">Ignored.</param>
+    /// <exception cref="Exception">Always ("Operation "SetSize" not supported"): the stream is read-only.</exception>
     procedure SetSize(const NewSize: Int64); override;
   public
     /// <summary>Opens Filename for shared reading.</summary>
@@ -380,12 +449,23 @@ type
     /// <summary>Releases the pooled buffer and closes the underlying file.</summary>
     destructor Destroy; override;
     /// <summary>Reads up to Count bytes, refilling the internal buffer as needed.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes actually read; 0 at end of stream.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
-    /// <summary>Always raises EAbort; the stream is read-only.</summary>
+    /// <summary>Not supported: the stream is read-only.</summary>
+    /// <param name="Buffer">Ignored.</param>
+    /// <param name="Count">Ignored.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="Exception">Always ("Operation "Write" not supported"): the stream is read-only.</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Repositions the cursor; the buffer is invalidated unless the seek stays within it.</summary>
+    /// <param name="Offset">Distance to move, relative to Origin.</param>
+    /// <param name="Origin">Where Offset is measured from.</param>
+    /// <returns>The new position in the stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    /// <summary>Always raises; the stream is read-only.</summary>
+    /// <summary>Not supported: the stream is read-only and has nothing to flush.</summary>
+    /// <exception cref="Exception">Always ("Operation "Flush" not supported"): the stream is read-only.</exception>
     procedure Flush;
 
     /// <summary>Current logical file position.</summary>

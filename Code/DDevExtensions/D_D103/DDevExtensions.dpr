@@ -74,6 +74,8 @@ uses
   SimpleXmlImport in '..\..\..\Shared\Xml\SimpleXmlImport.pas',
   UnitVersionInfo in '..\..\..\Shared\IDE\UnitVersionInfo.pas',
   IDEUtils in '..\..\..\Shared\IDE\IDEUtils.pas',
+  IDEHashLists in '..\..\..\Shared\IDE\IDEHashLists.pas',
+  VersionInfoKeys in '..\..\..\Shared\IDE\VersionInfoKeys.pas',
   Hooking in '..\..\..\Shared\Hooking.pas',
   FrmOptions in '..\..\..\Shared\IDE\Options\FrmOptions.pas' {FormOptions},
   FrmTreePages in '..\..\..\Shared\IDE\Options\FrmTreePages.pas' {FormTreePages},

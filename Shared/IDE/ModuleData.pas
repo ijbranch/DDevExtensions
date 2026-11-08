@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -40,8 +40,12 @@ type
     /// <summary>Cached filename used to detect renames.</summary>
     FFilename: string;
     /// <summary>Indexed-property getter for the bucket dictionary.</summary>
+    /// <param name="Index">Key object, usually the subscriber that stored the value.</param>
+    /// <returns>The stored object, or nil when none is stored.</returns>
     function GetBucket(Index: TObject): TObject;
     /// <summary>Indexed-property setter; assigning nil removes the entry.</summary>
+    /// <param name="Index">Key object.</param>
+    /// <param name="Value">Object to store; nil removes the entry.  Not owned.</param>
     procedure SetBucket(Index: TObject; const Value: TObject);
   protected
     { IOTAModuleNotifier }
@@ -50,18 +54,28 @@ type
     /// <summary>IOTAModuleNotifier: forwards the event to the owning registry.</summary>
     procedure BeforeSave;
     /// <summary>IOTAModuleNotifier: always returns True (overwrite allowed).</summary>
+    /// <returns>Always True: the module may be overwritten.</returns>
     function CheckOverwrite: Boolean;
     /// <summary>IOTANotifier: handles the module-destroyed event and detaches.</summary>
     procedure Destroyed;
     /// <summary>IOTAModuleNotifier: forwards the event to the owning registry.</summary>
     procedure Modified;
     /// <summary>IOTAModuleNotifier: forwards the rename event and updates FFilename.</summary>
+    /// <param name="NewName">New file name of the module.</param>
     procedure ModuleRenamed(const NewName: String);
   public
     /// <summary>Registers this object as a notifier on AModule and adds it to AOwner.</summary>
+    /// <param name="AOwner">Registry that lists this entry.</param>
+    /// <param name="AModule">Module to watch.</param>
     constructor Create(AOwner: TModuleDataList; AModule: IOTAModule);
     /// <summary>Removes the notifier and frees the bucket dictionary.</summary>
     destructor Destroy; override;
+    /// <summary>
+    /// Raises the Destroying event once and unregisters from the IDE.  The IDE then drops its
+    /// reference, which normally frees this object, so the caller must hold its own interface
+    /// reference across the call and must not touch the object afterwards without one.
+    /// </summary>
+    procedure Detach;
 
     /// <summary>Indexed access to the bucket dictionary; assigning nil removes the entry.</summary>
     property Bucket[Index: TObject]: TObject read GetBucket write SetBucket;
@@ -107,34 +121,58 @@ type
   /// </summary>
   TModuleDataList = class(TObject)
   private
-    /// <summary>Owned list of TModuleData instances.</summary>
+    /// <summary>
+    /// Non-owning list of the live TModuleData instances.  They are reference-counted (the IDE
+    /// holds each one through AddNotifier) and remove themselves when freed, so the list must never
+    /// free them: freeing one the IDE still references raised EInvalidPointer.
+    /// </summary>
     FList: TObjectList;
     /// <summary>Subscriber list of TModuleDataNotifier objects.</summary>
     FNotifiers: TList;
     /// <summary>IDE notifier that triggers UpdateModules whenever a file is opened.</summary>
     FIDENotifier: TIDENotifier;
     /// <summary>Indexed accessor by module; lazily creates a TModuleData for unseen modules.</summary>
+    /// <param name="Module">Module to look up.</param>
+    /// <returns>The module's entry; created and registered as a notifier on first use.</returns>
     function GetModuleData(const Module: IOTAModule): TModuleData;
     /// <summary>Subscriber accessor.</summary>
+    /// <param name="Index">Zero-based subscriber index.</param>
+    /// <returns>The subscriber at Index.</returns>
     function GetNotifier(Index: Integer): TModuleDataNotifier;
     /// <summary>Number of registered subscribers.</summary>
+    /// <returns>Number of registered subscribers.</returns>
     function GetNotifierCount: Integer;
   protected
     /// <summary>Walks IOTAModuleServices.Modules and ensures a TModuleData exists for each entry.</summary>
     procedure UpdateModules;
 
     /// <summary>Broadcasts the Added event to every subscriber.</summary>
+    /// <param name="Data">The module the event concerns.</param>
     procedure ModuleAdded(Data: TModuleData); virtual;
     /// <summary>Broadcasts the Destroying event to every subscriber.</summary>
+    /// <param name="Data">The module the event concerns.</param>
     procedure ModuleDestroying(Data: TModuleData); virtual;
     /// <summary>Broadcasts the BeforeSave event to every subscriber.</summary>
+    /// <param name="Data">The module the event concerns.</param>
     procedure ModuleBeforeSave(Data: TModuleData); virtual;
     /// <summary>Broadcasts the AfterSave event to every subscriber.</summary>
+    /// <param name="Data">The module the event concerns.</param>
     procedure ModuleAfterSave(Data: TModuleData); virtual;
     /// <summary>Broadcasts the Modified event to every subscriber.</summary>
+    /// <param name="Data">The module the event concerns.</param>
     procedure ModuleModified(Data: TModuleData); virtual;
     /// <summary>Broadcasts the Renamed event to every subscriber.</summary>
+    /// <param name="Data">The module being renamed.</param>
+    /// <param name="NewName">New file name.</param>
     procedure ModuleRenamed(Data: TModuleData; const NewName: string); virtual;
+
+    /// <summary>
+    /// Copy of the subscriber list for a broadcast: a handler may free a subscriber (its own or
+    /// another) and shrink FNotifiers, so broadcasts iterate the copy and skip any subscriber that
+    /// is no longer registered.
+    /// </summary>
+    /// <returns>The subscribers registered when the broadcast started.</returns>
+    function NotifierSnapshot: TArray<TModuleDataNotifier>;
 
     /// <summary>Number of registered subscribers.</summary>
     property NotifierCount: Integer read GetNotifierCount;
@@ -142,11 +180,16 @@ type
     property Notifiers[Index: Integer]: TModuleDataNotifier read GetNotifier;
 
     /// <summary>Adds a subscriber; usually called by TModuleDataNotifier.Create.</summary>
+    /// <param name="ANotifier">Subscriber to add.</param>
     procedure AddNotifier(ANotifier: TModuleDataNotifier);
     /// <summary>Removes a subscriber; usually called by TModuleDataNotifier.Destroy.</summary>
+    /// <param name="ANotifier">Subscriber to remove; not freed.</param>
     procedure RemoveNotifier(ANotifier: TModuleDataNotifier);
   protected
     /// <summary>IDE file-notification handler; calls UpdateModules whenever a file is opened.</summary>
+    /// <param name="NotifyCode">The kind of file event.</param>
+    /// <param name="FileName">File the event concerns.</param>
+    /// <param name="Cancel">Not changed.</param>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string;
       var Cancel: Boolean);
   public
@@ -160,6 +203,7 @@ type
   end;
 
 /// <summary>Returns the lazily-instantiated module-registry singleton.</summary>
+/// <returns>The registry, created on first use.</returns>
 function ModuleDataList: TModuleDataList;
 
 implementation
@@ -179,7 +223,7 @@ end;
 constructor TModuleDataList.Create;
 begin
   inherited Create;
-  FList := TObjectList.Create;
+  FList := TObjectList.Create( False );
   FNotifiers := TList.Create;
   UpdateModules;
   FIDENotifier := TIDENotifier.Create;
@@ -189,7 +233,25 @@ end;
 destructor TModuleDataList.Destroy;
 begin
   FIDENotifier.Free;
+
+  // Unregister every entry the IDE still holds; dropping the IDE's reference frees it, and it
+  // extracts itself from FList.
+  // Downwards, because each entry extracts itself from FList when it is freed.
+  for var iIndex: Integer := FList.Count - 1 downto 0 do
+  begin
+    if ( iIndex >= FList.Count ) then
+      Continue;
+    var oData := TModuleData( FList[iIndex] );
+    var oKeepAlive: IInterface := oData;
+    oData.Detach;
+    oKeepAlive := nil; // may free oData now, while FList still exists
+  end;
+
   FNotifiers.Free;
+  // Anything left is still referenced by the IDE and must not be freed here; cut its link to this
+  // list, so its later Destroy ( or a late notification ) does not reach freed memory.
+  for var iIndex: Integer := 0 to FList.Count - 1 do
+    TModuleData( FList[iIndex] ).FOwner := nil;
   FList.Free;
   inherited Destroy;
 end;
@@ -208,57 +270,99 @@ begin
 end;
 
 procedure TModuleDataList.ModuleAdded(Data: TModuleData);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].Added) then
-      Notifiers[i].Added(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Added ) then
+    try
+      oNotifier.Added( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Added', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.ModuleDestroying(Data: TModuleData);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].Destroying) then
-      Notifiers[i].Destroying(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Destroying ) then
+    try
+      oNotifier.Destroying( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Destroying', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.ModuleBeforeSave(Data: TModuleData);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].BeforeSave) then
-      Notifiers[i].BeforeSave(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.BeforeSave ) then
+    try
+      oNotifier.BeforeSave( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'BeforeSave', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.ModuleAfterSave(Data: TModuleData);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].AfterSave) then
-      Notifiers[i].AfterSave(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.AfterSave ) then
+    try
+      oNotifier.AfterSave( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'AfterSave', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.ModuleModified(Data: TModuleData);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].Modified) then
-      Notifiers[i].Modified(Data);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Modified ) then
+    try
+      oNotifier.Modified( Data );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Modified', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.ModuleRenamed(Data: TModuleData; const NewName: string);
-var
-  i: Integer;
 begin
-  for i := 0 to NotifierCount - 1 do
-    if Assigned(Notifiers[i].Renamed) then
-      Notifiers[i].Renamed(Data, NewName);
+  // Every subscriber is called; the first exception is re-raised afterwards.
+  var oFirstError: Exception := nil;
+  for var oNotifier in NotifierSnapshot do
+    if ( FNotifiers.IndexOf( oNotifier ) >= 0 ) and Assigned( oNotifier.Renamed ) then
+    try
+      oNotifier.Renamed( Data, NewName );
+    except
+      on E: Exception do
+        KeepFirstSubscriberError( oFirstError, 'Renamed', E );
+    end;
+  if ( oFirstError <> nil ) then
+    raise oFirstError;
 end;
 
 procedure TModuleDataList.AddNotifier(ANotifier: TModuleDataNotifier);
@@ -274,6 +378,13 @@ end;
 function TModuleDataList.GetNotifier(Index: Integer): TModuleDataNotifier;
 begin
   Result := TModuleDataNotifier(FNotifiers[Index]);
+end;
+
+function TModuleDataList.NotifierSnapshot: TArray<TModuleDataNotifier>;
+begin
+  SetLength( Result, FNotifiers.Count );
+  for var iIndex: Integer := 0 to FNotifiers.Count - 1 do
+    Result[iIndex] := TModuleDataNotifier( FNotifiers[iIndex] );
 end;
 
 function TModuleDataList.GetNotifierCount: Integer;
@@ -313,6 +424,7 @@ end;
 constructor TModuleData.Create(AOwner: TModuleDataList; AModule: IOTAModule);
 begin
   inherited Create;
+  FId := -1; // not registered yet: a failed AddNotifier must not make Destroy remove notifier 0
   FOwner := AOwner;
   FOwner.FList.Add(Self);
   FModule := AModule;
@@ -325,12 +437,14 @@ begin
   if FId <> -1 then
   begin
     try
-      FOwner.ModuleDestroying(Self);
+      if ( FOwner <> nil ) then
+        FOwner.ModuleDestroying(Self);
     except
       Application.HandleException(Self);
     end;
   end;
-  FOwner.FList.Extract(Self);
+  if ( FOwner <> nil ) then
+    FOwner.FList.Extract(Self);
   FBucket.Free;
 
   if FId <> -1 then
@@ -338,19 +452,32 @@ begin
   inherited Destroy;
 end;
 
+procedure TModuleData.Detach;
+begin
+  if ( FId = -1 ) then
+    Exit;
+
+  // Clear FId first: if RemoveNotifier drops the last reference, Destroy must not raise the
+  // event or unregister a second time.
+  var iId := FId;
+  FId := -1;
+  try
+    if ( FOwner <> nil ) then
+      FOwner.ModuleDestroying(Self);
+  except
+    Application.HandleException(Self);
+  end;
+  if ( FModule <> nil ) then
+    FModule.RemoveNotifier(iId);
+end;
+
 procedure TModuleData.Destroyed;
 begin
-  if FId <> -1 then
-  begin
-    try
-      FOwner.ModuleDestroying(Self);
-    except
-      Application.HandleException(Self);
-    end;
-    Module.RemoveNotifier(FId);
-  end;
+  // Hold a reference until this method returns: RemoveNotifier may drop the IDE's last one,
+  // and the fields below must not be written after the object has been freed.
+  var oKeepAlive: IInterface := Self;
+  Detach;
   FModule := nil;
-  FId := -1;
 end;
 
 function TModuleData.CheckOverwrite: Boolean;
@@ -360,22 +487,26 @@ end;
 
 procedure TModuleData.BeforeSave;
 begin
-  FOwner.ModuleBeforeSave(Self);
+  if ( FOwner <> nil ) then
+    FOwner.ModuleBeforeSave(Self);
 end;
 
 procedure TModuleData.AfterSave;
 begin
-  FOwner.ModuleAfterSave(Self);
+  if ( FOwner <> nil ) then
+    FOwner.ModuleAfterSave(Self);
 end;
 
 procedure TModuleData.Modified;
 begin
-  FOwner.ModuleModified(Self);
+  if ( FOwner <> nil ) then
+    FOwner.ModuleModified(Self);
 end;
 
 procedure TModuleData.ModuleRenamed(const NewName: String);
 begin
-  FOwner.ModuleRenamed(Self, NewName);
+  if ( FOwner <> nil ) then
+    FOwner.ModuleRenamed(Self, NewName);
   FFilename := NewName;
 end;
 

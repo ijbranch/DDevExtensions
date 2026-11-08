@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* (C) 2005-2009 Andreas Hausladen                                            *}
 {*                                                                            *}
@@ -34,6 +34,7 @@ type
     procedure Unselected;
 
     /// <summary>Receives the UserData parameter that was supplied when the page was registered.</summary>
+    /// <param name="UserData">The object given to TTreePage.Create; may be nil.</param>
     procedure SetUserData(UserData: TObject);
   end;
 
@@ -41,6 +42,7 @@ type
   ITreePageComponentEx = interface
     ['{9260B5AB-8021-4208-9EEF-B3BD24C3AF9B}']
     /// <summary>Receives the page caption so the implementor can display it.</summary>
+    /// <param name="ACaption">Caption of the page's node in the tree.</param>
     procedure SetTitle(const ACaption: string);
   end;
 
@@ -58,19 +60,27 @@ type
     /// <summary>Caller-supplied object handed to the page's SetUserData.</summary>
     FUserData: TObject;
     /// <summary>Returns the number of child pages.</summary>
+    /// <returns>Number of child pages.</returns>
     function GetCount: Integer;
     /// <summary>Returns the child page at Index.</summary>
+    /// <param name="Index">Zero-based child index.</param>
+    /// <returns>The child page at Index.</returns>
     function GetItem(Index: Integer): TTreePage;
   public
     /// <summary>Initialises the page; AComponentClass must implement ITreePageComponent or be nil for grouping nodes.</summary>
     /// <exception cref="ETreePageError">Raised when AComponentClass does not implement ITreePageComponent.</exception>
+    /// <param name="AName">Caption shown in the tree.</param>
+    /// <param name="AComponentClass">Page component class, created when the page is first selected; nil for a grouping node.</param>
+    /// <param name="AUserData">Object handed to the page through ITreePageComponent.SetUserData; not owned.</param>
     constructor Create(const AName: string; AComponentClass: TComponentClass; AUserData: TObject = nil);
     /// <summary>Detaches from the parent and frees every child page.</summary>
     destructor Destroy; override;
 
     /// <summary>Appends Page as a child and assumes ownership.</summary>
+    /// <param name="Page">Child page; must not be nil.  This page takes ownership.</param>
     procedure Add(Page: TTreePage);
     /// <summary>Removes the child page at Index.</summary>
+    /// <param name="Index">Zero-based index of the child page to remove and free.</param>
     procedure Delete(Index: Integer);
     /// <summary>Removes every child page.</summary>
     procedure Clear;
@@ -112,12 +122,17 @@ type
     /// <summary>Splitter between the tree view and the page client area.</summary>
     SplitterTree: TSplitter;
     /// <summary>Activates the selected page, instantiating its component on demand.</summary>
+    /// <param name="Sender">The tree view.</param>
+    /// <param name="Node">Newly selected node, or nil to unselect.</param>
     procedure TreeViewChange(Sender: TObject; Node: TTreeNode);
     /// <summary>Frees the root TTreePage on form destruction.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormDestroy(Sender: TObject);
     /// <summary>Anchors the OK/Cancel buttons and creates the root page.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormCreate(Sender: TObject);
     /// <summary>Hooks up the TreeView OnChange handler and forces an initial selection.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormShow(Sender: TObject);
   private
     { Private-Deklarationen }
@@ -125,19 +140,36 @@ type
     FRootPage: TTreePage;
     /// <summary>Currently selected page component (or nil).</summary>
     FSelected: TComponent;
+    /// <summary>
+    /// Page components whose LoadData raised.  Their controls hold the designer defaults, not the
+    /// stored settings, so they are not saved on OK (that would overwrite the stored settings).
+    /// </summary>
+    FFailedPages: TList;
     /// <summary>Returns the Index'th page component currently parented to PanelClient.</summary>
+    /// <param name="Index">Zero-based index among the page components.</param>
+    /// <returns>The page component at Index.</returns>
+    /// <exception cref="EListError">Raised when Index is negative or not below PageComponentCount.</exception>
     function GetPageComponent(Index: Integer): ITreePageComponent;
     /// <summary>Number of page components currently parented to PanelClient.</summary>
+    /// <returns>Number of components on PanelClient that implement ITreePageComponent.</returns>
     function GetPageComponentCount: Integer;
     /// <summary>Rebuilds TreeView nodes from FRootPage.</summary>
     procedure PopulateTreeNodes;
   protected
-    /// <summary>Shows the dialog modally and persists the page data when the user clicks OK.</summary>
+    /// <summary>
+    /// Shows the dialog modally and persists the page data when the user clicks OK.  Every page
+    /// is saved even if one raises, and AfterSaveData always runs; pages whose LoadData failed are
+    /// skipped.
+    /// </summary>
+    /// <returns>True when the user accepted the dialog.</returns>
+    /// <exception cref="ETreePageError">Raised after saving when one or more pages failed to save; the message lists them.</exception>
     function DoExecute: Boolean; virtual;
     /// <summary>Invoked after a TreeView selection change; default implementation does nothing.</summary>
+    /// <param name="Node">Newly selected node, or nil.</param>
     procedure SelectionChanged(Node: TTreeNode); virtual;
 
     /// <summary>Subclasses must populate Root with the pages they want to display.</summary>
+    /// <param name="Root">Root page to add the dialog's pages to.</param>
     procedure PopulateRootPage(Root: TTreePage); virtual; abstract;
     /// <summary>Hook called immediately before SaveData is invoked on every page.</summary>
     procedure BeforeSaveData; virtual;
@@ -293,14 +325,26 @@ begin
   begin
     BeforeSaveData;
     TreeViewChange(TreeView, nil); // unselect
+    var sErrors := '';
     try
       for i := 0 to PanelClient.ComponentCount - 1 do
-        if SupportsEx(PanelClient.Components[i], ITreePageComponent, Comp) then
+        if ( FFailedPages.IndexOf( PanelClient.Components[i] ) < 0 ) and
+           SupportsEx(PanelClient.Components[i], ITreePageComponent, Comp) then
+        try
           Comp.SaveData;
+        except
+          on E: Exception do
+            sErrors := sErrors + sLineBreak + PanelClient.Components[i].ClassName + ': ' + E.Message;
+        end;
     finally
       Comp := nil;
     end;
     AfterSaveData;
+    if ( sErrors <> '' ) then
+    begin
+      AfterClose;
+      raise ETreePageError.Create( 'Some option pages could not be saved:' + sErrors );
+    end;
   end;
   AfterClose;
 end;
@@ -342,11 +386,13 @@ begin
   btnCancel.Anchors := [akBottom, akRight];
 
   FRootPage := TTreePage.Create('', nil);
+  FFailedPages := TList.Create;
 end;
 
 procedure TFormTreePages.FormDestroy(Sender: TObject);
 begin
   FreeAndNil(FRootPage);
+  FreeAndNil( FFailedPages );
 end;
 
 procedure TFormTreePages.FormShow(Sender: TObject);
@@ -388,7 +434,12 @@ begin
             IntfEx.SetTitle(Node.Text);
         end;
         if Assigned(Intf) then
+        try
           Intf.LoadData;
+        except
+          FFailedPages.Add( Comp ); // shown, but never saved: see FFailedPages
+          raise;
+        end;
       end
       else
       begin

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -19,11 +19,16 @@ unit FileWatcher;
 /// modifications and dispatches a callback on the main thread. Reference-counts each watched
 /// directory so multiple subscribers can register the same path safely.
 /// </summary>
+/// <remarks>
+/// The worker waits on an I/O completion port rather than WaitForMultipleObjects, so the number
+/// of watched directories is not limited to the 64 handles one wait can take.  Stop and
+/// "watch list changed" requests are posted to the same port as special completion keys.
+/// </remarks>
 
 interface
 
 uses
-  Windows, SysUtils, Classes, Generics.Collections, Generics.Defaults;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, System.Generics.Defaults;
 
 type
   /// <summary>Callback signature raised when a watched file is modified. FileName is the full path.</summary>
@@ -35,7 +40,7 @@ type
   /// </summary>
   TFileWatcher = class( TObject )
   private
-    /// <summary>Background thread that performs the overlapped I/O wait loop.</summary>
+    /// <summary>Background thread that waits on the completion port.</summary>
     FWatchThread: TThread;
     /// <summary>Map of watched directory path to subscriber reference count.</summary>
     FDirectories: TDictionary<string, Integer>; // path -> ref count
@@ -43,19 +48,20 @@ type
     FOnFileChanged: TFileChangeEvent;
     /// <summary>Critical section guarding FDirectories.</summary>
     FLock: TRTLCriticalSection;
-    /// <summary>Manual-reset event signalled to terminate the worker thread.</summary>
-    FStopEvent: THandle;
-    /// <summary>Auto-reset event signalled when the watch list changes so the worker rebuilds its handles.</summary>
-    FUpdateEvent: THandle;
+    /// <summary>I/O completion port shared with the worker: directory reads complete here, and stop / update requests are posted here.</summary>
+    FPort: THandle;
     /// <summary>Spawns the worker thread if it is not already running.</summary>
     procedure StartThread;
-    /// <summary>Signals the worker thread to terminate and waits for it to finish.</summary>
+    /// <summary>Asks the worker thread to terminate and waits for it to finish.</summary>
     procedure StopThread;
+    /// <summary>Tells a running worker that the watch list changed so it rebuilds its handles.</summary>
+    procedure SignalUpdate;
     /// <summary>Returns a snapshot of currently watched directory paths under the lock.</summary>
     /// <returns>Array of directory paths.</returns>
     function GetWatchedDirectories: TArray<string>;
   public
-    /// <summary>Initialises internal state, creates synchronisation primitives, but does not start watching.</summary>
+    /// <summary>Initialises internal state and the completion port, but does not start watching.</summary>
+    /// <exception cref="EOSError">Raised when the completion port cannot be created.</exception>
     constructor Create;
     /// <summary>Stops the worker thread and releases all resources.</summary>
     destructor Destroy; override;
@@ -76,7 +82,13 @@ type
 implementation
 
 const
+  FILE_ACTION_ADDED = $00000001;
   FILE_ACTION_MODIFIED = $00000003;
+  FILE_ACTION_RENAMED_NEW_NAME = $00000005;
+  /// <summary>Completion key posted by StopThread.  Real keys are PDirectoryWatch pointers, never this small.</summary>
+  cStopKey = 1;
+  /// <summary>Completion key posted when the watch list changes.</summary>
+  cUpdateKey = 2;
 
 type
   { Explicit declaration for portability across Delphi versions }
@@ -92,18 +104,20 @@ type
     Path: string;
     Handle: THandle;
     Overlapped: TOverlapped;
+    /// <summary>Receives the notifications; ReadDirectoryChangesW requires it DWORD-aligned.</summary>
     Buffer: array [0..4095] of Byte;
+    /// <summary>True from a successful ReadDirectoryChangesW until its completion packet has been dequeued.</summary>
+    Pending: Boolean;
   end;
   PDirectoryWatch = ^TDirectoryWatch;
 
   TWatchThread = class( TThread )
   private
     FOwner: TFileWatcher;
-    FStopEvent: THandle;
-    FUpdateEvent: THandle;
+    FPort: THandle;
 
-    procedure SetupWatches( var Watches: TList<PDirectoryWatch> );
-    procedure CleanupWatches( var Watches: TList<PDirectoryWatch> );
+    procedure SetupWatches( Watches: TList<PDirectoryWatch> );
+    function CleanupWatches( Watches: TList<PDirectoryWatch> ): Boolean;
     procedure ProcessNotifications( Watch: PDirectoryWatch );
     procedure NotifyFileChanged( const FileName: string );
 
@@ -111,7 +125,7 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create( AOwner: TFileWatcher; AStopEvent, AUpdateEvent: THandle );
+    constructor Create( AOwner: TFileWatcher; APort: THandle );
   end;
 
 { TFileWatcher }
@@ -123,8 +137,9 @@ begin
 
   FDirectories := TDictionary<string, Integer>.Create( TIStringComparer.Ordinal );
   InitializeCriticalSection( FLock );
-  FStopEvent := CreateEvent( nil, True, False, nil );
-  FUpdateEvent := CreateEvent( nil, False, False, nil );
+  FPort := CreateIoCompletionPort( INVALID_HANDLE_VALUE, 0, 0, 1 );
+  if ( FPort = 0 ) then
+    RaiseLastOSError;
 
 end;
 
@@ -132,8 +147,8 @@ destructor TFileWatcher.Destroy;
 begin
 
   StopThread;
-  CloseHandle( FStopEvent );
-  CloseHandle( FUpdateEvent );
+  if ( FPort <> 0 ) then
+    CloseHandle( FPort );
   DeleteCriticalSection( FLock );
   FDirectories.Free;
 
@@ -167,7 +182,7 @@ begin
   if NeedStart then
     StartThread
   else
-    SetEvent( FUpdateEvent );
+    SignalUpdate;
 
 end;
 
@@ -192,7 +207,7 @@ begin
     LeaveCriticalSection( FLock );
   end;
 
-  SetEvent( FUpdateEvent );
+  SignalUpdate;
 
 end;
 
@@ -222,17 +237,25 @@ begin
 
 end;
 
+procedure TFileWatcher.SignalUpdate;
+begin
+
+  // Only a running worker drains the port; without one a posted packet would linger.
+  if ( FWatchThread <> nil ) then
+    PostQueuedCompletionStatus( FPort, 0, cUpdateKey, nil );
+
+end;
+
 procedure TFileWatcher.StartThread;
 begin
 
   if FWatchThread <> nil then
   begin
-    SetEvent( FUpdateEvent );
+    SignalUpdate;
     Exit;
   end;
 
-  ResetEvent( FStopEvent );
-  FWatchThread := TWatchThread.Create( Self, FStopEvent, FUpdateEvent );
+  FWatchThread := TWatchThread.Create( Self, FPort );
 
 end;
 
@@ -242,7 +265,8 @@ begin
   if FWatchThread = nil then
     Exit;
 
-  SetEvent( FStopEvent );
+  FWatchThread.Terminate;
+  PostQueuedCompletionStatus( FPort, 0, cStopKey, nil );
   FWatchThread.WaitFor;
   FreeAndNil( FWatchThread );
 
@@ -250,12 +274,11 @@ end;
 
 { TWatchThread }
 
-constructor TWatchThread.Create( AOwner: TFileWatcher; AStopEvent, AUpdateEvent: THandle );
+constructor TWatchThread.Create( AOwner: TFileWatcher; APort: THandle );
 begin
 
   FOwner := AOwner;
-  FStopEvent := AStopEvent;
-  FUpdateEvent := AUpdateEvent;
+  FPort := APort;
   FreeOnTerminate := False;
 
   inherited Create( False );
@@ -265,63 +288,50 @@ end;
 procedure TWatchThread.Execute;
 var
   Watches: TList<PDirectoryWatch>;
-  Events: array of THandle;
-  I, WaitIdx: Integer;
-  WaitResult: DWORD;
   BytesTransferred: DWORD;
+  Key: ULONG_PTR;
+  Overlapped: POverlapped;
 begin
 
   Watches := TList<PDirectoryWatch>.Create;
   try
     while not Terminated do
     begin
-      CleanupWatches( Watches );
       SetupWatches( Watches );
 
-      if Watches.Count = 0 then
+      { Wait for a directory read to complete, or for an update / stop request. }
+      while not Terminated do
       begin
-        { No directories to watch - wait for update or stop }
-        SetLength( Events, 2 );
-        Events[0] := FStopEvent;
-        Events[1] := FUpdateEvent;
-
-        WaitResult := WaitForMultipleObjects( 2, @Events[0], False, INFINITE );
-        if WaitResult = WAIT_OBJECT_0 then
+        var bOk := GetQueuedCompletionStatus( FPort, BytesTransferred, Key, Overlapped, INFINITE );
+        if ( not bOk ) and ( Overlapped = nil ) then
+        begin
+          { The port itself failed: nothing more can be received. }
+          Terminate;
           Break;
-        Continue;
-      end;
-
-      { Build wait array: stop event, update event, then overlapped events }
-      SetLength( Events, 2 + Watches.Count );
-      Events[0] := FStopEvent;
-      Events[1] := FUpdateEvent;
-      for I := 0 to Watches.Count - 1 do
-        Events[2 + I] := Watches[I].Overlapped.hEvent;
-
-      WaitResult := WaitForMultipleObjects( Length( Events ), @Events[0], False, INFINITE );
-
-      if WaitResult = WAIT_OBJECT_0 then
-        Break; { Stop requested }
-
-      if WaitResult = WAIT_OBJECT_0 + 1 then
-        Continue; { Directory list changed - rebuild watches }
-
-      WaitIdx := Integer( WaitResult ) - Integer( WAIT_OBJECT_0 ) - 2;
-      if ( WaitIdx >= 0 ) and ( WaitIdx < Watches.Count ) then
-      begin
-        if GetOverlappedResult( Watches[WaitIdx].Handle, Watches[WaitIdx].Overlapped, BytesTransferred, False ) then
-        begin
-          if BytesTransferred > 0 then
-            ProcessNotifications( Watches[WaitIdx] );
         end;
 
-        { Re-issue the read }
-        if not BeginRead( Watches[WaitIdx] ) then
+        if ( Key = cStopKey ) then
         begin
-          { Handle became invalid - trigger rebuild }
-          SetEvent( FUpdateEvent );
+          Terminate;
+          Break;
         end;
+
+        if ( Key = cUpdateKey ) then
+          Break; { Directory list changed - rebuild watches }
+
+        var Watch := PDirectoryWatch( Key );
+        Watch.Pending := False;
+        if bOk and ( BytesTransferred > 0 ) then
+          ProcessNotifications( Watch );
+
+        { Re-issue the read.  A read that failed ( the folder was deleted or became inaccessible )
+          is not re-issued: it would fail again at once and spin; the next rebuild retries it. }
+        if bOk and not Terminated then
+          BeginRead( Watch );
       end;
+
+      if not CleanupWatches( Watches ) then
+        Terminate; { a stop request arrived while the old handles were being released }
     end;
 
     CleanupWatches( Watches );
@@ -331,7 +341,7 @@ begin
 
 end;
 
-procedure TWatchThread.SetupWatches( var Watches: TList<PDirectoryWatch> );
+procedure TWatchThread.SetupWatches( Watches: TList<PDirectoryWatch> );
 var
   Dirs: TArray<string>;
   Dir: string;
@@ -343,9 +353,11 @@ begin
   for Dir in Dirs do
   begin
     New( Watch );
+    Watch.Pending := False;
     ZeroMemory( @Watch.Buffer, SizeOf( Watch.Buffer ) );
     ZeroMemory( @Watch.Overlapped, SizeOf( Watch.Overlapped ) );
     Watch.Path := IncludeTrailingPathDelimiter( Dir );
+    { The event lets CleanupWatches wait for a cancelled read to finish before freeing its buffer. }
     Watch.Overlapped.hEvent := CreateEvent( nil, True, False, nil );
     Watch.Handle := CreateFile(
       PChar( Dir ),
@@ -357,37 +369,75 @@ begin
       0
     );
 
-    if Watch.Handle = INVALID_HANDLE_VALUE then
+    if ( Watch.Handle = INVALID_HANDLE_VALUE ) or
+       ( CreateIoCompletionPort( Watch.Handle, FPort, ULONG_PTR( Watch ), 0 ) = 0 ) then
     begin
+      if ( Watch.Handle <> INVALID_HANDLE_VALUE ) then
+        CloseHandle( Watch.Handle );
       CloseHandle( Watch.Overlapped.hEvent );
       Dispose( Watch );
       Continue;
     end;
 
-    if not BeginRead( Watch ) then
-    begin
-      CloseHandle( Watch.Handle );
-      CloseHandle( Watch.Overlapped.hEvent );
-      Dispose( Watch );
-      Continue;
-    end;
-
+    { Added even when the first read fails, so CleanupWatches closes the handle. }
     Watches.Add( Watch );
+    BeginRead( Watch );
   end;
 
 end;
 
-procedure TWatchThread.CleanupWatches( var Watches: TList<PDirectoryWatch> );
+function TWatchThread.CleanupWatches( Watches: TList<PDirectoryWatch> ): Boolean;
+const
+  cDrainTimeoutMs = 2000;
 var
   I: Integer;
   Watch: PDirectoryWatch;
+  BytesTransferred: DWORD;
+  Key: ULONG_PTR;
+  Overlapped: POverlapped;
 begin
+
+  { Cancel every outstanding read and wait for it to finish: the kernel writes into
+    Watch.Buffer and Watch.Overlapped until then.  A read that had already completed still
+    holds changes nobody has seen: report them now rather than lose them in the rebuild. }
+  var iOutstanding := 0;
+  for I := 0 to Watches.Count - 1 do
+  begin
+    Watch := Watches[I];
+    if Watch.Pending then
+    begin
+      CancelIoEx( Watch.Handle, @Watch.Overlapped );
+      if GetOverlappedResult( Watch.Handle, Watch.Overlapped, BytesTransferred, True ) and ( BytesTransferred > 0 ) then
+        ProcessNotifications( Watch );
+      Inc( iOutstanding ); { its completion packet is still to be dequeued }
+    end;
+    CloseHandle( Watch.Handle );
+  end;
+
+  { Dequeue exactly one packet per read cancelled above: each names a watch about to be freed.
+    The wait is bounded; a stop request found here is reported to the caller instead of lost. }
+  Result := True;
+  var iDeadline := GetTickCount64 + cDrainTimeoutMs;
+  while ( iOutstanding > 0 ) and ( GetTickCount64 < iDeadline ) do
+  begin
+    var bOk := GetQueuedCompletionStatus( FPort, BytesTransferred, Key, Overlapped, DWORD( iDeadline - GetTickCount64 ) );
+    if ( not bOk ) and ( Overlapped = nil ) then
+      Break; { timed out, or the port failed }
+    if ( Overlapped = nil ) then
+    begin
+      if ( Key = cStopKey ) then
+        Result := False; { posted requests carry no OVERLAPPED }
+      Continue;
+    end;
+    PDirectoryWatch( Key ).Pending := False;
+    Dec( iOutstanding );
+  end;
 
   for I := Watches.Count - 1 downto 0 do
   begin
     Watch := Watches[I];
-    CancelIo( Watch.Handle );
-    CloseHandle( Watch.Handle );
+    if Watch.Pending then
+      Continue; { its packet never arrived: leak the record rather than free memory the port may still name }
     CloseHandle( Watch.Overlapped.hEvent );
     Dispose( Watch );
   end;
@@ -396,27 +446,29 @@ begin
 end;
 
 function TWatchThread.BeginRead( Watch: PDirectoryWatch ): Boolean;
-var
-  BytesReturned: DWORD;
 begin
 
   ResetEvent( Watch.Overlapped.hEvent );
   ZeroMemory( @Watch.Buffer, SizeOf( Watch.Buffer ) );
 
+  { With FILE_FLAG_OVERLAPPED the call returns at once: True, or False with ERROR_IO_PENDING;
+    either way the completion arrives on the port. }
   Result := ReadDirectoryChangesW(
     Watch.Handle,
     @Watch.Buffer[0],
     SizeOf( Watch.Buffer ),
     False, { Do not watch subtree }
-    FILE_NOTIFY_CHANGE_LAST_WRITE,
-    @BytesReturned,
+    { FILE_NAME as well as LAST_WRITE: editors, git and code tools often save by writing a
+      temporary file and renaming it over the original, or by deleting and recreating it. }
+    FILE_NOTIFY_CHANGE_LAST_WRITE or FILE_NOTIFY_CHANGE_FILE_NAME,
+    nil,
     @Watch.Overlapped,
     nil
   );
 
-  { ERROR_IO_PENDING is expected for overlapped I/O }
   if not Result then
     Result := GetLastError = ERROR_IO_PENDING;
+  Watch.Pending := Result;
 
 end;
 
@@ -442,7 +494,10 @@ begin
 
     Info := PFileNotifyInformation( @Watch.Buffer[Offset] );
 
-    if ( Info.Action = FILE_ACTION_MODIFIED ) and
+    { A file written in place, created ( delete + recreate ), or renamed into place ( temporary
+      file + rename ) all count as "changed".  Removals and the old name of a rename do not. }
+    if ( ( Info.Action = FILE_ACTION_MODIFIED ) or ( Info.Action = FILE_ACTION_ADDED ) or
+         ( Info.Action = FILE_ACTION_RENAMED_NEW_NAME ) ) and
        ( Offset + cHeaderSize + Info.FileNameLength <= SizeOf( Watch.Buffer ) ) then
     begin
       SetLength( FileName, Info.FileNameLength div SizeOf( WChar ) );

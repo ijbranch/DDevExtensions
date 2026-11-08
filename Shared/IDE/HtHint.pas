@@ -1,4 +1,4 @@
-unit HtHint;
+﻿unit HtHint;
 
 /// <summary>
 /// Hint window descendant that renders simple inline mark-up (b, i, u, c:colour) inside hint
@@ -31,10 +31,18 @@ type
   public
     {$IFDEF VCL}
     /// <summary>Computes the bounding rectangle required to render AHint with the inline mark-up taken into account.</summary>
+    /// <param name="MaxWidth">Maximum hint width in pixels.</param>
+    /// <param name="AHint">Hint text, possibly containing mark-up tags.</param>
+    /// <param name="AData">Passed to the inherited CalcHintRect.</param>
+    /// <returns>The hint rectangle: the inherited height, and a width wide enough for the widest rendered line.</returns>
     function CalcHintRect(MaxWidth: Integer; const AHint: string; AData: Pointer): TRect; override;
     {$ENDIF VCL}
     {$IFDEF VisualCLX}
     /// <summary>VisualCLX overload of CalcHintRect.</summary>
+    /// <param name="MaxWidth">Maximum hint width in pixels.</param>
+    /// <param name="AHint">Hint text, possibly containing mark-up tags.</param>
+    /// <param name="AData">Passed to the inherited CalcHintRect.</param>
+    /// <returns>The hint rectangle: the inherited height, and a width wide enough for the widest rendered line.</returns>
     function CalcHintRect(MaxWidth: Integer; const AHint: WideString; AData: Pointer): TRect; override;
     {$ENDIF VisualCLX}
   end;
