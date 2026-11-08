@@ -1,4 +1,4 @@
-unit StrucViewSearch;
+﻿unit StrucViewSearch;
 
 /// <summary>
 /// Adds an incremental search/filter combo box to the IDE's Structure View. Typing in the
@@ -84,7 +84,15 @@ type
     /// <summary>Rebuilds FItems and the list box contents from the current Structure View context using the active filter.</summary>
     procedure UpdateList;
     /// <summary>Brings the Structure View to the foreground and focuses the search edit.</summary>
+    /// <param name="Sender">The IDE action that fired.</param>
     procedure SetEditFocus(Sender: TObject);
+    /// <summary>
+    /// Clears <c>FEdit</c> when the IDE frees the search box with its parent (the structure
+    /// view form), so the hotkey and list handlers never touch a freed control.
+    /// </summary>
+    /// <param name="AComponent">The component being inserted or removed.</param>
+    /// <param name="Operation">opInsert or opRemove.</param>
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
     /// <summary>Creates the component, locates the Structure View, builds the search UI and attaches the timer.</summary>
     /// <param name="AOwner">Owning component (may be nil).</param>
@@ -191,7 +199,18 @@ destructor TStructureViewSearch.Destroy;
 begin
   SetHotkey(0);
   FItems.Free;
+  FreeAndNil( FTree );
   inherited Destroy;
+end;
+
+procedure TStructureViewSearch.Notification( AComponent: TComponent; Operation: TOperation );
+begin
+  inherited Notification( AComponent, Operation );
+  if ( Operation = opRemove ) and ( AComponent = FEdit ) then
+  begin
+    FEdit := nil;
+    FreeAndNil( FHotkeyAction );
+  end;
 end;
 
 procedure TStructureViewSearch.CreateComboBox(AParent: TWinControl);
@@ -351,6 +370,10 @@ procedure TStructureViewSearch.SetEditFocus(Sender: TObject);
 var
   Form: TCustomForm;
 begin
+  // No search box exists when the structure view was not found at start-up, or on
+  // the 64-bit IDE where it is never created.
+  if ( not Assigned( FEdit ) ) then
+    Exit;
   Form := FindForm('StructureViewForm', '');
   if Form <> nil then
   begin
@@ -370,7 +393,9 @@ end;
 
 procedure TStructureViewSearch.SetHotkey(AHotkey: TShortCut);
 begin
-  if AHotkey = 0 then
+  // Without a search box (structure view not found, or the 64-bit IDE where it is
+  // never created) the hotkey would have nothing to focus, so register no action.
+  if ( AHotkey = 0 ) or ( not Assigned( FEdit ) ) then
     FreeAndNil(FHotkeyAction)
   else
   begin

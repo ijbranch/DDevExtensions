@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -26,9 +26,25 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.ExtCtrls, Winapi.ShellAPI, ToolsAPI,
-  FrmTreePages, PluginConfig, IDENotifiers, FileWatcher;
+  FrmTreePages, PluginConfig, IDENotifiers, FileWatcher, System.Generics.Collections, System.Generics.Defaults, ModuleData;
 
 type
+  /// <summary>The folders one watched project contributes to the file watcher.</summary>
+  TWatchedProject = class
+  public
+    /// <summary>Folders this project holds a reference on in the shared folder set.</summary>
+    Dirs: TStringList;
+    /// <summary>
+    /// Folders found missing ( or unreachable ) for this project; not checked again on later
+    /// scans, so a disconnected share cannot stall the main thread every few seconds.
+    /// </summary>
+    Rejected: TStringList;
+    /// <summary>Creates the two empty, case-insensitive folder lists.</summary>
+    constructor Create;
+    /// <summary>Frees both folder lists.</summary>
+    destructor Destroy; override;
+  end;
+
   /// <summary>
   /// Plug-in configuration object that owns the External Mod Monitor feature, the file
   /// watcher and the IDE notifiers used to detect and apply external changes.
@@ -63,17 +79,73 @@ type
     FGraceUntilTick: UInt64;
     /// <summary>Lower-cased extensions parsed from MonitoredExtensions for fast lookup.</summary>
     FExtensionSet: TStringList;
+    /// <summary>
+    /// Watched projects, keyed by <see cref="ProjectKey"/> ( full project file name, with a
+    /// .dpr/.dpk mapped to its .dproj ), each with the folders it contributes.
+    /// </summary>
+    FWatchedProjects: TObjectDictionary<string, TWatchedProject>;
+    /// <summary>
+    /// Folder -> number of watched projects using it.  A folder is handed to the file watcher
+    /// once, however many projects share it, so each folder costs a single watch handle.
+    /// </summary>
+    FWatchedDirs: TDictionary<string, Integer>;
+    /// <summary>
+    /// Periodically re-synchronises the watch set with the open projects: picks up projects
+    /// and unit folders added since the last scan, and is the only way projects opened later
+    /// are noticed on the 64-bit IDE, where the IDE file notifier is not registered.
+    /// </summary>
+    FProjectScanTimer: TTimer;
+    /// <summary>Module-save notifier: files the IDE itself just saved are not reported as external changes.</summary>
+    FModuleNotifier: TModuleDataNotifier;
+    /// <summary>File name -> GetTickCount64 deadline until which a change to that file is the IDE's own save.</summary>
+    FRecentSaves: TDictionary<string, UInt64>;
 
     /// <summary>Re-parses MonitoredExtensions into FExtensionSet.</summary>
     procedure RebuildExtensionSet;
-    /// <summary>Begins watching the directory of the supplied project file and starts the grace period.</summary>
+    /// <summary>
+    /// Watches the folder of the supplied project and the folder of every unit in it.  A project
+    /// seen for the first time starts the grace period; for a project already watched only
+    /// folders not yet watched are added.
+    /// </summary>
     /// <param name="ProjectFileName">Full path to the project file ( .dproj, .dpr, .dpk or .groupproj ).</param>
     procedure StartWatchingProject( const ProjectFileName: string );
-    /// <summary>Stops watching the directory associated with the supplied project file.</summary>
+    /// <summary>Stops watching every folder that was watched for the supplied project.</summary>
     /// <param name="ProjectFileName">Full path to the project file being closed.</param>
     procedure StopWatchingProject( const ProjectFileName: string );
-    /// <summary>Scans the IDE module list and starts watching directories for projects already loaded.</summary>
+    /// <summary>
+    /// Brings the watch set in line with the projects open in the IDE: watches every open
+    /// project (and group member) and stops watching projects that are no longer open.
+    /// </summary>
     procedure ScanAndWatchOpenProjects;
+    /// <summary>Project-scan timer callback; re-synchronises the watch set while monitoring is active.</summary>
+    /// <param name="Sender">The scan timer.</param>
+    procedure HandleProjectScanTimer( Sender: TObject );
+    /// <summary>Records the files of a module the IDE has just saved, so the resulting change event is ignored.</summary>
+    /// <param name="Data">The saved module.</param>
+    procedure HandleModuleAfterSave( Data: TModuleData );
+    /// <summary>
+    /// Returns the dictionary key for a project file: its full file name, except that a .dpr or
+    /// .dpk maps to the .dproj of the same name ( one project ), so Foo.dpr, Foo.dpk and
+    /// Foo.groupproj in one folder never share a key by accident.
+    /// </summary>
+    /// <param name="ProjectFileName">Project file name.</param>
+    /// <returns>The key used in FWatchedProjects.</returns>
+    function ProjectKey( const ProjectFileName: string ): string;
+    /// <summary>Adds a reference on a folder; hands it to the file watcher on the first reference.</summary>
+    /// <param name="ADir">Folder to watch.</param>
+    procedure AcquireDir( const ADir: string );
+    /// <summary>Drops a reference on a folder; removes it from the file watcher on the last one.</summary>
+    /// <param name="ADir">Folder no longer needed by a project.</param>
+    procedure ReleaseDir( const ADir: string );
+    /// <summary>Releases every folder of the project with the given key and forgets the project.</summary>
+    /// <param name="AKey">Key in FWatchedProjects.</param>
+    procedure ForgetProject( const AKey: string );
+    /// <summary>
+    /// Makes sure every open module has its module data, so the AfterSave notification that
+    /// filters the IDE's own saves also covers modules opened later ( on the 64-bit IDE the
+    /// file notifier that normally does this is not registered ).
+    /// </summary>
+    procedure EnsureModuleData;
 
     /// <summary>IDE file-notification callback; tracks project open / close to add or remove watches.</summary>
     /// <param name="NotifyCode">Type of file notification.</param>
@@ -91,6 +163,7 @@ type
     /// <param name="FileName">File reported as changed.</param>
     procedure HandleFileChanged( const FileName: string );
     /// <summary>Debounce-timer callback; refreshes all queued modules whose editor buffers have not been modified.</summary>
+    /// <param name="Sender">The debounce timer.</param>
     procedure HandleDebounceTimer( Sender: TObject );
 
     /// <summary>Returns True when FileName has an extension on the monitored list.</summary>
@@ -98,7 +171,12 @@ type
     /// <summary>Looks up the IOTAModule for FileName among the modules currently open in the IDE.</summary>
     /// <returns>The matching module, or nil if it is not open.</returns>
     function FindOpenModule( const FileName: string ): IOTAModule;
-    /// <summary>Returns True when any source editor of Module has unsaved changes ( so it must not be refreshed ).</summary>
+    /// <summary>
+    /// Returns True when any editor of Module ( source, form designer or project ) has unsaved
+    /// changes, so it must not be refreshed.
+    /// </summary>
+    /// <param name="Module">The module about to be refreshed.</param>
+    /// <returns>True when the module has unsaved changes, or when that cannot be determined.</returns>
     function IsModuleModifiedInEditor( Module: IOTAModule ): Boolean;
     /// <summary>Displays a Windows shell balloon listing the files that were refreshed.</summary>
     /// <param name="RefreshedFiles">List of file names just refreshed.</param>
@@ -155,6 +233,28 @@ begin
 
 end;
 
+{ TWatchedProject }
+
+constructor TWatchedProject.Create;
+begin
+
+  inherited Create;
+  Dirs := TStringList.Create;
+  Dirs.CaseSensitive := False;
+  Rejected := TStringList.Create;
+  Rejected.CaseSensitive := False;
+
+end;
+
+destructor TWatchedProject.Destroy;
+begin
+
+  Rejected.Free;
+  Dirs.Free;
+  inherited Destroy;
+
+end;
+
 { TExternalModMonitorConfig }
 
 constructor TExternalModMonitorConfig.Create;
@@ -170,8 +270,21 @@ begin
   FExtensionSet.Duplicates := dupIgnore;
   FExtensionSet.CaseSensitive := False;
 
+  FWatchedProjects := TObjectDictionary<string, TWatchedProject>.Create( [ doOwnsValues ],
+    TIStringComparer.Ordinal );
+  FWatchedDirs := TDictionary<string, Integer>.Create( TIStringComparer.Ordinal );
+  FRecentSaves := TDictionary<string, UInt64>.Create( TIStringComparer.Ordinal );
+
   FFileWatcher := TFileWatcher.Create;
   FFileWatcher.OnFileChanged := HandleFileChanged;
+
+  FModuleNotifier := TModuleDataNotifier.Create;
+  FModuleNotifier.AfterSave := HandleModuleAfterSave;
+
+  FProjectScanTimer := TTimer.Create( nil );
+  FProjectScanTimer.Enabled := False;
+  FProjectScanTimer.Interval := 5000;
+  FProjectScanTimer.OnTimer := HandleProjectScanTimer;
 
   FDebounceTimer := TTimer.Create( nil );
   FDebounceTimer.Enabled := False;
@@ -195,21 +308,27 @@ begin
   { Watch any projects already open when plugin loads }
   if FActive then
     ScanAndWatchOpenProjects;
+  FProjectScanTimer.Enabled := FActive;
 
 end;
 
 destructor TExternalModMonitorConfig.Destroy;
 begin
 
+  FProjectScanTimer.Free;
   FFileWatcher.ClearWatches;
   // Remove any lingering tray icon
   Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
   FIDENotifier.Free;
+  FModuleNotifier.Free;
   FNotifyCleanupTimer.Free;
   FDebounceTimer.Free;
   FFileWatcher.Free;
   FPendingReloads.Free;
   FExtensionSet.Free;
+  FWatchedProjects.Free;
+  FWatchedDirs.Free;
+  FRecentSaves.Free;
 
   inherited Destroy;
 
@@ -258,28 +377,111 @@ begin
 
 end;
 
-procedure TExternalModMonitorConfig.StartWatchingProject( const ProjectFileName: string );
-var
-  Dir: string;
+function TExternalModMonitorConfig.ProjectKey( const ProjectFileName: string ): string;
 begin
 
-  Dir := ExtractFileDir( ProjectFileName );
-  if ( Dir <> '' ) and DirectoryExists( Dir ) then
+  Result := ExpandFileName( ProjectFileName );
+  // .dpr/.dpk and .dproj are two files of one project: one key.
+  if SameText( ExtractFileExt( Result ), '.dpr' ) or SameText( ExtractFileExt( Result ), '.dpk' ) then
+    Result := ChangeFileExt( Result, '.dproj' );
+
+end;
+
+procedure TExternalModMonitorConfig.AcquireDir( const ADir: string );
+var
+  RefCount: Integer;
+begin
+
+  if ( FWatchedDirs.TryGetValue( ADir, RefCount ) ) then
+    FWatchedDirs[ ADir ] := RefCount + 1
+  else
   begin
-    FFileWatcher.AddWatch( Dir );
-    FGraceUntilTick := GetTickCount64 + UInt64( FProjectLoadGraceMs );
+    FWatchedDirs.Add( ADir, 1 );
+    FFileWatcher.AddWatch( ADir );
   end;
 
 end;
 
-procedure TExternalModMonitorConfig.StopWatchingProject( const ProjectFileName: string );
+procedure TExternalModMonitorConfig.ReleaseDir( const ADir: string );
 var
-  Dir: string;
+  RefCount: Integer;
 begin
 
-  Dir := ExtractFileDir( ProjectFileName );
-  if Dir <> '' then
-    FFileWatcher.RemoveWatch( Dir );
+  if ( FWatchedDirs.TryGetValue( ADir, RefCount ) ) then
+  begin
+    if ( RefCount > 1 ) then
+      FWatchedDirs[ ADir ] := RefCount - 1
+    else
+    begin
+      FWatchedDirs.Remove( ADir );
+      FFileWatcher.RemoveWatch( ADir );
+    end;
+  end;
+
+end;
+
+procedure TExternalModMonitorConfig.ForgetProject( const AKey: string );
+var
+  Watched: TWatchedProject;
+begin
+
+  if ( FWatchedProjects.TryGetValue( AKey, Watched ) ) then
+  begin
+    for var Dir in Watched.Dirs do
+      ReleaseDir( Dir );
+    FWatchedProjects.Remove( AKey );
+  end;
+
+end;
+
+procedure TExternalModMonitorConfig.StartWatchingProject( const ProjectFileName: string );
+var
+  Watched: TWatchedProject;
+  Project: IOTAProject;
+
+  procedure AddDir( const ADir: string );
+  begin
+    // Each folder is probed at most once per project: a folder already used, or already
+    // found missing, is not touched again ( no repeated DirectoryExists on a dead share ).
+    if ( ADir = '' ) or ( Watched.Dirs.IndexOf( ADir ) >= 0 ) or ( Watched.Rejected.IndexOf( ADir ) >= 0 ) then
+      Exit;
+    if ( FWatchedDirs.ContainsKey( ADir ) ) or DirectoryExists( ADir ) then
+    begin
+      Watched.Dirs.Add( ADir );
+      AcquireDir( ADir );
+    end
+    else
+      Watched.Rejected.Add( ADir );
+  end;
+
+begin
+
+  if ( ExtractFileDir( ProjectFileName ) = '' ) then
+    Exit;
+
+  var Key := ProjectKey( ProjectFileName );
+  if ( not FWatchedProjects.TryGetValue( Key, Watched ) ) then
+  begin
+    Watched := TWatchedProject.Create;
+    FWatchedProjects.Add( Key, Watched );
+    FGraceUntilTick := GetTickCount64 + UInt64( FProjectLoadGraceMs );
+  end;
+
+  AddDir( ExcludeTrailingPathDelimiter( ExtractFileDir( Key ) ) );
+
+  // Units commonly live outside the project folder ( ..\Source, sub-folders ); watch the
+  // folder of every unit so their external changes are seen too.  A folder shared by
+  // several projects is handed to the file watcher once ( see AcquireDir ).
+  if ( Supports( FindOpenModule( ProjectFileName ), IOTAProject, Project ) ) then
+    for var I := 0 to Project.GetModuleCount - 1 do
+      AddDir( ExcludeTrailingPathDelimiter( ExtractFileDir( Project.GetModule( I ).FileName ) ) );
+
+end;
+
+procedure TExternalModMonitorConfig.StopWatchingProject( const ProjectFileName: string );
+begin
+
+  ForgetProject( ProjectKey( ProjectFileName ) );
 
 end;
 
@@ -289,11 +491,14 @@ begin
   // Keep the live watch set in step with the persisted Active flag: on enable,
   // pick up projects already open; on disable, drop all watches and the tray icon
   // (otherwise the background thread and directory handles linger until restart).
+  FProjectScanTimer.Enabled := FActive;
   if FActive then
     ScanAndWatchOpenProjects
   else
   begin
     FFileWatcher.ClearWatches;
+    FWatchedProjects.Clear;
+    FWatchedDirs.Clear;
     Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
   end;
 
@@ -304,25 +509,92 @@ var
   ProjectGroup: IOTAProjectGroup;
   ModuleServices: IOTAModuleServices;
   I: Integer;
+  OpenKeys: TStringList;
+  Module: IOTAModule;
+
+  procedure Watch( const AFileName: string );
+  begin
+    if ( ExtractFileDir( AFileName ) = '' ) then
+      Exit;
+    OpenKeys.Add( ProjectKey( AFileName ) );
+    StartWatchingProject( AFileName );
+  end;
+
 begin
 
   if not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
     Exit;
 
-  for I := 0 to ModuleServices.ModuleCount - 1 do
-  begin
-    if Supports( ModuleServices.Modules[I], IOTAProjectGroup, ProjectGroup ) then
+  OpenKeys := TStringList.Create;
+  try
+    OpenKeys.Sorted := True;
+    OpenKeys.Duplicates := dupIgnore;
+    OpenKeys.CaseSensitive := False;
+
+    for I := 0 to ModuleServices.ModuleCount - 1 do
     begin
-      // Watch every project in the group explicitly. Relying on each project's
-      // ofnProjectDesktopLoad is not enough: that notifier may not fire for
-      // projects already open at plugin load (and is unregistered on Win64).
-      for var K := 0 to ProjectGroup.ProjectCount - 1 do
-        StartWatchingProject( ProjectGroup.Projects[K].FileName );
+      Module := ModuleServices.Modules[I];
+      if Supports( Module, IOTAProjectGroup, ProjectGroup ) then
+      begin
+        // Watch every project in the group explicitly. Relying on each project's
+        // ofnProjectDesktopLoad is not enough: that notifier may not fire for
+        // projects already open at plugin load (and is unregistered on Win64).
+        Watch( Module.FileName );
+        for var K := 0 to ProjectGroup.ProjectCount - 1 do
+          Watch( ProjectGroup.Projects[K].FileName );
+      end
+      else
+      if Supports( Module, IOTAProject ) then
+        Watch( Module.FileName );
     end;
 
-    if Supports( ModuleServices.Modules[I], IOTAProject ) then
-      StartWatchingProject( ModuleServices.Modules[I].FileName );
+    // Drop projects that are no longer open (closed without a notification, e.g. on
+    // the 64-bit IDE).
+    for var Key in FWatchedProjects.Keys.ToArray do
+      if ( OpenKeys.IndexOf( Key ) < 0 ) then
+        ForgetProject( Key );
+  finally
+    OpenKeys.Free;
   end;
+
+end;
+
+procedure TExternalModMonitorConfig.EnsureModuleData;
+var
+  ModuleServices: IOTAModuleServices;
+begin
+
+  // Same path TModuleDataList takes for the modules open at start-up: looking a module up
+  // creates its TModuleData ( and its IOTAModuleNotifier ) when it has none yet.
+  if not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
+    Exit;
+  for var I := 0 to ModuleServices.ModuleCount - 1 do
+    ModuleDataList[ ModuleServices.Modules[ I ] ];
+
+end;
+
+procedure TExternalModMonitorConfig.HandleProjectScanTimer( Sender: TObject );
+begin
+
+  if FActive then
+  begin
+    EnsureModuleData;
+    ScanAndWatchOpenProjects;
+  end;
+
+end;
+
+procedure TExternalModMonitorConfig.HandleModuleAfterSave( Data: TModuleData );
+begin
+
+  if ( not Assigned( Data ) ) or ( not Assigned( Data.Module ) ) then
+    Exit;
+
+  // The change notification for the IDE's own write arrives shortly after the save; give
+  // it two seconds, then a change to the same file counts as external again.
+  var Deadline := GetTickCount64 + 2000;
+  for var I := 0 to Data.Module.ModuleFileCount - 1 do
+    FRecentSaves.AddOrSetValue( Data.Module.ModuleFileEditors[I].FileName, Deadline );
 
 end;
 
@@ -394,6 +666,15 @@ begin
   if not IsMonitoredExtension( FileName ) then
     Exit;
 
+  // A change caused by the IDE's own save is not an external modification.
+  var SavedUntil: UInt64;
+  if ( FRecentSaves.TryGetValue( FileName, SavedUntil ) ) then
+  begin
+    if ( GetTickCount64 < SavedUntil ) then
+      Exit;
+    FRecentSaves.Remove( FileName );
+  end;
+
   FPendingReloads.Add( FileName );
 
   { Reset debounce timer }
@@ -436,6 +717,9 @@ begin
     begin
       FileName := FilesToProcess[I];
       Module := FindOpenModule( FileName );
+      // A form file belongs to the module of its unit.
+      if ( Module = nil ) and SameText( ExtractFileExt( FileName ), '.dfm' ) then
+        Module := FindOpenModule( ChangeFileExt( FileName, '.pas' ) );
 
       if Module = nil then
         Continue;
@@ -478,7 +762,6 @@ function TExternalModMonitorConfig.IsModuleModifiedInEditor( Module: IOTAModule 
 var
   I: Integer;
   Editor: IOTAEditor;
-  SourceEditor: IOTASourceEditor;
 begin
 
   Result := False;
@@ -486,14 +769,14 @@ begin
   for I := 0 to Module.ModuleFileCount - 1 do
   begin
     try
+      // Every editor of the module counts, not only source editors: a form designer
+      // (IOTAFormEditor) or a project editor with unsaved changes would otherwise be
+      // silently discarded by Refresh when another file of the module changes on disk.
       Editor := Module.ModuleFileEditors[I];
-      if Supports( Editor, IOTASourceEditor, SourceEditor ) then
+      if ( Assigned( Editor ) ) and ( Editor.Modified ) then
       begin
-        if SourceEditor.Modified then
-        begin
-          Result := True;
-          Exit;
-        end;
+        Result := True;
+        Exit;
       end;
     except
       // A transient ToolsAPI fault on one editor: conservatively treat the module

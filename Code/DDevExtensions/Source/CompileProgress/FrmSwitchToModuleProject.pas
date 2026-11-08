@@ -1,4 +1,4 @@
-unit FrmSwitchToModuleProject;
+﻿unit FrmSwitchToModuleProject;
 
 /// <summary>
 /// Provides the dialog that prompts the user to switch the active project when they
@@ -48,10 +48,18 @@ type
     CheckBoxTempSwitch: TCheckBox;
     /// <summary>Form-create handler that localises the captions of all controls.</summary>
     procedure FormCreate(Sender: TObject);
-    /// <summary>Toggles CheckBoxTempSwitch when the user holds Shift while a key is pressed.</summary>
+    /// <summary>
+    /// Toggles CheckBoxTempSwitch once per press of the Shift key itself; Shift held as a
+    /// modifier (Shift+Tab) and keyboard auto-repeat do not toggle it.
+    /// </summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="Key">Virtual-key code of the key pressed.</param>
+    /// <param name="Shift">Modifier state.</param>
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private-Deklarationen }
+    /// <summary>True from the Shift key's first key-down until its key-up, so auto-repeat does not toggle again.</summary>
+    FShiftKeyDown: Boolean;
     /// <summary>Returns a friendly project name ( file name without path or extension ) for display.</summary>
     /// <param name="AProject">Project to obtain the display name for; may be nil.</param>
     /// <returns>Project name without extension, or an empty string if AProject is nil.</returns>
@@ -64,6 +72,16 @@ type
     /// <returns>mrYes, mrNo, mrCancel or mrRetry ( retry indicates a temporary switch ).</returns>
     function InternShowDialog(AModule: IOTAModule; var AProject: IOTAProject;
       var ADontShowAgain: Boolean; SwitchTemporary: Boolean): TModalResult;
+  protected
+    /// <summary>Clears the Shift-held flag when the Shift key is released (KeyPreview routes it here).</summary>
+    /// <param name="Key">Virtual-key code of the key released.</param>
+    /// <param name="Shift">Modifier state.</param>
+    procedure KeyUp(var Key: Word; Shift: TShiftState); override;
+    /// <summary>
+    /// Takes the Shift key's current state when the dialog appears, so a Shift already held
+    /// down ( its auto-repeat ) does not toggle the "temporary switch" box.
+    /// </summary>
+    procedure DoShow; override;
   public
     { Public-Deklarationen }
     /// <summary>Shows the switch-to-module-project dialog and returns the user's choice.</summary>
@@ -134,8 +152,24 @@ procedure TFormSwitchToModuleProject.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   inherited;
-  if ssShift in Shift then
+  if ( Key = VK_SHIFT ) and ( not FShiftKeyDown ) then
+  begin
+    FShiftKeyDown := True;
     CheckBoxTempSwitch.Checked := not CheckBoxTempSwitch.Checked;
+  end;
+end;
+
+procedure TFormSwitchToModuleProject.DoShow;
+begin
+  FShiftKeyDown := GetKeyState( VK_SHIFT ) < 0;
+  inherited DoShow;
+end;
+
+procedure TFormSwitchToModuleProject.KeyUp(var Key: Word; Shift: TShiftState);
+begin
+  if ( Key = VK_SHIFT ) then
+    FShiftKeyDown := False;
+  inherited KeyUp( Key, Shift );
 end;
 
 function TFormSwitchToModuleProject.GetProjectName(const AProject: IOTAProject): string;

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -205,7 +205,9 @@ begin
   inherited Init;
   DeleteDdp := False;
   RemoveEmptyHistory := True;
-  RemoveEmptyModel := True;
+  // Off by default: Together (whose "Model"/"Modell" folders this cleans up) is gone from
+  // current IDEs, and an empty "Model" folder is now usually a deliberate project folder.
+  RemoveEmptyModel := False;
   Active := True;
 end;
 
@@ -223,6 +225,10 @@ begin
   if Active then
   begin
     Filename := Data.Module.FileName;
+    // A module without a folder in its name (never saved to disk) would make every
+    // relative RemoveDir/DeleteFile below act on the IDE's current directory.
+    if ( ExtractFilePath( Filename ) = '' ) then
+      Exit;
     // Use the Unicode-safe LowerCase rather than the legacy ANSI round-trip,
     // which can corrupt non-ASCII path characters on non-Latin code pages.
     Ext := LowerCase(ExtractFileExt(FileName));

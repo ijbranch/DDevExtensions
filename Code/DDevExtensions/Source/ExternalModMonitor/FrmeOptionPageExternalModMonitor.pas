@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -92,6 +92,13 @@ begin
   cbxShowNotifications.Checked := ( FConfig as TExternalModMonitorConfig ).ShowNotifications;
   edtProjectLoadGraceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs );
   cbxActiveClick( cbxActive );
+  {$IFDEF CPUX64}
+  // The IDE compile and file notifier is not registered on the 64-bit IDE: projects are
+  // picked up by a periodic scan, and changes made during a compile are not suppressed.
+  cbxActive.Hint := 'On the 64-bit IDE, newly opened projects are picked up within a few seconds, ' +
+    'and files changed during a compile are not held back until it ends.';
+  cbxActive.ShowHint := True;
+  {$ENDIF}
 
 end;
 

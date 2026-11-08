@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -33,7 +33,11 @@ procedure SetRemoveExplicitPropertyActive(Active: Boolean);
 implementation
 
 uses
-  IDEUtils;
+  Winapi.Windows, IDEUtils;
+
+{$IF CompilerVersion > 37}
+  {$MESSAGE WARN 'Re-verify TControl.DefineProperties against the VCL for this compiler version'}
+{$IFEND}
 
 var
   HookTControl_DefineProperties: TFullReplaceHook;
@@ -174,7 +178,16 @@ begin
   begin
     IsActive := Active;
     if Active then
-      InstallFullReplaceHook(@TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties)
+    begin
+      InstallFullReplaceHook(@TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties);
+      // A failed patch (memory protection refused) leaves the hook empty: do not report
+      // the option as active, and log it so the failure is diagnosable.
+      if ( {$IFDEF CPUX64} HookTControl_DefineProperties.RealProc {$ELSE} HookTControl_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      begin
+        IsActive := False;
+        OutputDebugString( 'DDevExtensions RemoveExplicitProperty: TControl.DefineProperties could not be patched.' );
+      end;
+    end
     else
       RemoveFullReplaceHook(HookTControl_DefineProperties);
   end;

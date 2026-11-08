@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -25,6 +25,10 @@ uses
   System.Variants, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, System.Win.ComObj;
 
+const
+  /// <summary>Posted to the progress form once it is shown, to start the export outside any paint handler.</summary>
+  WM_START_EXPORT = WM_USER + 1;
+
 type
   /// <summary>
   /// Progress form shown while ExportListViewToExcel runs. Created via the
@@ -37,8 +41,6 @@ type
     ProgressBar: TProgressBar;
     /// <summary>Prevents the user from cancelling the dialog before the export completes.</summary>
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    /// <summary>Performs the export from OnPaint so it runs immediately after the dialog appears.</summary>
-    procedure FormPaint(Sender: TObject);
   private
     /// <summary>Sheet name passed to Excel.</summary>
     FName: string;
@@ -46,7 +48,18 @@ type
     FListView: TListView;
     /// <summary>Optional output filename; empty leaves the workbook open in Excel.</summary>
     FFilename: string;
+    /// <summary>True once the start message has been posted, so a second show does not export twice.</summary>
+    FExportPosted: Boolean;
+    /// <summary>Runs the export, then closes the dialog.</summary>
+    /// <param name="Msg">The WM_START_EXPORT message.</param>
+    procedure WMStartExport(var Msg: TMessage); message WM_START_EXPORT;
     { Private-Deklarationen }
+  protected
+    /// <summary>
+    /// Posts WM_START_EXPORT when the dialog is first shown, so the export runs from the
+    /// message loop once the dialog is visible rather than from inside a paint handler.
+    /// </summary>
+    procedure DoShow; override;
   public
     { Public-Deklarationen }
     /// <summary>Shows the progress form and exports a list view to Excel.</summary>
@@ -58,12 +71,23 @@ type
   end;
 
 /// <summary>
-/// Exports the rows and columns of a list view to a fresh Excel workbook via OLE.
+/// Returns the text to hand to Excel so that it is stored literally.  Excel treats a value
+/// starting with '=', '+', '-' or '@' as a formula; such text gets a leading apostrophe
+/// (Excel's text prefix, which it does not display).  A signed number ( "-5", "+1", "-0.3"
+/// in invariant or current-locale notation ) is left as it is, so it stays numeric.
+/// </summary>
+/// <param name="AText">Cell text from the list view.</param>
+/// <returns>AText, prefixed with an apostrophe when Excel would otherwise evaluate it.</returns>
+function ExcelCellText( const AText: string ): string;
+
+/// <summary>
+/// Exports the rows and columns of a list view to a fresh Excel workbook via OLE.  All cells
+/// are transferred in one variant-array assignment, not one OLE call per cell.
 /// </summary>
 /// <param name="Name">Sheet name to assign to the new sheet.</param>
 /// <param name="ListView">List view to export.</param>
 /// <param name="Filename">Optional output file; empty makes Excel visible instead.</param>
-/// <param name="ProgressBar">Optional progress bar updated every 25 rows.</param>
+/// <param name="ProgressBar">Optional progress bar, advanced at each stage of the export.</param>
 procedure ExportListViewToExcel(const Name: string; ListView: TListView;
   const Filename: string = ''; ProgressBar: TProgressBar = nil);
 
@@ -71,20 +95,67 @@ implementation
 
 {$R *.dfm}
 
+function ExcelCellText( const AText: string ): string;
+var
+  LNumber: Double;
+begin
+  Result := AText;
+  if ( AText = '' ) or ( not CharInSet( AText[ 1 ], [ '=', '+', '-', '@' ] ) ) then
+    Exit;
+  // A signed number ( "-5", "+1", "-0.3" ) is a number, not a formula: leave it numeric.
+  if ( CharInSet( AText[ 1 ], [ '+', '-' ] ) ) and
+     ( TryStrToFloat( AText, LNumber, TFormatSettings.Invariant ) or TryStrToFloat( AText, LNumber, FormatSettings ) ) then
+    Exit;
+  Result := '''' + AText;
+end;
+
 procedure ExportListViewToExcel(const Name: string; ListView: TListView;
   const Filename: string = ''; ProgressBar: TProgressBar = nil);
+
+  procedure SetProgress( APercent: Integer );
+  begin
+    if ( Assigned( ProgressBar ) ) then
+    begin
+      ProgressBar.Position := APercent;
+      ProgressBar.Update;
+    end;
+  end;
+
 var
   ExcelApp: Variant;
   Workbook: Variant;
   Sheet: Variant;
-  i: Integer;
-  k: Integer;
 begin
   if Assigned(ProgressBar) then
   begin
     ProgressBar.Position := 0;
     ProgressBar.Max := 100;
   end;
+
+  var LColCount := ListView.Columns.Count;
+  var LRowCount := ListView.Items.Count;
+  if ( LColCount = 0 ) then
+    Exit;
+
+  // Build every cell (header row + data rows) locally first: one OLE round trip for the
+  // whole block instead of one per cell.
+  var LData := VarArrayCreate( [ 1, LRowCount + 1, 1, LColCount ], varVariant );
+  for var LCol := 0 to LColCount - 1 do
+    LData[ 1, LCol + 1 ] := ExcelCellText( ListView.Columns[ LCol ].Caption );
+  for var LRow := 0 to LRowCount - 1 do
+  begin
+    var LItem := ListView.Items[ LRow ];
+    LData[ LRow + 2, 1 ] := ExcelCellText( LItem.Caption );
+    for var LCol := 1 to LColCount - 1 do
+    begin
+      // An item may carry fewer sub-items than there are columns.
+      if ( LCol - 1 < LItem.SubItems.Count ) then
+        LData[ LRow + 2, LCol + 1 ] := ExcelCellText( LItem.SubItems[ LCol - 1 ] )
+      else
+        LData[ LRow + 2, LCol + 1 ] := '';
+    end;
+  end;
+  SetProgress( 25 );
 
   try
     ExcelApp := CreateOleObject('Excel.Application');
@@ -103,38 +174,17 @@ begin
     Workbook := ExcelApp.Workbooks.Add;
     Sheet := Workbook.Sheets.Add;
     Sheet.Name := Name;
+    SetProgress( 40 );
 
-    with ListView do
-    begin
-      // Address cells by numeric (row, col) so any number of columns works;
-      // letter arithmetic ( Char( Ord( 'A' ) + i ) ) breaks past column Z.
-      for i := 0 to Columns.Count - 1 do
-      begin
-        Sheet.Cells[1, i + 1].Formula := Columns[i].Caption;
-        Sheet.Cells[1, i + 1].Font.Bold := True;
-        Sheet.Cells[1, i + 1].ColumnWidth := Columns[i].Width / 6;
-      end;
-      for i := 0 to Items.Count - 1 do
-      begin
-        for k := 0 to Columns.Count - 1 do
-        begin
-          if k = 0 then
-            Sheet.Cells[2 + i, k + 1].Formula := Items[i].Caption
-          else
-            Sheet.Cells[2 + i, k + 1].Formula := Items[i].SubItems[k - 1];
-        end;
-        if Assigned(ProgressBar) and (Items.Count > 0) and (i mod 25 = 0) then
-        begin
-          ProgressBar.Position := Int64(i) * 100 div Items.Count;
-          Application.ProcessMessages;
-        end;
-      end;
-    end;
-    if Assigned(ProgressBar) then
-      ProgressBar.Position := ProgressBar.Max;
+    Sheet.Range[ Sheet.Cells[ 1, 1 ], Sheet.Cells[ LRowCount + 1, LColCount ] ].Value := LData;
+    Sheet.Range[ Sheet.Cells[ 1, 1 ], Sheet.Cells[ 1, LColCount ] ].Font.Bold := True;
+    for var LCol := 0 to LColCount - 1 do
+      Sheet.Columns[ LCol + 1 ].ColumnWidth := ListView.Columns[ LCol ].Width / 6;
+    SetProgress( 90 );
 
     if Filename <> '' then
       Workbook.SaveAs(Filename);
+    SetProgress( 100 );
   except
     on E: Exception do
       ShowMessage('Excel export failed:'#13#10 + E.Message);
@@ -180,10 +230,20 @@ begin
   CanClose := ModalResult <> mrCancel;
 end;
 
-procedure TFormExcelExport.FormPaint(Sender: TObject);
+procedure TFormExcelExport.DoShow;
 begin
-  OnPaint := nil;
-  Repaint;
+  inherited DoShow;
+  if ( not FExportPosted ) then
+  begin
+    FExportPosted := True;
+    PostMessage( Handle, WM_START_EXPORT, 0, 0 );
+  end;
+end;
+
+procedure TFormExcelExport.WMStartExport(var Msg: TMessage);
+begin
+  // Let the dialog finish painting before the (blocking) OLE work starts.
+  Update;
   try
     ExportListViewToExcel(FName, FListView, FFilename, ProgressBar);
   finally

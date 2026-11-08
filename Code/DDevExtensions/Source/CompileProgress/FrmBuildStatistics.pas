@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -96,6 +96,7 @@ type
     /// <summary>Click handler for btnCopyToClipboard.</summary>
     procedure btnCopyToClipboardClick( Sender: TObject );
     /// <summary>Click handler for btnExportCSV.</summary>
+    /// <param name="Sender">The button that was clicked.</param>
     procedure btnExportCSVClick( Sender: TObject );
     /// <summary>Closes the form by setting Action to caFree and clearing the singleton reference.</summary>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
@@ -130,6 +131,7 @@ type
     /// <summary>Click handler for the style-issues "Copy to Clipboard" pop-up menu item.</summary>
     procedure mnuStyleCopyToClipboardClick( Sender: TObject );
     /// <summary>Click handler for the style-issues "Export CSV" pop-up menu item.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuStyleExportCSVClick( Sender: TObject );
     /// <summary>Click handler for the "Open File" style-issues pop-up menu item; delegates to lvStyleIssuesDblClick.</summary>
     procedure mnuStyleOpenFileClick( Sender: TObject );
@@ -166,6 +168,18 @@ type
     /// <summary>Shows the build-statistics dialog ( or refreshes it if already visible ).</summary>
     /// <param name="ABuildStatistics">Build-statistics object whose data will be displayed; ignored when nil.</param>
     class procedure Execute( ABuildStatistics: TBuildStatistics );
+    /// <summary>
+    /// Frees the open dialog, if any.  Called before the statistics it shows are freed and
+    /// before the plug-in unloads: the form is owned by the IDE's Application, so leaving it
+    /// open would leave the IDE holding a form whose code is in the unloaded DLL.
+    /// </summary>
+    class procedure CloseInstance;
+    /// <summary>
+    /// Clears the FormInstance singleton when it refers to this form, however the form is
+    /// destroyed ( caFree on close, its owner Application, or CloseInstance ), so the unit
+    /// finalization never frees a dangling reference.
+    /// </summary>
+    destructor Destroy; override;
   end;
 
 var
@@ -175,6 +189,22 @@ var
 implementation
 
 {$R *.dfm}
+
+class procedure TFormBuildStatistics.CloseInstance;
+begin
+  // FormClose (caFree) is not involved: free directly and clear the singleton first so
+  // nothing can reach the form while it is being destroyed.
+  var LForm := FormInstance;
+  FormInstance := nil;
+  LForm.Free;
+end;
+
+destructor TFormBuildStatistics.Destroy;
+begin
+  if ( FormInstance = Self ) then
+    FormInstance := nil;
+  inherited Destroy;
+end;
 
 class procedure TFormBuildStatistics.Execute( ABuildStatistics: TBuildStatistics );
 begin
@@ -384,13 +414,15 @@ begin
         if Item.SubItems.Count >= 4 then
           // Export the Duration value shown in the grid (SubItems[0]) rather than
           // the raw Int64 in Item.Data, so the CSV matches what the user sees.
-          SL.Add( Format( '"%s","%s",%s,%s,"%s"',
-            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
-              Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
+          // AnsiQuotedStr doubles any embedded quote, so names and paths cannot break a field.
+          SL.Add( Format( '%s,%s,%s,%s,%s',
+            [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ), Item.SubItems[ 1 ],
+              Item.SubItems[ 2 ], AnsiQuotedStr( Item.SubItems[ 3 ], '"' ) ] ) );
       end;
 
       try
-        SL.SaveToFile( SaveDialog.FileName );
+        // UTF-8 so non-ASCII unit names and paths survive.
+        SL.SaveToFile( SaveDialog.FileName, TEncoding.UTF8 );
       except
         on E: Exception do
           ShowMessage( 'Error saving file: ' + E.Message );
@@ -817,14 +849,17 @@ begin
         Item := lvStyleIssues.Items[ I ];
 
         if Item.SubItems.Count >= 6 then
-          SL.Add( Format( '"%s","%s","%s","%s","%s","%s","%s"',
-            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
-              Item.SubItems[ 2 ], Item.SubItems[ 3 ], Item.SubItems[ 4 ],
-              Item.SubItems[ 5 ] ] ) );
+          // AnsiQuotedStr doubles any embedded quote (rule text often contains them).
+          SL.Add( Format( '%s,%s,%s,%s,%s,%s,%s',
+            [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ),
+              AnsiQuotedStr( Item.SubItems[ 1 ], '"' ), AnsiQuotedStr( Item.SubItems[ 2 ], '"' ),
+              AnsiQuotedStr( Item.SubItems[ 3 ], '"' ), AnsiQuotedStr( Item.SubItems[ 4 ], '"' ),
+              AnsiQuotedStr( Item.SubItems[ 5 ], '"' ) ] ) );
       end;
 
       try
-        SL.SaveToFile( SaveDialog.FileName );
+        // UTF-8 so non-ASCII unit names and paths survive.
+        SL.SaveToFile( SaveDialog.FileName, TEncoding.UTF8 );
       except
         on E: Exception do
           ShowMessage( 'Error saving file: ' + E.Message );
@@ -842,5 +877,12 @@ begin
   lvStyleIssuesDblClick( Sender );
 
 end;
+
+initialization
+
+finalization
+  // Last line of defence if the plug-in is unloaded without TCompileProgress.Destroy
+  // having closed the dialog.
+  TFormBuildStatistics.CloseInstance;
 
 end.

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- (2026-11-09) **`TestExcelExportDUnitX`**: 12 cases proving `ExcelCellText` prefixes text Excel would evaluate (`= + - @`, including "-1+2"), leaves names, paths, numbers and empty text unchanged, and keeps signed numbers ("-5", "-0.3", "+1") numeric - `TestExcelExportDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
 - (2026-10-25) **This change log** — `CHANGELOG.md`.  The suite's own record, per the estate rule that every test
   suite has one; test-only history moved in from `..\CHANGELOG.md` ( 9 entries ).
 

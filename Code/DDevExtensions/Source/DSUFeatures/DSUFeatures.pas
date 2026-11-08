@@ -36,7 +36,7 @@ implementation
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Hooking, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  IDEHooks, ToolsAPI, IDEUtils, AppConsts, ImportHooking, Winapi.PsAPI, DesignEditors, System.TypInfo;
+  IDEHooks, ToolsAPI, IDEUtils, AppConsts, ImportHooking, Winapi.PsAPI, DesignEditors, System.TypInfo, Vcl.Themes;
 
 {-----------------------------------------------------------------------------}
 { Close all and Kill IDE                                                      }
@@ -86,10 +86,19 @@ procedure HookedTCustomFormClose(Self: TOpenForm);
             Result := caHide;
           DoClose(Result);
           if Result <> caNone then
+          begin
+            // Kept in step with D13's TCustomForm.Close: a styled MDI form/child is hidden
+            // first so the custom border is not painted during the close.
+            if IsCustomStyleActive and ( seBorder in StyleElements ) and
+               ( TStyleManager.FormBorderStyle = fbsCurrentStyle ) and
+               ( ( ( FormStyle = fsMDIForm ) and not IsIconic( Handle ) ) or
+                 ( ( FormStyle = fsMDIChild ) and ( WindowState = wsNormal ) ) ) then
+              ShowWindow( Handle, SW_HIDE );
             if Application.MainForm = Self then Application.Terminate
             else if Result = caHide then Hide
             else if Result = caMinimize then WindowState := wsMinimized
             else Release;
+          end;
         end;
   end;
 

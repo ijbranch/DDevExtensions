@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -186,11 +186,18 @@ end;
 
 procedure TFrameOptionPageFormDesigner.SetUserData(UserData: TObject);
 begin
-  FFormDesigner := UserData as TFormDesigner;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if ( UserData is TFormDesigner ) then
+    FFormDesigner := TFormDesigner( UserData )
+  else
+    FFormDesigner := nil;
 end;
 
 procedure TFrameOptionPageFormDesigner.LoadData;
 begin
+  if ( not Assigned( FFormDesigner ) ) then
+    Exit;
+
   cbxActive.Checked := FFormDesigner.Active;
   cbxLabelMargin.Checked := FFormDesigner.LabelMargin;
   chkRemoveExplicitProperties.Checked := FFormDesigner.RemoveExplicitProperty;
@@ -202,6 +209,9 @@ end;
 
 procedure TFrameOptionPageFormDesigner.SaveData;
 begin
+  if ( not Assigned( FFormDesigner ) ) then
+    Exit;
+
   FFormDesigner.LabelMargin := cbxLabelMargin.Checked;
   FFormDesigner.RemoveExplicitProperty := chkRemoveExplicitProperties.Checked;
   FFormDesigner.RemovePixelsPerInchProperty := chkRemovePixelsPerInchProperty.Checked;

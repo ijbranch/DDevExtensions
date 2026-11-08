@@ -14,7 +14,6 @@ object FormExcelExport: TFormExcelExport
   OldCreateOrder = False
   Position = poScreenCenter
   OnCloseQuery = FormCloseQuery
-  OnPaint = FormPaint
   PixelsPerInch = 96
   TextHeight = 13
   object LblExportText: TLabel

@@ -77,7 +77,9 @@ uses
   DelphiPreproc in '..\Shared\PascalParser\DelphiPreproc.pas',
   TestDelphiPreprocDUnitX in 'TestDelphiPreprocDUnitX.pas',
   UnitMetrics in '..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas',
-  TestUnitMetricsDUnitX in 'TestUnitMetricsDUnitX.pas';
+  TestUnitMetricsDUnitX in 'TestUnitMetricsDUnitX.pas',
+  FrmExcelExport in '..\Code\DDevExtensions\Source\ExcelExport\FrmExcelExport.pas' {FormExcelExport},
+  TestExcelExportDUnitX in 'TestExcelExportDUnitX.pas';
 
 {$R *.res}
 

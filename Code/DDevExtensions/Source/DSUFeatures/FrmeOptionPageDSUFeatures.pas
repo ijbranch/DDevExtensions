@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -87,6 +87,7 @@ type
     procedure SetEditorDblClickAction(Value: TEditorDblClickAction);
     {$IF CompilerVersion = 21.0} // Delphi 2010
     /// <summary>Setter for IncBuildNumOnBuildOnly; binary-patches AfterCompile to gate version increments.</summary>
+    /// <param name="Value">True to increment the build number only on Build.</param>
     procedure SetIncBuildNumOnBuildOnly(const Value: Boolean);
     {$IFEND}
     {$IF CompilerVersion >= 21.0} // Delphi 2010+
@@ -158,6 +159,13 @@ type
 
     /// <summary>Locates the editor zoom-mode byte and writes the requested value into the running IDE.</summary>
     procedure UpdateEditorDblClickAction;
+    /// <summary>
+    /// Removes every code redirect and IDE event handler this configuration installed
+    /// (Open File At Cursor, Show All Frames, Don't Break on Spawned Processes, Ctrl+F1
+    /// confirmation, alpha-sort class completion, editor-tab double-click, project-manager
+    /// file text), so that no IDE code is left jumping into the plug-in after it unloads.
+    /// </summary>
+    procedure RemoveIdeHooks;
   public
     /// <summary>Creates the configuration object, locates the IDE registry key and starts the structure-view timer.</summary>
     constructor Create;
@@ -299,11 +307,18 @@ end;
 
 procedure TFrameOptionPageDSUFeatures.SetUserData(UserData: TObject);
 begin
-  FDSUFeatures := UserData as TDSUFeaturesConfig;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if ( UserData is TDSUFeaturesConfig ) then
+    FDSUFeatures := TDSUFeaturesConfig( UserData )
+  else
+    FDSUFeatures := nil;
 end;
 
 procedure TFrameOptionPageDSUFeatures.LoadData;
 begin
+  if ( not Assigned( FDSUFeatures ) ) then
+    Exit;
+
   chkDisablePackageCache.Checked := FDSUFeatures.DisablePackageCache;
   {$IF CompilerVersion = 21.0} // Delphi 2010
   chkIncBuildNumOnBuildOnly.Checked := FDSUFeatures.IncBuildNumOnBuildOnly;
@@ -331,10 +346,27 @@ begin
   chkKillDExplore.Checked := FDSUFeatures.KillDExplore;
   chkConfirmDlgOnDebugCtrlF1.Checked := FDSUFeatures.ConfirmDlgOnDebugCtrlF1;
   chkDisableAlphaSortClassCompletion.Checked := FDSUFeatures.DisableAlphaSortClassCompletion;
+  {$IFDEF CPUX64}
+  // These features hook IDE internals through code redirects, x86 byte signatures or the
+  // IDE virtual-tree imports, none of which work on the 64-bit IDE.  Their settings are
+  // kept for the 32-bit IDE that shares the configuration, but they cannot be changed here.
+  for var LControl in TArray<TControl>.Create( lblEditorTabDblClickAction, cbxEditorTabDblClickAction,
+    chkShowFileProjectInPrjMgr, LabelStructureViewSearchHotkey, HotKeyStructureViewSearch,
+    chkReplaceOpenFileAtCursor, chkShowAllFrames, chkDontBreakOnSpawnedProcesses, chkConfirmDlgOnDebugCtrlF1,
+    chkDisableAlphaSortClassCompletion ) do
+  begin
+    LControl.Enabled := False;
+    LControl.Hint := 'Not available on the 64-bit IDE';
+    LControl.ShowHint := True;
+  end;
+  {$ENDIF}
 end;
 
 procedure TFrameOptionPageDSUFeatures.SaveData;
 begin
+  if ( not Assigned( FDSUFeatures ) ) then
+    Exit;
+
   FDSUFeatures.DisablePackageCache := chkDisablePackageCache.Checked;
   {$IF CompilerVersion = 21.0} // Delphi 2010
   FDSUFeatures.IncBuildNumOnBuildOnly := chkIncBuildNumOnBuildOnly.Checked;
@@ -410,7 +442,13 @@ begin
     end;
 
     if not FoundVisible then
-      TOpenControl(EditWindow.FindComponent('TabControl')).DblClick;
+    begin
+      // Called from inside the IDE's desktop switch: a renamed or missing tab control
+      // must not raise there.
+      var LTabControl := EditWindow.FindComponent( 'TabControl' );
+      if ( LTabControl is TControl ) then
+        TOpenControl( LTabControl ).DblClick;
+    end;
   end;
 end;
 
@@ -607,7 +645,8 @@ procedure TDSUFeaturesConfig.SetIncBuildNumOnBuildOnly(const Value: Boolean);
     Proc := DbgStrictGetProcAddress(GetModuleHandle(ModuleName), ProcName);
     if Proc <> nil then
     begin
-      P := FindMethodPtr(Cardinal(Proc), Bytes, 256);
+      // Pass the pointer itself: a Cardinal cast truncates the address on Win64.
+      P := FindMethodPtr( Proc, Bytes, 256 );
       if P <> nil then
         WriteProcessMemory(GetCurrentProcess, @P[PatchIndex], Value, SizeOf(TPatchArray), n);
 
@@ -650,13 +689,44 @@ begin
   FTimerStructureView := TTimer.Create(nil);
   FTimerStructureView.Interval := 800;
   FTimerStructureView.OnTimer := StructureViewTimer;
-  FTimerStructureView.Enabled := True;
+  // The background-parsing probe cannot read the parser thread on the 64-bit IDE
+  // (IsBackgroundParsing is always False there), so the timer would do nothing useful.
+  FTimerStructureView.Enabled := {$IFDEF CPUX64} False {$ELSE} True {$ENDIF};
 
   inherited Create(AppDataDirectory + '\DSUFeatures.xml', 'DSUFeatures');
 end;
 
+procedure TDSUFeaturesConfig.RemoveIdeHooks;
+begin
+  // The property setters restore the redirects they installed.  The fields change, but
+  // nothing is saved after this point, so the persisted settings are unaffected.
+  ReplaceOpenFileAtCursor := False;
+  ShowAllFrames := False;
+  DontBreakOnSpawnedProcesses := False;
+  ConfirmDlgOnDebugCtrlF1 := False;
+  DisableAlphaSortClassCompletion := False;
+
+  // Restore the desktop-load redirect directly: the ecaNone setter path would also
+  // un-zoom the editor and rewrite the IDE's zoom mode, which is not wanted on unload.
+  if ( FEditorDblClickAction <> ecaNone ) then
+    CodeRestore( HookDesktopLoadRuntimeDesktop );
+
+  {$IFNDEF CPUX64}
+  // Hand the project-manager tree its own OnGetText back, but only while that same tree
+  // still exists: at IDE shutdown it may already have been destroyed.
+  if ( Assigned( FPrjMgrTree ) ) then
+  begin
+    var LForm := FindForm( 'ProjectManagerForm', '' );
+    if ( Assigned( LForm ) ) and ( LForm.FindComponent( 'ProjectTree2' ) = FPrjMgrTree.Tree ) then
+      FPrjMgrTree.OnGetText := FOrgPMGetTextEvent;
+    FreeAndNil( FPrjMgrTree );
+  end;
+  {$ENDIF}
+end;
+
 destructor TDSUFeaturesConfig.Destroy;
 begin
+  RemoveIdeHooks;
   {$IF CompilerVersion < 21.0} // Delphi 2009
   UnhookFunction(DisabledGetRegionsHook);
   CodeRestore(ProcessAddCommandHook);
@@ -1591,7 +1661,6 @@ end;
 
 procedure TDSUFeaturesConfig.StructureViewTimer(Sender: TObject);
 var
-  Index: Integer;
   S: string;
   StructView: TCustomForm;
 begin
@@ -1599,10 +1668,13 @@ begin
   if (StructView <> nil) and StructView.Visible and
      (StructView.HandleAllocated and IsWindowVisible(StructView.Handle)) then
   begin
+    // Strip only the dots this timer appended last time, so a caption that itself
+    // contains a '.' is never truncated.
     S := StructView.Caption;
-    Index := Pos('.', S);
-    if Index > 0 then
-      S := Copy(S, 1, Index - 1);
+    var LAddedDots := DupeString( '.', FLastParsingDots );
+    var LHadDots := ( FLastParsingDots > 0 ) and S.EndsWith( LAddedDots );
+    if ( LHadDots ) then
+      S := Copy( S, 1, Length( S ) - FLastParsingDots );
     if IsBackgroundParsing then
     begin
       FLastParsingDots := (FLastParsingDots + 1) mod 4;
@@ -1611,7 +1683,7 @@ begin
     else
     begin
       FLastParsingDots := 0;
-      if Index > 0 then
+      if ( LHadDots ) then
         StructView.Caption := S;
     end;
   end;

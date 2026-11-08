@@ -1,4 +1,4 @@
-unit CompilerClearOtherStates;
+﻿unit CompilerClearOtherStates;
 
 /// <summary>
 /// Hooks the Delphi IDE compiler so that the cached compilation state ( CompState ) of
@@ -136,9 +136,6 @@ function TCustomCodeIProject_GetCompState(Project: TObject): Integer;
   external coreide_bpl name '@Projectmodule@TCustomCodeIProject@GetCompState$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
 {$IFEND}
 
-procedure NopClearCompState(CompState: Integer); stdcall;
-begin
-end;
 
 procedure ClearCompStatePlatform(CompState: Integer; const PlatformName: string);
 var
@@ -155,10 +152,10 @@ begin
         if Lib <> 0 then
           @cClearCompStatePlatforms[I].ClearCompState := GetProcAddress(Lib, 'ClearCompState');
       end;
+      // When the platform's compiler DLL is not loaded yet, skip this time and look it up
+      // again at the next compile instead of disabling the platform for the session.
       if Assigned(cClearCompStatePlatforms[I].ClearCompState) then
-        cClearCompStatePlatforms[I].ClearCompState(CompState)
-      else
-        @cClearCompStatePlatforms[I].ClearCompState := @NopClearCompState;
+        cClearCompStatePlatforms[I].ClearCompState(CompState);
       Break;
     end;
   end;
@@ -228,6 +225,10 @@ begin
           end;
         end;
       except
+        on E: Exception do
+          // Releasing other projects' unit caches is a best-effort memory optimisation and
+          // must never stop the compile; log so a layout change in the IDE is diagnosable.
+          OutputDebugString( PChar( 'DDevExtensions ClearOtherStates: ' + E.ClassName + ': ' + E.Message ) );
       end;
     end;
   end;

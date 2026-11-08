@@ -8,6 +8,8 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Changed
 
+- (2026-11-09) **Options that cannot work on the 64-bit IDE are now disabled there with a hint** (Compilation page, the DSU hooks, Old Palette), and the Build Statistics menu item is hidden on Win64 - `FrmeOptionPageCompilerProgress.pas`, `FrmeOptionPageDSUFeatures.pas`, `FrmeOptionPageOldPalette.pas`, `CompileProgress.pas`
+- (2026-11-09) **File Cleaner's "remove empty Model folders" now defaults to off** (an empty Model folder is usually deliberate) and skips modules not yet saved to disk, which made the removal act on the IDE's current folder - `FrmeOptionPageFileCleaner.pas`
 - (2026-10-29) **`## [In-Service]` replaces `## [Unreleased]`.** - `CHANGELOG.md`, `DDevExtUnitTests/CHANGELOG.md`, `CLAUDE.md`
   A DDevExtensions build is in service as soon as it is built and deployed (Ian, 2026-10-29: "As soon as
   they are generated they go into service"), as for GITLAKLib, GITLAKDB and the `gll*` forks: there is no
@@ -44,6 +46,24 @@ This file is the sole source and record of all project changes for DDevExtension
 
 ### Fixed
 
+- (2026-11-09) **Old Palette could use freed palette items** after a Tool Palette category was reordered (buttons kept pointers to freed items; a click could AV), and on the 64-bit IDE, where its palette re-sync hook cannot run, it is now not offered - `OldPalette.pas`, `FrmeOptionPageOldPalette.pas`
+- (2026-11-09) **Structure-view search hotkey raised an access violation on the 64-bit IDE**, where the search box is never created; the action is no longer registered without a search box - `StrucViewSearch.pas`
+- (2026-11-09) **An open Build Statistics window survived the plug-in unloading** (left owned by the IDE with its code unloaded); it is now closed before its data is freed, and the window clears its own singleton reference however it is destroyed - `FrmBuildStatistics.pas`, `CompileProgress.pas`
+- (2026-11-09) **External Mod Monitor could discard unsaved form-designer or project changes**: only source editors were checked before refreshing a module; every module editor is now checked - `ExternalModMonitor.pas`
+- (2026-11-09) **External Mod Monitor missed units outside the project folder, projects opened later on the 64-bit IDE and `.dfm`-only changes, leaked folder watches, and reported the IDE's own saves as refreshes**; it now watches every unit's folder (each folder once, however many projects share it), re-syncs with the open projects every 5 s (also attaching save tracking to modules opened since), remembers folders found missing instead of probing them again, keys projects by their full file name, and ignores the IDE's own saves - `ExternalModMonitor.pas`, `FrmeOptionPageExternalModMonitor.pas`
+- (2026-11-09) **"Do not store PixelsPerInch" broke data modules whose DFM has Left/Top** ("Property Left does not exist"): the replacement skipped `TComponent.DefineProperties` - `RemovePixelsPerInchProperty.pas`
+- (2026-11-09) **Compile Backup could attach one unit's backup to another, leave stray `.cbk` files, and lose the last good backup when a write failed**; backups are now written to a temporary file and then moved into place - `FrmeOptionPageCompileBackup.pas`
+- (2026-11-09) **Several hooks were never removed when DDevExtensions unloaded** (Open File At Cursor, Show All Frames, Don't Break on Spawned Processes, Ctrl+F1 confirmation, alpha-sort class completion, editor-tab double-click, project-manager file text); they are now restored on unload - `FrmeOptionPageDSUFeatures.pas`
+- (2026-11-09) **Possible access violations**: switching to the Debug desktop when the editor tab control is missing, a compile notification without a project, and option pages handed the wrong settings object - `FrmeOptionPageDSUFeatures.pas`, `CompileProgress.pas`, `FrmeOptionPageFormDesigner.pas`, `FrmeOptionPageCompilerProgress.pas`
+- (2026-11-09) **Excel export was very slow and evaluated text such as "=Foo" as formulas**; all cells now go to Excel in one call, text Excel would read as a formula is prefixed (signed numbers such as "-5" stay numeric), and the export no longer runs inside a paint handler - `FrmExcelExport.pas`, `FrmExcelExport.dfm`
+- (2026-11-09) **Build Statistics CSV export broke on embedded quotes and lost non-ASCII paths**; fields are escaped and the file is written as UTF-8 - `FrmBuildStatistics.pas`
+- (2026-11-09) **The Structure view caption was cut at its first '.'** by the background-parsing indicator; only the indicator's own dots are removed, and the timer no longer runs on the 64-bit IDE - `FrmeOptionPageDSUFeatures.pas`
+- (2026-11-09) **Any Shift+key combination (e.g. Shift+Tab) toggled "temporary switch"** in the switch-project dialog; only pressing Shift itself does now (a Shift already held when the dialog opens is ignored) - `FrmSwitchToModuleProject.pas`
+- (2026-11-09) **Background compilation recorded no build statistics**, and the release of other projects' compiler state was switched off for a whole session if a platform compiler was not yet loaded; the statistics are now also read under their lock - `CompileProgress.pas`, `CompilerClearOtherStates.pas`
+- (2026-11-09) **A failed DFM-cleaner patch was reported as active** and not logged; re-verify warnings added for future compilers - `RemoveExplicitProperty.pas`, `RemoveTextHeightProperty.pas`, `RemovePixelsPerInchProperty.pas`
+- (2026-11-09) **Win64 pointer truncation** in byte-signature scans (`Cardinal(Proc)`), and coreide's ProgressForm variable read through a delayed import (which yields the loader stub, not the variable) - `FrmeOptionPageDSUFeatures.pas`, `CompileProgress.pas`, `NativeProgressForm.pas`
+- (2026-11-09) **The Old Palette band rewrote its configuration file on every move**; it is saved once when the band closes - `OldPalette.pas`
+- (2026-11-09) **The styled-MDI close step was missing** from the Ctrl+close hook's copy of `TCustomForm.Close` - `DSUFeatures.pas`
 - (2026-10-21) **The 64-bit Debug build failed in `Hooking.pas`.** - `Shared/Hooking.pas`
   In `GetStartCodeSize.Failed`, the `end;` closing `if IsDebuggerPresent then begin` sat inside the
   Win32-only `{$ELSE}` branch, so Win64 Debug saw an unclosed block and failed with 30 errors from

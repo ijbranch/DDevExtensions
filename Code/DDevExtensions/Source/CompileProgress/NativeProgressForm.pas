@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -94,6 +94,7 @@ type
     procedure UpdateTaskbarProgress;
 
     /// <summary>Returns the IDE's compile progress form, or nil when it is not available.</summary>
+    /// <returns>The IDE progress form, or nil.</returns>
     function GetForm: TCustomForm;
     /// <summary>Looks up a TLabel control on the IDE progress form by component name.</summary>
     /// <param name="Name">Component name.</param>
@@ -178,8 +179,13 @@ const
   sCurrFileLabelName = 'CurrFile';
   {$IFEND}
 
-procedure ProgressFormPtr;
-  external coreide_bpl name '@Comprgrs@ProgressForm' {$IFDEF WIN64} delayed {$ENDIF};
+const
+  /// <summary>
+  /// coreide's exported ProgressForm variable.  It is a DATA export, so it is resolved with
+  /// GetProcAddress: the address of a "delayed" external is the delay-load thunk until its
+  /// first call, never the variable, and a data export is never called.
+  /// </summary>
+  sProgressFormExport: PAnsiChar = '@Comprgrs@ProgressForm';
 
 var
   ProgressFormP: ^TForm;
@@ -235,7 +241,9 @@ end;
 function TNativeProgressForm.GetForm: TCustomForm;
 begin
   if ProgressFormP = nil then
-    ProgressFormP := GetActualAddr(@ProgressFormPtr);
+    ProgressFormP := GetProcAddress( GetModuleHandle( coreide_bpl ), sProgressFormExport );
+  if ( ProgressFormP = nil ) then
+    Exit( nil );
   Result := ProgressFormP^;
 end;
 

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -105,6 +105,21 @@ type
     FStyleViolations: TArray<TStyleViolation>;
     /// <summary>Closes off the timing of the current unit; must be called while holding FLock.</summary>
     procedure DoEndCurrentUnit; // Internal - must be called while holding FLock
+    /// <summary>Reads FTotalBuildTime under the lock ( StartUnit may update it from the compiler thread ).</summary>
+    /// <returns>Total milliseconds across all units recorded so far.</returns>
+    function GetTotalBuildTime: Int64;
+    /// <summary>Reads FBuildSucceeded under the lock.</summary>
+    /// <returns>Result of the most recent build.</returns>
+    function GetBuildSucceeded: Boolean;
+    /// <summary>Reads FUnitCount under the lock ( StartUnit may update it from the compiler thread ).</summary>
+    /// <returns>Number of units recorded so far.</returns>
+    function GetUnitCount: Integer;
+    /// <summary>Reads FProjectPath under the lock.</summary>
+    /// <returns>Path used to resolve relative file names.</returns>
+    function GetProjectPath: string;
+    /// <summary>Writes FProjectPath under the lock.</summary>
+    /// <param name="Value">New project path.</param>
+    procedure SetProjectPath( const Value: string );
   public
     /// <summary>Creates the statistics container with an empty unit list.</summary>
     constructor Create;
@@ -136,13 +151,13 @@ type
     /// <summary>Returns a thread-safe snapshot of the recorded style violations.</summary>
     function GetStyleViolations: TArray<TStyleViolation>;
     /// <summary>Total milliseconds across all units in the most recent build.</summary>
-    property TotalBuildTime: Int64 read FTotalBuildTime;
+    property TotalBuildTime: Int64 read GetTotalBuildTime;
     /// <summary>Result of the most recent build.</summary>
-    property BuildSucceeded: Boolean read FBuildSucceeded;
+    property BuildSucceeded: Boolean read GetBuildSucceeded;
     /// <summary>Number of units recorded for the most recent build.</summary>
-    property UnitCount: Integer read FUnitCount;
+    property UnitCount: Integer read GetUnitCount;
     /// <summary>Path used to resolve relative file names returned by the compiler.</summary>
-    property ProjectPath: string read FProjectPath write FProjectPath;
+    property ProjectPath: string read GetProjectPath write SetProjectPath;
     /// <summary>Style violations gathered by the post-build style checker.</summary>
     property StyleViolations: TArray<TStyleViolation> read GetStyleViolations write SetStyleViolations;
   end;
@@ -199,13 +214,12 @@ type
     {$IFEND}
     /// <summary>Setter for AskCompileFromDiffProject.</summary>
     procedure SetAskCompileFromDiffProject(const Value: Boolean);
-    /// <summary>Increments the progress bar from the main thread ( queued from worker threads ).</summary>
-    procedure UpdateInMainThread;
     /// <summary>Setter for ReleaseCompilerUnitCache; updates the active hook.</summary>
     procedure SetReleaseCompilerUnitCache(const Value: Boolean);
     /// <summary>Setter for ReleaseCompilerUnitCacheHigh; updates the active hook.</summary>
     procedure SetReleaseCompilerUnitCacheHigh(const Value: Boolean);
     /// <summary>Setter for EnableBuildStatistics; toggles the menu item visibility.</summary>
+    /// <param name="Value">True to collect build statistics and show the menu item.</param>
     procedure SetEnableBuildStatistics(const Value: Boolean);
     /// <summary>Shows the singleton Build Statistics dialog.</summary>
     procedure ShowBuildStatisticsDialog;
@@ -500,6 +514,56 @@ begin
 
 end;
 
+function TBuildStatistics.GetTotalBuildTime: Int64;
+begin
+  FLock.Enter;
+  try
+    Result := FTotalBuildTime;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TBuildStatistics.GetBuildSucceeded: Boolean;
+begin
+  FLock.Enter;
+  try
+    Result := FBuildSucceeded;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TBuildStatistics.GetUnitCount: Integer;
+begin
+  FLock.Enter;
+  try
+    Result := FUnitCount;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TBuildStatistics.GetProjectPath: string;
+begin
+  FLock.Enter;
+  try
+    Result := FProjectPath;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+procedure TBuildStatistics.SetProjectPath( const Value: string );
+begin
+  FLock.Enter;
+  try
+    FProjectPath := Value;
+  finally
+    FLock.Leave;
+  end;
+end;
+
 function TBuildStatistics.GetUnits: TArray<TBuildUnitInfo>;
 begin
 
@@ -538,6 +602,14 @@ begin
   end;
 
 end;
+
+const
+  /// <summary>
+  /// True where build statistics can be collected.  They are filled by the IDE compile
+  /// notifier and the compile interceptor, neither of which is registered on the 64-bit
+  /// IDE, so there the Tools menu item stays hidden instead of opening an empty dialog.
+  /// </summary>
+  BuildStatisticsAvailable = {$IFDEF CPUX64} False {$ELSE} True {$ENDIF};
 
 var
   OrgStartCompile, OrgCallStartCompile: procedure(Inst: TObject); register;
@@ -894,7 +966,7 @@ begin
     P := Application.MainForm.MethodAddress('ProjectMake');
     if P <> nil then
     begin
-      if FindMethodPtr(Cardinal(P), ProjectMakeCode, 1) <> nil then
+      if FindMethodPtr(Pointer(P), ProjectMakeCode, 1) <> nil then
       begin
         if P[23] = $E8 then // a last check for changes in ProjectMakeCode
         begin
@@ -946,7 +1018,7 @@ begin
     FBuildStatsMenuItem         := TMenuItem.Create( MenuItem );
     FBuildStatsMenuItem.Caption := 'Build &Statistics...';
     FBuildStatsMenuItem.OnClick := BuildStatsMenuItemClick;
-    FBuildStatsMenuItem.Visible := FEnableBuildStatistics;
+    FBuildStatsMenuItem.Visible := BuildStatisticsAvailable and FEnableBuildStatistics;
     MenuItem.Add( FBuildStatsMenuItem );
   end;
 
@@ -966,7 +1038,10 @@ begin
   // RegisterInterceptor was never called on Win64 — see TCompileProgress.Create.
   try FIDENotifier.Free;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FIDENotifier.Free', E); end;
   try FormNativeProgress.Free;                            except on E: Exception do LogWin64UnloadStep('TCompileProgress.FormNativeProgress.Free', E); end;
-  try FBuildStatistics.Free;                              except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatistics.Free', E); end;
+  // The Build Statistics dialog shows FBuildStatistics and is owned by the IDE's
+  // Application: close it before its data goes and before the DLL unloads.
+  try TFormBuildStatistics.CloseInstance;                 except on E: Exception do LogWin64UnloadStep('TCompileProgress.CloseBuildStatistics', E); end;
+  try FBuildStatistics.Free;                             except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatistics.Free', E); end;
   try FPasFilesLock.Free;                                 except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFilesLock.Free', E); end;
   try FPasFiles.Free;                                     except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFiles.Free', E); end;
   try inherited Destroy;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.inherited Destroy', E); end;
@@ -979,6 +1054,9 @@ begin
   GetCompileInterceptorServices.UnregisterInterceptor( FCompileInterceptorId );
   FIDENotifier.Free;
   FormNativeProgress.Free;
+  // The Build Statistics dialog shows FBuildStatistics and is owned by the IDE's
+  // Application: close it before its data goes and before the DLL unloads.
+  TFormBuildStatistics.CloseInstance;
   FBuildStatistics.Free;
   FPasFilesLock.Free;
   FPasFiles.Free;
@@ -1073,6 +1151,11 @@ var
   Ext: string;
   FileName: string;
 begin
+  // Everything below needs the project (file name, module list); without one there is
+  // nothing to track, and an AV here would escape into the IDE's notifier dispatch.
+  if ( Project = nil ) then
+    Exit;
+
   if not IsCodeInsight then
   begin
     {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
@@ -1095,8 +1178,7 @@ begin
       begin
         FBuildStatistics.Clear;
         // Store project path for filtering (use first project's path)
-        if Project <> nil then
-          FBuildStatistics.ProjectPath := ExtractFilePath( Project.FileName );
+        FBuildStatistics.ProjectPath := ExtractFilePath( Project.FileName );
       end;
     end;
 
@@ -1145,7 +1227,7 @@ begin
   FEnableBuildStatistics := Value;
 
   if FBuildStatsMenuItem <> nil then
-    FBuildStatsMenuItem.Visible := Value;
+    FBuildStatsMenuItem.Visible := BuildStatisticsAvailable and Value;
 
 end;
 
@@ -1354,11 +1436,6 @@ begin
   Result := nil;
 end;
 
-procedure TCompileProgress.UpdateInMainThread;
-begin
-  FormNativeProgress.ProjectFilesCompiled := FormNativeProgress.ProjectFilesCompiled + 1;
-end;
-
 procedure TCompileProgress.InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode);
 var
   Index: Integer;
@@ -1366,16 +1443,22 @@ var
   SFullFilename: string;
   Ext: string;
 begin
-  if (FileMode = ifmOpen) and (GetCurrentThreadId = MainThreadId) {and (FormNativeProgress.Form <> nil)} then
+  if ( FileMode <> ifmOpen ) then
+    Exit;
+
+  SFullFilename := Filename;
+  SFilename := ExtractFileName(SFullFilename);
+  Ext := AnsiLowerCase(ExtractFileExt(SFilename));
+
+  // Track build statistics for .pas files.  TBuildStatistics is lock-protected, so this
+  // also runs when the IDE compiles in the background on its compiler thread.
+  if FEnableBuildStatistics and (Ext = '.pas') then
+    FBuildStatistics.StartUnit(ChangeFileExt(SFilename, ''), SFullFilename);
+
+  // FPasFiles and the IDE progress form are main-thread only; a background compile
+  // shows no modal progress form, so there is no progress bar to advance.
+  if ( GetCurrentThreadId = MainThreadId ) then
   begin
-    SFullFilename := Filename;
-    SFilename := ExtractFileName(SFullFilename);
-    Ext := AnsiLowerCase(ExtractFileExt(SFilename));
-
-    // Track build statistics for .pas files
-    if FEnableBuildStatistics and (Ext = '.pas') then
-      FBuildStatistics.StartUnit(ChangeFileExt(SFilename, ''), SFullFilename);
-
     Index := FPasFiles.IndexOf(SFilename);
     if Index <> -1 then
     begin
@@ -1385,12 +1468,7 @@ begin
         FPasFiles.Delete(Index);
 
       if FormNativeProgress.Form <> nil then
-      begin
-        if GetCurrentThreadId = MainThreadId then
-          FormNativeProgress.ProjectFilesCompiled := FormNativeProgress.ProjectFilesCompiled + 1
-        else
-          TThread.Queue(nil, UpdateInMainThread);
-      end;
+        FormNativeProgress.ProjectFilesCompiled := FormNativeProgress.ProjectFilesCompiled + 1;
     end;
     {if AnsiCompareText(ExtractFileExt(SFilename), '.pas') = 0 then
       FormNativeProgress.FilesCompiled := FormNativeProgress.FilesCompiled + 1;}

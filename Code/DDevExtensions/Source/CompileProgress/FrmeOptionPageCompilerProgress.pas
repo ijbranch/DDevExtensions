@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -85,7 +85,11 @@ implementation
 
 procedure TFrameOptionPageCompilerProgress.SetUserData(UserData: TObject);
 begin
-  FCompileProgress := UserData as TCompileProgress;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if ( UserData is TCompileProgress ) then
+    FCompileProgress := TCompileProgress( UserData )
+  else
+    FCompileProgress := nil;
 end;
 
 procedure TFrameOptionPageCompilerProgress.chkLastCompileVersionInfoClick(Sender: TObject);
@@ -135,6 +139,9 @@ end;
 
 procedure TFrameOptionPageCompilerProgress.LoadData;
 begin
+  if ( not Assigned( FCompileProgress ) ) then
+    Exit;
+
   chkReleaseCompilerUnitCache.Checked := FCompileProgress.ReleaseCompilerUnitCache;
   chkReleaseCompilerUnitCacheHigh.Checked := FCompileProgress.ReleaseCompilerUnitCacheHigh;
   chkReleaseCompilerUnitCacheHigh.Enabled := chkReleaseCompilerUnitCache.Checked;
@@ -156,10 +163,26 @@ begin
   chkRunStyleCheckAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
 
   chkLastCompileVersionInfoClick(chkLastCompileVersionInfo);
+  {$IFDEF CPUX64}
+  // Every option on this page runs from the IDE compile notifier, the compile
+  // interceptor or a code redirect, none of which is registered on the 64-bit IDE.
+  // Make that explicit rather than letting the user rely on options that never run.
+  for var LControl in TArray<TControl>.Create( chkReleaseCompilerUnitCache, chkReleaseCompilerUnitCacheHigh,
+    chkAutoSaveAfterSuccessfulCompile, chkAskBeforeCompilingFileFromDiffernetProject, chkEnableBuildStatistics,
+    chkShowBuildStatisticsAfterCompile, chkRunStyleCheckAfterCompile ) do
+  begin
+    LControl.Enabled := False;
+    LControl.Hint := 'Not available on the 64-bit IDE';
+    LControl.ShowHint := True;
+  end;
+  {$ENDIF}
 end;
 
 procedure TFrameOptionPageCompilerProgress.SaveData;
 begin
+  if ( not Assigned( FCompileProgress ) ) then
+    Exit;
+
   FCompileProgress.ReleaseCompilerUnitCache := chkReleaseCompilerUnitCache.Checked;
   FCompileProgress.ReleaseCompilerUnitCacheHigh := chkReleaseCompilerUnitCacheHigh.Checked;
   {$IF CompilerVersion < 22.0} // XE has its own option

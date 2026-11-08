@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -161,6 +161,8 @@ type
     FOrgTabControlWndProc: TWndMethod;
     /// <summary>True while a delayed rebuild is queued.</summary>
     FRebuildDelay: Boolean;
+    /// <summary>True when the band moved since the configuration was last saved; saved once on destruction.</summary>
+    FBoundsModified: Boolean;
 
     /// <summary>Original IDE handler for OnSelectedItemChange, restored on shutdown.</summary>
     FOrgSelectedItemChange: TCatButtonEvent;
@@ -205,7 +207,14 @@ type
     /// <summary>Resets the deferred rebuild flag when the window handle is created.</summary>
     procedure CreateWnd; override;
   public
-    /// <summary>Updates the band geometry and persists changes to <see cref="Config"/>.</summary>
+    /// <summary>
+    /// Updates the band geometry and records the new position in <see cref="Config"/>; the
+    /// configuration file is written once when the band is destroyed, not on every move.
+    /// </summary>
+    /// <param name="ALeft">New left position.</param>
+    /// <param name="ATop">New top position.</param>
+    /// <param name="AWidth">New width.</param>
+    /// <param name="AHeight">New height.</param>
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
     /// <summary>Number of tabs currently in the tab control.</summary>
     property TabItemCount: Integer read GetTabItemCount;
@@ -259,11 +268,13 @@ procedure TToolForm_LoadPalette(Instance: TForm);
 procedure HookedTToolForm_LoadPalette(Instance: TForm);
 begin
   CodeRestore(HookTToolForm_LoadPalette);
-  Inc(FrameOldPalette.FRebuilding);
+  if ( Assigned( FrameOldPalette ) ) then
+    Inc( FrameOldPalette.FRebuilding );
   try
     TToolForm_LoadPalette(Instance);
   finally
-    Dec(FrameOldPalette.FRebuilding);
+    if ( Assigned( FrameOldPalette ) ) then
+      Dec( FrameOldPalette.FRebuilding );
     RehookFunction(@HookedTToolForm_LoadPalette, HookTToolForm_LoadPalette);
   end;
   if Assigned(FrameOldPalette) then
@@ -334,6 +345,8 @@ destructor TFrameOldPalette.Destroy;
 begin
   ReleaseToolForm;
   FrameOldPalette := nil;
+  if ( FBoundsModified ) and ( Assigned( Config ) ) then
+    Config.Save;
   inherited Destroy;
 end;
 
@@ -360,6 +373,10 @@ procedure TFrameOldPalette.ClearTabs;
 var
   i: Integer;
 begin
+  // The palette buttons carry each TCompItem in their Tag.  Drop the buttons
+  // before the tab items (which own the TCompItems) are freed, so no button can
+  // hand a freed item to PaletteClick/PaletteDblClick.
+  Palette.ButtonCount := 0;
   for i := 0 to TabItemCount - 1 do
     TabItems[i].Free;
   TabControl.Tabs.Clear;
@@ -684,6 +701,11 @@ begin
     finally
       FRebuilding := PreviousRebuildingState;
     end;
+
+    // A reorder-only rebuild keeps FRebuilding raised while the tabs are refilled,
+    // so TabSelected skipped the button fill; refill now that rebuilding is over.
+    if ( ReorderOnly ) and ( FRebuilding = 0 ) then
+      TabControlChange( TabControl );
   end
   else
     ClearTabItemComponents;
@@ -979,7 +1001,7 @@ begin
   begin
     Config.Left := ALeft;
     Config.Top := ATop;
-    Config.Save;
+    FBoundsModified := True;
   end;
 end;
 

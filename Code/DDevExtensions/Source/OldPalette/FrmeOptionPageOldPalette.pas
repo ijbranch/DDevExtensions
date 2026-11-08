@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -52,6 +52,7 @@ type
     /// <summary>True to render tab labels using the legacy "Small Fonts" face.</summary>
     FSmallFonts: Boolean;
     /// <summary>Setter that creates or destroys the in-IDE palette band.</summary>
+    /// <param name="Value">True to show the palette band.</param>
     procedure SetActive(const Value: Boolean);
     /// <summary>Setter that rebuilds the palette popup menu when the sort option toggles.</summary>
     procedure SetAlphaSortPopupMenu(const Value: Boolean);
@@ -156,7 +157,11 @@ end;
 
 procedure TFrameOptionPageOldPalette.SetUserData(UserData: TObject);
 begin
-  FOldPaletteConfig := UserData as TOldPaletteConfig;
+  // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
+  if ( UserData is TOldPaletteConfig ) then
+    FOldPaletteConfig := TOldPaletteConfig( UserData )
+  else
+    FOldPaletteConfig := nil;
 end;
 
 procedure TFrameOptionPageOldPalette.cbxActiveClick(Sender: TObject);
@@ -172,6 +177,9 @@ end;
 
 procedure TFrameOptionPageOldPalette.LoadData;
 begin
+  if ( not Assigned( FOldPaletteConfig ) ) then
+    Exit;
+
   cbxActive.Checked := FOldPaletteConfig.Active;
   cbxMultiline.Checked := FOldPaletteConfig.MultiLine;
   cbxRaggedRight.Checked := FOldPaletteConfig.RaggedRight;
@@ -180,10 +188,27 @@ begin
   cbxStyle.ItemIndex := Integer(FOldPaletteConfig.Style);
 
   cbxActiveClick(cbxActive);
+  {$IFDEF CPUX64}
+  // The Old Palette re-syncs with the IDE's palette only through a LoadPalette code
+  // redirect, which is inert on the 64-bit IDE; without it the band would keep
+  // pointers to palette items the IDE has freed.  It is therefore never shown there.
+  cbxActive.Enabled := False;
+  cbxActive.Hint := 'Not available on the 64-bit IDE';
+  cbxActive.ShowHint := True;
+  cbxMultiline.Enabled := False;
+  cbxRaggedRight.Enabled := False;
+  lblStyleCaption.Enabled := False;
+  chkAlphaSortPopupMenu.Enabled := False;
+  chkSmallFonts.Enabled := False;
+  cbxStyle.Enabled := False;
+  {$ENDIF}
 end;
 
 procedure TFrameOptionPageOldPalette.SaveData;
 begin
+  if ( not Assigned( FOldPaletteConfig ) ) then
+    Exit;
+
   FOldPaletteConfig.Active := cbxActive.Checked;
   FOldPaletteConfig.MultiLine := cbxMultiline.Checked;
   FOldPaletteConfig.RaggedRight := cbxRaggedRight.Checked;
@@ -268,6 +293,11 @@ begin
     FActive := Value;
     if FLoading then
       Exit;
+    {$IFDEF CPUX64}
+    // Never shown on the 64-bit IDE (see TFrameOptionPageOldPalette.LoadData); the
+    // persisted flag is kept so the 32-bit IDE sharing this file is unaffected.
+    Exit;
+    {$ENDIF}
     if Application.MainForm <> nil then
       ControlBar := TControlBar(Application.MainForm.FindComponent('ControlBar1'))
     else

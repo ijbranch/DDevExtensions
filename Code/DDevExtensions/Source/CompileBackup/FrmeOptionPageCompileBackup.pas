@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -259,6 +259,23 @@ end;
 procedure TCompileBackupConfig.BackupModifiedFiles;
 const
   Utf8BOM: array[0..2] of Byte = ($EF, $BB, $BF);
+  // Each backup is written beside its target first, so a failed write (disk full,
+  // locked file) never truncates the previous good backup.
+  sTempSuffix = '.tmp';
+
+  procedure WriteBackup( const ABackupFilename: string; const AWrite: TProc<string> );
+  begin
+    var LTempFilename := ABackupFilename + sTempSuffix;
+    try
+      AWrite( LTempFilename );
+      if ( not MoveFileEx( PChar( LTempFilename ), PChar( ABackupFilename ), MOVEFILE_REPLACE_EXISTING ) ) then
+        RaiseLastOSError( Winapi.Windows.GetLastError );
+    except
+      System.SysUtils.DeleteFile( LTempFilename );
+      raise;
+    end;
+  end;
+
 var
   Modules: IOTAModuleServices;
   Module: IOTAModule;
@@ -287,7 +304,12 @@ begin
               if SourceEditor.Modified and FastFileExists(SourceEditor.FileName) then
               begin
                 BackupFilename := GetCompileBackupFilename(SourceEditor.FileName);
-                SaveEditorSourceTo(SourceEditor, BackupFilename);
+                var LSourceEditor := SourceEditor;
+                WriteBackup( BackupFilename,
+                  procedure( ATempFilename: string )
+                  begin
+                    SaveEditorSourceTo( LSourceEditor, ATempFilename );
+                  end );
                 BackupedFiles.Add(BackupFilename);
               end;
             end
@@ -297,12 +319,27 @@ begin
               if FormEditor.Modified and FastFileExists(FormEditor.FileName) then
               begin
                 BackupFilename := GetCompileBackupFilename(FormEditor.FileName);
-                SaveFormResourceTo(FormEditor, BackupFilename);
+                var LFormEditor := FormEditor;
+                WriteBackup( BackupFilename,
+                  procedure( ATempFilename: string )
+                  begin
+                    SaveFormResourceTo( LFormEditor, ATempFilename );
+                  end );
                 BackupedFiles.Add(BackupFilename);
               end;
             end;
           end;
+        except
+          on E: Exception do
+            // Legacy guard for old-IDE quirks; log write failures (disk full,
+            // read-only target, locked file) so a missing backup is diagnosable
+            // instead of being silently swallowed.
+            OutputDebugString( PChar( 'CompileBackup: ' + Module.FileName + ' - ' + E.Message ) );
+        end;
 
+        // Hand over whatever this module wrote, even after a failure part-way through,
+        // so those backups are deleted with this module and never attributed to the next.
+        try
           if BackupedFiles.Count > 0 then
           begin
             ModuleDataList[Module].Bucket[Self].Free;
@@ -311,10 +348,10 @@ begin
           end;
         except
           on E: Exception do
-            // Legacy guard for old-IDE quirks; log write failures (disk full,
-            // read-only target, locked file) so a missing backup is diagnosable
-            // instead of being silently swallowed.
+          begin
             OutputDebugString( PChar( 'CompileBackup: ' + Module.FileName + ' - ' + E.Message ) );
+            BackupedFiles.Clear;
+          end;
         end;
       end;
     finally

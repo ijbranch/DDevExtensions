@@ -1,4 +1,4 @@
-// * Copyright: ©2021 Fred Schetterer
+﻿// * Copyright: ©2021 Fred Schetterer
 
 unit RemovePixelsPerInchProperty;
 
@@ -27,7 +27,7 @@ procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
 implementation
 
 uses
-  IDEUtils;
+  Winapi.Windows, IDEUtils;
 
 var
   HookTControl_DefineProperties: TFullReplaceHook;
@@ -56,6 +56,12 @@ type
   /// <summary>Friend declaration giving the unit visibility of TDataModule's protected DefineProperties.</summary>
   TOpenDataModule = class(TDataModule);
 
+  /// <summary>Friend declaration giving the unit access to TComponent's protected DefineProperties.</summary>
+  TOpenComponent = class(TComponent);
+
+  /// <summary>Method-pointer shape of DefineProperties, used to call TComponent's version directly.</summary>
+  TDefinePropertiesProc = procedure(Filer: TFiler) of object;
+
 var
   IsActive: Boolean;
 
@@ -77,7 +83,16 @@ begin
   begin
     IsActive := Active;
     if Active then
-      InstallFullReplaceHook(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties)
+    begin
+      InstallFullReplaceHook(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties);
+      // A failed patch (memory protection refused) leaves the hook empty: do not report
+      // the option as active, and log it so the failure is diagnosable.
+      if ( {$IFDEF CPUX64} HookTControl_DefineProperties.RealProc {$ELSE} HookTControl_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      begin
+        IsActive := False;
+        OutputDebugString( 'DDevExtensions RemovePixelsPerInchProperty: TDataModule.DefineProperties could not be patched.' );
+      end;
+    end
     else
       RemoveFullReplaceHook(HookTControl_DefineProperties);
   end;
@@ -115,6 +130,15 @@ var
   end;
 
 begin
+  // TDataModule.DefineProperties starts with "inherited", i.e. TComponent.DefineProperties,
+  // which defines the Left/Top design-position properties.  Call it directly ( this method
+  // replaces TDataModule's, so "inherited" here would not reach it ) so that DFMs carrying
+  // Left/Top still load.
+  var LInheritedDefine: TDefinePropertiesProc;
+  TMethod( LInheritedDefine ).Code := @TOpenComponent.DefineProperties;
+  TMethod( LInheritedDefine ).Data := Self;
+  LInheritedDefine( Filer );
+
   Ancestor := TDataModule(Filer.Ancestor);
   with self do begin // access to private parts
     Filer.DefineProperty('Height', ReadHeight, WriteHeight, DoWriteHeight);

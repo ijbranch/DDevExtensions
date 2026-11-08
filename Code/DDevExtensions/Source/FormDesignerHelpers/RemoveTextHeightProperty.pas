@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -39,7 +39,11 @@ implementation
 {$IFDEF DELPHI28_UP}
 
 uses
-  IDEUtils;
+  Winapi.Windows, IDEUtils;
+
+{$IF CompilerVersion > 37}
+  {$MESSAGE WARN 'Re-verify TCustomForm.DefineProperties against the VCL for this compiler version'}
+{$IFEND}
 
 var
   HookTForm_DefineProperties: TFullReplaceHook;
@@ -96,7 +100,16 @@ begin
   begin
     IsActive := Active;
     if Active then
-      InstallFullReplaceHook(@TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties)
+    begin
+      InstallFullReplaceHook(@TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties);
+      // A failed patch (memory protection refused) leaves the hook empty: do not report
+      // the option as active, and log it so the failure is diagnosable.
+      if ( {$IFDEF CPUX64} HookTForm_DefineProperties.RealProc {$ELSE} HookTForm_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      begin
+        IsActive := False;
+        OutputDebugString( 'DDevExtensions RemoveTextHeightProperty: TCustomForm.DefineProperties could not be patched.' );
+      end;
+    end
     else
       RemoveFullReplaceHook(HookTForm_DefineProperties);
   end;
