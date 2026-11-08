@@ -442,7 +442,8 @@ begin
       CompleteMethodSymbolTableIteratorP := FindMethodPtr( GetActualAddr( @TPascalClassCompleter_Complete ), CompleteMethodSymbolTableIteratorBytes, $10000 );
       CallAddrTSortedThingList_SetSortedP := FindMethodPtr( CompleteMethodSymbolTableIteratorP, CompleteSetSortedBytes, $1000 );
 
-      // Code-Search: Breakpoint in TClassSymbol_MethodAddPos_AlphSort, start, add method to class decl., press Ctrl+Shift+C, debug through function returns until you are in method "Complete"
+      // Code-Search: Breakpoint in TClassSymbol_MethodAddPos_AlphSort, start, add method to class decl., press Ctrl+Shift+C,
+      // debug through function returns until you are in method "Complete"
       if ( CallAddrTSortedThingList_SetSortedP = nil ) and ( DebugHook <> 0 ) then
         MessageBox( 0, 'InstallDisableAlphaSortClassCompletion byte sequences not found', 'DDevExtensions', MB_OK or MB_ICONWARNING );
 

@@ -974,7 +974,8 @@ begin
       begin
         Candidate.Verdict := dcvAmbiguous;
         Candidate.Advice    := Format(
-          'Cannot tell. Nothing unique to %s is referenced by %s, but %d identifier(s) that several units here declare are - most often inherited form members. Remove the entry and let the compiler decide.',
+          'Cannot tell. Nothing unique to %s is referenced by %s, but %d identifier(s) that several units here declare are - ' +
+          'most often inherited form members. Remove the entry and let the compiler decide.',
           [ Edge.ToUnit, Edge.FromUnit, Candidate.AmbiguousSymbolCount ] );
       end
       else if Length( Candidate.CrossingSymbols ) = 0 then

@@ -90,8 +90,8 @@ const
       'CompileInterceptorW.dll' ),
     ( Version: '2010'; IDEName: 'Embarcadero RAD Studio 2010'; Key: 'CodeGear\BDS\7.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe';
       CompInterceptorDll: 'CompileInterceptorW.dll' ),
-    ( Version: 'XE'; IDEName: 'Embarcadero RAD Studio XE'; Key: 'Embarcadero\BDS\8.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:
-      'CompileInterceptorW.dll' ),
+    ( Version: 'XE'; IDEName: 'Embarcadero RAD Studio XE'; Key: 'Embarcadero\BDS\8.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe';
+      CompInterceptorDll: 'CompileInterceptorW.dll' ),
     ( Version: 'XE2'; IDEName: 'Embarcadero RAD Studio XE2'; Key: 'Embarcadero\BDS\9.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe';
       CompInterceptorDll: 'CompileInterceptorW.dll' ),
     ( Version: 'XE3'; IDEName: 'RAD Studio XE3'; Key: 'Embarcadero\BDS\10.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:
@@ -108,8 +108,8 @@ const
       'CompileInterceptorW.dll' ),
     ( Version: 'D10'; IDEName: 'RAD Studio 10 Seattle'; Key: 'Embarcadero\BDS\17.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:
       'CompileInterceptorW.dll' ),
-    ( Version: 'D101'; IDEName: 'RAD Studio 10.1 Berlin'; Key: 'Embarcadero\BDS\18.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:
-      'CompileInterceptorW.dll' ),
+    ( Version: 'D101'; IDEName: 'RAD Studio 10.1 Berlin'; Key: 'Embarcadero\BDS\18.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe';
+      CompInterceptorDll: 'CompileInterceptorW.dll' ),
     ( Version: 'D102'; IDEName: 'RAD Studio 10.2'; Key: 'Embarcadero\BDS\19.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:
       'CompileInterceptorW.dll' ),
     ( Version: 'D103'; IDEName: 'RAD Studio 10.3'; Key: 'Embarcadero\BDS\20.0'; ExpertsSubKey: 'Experts'; HostExeRelPath: 'bin\bds.exe'; CompInterceptorDll:

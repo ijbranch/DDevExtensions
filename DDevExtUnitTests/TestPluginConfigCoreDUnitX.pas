@@ -70,7 +70,8 @@ type
     [ Test ]
     procedure TestBadContentIsUnreadableAfterAllAttempts;
     /// <summary>A file caught mid-write on the first attempt loads on a retry.</summary>
-    /// <exception cref="EParserError">Raised by the test's loader on purpose to simulate a transient parse failure; the routine under test absorbs it.</exception>
+    /// <exception cref="EParserError">Raised by the test's loader on purpose to simulate a transient parse failure;
+    /// the routine under test absorbs it.</exception>
     [ Test ]
     procedure TestRetryLoadsAfterTransientFailure;
     /// <summary>An empty file is unreadable, and the parser is not run on it.</summary>

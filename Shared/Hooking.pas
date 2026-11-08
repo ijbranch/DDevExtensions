@@ -1750,8 +1750,8 @@ begin
   if ( Word( AWinApiProc^ ) = $25FF ) then // "FF 25 jmp [rel dword]"
   begin
     //PP^ <= GetActualAddr(AWinApiProc);
-    PP                  := PPointer( PByte( @PAbsoluteIndirectJmp64( AWinApiProc ).OpCode ) + SizeOf( TAbsoluteIndirectJmp64 ) + PAbsoluteIndirectJmp64( AWinApiProc
-      ).Rel );
+    PP                  := PPointer( PByte( @PAbsoluteIndirectJmp64( AWinApiProc ).OpCode ) + SizeOf( TAbsoluteIndirectJmp64 ) +
+      PAbsoluteIndirectJmp64( AWinApiProc ).Rel );
     // Set OrgCallProc before changing the code so that concurrent threads can call the hook that can call the org function
     Pointer( AOrgCallProc ) := PP^;
 

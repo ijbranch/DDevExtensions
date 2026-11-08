@@ -1301,8 +1301,8 @@ begin
           if ( Screen.ActiveControl <> nil ) and ( Screen.ActiveControl.Name = 'Editor' ) and
             Screen.ActiveControl.ClassNameIs( 'TEditControl' ) then
           begin
-            SearchForwardEnvProp := TPropField( ( TObject( PPointer( GetActualAddr( @EnvironmentOptionsAddr ) )^ ) as TComponent ).FindComponent( 'SearchForward' )
-              );
+            SearchForwardEnvProp := TPropField( ( TObject( PPointer( GetActualAddr( @EnvironmentOptionsAddr ) )^ ) as TComponent )
+              .FindComponent( 'SearchForward' ) );
             if SearchForwardEnvProp <> nil then
             begin
               OldSearchForwardValue := SearchForwardEnvProp.Value;

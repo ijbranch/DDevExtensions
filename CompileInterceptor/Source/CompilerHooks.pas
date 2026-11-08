@@ -141,7 +141,8 @@ type
     IdeEnableBrowser: procedure; pascal;
     IdeEnableKibitzing: procedure(p1: PAnsiChar); pascal;
     KibizProgress: function: Boolean; pascal;
-    MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+    MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer;
+      const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
     FileFlush: procedure(hFile: THandle); pascal; // C++Builder XE+
   end;}
 
@@ -212,7 +213,8 @@ type
       Empty11: function(p1: Integer): Integer; pascal;
       Empty12: function(p1: Integer): Integer; pascal;
 
-      MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+      MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer;
+        const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
       EnumPathTimestamps: procedure(CallCount: Integer; UserData: Pointer; Path: PAnsiChar; Callback: TPathTimestampCallback); pascal;
     end;
   }
@@ -549,7 +551,8 @@ begin
   OrgComInOut.BMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg);
 end;
 
-function Compiler_MultiLineMessage(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+function Compiler_MultiLineMessage(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer;
+  const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
 begin
   Result := OrgComInOut.CompilerMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine);
 end;

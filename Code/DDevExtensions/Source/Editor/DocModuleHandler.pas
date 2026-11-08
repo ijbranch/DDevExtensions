@@ -832,8 +832,8 @@ begin
     DocModuleVirtMethods[ MethTyp ].Addr := GetProcAddress( CoreIdeLib, DocModuleVirtMethods[ MethTyp ].Import );
     if DocModuleVirtMethods[ MethTyp ].Addr = nil then
     begin
-      MessageDlg( Format( 'DDevExtensions: Import symbol "%s" not found in "%s"', [ AnsiString( DocModuleVirtMethods[ MethTyp ].Import ), coreide_bpl ] ), mtError,
-        [ mbOk ], 0 );
+      MessageDlg( Format( 'DDevExtensions: Import symbol "%s" not found in "%s"',
+        [ AnsiString( DocModuleVirtMethods[ MethTyp ].Import ), coreide_bpl ] ), mtError, [ mbOk ], 0 );
       Exit;
     end;
   end;
