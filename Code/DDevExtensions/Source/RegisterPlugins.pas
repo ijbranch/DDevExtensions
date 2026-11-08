@@ -209,11 +209,11 @@ begin
       RegisterLateLoader(StrucViewSearch.InitPlugin);
     {$ENDIF}
 
-    // Menu items appear in registration order - organized by workflow:
+    // Menu items appear in registration order - organised by workflow:
     // 1. Architecture overview (Dependency Viewer)
-    // 2. Comprehensive quality check (Code Quality Analyzer)
+    // 2. Comprehensive quality check (Code Quality Analyser)
     // 3. Remove unused code (Unused Units, Dead Code, Unreachable, Empty Handlers)
-    // 4. Organize (Uses Clause Manager, DFM/PAS Consistency)
+    // 4. Organise (Uses Clause Manager, DFM/PAS Consistency)
     // 5. Style check (Code Style Checker)
     // 6. Review work items (TODO/FIXME Aggregator)
 

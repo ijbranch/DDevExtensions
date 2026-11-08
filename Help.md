@@ -20,7 +20,7 @@ Version 3.16.5 | Comprehensive Feature Reference
 |---------|---------|---------------|
 | Auto-save After Compile | OFF | Options |
 | Build Statistics | OFF | DDevExtensions submenu |
-| Code Quality Analyzer | ON | DDevExtensions submenu |
+| Code Quality Analyser | ON | DDevExtensions submenu |
 | Code Style Checker | ON | DDevExtensions submenu |
 | Compile Backup | ON | Automatic |
 | Compile Progress | ON | Automatic |
@@ -84,7 +84,7 @@ The 32-bit IDE host (`bin\bds.exe`) is unchanged and remains the primary target 
 
 > **Restored on Win64 in v3.20.9:** the three Form Designer DFM-property cleaners — *Remove Explicit\**, *Remove PixelsPerInch* and *Remove TextHeight* — formerly fell under the `CodeRedirect` restriction above and were greyed out on the 64-bit host. They are *full-replacement* hooks (their replacement `DefineProperties` never calls the original), so they now install through an x64-safe primitive (`InstallFullReplaceHook`, a 14-byte absolute indirect jump) and are fully functional on the 64-bit IDE. The global `CodeRedirect` is unchanged, so the genuine chain-back hooks listed above stay inactive.
 
-All other features — Dependency Viewer, Code Quality Analyzer, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, Method Separators, etc. — run on the 64-bit host.
+All other features — Dependency Viewer, Code Quality Analyser, Unused Unit Detector, Dead Code Detector, Unreachable Code Detector, Empty Event Handler Detector, Uses Clause Manager, Decirculariser, DFM/PAS Consistency Checker, Code Style Checker, TODO/FIXME Aggregator, IDE Path Sorter, Sort Projects in Group, Build Statistics, External Mod Monitor, Method Separators, etc. — run on the 64-bit host.
 
 **Win64 shutdown diagnostic log.** If anything in the plug-in raises an exception while the 64-bit IDE is shutting down, a single attributed line is appended to:
 
@@ -111,7 +111,7 @@ Tools
         ├── Options...
         ├── ─────────────
         ├── Dependency Viewer...        (1. Architecture overview)
-        ├── Code Quality Analyzer...    (2. Comprehensive quality check)
+        ├── Code Quality Analyser...    (2. Comprehensive quality check)
         ├── Unused Unit Detector...     (3. Remove unused units)
         ├── Dead Code Detector...       (4. Remove dead code)
         ├── Unreachable Code Detector...(5. Remove unreachable code)
@@ -195,7 +195,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 | Step | Feature | Purpose |
 |------|---------|---------|
 | 1 | **Dependency Viewer** | Start here - understand architecture, find circular references, check layer violations |
-| 2 | **Code Quality Analyzer** | Comprehensive scan for magic numbers, hardcoded strings, empty excepts, etc. |
+| 2 | **Code Quality Analyser** | Comprehensive scan for magic numbers, hardcoded strings, empty excepts, etc. |
 | 3 | **Unused Unit Detector** | Remove units that are no longer needed |
 | 4 | **Dead Code Detector** | Find procedures, functions, and fields that are never used |
 | 5 | **Unreachable Code Detector** | Find code within functions that can never execute |
@@ -322,15 +322,15 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 
 ---
 
-### Code Quality Analyzer
+### Code Quality Analyser
 
 **Purpose:** A unified tool to detect common code quality issues including magic numbers, hardcoded strings, commented-out code, exception handling problems, and memory leak patterns.
 
 **Default:** ON
 
-**Location:** Options > DDevExtensions > Code Quality Analyzer
+**Location:** Options > DDevExtensions > Code Quality Analyser
 
-**Access:** Tools > DDevExtensions > Code Quality Analyzer...
+**Access:** Tools > DDevExtensions > Code Quality Analyser...
 
 **Settings File:** `%APPDATA%\DDevExtensions\CodeQualityAnalyzer.xml`
 
@@ -375,7 +375,7 @@ These tools analyze existing code patterns and dependencies. They're most valuab
 #### Using the Analyzer
 
 1. Open your project in the Delphi IDE
-2. Go to **Tools > DDevExtensions > Code Quality Analyzer...**
+2. Go to **Tools > DDevExtensions > Code Quality Analyser...**
 3. Click **Check Project** to scan all Pascal files
 4. Results appear in the list with Unit, Line, Category, Severity, and Description
 5. Double-click any issue to navigate to the source code location
@@ -2576,7 +2576,7 @@ The Uses Clause Manager works in three steps:
    - Shows progress as it scans units
    - Shows summary when complete (e.g., "Database built: 450 units scanned")
    - Database is cached for subsequent analyses
-4. **Click "Analyze Unit"**
+4. **Click "Analyse Unit"**
    - Analyzes the current file
    - Populates the list with recommendations
 5. **Review recommendations**

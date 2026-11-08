@@ -13,13 +13,13 @@ Project.dproj
 
 Predefined Macros:
   $(ParamFileName)      Full Filename of the *.params file
-  $(ParamFilePath)      Direcory of the *.params file
+  $(ParamFilePath)      Directory of the *.params file
   $(Year)               Current year
   $(Month)              Current month
   $(Day)                Current day
-  $(MonthShortName)     Short name (3 charaters) of the current month (local settings)
+  $(MonthShortName)     Short name (3 characters) of the current month (local settings)
   $(MonthName)          Full name of the current month (local settings)
-  $(LastMonthShortName) Short name (3 charaters) of the last month (local settings)
+  $(LastMonthShortName) Short name (3 characters) of the last month (local settings)
   $(LastMonthName)      Full name of the last month (local settings)
   $(LastYear)           Last year
 

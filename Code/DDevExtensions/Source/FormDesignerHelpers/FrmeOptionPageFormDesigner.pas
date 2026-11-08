@@ -101,11 +101,9 @@ type
     /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Configuration object passed in via SetUserData.</summary>
     FFormDesigner: TFormDesigner;
   public
-    { Public-Deklarationen }
     /// <summary>Constructs the frame and disables version-restricted check boxes.</summary>
     /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;

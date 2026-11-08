@@ -58,11 +58,9 @@ type
     /// <param name="Sender">The check box that was clicked.</param>
     procedure chkEnableBuildStatisticsClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Plug-in configuration object whose properties are bound to this frame.</summary>
     FCompileProgress: TCompileProgress;
   public
-    { Public-Deklarationen }
     /// <summary>Creates the frame and adjusts the layout for compiler versions that hide certain options.</summary>
     /// <param name="AOwner">Owning component for the frame.</param>
     constructor Create(AOwner: TComponent); override;

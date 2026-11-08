@@ -1,7 +1,7 @@
 object FormCodeQualityAnalyzer: TFormCodeQualityAnalyzer
   Left = 0
   Top = 0
-  Caption = 'Code Quality Analyzer'
+  Caption = 'Code Quality Analyser'
   ClientHeight = 450
   ClientWidth = 750
   Color = clBtnFace

@@ -118,11 +118,9 @@ type
     /// <param name="Sender">The active checkbox.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Configuration object the page edits.</summary>
     FOldPaletteConfig: TOldPaletteConfig;
   public
-    { Public-Deklarationen }
     /// <summary>Receives the <see cref="TOldPaletteConfig"/> instance edited by this page.</summary>
     /// <param name="UserData">The configuration cast to TObject.</param>
     procedure SetUserData(UserData: TObject);

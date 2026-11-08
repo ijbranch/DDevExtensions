@@ -257,7 +257,7 @@ var
 begin
   Lbx := TListBox(Control);
   Canvas := Lbx.Canvas;
-  { Normal/Alternate color rows }
+  { Normal/Alternate colour rows }
   Item := TNodeItem(Lbx.Items.Objects[Index]);
   if not (odSelected in State) then
   begin

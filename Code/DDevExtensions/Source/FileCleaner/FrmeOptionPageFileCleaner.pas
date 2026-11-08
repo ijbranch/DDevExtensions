@@ -82,11 +82,9 @@ type
     /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Backing configuration object supplied via SetUserData.</summary>
     FFileCleaner: TFileCleaner;
   public
-    { Public-Deklarationen }
     /// <summary>Stores the supplied configuration object for later Load/Save calls.</summary>
     /// <param name="UserData">Configuration object expected to be a TFileCleaner instance.</param>
     procedure SetUserData(UserData: TObject);

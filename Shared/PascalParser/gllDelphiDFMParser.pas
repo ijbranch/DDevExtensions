@@ -2,7 +2,7 @@
 {*                                                                            *}
 {* DelphiDfmParser - Lossless DFM Text Parser                                *}
 {*                                                                            *}
-{* Purpose: Parse and serialize Delphi .dfm files with exact fidelity        *}
+{* Purpose: Parse and serialise Delphi .dfm files with exact fidelity        *}
 {* Design goal: Parse(text) then Serialize() = identical text                *}
 {*                                                                            *}
 {* Part of DDevExtensions                                                     *}
@@ -143,7 +143,7 @@ type
     property Trailer: string read FTrailer write FTrailer;
   end;
 
-  /// <summary>DFM parser and serializer</summary>
+  /// <summary>DFM parser and serialiser</summary>
   TDelphiDfmParser = class
   public
     /// <summary>Parses text-format DFM into a document structure, keeping indentation and line endings for round-tripping.</summary>

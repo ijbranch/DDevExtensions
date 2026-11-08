@@ -155,7 +155,6 @@ type
     /// <param name="Sender">The tab control.</param>
     procedure TabControlResize(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>True when the IDE is currently showing a form designer.</summary>
     FIsFormDesigner: Boolean;
     /// <summary>Active configuration snapshot.</summary>
@@ -257,7 +256,6 @@ type
     /// <summary>Indexed access to the tab items.</summary>
     property TabItems[Index: Integer]: TTabItem read GetTabItem;
   public
-    { Public-Deklarationen }
     /// <summary>Creates the frame and installs IDE hooks on the component palette.</summary>
     /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
@@ -606,7 +604,7 @@ begin
     if Categories.Items[PalIndex].Items.Count > 0 then
       Inc(NewTabCount);
 
-  if NewTabCount > 0 then // The ToolPalette meight use the LoadPalette to find out if there are components that match the filter
+  if NewTabCount > 0 then // The ToolPalette might use the LoadPalette to find out if there are components that match the filter
   begin
     FIsFormDesigner := False;
     for PalIndex := 0 to Categories.Count - 1 do
@@ -837,7 +835,7 @@ procedure TFrameOldPalette.SelectComponent(PalGroup: TButtonCategory; PalItem: T
           CompName := PalItem.Caption;
           for k := 0 to Palette.ButtonCount - 1 do
           begin
-            // do not use TabBar.Tabs[i].AutoDeleteData[0] as TList because ButtonCount meight be out of sync here
+            // do not use TabBar.Tabs[i].AutoDeleteData[0] as TList because ButtonCount might be out of sync here
             if AnsiCompareText(Palette.Buttons[k].HelpKeyword, CompName) = 0 then
             begin
               Palette.SelectedButton := k;
@@ -906,7 +904,7 @@ begin
       SelectedPalItem := CompPal.SelectedItem;
   end;
 
-  { Initialize the component buttons }
+  { Initialise the component buttons }
   CurPersonality := PersonalityServices.CurrentPersonality;
   IsWin32Personality := (CurPersonality = sDelphiPersonality) or
                         (CurPersonality = sCBuilderPersonality);

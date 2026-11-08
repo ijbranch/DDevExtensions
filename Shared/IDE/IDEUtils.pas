@@ -1019,7 +1019,7 @@ begin
   if Addr = nil then
     Result := 0
   else
-    Result := HMODULE(FindHInstance(Addr)); // optimized by IDE Fix Pack
+    Result := HMODULE(FindHInstance(Addr)); // optimised by IDE Fix Pack
 end;
 
 {$IFDEF CPUX64}

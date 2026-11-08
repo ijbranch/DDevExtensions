@@ -52,7 +52,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
       Top = 8
       Width = 100
       Height = 25
-      Caption = '&Analyze Unit'
+      Caption = '&Analyse Unit'
       TabOrder = 1
       OnClick = btnAnalyzeClick
     end

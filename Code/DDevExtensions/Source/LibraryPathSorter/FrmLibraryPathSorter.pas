@@ -918,7 +918,7 @@ begin
 
     ListBox.Canvas.FillRect( Rect );
 
-    // Set text color (Invalid takes priority)
+    // Set text colour (Invalid takes priority)
     if odSelected in State then
       ListBox.Canvas.Font.Color := clHighlightText
     else if IsInvalid then
@@ -1112,7 +1112,7 @@ begin
 
     ListBox.Canvas.FillRect( Rect );
 
-    // Set text color (Invalid takes priority)
+    // Set text colour (Invalid takes priority)
     if odSelected in State then
       ListBox.Canvas.Font.Color := clHighlightText
     else if IsInvalid then

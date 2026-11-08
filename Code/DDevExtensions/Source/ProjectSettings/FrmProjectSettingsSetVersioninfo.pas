@@ -284,7 +284,6 @@ type
     /// <param name="Sender">The Auto-set Original Filename button.</param>
     procedure btnApplyAutoSetOriginalFilenameClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Working icon resource used by the Main Icon tab.</summary>
     FIcon: TIconResource;
     /// <summary>Populates the projects list, runs the dialog and persists settings on close.</summary>
@@ -320,7 +319,6 @@ type
     /// <param name="Text">The message to show; empty shows "Versioninfo updated.".</param>
     procedure ApplyFinished(const Text: string = '');
   public
-    { Public-Deklarationen }
     /// <summary>Creates the form, runs the dialog over the supplied projects and frees the form.</summary>
     /// <param name="Projects">Projects whose version info should be edited.</param>
     /// <returns>True if the user confirmed with OK.</returns>

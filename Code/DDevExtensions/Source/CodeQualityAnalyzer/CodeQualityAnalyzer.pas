@@ -74,7 +74,7 @@ type
   end;
 
   /// <summary>
-  /// Plugin host integrating the Code Quality Analyzer into the DDevExtensions menu and storing
+  /// Plugin host integrating the Code Quality Analyser into the DDevExtensions menu and storing
   /// its persistent configuration. Provides the static <see cref="AnalyzeUnit"/> entry point.
   /// </summary>
   TCodeQualityAnalyzerPlugin = class( TPluginConfig )
@@ -266,7 +266,7 @@ begin
   if DDevExtensionsMenu <> nil then
   begin
     FMenuItem := TMenuItem.Create( DDevExtensionsMenu );
-    FMenuItem.Caption := 'Code &Quality Analyzer...';
+    FMenuItem.Caption := 'Code &Quality Analyser...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
   end;
@@ -280,7 +280,7 @@ end;
 
 function TCodeQualityAnalyzerPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create( 'Code Quality Analyzer', TFrameOptionPageCodeQuality, Self );
+  Result := TTreePage.Create( 'Code Quality Analyser', TFrameOptionPageCodeQuality, Self );
 end;
 
 procedure TCodeQualityAnalyzerPlugin.Init;
@@ -320,7 +320,7 @@ procedure TCodeQualityAnalyzerPlugin.MenuItemClick( Sender: TObject );
 begin
   if not Enabled then
   begin
-    ShowMessage( 'Code Quality Analyzer is disabled. Enable it in DDevExtensions options.' );
+    ShowMessage( 'Code Quality Analyser is disabled. Enable it in DDevExtensions options.' );
     Exit;
   end;
 

@@ -907,7 +907,7 @@ begin
       TokenList.Add( Token );
     end;
 
-    // Second pass: analyze tokens (must be inside lexer's try block)
+    // Second pass: analyse tokens (must be inside lexer's try block)
     InInterface := False;
     InImplementation := False;
     InUses := False;
@@ -1116,7 +1116,7 @@ var
   end;
 
 begin
-  // Step 1: Analyze the source to extract uses clauses and identifier usage
+  // Step 1: Analyse the source to extract uses clauses and identifier usage
   FUsageAnalyzer.Analyze( Source );
 
   ResultList := TList<TUnitPlacement>.Create;

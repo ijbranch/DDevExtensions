@@ -610,7 +610,7 @@ begin
     begin
       lblCircularRefs.Caption := Format( 'Circular References: %d found', [ ListBoxCircular.Items.Count ] );
 
-      // Color code based on severity
+      // Colour code based on severity
       if ListBoxCircular.Items.Count >= 100 then
         lblCircularRefs.Font.Color := clRed
       else if ListBoxCircular.Items.Count >= 10 then
@@ -961,7 +961,7 @@ begin
   lblImpactTransitive.Caption := Format( 'Total affected: %d units', [ Impact.TransitiveCount ] );
   lblImpactRisk.Caption       := 'Risk: ' + Impact.RiskLevelText;
 
-  // Set risk indicator color
+  // Set risk indicator colour
   case Impact.RiskLevel of
     0: shpRiskIndicator.Brush.Color := clGreen;   // Safe
     1: shpRiskIndicator.Brush.Color := $0080FF80; // Light green - Low
@@ -1226,7 +1226,7 @@ begin
     begin
       lblLayerViolations.Caption := Format( 'Layer Violations: %d found', [ Length( FLayerViolations ) ] );
 
-      // Color code based on severity
+      // Colour code based on severity
       if Length( FLayerViolations ) >= 50 then
         lblLayerViolations.Font.Color := clRed
       else if Length( FLayerViolations ) >= 10 then

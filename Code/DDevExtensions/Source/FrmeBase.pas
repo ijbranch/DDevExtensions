@@ -47,7 +47,6 @@ type
     /// <summary>Page caption label.</summary>
     lblCaption: TLabel;
   private
-    { Private-Deklarationen }
     /// <summary>Reader error handler: skips the offending DFM entry and logs it, instead of failing the page.</summary>
     /// <param name="Reader">The reader streaming this frame.</param>
     /// <param name="Message">The reader's error message.</param>
@@ -65,7 +64,6 @@ type
     /// <param name="Reader">The reader streaming this frame (one per inheritance level).</param>
     procedure ReadState(Reader: TReader); override;
   public
-    { Public-Deklarationen }
     /// <summary>
     /// Constructs the frame (DFM reader errors are handled by <see cref="ReadState"/>) and aligns it to its host.
     /// </summary>

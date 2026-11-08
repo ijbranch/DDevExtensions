@@ -30,7 +30,7 @@ const
   /// <summary>Interceptor supports the <c>AlterFile()</c> method.</summary>
   CIO_ALTERFILES       = $0001;  // The interceptor supports the AlterFile() method
   /// <summary>Interceptor supports the <c>GetVirtualFile()</c> / <c>OpenVirtualFile()</c> methods.</summary>
-  CIO_VIRTUALFILES     = $0002;  // The interceptor supports the VirtrualFile() method
+  CIO_VIRTUALFILES     = $0002;  // The interceptor supports the VirtualFile() method
   /// <summary>Interceptor supports the <c>InspectFilename()</c> method.</summary>
   CIO_INSPECTFILENAMES = $0004;  // The interceptor supports the InspectFilename() method
   /// <summary>Interceptor supports the <c>AlterMessage()</c> method.</summary>

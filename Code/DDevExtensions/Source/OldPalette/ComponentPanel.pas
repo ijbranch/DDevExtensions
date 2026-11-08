@@ -758,7 +758,7 @@ begin
             DDB.HandleType := bmDDB;
             if NumGlyphs > 1 then
               with TmpImage.Canvas do
-              begin { Change white & gray to clBtnHighlight and clBtnShadow }
+              begin { Change white & grey to clBtnHighlight and clBtnShadow }
                 CopyRect(IRect, DDB.Canvas, ORect);
                 MonoBmp.Monochrome := True;
                 MonoBmp.Width := IWidth;
@@ -774,7 +774,7 @@ begin
                 BitBlt(DestDC, 0, 0, IWidth, IHeight,
                   MonoBmp.Canvas.Handle, 0, 0, ROP_DSPDxax);
 
-                { Convert gray to clBtnShadow }
+                { Convert grey to clBtnShadow }
                 DDB.Canvas.Brush.Color := clGray;
                 MonoBmp.Canvas.CopyRect(IRect, DDB.Canvas, ORect);
                 Brush.Color := clBtnShadow;
@@ -784,7 +784,7 @@ begin
                 BitBlt(DestDC, 0, 0, IWidth, IHeight,
                   MonoBmp.Canvas.Handle, 0, 0, ROP_DSPDxax);
 
-                { Convert transparent color to clBtnFace }
+                { Convert transparent colour to clBtnFace }
                 DDB.Canvas.Brush.Color := ColorToRGB(FTransparentColor);
                 MonoBmp.Canvas.CopyRect(IRect, DDB.Canvas, ORect);
                 Brush.Color := Color {clBtnFace};
@@ -914,8 +914,8 @@ begin
   end;
 
   { If the layout has the glyph on the right or the left, then both the
-    text and the glyph are centered vertically.  If the glyph is on the top
-    or the bottom, then both the text and the glyph are centered horizontally.}
+    text and the glyph are centred vertically.  If the glyph is on the top
+    or the bottom, then both the text and the glyph are centred horizontally.}
   if Layout in [blGlyphLeft, blGlyphRight] then
   begin
     GlyphPos.Y := (ClientSize.Y - GlyphSize.Y + 1) div 2;

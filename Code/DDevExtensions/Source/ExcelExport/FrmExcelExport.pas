@@ -55,7 +55,6 @@ type
     /// <summary>Runs the export, then closes the dialog.</summary>
     /// <param name="Msg">The WM_START_EXPORT message.</param>
     procedure WMStartExport(var Msg: TMessage); message WM_START_EXPORT;
-    { Private-Deklarationen }
   protected
     /// <summary>
     /// Posts WM_START_EXPORT when the dialog is first shown, so the export runs from the
@@ -63,7 +62,6 @@ type
     /// </summary>
     procedure DoShow; override;
   public
-    { Public-Deklarationen }
     /// <summary>Shows the progress form and exports a list view to Excel.</summary>
     /// <param name="AName">Sheet name to use in the new workbook.</param>
     /// <param name="AListView">List view whose contents should be exported.</param>

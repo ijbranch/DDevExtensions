@@ -10,7 +10,7 @@
 unit FrmeOptionPageCodeQuality;
 
 /// <summary>
-/// Tree-page options frame for the Code Quality Analyzer plugin. Renders one tab sheet per
+/// Tree-page options frame for the Code Quality Analyser plugin. Renders one tab sheet per
 /// detection category and binds the controls to the persistent settings on
 /// <see cref="TCodeQualityAnalyzerPlugin"/>.
 /// </summary>
@@ -25,7 +25,7 @@ uses
   CodeQualityAnalyzer;
 
 type
-  /// <summary>Options frame surfacing every Code Quality Analyzer setting.</summary>
+  /// <summary>Options frame surfacing every Code Quality Analyser setting.</summary>
   TFrameOptionPageCodeQuality = class( TFrameBase, ITreePageComponent )
     /// <summary>Master enable for the plugin.</summary>
     chkEnabled: TCheckBox;

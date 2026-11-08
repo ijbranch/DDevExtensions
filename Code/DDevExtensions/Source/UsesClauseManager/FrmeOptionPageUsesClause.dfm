@@ -19,7 +19,7 @@ inherited FrameOptionPageUsesClause: TFrameOptionPageUsesClause
       Height = 65
       AutoSize = False
       Caption = 
-        'The Uses Clause Manager analyzes your code to determine which un' +
+        'The Uses Clause Manager analyses your code to determine which un' +
         'its should be in the interface uses clause vs the implementation' +
         ' uses clause. Units are moved to implementation if their symbols' +
         ' are only used in the implementation section.'
@@ -34,7 +34,7 @@ inherited FrameOptionPageUsesClause: TFrameOptionPageUsesClause
     inherited lblDescription: TLabel
       Width = 368
       Caption = 
-        'Automatically organize uses clauses by moving units to the appro' +
+        'Automatically organise uses clauses by moving units to the appro' +
         'priate section.'
     end
   end

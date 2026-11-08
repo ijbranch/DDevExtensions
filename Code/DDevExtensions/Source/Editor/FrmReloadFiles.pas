@@ -14,7 +14,7 @@
     - Checkboxes to select which files should be reloaded
     - If a diff tool (Beyond Compare, TortoiseSVN (TMerge), TortoiseGIT (TMerge), TortoiseHG (kdiff3)
       is installed the context menu shows "Diff <filename>" items and at the bottom a combobox for
-      the file editors and "Diff" butten become visible.
+      the file editors and "Diff" button become visible.
     - The context menu allows to select/deselect items
     - With the "Show in Explorer" context menu item the main file can be opened in the Windows Explorer
     - If the user switches to another application makes changes further files and switches back to
@@ -104,7 +104,6 @@ type
     procedure ListViewModulesCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
   private
-    { Private-Deklarationen }
     /// <summary>List-view group used for project files (.dproj/.dpr/...).</summary>
     FProjectGroup: TListGroup;
     /// <summary>List-view group used for plain unit files.</summary>
@@ -149,7 +148,6 @@ type
     /// <param name="APopupMenu">The pop-up menu that receives the entries.</param>
     procedure AddDiffPopupItems(ADocModule: TDocModule; APopupMenu: TPopupMenu);
   public
-    { Public-Deklarationen }
     /// <summary>Shows the dialog modally and returns True if the user accepted the reload.</summary>
     /// <param name="AModules">The modules to display; filtered in-place to those still ticked on OK.</param>
     /// <returns>True if the user clicked OK; False on Cancel or on re-entrant invocation.</returns>

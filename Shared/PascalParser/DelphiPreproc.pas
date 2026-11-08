@@ -443,7 +443,7 @@ resourcestring
   RsIdentifierExpected = 'Identifier expected';
   RsFilenameExpected = 'Filename expected';
   RsStringEndMissing = 'String end is missing';
-  RsNoIfdefOpen = 'No conditinal block open';
+  RsNoIfdefOpen = 'No conditional block open';
   RsExpected = '%s expected';
   RsMultipleElseNotAllowed = '$ELSE already used';
 

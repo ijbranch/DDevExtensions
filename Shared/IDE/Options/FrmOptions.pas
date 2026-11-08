@@ -40,7 +40,6 @@ type
     /// <param name="Sender">The clicked label; its Hint holds the URL.</param>
     procedure lblURLClick(Sender: TObject);
   private
-    { Private-Deklarationen }
   protected
     /// <summary>Returns the global registry of page providers; overridable for subclassed dialogs.</summary>
     /// <returns>The registry list, or nil when no provider has been registered (or after finalization).</returns>
@@ -52,7 +51,6 @@ type
     /// <param name="Root">Root page that receives the pages the providers return.</param>
     procedure PopulateRootPage(Root: TTreePage); override;
   public
-    { Public-Deklarationen }
     /// <summary>Registers a method-typed page provider so it is invoked the next time the dialog is opened.</summary>
     /// <param name="OptionPages">Method that returns the provider's page tree each time the dialog opens.</param>
     class procedure RegisterPages(const OptionPages: TOptionPagesEvent);

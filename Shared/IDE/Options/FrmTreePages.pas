@@ -135,7 +135,6 @@ type
     /// <param name="Sender">The form.</param>
     procedure FormShow(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Root TTreePage that owns the entire page hierarchy.</summary>
     FRootPage: TTreePage;
     /// <summary>Currently selected page component (or nil).</summary>
@@ -185,7 +184,6 @@ type
     /// <summary>Indexed accessor for the page components currently parented to PanelClient.</summary>
     property PageComponents[Index: Integer]: ITreePageComponent read GetPageComponent;
   public
-    { Public-Deklarationen }
     /// <summary>Convenience method that creates the dialog, runs DoExecute and frees it.</summary>
     /// <returns>True when the user accepted the dialog.</returns>
     class function Execute: Boolean;

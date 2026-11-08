@@ -55,7 +55,6 @@ type
     /// <summary>Restores state and rewrites every "Tahoma" font to the IDE default font.</summary>
     procedure DoShow; override;
   public
-    { Public-Deklarationen }
     /// <summary>Creates the form and applies the IDE's default font.</summary>
     /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;

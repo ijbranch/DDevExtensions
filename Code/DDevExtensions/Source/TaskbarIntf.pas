@@ -253,8 +253,8 @@ type
   end;
 
 const
-  /// <summary>No specific property values are specified.  The default behavior is used: the tab window provides a thumbnail and peek image, either live or static
-  /// as appropriate.</summary>
+  /// <summary>No specific property values are specified.  The default behaviour is used: the tab window provides a thumbnail and peek image, either live or
+  /// static as appropriate.</summary>
   {$EXTERNALSYM STPF_NONE}
   STPF_NONE                       = $0;
   /// <summary>Always use the thumbnail provided by the main application frame window rather than a thumbnail provided by the individual tab window.  Do not

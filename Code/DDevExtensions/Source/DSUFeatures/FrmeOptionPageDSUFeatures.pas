@@ -256,11 +256,9 @@ type
     /// <summary>Check box for the DisableAlphaSortClassCompletion option.</summary>
     chkDisableAlphaSortClassCompletion: TCheckBox;
   private
-    { Private-Deklarationen }
     /// <summary>Backing configuration object supplied through SetUserData.</summary>
     FDSUFeatures: TDSUFeaturesConfig;
   public
-    { Public-Deklarationen }
     /// <summary>Stores the supplied configuration object for later Load/Save calls.</summary>
     /// <param name="UserData">Configuration object expected to be a TDSUFeaturesConfig.</param>
     procedure SetUserData(UserData: TObject);
@@ -432,7 +430,7 @@ begin
   begin
     { When the IDE switches to the Debug Desktop and then back, the
       zoomed editor can't be restored anymore. The following code
-      restores the zommed editor before the IDE switches to the Debug
+      restores the zoomed editor before the IDE switches to the Debug
       Desktop. }
     FoundVisible := False;
     for I := 0 to EditWindow.ControlCount - 1 do
@@ -1570,7 +1568,7 @@ begin
     // in XML for round-trip with the 32-bit IDE, but don't install the hook here.
     FShowFileProjectInPrjMgr := Value;
     {$ELSE}
-    { Find the tree and initialize the tree handler }
+    { Find the tree and initialise the tree handler }
     if FPrjMgrTree = nil then
     begin
       ProjectManagerForm := FindForm('ProjectManagerForm', '');

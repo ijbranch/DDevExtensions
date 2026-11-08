@@ -10,7 +10,7 @@
 unit FrmCodeQualityAnalyzer;
 
 /// <summary>
-/// Singleton results window for the Code Quality Analyzer plugin. Initiates project-wide scans,
+/// Singleton results window for the Code Quality Analyser plugin. Initiates project-wide scans,
 /// shows the issues in a sortable list view with category and severity filters, and supports
 /// navigation, clipboard copy, and CSV export.
 /// </summary>
@@ -25,7 +25,7 @@ uses
   FrmBase, CodeQualityAnalyzer, ToolsAPI;
 
 type
-  /// <summary>Singleton results form for the Code Quality Analyzer.</summary>
+  /// <summary>Singleton results form for the Code Quality Analyser.</summary>
   TFormCodeQualityAnalyzer = class( TForm )
     /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
@@ -252,7 +252,7 @@ begin
 
   if CodeQualityAnalyzerPlugin = nil then
   begin
-    ShowMessage( 'Code Quality Analyzer is not available.' );
+    ShowMessage( 'Code Quality Analyser is not available.' );
     Exit;
   end;
 

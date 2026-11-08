@@ -135,11 +135,11 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <VerInfo_Release>16</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Build>679</VerInfo_Build>
+        <VerInfo_Build>680</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>24</VerInfo_MinorVer>
         <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.24.16.679;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.24.16.679;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.24.16.680;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.24.16.680;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_DcuOutput>lib\$(Platform)\debug</DCC_DcuOutput>
@@ -166,11 +166,11 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <VerInfo_Build>663</VerInfo_Build>
+        <VerInfo_Build>664</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>24</VerInfo_MinorVer>
         <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.24.16.663;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.24.16.663;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.24.16.664;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.24.16.664;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>

@@ -49,7 +49,7 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
       Top = 8
       Width = 90
       Height = 25
-      Caption = '&Analyze Project'
+      Caption = '&Analyse Project'
       TabOrder = 0
       OnClick = btnScanClick
     end

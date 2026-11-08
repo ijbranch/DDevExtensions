@@ -43,11 +43,9 @@ type
     /// <param name="Sender">The active checkbox.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Selector instance the page edits.</summary>
     FComponentSelector: TComponentSelector;
   public
-    { Public-Deklarationen }
     /// <summary>Receives the <see cref="TComponentSelector"/> instance edited by this page.</summary>
     /// <param name="UserData">The selector cast to TObject.</param>
     procedure SetUserData(UserData: TObject);

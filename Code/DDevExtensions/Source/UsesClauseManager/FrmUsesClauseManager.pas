@@ -74,7 +74,7 @@ type
     /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Runs the analyser on the currently active editor source.</summary>
-    /// <param name="Sender">The Analyze button.</param>
+    /// <param name="Sender">The Analyse button.</param>
     procedure btnAnalyzeClick( Sender: TObject );
     /// <summary>Applies all recommended placement changes to the active editor.</summary>
     /// <param name="Sender">The Apply button.</param>
@@ -283,7 +283,7 @@ begin
     UsesClauseManagerPlugin.ExportsDB.BuildFromSearchPath( Project, DBProgress );
 
     lblProgress.Visible := False;
-    lblSummary.Caption := Format( 'Database built: %d units scanned. Ready to analyze.',
+    lblSummary.Caption := Format( 'Database built: %d units scanned. Ready to analyse.',
       [ UsesClauseManagerPlugin.ExportsDB.UnitCount ] );
     lblSummary.Visible := True;
   finally
@@ -339,7 +339,7 @@ begin
   btnAnalyze.Enabled := False;
   FBusy := True;
   try
-    lblProgress.Caption := 'Analyzing ' + ExtractFileName( FCurrentFileName ) + '...';
+    lblProgress.Caption := 'Analysing ' + ExtractFileName( FCurrentFileName ) + '...';
     lblProgress.Visible := True;
     lblSummary.Visible := False;
     Application.ProcessMessages;
@@ -358,7 +358,7 @@ begin
     PopulateList;
 
     lblProgress.Visible := False;
-    lblSummary.Caption := Format( 'Found %d units to analyze', [ Length( FPlacements ) ] );
+    lblSummary.Caption := Format( 'Found %d units to analyse', [ Length( FPlacements ) ] );
     lblSummary.Visible := True;
   finally
     FBusy := False;

@@ -114,7 +114,7 @@ Version 3.6.1 fixes a compilation error in Delphi 10.2-10.4 where the Remove Pix
 
 Version 3.6.0 enhances the Dependency Viewer with two new features: Export Circular References (export circular reference analysis to CSV or TXT files for external review) and Layer Violation Detection (define architectural layers with pattern-based unit matching and detect forbidden cross-layer dependencies).
 
-Version 3.6.0 adds two new Code Style Checker rules (Variable Type Prefix Rules and Unit Scope Names) plus the Code Quality Analyzer - a unified tool that detects common code quality issues including magic numbers, hardcoded strings, commented-out code, empty except blocks, catch-all exception handlers, missing try/finally patterns, and potential memory leaks. All detectors are configurable with whitelists and thresholds. Cleanup is deliberately conservative: removal of duplicates, missing directories and dead macro references is opt-in and off by default, every intended removal is re-verified immediately before it happens (a share may have reconnected since you pressed Analyse), each one is listed for confirmation, and a macro that resolves only in the *other* IDE bitness is reported as divergent rather than dead so it is never deleted. It also fixes the `OldPalette` search-path entries, which pointed at a directory that has never existed and emitted `H2675` on every build. See Help.md for details.
+Version 3.6.0 adds two new Code Style Checker rules (Variable Type Prefix Rules and Unit Scope Names) plus the Code Quality Analyser - a unified tool that detects common code quality issues including magic numbers, hardcoded strings, commented-out code, empty except blocks, catch-all exception handlers, missing try/finally patterns, and potential memory leaks. All detectors are configurable with whitelists and thresholds. Cleanup is deliberately conservative: removal of duplicates, missing directories and dead macro references is opt-in and off by default, every intended removal is re-verified immediately before it happens (a share may have reconnected since you pressed Analyse), each one is listed for confirmation, and a macro that resolves only in the *other* IDE bitness is reported as divergent rather than dead so it is never deleted. It also fixes the `OldPalette` search-path entries, which pointed at a directory that has never existed and emitted `H2675` on every build. See Help.md for details.
 
 Version 3.5.2 fixes multiple Code Style Checker bugs: field detection now works correctly, method names and parameters are no longer incorrectly flagged as fields, return types and case labels are no longer flagged as parameters, and line number navigation is now accurate. All feature dialogs are now non-modal and open at screen center.
 
@@ -830,7 +830,7 @@ Automatically analyzes which symbols from each unit are used in the interface vs
 
 **How it works:**
 1. Click "Build Database" to scan all units in the project's search path and build an exports database
-2. Click "Analyze Unit" to analyze the current file's identifier usage
+2. Click "Analyse Unit" to analyse the current file's identifier usage
 3. Review the recommendations showing which units should move between uses clauses
 4. Click "Apply Changes" to automatically reorganize the uses clauses
 

@@ -9,7 +9,7 @@ inherited FrameOptionPageCodeQuality: TFrameOptionPageCodeQuality
       Top = 8
       Width = 300
       Height = 17
-      Caption = 'Enable Code Quality Analyzer'
+      Caption = 'Enable Code Quality Analyser'
       TabOrder = 0
     end
     object pcCategories: TPageControl
@@ -185,7 +185,7 @@ inherited FrameOptionPageCodeQuality: TFrameOptionPageCodeQuality
     inherited lblDescription: TLabel
       Width = 418
       Caption = 
-        'Configure the Code Quality Analyzer to detect common code issues' +
+        'Configure the Code Quality Analyser to detect common code issues' +
         '.'
     end
   end

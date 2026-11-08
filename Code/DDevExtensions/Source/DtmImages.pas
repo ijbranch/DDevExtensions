@@ -38,9 +38,7 @@ type
     /// <summary>Application icons used in the project switcher and reload list.</summary>
     imlApplications: TImageList;
   private
-    { Private-Deklarationen }
   public
-    { Public-Deklarationen }
   end;
 
 var

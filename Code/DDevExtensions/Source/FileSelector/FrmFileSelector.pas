@@ -349,7 +349,6 @@ type
     /// <param name="Sender">The Options button.</param>
     procedure btnOptionsClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Index of the column the free-text filter currently targets.</summary>
     FFilterField: Integer;
     /// <summary>Absolute path of the active project file used for relative paths and caching.</summary>
@@ -431,7 +430,6 @@ type
     /// <returns>True when the user accepted the dialog.</returns>
     function InternExecute(OpenMode: Boolean): Boolean;
   public
-    { Public-Deklarationen }
     /// <summary>Creates the form, allocating helper objects and initial state.</summary>
     /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
@@ -1075,7 +1073,7 @@ begin
   ListView.DoubleBuffered := True;
   ToolBar.Flat := True; // BDS 2006's default is True => Flat is not stored in the DFM
 
-  { Delphi 7's designer always looses these information if the dtmImages is not
+  { Delphi 7's designer always loses this information if the dtmImages is not
     open. }
   ListView.SmallImages := DataModuleImages.imlModules;
   ListViewInsertUnits.SmallImages := DataModuleImages.imlModules;
@@ -1366,7 +1364,7 @@ procedure TFormFileSelector.GetFilenames;
             end;
             {$ENDIF ~COMPILER12_UP}
             UpName := AnsiUpperCase(ChangeFileExt(FileName, ''));
-            { Only add files that aren't already found in a more prioritized
+            { Only add files that aren't already found in a more prioritised
               directory. }
             if not FilesHash.Find(UpName, Index) then
             begin
@@ -1431,7 +1429,7 @@ var
 
         if Filename <> '' then
         begin
-          { Project files are prioritized }
+          { Project files are prioritised }
           // A project file is a source file: without the flag the "source for a DCU" lookup below
           // replaced it with a same-named unit from the Browsing Path.
           Index := Files.AddObject(Filename, TObject(True));
@@ -1538,7 +1536,7 @@ begin
             HashTable.Add(AnsiUpperCase(Filename), Index);
             if Filename <> '' then
             begin
-              { Project files are prioritized }
+              { Project files are prioritised }
               // A project file is a source file: without the flag the "source for a DCU" lookup below
               // replaced it with a same-named unit from the Browsing Path.
               Index := Files.AddObject(Filename, TObject(True));
@@ -2137,7 +2135,7 @@ begin
       else
       begin
         { Add the already added UsesItem to the delete list if the user wants the unit
-          to be moved to the other location (implementation vs. interferface) }
+          to be moved to the other location (implementation vs. interface) }
         if (FoundInImpl <> nil) and not UseUnitsImplementation then
           DeleteUsesList.Add(FoundInImpl);
         if (FoundInIntf <> nil) and UseUnitsImplementation then

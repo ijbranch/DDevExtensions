@@ -86,7 +86,6 @@ type
     /// <summary>Toggles replacement of the IDE's File Use Unit dialog.</summary>
     chkReplaceUseUnit: TCheckBox;
   private
-    { Private declarations }
     /// <summary>Configuration object the page edits.</summary>
     FUnitSelectorConfig: TUnitSelectorConfig;
   public
@@ -101,7 +100,6 @@ type
     procedure Selected;
     /// <summary>Called when the page is deactivated in the options dialog.</summary>
     procedure Unselected;
-    { Public declarations }
   end;
 
 /// <summary>Singleton configuration instance owned by the plugin.</summary>

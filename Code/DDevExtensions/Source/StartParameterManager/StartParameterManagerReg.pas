@@ -18,7 +18,7 @@ type
   /// </summary>
   TStartParameterManager = class(TComponent)
   private
-    /// <summary>Action backing the "Customize start parameters" command (currently disabled).</summary>
+    /// <summary>Action backing the "Customise start parameters" command (currently disabled).</summary>
     FActionCustomize: TAction;
   protected
     /// <summary>OnExecute for FActionCustomize (currently a no-op placeholder).</summary>

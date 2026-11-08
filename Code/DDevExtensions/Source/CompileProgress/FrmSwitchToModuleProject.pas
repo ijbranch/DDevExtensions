@@ -58,7 +58,6 @@ type
     /// <param name="Shift">Modifier state.</param>
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
-    { Private-Deklarationen }
     /// <summary>True from the Shift key's first key-down until its key-up, so auto-repeat does not toggle again.</summary>
     FShiftKeyDown: Boolean;
     /// <summary>Returns a friendly project name ( file name without path or extension ) for display.</summary>
@@ -84,7 +83,6 @@ type
     /// </summary>
     procedure DoShow; override;
   public
-    { Public-Deklarationen }
     /// <summary>Shows the switch-to-module-project dialog and returns the user's choice.</summary>
     /// <param name="AModule">Module that triggered the compile.</param>
     /// <param name="AProject">On entry the currently active project; on exit the project chosen by the user.</param>
@@ -184,7 +182,7 @@ end;
 procedure TFormSwitchToModuleProject.FormCreate(Sender: TObject);
 begin
   inherited;
-  { Localize dialog }
+  { Localise dialog }
   ButtonYes.Caption := SYesButton;
   ButtonNo.Caption := SNoButton;
   ButtonCancel.Caption := SCancelButton;

@@ -27,9 +27,7 @@ type
     /// <param name="Sender">The form raising <c>OnCreate</c>.</param>
     procedure FormCreate(Sender: TObject);
   private
-    { Private-Deklarationen }
   public
-    { Public-Deklarationen }
   end;
 
 implementation

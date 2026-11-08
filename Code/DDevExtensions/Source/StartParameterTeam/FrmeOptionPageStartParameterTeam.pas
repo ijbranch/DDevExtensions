@@ -88,11 +88,9 @@ type
     /// <summary>Checkbox that mirrors TStartParameterTeam.Active.</summary>
     cbxActive: TCheckBox;
   private
-    { Private-Deklarationen }
     /// <summary>Backing reference to the configuration object whose state is edited.</summary>
     FStartParameterTeam: TStartParameterTeam;
   public
-    { Public-Deklarationen }
     /// <summary>Receives the configuration object from the host page.</summary>
     /// <param name="UserData">The TStartParameterTeam object to edit.</param>
     procedure SetUserData(UserData: TObject);

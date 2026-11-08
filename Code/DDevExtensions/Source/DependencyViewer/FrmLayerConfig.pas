@@ -463,7 +463,7 @@ begin
       NewMatrix[ I, J ] := FRulesMatrix[ I, J ];
   end;
 
-  // Initialize new row/column to false
+  // Initialise new row/column to false
   for I := 0 to OldCount do
   begin
     NewMatrix[ I, OldCount ] := False;

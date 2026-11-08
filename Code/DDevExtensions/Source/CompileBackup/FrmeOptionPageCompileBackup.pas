@@ -95,11 +95,9 @@ type
     /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Configuration instance bound to this frame.</summary>
     FCompileBackupConfig: TCompileBackupConfig;
   public
-    { Public-Deklarationen }
     /// <summary>Receives the TCompileBackupConfig instance to edit.</summary>
     /// <param name="UserData">A TCompileBackupConfig instance.</param>
     procedure SetUserData(UserData: TObject);

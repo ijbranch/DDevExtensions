@@ -236,11 +236,9 @@ type
     /// <param name="Sender">The Section Toggle check box.</param>
     procedure chkSectionToggleClick(Sender: TObject);
   private
-    { Private-Deklarationen }
     /// <summary>Configuration object passed in via SetUserData.</summary>
     FKeyBindings: TKeybindings;
   public
-    { Public-Deklarationen }
     /// <summary>Receives the TKeybindings configuration object that backs this page.</summary>
     /// <param name="UserData">Must be a TKeybindings instance.</param>
     procedure SetUserData(UserData: TObject);
@@ -887,7 +885,7 @@ begin
     ClearFlags := ULARGE_INTEGER(RestoreFlags).LowPart;
     SetFlags := ULARGE_INTEGER(RestoreFlags).HighPart;
 
-    // apply in revers to restore the original settings
+    // apply in reverse to restore the original settings
     EkView.Editor.EdModes := (EkView.Editor.EdModes and not ClearFlags) or SetFlags;
   end;
 end;

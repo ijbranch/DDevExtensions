@@ -579,7 +579,7 @@ begin
   Data.Count := 0;
   Exit;
   {$ENDIF}
-  if Data.Count = 0 then // do not overwrite an already backuped code
+  if Data.Count = 0 then // do not overwrite already backed-up code
   begin
     Proc := GetActualAddr(Proc);
     var rJump: TXRedirCode;
@@ -1509,7 +1509,7 @@ begin
 
   P[JmpRelOffset] := $E9;
   PInteger(@P[JmpRelOffset + 1])^ := (PByte(Proc) + StartCodeSize) - (P + JmpRelOffset + 5);
-  // Fill gab
+  // Fill gap
   for I := CodeSize to FullCodeSize - 1 do
     Byte(PAnsiChar(P)[I]) := $CC; // int 3
 
