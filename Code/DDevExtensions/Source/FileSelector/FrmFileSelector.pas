@@ -731,6 +731,14 @@ begin
     FParser := TDesignerParser.Create(FEditor.FileName, GetEditorSource(FEditor));
     try
       FParser.ParseUsesOnly;
+      // A truncated parse (a compiler-directive error, or an include file that could not be read) may
+      // have missed uses entries, so editing the clause could add a duplicate: offer Open only.
+      // Said in the caption, not a modal box, so a harmless directive error does not interrupt every open.
+      if FParser.ParseError then
+      begin
+        Caption := Caption + ' - Use Unit unavailable: the unit could not be parsed completely';
+        Abort;
+      end;
       if FParser.ModuleType <> mtUnit then
         Abort;
     except

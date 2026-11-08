@@ -25,20 +25,36 @@ uses
   SysUtils, Classes, Contnrs, TypInfo;
 
 const
+  /// <summary>Control characters and the space, which the lexer skips between tokens.</summary>
   WhiteChars = [#1..#32];
+  /// <summary>Decimal digits, used to recognise integer and float literals.</summary>
   NumberChars = ['0'..'9'];
+  /// <summary>Digits allowed in a $-prefixed hexadecimal literal.</summary>
   HexNumberChars = NumberChars + ['A'..'F', 'a'..'f'];
+  /// <summary>ASCII characters that may start an identifier.</summary>
   IdentFirstChars = ['a'..'z', 'A'..'Z', '_'];
+  /// <summary>ASCII characters that may continue an identifier after its first character.</summary>
   IdentChars = IdentFirstChars + NumberChars;
 
 type
+  /// <summary>Pointer to a byte of the UTF-8 source text the lexer scans.</summary>
   PUTF8Char = PAnsiChar;
+  /// <summary>One byte of the UTF-8 source text the lexer scans.</summary>
   UTF8Char = AnsiChar;
   {$IFNDEF UNICODE}
+  /// <summary>Fallback for compilers before Delphi 2009, which lack RawByteString.</summary>
   RawByteString = AnsiString;
+  /// <summary>Fallback for compilers before Delphi 2009, which lack UnicodeString.</summary>
   UnicodeString = WideString;
   {$ENDIF UNICODE}
 
+  /// <summary>
+  /// Classification of a lexed token.  The values are ordered in ranges that callers compare against:
+  /// symbols from tkSymbol (compound operators from tkSymbolLevel2), then comments, directives and literals,
+  /// then tkIdent followed by the context-sensitive directive words (tkI_read ...) and, from
+  /// tkIdentStrictReserved, the strictly reserved words.  A word token's name is its enum name less the
+  /// "tkI_" prefix.
+  /// </summary>
   TTokenKind = (
     tkNone,
 
@@ -216,10 +232,11 @@ type
       tkI_finalization
   );
 
+  /// <summary>Set of token kinds, for testing a token against several kinds at once.</summary>
   TTokenKindSet = set of TTokenKind;
 
 const
-  /// <summary>First token kind that represents a multi-character compound operator (>=, &lt;=, ...).</summary>
+  /// <summary>First token kind that represents a multi-character compound operator (&gt;=, &lt;=, ...).</summary>
   tkSymbolLevel2 = tkGreaterEqualThan;
   /// <summary>First token kind that represents a strictly-reserved keyword (if, else, ...).</summary>
   tkIdentStrictReserved = tkI_if;
@@ -235,39 +252,80 @@ type
   /// <summary>Single token produced by the lexer: classification, source value and source location.</summary>
   TToken = class(TObject)
   private
+    /// <summary>0-based position of this token in the lexer's token list.</summary>
     FTokenIndex: Integer;
+    /// <summary>Classification of the token.</summary>
     FKind: TTokenKind;
+    /// <summary>The token's text as a native string.</summary>
     FValue: string;
+    /// <summary>1-based column of the token's first character.</summary>
     FColumn: Integer;
+    /// <summary>0-based line of the token's first character.</summary>
     FLine: Integer;
+    /// <summary>1-based byte index of the token's first character in the lexer's UTF-8 text.</summary>
     FIndex: Integer;
+    /// <summary>Name of the file the token was lexed from.</summary>
     FFilename: string;
+    /// <summary>Number of bytes the token occupies in the lexer's UTF-8 text.</summary>
     FTokenLength: Integer;
+    /// <summary>Computes the 1-based byte index of the token's last character.</summary>
+    /// <returns>Index + TokenLength - 1.</returns>
     function GetEndIndex: Integer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
   protected
+    /// <summary>Shifts the token's position after the lexer's text was edited before it.</summary>
+    /// <param name="OffsetTokenIndex">Amount added to TokenIndex.</param>
+    /// <param name="OffsetIndex">Amount added to Index.</param>
+    /// <param name="OffsetColumn">Amount added to Column.</param>
+    /// <param name="OffsetLine">Amount added to Line.</param>
     procedure OffsetToken(OffsetTokenIndex, OffsetIndex, OffsetColumn, OffsetLine: Integer);
   public
+    /// <summary>Creates a token with the classification, text and position the lexer found.</summary>
+    /// <param name="ATokenIndex">0-based position of the token in the lexer's token list.</param>
+    /// <param name="AKind">Classification of the token.</param>
+    /// <param name="AValue">The token's text.</param>
+    /// <param name="AFilename">Name of the file the token was lexed from.</param>
+    /// <param name="ALine">0-based line of the token's first character.</param>
+    /// <param name="AColumn">1-based column of the token's first character.</param>
+    /// <param name="AIndex">1-based byte index of the token's first character.</param>
+    /// <param name="ATokenLength">Number of bytes the token occupies in the source text.</param>
     constructor Create(ATokenIndex: Integer; AKind: TTokenKind; const AValue, AFilename: string;
       ALine, AColumn, AIndex, ATokenLength: Integer);
     //class function NewInstance: TObject; override;
     //procedure FreeInstance; override;
 
+    /// <summary>Tells whether the token is an identifier or any keyword or directive word.</summary>
+    /// <returns>True when Kind is tkIdent or later.</returns>
     function IsIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    /// <summary>Tells whether the token can be used as a plain identifier, i.e. is not a strictly reserved word.</summary>
+    /// <returns>True when Kind is from tkIdent up to, but not including, tkIdentStrictReserved.</returns>
     function IsFreeUsableIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    /// <summary>Tells whether the token can name a type: a freely usable identifier or the word "string".</summary>
+    /// <returns>True for a freely usable identifier or tkI_string.</returns>
     function IsTypeIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 
+    /// <summary>Extracts the text of a comment token without its delimiters.</summary>
+    /// <returns>The text inside { }, (* *) or after //; empty when the token is not a comment.</returns>
     function GetCommentBody: string;
 
+    /// <summary>Classification of the token.</summary>
     property Kind: TTokenKind read FKind;
-    property Value: string read FValue; // WARNING: Index + Length(Value) <> EndIndex
+    /// <summary>The token's text.  WARNING: Index + Length(Value) &lt;&gt; EndIndex; use TokenLength for source positions.</summary>
+    property Value: string read FValue;
 
-    property Line: Integer read FLine; // 0..n-1
-    property Column: Integer read FColumn; // 1..m
-    property Index: Integer read FIndex; // 1..k
+    /// <summary>0-based line of the token's first character (0..n-1).</summary>
+    property Line: Integer read FLine;
+    /// <summary>1-based column of the token's first character (1..m).</summary>
+    property Column: Integer read FColumn;
+    /// <summary>1-based byte index of the token's first character in the lexer's UTF-8 text (1..k).</summary>
+    property Index: Integer read FIndex;
+    /// <summary>Name of the file the token was lexed from.</summary>
     property Filename: string read FFilename;
-    property TokenIndex: Integer read FTokenIndex; // 0..j-1
+    /// <summary>0-based position of the token in the lexer's token list (0..j-1).</summary>
+    property TokenIndex: Integer read FTokenIndex;
+    /// <summary>Number of bytes the token occupies in the lexer's UTF-8 text.</summary>
     property TokenLength: Integer read FTokenLength;
-    property EndIndex: Integer read GetEndIndex; // 1..k
+    /// <summary>1-based byte index of the token's last character (1..k).</summary>
+    property EndIndex: Integer read GetEndIndex;
   end;
 
   /// <summary>
@@ -277,81 +335,219 @@ type
   /// </summary>
   TDelphiLexer = class(TObject)
   private
+    /// <summary>Name of the file being lexed, copied into every token.</summary>
     FFilename: string;
+    /// <summary>The UTF-8 source text; edited in place by the modification methods.</summary>
     FText: UTF8String;
+    /// <summary>0-based line number of the first line of Text, restored when the token list is discarded.</summary>
     FStartLine: Integer;
+    /// <summary>0-based line of the scan position.</summary>
     FLine: Integer;
+    /// <summary>1-based column of the first character of Text, restored when the token list is discarded.</summary>
     FStartColumn: Integer;
+    /// <summary>1-based column of the scan position.</summary>
     FColumn: Integer;
+    /// <summary>1-based byte index in Text of the next character to lex.</summary>
     FIndex: Integer;
 
+    /// <summary>Every token lexed so far, in source order.</summary>
     FTokens: TObjectList;
+    /// <summary>Position in FTokens of the token NextToken returns next; CurrentToken is the one before it.</summary>
     FCurTokenIndex: Integer;
+    /// <summary>True once Text has been changed by a modification method.</summary>
     FModified: Boolean;
+    /// <summary>When True, $__name is lexed as a single tkMacro token.</summary>
     FSupportMacroTokens: Boolean;
+    /// <summary>Set by ParseIfdefToken so that an identifier may start with a digit (e.g. 7ZIP_LINKONREQUEST).</summary>
     FPreprocMode: Boolean;
+    /// <summary>Reads Count.</summary>
+    /// <returns>Number of tokens lexed so far.</returns>
     function GetCount: Integer;
+    /// <summary>Reads Tokens[Index].</summary>
+    /// <param name="Index">0-based position in the token list.</param>
+    /// <returns>The token at Index.</returns>
     function GetTokenProp(Index: Integer): TToken;
+    /// <summary>
+    /// Drops the lexed tokens at or after StartIndex after an edit and moves the scan position back to
+    /// re-lex from there; drops all tokens and restarts from the beginning when StartIndex is at or before the
+    /// first token.
+    /// </summary>
+    /// <param name="StartIndex">1-based byte index in Text where the edit began.</param>
     procedure DiscardTokens(StartIndex: Integer);
+    /// <summary>Reads CurrentToken.</summary>
+    /// <returns>The token NextToken returned last, or nil.</returns>
     function GetCurrentToken: TToken;
+    /// <summary>Reads PreviousToken.</summary>
+    /// <returns>The token before CurrentToken, or nil at the start.</returns>
     function GetPreviousToken: TToken;
+    /// <summary>Counts the tabs and spaces in Text from StartIndex on.</summary>
+    /// <param name="StartIndex">1-based byte index in Text to start counting at.</param>
+    /// <returns>Number of consecutive tab and space characters.</returns>
     function CountSpaces(StartIndex: Integer): Integer;
   public
+    /// <summary>Creates a lexer over AText, positioned at its start.</summary>
+    /// <param name="AFilename">Name of the file AText came from, copied into every token.</param>
+    /// <param name="AText">UTF-8 source text without a BOM.</param>
+    /// <param name="AOwnsTokens">True to free the tokens with the lexer; False when the caller keeps them.</param>
+    /// <param name="AStartLine">0-based line number to give the first line of AText.</param>
+    /// <param name="AStartColumn">1-based column to give the first character of AText (values below 1 become 1).</param>
     constructor Create(const AFilename: string; const AText: UTF8String;
       AOwnsTokens: Boolean = True; AStartLine: Integer = 0; AStartColumn: Integer = 1);
+    /// <summary>Frees the token list (and the tokens when the lexer owns them).</summary>
     destructor Destroy; override;
 
-    { Low Level }
+    /// <summary>
+    /// Low level: lexes the next token from the scan position and appends it to Tokens, regardless of
+    /// the NextToken read position.  Handles Delphi 12 multi-line strings, &amp;-escaped identifiers,
+    /// binary literals and digit separators.
+    /// </summary>
+    /// <returns>The new token, or nil at the end of Text.</returns>
     function GetToken: TToken; overload;
+    /// <summary>Low level: lexes the next token from the scan position and appends it to Tokens.</summary>
+    /// <param name="Token">Receives the new token, or nil at the end of Text.</param>
+    /// <returns>True when a token was lexed.</returns>
     function GetToken(out Token: TToken): Boolean; overload;
 
-    { High Level }
+    /// <summary>High level: moves the read position back to the first token; lexed tokens are kept.</summary>
     procedure RestartLexer;
+    /// <summary>Moves the read position back one token, so NextToken returns CurrentToken again.</summary>
     procedure RewindLastToken;
+    /// <summary>Returns the token at the read position, lexing it if needed, and advances the read position.</summary>
+    /// <returns>The next token, or nil at the end of Text.</returns>
     function NextToken: TToken; overload;
+    /// <summary>Returns the token at the read position, lexing it if needed, and advances the read position.</summary>
+    /// <param name="Token">Receives the next token, or nil at the end of Text.</param>
+    /// <returns>True when there was a token.</returns>
     function NextToken(out Token: TToken): Boolean; overload;
+    /// <summary>
+    /// As NextToken, but skips comments and compiler directives - except an include directive
+    /// (<c>{$I file}</c>, <c>{$INCLUDE file}</c> and the <c>(*$ *)</c> forms; not the <c>{$I+}</c>
+    /// switch), which is returned so the caller can see that text from another file belongs there.
+    /// </summary>
+    /// <returns>The next token that is not a comment or a non-include directive, or nil at the end of Text.</returns>
     function NextTokenNoComment: TToken; overload;
+    /// <summary>As NextToken, but skips comments and compiler directives other than include directives.</summary>
+    /// <param name="Token">Receives the next token that is not a comment or a non-include directive, or nil.</param>
+    /// <returns>True when there was such a token.</returns>
     function NextTokenNoComment(out Token: TToken): Boolean; overload;
+    /// <summary>Finds the already-lexed token before Token.</summary>
+    /// <param name="Token">A token of this lexer.</param>
+    /// <returns>The preceding token, or nil when Token is the first.</returns>
     function PreTokenOf(Token: TToken): TToken;
+    /// <summary>Finds the nearest already-lexed token before Token that is not a comment (directives count).</summary>
+    /// <param name="Token">A token of this lexer.</param>
+    /// <returns>The preceding non-comment token, or nil when there is none.</returns>
     function PreTokenNoCommentOf(Token: TToken): TToken;
+    /// <summary>Finds the already-lexed token after Token; does not lex further.</summary>
+    /// <param name="Token">A token of this lexer.</param>
+    /// <returns>The following token, or nil when Token is the last lexed so far.</returns>
     function NextTokenOf(Token: TToken): TToken;
+    /// <summary>Finds the nearest already-lexed token after Token that is not a comment; does not lex further.</summary>
+    /// <param name="Token">A token of this lexer.</param>
+    /// <returns>The following non-comment token, or nil when there is none yet.</returns>
     function NextTokenNoCommentOf(Token: TToken): TToken;
-    function GetFullStringNext: string; // concates the current token string and all following string concatinations. Leave: next token after last string token
-    function GetCombinedStringConstantNext(var CombinedString: string): Integer; // If a string is concatenated like 'a'#13#10 the function return "'a'#13#10', Leave: next token after last string token
+    /// <summary>
+    /// Builds the source text of the string expression starting at CurrentToken: the string constant and
+    /// every following "+ string" or "+ identifier" part.  Leaves the read position after the last part.
+    /// </summary>
+    /// <returns>The concatenated source text, joined with " + "; empty when CurrentToken is not a string.</returns>
+    function GetFullStringNext: string;
+    /// <summary>
+    /// Joins CurrentToken's string constant with directly adjacent #-character tokens (as in 'a'#13#10, but
+    /// not #13 #10).  Leaves the read position on the token after the last string part.
+    /// </summary>
+    /// <param name="CombinedString">Receives the combined source text when CurrentToken is a string.</param>
+    /// <returns>Number of string tokens joined; 0 when CurrentToken is not a string.</returns>
+    function GetCombinedStringConstantNext(var CombinedString: string): Integer;
+    /// <summary>Peeks at the next token without moving the read position.</summary>
+    /// <returns>The token NextToken would return, or nil.</returns>
     function LookAhead: TToken;
+    /// <summary>Peeks at the next token that is not a comment or a non-include directive, without moving the read position.</summary>
+    /// <returns>The token NextTokenNoComment would return, or nil.</returns>
     function LookAheadNoComment: TToken;
 
+    /// <summary>
+    /// Reads a dotted name (e.g. System.SysUtils.TObject) from CurrentToken, skipping comments and
+    /// directives between the parts.  Leaves the read position on the token after the last part.
+    /// </summary>
+    /// <returns>The dotted name; empty when CurrentToken is nil or not a type identifier.</returns>
     function ParseIdentifierName: string;
-    function ParseIfdefToken: TToken; // allows "7ZIP_LINKONREQUEST" as Ident
+    /// <summary>Lexes the next token in preprocessor mode, where an identifier may start with a digit (e.g. 7ZIP_LINKONREQUEST).</summary>
+    /// <returns>The new token, or nil at the end of Text.</returns>
+    function ParseIfdefToken: TToken;
 
-    { Modification }
+    /// <summary>Modification: removes Token's text from Text and the token from Tokens, shifting later tokens.</summary>
+    /// <param name="Token">Token to delete; nil does nothing.</param>
+    /// <param name="DeleteEndSpaces">True to delete the tabs and spaces after the token as well.</param>
     procedure DeleteToken(Token: TToken; DeleteEndSpaces: Boolean = False);
+    /// <summary>Removes the text from StartToken to EndToken inclusive, and those tokens, shifting later tokens.</summary>
+    /// <param name="StartToken">First token to delete; when nil only EndToken is deleted.</param>
+    /// <param name="EndToken">Last token to delete; when nil only StartToken is deleted.</param>
+    /// <param name="DeleteEndSpaces">True to delete the tabs and spaces after EndToken as well.</param>
     procedure DeleteTokens(StartToken, EndToken: TToken; DeleteEndSpaces: Boolean = False);
+    /// <summary>Inserts UTF-8 text directly after Token; tokens from there on are re-lexed.</summary>
+    /// <param name="Token">Token to insert after.</param>
+    /// <param name="Text">UTF-8 text to insert.</param>
     procedure InsertTextAfter(Token: TToken; const Text: UTF8String); overload;
+    /// <summary>Inserts text directly after Token; tokens from there on are re-lexed.</summary>
+    /// <param name="Token">Token to insert after.</param>
+    /// <param name="Text">Text to insert (stored as UTF-8).</param>
     procedure InsertTextAfter(Token: TToken; const Text: string); overload;
+    /// <summary>Replaces Token's text with UTF-8 text; tokens from there on are re-lexed.</summary>
+    /// <param name="Token">Token to replace.</param>
+    /// <param name="Text">UTF-8 replacement text.</param>
     procedure ReplaceToken(Token: TToken; const Text: UTF8String); overload;
+    /// <summary>Replaces Token's text; tokens from there on are re-lexed.</summary>
+    /// <param name="Token">Token to replace.</param>
+    /// <param name="Text">Replacement text (stored as UTF-8).</param>
     procedure ReplaceToken(Token: TToken; const Text: string); overload;
-    { Index is 1-based }
+    /// <summary>Deletes Len bytes of Text at StartIndex; tokens from there on are re-lexed.</summary>
+    /// <param name="StartIndex">1-based byte index of the first byte to delete.</param>
+    /// <param name="Len">Number of bytes to delete; 0 or less does nothing.</param>
     procedure DeleteText(StartIndex, Len: Integer);
+    /// <summary>Inserts UTF-8 text at StartIndex; tokens from there on are re-lexed.</summary>
+    /// <param name="StartIndex">1-based byte index to insert at.</param>
+    /// <param name="Text">UTF-8 text to insert; empty does nothing.</param>
     procedure InsertText(StartIndex: Integer; const Text: UTF8String); overload;
+    /// <summary>Inserts text at StartIndex; tokens from there on are re-lexed.</summary>
+    /// <param name="StartIndex">1-based byte index to insert at.</param>
+    /// <param name="Text">Text to insert (stored as UTF-8).</param>
     procedure InsertText(StartIndex: Integer; const Text: string); overload;
+    /// <summary>Replaces Len bytes of Text at StartIndex with UTF-8 text; tokens from there on are re-lexed.</summary>
+    /// <param name="StartIndex">1-based byte index of the first byte to replace.</param>
+    /// <param name="Len">Number of bytes to replace.</param>
+    /// <param name="Text">UTF-8 replacement text.</param>
     procedure ReplaceText(StartIndex, Len: Integer; const Text: UTF8String); overload;
+    /// <summary>Replaces Len bytes of Text at StartIndex; tokens from there on are re-lexed.</summary>
+    /// <param name="StartIndex">1-based byte index of the first byte to replace.</param>
+    /// <param name="Len">Number of bytes to replace.</param>
+    /// <param name="Text">Replacement text (stored as UTF-8).</param>
     procedure ReplaceText(StartIndex, Len: Integer; const Text: string); overload;
 
 
+    /// <summary>1-based byte index in Text of the next character to lex.</summary>
     property Index: Integer read FIndex;
+    /// <summary>0-based line of the scan position.</summary>
     property Line: Integer read FLine;
+    /// <summary>1-based column of the scan position.</summary>
     property Column: Integer read FColumn;
+    /// <summary>The UTF-8 source text, including any edits made through the modification methods.</summary>
     property Text: UTF8String read FText;
+    /// <summary>Name of the file being lexed.</summary>
     property Filename: string read FFilename;
 
-      // already parsed tokens
+    /// <summary>Number of tokens already lexed.</summary>
     property Count: Integer read GetCount;
+    /// <summary>The already-lexed tokens, by 0-based position.</summary>
     property Tokens[Index: Integer]: TToken read GetTokenProp;
+    /// <summary>True once Text has been changed by a modification method.</summary>
     property Modified: Boolean read FModified;
+    /// <summary>The token before CurrentToken, or nil.</summary>
     property PreviousToken: TToken read GetPreviousToken;
+    /// <summary>The token NextToken returned last.</summary>
     property CurrentToken: TToken read GetCurrentToken;
 
+    /// <summary>When True, $__name is lexed as a single tkMacro token; off by default.</summary>
     property SupportMacroTokens: Boolean read FSupportMacroTokens write FSupportMacroTokens;
   end;
 
@@ -369,68 +565,144 @@ type
   TBytes = array of Byte;
   {$ENDIF}
 
-  /// <summary>Buffered text reader that detects the input BOM and transcodes UCS to UTF-8 on the fly.</summary>
+  /// <summary>
+  /// Buffered text reader that detects the input's BOM and decodes the text to a native or UTF-8 string.
+  /// A file without a BOM is read as UTF-8 when its first block is valid UTF-8, otherwise as ANSI; that
+  /// decision is made once and holds for the whole file.
+  /// </summary>
   TTextFileReader = class(TObject)
   private
+    /// <summary>True when the reader frees FStream on destruction.</summary>
     FOwnStream: Boolean;
+    /// <summary>The stream the text is read from.</summary>
     FStream: TStream;
+    /// <summary>Read buffer; its size is rounded up to a whole number of characters for UCS-2 and UCS-4.</summary>
     FBuffer: TBytes;
+    /// <summary>Index in FBuffer of the next unconsumed byte.</summary>
     FBufStart: Integer;
+    /// <summary>Number of valid bytes in FBuffer; 0 at the end of the input.</summary>
     FBufCount: Integer;
+    /// <summary>Encoding found by ReadBOM; bomAnsi when the input has no BOM.</summary>
     FBOMType: TBOMType;
+    /// <summary>Most bytes to read from the stream; 0 for no limit.</summary>
     FMaxReadBytes: Cardinal;
+    /// <summary>Bytes read from the stream by FillBuffer so far, checked against FMaxReadBytes.</summary>
     FBytesRead: Cardinal;
+    /// <summary>For a file without a BOM: 0 = not decided yet, 1 = UTF-8, 2 = ANSI.  The first block read decides for the whole file.</summary>
+    FBomlessEncoding: Integer;
+    /// <summary>Returns True when the BOM-less file is UTF-8, deciding from Data on the first call.</summary>
+    /// <param name="Data">The first block of text read (later calls ignore it).</param>
+    /// <returns>True for UTF-8, False for the ANSI code page.</returns>
+    function AnsiDataIsUtf8(const Data: TBytes): Boolean;
 
+    /// <summary>Fills the buffer with the first block of the stream and sets BOMType from any BOM, skipping it.</summary>
     procedure ReadBOM;
+    /// <summary>Refills the buffer from the stream once it is used up, honouring MaxReadBytes.</summary>
     procedure FillBuffer;
+    /// <summary>Reads Eof.</summary>
+    /// <returns>True when the buffer holds no more data.</returns>
     function GetEof: Boolean;
     /// <summary>Decodes Data according to the BOM found by ReadBOM: ANSI, UTF-8, UTF-16 (either byte order) or UCS-4.</summary>
     /// <param name="Data">Raw bytes read after the BOM.</param>
     /// <returns>The decoded text; empty when Data is nil.</returns>
     function DataToString(const Data: TBytes): string;
+    /// <summary>Converts Data to UTF-8: UTF-8 (and BOM-less UTF-8) bytes are copied as they are, anything else is decoded first.</summary>
+    /// <param name="Data">Raw bytes read after the BOM.</param>
+    /// <returns>The text as UTF-8; empty when Data is nil.</returns>
     function DataToUtf8String(const Data: TBytes): UTF8String;
+    /// <summary>Reads every remaining byte of the stream, up to MaxReadBytes.</summary>
+    /// <returns>The raw bytes read.</returns>
     function InternReadAll: TBytes;
+    /// <summary>Reads raw bytes up to the next line break (CR, LF or CR LF) and consumes the line break.</summary>
+    /// <returns>The line's bytes without the line break; nil at the end of the input.</returns>
+    /// <exception cref="Exception">The input is UCS-2 or UCS-4: only ANSI and UTF-8 can be read by line.</exception>
     function InternReadLine: TBytes;
   public
+    /// <summary>Opens AFileName for reading (deny write) and detects its BOM; the reader owns the file stream.</summary>
+    /// <param name="AFileName">File to read.</param>
+    /// <param name="ABufferSize">Read buffer size in bytes (at least 16).</param>
     constructor Create(const AFileName: string; ABufferSize: Integer = 4096); overload;
+    /// <summary>Reads from AStream, starting at its current position, and detects its BOM.</summary>
+    /// <param name="AStream">Stream to read.</param>
+    /// <param name="ABufferSize">Read buffer size in bytes (at least 16).</param>
+    /// <param name="AOwnStream">True to free AStream with the reader.</param>
     constructor Create(AStream: TStream; ABufferSize: Integer = 4096; AOwnStream: Boolean = False); overload;
+    /// <summary>Frees the stream when the reader owns it.</summary>
     destructor Destroy; override;
 
+    /// <summary>Reads the rest of the input, up to MaxReadBytes, decoded to a native string.</summary>
+    /// <returns>The decoded text.</returns>
     function ReadAll: string;
+    /// <summary>Reads the next line, decoded to a native string.</summary>
+    /// <returns>The line without its line break; empty at the end of the input.</returns>
+    /// <exception cref="Exception">The input is UCS-2 or UCS-4: only ANSI and UTF-8 can be read by line.</exception>
     function ReadLine: string;
+    /// <summary>Reads the rest of the input, up to MaxReadBytes, as UTF-8.</summary>
+    /// <returns>The text as UTF-8, without the BOM.</returns>
     function Utf8ReadAll: UTF8String;
+    /// <summary>Reads the next line as UTF-8.</summary>
+    /// <returns>The line without its line break; empty at the end of the input.</returns>
+    /// <exception cref="Exception">The input is UCS-2 or UCS-4: only ANSI and UTF-8 can be read by line.</exception>
     function Utf8ReadLine: UTF8String;
 
+    /// <summary>Most bytes to read from the stream (counting the first block read with the BOM); 0 for no limit.</summary>
     property MaxReadBytes: Cardinal read FMaxReadBytes write FMaxReadBytes;
+    /// <summary>True when the buffer holds no more data.</summary>
     property Eof: Boolean read GetEof;
+    /// <summary>Encoding found from the BOM; bomAnsi when the input has none.</summary>
     property BOMType: TBOMType read FBOMType;
   end;
 
-/// <summary>Returns a human-readable name for the supplied TTokenKind value.</summary>
+/// <summary>Returns a display name for a token kind: the symbol itself, the keyword in upper case, or a literal kind's name.</summary>
+/// <param name="Kind">Token kind to name.</param>
+/// <returns>The display name; tkNone, tkSymbol, tkComment, tkDirective and tkMacro have none and are not assigned one.</returns>
 function TokenKindToString(Kind: TTokenKind): string;
 /// <summary>Reads Filename via TTextFileReader and returns its content as a native string.</summary>
+/// <param name="Filename">File to read.</param>
+/// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
+/// <returns>The decoded text, without the BOM.</returns>
 function LoadTextFileToString(const Filename: string; MaxReadBytes: Cardinal = 0): string;
 /// <summary>Reads up to MaxReadBytes from Filename and returns it as UTF-8 (BOM-stripped).</summary>
+/// <param name="Filename">File to read.</param>
+/// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
+/// <returns>The text as UTF-8.</returns>
 function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal): UTF8String; overload;
-/// <summary>UTF-8 reader overload that also reports the detected encoding.</summary>
+/// <summary>Reads up to MaxReadBytes from Filename as UTF-8 (BOM-stripped) and reports the encoding found.</summary>
+/// <param name="Filename">File to read.</param>
+/// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
+/// <param name="Encoding">
+/// Receives the encoding found from the BOM: TEncoding.UTF8, Unicode or BigEndianUnicode (UCS-4 is reported as the
+/// UTF-16 encoding of the same byte order), or TEncoding.Default when there is no BOM, even when the text was read as UTF-8.
+/// </param>
+/// <returns>The text as UTF-8.</returns>
 function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding): UTF8String; overload;
 /// <summary>Reads the entire Filename and returns it as UTF-8 (BOM-stripped).</summary>
+/// <param name="Filename">File to read.</param>
+/// <returns>The text as UTF-8.</returns>
 function LoadTextFileToUtf8String(const Filename: string): UTF8String; overload;
-/// <summary>Whole-file UTF-8 reader overload that also reports the detected encoding.</summary>
+/// <summary>Reads the entire Filename as UTF-8 (BOM-stripped) and reports the encoding found.</summary>
+/// <param name="Filename">File to read.</param>
+/// <param name="Encoding">Receives the encoding found from the BOM, as for the MaxReadBytes overload.</param>
+/// <returns>The text as UTF-8.</returns>
 function LoadTextFileToUtf8String(const Filename: string; out Encoding: TEncoding): UTF8String; overload;
-/// <summary>Returns the C++Builder mangled name (length-prefixed) for the supplied identifier.</summary>
+/// <summary>Returns the C++Builder mangled form of a name: its length followed by the name, with every '.' replaced by '_'.</summary>
+/// <param name="Name">Name to mangle.</param>
+/// <returns>The mangled name.</returns>
 function Mangle(const Name: string): string;
-/// <summary>True when Token is an $ENDIF / $IFEND directive.</summary>
+/// <summary>Tells whether Token is an $ENDIF or $IFEND directive, in { } or (* *) form.</summary>
+/// <param name="Token">Token to test.</param>
+/// <returns>True for an $ENDIF or $IFEND directive.</returns>
 function IsEndIfToken(Token: TToken): Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 /// <summary>ASCII-only case-insensitive StartsText that does not depend on the locale.</summary>
+/// <param name="SubStr">Prefix to look for.</param>
+/// <param name="S">String to test.</param>
+/// <returns>True when S starts with SubStr, ignoring ASCII case.</returns>
 function AsciiStartsText(const SubStr, S: string): Boolean;
 
 implementation
 
-{$IFDEF UNICODE}
 uses
-  WideStrUtils, Character;
-{$ENDIF UNICODE}
+  Winapi.Windows{$IFDEF UNICODE}, System.WideStrUtils, System.Character{$ENDIF UNICODE};
 
 resourcestring
   RsIdentifier = 'Identifier';
@@ -639,22 +911,93 @@ begin
 end;
 
 {$IFDEF UNICODE}
-function IsUtf8Letter(P: PUTF8Char; Index: Integer): Boolean;
+/// <summary>
+/// Decodes the UTF-8 sequence at P[Index] into its first UTF-16 code unit.  Fails, without reading
+/// past the sequence, when the lead byte is not a multi-byte lead or a continuation byte is missing
+/// (a truncated sequence at the end of the text stops at the terminating #0, which is no
+/// continuation byte).
+/// </summary>
+/// <param name="P">The text.</param>
+/// <param name="Index">Offset of the lead byte in P.</param>
+/// <param name="Ch">Receives the first decoded code unit.</param>
+/// <returns>True when a complete, valid sequence was decoded.</returns>
+function DecodeUtf8Char(P: PUTF8Char; Index: Integer; out Ch: WideChar): Boolean;
 var
   C: array[0..2] of WideChar;
+  iSize, i: Integer;
 begin
-  Utf8ToUnicode(@C, Length(C), P, UTF8CharSize(P[Index]));
-  Result := C[0].IsLetter;
+  Result := False;
+  Ch := #0;
+  iSize := UTF8CharSize(P[Index]);
+  if (iSize < 2) or (iSize > 4) then
+    Exit;
+  for i := 1 to iSize - 1 do
+    if (Byte(P[Index + i]) and $C0) <> $80 then
+      Exit;
+
+  FillChar(C, SizeOf(C), 0);
+  if Utf8ToUnicode(@C, Length(C), @P[Index], iSize) <= 0 then
+    Exit;
+  Ch := C[0];
+  Result := True;
+end;
+
+function IsUtf8Letter(P: PUTF8Char; Index: Integer): Boolean;
+var
+  Ch: WideChar;
+begin
+  Result := DecodeUtf8Char(P, Index, Ch) and Ch.IsLetter;
 end;
 
 function IsUtf8LetterOrDigit(P: PUTF8Char; Index: Integer): Boolean;
 var
-  C: array[0..2] of WideChar;
+  Ch: WideChar;
 begin
-  Utf8ToUnicode(@C, Length(C), P, UTF8CharSize(P[Index]));
-  Result := C[0].IsLetterOrDigit;
+  Result := DecodeUtf8Char(P, Index, Ch) and Ch.IsLetterOrDigit;
 end;
 {$ENDIF UNICODE}
+
+/// <summary>Returns True when only blanks (space, tab) follow P up to a line break.</summary>
+/// <param name="P">The first character after the candidate multi-line string opener.</param>
+/// <returns>True when the line ends (CR or LF) after nothing but blanks; False at the end of the text.</returns>
+function IsBlankToLineEnd(P: PUTF8Char): Boolean;
+begin
+  while P[0] in [#9, ' '] do
+    Inc(P);
+  Result := P[0] in [#10, #13];
+end;
+
+/// <summary>
+/// Returns True when Data is valid UTF-8 (a BOM-less file is then read as UTF-8, not ANSI).  A
+/// multi-byte sequence cut short by the end of Data (a read limit or block boundary) is tolerated.
+/// </summary>
+/// <param name="Data">The file bytes after any BOM.</param>
+/// <returns>True when Data decodes as UTF-8 without an invalid sequence.</returns>
+function IsValidUtf8(const Data: TBytes): Boolean;
+var
+  Len, Lead, Need: Integer;
+begin
+  Len := Length(Data);
+
+  // drop an incomplete final sequence: find its lead byte among the last three bytes
+  Lead := Len - 1;
+  while (Lead >= 0) and (Lead >= Len - 3) and ((Data[Lead] and $C0) = $80) do
+    Dec(Lead);
+  if (Lead >= 0) and (Data[Lead] >= $C0) then
+  begin
+    if Data[Lead] >= $F0 then
+      Need := 4
+    else if Data[Lead] >= $E0 then
+      Need := 3
+    else
+      Need := 2;
+    if Len - Lead < Need then
+      Len := Lead;
+  end;
+
+  Result := (Len = 0) or
+            (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, PAnsiChar(@Data[0]), Len, nil, 0) > 0);
+end;
 
 { TTextFileReader }
 
@@ -748,7 +1091,12 @@ begin
     bomAnsi:
       begin
         SetString(A, PAnsiChar(@Data[0]), Length(Data));
-        Result := string(A);
+        // No BOM: Delphi source is UTF-8 in practice, so valid UTF-8 is read as UTF-8; only text
+        // that is not valid UTF-8 falls back to the ANSI code page.
+        if AnsiDataIsUtf8(Data) then
+          Result := UTF8ToString(A)
+        else
+          Result := string(A);
       end;
     bomUtf8:
       begin
@@ -758,30 +1106,47 @@ begin
     bomUcs2BE:
       begin
         SwapBytes(Data);
-        SetString(W, PWideChar(@Data[0]), Length(Data));
+        // the length is in characters: two bytes each (it used to pass the byte count and read
+        // twice the data's length)
+        SetString(W, PWideChar(@Data[0]), Length(Data) div SizeOf(WideChar));
         Result := W;
       end;
     bomUcs2LE:
       begin
-        SetString(W, PWideChar(@Data[0]), Length(Data));
+        SetString(W, PWideChar(@Data[0]), Length(Data) div SizeOf(WideChar));
         Result := W;
       end;
     bomUcs4BE, bomUcs4LE:
       begin
         if BOMType = bomUcs4BE then
           SwapBytes(Data);
-        SetLength(UCS4, Length(Data) div SizeOf(UCS4Char));
-        Move(UCS4[0], Data[0], Length(Data));
+        // UCS4String carries a terminating #0 element; copy the data INTO it (the arguments used to
+        // be reversed, which overwrote the file data with zeros)
+        SetLength(UCS4, Length(Data) div SizeOf(UCS4Char) + 1);
+        Move(Data[0], UCS4[0], (Length(UCS4) - 1) * SizeOf(UCS4Char));
+        UCS4[High(UCS4)] := 0;
         Result := UCS4StringToWideString(UCS4);
       end;
   end;
+end;
+
+function TTextFileReader.AnsiDataIsUtf8(const Data: TBytes): Boolean;
+begin
+  if FBomlessEncoding = 0 then
+  begin
+    if IsValidUtf8(Data) then
+      FBomlessEncoding := 1
+    else
+      FBomlessEncoding := 2;
+  end;
+  Result := FBomlessEncoding = 1;
 end;
 
 function TTextFileReader.DataToUtf8String(const Data: TBytes): UTF8String;
 begin
   if Data = nil then
     Exit;
-  if BOMType = bomUtf8 then
+  if (BOMType = bomUtf8) or ((BOMType = bomAnsi) and AnsiDataIsUtf8(Data)) then
     SetString(Result, PAnsiChar(@Data[0]), Length(Data))
   else
     Result := UTF8Encode(DataToString(Data));
@@ -1319,10 +1684,12 @@ begin
     Result := NextToken;
     if (Result <> nil) and (Result.Kind = tkDirective) then
     begin
-      if AsciiStartsText(Result.Value, '{INCLUDE ') or
-         AsciiStartsText(Result.Value, '{I ') or
-         AsciiStartsText(Result.Value, '(*INCLUDE ') or
-         AsciiStartsText(Result.Value, '(*I ') then
+      // AsciiStartsText takes the prefix first, and a directive's text starts with "{$" / "(*$"
+      // (the test used to pass the token first and omit the "$", so it never matched).
+      if AsciiStartsText('{$INCLUDE ', Result.Value) or
+         AsciiStartsText('{$I ', Result.Value) or
+         AsciiStartsText('(*$INCLUDE ', Result.Value) or
+         AsciiStartsText('(*$I ', Result.Value) then
         Break;
     end;
   until (Result = nil) or not (Result.Kind in [tkComment, tkDirective]);
@@ -1447,7 +1814,7 @@ begin
   end;
 end;
 
-function TDelphiLexer.GetCombinedStringConstantNext(var CombinedString: string): Integer; // If a string is concatenated like 'a'#13#10 the function return "'a'#13#10', Leave: next token after last string token
+function TDelphiLexer.GetCombinedStringConstantNext(var CombinedString: string): Integer;
 var
   Token: TToken;
   LastEndIndex: Integer;
@@ -1499,6 +1866,9 @@ var
   StartLine, StartColumn, Line, Column: Integer;
   Kind: TTokenKind;
   StartIndex: Integer;
+  IsEscapedIdent: Boolean;
+  QuoteRun, ClosingRun: Integer;
+  ClosingFound: Boolean;
 begin
   Result := nil;
   if FIndex > Length(FText) then
@@ -1536,7 +1906,55 @@ begin
 
   F := P;
   IndexAdd := 0;
-  if ch1 = '''' then
+  IsEscapedIdent := False;
+  QuoteRun := 0;
+  while P[QuoteRun] = '''' do
+    Inc(QuoteRun);
+
+  if (QuoteRun >= 3) and Odd(QuoteRun) and IsBlankToLineEnd(P + QuoteRun) then
+  begin
+    // Delphi 12 multi-line string: an odd run of three or more quotes ends the line; the string
+    // runs to the first later line that holds, after leading blanks, the same run of quotes.
+    // Its lines are text, never code.
+    Inc(P, QuoteRun);
+    Inc(Column, QuoteRun);
+    ClosingFound := False;
+    while not ClosingFound and (P[0] <> #0) do
+    begin
+      // to the start of the next line
+      while not (P[0] in [#0, #10, #13]) do
+      begin
+        Inc(P);
+        Inc(Column);
+      end;
+      if P[0] = #0 then
+        Break; // unterminated at the end of the text
+      if P[0] = #13 then
+        Inc(P);
+      if P[0] = #10 then
+        Inc(P);
+      Inc(Line);
+      Column := 1;
+
+      // a closing line: blanks, then the quote run
+      while P[0] in [#9, ' '] do
+      begin
+        Inc(P);
+        Inc(Column);
+      end;
+      ClosingRun := 0;
+      while P[ClosingRun] = '''' do
+        Inc(ClosingRun);
+      if ClosingRun >= QuoteRun then
+      begin
+        Inc(P, QuoteRun);
+        Inc(Column, QuoteRun);
+        ClosingFound := True;
+      end;
+    end;
+    Kind := tkString;
+  end
+  else if ch1 = '''' then
   begin
     Inc(P);
     Inc(Column);
@@ -1696,7 +2114,7 @@ begin
     IsExpSign := False;
     repeat
       case P[0] of
-        '0'..'9': ;
+        '0'..'9', '_': ; // '_' is a digit separator (Delphi 11+): 1_000_000
 
         '.':
           begin
@@ -1733,15 +2151,49 @@ begin
   end
   else if (ch1 = '$') and (P[1] in HexNumberChars) then
   begin
-    // hex number
+    // hex number ('_' digit separators allowed: $FF_FF)
     Inc(P, 2);
     Inc(Column, 2);
-    while P[0] in HexNumberChars do
+    while P[0] in HexNumberChars + ['_'] do
     begin
       Inc(P);
       Inc(Column);
     end;
     Kind := tkInt;
+  end
+  else if (ch1 = '%') and (P[1] in ['0', '1']) then
+  begin
+    // binary literal (Delphi 11+): %1010, separators allowed
+    Inc(P, 2);
+    Inc(Column, 2);
+    while P[0] in ['0', '1', '_'] do
+    begin
+      Inc(P);
+      Inc(Column);
+    end;
+    Kind := tkInt;
+  end
+  else if (ch1 = '&') and ((P[1] in IdentFirstChars) {$IFDEF UNICODE}or ((P[1] >= #128) and IsUtf8Letter(P, 1)){$ENDIF}) then
+  begin
+    // &-escaped identifier (&End, &Type): an identifier even when the word is reserved
+    Inc(P);
+    Inc(Column);
+    while (P[0] in IdentChars) {$IFDEF UNICODE}or ((P[0] >= #128) and IsUtf8LetterOrDigit(P, 0)){$ENDIF} do
+    begin
+      if Byte(P[0]) and $80 > 0 then
+      begin
+        CharSize := UTF8CharLength(P[0]);
+        Inc(P, CharSize);
+        Inc(Column, CharSize);
+      end
+      else
+      begin
+        Inc(P);
+        Inc(Column);
+      end;
+    end;
+    Kind := tkIdent;
+    IsEscapedIdent := True;
   end
   else if SupportMacroTokens and (ch1 = '$') and (P[1] = '_') and (P[2] = '_') then // macro support
   begin
@@ -1842,7 +2294,7 @@ begin
   {$ELSE}
   SetString(TokenValue, F, P - F);
   {$ENDIF UNICODE}
-  if Kind = tkIdent then
+  if (Kind = tkIdent) and not IsEscapedIdent then
     Kind := FindTokenIdentKind(TokenValue);
 
   Result := TToken.Create(FTokens.Count, Kind, TokenValue, FFilename, StartLine, StartColumn, StartIndex, P - F);

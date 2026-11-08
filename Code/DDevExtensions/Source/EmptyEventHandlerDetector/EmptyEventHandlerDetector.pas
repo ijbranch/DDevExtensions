@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -49,9 +49,11 @@ type
     /// <summary>Master enable flag for the plugin.</summary>
     FEnabled: Boolean;
     /// <summary>Menu OnClick handler that opens the result form.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure MenuItemClick(Sender: TObject);
   protected
     /// <summary>Returns the option page used in the IDE options dialog.</summary>
+    /// <returns>The page shown under this plugin in the DDevExtensions options.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
@@ -96,7 +98,12 @@ begin
   if not Unload then
     EmptyEventHandlerDetectorPlugin := TEmptyEventHandlerDetectorPlugin.Create
   else
+  begin
+    // Close the form first: it is owned by the IDE's Application and would otherwise outlive the
+    // plugin (and, on package unload, its own code).
+    TFormEmptyEventHandlerDetector.CloseInstance;
     FreeAndNil(EmptyEventHandlerDetectorPlugin);
+  end;
 end;
 
 { TEmptyEventHandlerDetectorPlugin }
@@ -327,8 +334,16 @@ begin
                   HasStatements := True;
               end;
 
+            tkI_asm:
+              begin
+                // An asm block closes with its own "end": count it like begin, or that end would
+                // be taken for the end of the method.
+                Inc(BeginCount);
+                HasStatements := True;
+              end;
+
             tkI_if, tkI_for, tkI_while, tkI_repeat, tkI_with, tkI_raise,
-            tkI_goto, tkI_asm, tkI_inherited:
+            tkI_goto, tkI_inherited:
               begin
                 // Control flow statements
                 if BeginCount >= 1 then

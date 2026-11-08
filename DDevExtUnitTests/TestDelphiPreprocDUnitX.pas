@@ -45,12 +45,44 @@ type
     /// </summary>
     [Test]
     procedure TestDefineUndef;
+    /// <summary>
+    /// Proves <c>{$IF ...}</c> may be closed by <c>{$ENDIF}</c> (legal since XE4 and common in
+    /// our code): it used to raise "$IFEND expected", which aborted the File Selector's parse.
+    /// </summary>
+    [Test]
+    procedure TestIfClosedByEndif;
+    /// <summary>
+    /// Proves the predefined-symbol table matches the target platform: Win64 gets WIN64, CPUX64 and
+    /// MSWINDOWS but not WIN32; Win32 gets WIN32 and CPUX86 but not WIN64.
+    /// </summary>
+    [Test]
+    procedure TestPredefinedSymbols;
+    /// <summary>
+    /// Proves <c>CompareFileName</c> tells different file names apart; it compared two
+    /// uninitialised locals and so called every pair of names equal.
+    /// </summary>
+    [Test]
+    procedure TestCompareFileName;
+    /// <summary>
+    /// Proves exactly one branch of an <c>$IF</c> / <c>$ELSEIF</c> / <c>$ELSE</c> chain survives: a
+    /// taken <c>$IF</c> skips the <c>$ELSEIF</c> branch (it used to keep it), and a false
+    /// <c>$ELSEIF</c> after a false <c>$IF</c> is skipped (it used to be taken without being evaluated).
+    /// </summary>
+    [Test]
+    procedure TestElseIfTakesOneBranch;
+    /// <summary>
+    /// Proves both branches of <c>$IFOPT</c> survive: option states are not tracked, so neither
+    /// branch can be dropped (it used to pick one by whether the option letter named a directive).
+    /// </summary>
+    [Test]
+    procedure TestIfoptKeepsBothBranches;
   end;
+
 
 implementation
 
 uses
-  System.SysUtils, System.Classes, DelphiLexer, DelphiParserContainers, DelphiPreproc;
+  System.SysUtils, System.Classes, System.StrUtils, DelphiLexer, DelphiParserContainers, DelphiPreproc;
 
 /// <summary>Preprocesses ASource and returns the identifiers that survive, space-separated.</summary>
 /// <param name="ASource">Source text containing conditional directives.</param>
@@ -141,7 +173,63 @@ begin
   end;
 end;
 
+procedure TTestDelphiPreproc.TestIfClosedByEndif;
+begin
+  var sSource :=
+    '{$IF Defined( FOO )}'#13#10 +
+    '  Alpha'#13#10 +
+    '{$ELSE}'#13#10 +
+    '  Beta'#13#10 +
+    '{$ENDIF}'#13#10 +
+    'After'#13#10;
+  Assert.AreEqual( 'Alpha After', SurvivingIdents( sSource, 'FOO' ), '$IF closed by $ENDIF, FOO defined' );
+  Assert.AreEqual( 'Beta After', SurvivingIdents( sSource, '' ), '$IF closed by $ENDIF, FOO undefined' );
+end;
+
+procedure TTestDelphiPreproc.TestPredefinedSymbols;
+begin
+  var aWin64 := PredefinedSymbols( 'Win64' );
+  Assert.IsTrue( MatchText( 'WIN64', aWin64 ), 'Win64 defines WIN64' );
+  Assert.IsTrue( MatchText( 'CPUX64', aWin64 ), 'Win64 defines CPUX64' );
+  Assert.IsTrue( MatchText( 'MSWINDOWS', aWin64 ), 'Win64 defines MSWINDOWS' );
+  Assert.IsTrue( MatchText( 'UNICODE', aWin64 ), 'Win64 defines UNICODE' );
+  Assert.IsTrue( MatchText( 'VER' + IntToStr( Trunc( CompilerVersion * 10 ) ), aWin64 ), 'the compiler''s VERnnn is defined' );
+  Assert.IsFalse( MatchText( 'WIN32', aWin64 ), 'Win64 does not define WIN32' );
+
+  var aWin32 := PredefinedSymbols( 'Win32' );
+  Assert.IsTrue( MatchText( 'WIN32', aWin32 ), 'Win32 defines WIN32' );
+  Assert.IsTrue( MatchText( 'CPUX86', aWin32 ), 'Win32 defines CPUX86' );
+  Assert.IsFalse( MatchText( 'WIN64', aWin32 ), 'Win32 does not define WIN64' );
+end;
+
+procedure TTestDelphiPreproc.TestCompareFileName;
+begin
+  Assert.IsTrue( CompareFileName( 'C:\a\Unit1.pas', 'c:\A\UNIT1.PAS' ), 'same name, different case' );
+  Assert.IsFalse( CompareFileName( 'C:\a\Unit1.pas', 'C:\a\Unit2.pas' ), 'different names' );
+end;
+
+procedure TTestDelphiPreproc.TestElseIfTakesOneBranch;
+begin
+  var sChain :=
+    '{$IF Defined( %s )}A' +
+    '{$ELSEIF Defined( %s )}B' +
+    '{$ELSE}C' +
+    '{$ENDIF}D';
+  Assert.AreEqual( 'A D', SurvivingIdents( Format( sChain, [ 'FOO', 'FOO' ] ), 'FOO' ), '$IF taken: $ELSEIF and $ELSE skipped' );
+  Assert.AreEqual( 'B D', SurvivingIdents( Format( sChain, [ 'BAR', 'FOO' ] ), 'FOO' ), '$IF false, $ELSEIF true' );
+  Assert.AreEqual( 'C D', SurvivingIdents( Format( sChain, [ 'BAR', 'BAZ' ] ), 'FOO' ), 'both false: the $ELSE branch' );
+end;
+
+procedure TTestDelphiPreproc.TestIfoptKeepsBothBranches;
+begin
+  Assert.AreEqual( 'A B C', SurvivingIdents( '{$IFOPT R+}A{$ELSE}B{$ENDIF}C', '' ), '$IFOPT R+ keeps both branches' );
+  Assert.AreEqual( 'A B C', SurvivingIdents( '{$IFOPT I+}A{$ELSE}B{$ENDIF}C', '' ), '$IFOPT I+ keeps both branches' );
+  Assert.AreEqual( 'A D', SurvivingIdents( '{$IFDEF NOPE}{$IFOPT R+}X{$ELSE}Y{$ENDIF}{$ELSE}A{$ENDIF}D', '' ),
+    'an $IFOPT inside a skipped block stays skipped' );
+end;
+
 initialization
+
   TDUnitX.RegisterTestFixture( TTestDelphiPreproc );
 
 end.

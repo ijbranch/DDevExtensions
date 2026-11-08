@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -21,7 +21,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
-  FrmBase, UnreachableCodeDetector, ToolsAPI;
+  FrmBase, UnreachableCodeDetector, UnreachableCodeCore, ToolsAPI;
 
 type
   /// <summary>Main detector form for the Unreachable Code Detector plugin.</summary>
@@ -49,31 +49,51 @@ type
     /// <summary>Shows the project name being analysed.</summary>
     lblProject: TLabel;
     /// <summary>Closes the form.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
-    /// <summary>Runs the scanner against the active project.</summary>
+    /// <summary>Runs the scanner against the active project; while a scan runs, the button reads Cancel and stops it.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
-    /// <summary>Form OnCreate handler: initialises scanner and filter items.</summary>
+    /// <summary>Form OnCreate handler: creates the scanner, fills the filter items and remembers the Scan caption.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormCreate( Sender: TObject );
-    /// <summary>Releases the form when closed (non-modal).</summary>
+    /// <summary>Frees the form and releases the singleton on close; vetoes the close while a scan is running.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Action">Set to caNone to veto the close while a scan runs; otherwise caFree, so the form is freed.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
-    /// <summary>Form OnDestroy handler: frees the scanner.</summary>
+    /// <summary>Form OnDestroy handler: releases the singleton if it is this form, and frees the scanner.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the source file at the offending line when a row is double-clicked.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Re-applies the filter when the combo selection changes.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure cmbFilterChange( Sender: TObject );
     /// <summary>Exports all detected items to a CSV file.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Custom-column comparer used by AlphaSort.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Item1">The first list item being compared.</param>
+    /// <param name="Item2">The second list item being compared.</param>
+    /// <param name="Data">Sort data passed by AlphaSort (unused).</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, level with or after Item2.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Toggles or switches the active sort column.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
   private
     /// <summary>Owned scanner used to perform the analysis.</summary>
     FScanner: TUnreachableCodeScanner;
     /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
+    /// <summary>Set by the Scan button (which reads "Cancel" during a scan) or by <see cref="CloseInstance"/> to stop the running scan.</summary>
+    FCancelRequested: Boolean;
+    /// <summary>Caption of the Scan button, restored when a scan ends.</summary>
+    FScanCaption: string;
     /// <summary>Most recent scan result.</summary>
     FItems: TArray<TUnreachableCodeItem>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -82,14 +102,24 @@ type
     FSortAscending: Boolean;
     /// <summary>Refreshes the list view from <see cref="FItems"/>, applying the current filter.</summary>
     procedure PopulateList;
-    /// <summary>Scanner OnProgress callback that updates the progress label.</summary>
-    procedure ScannerProgress( Sender: TObject );
+    /// <summary>Scan progress callback: updates the progress label, pumps messages and reports a requested cancel.</summary>
+    /// <param name="Step">Text describing the current step.</param>
+    /// <param name="Cancel">Set to True when the user cancelled the scan.</param>
+    procedure ScannerProgress( const Step: string; var Cancel: Boolean );
     /// <summary>Opens the source file for the supplied item and centres the view on its line.</summary>
+    /// <param name="Item">The item whose source line is shown.</param>
     procedure OpenItem( const Item: TUnreachableCodeItem );
   public
-    /// <summary>Creates and shows a new (non-modal) detector form.</summary>
+    /// <summary>Shows or focuses the singleton (non-modal) detector form.</summary>
     /// <returns>Always True.</returns>
     class function Execute: Boolean;
+    /// <summary>
+    /// Frees the singleton form, if open, so it cannot outlive the plugin on unload.
+    /// It covers an unload outside a scan.  An unload reached through a running scan's own message
+    /// pump cannot be made safe here: the scan is cancelled and the form hidden, and the form is
+    /// released when the scan unwinds - safe only while the plug-in's code is still loaded.
+    /// </summary>
+    class procedure CloseInstance;
   end;
 
 implementation
@@ -97,26 +127,53 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers, Vcl.Clipbrd;
+  ToolsAPIHelpers, Vcl.Clipbrd, ProjectSources;
+
+var
+  /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
+  FormInstance: TFormUnreachableCodeDetector = nil;
 
 class function TFormUnreachableCodeDetector.Execute: Boolean;
-var
-  Form: TFormUnreachableCodeDetector;
 begin
 
-  Form := TFormUnreachableCodeDetector.Create( Application );
-  Form.Show;  // Non-modal - allows working in Delphi while open
+  // One form only: each extra instance would be one more window to leave behind on unload.
+  if FormInstance = nil then
+    FormInstance := TFormUnreachableCodeDetector.Create( Application );
+
+  FormInstance.Show;  // Non-modal - allows working in Delphi while open
+  FormInstance.BringToFront;
   Result := True;
 
+end;
+
+class procedure TFormUnreachableCodeDetector.CloseInstance;
+begin
+  if FormInstance = nil then
+    Exit;
+
+  var oForm := FormInstance;
+  FormInstance := nil;
+
+  if oForm.FScanning then
+  begin
+    // The scan is still on the stack (this call arrived through its message pump): freeing the
+    // form now would free FScanner under it.  Stop the scan and let btnScanClick release the form.  That
+    // is safe only if the plug-in's code is still loaded when the scan unwinds; an unload cannot be
+    // refused or postponed from here.
+    oForm.FCancelRequested := True;
+    oForm.Hide;
+  end
+  else
+    oForm.Free;
 end;
 
 procedure TFormUnreachableCodeDetector.FormCreate( Sender: TObject );
 begin
 
   FScanner            := TUnreachableCodeScanner.Create;
-  FScanner.OnProgress := ScannerProgress;
   FSortColumn         := 0;
   FSortAscending      := True;
+  FScanCaption        := btnScan.Caption;
 
   cmbFilter.Items.Add( 'All' );
   cmbFilter.Items.Add( 'After Exit' );
@@ -141,6 +198,8 @@ begin
     Exit;
   end;
 
+  if FormInstance = Self then
+    FormInstance := nil;
   Action := caFree;  // Free the form when closed (non-modal)
 
 end;
@@ -148,16 +207,17 @@ end;
 procedure TFormUnreachableCodeDetector.FormDestroy( Sender: TObject );
 begin
 
+  if FormInstance = Self then
+    FormInstance := nil;
   FScanner.Free;
 
 end;
 
-procedure TFormUnreachableCodeDetector.ScannerProgress( Sender: TObject );
+procedure TFormUnreachableCodeDetector.ScannerProgress( const Step: string; var Cancel: Boolean );
 begin
-
-  lblProgress.Caption := 'Scanning: ' + FScanner.ProgressUnit;
+  lblProgress.Caption := Step;
   Application.ProcessMessages;
-
+  Cancel := FCancelRequested;
 end;
 
 procedure TFormUnreachableCodeDetector.btnCloseClick( Sender: TObject );
@@ -168,43 +228,57 @@ begin
 end;
 
 procedure TFormUnreachableCodeDetector.btnScanClick( Sender: TObject );
-var
-  Project: IOTAProject;
-  ProjectName: string;
 begin
 
-  Project := GetActiveProject;
+  // During a scan the button reads "Cancel".
+  if FScanning then
+  begin
+    FCancelRequested := True;
+    Exit;
+  end;
 
-  if Project = nil then
+  var oProject := GetActiveProject;
+
+  if oProject = nil then
   begin
     ShowMessage( 'No active project.' );
     Exit;
   end;
 
-  ProjectName := ChangeFileExt( ExtractFileName( Project.FileName ), '' );
-  lblProject.Caption := 'Project: ' + ProjectName;
+  lblProject.Caption := 'Project: ' + ChangeFileExt( ExtractFileName( oProject.FileName ), '' );
 
-  if FScanning then
-    Exit;
-
-  Screen.Cursor := crHourGlass;
-  FScanning     := True;
+  Screen.Cursor    := crHourGlass;
+  FScanning        := True;
+  FCancelRequested := False;
+  btnScan.Caption  := '&Cancel';
 
   try
     lblProgress.Caption := 'Scanning project...';
     lblProgress.Visible := True;
     Application.ProcessMessages;
 
-    FScanner.ScanProject( Project );
+    var iSkipped: Integer;
+    var bCompleted := ScanProject( FScanner, oProject, ScannerProgress, iSkipped );
     FItems := FScanner.GetItems;
 
     PopulateList;
 
-    lblProgress.Caption := Format( 'Scan complete. Found %d unreachable code blocks.', [ Length( FItems ) ] );
+    if not bCompleted then
+      lblProgress.Caption := 'Scan cancelled.'
+    else if iSkipped > 0 then
+      lblProgress.Caption := Format( 'Scan complete. Found %d unreachable code blocks (%d unreadable units skipped).',
+        [ Length( FItems ), iSkipped ] )
+    else
+      lblProgress.Caption := Format( 'Scan complete. Found %d unreachable code blocks.', [ Length( FItems ) ] );
   finally
-    FScanning     := False;
-    Screen.Cursor := crDefault;
+    FScanning       := False;
+    btnScan.Caption := FScanCaption;
+    Screen.Cursor   := crDefault;
   end;
+
+  // CloseInstance arrived during the scan: the form is no longer the singleton and must go.
+  if FormInstance <> Self then
+    Release;
 
 end;
 

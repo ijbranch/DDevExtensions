@@ -55,6 +55,13 @@ type
     /// </summary>
     [Test]
     procedure TestParserEndToEnd;
+    /// <summary>
+    /// Proves a comparison of an integer with a float (<c>1 &lt; 2.5</c>) uses the float's value:
+    /// the right operand's kind was tested on the left operand, so a float on the right of an
+    /// integer read as 0 and <c>1 &lt; 2.5</c> came out False.
+    /// </summary>
+    [Test]
+    procedure TestIntegerComparedWithFloat;
   end;
 
 implementation
@@ -184,6 +191,14 @@ begin
   Assert.IsTrue( EvalExpr( '1 + 2 = 3' ), '''1 + 2 = 3'' = True' );
   Assert.IsTrue( EvalExpr( '2 * 3 = 6' ), '''2 * 3 = 6'' = True' );
   Assert.IsTrue( EvalExpr( '10 - 4 * 2 = 2' ), '''10 - 4 * 2 = 2'' = True (precedence)' );
+end;
+
+procedure TTestDelphiExpr.TestIntegerComparedWithFloat;
+begin
+  Assert.IsTrue( EvalExpr( '1 < 2.5' ), '1 < 2.5' );
+  Assert.IsTrue( EvalExpr( '3 < 3.5' ), '3 < 3.5' );
+  Assert.IsFalse( EvalExpr( '3 = 3.5' ), '3 = 3.5 is false' );
+  Assert.IsTrue( EvalExpr( '2.5 < 3' ), '2.5 < 3 (float on the left already worked)' );
 end;
 
 initialization

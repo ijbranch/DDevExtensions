@@ -67,95 +67,155 @@ type
 
   /// <summary>Source location captured by parser symbols (line, column, filename and absolute index).</summary>
   TLocation = record
+    /// <summary>The source line and column of the token the location was taken from.</summary>
     Line, Column: Integer;
+    /// <summary>The file the token came from (the parsed file or one of its include files); '' for no location.</summary>
     Filename: string;
-    Index: Integer; // linear position
+    /// <summary>The token's linear character position in the text it was read from.</summary>
+    Index: Integer;
   end;
 
   /// <summary>Base class for every parsed symbol; carries a name plus three source locations (start, name, end).</summary>
   TCodeSymbol = class(TObject)
   private
+    /// <summary>Backing field for <see cref="Name"/>.</summary>
     FName: string;
+    /// <summary>Backing field for <see cref="Access"/>; akPublished unless the parser sets a member's section.</summary>
     FAccess: TAccessKind;
+    /// <summary>Backing field for <see cref="Location"/>.</summary>
     FLocation: TLocation;
+    /// <summary>Backing field for <see cref="StartLocation"/>; set by the parser after construction.</summary>
     FStartLocation: TLocation;
+    /// <summary>Backing field for <see cref="EndLocation"/>; set by the parser after construction.</summary>
     FEndLocation: TLocation;
   protected
+    /// <summary>Finds the first symbol in List whose name matches AName, ignoring case.</summary>
+    /// <param name="List">A list whose items are all TCodeSymbol descendants.</param>
+    /// <param name="AName">The name to look for.</param>
+    /// <returns>The first matching symbol, or nil when none matches.</returns>
     class function FindSymbol(List: TObjectList; const AName: string): TCodeSymbol;
   public
+    /// <summary>Creates a symbol with the given name and name location; its access starts as akPublished.</summary>
+    /// <param name="AName">The symbol's name.</param>
+    /// <param name="ALocation">The location of the symbol's name in the source.</param>
     constructor Create(const AName: string; const ALocation: TLocation);
 
+    /// <summary>Describes the symbol for display and debugging.</summary>
+    /// <returns>The symbol's name.</returns>
     function ToString: string; override;
 
+    /// <summary>The symbol's name as written in the source.</summary>
     property Name: string read FName;
-    { Location returns the location of the symbol's name. }
+    /// <summary>The location of the symbol's name.</summary>
     property Location: TLocation read FLocation;
-    { BeginLocation return the location of the symbol's start. }
+    /// <summary>The location of the symbol's start (for example its PROCEDURE, PROPERTY or USES-item token).</summary>
     property StartLocation: TLocation read FStartLocation;
-    { EndLocation return the location of the symbol's end. }
+    /// <summary>The location of the symbol's end (the token that follows or closes its declaration).</summary>
     property EndLocation: TLocation read FEndLocation;
+    /// <summary>The visibility section the member was declared in; akPublished for symbols that are not class members.</summary>
     property Access: TAccessKind read FAccess;
   end;
 
   /// <summary>Field of a class or record (also used as a base for local variables and method arguments).</summary>
   TCodeField = class(TCodeSymbol)
   private
+    /// <summary>Backing field for <see cref="TypeName"/>.</summary>
     FTypeName: string;
+    /// <summary>Backing field for <see cref="IsClassField"/>.</summary>
     FIsClassField: Boolean;
   protected
+    /// <summary>
+    /// Sets the type name once it is known: in <c>A, B: Integer</c> the names are read before the shared type, so every
+    /// name of the group receives the type afterwards.
+    /// </summary>
+    /// <param name="ATypeName">The reformatted type name.</param>
     procedure SetTypeNameLater(const ATypeName: string);
   public
+    /// <summary>Describes the field for display and debugging.</summary>
+    /// <returns>The field in the form <c>Name: TypeName</c>.</returns>
     function ToString: string; override;
 
-    { TypeName returns the reformated type as string. E.g. "array [ 0 .. 20 ] of string" }
+    /// <summary>The reformatted type as a string, e.g. <c>array[0..20] of string</c>.</summary>
     property TypeName: string read FTypeName;
-    { IsClassField return True if the field is a class variable (static)}
+    /// <summary>True if the field is a class variable (declared with <c>class var</c>, static).</summary>
     property IsClassField: Boolean read FIsClassField;
   end;
 
   /// <summary>Class property declaration with getter/setter/storage information.</summary>
   TCodeProperty = class(TCodeSymbol)
   private
+    /// <summary>Backing field for <see cref="TypeName"/>.</summary>
     FTypeName: string;
+    /// <summary>Backing field for <see cref="Setter"/>.</summary>
     FSetter: string;
+    /// <summary>Backing field for <see cref="Adder"/>.</summary>
     FAdder: string;
+    /// <summary>Backing field for <see cref="IsDefault"/>.</summary>
     FIsDefault: Boolean;
+    /// <summary>Backing field for <see cref="Remover"/>.</summary>
     FRemover: string;
+    /// <summary>Backing field for <see cref="Storer"/>.</summary>
     FStorer: string;
+    /// <summary>Backing field for <see cref="Getter"/>.</summary>
     FGetter: string;
+    /// <summary>Backing field for <see cref="IsArray"/>.</summary>
     FIsArray: Boolean;
+    /// <summary>Backing field for <see cref="IsClassProperty"/>.</summary>
     FIsClassProperty: Boolean;
+    /// <summary>Backing field for <see cref="IsInheritChange"/>.</summary>
     FIsInheritChange: Boolean;
+    /// <summary>Backing field for <see cref="IsNoDefault"/>.</summary>
     FIsNoDefault: Boolean;
   public
+    /// <summary>Describes the property for display and debugging.</summary>
+    /// <returns>
+    /// The property in declaration form, e.g. <c>Name[]: TypeName read GetX write SetX; default</c>, listing only the parts
+    /// that were declared.
+    /// </returns>
     function ToString: string; override;
 
-    { TypeName returns the reformated type as string. E.g. "array [ 0 .. 20 ] of string" }
+    /// <summary>The reformatted type as a string, e.g. <c>array[0..20] of string</c>; '' when <see cref="IsInheritChange"/>.</summary>
     property TypeName: string read FTypeName;
+    /// <summary>The name after READ (field or method), or '' if there is none.</summary>
     property Getter: string read FGetter;
+    /// <summary>The name after WRITE (field or method), or '' if there is none.</summary>
     property Setter: string read FSetter;
+    /// <summary>The name after ADD (.NET event adder), or '' if there is none.</summary>
     property Adder: string read FAdder;
+    /// <summary>The name after REMOVE (.NET event remover), or '' if there is none.</summary>
     property Remover: string read FRemover;
+    /// <summary>The identifier after STORED, or '' if there is none (or it is not an identifier).</summary>
     property Storer: string read FStorer;
+    /// <summary>True if the property is the class's default array property (<c>; default</c> after the declaration).</summary>
     property IsDefault: Boolean read FIsDefault;
+    /// <summary>True if the declaration ends with <c>; nodefault</c>.</summary>
     property IsNoDefault: Boolean read FIsNoDefault;
+    /// <summary>True if the property is an array property (it has an index parameter list).</summary>
     property IsArray: Boolean read FIsArray;
+    /// <summary>True if the property is declared with <c>class property</c>.</summary>
     property IsClassProperty: Boolean read FIsClassProperty;
-    property IsInheritChange: Boolean read FIsInheritChange; // specifies if the property is inherited but with differnent visibility/default value.
+    /// <summary>
+    /// True if the property redeclares an inherited one without a type (no colon after the name), to change its
+    /// visibility or default value.
+    /// </summary>
+    property IsInheritChange: Boolean read FIsInheritChange;
   end;
 
-  /// <summary>Local variable inside a procedure or function (alias of TCodeField for clarity).</summary>
+  /// <summary>Local variable inside a procedure or function: a TCodeField descendant that adds nothing, kept as its own class for clarity.</summary>
   TCodeLocalVariable = class(TCodeField)
   end;
 
   /// <summary>Argument of a method, including the parameter modifier (var/out/const/none).</summary>
   TCodeMethodArg = class(TCodeField)
   private
+    /// <summary>Backing field for <see cref="Modifier"/>.</summary>
     FModifier: TArgModifier;
   public
+    /// <summary>Describes the parameter for display and debugging.</summary>
+    /// <returns>The parameter in the form <c>[var |out |const ]Name: TypeName</c>.</returns>
     function ToString: string; override;
 
-    { Returns the parameter modifier (none, var, out, const). }
+    /// <summary>The parameter modifier (none, var, out, const).</summary>
     property Modifier: TArgModifier read FModifier;
   end;
 
@@ -166,220 +226,383 @@ type
   /// </summary>
   TCodeMethod = class(TCodeSymbol)
   private
+    /// <summary>Owns the parameters (TCodeMethodArg) in declaration order; backs <see cref="Args"/>.</summary>
     FArgs: TObjectList;
+    /// <summary>Backing field for <see cref="CodeInsert"/>.</summary>
     FCodeInsert: TLocation;
+    /// <summary>The location of the implementation's local VAR keyword (the last one met), where new local variables can go.</summary>
     FVarInsert: TLocation;
+    /// <summary>Owns the implementation's local variables (TCodeLocalVariable); backs <see cref="LocalVariables"/>.</summary>
     FLocalVariables: TObjectList;
+    /// <summary>Owns the implementation's nested procedures and functions (TCodeMethod); backs <see cref="LocalProcss"/>.</summary>
     FLocalProcs: TObjectList;
+    /// <summary>Backing field for <see cref="ImplLocation"/>.</summary>
     FImplLocation: TLocation;
+    /// <summary>Backing field for <see cref="ReturnTypeName"/>.</summary>
     FReturnTypeName: string;
+    /// <summary>Backing field for <see cref="IsClassStatic"/>.</summary>
     FIsClassStatic: Boolean;
+    /// <summary>Backing field for <see cref="IsClassMethod"/>.</summary>
     FIsClassMethod: Boolean;
+    /// <summary>Backing field for <see cref="VirtualKind"/>.</summary>
     FVirtualKind: TVirtualKind;
+    /// <summary>Backing field for <see cref="Convention"/>.</summary>
     FConvention: TCallConvention;
+    /// <summary>Backing field for <see cref="MethodType"/>.</summary>
     FMethodType: TMethodType;
+    /// <summary>Backing field for <see cref="IsImplemented"/>.</summary>
     FIsImplemented: Boolean;
+    /// <summary>Backing field for <see cref="IsDeclared"/>.</summary>
     FIsDeclared: Boolean;
+    /// <summary>Backing field for <see cref="ImplEndLocation"/>.</summary>
     FImplEndLocation: TLocation;
+    /// <summary>Backing field for <see cref="ImplBeginLocation"/>.</summary>
     FImplBeginLocation: TLocation;
+    /// <summary>Backing field for <see cref="IsImplEmpty"/>.</summary>
     FIsImplEmpty: Boolean;
+    /// <summary>Read accessor for <see cref="Args"/>.</summary>
+    /// <param name="Index">The 0-based parameter index.</param>
+    /// <returns>The parameter at Index.</returns>
     function GetArg(Index: Integer): TCodeMethodArg;
+    /// <summary>Read accessor for <see cref="ArgCount"/>.</summary>
+    /// <returns>The number of parameters.</returns>
     function GetArgCount: Integer;
+    /// <summary>Read accessor for <see cref="LocalVariables"/>.</summary>
+    /// <param name="Index">The 0-based local-variable index.</param>
+    /// <returns>The local variable at Index.</returns>
     function GetLocalVariable(Index: Integer): TCodeLocalVariable;
+    /// <summary>Read accessor for <see cref="LocalVariableCount"/>.</summary>
+    /// <returns>The number of local variables.</returns>
     function GetLocalVariableCount: Integer;
+    /// <summary>Read accessor for <see cref="LocalProcss"/>.</summary>
+    /// <param name="Index">The 0-based local-procedure index.</param>
+    /// <returns>The local procedure at Index.</returns>
     function GetLocalProc(Index: Integer): TCodeMethod;
+    /// <summary>Read accessor for <see cref="LocalProcCount"/>.</summary>
+    /// <returns>The number of local procedures.</returns>
     function GetLocalProcCount: Integer;
   protected
+    /// <summary>Appends a parameter; the method takes ownership of it.</summary>
+    /// <param name="Item">The parameter to add.</param>
+    /// <returns>The index of the added parameter.</returns>
     function AddArg(Item: TCodeMethodArg): Integer;
+    /// <summary>Appends a local variable; the method takes ownership of it.</summary>
+    /// <param name="Item">The local variable to add.</param>
+    /// <returns>The index of the added local variable.</returns>
     function AddLocalVariable(Item: TCodeLocalVariable): Integer;
+    /// <summary>Appends a nested procedure or function; the method takes ownership of it.</summary>
+    /// <param name="Item">The local procedure to add.</param>
+    /// <returns>The index of the added local procedure.</returns>
     function AddLocalProc(Item: TCodeMethod): Integer;
   public
+    /// <summary>Creates a method with empty parameter, local-variable and local-procedure lists.</summary>
+    /// <param name="AName">The method's name (without the class qualifier).</param>
+    /// <param name="ALocation">The location of the method's name in its declaration (EmptyLocation when only the implementation was found).</param>
     constructor Create(const AName: string; const ALocation: TLocation);
+    /// <summary>Frees the method together with its parameters, local variables and local procedures.</summary>
     destructor Destroy; override;
 
+    /// <summary>Describes the method for display and debugging.</summary>
+    /// <returns>The signature, e.g. <c>function Name(const A: Integer; B: string): Boolean</c>.</returns>
     function ToString: string; override;
 
-    { FindArg return nil if no matching parameter was found with the name. }
+    /// <summary>Finds a parameter by name, ignoring case.</summary>
+    /// <param name="AName">The parameter name to look for.</param>
+    /// <returns>The matching parameter, or nil if no parameter has that name.</returns>
     function FindArg(const AName: string): TCodeMethodArg;
 
-    { IsCompatible returns True if both methods have the same signature
-      (no name comparision, only type and arg-types). }
+    /// <summary>
+    /// Tells whether M has the same signature: method type, calling convention, class/static flags, return type and the
+    /// modifier and type of every parameter.  Names (method and parameters) are not compared.
+    /// </summary>
+    /// <param name="M">The method to compare with; nil is never compatible, Self always is.</param>
+    /// <returns>True if both methods have the same signature.</returns>
     function IsCompatible(M: TCodeMethod): Boolean;
 
-    { ImplLocation returns the location where the method is implemented. }
+    /// <summary>The location of the method's name in its implementation.</summary>
     property ImplLocation: TLocation read FImplLocation;
-    { ImplBeginLocation returns the location of the method's impl. start }
+    /// <summary>The location of the implementation's start (its PROCEDURE/FUNCTION/... keyword, or CLASS before it).</summary>
     property ImplBeginLocation: TLocation read FImplBeginLocation;
-    { ImplEndLocation returns the location of the method's impl. end }
+    /// <summary>The location of the token after the implementation's closing END.</summary>
     property ImplEndLocation: TLocation read FImplEndLocation;
-    { IsImplEmpty returns True if the impl. method consists only of "begin end" }
+    /// <summary>True if the implementation has no local declarations and its body is only <c>begin end</c>.</summary>
     property IsImplEmpty: Boolean read FIsImplEmpty;
-    { CodeInsert returns the location after the BEGIN in the implementation. }
+    /// <summary>The location of the first token after BEGIN in the implementation, where generated code can be inserted.</summary>
     property CodeInsert: TLocation read FCodeInsert;
 
-    { MethodType returns the type of the method (constructor, destructor,
-      function, procedure). }
+    /// <summary>The kind of method (constructor, destructor, function, procedure).</summary>
     property MethodType: TMethodType read FMethodType;
-    { ReturnTypeName returns the reformated return-type as string. E.g. "array [ 0 .. 20 ] of string" }
+    /// <summary>The reformatted return type as a string, e.g. <c>array[0..20] of string</c>; '' for a procedure.</summary>
     property ReturnTypeName: string read FReturnTypeName;
-    { IsClassMethod returns True if the method is a class method. }
+    /// <summary>True if the method is a class method.</summary>
     property IsClassMethod: Boolean read FIsClassMethod;
-    { IsClassStatic returns True if the method is a static class method. }
+    /// <summary>True if the method is a static class method (has the STATIC directive).</summary>
     property IsClassStatic: Boolean read FIsClassStatic;
-    { VirtualKind returns the methods' virtuality kind. }
+    /// <summary>The method's virtuality kind (static, virtual, override, abstract, dynamic, message).</summary>
     property VirtualKind: TVirtualKind read FVirtualKind;
-    { Convention returns call convention of the method. }
+    /// <summary>The method's calling convention.</summary>
     property Convention: TCallConvention read FConvention;
 
-    { IsImplemented return True if the method is in the implementation section.
-      Is IsDeclared <> IsImplemented then one is missing. }
+    /// <summary>
+    /// True if an implementation of the method was found.  If IsDeclared &lt;&gt; IsImplemented, one of the two is
+    /// missing.
+    /// </summary>
     property IsImplemented: Boolean read FIsImplemented;
-    { IsDeclared return True if the method is in the interface section. }
+    /// <summary>True if the method was found in a class declaration.</summary>
     property IsDeclared: Boolean read FIsDeclared;
 
-    { Returns the number of parameters. }
+    /// <summary>The number of parameters.</summary>
     property ArgCount: Integer read GetArgCount;
-    { Returns the parameters. }
+    /// <summary>The parameters, in declaration order.</summary>
+    /// <param name="Index">The 0-based parameter index.</param>
     property Args[Index: Integer]: TCodeMethodArg read GetArg;
 
-    { Returns the number of local variables. }
+    /// <summary>The number of local variables in the implementation.</summary>
     property LocalVariableCount: Integer read GetLocalVariableCount;
-    { Returns the local variables. }
+    /// <summary>The local variables declared in the implementation's VAR sections.</summary>
+    /// <param name="Index">The 0-based local-variable index.</param>
     property LocalVariables[Index: Integer]: TCodeLocalVariable read GetLocalVariable;
 
-    { Returns the number of local procedures. }
+    /// <summary>The number of local (nested) procedures in the implementation.</summary>
     property LocalProcCount: Integer read GetLocalProcCount;
-    { Returns the local procedures. }
+    /// <summary>The local (nested) procedures and functions of the implementation.</summary>
+    /// <param name="Index">The 0-based local-procedure index.</param>
     property LocalProcss[Index: Integer]: TCodeMethod read GetLocalProc;
   end;
 
   /// <summary>Class declaration: base class, supported interfaces, fields, properties and methods.</summary>
   TCodeClass = class(TCodeSymbol)
   private
+    /// <summary>Backing field for <see cref="AccessInsert"/>; an entry with an empty Filename has not been recorded.</summary>
     FAccessInsert: array[TAccessKind] of TLocation;
+    /// <summary>Backing field for <see cref="BaseClass"/>.</summary>
     FBaseClass: string;
+    /// <summary>Backing field for <see cref="IsUnitPrivate"/>.</summary>
     FIsUnitPrivate: Boolean;
 
+    /// <summary>The names of the directly implemented interfaces; backs <see cref="Interfaces"/>.</summary>
     FInterfaces: TStringList;
+    /// <summary>Owns the class's fields (TCodeField); backs <see cref="Fields"/>.</summary>
     FFields: TObjectList;
+    /// <summary>Owns the class's properties (TCodeProperty); backs <see cref="Properties"/>.</summary>
     FProperties: TObjectList;
+    /// <summary>Owns the class's methods (TCodeMethod); backs <see cref="Methods"/>.</summary>
     FMethods: TObjectList;
 
+    /// <summary>Read accessor for <see cref="InterfaceCount"/>.</summary>
+    /// <returns>The number of directly implemented interfaces.</returns>
     function GetInterfaceCount: Integer;
+    /// <summary>Read accessor for <see cref="Interfaces"/>.</summary>
+    /// <param name="Index">The 0-based interface index.</param>
+    /// <returns>The interface name at Index.</returns>
     function GetInterfaceItem(Index: Integer): string;
+    /// <summary>Read accessor for <see cref="AccessInsert"/>.</summary>
+    /// <param name="Access">The visibility section.</param>
+    /// <returns>The recorded insert location for that section, or a location with an empty Filename if none was recorded.</returns>
     function GetAccessInsert(Access: TAccessKind): TLocation;
+    /// <summary>Read accessor for <see cref="Fields"/>.</summary>
+    /// <param name="Index">The 0-based field index.</param>
+    /// <returns>The field at Index.</returns>
     function GetField(Index: Integer): TCodeField;
+    /// <summary>Read accessor for <see cref="FieldCount"/>.</summary>
+    /// <returns>The number of fields.</returns>
     function GetFieldCount: Integer;
+    /// <summary>Read accessor for <see cref="MethodCount"/>.</summary>
+    /// <returns>The number of methods.</returns>
     function GetMethodCount: Integer;
+    /// <summary>Read accessor for <see cref="Methods"/>.</summary>
+    /// <param name="Index">The 0-based method index.</param>
+    /// <returns>The method at Index.</returns>
     function GetMethodItem(Index: Integer): TCodeMethod;
+    /// <summary>Read accessor for <see cref="Properties"/>.</summary>
+    /// <param name="Index">The 0-based property index.</param>
+    /// <returns>The property at Index.</returns>
     function GetProperty(Index: Integer): TCodeProperty;
+    /// <summary>Read accessor for <see cref="PropertyCount"/>.</summary>
+    /// <returns>The number of properties.</returns>
     function GetPropertyCount: Integer;
   protected
+    /// <summary>Records the name of a directly implemented interface.</summary>
+    /// <param name="Item">The interface name.</param>
+    /// <returns>The index of the added name.</returns>
     function AddInterface(const Item: string): Integer;
+    /// <summary>Appends a field; the class takes ownership of it.</summary>
+    /// <param name="Item">The field to add.</param>
+    /// <returns>The index of the added field.</returns>
     function AddField(Item: TCodeField): Integer;
+    /// <summary>Appends a property; the class takes ownership of it.</summary>
+    /// <param name="Item">The property to add.</param>
+    /// <returns>The index of the added property.</returns>
     function AddProperty(Item: TCodeProperty): Integer;
+    /// <summary>Appends a method; the class takes ownership of it.</summary>
+    /// <param name="Item">The method to add.</param>
+    /// <returns>The index of the added method.</returns>
     function AddMethod(Item: TCodeMethod): Integer;
   public
+    /// <summary>Creates a class symbol with empty interface, field, property and method lists.</summary>
+    /// <param name="AName">The class's name.</param>
+    /// <param name="ALocation">The location of the class's name in its declaration.</param>
     constructor Create(const AName: string; const ALocation: TLocation);
+    /// <summary>Frees the class together with its interface names, fields, properties and methods.</summary>
     destructor Destroy; override;
 
-    { SupportsInterface returns True if the class implements the given
-      interface directly. }
+    /// <summary>Tells whether the class lists the interface directly in its declaration (inherited ones are not seen).</summary>
+    /// <param name="AName">The interface name, as written in the class declaration.</param>
+    /// <returns>True if the class implements the interface directly.</returns>
     function SupportsInterface(const AName: string): Boolean;
-    { FindProperty return nil if no matching property was found. }
+    /// <summary>Finds a property by name, ignoring case.</summary>
+    /// <param name="AName">The property name.</param>
+    /// <returns>The matching property, or nil if none was found.</returns>
     function FindProperty(const AName: string): TCodeProperty;
-    { FindField return nil if no matching field was found. }
+    /// <summary>Finds a field by name, ignoring case.</summary>
+    /// <param name="AName">The field name.</param>
+    /// <returns>The matching field, or nil if none was found.</returns>
     function FindField(const AName: string): TCodeField;
-    { FindMethod return nil if no matching method was found. }
+    /// <summary>Finds the first method with the given name, ignoring case (overloads are not told apart).</summary>
+    /// <param name="AName">The method name.</param>
+    /// <returns>The first matching method, or nil if none was found.</returns>
     function FindMethod(const AName: string): TCodeMethod;
 
-    { AccessInsert[] returns the location of the access-kind (private, public, ...).
-      This is the before the next access-kind. }
+    /// <summary>
+    /// The location where members of the given visibility section can be inserted: the token at which the first section of
+    /// that kind ends (the next visibility keyword).  Its Filename is empty if no such section ended there.
+    /// </summary>
+    /// <param name="Access">The visibility section (private, public, ...).</param>
     property AccessInsert[Access: TAccessKind]: TLocation read GetAccessInsert;
 
-    { BaseClass returns the name of the base class. }
+    /// <summary>The name of the base class; TObject when the declaration names none.</summary>
     property BaseClass: string read FBaseClass;
-    { IsUnitPrivate returns True if the class is declared in the implementation
-      section. }
+    /// <summary>True if the class is declared in the implementation section.</summary>
     property IsUnitPrivate: Boolean read FIsUnitPrivate;
 
-    { Supported interfaces. }
+    /// <summary>The number of directly implemented interfaces.</summary>
     property InterfaceCount: Integer read GetInterfaceCount;
+    /// <summary>The names of the directly implemented interfaces, in declaration order.</summary>
+    /// <param name="Index">The 0-based interface index.</param>
     property Interfaces[Index: Integer]: string read GetInterfaceItem;
 
-    { Member methods. }
+    /// <summary>The number of member methods.</summary>
     property MethodCount: Integer read GetMethodCount;
+    /// <summary>The member methods (declared, plus implemented ones with no matching declaration).</summary>
+    /// <param name="Index">The 0-based method index.</param>
     property Methods[Index: Integer]: TCodeMethod read GetMethodItem;
 
-    { Member properties. }
+    /// <summary>The number of member properties.</summary>
     property PropertyCount: Integer read GetPropertyCount;
+    /// <summary>The member properties, in declaration order.</summary>
+    /// <param name="Index">The 0-based property index.</param>
     property Properties[Index: Integer]: TCodeProperty read GetProperty;
 
-    { Member fields. }
+    /// <summary>The number of member fields.</summary>
     property FieldCount: Integer read GetFieldCount;
+    /// <summary>The member fields, in declaration order.</summary>
+    /// <param name="Index">The 0-based field index.</param>
     property Fields[Index: Integer]: TCodeField read GetField;
   end;
 
   /// <summary>Owned collection of TCodeClass instances with name-based look-up.</summary>
   TCodeClassList = class(TObject)
   private
+    /// <summary>Owns the classes (TCodeClass); backs <see cref="Items"/>.</summary>
     FItems: TObjectList;
+    /// <summary>Read accessor for <see cref="Items"/>.</summary>
+    /// <param name="Index">The 0-based class index.</param>
+    /// <returns>The class at Index.</returns>
     function GetItem(Index: Integer): TCodeClass;
+    /// <summary>Read accessor for <see cref="Count"/>.</summary>
+    /// <returns>The number of classes.</returns>
     function GetCount: Integer;
   protected
+    /// <summary>Removes and frees every class.</summary>
     procedure Clear;
+    /// <summary>Appends a class; the list takes ownership of it.</summary>
+    /// <param name="Item">The class to add.</param>
+    /// <returns>The index of the added class.</returns>
     function Add(Item: TCodeClass): Integer;
   public
+    /// <summary>Creates an empty class list.</summary>
     constructor Create;
+    /// <summary>Frees the list and every class in it.</summary>
     destructor Destroy; override;
 
-    { Find returns nil if the class was not found. }
+    /// <summary>Finds a class by name, ignoring case.</summary>
+    /// <param name="ClassName">The class name.</param>
+    /// <returns>The first matching class, or nil if the class was not found.</returns>
     function Find(const ClassName: string): TCodeClass;
 
-    { Classes }
+    /// <summary>The number of classes.</summary>
     property Count: Integer read GetCount;
+    /// <summary>The classes, in the order the parser found them.</summary>
+    /// <param name="Index">The 0-based class index.</param>
     property Items[Index: Integer]: TCodeClass read GetItem; default;
   end;
 
   /// <summary>Single entry in a uses/contains/requires clause: unit name plus an optional "in 'file.pas'" filename.</summary>
   TUsesItem = class(TCodeSymbol)
   private
+    /// <summary>Backing field for <see cref="Filename"/>.</summary>
     FFilename: string;
   public
+    /// <summary>Creates a uses entry.</summary>
+    /// <param name="AName">The (possibly dotted) unit name.</param>
+    /// <param name="AFilename">The filename given with IN, unquoted, or '' if none was given.</param>
+    /// <param name="ALocation">The location of the unit name.</param>
     constructor Create(const AName, AFilename: string; const ALocation: TLocation);
 
-    { Name returns the included unit name. }
+    /// <summary>The included unit name (dotted names are kept whole).</summary>
     property Name;
 
-    { Filename returns the specified filename ("bla in 'bla.pas'"), if no
-      filename was specified it return ''. }
+    /// <summary>The filename given with IN (<c>bla in 'bla.pas'</c>), unquoted; '' if no filename was given.</summary>
     property Filename: string read FFilename;
   end;
 
   /// <summary>Collection of TUsesItem entries that also captures the source location of the surrounding clause.</summary>
   TUsesList = class(TObject)
   private
+    /// <summary>Owns the entries (TUsesItem); backs <see cref="Items"/>.</summary>
     FItems: TObjectList;
+    /// <summary>Backing field for <see cref="Location"/>.</summary>
     FLocation: TLocation;
+    /// <summary>Backing field for <see cref="EndLocation"/>.</summary>
     FEndLocation: TLocation;
+    /// <summary>Read accessor for <see cref="Count"/>.</summary>
+    /// <returns>The number of entries.</returns>
     function GetCount: Integer;
+    /// <summary>Read accessor for <see cref="Items"/>.</summary>
+    /// <param name="Index">The 0-based entry index.</param>
+    /// <returns>The entry at Index.</returns>
     function GetItem(Index: Integer): TUsesItem;
   protected
+    /// <summary>Removes and frees every entry; the locations are left as they are.</summary>
     procedure Clear;
+    /// <summary>Appends an entry; the list takes ownership of it.</summary>
+    /// <param name="Item">The entry to add.</param>
+    /// <returns>The index of the added entry.</returns>
     function AddUses(Item: TUsesItem): Integer;
   public
+    /// <summary>Creates an empty uses list.</summary>
     constructor Create;
+    /// <summary>Frees the list and every entry in it.</summary>
     destructor Destroy; override;
 
-    { FindUses return nil if no matching USES-item was found. }
+    /// <summary>Finds an entry by unit name, ignoring case.</summary>
+    /// <param name="AName">The unit name.</param>
+    /// <returns>The first matching entry, or nil if no matching USES-item was found.</returns>
     function FindUses(const AName: string): TUsesItem;
+    /// <summary>Finds the position of an entry object in the list.</summary>
+    /// <param name="AItem">The entry to look for (compared by reference).</param>
+    /// <returns>The 0-based index of AItem, or -1 if it is not in the list.</returns>
     function IndexOf(AItem: TUsesItem): Integer;
 
+    /// <summary>The number of entries.</summary>
     property Count: Integer read GetCount;
+    /// <summary>The entries, in clause order.</summary>
+    /// <param name="Index">The 0-based entry index.</param>
     property Items[Index: Integer]: TUsesItem read GetItem; default;
 
-    { Location returns the location of the USES-keyword. }
+    /// <summary>The location of the USES (or REQUIRES / CONTAINS) keyword.</summary>
     property Location: TLocation read FLocation;
+    /// <summary>The location of the semicolon that ends the clause.</summary>
     property EndLocation: TLocation read FEndLocation;
   end;
 
@@ -390,133 +613,320 @@ type
   /// </summary>
   TDesignerParser = class(TObject)
   private
+    /// <summary>The token source while a parse runs; created by ParseHead and freed (set to nil) when the parse ends or fails.</summary>
     p: TDelphiPreprocessor;
+    /// <summary>True once the IMPLEMENTATION keyword has been passed.</summary>
     FImplementation: Boolean;
+    /// <summary>Backing field for <see cref="Classes"/>.</summary>
     FClasses: TCodeClassList;
+    /// <summary>Backing field for <see cref="ModuleName"/>.</summary>
     FModuleName: string;
+    /// <summary>Backing field for <see cref="FormResource"/>.</summary>
     FFormResource: string;
+    /// <summary>Backing field for <see cref="Filename"/>.</summary>
     FFilename: string;
+    /// <summary>Backing field for <see cref="Text"/>.</summary>
     FText: UTF8String;
+    /// <summary>When True, the next call to Next hands back the current token again instead of reading a new one.</summary>
     FRepeatLastToken: Boolean;
+    /// <summary>Backing field for <see cref="ImplUses"/>.</summary>
     FImplUses: TUsesList;
+    /// <summary>Backing field for <see cref="InterfaceUses"/>.</summary>
     FInterfaceUses: TUsesList;
+    /// <summary>Backing field for <see cref="ImplLocation"/>.</summary>
     FImplLocation: TLocation;
+    /// <summary>Backing field for <see cref="InterfaceLocation"/>.</summary>
     FInterfaceLocation: TLocation;
+    /// <summary>The $R resource names found; backs <see cref="Resources"/>.</summary>
     FResources: TStringList;
+    /// <summary>The $I / $INCLUDE file names found, unquoted; backs <see cref="IncludeFiles"/>.</summary>
     FIncludeFiles: TStringList;
+    /// <summary>Backing field for <see cref="Contains"/>.</summary>
     FContains: TUsesList;
+    /// <summary>Backing field for <see cref="Requires"/>.</summary>
     FRequires: TUsesList;
+    /// <summary>Backing field for <see cref="ModuleType"/>.</summary>
     FModuleType: TModuleType;
+    /// <summary>Owns the stand-alone routines (TCodeMethod) found in the implementation section; backs <see cref="Functions"/>.</summary>
     FFunctions: TObjectList;
+    /// <summary>Backing field for <see cref="IncludeDirs"/>.</summary>
     FIncludeDirs: TStrings;
+    /// <summary>Backing field for <see cref="ParseError"/>.</summary>
+    FParseError: Boolean;
 
+    /// <summary>
+    /// OnIncludeFile handler: records the include file in <see cref="IncludeFiles"/> and loads it into the preprocessor.  A
+    /// file that exists but cannot be read (EStreamError, EOSError) sets <see cref="ParseError"/> instead of raising.
+    /// </summary>
+    /// <param name="Sender">The TDelphiPreprocessor that met the include directive.</param>
+    /// <param name="Name">The include file name as written, possibly quoted.</param>
     procedure IncludeFile(Sender: TObject; const Name: string);
+    /// <summary>Finds the include file LName (beside the current file, then in IncludeDirs) and hands its text to Preprocessor.</summary>
+    /// <param name="Preprocessor">The preprocessor that met the include directive.</param>
+    /// <param name="LName">The include file name, unquoted.</param>
+    /// <exception cref="EFOpenError">Raised when the file exists but cannot be opened.</exception>
+    procedure IncludeFoundFile(Preprocessor: TDelphiPreprocessor; const LName: string);
+    /// <summary>
+    /// OnDirective handler: records every <c>{$R ...}</c> resource in <see cref="Resources"/>, and a form resource
+    /// (<c>*.dfm</c>, <c>*.fmx</c>, <c>*.nfm</c>, <c>*.xfm</c>, <c>*.lfm</c>) also in <see cref="FormResource"/>.
+    /// </summary>
+    /// <param name="Sender">The preprocessor that met the directive.</param>
+    /// <param name="Token">The directive's comment token, braces or <c>(* *)</c> included.</param>
     procedure Directive(Sender: TObject; Token: TToken);
+    /// <summary>
+    /// OnGetDeclared handler for <c>Declared()</c>: a name counts as declared when it is a unit in either uses clause, a
+    /// class or a stand-alone routine found so far.
+    /// </summary>
+    /// <param name="Sender">The preprocessor that evaluates the expression.</param>
+    /// <param name="Name">The identifier passed to <c>Declared()</c>.</param>
+    /// <param name="Value">Receives True if the name is declared.</param>
     procedure GetDeclared(Sender: TObject; const Name: string; var Value: Boolean);
+    /// <summary>OnGetConstValue handler: supplies <c>CompilerVersion</c> as a float; any other name is left unchanged.</summary>
+    /// <param name="Sender">The preprocessor that evaluates the expression.</param>
+    /// <param name="Name">The constant's name.</param>
+    /// <param name="Kind">Receives tkFloat for <c>CompilerVersion</c>.</param>
+    /// <param name="Value">Receives the compiler version, e.g. <c>37.0</c>, for <c>CompilerVersion</c>.</param>
     procedure GetConstValue(Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string);
+    /// <summary>OnGetConstBoolValue handler: does nothing, so Value keeps whatever the preprocessor passed in.</summary>
+    /// <param name="Sender">The preprocessor that evaluates the expression.</param>
+    /// <param name="Name">The constant's name.</param>
+    /// <param name="Value">Left unchanged.</param>
     procedure GetConstBoolValue(Sender: TObject; const Name: string; var Value: Boolean);
 
+    /// <summary>
+    /// Resets every result (uses lists, resources, include files, classes, functions, module name and type, locations,
+    /// <see cref="ParseError"/>) before a new parse.  <see cref="IncludeDirs"/> is kept.
+    /// </summary>
     procedure Clear;
 
+    /// <summary>Gives the current token without advancing.</summary>
+    /// <returns>The preprocessor's current token; nil at the end of the text.</returns>
     function Look: TToken;
+    /// <summary>
+    /// Advances to the next token, or, when FRepeatLastToken is set, clears it and stays on the current token.
+    /// </summary>
+    /// <returns>False at the end of the text, or when the preprocessor was dropped after an error.</returns>
     function Next: Boolean;
+    /// <summary>Advances like <see cref="Next"/>, but aborts the parse at the end of the text.</summary>
+    /// <exception cref="EAbort">Raised (through Abort) when there is no next token; Parse and ParseUsesOnly absorb it.</exception>
     procedure NextA;
+    /// <summary>
+    /// Skips a routine, a routine type or an anonymous method from its PROCEDURE/FUNCTION/... keyword: its name,
+    /// parameters, return type, directives and, in the implementation section, its body.
+    /// </summary>
     procedure IgnoreProc;
+    /// <summary>Skips a record, object or interface type (and any type nested in it) up to its END, or a forward declaration.</summary>
     procedure IgnoreRecord;
+    /// <summary>Skips an interface type; the same as <see cref="IgnoreRecord"/>.</summary>
     procedure IgnoreInterface;
+    /// <summary>
+    /// Skips a BEGIN ... END (or the rest of one) up to its matching END, counting nested BEGIN, CASE and TRY blocks.
+    /// </summary>
+    /// <param name="Empty">Receives True if the block contains no tokens between BEGIN and END.</param>
+    /// <returns>The location of the first token after BEGIN.</returns>
     function IgnoreBlock(out Empty: Boolean): TLocation;
+    /// <summary>
+    /// Skips a nested TYPE or CONST section in a class up to the next visibility keyword or END.  At the end of the text it
+    /// aborts the parse through <see cref="NextA"/>.
+    /// </summary>
+    /// <exception cref="EAbort">Raised when the text ends before a visibility keyword or END.</exception>
     procedure IgnoreToClassAccess;
+    /// <summary>Skips the rest of an EXTERNAL directive (library, NAME, INDEX and string expressions).</summary>
     procedure IgnoreExternal;
+    /// <summary>
+    /// Skips a procedural type or variable (<c>X: procedure(...)</c>, <c>T = function(...): ...</c>), including
+    /// <c>of object</c> and the closing semicolon.
+    /// </summary>
     procedure IgnoreFunctionType;
+    /// <summary>
+    /// Parses a class declaration whose CLASS keyword has just been read: base class, interfaces, and the fields,
+    /// properties and methods of each visibility section, and adds it to <see cref="Classes"/>.  A declaration that
+    /// cannot be read (the text ends, or there is no type name) is skipped.
+    /// </summary>
     procedure ParseClass;
+    /// <summary>Parses a method declaration in a class and adds it to the class's methods.</summary>
+    /// <param name="C">The class being parsed.</param>
+    /// <param name="Access">The visibility section the declaration is in.</param>
+    /// <param name="IsClass">True if the declaration is preceded by CLASS.</param>
     procedure ParseMethodDecl(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    /// <summary>Parses a property declaration (type, accessors, STORED, DEFAULT/NODEFAULT) and adds it to the class's properties.</summary>
+    /// <param name="C">The class being parsed.</param>
+    /// <param name="Access">The visibility section the declaration is in.</param>
+    /// <param name="IsClass">True if the declaration is preceded by CLASS.</param>
     procedure ParseProperty(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    /// <summary>Parses a field declaration (one or more comma-separated names) and adds the fields to the class.</summary>
+    /// <param name="C">The class being parsed.</param>
+    /// <param name="Access">The visibility section the declaration is in.</param>
+    /// <param name="IsClass">True for a class variable.</param>
     procedure ParseField(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    /// <summary>
+    /// Reads a type expression and reformats it as a string: a qualified name, <c>array[...] of ...</c>,
+    /// <c>set of ...</c>; record, object and procedural types are skipped.  An unreadable type gives
+    /// <c>errornous</c>.
+    /// </summary>
+    /// <param name="Stop">The tokens that end the type; passed on to the element type of an array.</param>
+    /// <returns>The reformatted type name.</returns>
     function ParseTypeName(const Stop: TTokenKindSet): string;
+    /// <summary>Parses a parenthesised parameter list into M's parameters.</summary>
+    /// <param name="M">The method that receives the parameters, or nil to skip the list.</param>
     procedure ParseFunctionArgs(M: TCodeMethod);
+    /// <summary>Parses a USES, REQUIRES or CONTAINS clause from its keyword up to the closing semicolon.</summary>
+    /// <param name="List">Receives the entries and the clause's locations.</param>
     procedure ParseUses(List: TUsesList);
+    /// <summary>
+    /// Parses a routine heading met outside a class declaration, matches it with the declared method (or earlier stand-alone
+    /// routine) of the same signature and records its implementation: locations, local variables, nested routines and the
+    /// code-insert point.  An unmatched method of a class is added to the class; an unmatched stand-alone routine in the
+    /// implementation section is added to <see cref="Functions"/>.  Procedural types and variables are skipped.
+    /// </summary>
+    /// <param name="AParent">The routine this one is nested in, or nil for a top-level routine.</param>
     procedure ParseFunctionImpl(AParent: TCodeMethod);
+    /// <summary>
+    /// Reads the directives after a routine heading (STATIC, VIRTUAL, OVERRIDE, ..., calling conventions, EXTERNAL) into M,
+    /// stopping at the first token that is not a directive.
+    /// </summary>
+    /// <param name="M">The method that receives the directives.</param>
     procedure ParseDirectives(M: TCodeMethod);
+    /// <summary>
+    /// Parses a list of <c>Name[, Name]: Type;</c> declarations, as parameters, class fields or local variables.
+    /// </summary>
+    /// <param name="List">
+    /// Receives a TCodeMethodArg (parameters) or TCodeField (otherwise) per name, or nil to only skip the declarations.
+    /// </param>
+    /// <param name="Mode">What is being parsed, which decides the item class and the tokens that end the list.</param>
     procedure ParseVariableList(List: TObjectList; Mode: TVarListMode);
+    /// <summary>Parses the declarations of a VAR section into List (vmVariables mode).</summary>
+    /// <param name="List">Receives a TCodeField per declared name.</param>
     procedure ParseVariableDecl(List: TObjectList);
 
+    /// <summary>Read accessor for <see cref="Resources"/>.</summary>
+    /// <param name="Index">The 0-based resource index.</param>
+    /// <returns>The resource name at Index.</returns>
     function GetResource(Index: Integer): string;
+    /// <summary>Read accessor for <see cref="ResourceCount"/>.</summary>
+    /// <returns>The number of resources.</returns>
     function GetResourceCount: Integer;
+    /// <summary>Read accessor for <see cref="IncludeFiles"/>.</summary>
+    /// <param name="Index">The 0-based include-file index.</param>
+    /// <returns>The include file name at Index.</returns>
     function GetIncludeFiles(Index: Integer): string;
+    /// <summary>Read accessor for <see cref="IncludeFileCount"/>.</summary>
+    /// <returns>The number of include files.</returns>
     function GetIncludeFileCount: Integer;
 
+    /// <summary>Read accessor for <see cref="FunctionCount"/>.</summary>
+    /// <returns>The number of stand-alone routines.</returns>
     function GetFunctionCount: Integer;
+    /// <summary>Read accessor for <see cref="Functions"/>.</summary>
+    /// <param name="Index">The 0-based routine index.</param>
+    /// <returns>The routine at Index.</returns>
     function GetFunctionItem(Index: Integer): TCodeMethod;
+    /// <summary>Appends a stand-alone routine; the parser takes ownership of it.</summary>
+    /// <param name="Item">The routine to add.</param>
+    /// <returns>The index of the added routine.</returns>
     function AddFunction(Item: TCodeMethod): Integer;
+    /// <summary>Reads a dotted name (<c>A.B.C</c>) from the current token on.</summary>
+    /// <returns>The qualified name; '' if the current token is not an identifier.</returns>
     function ParseQualifiedName: string;
+    /// <summary>
+    /// Creates the preprocessor and reads the module heading: its kind and name, the INTERFACE keyword, the first uses
+    /// clause and, for a package, the REQUIRES and CONTAINS clauses.  A preprocessor error sets <see cref="ParseError"/>;
+    /// on any error the preprocessor is freed, so later reads find no tokens.  Any exception other than
+    /// EDelphiPreprocessor or EAbort is re-raised.
+    /// </summary>
     procedure ParseHead;
   protected
     /// <summary>
-    /// Defines the symbols the parsed source sees: <c>CONDITIONALEXPRESSION</c>, this compiler's
-    /// <c>VERxxx</c>, and <c>MSWINDOWS</c> / <c>UNICODE</c> where they apply.  Override to add more.
+    /// Defines the symbols the parsed source sees: the compiler's predefined symbols (PredefinedSymbols) for the IDE's own
+    /// bitness, Win64 or Win32, since the project's target is not known.  Override to add more.
     /// </summary>
     /// <param name="Parser">The preprocessor that will run over the source.</param>
     procedure InitDefines(Parser: TDelphiPreprocessor); virtual;
   public
+    /// <summary>Creates a parser for the given source; nothing is parsed until <see cref="Parse"/> or <see cref="ParseUsesOnly"/>.</summary>
+    /// <param name="AFilename">The source's file name, used to locate include files and reported in token locations.</param>
+    /// <param name="AText">The source text to parse.</param>
     constructor Create(const AFilename: string; const AText: UTF8String);
+    /// <summary>Frees the parser and every result it holds (classes, routines, uses lists).</summary>
     destructor Destroy; override;
 
+    /// <summary>Folders searched for an include file that is not found beside the file that includes it.</summary>
     property IncludeDirs: TStrings read FIncludeDirs;
 
-    { Parses the text which was specified in the constructor call. It fills
-      the following structures. }
+    /// <summary>
+    /// Parses the text that was given to the constructor and fills the properties below: module, uses clauses, resources,
+    /// include files, classes and stand-alone routines.  Previous results are cleared first.  A preprocessor error sets
+    /// <see cref="ParseError"/> and stops the parse without raising.
+    /// </summary>
     procedure Parse;
-    { Parses the head and the interface/implementation uses. }
+    /// <summary>
+    /// Parses only the heading and the interface and implementation uses clauses (and a package's REQUIRES / CONTAINS).
+    /// Previous results are cleared first; a preprocessor error sets <see cref="ParseError"/> without raising.
+    /// </summary>
     procedure ParseUsesOnly;
 
-    { Contains every class the parser found in this file (and include files) }
+    /// <summary>
+    /// True when the last <c>Parse</c> / <c>ParseUsesOnly</c> stopped on a preprocessor error (an
+    /// unmatched <c>$ENDIF</c>, a malformed directive, ...).  The uses lists and locations are then
+    /// partial, so a caller that edits the source from them must not trust them.
+    /// </summary>
+    property ParseError: Boolean read FParseError;
+
+    /// <summary>Every class the parser found in this file (and its include files).</summary>
     property Classes: TCodeClassList read FClasses;
 
-    { ModuleType can be either mtUnit, mtProgram, mtLibrary or mtPackage }
+    /// <summary>The kind of module: mtUnit, mtProgram, mtLibrary or mtPackage.</summary>
     property ModuleType: TModuleType read FModuleType;
-    { ModuleName is the name of the module read from the file content (UNIT name) }
+    /// <summary>The module's name as read from the file content (the UNIT, PROGRAM, LIBRARY or PACKAGE name).</summary>
     property ModuleName: string read FModuleName;
-    { FormResource contains *.dfm, *.nfm or *.xfm if the file includes such a
-      resource. Otherwise it is '' }
+    /// <summary>
+    /// The form resource (<c>*.dfm</c>, <c>*.fmx</c>, <c>*.nfm</c>, <c>*.xfm</c> or <c>*.lfm</c>) if the file includes
+    /// one with $R; otherwise ''.
+    /// </summary>
     property FormResource: string read FFormResource;
 
-    { ResourceCount returns the number of included resources. }
+    /// <summary>The number of resources included with $R.</summary>
     property ResourceCount: Integer read GetResourceCount;
-    { Resources[] returns the resource filename (or *.xxx). The FormResource is
-      also in this list. }
+    /// <summary>The resource file names (or <c>*.xxx</c>) included with $R.  The FormResource is also in this list.</summary>
+    /// <param name="Index">The 0-based resource index.</param>
     property Resources[Index: Integer]: string read GetResource;
 
-    { ResourceCount returns the number of included resources. }
+    /// <summary>The number of files included with $I / $INCLUDE.</summary>
     property IncludeFileCount: Integer read GetIncludeFileCount;
-    { Resources[] returns the resource filename (or *.xxx). The FormResource is
-      also in this list. }
+    /// <summary>The names of the files included with $I / $INCLUDE, unquoted, as written in the directive.</summary>
+    /// <param name="Index">The 0-based include-file index.</param>
     property IncludeFiles[Index: Integer]: string read GetIncludeFiles;
 
-    { InterfaceUses contains every unit name (+filename if specified) of the
-      interface USES-clausel (program/library uses). }
+    /// <summary>
+    /// Every unit name (and filename, if given) of the first USES clause: the interface uses of a unit, or the uses of a
+    /// program or library.
+    /// </summary>
     property InterfaceUses: TUsesList read FInterfaceUses;
-    { ImplUses contains every unit name (+filename if specified) of the
-      implementation USES-clausel (unit only). }
+    /// <summary>Every unit name (and filename, if given) of the implementation USES clause (unit only).</summary>
     property ImplUses: TUsesList read FImplUses;
-    { Requires contains every required package of the REQUIRES-clausel (package only). }
+    /// <summary>Every required package of the REQUIRES clause (package only).</summary>
     property Requires: TUsesList read FRequires;
-    { Contains contains every contained unit name (+filename if specified) of
-      the CONTAINS-clausel (package only). }
+    /// <summary>Every contained unit name (and filename, if given) of the CONTAINS clause (package only).</summary>
     property Contains: TUsesList read FContains;
 
-    { Functions }
+    /// <summary>Finds a stand-alone routine of the implementation section by name, ignoring case.</summary>
+    /// <param name="AName">The routine's name.</param>
+    /// <returns>The first matching routine, or nil if none was found.</returns>
     function FindFunction(const AName: string): TCodeMethod;
+    /// <summary>The number of stand-alone routines found in the implementation section.</summary>
     property FunctionCount: Integer read GetFunctionCount;
+    /// <summary>The stand-alone (non-method) routines found in the implementation section.</summary>
+    /// <param name="Index">The 0-based routine index.</param>
     property Functions[Index: Integer]: TCodeMethod read GetFunctionItem;
 
-    { InterfaceLocation returns the location of the INTERFACE-keyword. }
+    /// <summary>The location of the INTERFACE keyword; EmptyLocation if there is none.</summary>
     property InterfaceLocation: TLocation read FInterfaceLocation;
-    { ImplLocation returns the location of the IMPLEMENTATION-keyword. }
+    /// <summary>The location of the IMPLEMENTATION keyword; EmptyLocation if there is none.</summary>
     property ImplLocation: TLocation read FImplLocation;
 
-    { Filename returns the name of the file to parse (-> constructor) }
+    /// <summary>The name of the file to parse, as given to the constructor.</summary>
     property Filename: string read FFilename;
-    { Text returns the text to parse (-> constructor) }
+    /// <summary>The text to parse, as given to the constructor.</summary>
     property Text: UTF8String read FText;
   end;
 
@@ -1005,6 +1415,7 @@ begin
   FInterfaceLocation := EmptyLocation;
   FImplementation := False;
   FRepeatLastToken := False;
+  FParseError := False;
   FRequires.Clear;
   FContains.Clear;
   FFunctions.Clear;
@@ -1052,15 +1463,15 @@ end;
 
 function TDesignerParser.Next: Boolean;
 begin
+  if p = nil then
+    Exit(False); // the preprocessor was dropped after an error: nothing more to read
   if FRepeatLastToken then
   begin
     Result := p.CurrentToken <> nil;
     FRepeatLastToken := False;
   end
-  else if p <> nil then
-    Result := p.GetToken <> nil
   else
-    Result := False;
+    Result := p.GetToken <> nil;
 end;
 
 procedure TDesignerParser.NextA;
@@ -1071,17 +1482,33 @@ end;
 
 procedure TDesignerParser.IncludeFile(Sender: TObject; const Name: string);
 var
-  Dir, FileName: string;
-  I: Integer;
   LName: string;
 begin
   LName := AnsiDequotedStr(Name, '''');
-  Dir := ExtractFileDir((Sender as TDelphiPreprocessor).CurrentFileName);
+  FIncludeFiles.Add(LName);
+  // An include that exists but cannot be read (locked, no access) leaves the parse incomplete: it is
+  // reported through ParseError, never raised into the caller.
+  try
+    IncludeFoundFile(Sender as TDelphiPreprocessor, LName);
+  except
+    on E: EStreamError do
+      FParseError := True;
+    on E: EOSError do
+      FParseError := True;
+  end;
+end;
+
+procedure TDesignerParser.IncludeFoundFile(Preprocessor: TDelphiPreprocessor; const LName: string);
+var
+  Dir, FileName: string;
+  I: Integer;
+begin
+  Dir := ExtractFileDir(Preprocessor.CurrentFileName);
   if (Length(LName) >= 2) and (LName[1] <> '\') and (LName[2] <> ':') then
   begin
     FileName := Dir + '\' + LName;
     if (Dir <> '') and FileExists(FileName) then
-      TDelphiPreprocessor(Sender).AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName))
+      Preprocessor.AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName))
     else
     begin
       for I := 0 to IncludeDirs.Count - 1 do
@@ -1089,30 +1516,20 @@ begin
         FileName := ExcludeTrailingPathDelimiter(IncludeDirs[I]) + '\' + LName;
         if FileExists(FileName) then
         begin
-          TDelphiPreprocessor(Sender).AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName));
+          Preprocessor.AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName));
           Break;
         end;
       end;
     end;
   end;
-
-  FIncludeFiles.Add(LName);
 end;
 
 procedure TDesignerParser.InitDefines(Parser: TDelphiPreprocessor);
 begin
-  Parser.Define('CONDITIONALEXPRESSION');
-  Parser.Define('VER' + IntToStr(Trunc(CompilerVersion * 10)));
-
-  {$IFDEF MSWINDOWS}
-  Parser.Define('MSWINDOWS');
-  {$ENDIF MSWINDOWS}
-  {$IFDEF LINUX}
-  Parser.Define('LINUX');
-  {$ENDIF LINUX}
-  {$IFDEF UNICODE}
-  Parser.Define('UNICODE');
-  {$ENDIF UNICODE}
+  // The compiler's predefined symbols for the IDE's own bitness (the parser does not know the
+  // project's target), shared with the Unreachable Code scanner.
+  for var sSymbol in PredefinedSymbols({$IFDEF WIN64}'Win64'{$ELSE}'Win32'{$ENDIF}) do
+    Parser.Define(sSymbol);
 end;
 
 procedure TDesignerParser.Directive(Sender: TObject; Token: TToken);
@@ -1209,10 +1626,23 @@ begin
       end;
     end;
 
-    if Look.Kind <> tkSemicolon then
+    if (Look <> nil) and (Look.Kind <> tkSemicolon) then
       FRepeatLastToken := True;
   except
-    FreeAndNil(p);
+    // Only the parser's own stop signals are absorbed, and a preprocessor error is recorded, so a
+    // caller can tell a complete parse from a truncated one.  Anything else (an AV) propagates.
+    on E: EDelphiPreprocessor do
+    begin
+      FParseError := True;
+      FreeAndNil(p);
+    end;
+    on E: EAbort do
+      FreeAndNil(p);
+    on E: Exception do
+    begin
+      FreeAndNil(p);
+      raise;
+    end;
   end;
 end;
 
@@ -1238,6 +1668,8 @@ begin
       FreeAndNil(p);
     end;
   except
+    on E: EDelphiPreprocessor do
+      FParseError := True;
     on E: EAbort do
       ;
   end;
@@ -1286,6 +1718,8 @@ begin
       FreeAndNil(p);
     end;
   except
+    on E: EDelphiPreprocessor do
+      FParseError := True;
     on E: EAbort do
       ;
   end;

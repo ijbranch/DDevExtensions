@@ -183,6 +183,14 @@
         <DCCReference Include="TestDependencyViewerCoreDUnitX.pas"/>
         <DCCReference Include="..\Shared\ImportHooking.pas"/>
         <DCCReference Include="TestImportHookingDUnitX.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiDesignerParser.pas"/>
+        <DCCReference Include="TestDelphiDesignerParserDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\DeadCodeDetector\DeadCodeCore.pas"/>
+        <DCCReference Include="TestDeadCodeCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\UnreachableCodeDetector\UnreachableCodeCore.pas"/>
+        <DCCReference Include="TestUnreachableCodeCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\UnusedUnitDetector\UnusedUnitCore.pas"/>
+        <DCCReference Include="TestUnusedUnitCoreDUnitX.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

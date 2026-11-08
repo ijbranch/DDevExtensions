@@ -45,66 +45,120 @@ type
 
   /// <summary>Common interface for arithmetic expression nodes.</summary>
   IExprNode = interface
-    /// <summary>Returns the source representation of the node.</summary>
+    /// <summary>Renders the node as expression source text, for diagnostics.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string;
-    /// <summary>Evaluates the node into Value; returns False when an error occurred.</summary>
+    /// <summary>Evaluates the node.</summary>
+    /// <param name="Value">Receives the result; its Error field carries the message when evaluation fails.</param>
+    /// <returns>False when an error occurred.</returns>
     function GetValue(out Value: TExprNodeValueRec): Boolean;
   end;
 
   /// <summary>Abstract base class for arithmetic expression nodes.</summary>
   TExprNode = class(TInterfacedObject, IExprNode)
   public
-    /// <summary>Subclass-specific evaluation; returns False when an error occurred.</summary>
+    /// <summary>Subclass-specific evaluation of the node.</summary>
+    /// <param name="Value">Receives the result; its Error field carries the message when evaluation fails.</param>
+    /// <returns>False when an error occurred.</returns>
     function GetValue(out Value: TExprNodeValueRec): Boolean; virtual; abstract;
   end;
 
   /// <summary>Unary "-" applied to FOperand.</summary>
   TExprNodeUnaryMinus = class(TExprNode)
   private
+    /// <summary>The expression being negated.</summary>
     FOperand: IExprNode;
   public
+    /// <summary>Creates the node over its operand.</summary>
+    /// <param name="AOperand">The expression to negate.</param>
     constructor Create(AOperand: IExprNode);
+    /// <summary>Renders the node as '-' followed by the operand's text.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates the operand and negates an integer or float result; a string operand sets Value.Error.</summary>
+    /// <param name="Value">Receives the negated result.</param>
+    /// <returns>False when the operand could not be evaluated.</returns>
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
   /// <summary>Bitwise "not" applied to FOperand.</summary>
   TExprNodeBitOpNeg = class(TExprNode)
   private
+    /// <summary>The expression whose bits are inverted.</summary>
     FOperand: IExprNode;
   public
+    /// <summary>Creates the node over its operand.</summary>
+    /// <param name="AOperand">The expression whose bits are inverted.</param>
     constructor Create(AOperand: IExprNode);
+    /// <summary>Renders the node as '~' followed by the operand's text.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates the operand and inverts the bits of an integer result; a float operand is an error.</summary>
+    /// <param name="Value">Receives the inverted result.</param>
+    /// <returns>False when the operand could not be evaluated or is a float.</returns>
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
   /// <summary>Binary arithmetic / bitwise operator (FOperation) applied to FOperand1 and FOperand2.</summary>
   TExprNodeBinOp = class(TExprNode)
   private
+    /// <summary>Token kind of the operator ( +, -, *, /, mod, or, xor, and ).</summary>
     FOperation: TTokenKind;
+    /// <summary>Operator text as written, used by ToString and error messages.</summary>
     FOpName: string;
+    /// <summary>Left-hand operand.</summary>
     FOperand1: IExprNode;
+    /// <summary>Right-hand operand.</summary>
     FOperand2: IExprNode;
   public
+    /// <summary>Creates the node from its operator and operands.</summary>
+    /// <param name="AOperation">Token kind of the operator.</param>
+    /// <param name="AOpName">Operator text as written.</param>
+    /// <param name="AOperand1">Left-hand operand.</param>
+    /// <param name="AOperand2">Right-hand operand.</param>
     constructor Create(AOperation: TTokenKind; const AOpName: string; AOperand1, AOperand2: IExprNode);
+    /// <summary>Renders the node as a parenthesised infix expression.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>
+    /// Evaluates both operands and applies the operator: string + string concatenates, two integers give an integer, any other
+    /// numeric mix gives a float.  Float division or mod by zero, and bitwise operators on floats, are errors.
+    /// </summary>
+    /// <param name="Value">Receives the result.</param>
+    /// <returns>False when either operand fails or the operation is invalid for the operand types.</returns>
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
   /// <summary>Literal constant node (integer, floating-point or string).</summary>
   TExprNodeConst = class(TExprNode)
   private
+    /// <summary>Token kind of the literal ( tkInt, tkFloat, tkString, or tkIdent for True/False ).</summary>
     FKind: TTokenKind;
+    /// <summary>Literal text as written.</summary>
     FValue: string;
   public
+    /// <summary>Creates the node from a literal token.</summary>
+    /// <param name="AKind">Token kind of the literal.</param>
+    /// <param name="AValue">Literal text.</param>
     constructor Create(AKind: TTokenKind; const AValue: string);
+    /// <summary>Returns the literal text.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Converts the literal into a value; the identifiers True and False become the integers 1 and 0.</summary>
+    /// <param name="Value">Receives the converted value.</param>
+    /// <returns>False when a float literal does not convert.</returns>
+    /// <exception cref="Exception">An identifier other than True or False ( an internal error ).</exception>
     function GetValue(out Value: TExprNodeValueRec): Boolean; override;
   end;
 
   /// <summary>Common interface for Boolean expression nodes.</summary>
   IBoolNode = interface
+    /// <summary>Renders the node as expression source text, for diagnostics.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string;
+    /// <summary>Evaluates the node.</summary>
+    /// <param name="Error">Set to a message when evaluation fails; left unchanged otherwise.</param>
+    /// <returns>The Boolean result ( False when an error occurred ).</returns>
     function GetValue(var Error: string): Boolean;
   end;
 
@@ -112,39 +166,71 @@ type
   TBoolNode = class(TInterfacedObject, IBoolNode)
   public
     /// <summary>Subclass-specific evaluation; sets Error on failure.</summary>
+    /// <param name="Error">Set to a message when evaluation fails.</param>
+    /// <returns>The Boolean result ( False when an error occurred ).</returns>
     function GetValue(var Error: string): Boolean; virtual; abstract;
   end;
 
   /// <summary>Boolean binary operator (and/or/xor) applied to FLeft and FRight.</summary>
   TBoolNodeOp = class(TBoolNode)
   private
+    /// <summary>Token kind of the operator ( tkI_And, tkI_Or or tkI_Xor ).</summary>
     FOperation: TTokenKind;
+    /// <summary>Operator text as written, used by ToString and error messages.</summary>
     FOpName: string;
+    /// <summary>Left-hand operand.</summary>
     FLeft: IBoolNode;
+    /// <summary>Right-hand operand.</summary>
     FRight: IBoolNode;
   public
+    /// <summary>Creates the node from its operator and operands.</summary>
+    /// <param name="AOperation">Token kind of the operator.</param>
+    /// <param name="AOpName">Operator text as written.</param>
+    /// <param name="ALeft">Left-hand operand.</param>
+    /// <param name="ARight">Right-hand operand.</param>
     constructor Create(AOperation: TTokenKind; const AOpName: string; ALeft, ARight: IBoolNode);
+    /// <summary>Renders the node as a parenthesised infix expression.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates the left operand, then combines it with the right ( short-circuiting and/or ).</summary>
+    /// <param name="Error">Set to a message when an operand fails or the operator is unknown.</param>
+    /// <returns>The Boolean result ( False when an error occurred ).</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
   /// <summary>Logical "not" applied to FNode.</summary>
   TBoolNodeNot = class(TBoolNode)
   private
+    /// <summary>The Boolean expression being negated.</summary>
     FNode: IBoolNode;
   public
+    /// <summary>Creates the node over its operand.</summary>
+    /// <param name="ANode">The Boolean expression to negate.</param>
     constructor Create(ANode: IBoolNode);
+    /// <summary>Renders the node as 'not ' followed by the operand's text.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates the operand and negates it.</summary>
+    /// <param name="Error">Set by the operand when its evaluation fails.</param>
+    /// <returns>The negated result.</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
   /// <summary>Boolean literal.</summary>
   TBoolNodeConst = class(TBoolNode)
   private
+    /// <summary>The literal value.</summary>
     FValue: Boolean;
   public
+    /// <summary>Creates the node holding a fixed value.</summary>
+    /// <param name="AValue">The literal value.</param>
     constructor Create(AValue: Boolean);
+    /// <summary>Renders the value as 'True' or 'False'.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Returns the literal value; never fails.</summary>
+    /// <param name="Error">Not used.</param>
+    /// <returns>The literal value.</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
@@ -161,37 +247,76 @@ type
   /// <summary>Adapter that exposes an arithmetic IExprNode as a Boolean node (non-zero = True).</summary>
   TBoolNodeExp = class(TBoolNode)
   private
+    /// <summary>The arithmetic expression being tested.</summary>
     FExpr: IExprNode;
   public
+    /// <summary>Creates the adapter over an arithmetic expression.</summary>
+    /// <param name="AExpr">The arithmetic expression to test.</param>
     constructor Create(AExpr: IExprNode);
+    /// <summary>Renders the wrapped expression in parentheses.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates the expression; an integer is True when non-zero, while a float or string is an error.</summary>
+    /// <param name="Error">Set to a message when the expression fails or is not an integer.</param>
+    /// <returns>The Boolean result ( False when an error occurred ).</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
   /// <summary>Relational operator (=, &lt;&gt;, &lt;=, &gt;=, &lt;, &gt;) applied to two arithmetic operands.</summary>
   TBoolNodeRelOp = class(TBoolNode)
   private
+    /// <summary>Token kind of the relational operator.</summary>
     FRelOperation: TTokenKind;
+    /// <summary>Operator text as written, used by ToString and error messages.</summary>
     FRelOpName: string;
+    /// <summary>Left-hand operand.</summary>
     FLeft: IExprNode;
+    /// <summary>Right-hand operand.</summary>
     FRight: IExprNode;
   public
+    /// <summary>Creates the node from its operator and operands.</summary>
+    /// <param name="ARelOperation">Token kind of the relational operator.</param>
+    /// <param name="ARelOpName">Operator text as written.</param>
+    /// <param name="ALeft">Left-hand operand.</param>
+    /// <param name="ARight">Right-hand operand.</param>
     constructor Create(ARelOperation: TTokenKind; const ARelOpName: string;
       ALeft, ARight: IExprNode);
+    /// <summary>Renders the node as a parenthesised infix expression.</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>
+    /// Evaluates both operands and compares them: two strings compare as strings, two integers as integers, any other mix
+    /// as floating-point values.
+    /// </summary>
+    /// <param name="Error">Set to the operands' messages when either fails, or when the operator is unknown.</param>
+    /// <returns>The result of the comparison ( False when an error occurred ).</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
-  /// <summary>Boolean binary operator (and/or/xor) applied to two Boolean operands.</summary>
+  /// <summary>Boolean equality operator (= or &lt;&gt;) comparing two Boolean operands.</summary>
   TBoolNodeBoolOp = class(TBoolNode)
   private
+    /// <summary>Token kind of the operator ( tkEqual or tkNotEqual ).</summary>
     FOperation: TTokenKind;
+    /// <summary>Operator text as written, used by ToString and error messages.</summary>
     FOpName: string;
+    /// <summary>Left-hand operand.</summary>
     FLeft: IBoolNode;
+    /// <summary>Right-hand operand.</summary>
     FRight: IBoolNode;
   public
+    /// <summary>Creates the node from its operator and operands.</summary>
+    /// <param name="AOperation">Token kind of the operator.</param>
+    /// <param name="AOpName">Operator text as written.</param>
+    /// <param name="ALeft">Left-hand operand.</param>
+    /// <param name="ARight">Right-hand operand.</param>
     constructor Create(AOperation: TTokenKind; const AOpName: string; ALeft, ARight: IBoolNode);
+    /// <summary>Renders the node as an infix expression ( without parentheses ).</summary>
+    /// <returns>The source representation of the node.</returns>
     function ToString: string; override;
+    /// <summary>Evaluates both operands and tests them for equality or inequality.</summary>
+    /// <param name="Error">Set by an operand that fails, or to a message when the operator is unknown.</param>
+    /// <returns>The result of the comparison ( False when the operator is unknown ).</returns>
     function GetValue(var Error: string): Boolean; override;
   end;
 
@@ -205,42 +330,119 @@ type
   /// </summary>
   TExpressionParser = class(TObject)
   private
+    /// <summary>The current look-ahead token; nil at the end of the expression.</summary>
     Look: TToken;
+    /// <summary>Lexer supplying the expression's tokens ( not owned ).</summary>
     FLexer: TDelphiLexer;
+    /// <summary>Every token read so far ( not owned ), kept so the parser can back up with Rescan.</summary>
     FRescanTokens: TObjectList;
+    /// <summary>Position in FRescanTokens of the next token to re-read; at or past the end, Next reads from the lexer.</summary>
     FRescanIndex: Integer;
   public
+    /// <summary>Creates a parser reading from a lexer positioned at the start of the expression.</summary>
+    /// <param name="ALexer">Lexer supplying the tokens; the caller keeps ownership.</param>
     constructor Create(ALexer: TDelphiLexer);
+    /// <summary>Frees the rescan list ( not the tokens it references ).</summary>
     destructor Destroy; override;
   protected
+    /// <summary>Resolves an identifier used in an arithmetic expression to a constant; the base class knows none.</summary>
+    /// <param name="Name">The identifier.</param>
+    /// <param name="Kind">Receives the token kind of the constant's value.</param>
+    /// <param name="Value">Receives the constant's value as literal text.</param>
+    /// <returns>True when the identifier names a constant.</returns>
     function GetConstValue(const Name: string; out Kind: TTokenKind; out Value: string): Boolean; virtual;
+    /// <summary>Resolves a bare identifier used as a Boolean; the base class treats only 'True' as True.</summary>
+    /// <param name="Name">The identifier.</param>
+    /// <returns>The identifier's Boolean value.</returns>
     function GetConstBoolValue(const Name: string): Boolean; virtual;
+    /// <summary>Tells whether an identifier is a Boolean function such as defined() or declared(); the base class has none.</summary>
+    /// <param name="Name">The identifier.</param>
+    /// <returns>True when Name is a Boolean function the parser should call through EvalBoolFunction.</returns>
     function IsBoolFunction(const Name: string): Boolean; virtual;
+    /// <summary>Evaluates a call to a Boolean function; the base class reports every function as unknown.</summary>
+    /// <param name="IdentToken">Token holding the function name.</param>
+    /// <param name="Args">The argument tokens.</param>
+    /// <returns>The function's result.</returns>
+    /// <exception cref="Exception">The base class raises for every function ( through ErrorMsg ).</exception>
     function EvalBoolFunction(IdentToken: TToken; const Args: TDynTokenArray): Boolean; virtual;
+    /// <summary>Reports a parse or evaluation error; the base class raises it, and descendants may redirect it.</summary>
+    /// <param name="Msg">Format string of the message.</param>
+    /// <param name="Args">Arguments for Msg.</param>
+    /// <param name="Token">Token the error refers to, or nil.</param>
+    /// <exception cref="Exception">Always, in the base class.</exception>
     procedure ErrorMsg(const Msg: string; const Args: array of const; Token: TToken); virtual;
+    /// <summary>Reports an error with no arguments and no token, through ErrorMsg.</summary>
+    /// <param name="Msg">The message ( passed to ErrorMsg as a format string ).</param>
+    /// <exception cref="Exception">Raised by the base ErrorMsg.</exception>
     procedure Error(const Msg: string);
   private
     /// <summary>Returns the next token of the expression, from the look-ahead cache when it holds one.</summary>
     /// <returns>The next token, or nil at the end of the expression.</returns>
     function NextCache: TToken; inline;
+    /// <summary>Advances Look to the next token, re-reading the rescan list before asking the lexer.</summary>
     procedure Next;
+    /// <summary>Backs the parser up so that the next call to Next returns Token again.</summary>
+    /// <param name="Token">A token already read in this expression.</param>
+    /// <exception cref="Exception">Token was never read ( an internal error, through ErrorMsg ).</exception>
     procedure Rescan(Token: TToken);
+    /// <summary>Tests whether the look-ahead token is one of the given kinds.</summary>
+    /// <param name="Tokens">The acceptable token kinds.</param>
+    /// <returns>True when Look is not nil and its kind is in Tokens.</returns>
     function Match(const Tokens: array of TTokenKind): Boolean; overload;
+    /// <summary>Tests whether the look-ahead token is one of the given kinds, optionally treating a mismatch as a syntax error.</summary>
+    /// <param name="Fail">mfYes reports a mismatch through Error; mfNo just returns False.</param>
+    /// <param name="Tokens">The acceptable token kinds.</param>
+    /// <returns>True when the token matches ( always True with mfYes, which raises otherwise ).</returns>
+    /// <exception cref="Exception">Fail is mfYes and the token does not match.</exception>
     function Match(Fail: MatchFail; const Tokens: array of TTokenKind): Boolean; overload;
+    /// <summary>Parses an arithmetic expression: an optional sign or 'not', then terms joined by +, -, or, xor.</summary>
+    /// <returns>The expression tree.</returns>
     function Expression: IExprNode;
+    /// <summary>Parses an arithmetic term: factors joined by *, /, mod, and.</summary>
+    /// <returns>The term's expression tree.</returns>
     function Term: IExprNode;
+    /// <summary>Parses a number, string, True/False, constant identifier or parenthesised expression.</summary>
+    /// <returns>The factor's expression tree.</returns>
+    /// <exception cref="Exception">Unexpected token, or an identifier that is not a known constant.</exception>
     function Factor: IExprNode;
 
+    /// <summary>Parses a Boolean expression: Boolean terms joined by or / xor.</summary>
+    /// <returns>The Boolean expression tree.</returns>
     function BoolExpression: IBoolNode;
+    /// <summary>Parses a Boolean term: not-factors joined by 'and', then checks what may follow it.</summary>
+    /// <returns>The term's Boolean tree.</returns>
+    /// <exception cref="Exception">The term is followed by a token that cannot continue the expression.</exception>
     function BoolTerm: IBoolNode;
+    /// <summary>Parses an optional 'not' followed by a Boolean factor.</summary>
+    /// <returns>The factor's Boolean tree, wrapped in a not node when negated.</returns>
     function BoolNotFactor: IBoolNode;
+    /// <summary>Tests whether the look-ahead token is a relational operator.</summary>
+    /// <returns>True for &lt;, &gt;, &lt;=, &gt;=, = or &lt;&gt;.</returns>
     function IsRelOp: Boolean;
+    /// <summary>Tests whether the look-ahead token is a Boolean comparison operator.</summary>
+    /// <returns>True for = or &lt;&gt;.</returns>
     function IsBoolOp: Boolean;
+    /// <summary>Parses an identifier used as a Boolean: a Boolean function call, evaluated now, or a constant.</summary>
+    /// <returns>A constant node holding the identifier's value.</returns>
+    /// <exception cref="Exception">A malformed function argument list, or an unknown function.</exception>
     function BoolIdent: IBoolNode;
+    /// <summary>Parses an arithmetic expression optionally followed by a relational operator and a second expression.</summary>
+    /// <returns>A relational node, or an adapter testing the single expression for non-zero.</returns>
     function RelOp: IBoolNode;
+    /// <summary>Parses a single Boolean factor, optionally compared with a second one by = or &lt;&gt;.</summary>
+    /// <returns>The factor's Boolean tree.</returns>
     function BoolFactor: IBoolNode;
+    /// <summary>
+    /// Parses a parenthesised Boolean expression, a Boolean identifier or a relational expression, backing up with Rescan
+    /// when the tokens turn out to start an arithmetic comparison.
+    /// </summary>
+    /// <returns>The factor's Boolean tree.</returns>
+    /// <exception cref="Exception">Unexpected token.</exception>
     function BoolSingleFactor: IBoolNode;
   public
+    /// <summary>Parses the whole expression from the lexer and evaluates it.</summary>
+    /// <returns>The value of the expression.</returns>
+    /// <exception cref="Exception">A syntax error, or an evaluation error ( through ErrorMsg ).</exception>
     function Parse: Boolean;
   end;
 
@@ -661,7 +863,7 @@ begin
     else S1 := V1.ValueStr;
 
     if V2.Typ = vkIsInt then D2 := V2.ValueInt
-    else if V1.Typ = vkIsFloat then D2 := V2.ValueFloat
+    else if V2.Typ = vkIsFloat then D2 := V2.ValueFloat // tested V1 here, so 1 < 2.5 read the 2.5 as 0
     else S2 := V2.ValueStr;
 
     case FRelOperation of

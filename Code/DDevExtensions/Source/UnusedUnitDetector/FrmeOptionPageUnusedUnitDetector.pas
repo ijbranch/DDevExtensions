@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -37,6 +37,7 @@ type
     FPlugin: TUnusedUnitDetectorPlugin;
   public
     /// <summary>Creates the frame; required override of the base constructor.</summary>
+    /// <param name="AOwner">The component that owns the frame.</param>
     constructor Create( AOwner: TComponent ); override;
 
     /// <summary>Loads current plugin settings into the frame's controls.</summary>
@@ -77,6 +78,8 @@ begin
 
   chkEnabled.Checked := FPlugin.Enabled;
   memoIgnoreList.Lines.Assign( FPlugin.IgnoreList );
+  memoIgnoreList.Hint     := UnusedUnitInlineNote;
+  memoIgnoreList.ShowHint := True;
 
 end;
 

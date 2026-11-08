@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -53,30 +53,53 @@ type
     SaveDialog: TSaveDialog;
     /// <summary>Result summary text.</summary>
     lblSummary: TLabel;
-    /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
+    /// <summary>Closes the form.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnCloseClick(Sender: TObject);
-    /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
+    /// <summary>Scans the active project for empty event handlers; while a scan runs, the button reads Cancel and stops it.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnScanClick(Sender: TObject);
-    /// <summary>Initialises sort state.</summary>
+    /// <summary>Sets the initial sort state and remembers the Scan caption.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormCreate(Sender: TObject);
-    /// <summary>Clears the result set when the form closes.</summary>
+    /// <summary>Frees the form and releases the singleton on close; vetoes the close while a scan is running.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Action">Set to caNone to veto the close while a scan runs; otherwise caFree, so the form is freed.</param>
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     /// <summary>Clears the singleton reference when the form is destroyed.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormDestroy(Sender: TObject);
     /// <summary>Opens the file referenced by the double-clicked row.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure ListViewDblClick(Sender: TObject);
     /// <summary>Context-menu handler that copies result data to the clipboard.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuCopyToClipboardClick(Sender: TObject);
     /// <summary>Context-menu handler that opens the source file at the handler's line.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuOpenFileClick(Sender: TObject);
     /// <summary>Exports the visible results to a CSV file.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnExportClick(Sender: TObject);
     /// <summary>Cycles sort direction when a column header is clicked.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
     /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Item1">The first list item being compared.</param>
+    /// <param name="Item2">The second list item being compared.</param>
+    /// <param name="Data">Sort data passed by AlphaSort (unused).</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, level with or after Item2.</param>
     procedure ListViewCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
   private
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
+    FScanning: Boolean;
+    /// <summary>Set by the Scan button (which reads "Cancel" during a scan) or by <see cref="CloseInstance"/> to stop the running scan.</summary>
+    FCancelRequested: Boolean;
+    /// <summary>Caption of the Scan button, restored when a scan ends.</summary>
+    FScanCaption: string;
     /// <summary>Latest scan results.</summary>
     FResults: TArray<TEmptyHandlerInfo>;
     /// <summary>Index of the column currently being sorted.</summary>
@@ -87,10 +110,21 @@ type
     procedure PopulateList;
     /// <summary>Opens the file/line of the currently selected list item in the IDE.</summary>
     procedure OpenSelectedFile;
+    /// <summary>Scan progress callback: updates the progress label, pumps messages and reports a requested cancel.</summary>
+    /// <param name="Step">Text describing the current step.</param>
+    /// <param name="Cancel">Set to True when the user cancelled the scan.</param>
+    procedure ScanProgress( const Step: string; var Cancel: Boolean );
   public
     /// <summary>Displays the singleton form, creating it if required.</summary>
     /// <returns><c>True</c> when the form was shown.</returns>
     class function Execute: Boolean;
+    /// <summary>
+    /// Frees the singleton form, if open, so it cannot outlive the plugin on unload.
+    /// It covers an unload outside a scan.  An unload reached through a running scan's own message
+    /// pump cannot be made safe here: the scan is cancelled and the form hidden, and the form is
+    /// released when the scan unwinds - safe only while the plug-in's code is still loaded.
+    /// </summary>
+    class procedure CloseInstance;
   end;
 
 implementation
@@ -98,7 +132,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers;
+  ToolsAPIHelpers, ProjectSources;
 
 function SafeGetSubItem(Item: TListItem; Index: Integer): string;
 begin
@@ -128,19 +162,49 @@ begin
   Result := True;
 end;
 
+class procedure TFormEmptyEventHandlerDetector.CloseInstance;
+begin
+  if FormEmptyEventHandlerDetectorInstance = nil then
+    Exit;
+
+  var oForm := FormEmptyEventHandlerDetectorInstance;
+  FormEmptyEventHandlerDetectorInstance := nil;
+
+  if oForm.FScanning then
+  begin
+    // The scan is still on the stack (this call arrived through its message pump): freeing the
+    // form now would free it under the scan.  Stop the scan and let btnScanClick release the form.  That
+    // is safe only if the plug-in's code is still loaded when the scan unwinds; an unload cannot be
+    // refused or postponed from here.
+    oForm.FCancelRequested := True;
+    oForm.Hide;
+  end
+  else
+    oForm.Free;
+end;
+
 procedure TFormEmptyEventHandlerDetector.FormCreate(Sender: TObject);
 begin
   FSortColumn := 0;
   FSortAscending := True;
+  FScanCaption := btnScan.Caption;
 end;
 
 procedure TFormEmptyEventHandlerDetector.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  // Clear results when dialog is closed
-  ListView.Items.Clear;
-  SetLength(FResults, 0);
-  lblSummary.Visible := False;
-  lblProgress.Visible := False;
+  // ScanProgress pumps the message queue, so a close can arrive mid-scan: veto it, the scan is
+  // still on the stack.
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
+
+  // Free the form on close (it used to be hidden and kept for the whole IDE session, so it was
+  // still alive - owned by the IDE's Application - when the plugin unloaded).
+  if FormEmptyEventHandlerDetectorInstance = Self then
+    FormEmptyEventHandlerDetectorInstance := nil;
+  Action := caFree;
 end;
 
 procedure TFormEmptyEventHandlerDetector.FormDestroy(Sender: TObject);
@@ -155,107 +219,94 @@ begin
   Close;
 end;
 
-procedure TFormEmptyEventHandlerDetector.btnScanClick(Sender: TObject);
-var
-  Project: IOTAProject;
-  ModuleInfo: IOTAModuleInfo;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I, J: Integer;
-  Source: UTF8String;
-  UnitResults: TArray<TEmptyHandlerInfo>;
-  AllResults: TList<TEmptyHandlerInfo>;
-  ProjectName: string;
+procedure TFormEmptyEventHandlerDetector.ScanProgress( const Step: string; var Cancel: Boolean );
 begin
-  Project := GetActiveProject;
-  if Project = nil then
+  lblProgress.Caption := Step;
+  Application.ProcessMessages;
+  Cancel := FCancelRequested;
+end;
+
+procedure TFormEmptyEventHandlerDetector.btnScanClick(Sender: TObject);
+begin
+  // During a scan the button reads "Cancel".
+  if FScanning then
+  begin
+    FCancelRequested := True;
+    Exit;
+  end;
+
+  var oProject := GetActiveProject;
+  if oProject = nil then
   begin
     ShowMessage('No active project.');
     Exit;
   end;
 
-  ProjectName := ExtractFileName(Project.FileName);
+  var sProjectName := ExtractFileName( oProject.FileName );
 
-  AllResults := TList<TEmptyHandlerInfo>.Create;
+  // Snapshot the file list now: the scan pumps messages, so the project may change under it.
+  var aFiles := GetProjectSourceFiles( oProject, [ '.pas', '.pp' ] );
+
+  var oAllResults := TList<TEmptyHandlerInfo>.Create;
   try
     Screen.Cursor := crHourGlass;
-    btnScan.Enabled := False;
+    FScanning := True;
+    FCancelRequested := False;
+    btnScan.Caption := '&Cancel';
     try
-      lblProgress.Caption := 'Scanning ' + ProjectName + '...';
+      lblProgress.Caption := 'Scanning ' + sProjectName + '...';
       lblProgress.Visible := True;
       lblSummary.Visible := False;
       Application.ProcessMessages;
 
-      for I := 0 to Project.GetModuleCount - 1 do
+      var bCancelled := False;
+      var iSkipped := 0;
+      for var sFileName in aFiles do
       begin
-        ModuleInfo := Project.GetModule(I);
-        if ModuleInfo = nil then
-          Continue;
+        if ScanShouldStop( ScanProgress, 'Scanning: ' + ExtractFileName( sFileName ) ) then
+        begin
+          bCancelled := True;
+          Break;
+        end;
 
-        // Only scan Pascal files
-        if not (SameText(ExtractFileExt(ModuleInfo.FileName), '.pas') or
-                SameText(ExtractFileExt(ModuleInfo.FileName), '.pp')) then
-          Continue;
-
-        lblProgress.Caption := 'Scanning: ' + ExtractFileName(ModuleInfo.FileName);
-        Application.ProcessMessages;
-
-        Source := '';
+        // The open editor buffer when the unit is open, else the file: never open a module just to
+        // read it (that loaded every form designer of the project and left them all open).
         try
-          // Try to get source from open editor first
-          Module := ModuleInfo.OpenModule;
-          if Module <> nil then
-          begin
-            SourceEditor := nil;
-            for J := 0 to Module.ModuleFileCount - 1 do
-            begin
-              if Supports(Module.ModuleFileEditors[J], IOTASourceEditor, SourceEditor) then
-                Break;
-            end;
-
-            if SourceEditor <> nil then
-              Source := GetEditorSource(SourceEditor);
-          end;
-
-          // If no editor source, try to read from file
-          if (Source = '') and FileExists(ModuleInfo.FileName) then
-          begin
-            with TStringList.Create do
-            try
-              LoadFromFile(ModuleInfo.FileName);
-              Source := UTF8String(Text);
-            finally
-              Free;
-            end;
-          end;
-
-          if Source <> '' then
-          begin
-            UnitResults := TEmptyEventHandlerDetectorPlugin.AnalyzeUnit(Source, ModuleInfo.FileName);
-            for J := 0 to Length(UnitResults) - 1 do
-              AllResults.Add(UnitResults[J]);
-          end;
+          var sSource := ReadModuleSource( sFileName );
+          if sSource <> '' then
+            oAllResults.AddRange( TEmptyEventHandlerDetectorPlugin.AnalyzeUnit( sSource, sFileName ) );
         except
-          // One unreadable or malformed module must not abort the whole scan.
-          on E: Exception do
-            Continue;
+          on E: EStreamError do
+            Inc( iSkipped );   // locked / unreadable unit: skip it, the rest of the scan still runs
+          on E: EOSError do
+            Inc( iSkipped );
         end;
       end;
 
-      FResults := AllResults.ToArray;
+      FResults := oAllResults.ToArray;
       PopulateList;
 
       lblProgress.Visible := False;
-      lblSummary.Caption := Format('Found %d empty event handler(s) in %s',
-        [Length(FResults), ProjectName]);
+      if bCancelled then
+        lblSummary.Caption := 'Scan cancelled.'
+      else if iSkipped > 0 then
+        lblSummary.Caption := Format( 'Found %d empty event handler(s) in %s (%d unreadable units skipped)',
+          [ Length( FResults ), sProjectName, iSkipped ] )
+      else
+        lblSummary.Caption := Format( 'Found %d empty event handler(s) in %s', [ Length( FResults ), sProjectName ] );
       lblSummary.Visible := True;
     finally
-      btnScan.Enabled := True;
+      FScanning := False;
+      btnScan.Caption := FScanCaption;
       Screen.Cursor := crDefault;
     end;
   finally
-    AllResults.Free;
+    oAllResults.Free;
   end;
+
+  // CloseInstance arrived during the scan: the form is no longer the singleton and must go.
+  if FormEmptyEventHandlerDetectorInstance <> Self then
+    Release;
 end;
 
 procedure TFormEmptyEventHandlerDetector.PopulateList;

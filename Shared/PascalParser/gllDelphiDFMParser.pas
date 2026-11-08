@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DelphiDfmParser - Lossless DFM Text Parser                                *}
 {*                                                                            *}
@@ -84,13 +84,20 @@ type
     /// <summary>Frees the property and child lists (and their entries).</summary>
     destructor Destroy; override;
 
-    /// <summary>Find a property by name (case-insensitive)</summary>
+    /// <summary>Finds a property of this component by name ( case-insensitive ).</summary>
+    /// <param name="PropName">Name of the property to find.</param>
+    /// <returns>The matching property, or nil when the component has none of that name.</returns>
     function FindProperty(const PropName: string): TDfmProperty;
-    /// <summary>Find a child component by name (case-insensitive)</summary>
+    /// <summary>Finds a direct child component by name ( case-insensitive ).</summary>
+    /// <param name="ChildName">Name of the child component to find.</param>
+    /// <returns>The matching child component, or nil when there is none of that name.</returns>
     function FindChild(const ChildName: string): TDfmComponent;
-    /// <summary>Delete a property by name</summary>
+    /// <summary>Removes and frees a property by name; does nothing when the property is absent.</summary>
+    /// <param name="PropName">Name of the property to delete ( case-insensitive ).</param>
     procedure DeleteProperty(const PropName: string);
-    /// <summary>Set a simple property value (creates if not exists)</summary>
+    /// <summary>Sets the raw value of a property, adding it as a simple property ( two-space indent ) when it does not exist.</summary>
+    /// <param name="PropName">Name of the property to set ( matched case-insensitively ).</param>
+    /// <param name="Value">Raw DFM text of the value, written after the '=' as is.</param>
     procedure SetProperty(const PropName, Value: string);
 
     /// <summary>Component name (e.g. 'Button1')</summary>
@@ -139,9 +146,13 @@ type
   /// <summary>DFM parser and serializer</summary>
   TDelphiDfmParser = class
   public
-    /// <summary>Parse DFM text into a document structure</summary>
+    /// <summary>Parses text-format DFM into a document structure, keeping indentation and line endings for round-tripping.</summary>
+    /// <param name="DfmText">The text DFM content to parse.</param>
+    /// <returns>A new document owned by the caller, who must free it.</returns>
     class function Parse(const DfmText: string): TDfmDocument;
-    /// <summary>Serialize a document structure back to DFM text</summary>
+    /// <summary>Serialises a document structure back to text DFM, using the document's line ending.</summary>
+    /// <param name="Doc">The document to serialise.</param>
+    /// <returns>The DFM text.</returns>
     class function Serialize(Doc: TDfmDocument): string;
   end;
 

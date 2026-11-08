@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -41,6 +41,7 @@ type
     FPlugin: TDeadCodeDetectorPlugin;
   public
     /// <summary>Creates the frame; required override of the base constructor.</summary>
+    /// <param name="AOwner">The component that owns the frame.</param>
     constructor Create( AOwner: TComponent ); override;
 
     /// <summary>Loads current plugin settings into the frame's controls.</summary>

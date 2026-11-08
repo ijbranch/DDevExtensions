@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -27,80 +27,9 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
-  ToolsAPI, FrmTreePages, PluginConfig, Main;
+  ToolsAPI, FrmTreePages, PluginConfig, Main, UnusedUnitCore, ProjectSources;
 
 type
-  /// <summary>One reference to a unit appearing in a uses clause.</summary>
-  TUsedUnitInfo = record
-    /// <summary>Name of the unit being used.</summary>
-    UnitName: string;
-    /// <summary>Resolved source file path, when known.</summary>
-    FileName: string;
-    /// <summary>True when the reference appears in the interface uses clause.</summary>
-    IsInterface: Boolean;
-    /// <summary>Source line number of the unit reference.</summary>
-    LineNumber: Integer;
-  end;
-
-  /// <summary>A potentially unused uses entry detected by the analyser.</summary>
-  TUnusedUnitInfo = record
-    /// <summary>Name of the unit containing the suspected unused reference.</summary>
-    SourceUnit: string;
-    /// <summary>Path of the unit containing the reference.</summary>
-    SourceFileName: string;
-    /// <summary>Name of the unit that appears to be unused.</summary>
-    UnusedUnit: string;
-    /// <summary>True when the unused reference is in the interface uses clause.</summary>
-    IsInterface: Boolean;
-    /// <summary>Source line number of the unused reference.</summary>
-    LineNumber: Integer;
-  end;
-
-  /// <summary>
-  /// Heuristic analyser that examines a unit's source for unused uses entries by
-  /// comparing the uses list against the identifiers detected in the source.
-  /// </summary>
-  TUnitAnalyzer = class
-  private
-    /// <summary>Search paths used when resolving unit names (currently informational).</summary>
-    FSearchPaths: TStringList;
-    /// <summary>Map of unit name -&gt; well-known identifiers exported by that unit.</summary>
-    FKnownIdentifiers: TDictionary<string, TStringList>;
-    /// <summary>Backing field for <see cref="ProgressFileName"/>.</summary>
-    FProgressFileName: string;
-    /// <summary>Seeds <see cref="FKnownIdentifiers"/> with common RTL/VCL exports.</summary>
-    procedure LoadKnownIdentifiers;
-    /// <summary>Tokenises the source and returns lists of interface/implementation uses entries.</summary>
-    function ExtractUsedUnits( const Content: string; out InterfaceUnits, ImplUnits: TList<TUsedUnitInfo> ): Boolean;
-    /// <summary>Returns True when the unit appears to be referenced in the appropriate scope of the source.</summary>
-    function IsUnitReferenced( const UnitName, Content: string; InterfaceEndPos: Integer; IsInterfaceUnit: Boolean ): Boolean;
-    /// <summary>Returns the well-known exports list for a unit, or nil if not registered.</summary>
-    function GetUnitExports( const UnitName: string ): TStringList;
-  public
-    /// <summary>Creates a new analyser and seeds the known-identifier table.</summary>
-    constructor Create;
-    /// <summary>Releases all owned resources.</summary>
-    destructor Destroy; override;
-    /// <summary>Adds a directory to the search-path collection (duplicates ignored).</summary>
-    procedure AddSearchPath( const Path: string );
-    /// <summary>Empties the search-path collection.</summary>
-    procedure ClearSearchPaths;
-    /// <summary>Analyses a single unit file and returns the suspected unused entries.</summary>
-    /// <param name="FileName">Full path of the .pas file to analyse.</param>
-    /// <param name="UnusedUnits">Receives the suspected unused entries (empty if none).</param>
-    /// <returns>True on success, False if the file could not be read.</returns>
-    function AnalyzeUnit( const FileName: string; out UnusedUnits: TArray<TUnusedUnitInfo> ): Boolean;
-    /// <summary>Analyses every .pas module in the supplied project.</summary>
-    /// <param name="Project">The project to scan.</param>
-    /// <param name="AllUnusedUnits">Receives the aggregated suspected unused entries.</param>
-    /// <param name="OnProgress">Optional progress callback (read <see cref="ProgressFileName"/> for the current file).</param>
-    /// <returns>True on success.</returns>
-    function AnalyzeProject( const Project: IOTAProject; out AllUnusedUnits: TArray<TUnusedUnitInfo>;
-      OnProgress: TNotifyEvent ): Boolean;
-    /// <summary>Name of the file currently being analysed (read by the OnProgress callback).</summary>
-    property ProgressFileName: string read FProgressFileName;
-  end;
-
   /// <summary>
   /// Plugin host: registers the menu item, owns the persisted ignore list and exposes
   /// the entry point for displaying the detector form.
@@ -113,14 +42,18 @@ type
     FIgnoreList: TStringList;
     /// <summary>Owned menu item under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
-    /// <summary>Menu click handler that opens the detector form.</summary>
+    /// <summary>Menu click handler that opens the detector form, unless the plugin is disabled.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure MenuItemClick( Sender: TObject );
     /// <summary>Property setter for the comma-text serialised ignore list.</summary>
+    /// <param name="Value">The comma-text form of the ignore list.</param>
     procedure SetIgnoreListText( const Value: string );
     /// <summary>Property getter for the comma-text serialised ignore list.</summary>
+    /// <returns>The ignore list as comma text.</returns>
     function GetIgnoreListText: string;
   protected
     /// <summary>Returns the IDE Tools options page for this plugin.</summary>
+    /// <returns>The page shown under this plugin in the DDevExtensions options.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises default option values and seeds the ignore list.</summary>
     procedure Init; override;
@@ -140,6 +73,28 @@ type
     property IgnoreListText: string read GetIgnoreListText write SetIgnoreListText;
   end;
 
+/// <summary>
+/// Analyses every .pas unit of Project.  Used units are resolved to their source through the
+/// project's own modules first, then the project directory and its search path; a used unit
+/// whose source cannot be found is never reported.  Each unit is read from its open editor buffer
+/// when it has one, else from disk, and its form file (.dfm) is read when present.
+/// </summary>
+/// <param name="Analyzer">The analyser; its ignore list should already be set.</param>
+/// <param name="Project">The project to analyse.</param>
+/// <param name="OnProgress">Optional progress callback; it can cancel the scan.</param>
+/// <param name="AllUnusedUnits">Receives the suspected unused uses entries.</param>
+/// <param name="SkippedFiles">Receives the number of units that could not be read.</param>
+/// <returns>True when the scan ran to the end; False when there was no project or it was cancelled.</returns>
+function AnalyzeProject( Analyzer: TUnitAnalyzer; const Project: IOTAProject; OnProgress: TSourceScanProgressEvent;
+  out AllUnusedUnits: TArray<TUnusedUnitInfo>; out SkippedFiles: Integer ): Boolean;
+
+const
+  /// <summary>The limit the detector cannot see past, shown with its results and on its options page.</summary>
+  UnusedUnitInlineNote =
+    'A unit can be needed only so that an inline routine from another unit can expand there; nothing ' +
+    'names it, so it cannot be detected and may be listed here.  Removing it then gives hint H2443 ' +
+    '(inline function not expanded) - rebuild after removing a unit, and put it back if that hint appears.';
+
 /// <summary>Plugin entry point invoked by the IDE host to load or unload the plugin singleton.</summary>
 /// <param name="Unload">When True the plugin is unloaded; otherwise it is loaded.</param>
 procedure InitPlugin( Unload: Boolean );
@@ -151,608 +106,138 @@ var
 implementation
 
 uses
-  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts,
+  Vcl.Forms, Vcl.Controls, Vcl.Dialogs, ToolsAPIHelpers, AppConsts,
   FrmUnusedUnitDetector, FrmeOptionPageUnusedUnitDetector;
 
-{ TUnitAnalyzer }
-
-constructor TUnitAnalyzer.Create;
+/// <summary>Reads a form file as text; a binary .dfm is converted to its text form.</summary>
+/// <param name="FileName">Full path of the .dfm.</param>
+/// <param name="FormText">Receives the form text; empty when there is no form file.</param>
+/// <returns>
+/// False when the form file exists but cannot be converted: its streamed classes are then unknown,
+/// so the unit must not be analysed (a unit used only by its form would look unused).
+/// </returns>
+/// <exception cref="EStreamError">Raised when the form file exists but cannot be opened.</exception>
+function ReadFormText( const FileName: string; out FormText: string ): Boolean;
 begin
-
-  inherited Create;
-  FSearchPaths                := TStringList.Create;
-  FSearchPaths.CaseSensitive  := False;
-  FSearchPaths.Duplicates     := dupIgnore;
-  FKnownIdentifiers           := TDictionary<string, TStringList>.Create;
-  LoadKnownIdentifiers;
-
-end;
-
-destructor TUnitAnalyzer.Destroy;
-var
-  Pair: TPair<string, TStringList>;
-begin
-
-  for Pair in FKnownIdentifiers do
-    Pair.Value.Free;
-
-  FKnownIdentifiers.Free;
-  FSearchPaths.Free;
-  inherited Destroy;
-
-end;
-
-procedure TUnitAnalyzer.LoadKnownIdentifiers;
-
-  procedure AddUnit( const UnitName: string; const Identifiers: array of string );
-  var
-    List: TStringList;
-    I: Integer;
-  begin
-
-    List                 := TStringList.Create;
-    List.CaseSensitive   := False;
-
-    for I := Low( Identifiers ) to High( Identifiers ) do
-      List.Add( Identifiers[ I ] );
-
-    FKnownIdentifiers.Add( LowerCase( UnitName ), List );
-
-  end;
-
-begin
-
-  // Common RTL/VCL units and their commonly used identifiers
-  AddUnit( 'SysUtils', [ 'Exception', 'Format', 'IntToStr', 'StrToInt', 'Trim', 'UpperCase',
-    'LowerCase', 'CompareText', 'SameText', 'FileExists', 'DirectoryExists', 'ExtractFileName',
-    'ExtractFilePath', 'ExtractFileExt', 'ChangeFileExt', 'IncludeTrailingPathDelimiter',
-    'ExcludeTrailingPathDelimiter', 'ForceDirectories', 'DeleteFile', 'RenameFile',
-    'Now', 'Date', 'Time', 'DateToStr', 'TimeToStr', 'StrToDate', 'StrToTime',
-    'FormatDateTime', 'EncodeDate', 'DecodeDate', 'FreeAndNil', 'Supports',
-    'TStringHelper', 'TEncoding', 'EAbort', 'EArgumentException' ] );
-  AddUnit( 'Classes', [ 'TList', 'TStringList', 'TStrings', 'TStream', 'TMemoryStream',
-    'TFileStream', 'TComponent', 'TNotifyEvent', 'TThread', 'TInterfacedObject',
-    'TCollectionItem', 'TCollection', 'TPersistent', 'TReader', 'TWriter',
-    'RegisterClass', 'FindClass', 'GetClass' ] );
-  AddUnit( 'Windows', [ 'HWND', 'HDC', 'HINSTANCE', 'THandle', 'DWORD', 'BOOL',
-    'GetTickCount', 'Sleep', 'MessageBox', 'GetLastError', 'SetLastError',
-    'CreateFile', 'CloseHandle', 'ReadFile', 'WriteFile', 'GetModuleFileName',
-    'LoadLibrary', 'FreeLibrary', 'GetProcAddress', 'OutputDebugString',
-    'PostMessage', 'SendMessage', 'PChar', 'PWideChar', 'WPARAM', 'LPARAM' ] );
-  AddUnit( 'Forms', [ 'TForm', 'TApplication', 'Application', 'Screen', 'TScreen',
-    'TCustomForm', 'TFormClass', 'ShowMessage', 'ShowMessageFmt', 'MessageDlg',
-    'InputBox', 'InputQuery', 'mrOk', 'mrCancel', 'mrYes', 'mrNo' ] );
-  AddUnit( 'Controls', [ 'TControl', 'TWinControl', 'TGraphicControl', 'TMouse',
-    'TDragObject', 'TCursor', 'crDefault', 'crHourGlass', 'TAlign', 'alClient',
-    'alTop', 'alBottom', 'alLeft', 'alRight', 'alNone' ] );
-  AddUnit( 'Graphics', [ 'TCanvas', 'TBitmap', 'TIcon', 'TGraphic', 'TPicture',
-    'TColor', 'TFont', 'TPen', 'TBrush', 'clNone', 'clBlack', 'clWhite', 'clRed',
-    'clGreen', 'clBlue', 'clYellow', 'clWindow', 'clBtnFace' ] );
-  AddUnit( 'Dialogs', [ 'TOpenDialog', 'TSaveDialog', 'TFontDialog', 'TColorDialog',
-    'TPrintDialog', 'TFindDialog', 'TReplaceDialog', 'MessageDlg', 'ShowMessage',
-    'InputBox', 'InputQuery', 'mtWarning', 'mtError', 'mtInformation', 'mtConfirmation' ] );
-  AddUnit( 'StdCtrls', [ 'TButton', 'TLabel', 'TEdit', 'TMemo', 'TListBox', 'TComboBox',
-    'TCheckBox', 'TRadioButton', 'TGroupBox', 'TPanel', 'TScrollBar', 'TStaticText' ] );
-  AddUnit( 'ExtCtrls', [ 'TPanel', 'TImage', 'TShape', 'TBevel', 'TTimer', 'TSplitter',
-    'TNotebook', 'THeader', 'TRadioGroup', 'TCheckGroup' ] );
-  AddUnit( 'ComCtrls', [ 'TTreeView', 'TListView', 'TTreeNode', 'TListItem', 'TStatusBar',
-    'TToolBar', 'TProgressBar', 'TPageControl', 'TTabSheet', 'TRichEdit',
-    'TDateTimePicker', 'TMonthCalendar', 'THeaderControl', 'TTrackBar' ] );
-  AddUnit( 'Menus', [ 'TMainMenu', 'TPopupMenu', 'TMenuItem', 'TMenu' ] );
-  AddUnit( 'ActnList', [ 'TAction', 'TActionList', 'TCustomAction' ] );
-  AddUnit( 'Generics.Collections', [ 'TList', 'TDictionary', 'TObjectList', 'TObjectDictionary',
-    'TQueue', 'TStack', 'TPair', 'TArray' ] );
-  AddUnit( 'Generics.Defaults', [ 'TComparer', 'TEqualityComparer', 'IComparer', 'IEqualityComparer' ] );
-  AddUnit( 'System.IOUtils', [ 'TFile', 'TDirectory', 'TPath' ] );
-  AddUnit( 'System.JSON', [ 'TJSONObject', 'TJSONArray', 'TJSONValue', 'TJSONPair' ] );
-  AddUnit( 'System.RegularExpressions', [ 'TRegEx', 'TMatch', 'TGroup' ] );
-  AddUnit( 'Vcl.Themes', [ 'TStyleManager', 'TCustomStyle', 'TCustomStyleServices' ] );
-  AddUnit( 'ToolsAPI', [ 'IOTAProject', 'IOTAModule', 'IOTAEditor', 'IOTASourceEditor',
-    'IOTAModuleServices', 'IOTAActionServices', 'BorlandIDEServices', 'INTAServices',
-    'IOTAServices', 'IOTAMessageServices', 'IOTAWizard', 'IOTANotifier' ] );
-
-end;
-
-procedure TUnitAnalyzer.AddSearchPath( const Path: string );
-var
-  ExpandedPath: string;
-begin
-
-  ExpandedPath := ExcludeTrailingPathDelimiter( Path );
-
-  if ( ExpandedPath <> '' ) and DirectoryExists( ExpandedPath ) then
-    FSearchPaths.Add( ExpandedPath );
-
-end;
-
-procedure TUnitAnalyzer.ClearSearchPaths;
-begin
-
-  FSearchPaths.Clear;
-
-end;
-
-function TUnitAnalyzer.GetUnitExports( const UnitName: string ): TStringList;
-var
-  LowerName: string;
-begin
-
-  LowerName := LowerCase( UnitName );
-
-  if FKnownIdentifiers.TryGetValue( LowerName, Result ) then
+  FormText := '';
+  Result   := True;
+  if not FileExists( FileName ) then
     Exit;
 
-  // For unknown units, return nil - we'll use heuristic matching
-  Result := nil;
-
-end;
-
-function TUnitAnalyzer.ExtractUsedUnits( const Content: string;
-  out InterfaceUnits, ImplUnits: TList<TUsedUnitInfo> ): Boolean;
-var
-  I, Len: Integer;
-  InInterface, InImplementation: Boolean;
-  InUses, InString, InComment, InLineComment: Boolean;
-  BraceDepth: Integer;
-  Token: string;
-  Ch: Char;
-  UnitInfo: TUsedUnitInfo;
-  TokenStartPos: Integer;
-
-  function CountLines( const S: string; FromPos, ToPos: Integer ): Integer;
-  var
-    J: Integer;
-  begin
-
-    Result := 1;
-
-    for J := FromPos to ToPos - 1 do
-    begin
-
-      if S[ J ] = #10 then
-        Inc( Result );
-    end;
-
-  end;
-
-  procedure AddToken;
-  begin
-
-    if Token <> '' then
-    begin
-
-      if SameText( Token, 'interface' ) and ( not InImplementation ) then
-      begin
-        InInterface      := True;
-        InImplementation := False;
-      end
-      else if SameText( Token, 'implementation' ) then
-      begin
-        InInterface      := False;
-        InImplementation := True;
-        InUses           := False;
-      end
-      else if SameText( Token, 'uses' ) then
-      begin
-        InUses := True;
-      end
-      else if InUses and ( not SameText( Token, 'in' ) ) then
-      begin
-        UnitInfo.UnitName    := Token;
-        UnitInfo.FileName    := '';
-        UnitInfo.IsInterface := InInterface and ( not InImplementation );
-        // Use the position where THIS unit token started, not the position of
-        // the 'uses' keyword, so each entry in a multi-line uses clause reports
-        // its own line.
-        UnitInfo.LineNumber  := CountLines( Content, 1, TokenStartPos );
-
-        if InInterface and ( not InImplementation ) then
-          InterfaceUnits.Add( UnitInfo )
-        else if InImplementation then
-          ImplUnits.Add( UnitInfo );
-      end;
-
-      Token := '';
-    end;
-
-  end;
-
-begin
-
-  InterfaceUnits := TList<TUsedUnitInfo>.Create;
-  ImplUnits      := TList<TUsedUnitInfo>.Create;
-
-  I                := 1;
-  Len              := Length( Content );
-  InInterface      := False;
-  InImplementation := False;
-  InUses           := False;
-  InString         := False;
-  InComment        := False;
-  InLineComment    := False;
-  BraceDepth       := 0;
-  Token            := '';
-  TokenStartPos    := 1;
-
-  while I <= Len do
-  begin
-    Ch := Content[ I ];
-
-    // Handle line comments
-    if InLineComment then
-    begin
-
-      if ( Ch = #13 ) or ( Ch = #10 ) then
-        InLineComment := False;
-
-      Inc( I );
-      Continue;
-    end;
-
-    // Handle block comments
-    if InComment then
-    begin
-
-      if ( Ch = '*' ) and ( I < Len ) and ( Content[ I + 1 ] = ')' ) then
-      begin
-        InComment := False;
-        Inc( I );
-      end
-      else if ( Ch = '}' ) and ( BraceDepth > 0 ) then
-        Dec( BraceDepth );
-
-      Inc( I );
-      Continue;
-    end;
-
-    if BraceDepth > 0 then
-    begin
-
-      if Ch = '}' then
-        Dec( BraceDepth );
-
-      Inc( I );
-      Continue;
-    end;
-
-    // Handle strings
-    if InString then
-    begin
-
-      if Ch = '''' then
-        InString := False;
-
-      Inc( I );
-      Continue;
-    end;
-
-    // Check for comment start
-    if ( Ch = '/' ) and ( I < Len ) and ( Content[ I + 1 ] = '/' ) then
-    begin
-      AddToken;
-      InLineComment := True;
-      Inc( I, 2 );
-      Continue;
-    end;
-
-    if ( Ch = '(' ) and ( I < Len ) and ( Content[ I + 1 ] = '*' ) then
-    begin
-      AddToken;
-      InComment := True;
-      Inc( I, 2 );
-      Continue;
-    end;
-
-    // NOTE: braces are treated as comments, so compiler directives written as
-    // {$IFDEF}...{$ENDIF} - and any unit listed only inside such a directive in a
-    // uses clause - are not analysed. Conditional uses entries are out of scope
-    // for this heuristic; results are advisory when directives are present.
-    if Ch = '{' then
-    begin
-      AddToken;
-      Inc( BraceDepth );
-      Inc( I );
-      Continue;
-    end;
-
-    if Ch = '''' then
-    begin
-      AddToken;
-      InString := True;
-      Inc( I );
-      Continue;
-    end;
-
-    // Parse tokens
-    if CharInSet( Ch, [ 'A'..'Z', 'a'..'z', '_', '0'..'9', '.' ] ) then
-    begin
-      if Token = '' then
-        TokenStartPos := I;
-      Token := Token + Ch;
-    end
-    else
-    begin
-      AddToken;
-
-      if InUses and ( Ch = ';' ) then
-        InUses := False;
-    end;
-
-    Inc( I );
-  end;
-
-  AddToken;
-  Result := True;
-
-end;
-
-function TUnitAnalyzer.IsUnitReferenced( const UnitName, Content: string;
-  InterfaceEndPos: Integer; IsInterfaceUnit: Boolean ): Boolean;
-var
-  SearchContent: string;
-  UnitPrefix: string;
-  KnownIds: TStringList;
-  I: Integer;
-  Id: string;
-  Pos1: Integer;
-  LowerSearchContent: string;
-  LowerUnitName: string;
-  SearchOffset: Integer;
-begin
-
-  Result := False;
-
-  // Get the content to search (skip uses clause area)
-  if IsInterfaceUnit then
-    SearchContent := Content  // Search whole file for interface units
-  else
-    SearchContent := Copy( Content, InterfaceEndPos, MaxInt );  // Only implementation for impl units
-
-  // Check for qualified references (UnitName.Something)
-  UnitPrefix := UnitName + '.';
-
-  if Pos( LowerCase( UnitPrefix ), LowerCase( SearchContent ) ) > 0 then
-    Exit( True );
-
-  // Precompute lowercase content once for whole-word identifier scanning.
-  LowerSearchContent := LowerCase( SearchContent );
-
-  // Check for known identifiers from this unit
-  KnownIds := GetUnitExports( UnitName );
-
-  if KnownIds <> nil then
-  begin
-
-    for I := 0 to KnownIds.Count - 1 do
-    begin
-      Id := LowerCase( KnownIds[ I ] );
-      // Scan EVERY occurrence as a whole word: the first hit may be a substring
-      // of a larger identifier, and stopping there would wrongly report a used
-      // unit as unused.
-      SearchOffset := 1;
-
-      repeat
-        Pos1 := Pos( Id, LowerSearchContent, SearchOffset );
-
-        if Pos1 = 0 then
-          Break;
-
-        if ( ( Pos1 = 1 ) or ( not CharInSet( SearchContent[ Pos1 - 1 ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) ) and
-           ( ( Pos1 + Length( Id ) > Length( SearchContent ) ) or
-             ( not CharInSet( SearchContent[ Pos1 + Length( Id ) ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) ) then
-          Exit( True );
-
-        SearchOffset := Pos1 + 1;
-      until SearchOffset > Length( LowerSearchContent );
-    end;
-  end;
-
-  // Heuristic: if unit name appears anywhere as identifier, consider it used
-  // This catches cases like type names matching unit names
-  LowerUnitName      := LowerCase( UnitName );
-  Pos1               := Pos( LowerUnitName, LowerSearchContent );
-
-  while Pos1 > 0 do
-  begin
-    // Check if it's a whole word
-    if ( Pos1 = 1 ) or ( not CharInSet( SearchContent[ Pos1 - 1 ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) then
-    begin
-
-      if ( Pos1 + Length( UnitName ) > Length( SearchContent ) ) or
-         ( not CharInSet( SearchContent[ Pos1 + Length( UnitName ) ], [ 'A'..'Z', 'a'..'z', '_', '0'..'9' ] ) ) then
-        Exit( True );
-    end;
-
-    // Search for next occurrence after current match
-    SearchOffset := Pos1 + 1;
-
-    if SearchOffset > Length( LowerSearchContent ) then
-      Break;
-
-    Pos1 := Pos( LowerUnitName, Copy( LowerSearchContent, SearchOffset, MaxInt ) );
-
-    if Pos1 > 0 then
-      Pos1 := Pos1 + SearchOffset - 1;  // Adjust to absolute position
-  end;
-
-end;
-
-function TUnitAnalyzer.AnalyzeUnit( const FileName: string;
-  out UnusedUnits: TArray<TUnusedUnitInfo> ): Boolean;
-var
-  Content: string;
-  SL: TStringList;
-  InterfaceUnits, ImplUnits: TList<TUsedUnitInfo>;
-  UsedUnit: TUsedUnitInfo;
-  UnusedInfo: TUnusedUnitInfo;
-  UnusedList: TList<TUnusedUnitInfo>;
-  ImplPos: Integer;
-  SourceUnitName: string;
-begin
-
-  Result := False;
-  SetLength( UnusedUnits, 0 );
-
-  if ( not FileExists( FileName ) ) then
-    Exit;
-
-  SL := TStringList.Create;
-
+  var oInput := TFileStream.Create( FileName, fmOpenRead or fmShareDenyWrite );
   try
+    var oText := TStringStream.Create( '', TEncoding.UTF8 );
     try
-      SL.LoadFromFile( FileName );
-    except
-      // Locked / in-use / permission-denied file: skip it rather than aborting
-      // the whole project scan with an unhandled exception.
-      on E: Exception do
-        Exit;
-    end;
-    Content := SL.Text;
-  finally
-    SL.Free;
-  end;
-
-  SourceUnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
-  ImplPos        := Pos( 'implementation', LowerCase( Content ) );
-
-  if ImplPos = 0 then
-    ImplPos := Length( Content );
-
-  InterfaceUnits := nil;
-  ImplUnits      := nil;
-  UnusedList     := TList<TUnusedUnitInfo>.Create;
-
-  try
-
-    if ( not ExtractUsedUnits( Content, InterfaceUnits, ImplUnits ) ) then
-      Exit;
-
-    // Check interface uses
-    for UsedUnit in InterfaceUnits do
-    begin
-      // Skip ignored units
-      if ( UnusedUnitDetectorPlugin <> nil ) and
-         ( UnusedUnitDetectorPlugin.IgnoreList.IndexOf( UsedUnit.UnitName ) >= 0 ) then
-        Continue;
-
-      if ( not IsUnitReferenced( UsedUnit.UnitName, Content, ImplPos, True ) ) then
-      begin
-        UnusedInfo.SourceUnit     := SourceUnitName;
-        UnusedInfo.SourceFileName := FileName;
-        UnusedInfo.UnusedUnit     := UsedUnit.UnitName;
-        UnusedInfo.IsInterface    := True;
-        UnusedInfo.LineNumber     := UsedUnit.LineNumber;
-        UnusedList.Add( UnusedInfo );
+      try
+        if TestStreamFormat( oInput ) = sofBinary then
+          ObjectResourceToText( oInput, oText )
+        else
+          oText.CopyFrom( oInput, 0 );
+        FormText := oText.DataString;
+      except
+        on E: EParserError do
+          Result := False;
       end;
+    finally
+      oText.Free;
     end;
-
-    // Check implementation uses
-    for UsedUnit in ImplUnits do
-    begin
-      // Skip ignored units
-      if ( UnusedUnitDetectorPlugin <> nil ) and
-         ( UnusedUnitDetectorPlugin.IgnoreList.IndexOf( UsedUnit.UnitName ) >= 0 ) then
-        Continue;
-
-      if ( not IsUnitReferenced( UsedUnit.UnitName, Content, ImplPos, False ) ) then
-      begin
-        UnusedInfo.SourceUnit     := SourceUnitName;
-        UnusedInfo.SourceFileName := FileName;
-        UnusedInfo.UnusedUnit     := UsedUnit.UnitName;
-        UnusedInfo.IsInterface    := False;
-        UnusedInfo.LineNumber     := UsedUnit.LineNumber;
-        UnusedList.Add( UnusedInfo );
-      end;
-    end;
-
-    UnusedUnits := UnusedList.ToArray;
-    Result      := True;
   finally
-    UnusedList.Free;
-    InterfaceUnits.Free;
-    ImplUnits.Free;
+    oInput.Free;
   end;
-
 end;
 
-function TUnitAnalyzer.AnalyzeProject( const Project: IOTAProject;
-  out AllUnusedUnits: TArray<TUnusedUnitInfo>; OnProgress: TNotifyEvent ): Boolean;
-var
-  I: Integer;
-  ModuleInfo: IOTAModuleInfo;
-  FileName: string;
-  Options: IOTAProjectOptions;
-  SearchPath: string;
-  SL: TStringList;
-  UnusedUnits: TArray<TUnusedUnitInfo>;
-  AllUnused: TList<TUnusedUnitInfo>;
-  UnusedInfo: TUnusedUnitInfo;
+function AnalyzeProject( Analyzer: TUnitAnalyzer; const Project: IOTAProject; OnProgress: TSourceScanProgressEvent;
+  out AllUnusedUnits: TArray<TUnusedUnitInfo>; out SkippedFiles: Integer ): Boolean;
 begin
-
-  Result := False;
-  SetLength( AllUnusedUnits, 0 );
+  Result         := False;
+  AllUnusedUnits := nil;
+  SkippedFiles   := 0;
 
   if Project = nil then
     Exit;
 
-  ClearSearchPaths;
+  var aFiles := GetProjectSourceFiles( Project, [ '.pas' ] );
 
-  // Add project directory as search path
-  AddSearchPath( ExtractFileDir( Project.FileName ) );
+  // Unit name -> file: the project's own units first, then the project directory and search path.
+  var oUnitFiles  := TDictionary<string, string>.Create;
+  var oSearchDirs := TStringList.Create;
+  var oAll        := TList<TUnusedUnitInfo>.Create;
+  try
+    for var sFileName in aFiles do
+      oUnitFiles.AddOrSetValue( UpperCase( ChangeFileExt( ExtractFileName( sFileName ), '' ) ), sFileName );
 
-  // Get search paths from project options
-  Options := Project.ProjectOptions;
+    oSearchDirs.Add( ExtractFileDir( Project.FileName ) );
+    var oOptions := Project.ProjectOptions;
+    if oOptions <> nil then
+      for var sDir in VarToStr( oOptions.Values[ 'UnitDir' ] ).Split( [ ';' ] ) do
+        if ( Trim( sDir ) <> '' ) and ( Pos( '$(', sDir ) = 0 ) then
+          oSearchDirs.Add( ExpandFileName( Trim( sDir ) ) );
 
-  if Options <> nil then
-  begin
-    SearchPath := VarToStr( Options.Values[ 'UnitDir' ] );
-    SL         := TStringList.Create;
+    Analyzer.OnResolveUnit :=
+      function( const UnitName: string; out Source: string ): Boolean
+      begin
+        Source := '';
+        var sFile: string;
+        if not oUnitFiles.TryGetValue( UpperCase( UnitName ), sFile ) then
+        begin
+          sFile := '';
+          for var sDir in oSearchDirs do
+            if FileExists( IncludeTrailingPathDelimiter( sDir ) + UnitName + '.pas' ) then
+            begin
+              sFile := IncludeTrailingPathDelimiter( sDir ) + UnitName + '.pas';
+              Break;
+            end;
+          oUnitFiles.Add( UpperCase( UnitName ), sFile );   // cache misses too
+        end;
+
+        Result := sFile <> '';
+        if Result then
+          try
+            Source := UTF8ToString( ReadModuleSource( sFile ) );
+          except
+            on E: EStreamError do
+              Result := False;   // unreadable: unknown, so never reported
+          end;
+      end;
 
     try
-      SL.Delimiter       := ';';
-      SL.StrictDelimiter := True;
-      SL.DelimitedText   := SearchPath;
-
-      for I := 0 to SL.Count - 1 do
-        AddSearchPath( ExpandFileName( SL[ I ] ) );
-    finally
-      SL.Free;
-    end;
-  end;
-
-  AllUnused := TList<TUnusedUnitInfo>.Create;
-
-  try
-    // Analyse all units in the project
-    for I := 0 to Project.GetModuleCount - 1 do
-    begin
-      ModuleInfo := Project.GetModule( I );
-      FileName   := ModuleInfo.FileName;
-
-      if SameText( ExtractFileExt( FileName ), '.pas' ) then
+      for var sFileName in aFiles do
       begin
+        if ScanShouldStop( OnProgress, 'Analysing: ' + ExtractFileName( sFileName ) ) then
+          Exit;
 
-        if Assigned( OnProgress ) then
-        begin
-          FProgressFileName := ExtractFileName( FileName );
-          OnProgress( Self );
-        end;
+        try
+          var sFormText: string;
+          if not ReadFormText( ChangeFileExt( sFileName, '.dfm' ), sFormText ) then
+          begin
+            Inc( SkippedFiles );
+            Continue;
+          end;
 
-        if AnalyzeUnit( FileName, UnusedUnits ) then
-        begin
-
-          for UnusedInfo in UnusedUnits do
-            AllUnused.Add( UnusedInfo );
+          var sContent := UTF8ToString( ReadModuleSource( sFileName ) );
+          var aUnused: TArray<TUnusedUnitInfo>;
+          if Analyzer.AnalyseSource( sFileName, sContent, sFormText, aUnused ) then
+            oAll.AddRange( aUnused )
+          else
+            Inc( SkippedFiles );   // not judged (an include file after "interface")
+        except
+          on E: EStreamError do
+            Inc( SkippedFiles );   // locked / unreadable unit: skip it, the rest of the scan still runs
+          on E: EOSError do
+            Inc( SkippedFiles );
         end;
       end;
+    finally
+      Analyzer.OnResolveUnit := nil;   // drop the captured lookups before they are freed
     end;
 
-    AllUnusedUnits := AllUnused.ToArray;
+    AllUnusedUnits := oAll.ToArray;
     Result         := True;
   finally
-    AllUnused.Free;
+    oAll.Free;
+    oSearchDirs.Free;
+    oUnitFiles.Free;
   end;
-
 end;
 
 { TUnusedUnitDetectorPlugin }
@@ -823,9 +308,13 @@ end;
 
 procedure TUnusedUnitDetectorPlugin.MenuItemClick( Sender: TObject );
 begin
+  if not FEnabled then
+  begin
+    ShowMessage( 'The Unused Unit Detector is disabled. Enable it in the DDevExtensions options.' );
+    Exit;
+  end;
 
   ShowDetector;
-
 end;
 
 procedure TUnusedUnitDetectorPlugin.ShowDetector;

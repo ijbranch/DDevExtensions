@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -22,7 +22,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, DeadCodeDetector, ToolsAPI;
+  System.Generics.Defaults, FrmBase, DeadCodeDetector, DeadCodeCore, ToolsAPI;
 
 type
   /// <summary>Main detector form for the Dead Code Detector plugin.</summary>
@@ -64,39 +64,63 @@ type
     /// <summary>Menu item: add the selected symbol's name to the persistent ignore list.</summary>
     mnuAddToIgnoreList: TMenuItem;
     /// <summary>Closes the form.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
-    /// <summary>Runs the analyser against the active project.</summary>
+    /// <summary>Runs the analyser against the active project; while a scan runs, the button reads Cancel and stops it.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
-    /// <summary>Releases the singleton form instance and frees the form on close.</summary>
+    /// <summary>Frees the form and releases the singleton on close; vetoes the close while a scan is running.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Action">Set to caNone to veto the close while a scan runs; otherwise caFree, so the form is freed.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
-    /// <summary>Form OnCreate handler: initialises analyser, sort state and filter combos.</summary>
+    /// <summary>Form OnCreate handler: creates the analyser, sets the sort state and filter combos, and remembers the Scan caption.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: frees the analyser.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the source file at the declaration line when a row is double-clicked.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Copies selected (or all) rows to the clipboard as TSV.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Opens the source file at the declaration line.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the result list to a CSV file.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Toggles or switches the active sort column.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom-column comparer used by AlphaSort.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Item1">The first list item being compared.</param>
+    /// <param name="Item2">The second list item being compared.</param>
+    /// <param name="Data">Sort data passed by AlphaSort (unused).</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, level with or after Item2.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Re-applies the type filter when the combo selection changes.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure cboTypeChange( Sender: TObject );
     /// <summary>Re-applies the scope filter when the combo selection changes.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure cboScopeChange( Sender: TObject );
     /// <summary>Adds the selected symbol's bare name to the persistent ignore list.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuAddToIgnoreListClick( Sender: TObject );
   private
     /// <summary>Owned analyser used to perform the analysis.</summary>
     FAnalyzer: TDeadCodeAnalyzer;
     /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
+    /// <summary>Set by the Scan button (which reads "Cancel" during a scan) or by <see cref="CloseInstance"/> to stop the running scan.</summary>
+    FCancelRequested: Boolean;
+    /// <summary>Caption of the Scan button, restored when a scan ends.</summary>
+    FScanCaption: string;
     /// <summary>Most recent analysis result.</summary>
     FDeadCode: TArray<TDeadCodeItem>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -105,15 +129,26 @@ type
     FSortAscending: Boolean;
     /// <summary>Refreshes the list view from <see cref="FDeadCode"/>, applying the current filters.</summary>
     procedure PopulateList;
-    /// <summary>Analyser OnProgress callback that updates the progress label.</summary>
-    procedure AnalyzerProgress( Sender: TObject );
+    /// <summary>Scan progress callback: updates the progress label, pumps messages and reports a requested cancel.</summary>
+    /// <param name="Step">Text describing the current step.</param>
+    /// <param name="Cancel">Set to True when the user cancelled the scan.</param>
+    procedure AnalyzerProgress( const Step: string; var Cancel: Boolean );
     /// <summary>Opens the source file for the selected row at its declaration line.</summary>
     procedure OpenSelectedFile;
     /// <summary>Returns True when the supplied item passes both the type and scope filters.</summary>
+    /// <param name="Item">The dead-code item to test.</param>
+    /// <returns>True when the item matches both the type and the scope filter.</returns>
     function PassesFilter( const Item: TDeadCodeItem ): Boolean;
   public
     /// <summary>Shows or focuses the singleton detector form.</summary>
     class procedure Execute;
+    /// <summary>
+    /// Frees the singleton form, if open, so it cannot outlive the plugin on unload.
+    /// It covers an unload outside a scan.  An unload reached through a running scan's own message
+    /// pump cannot be made safe here: the scan is cancelled and the form hidden, and the form is
+    /// released when the scan unwinds - safe only while the plug-in's code is still loaded.
+    /// </summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -160,6 +195,27 @@ begin
 
 end;
 
+class procedure TFormDeadCodeDetector.CloseInstance;
+begin
+  if FormInstance = nil then
+    Exit;
+
+  var oForm := FormInstance;
+  FormInstance := nil;
+
+  if oForm.FScanning then
+  begin
+    // The scan is still on the stack (this call arrived through its message pump): freeing the
+    // form now would free FAnalyzer under it.  Stop the scan and let btnScanClick release the form.  That
+    // is safe only if the plug-in's code is still loaded when the scan unwinds; an unload cannot be
+    // refused or postponed from here.
+    oForm.FCancelRequested := True;
+    oForm.Hide;
+  end
+  else
+    oForm.Free;
+end;
+
 procedure TFormDeadCodeDetector.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
@@ -178,20 +234,12 @@ begin
 end;
 
 procedure TFormDeadCodeDetector.FormCreate( Sender: TObject );
-var
-  I: Integer;
 begin
 
   FAnalyzer      := TDeadCodeAnalyzer.Create;
   FSortColumn    := 0;
   FSortAscending := True;
-
-  // Load ignore patterns from plugin
-  if DeadCodeDetectorPlugin <> nil then
-  begin
-    for I := 0 to DeadCodeDetectorPlugin.IgnoreList.Count - 1 do
-      FAnalyzer.AddIgnorePattern( DeadCodeDetectorPlugin.IgnoreList[ I ] );
-  end;
+  FScanCaption   := btnScan.Caption;
 
   // Set up type filter
   cboType.Items.Add( '(All)' );
@@ -213,18 +261,17 @@ end;
 procedure TFormDeadCodeDetector.FormDestroy( Sender: TObject );
 begin
 
+  if FormInstance = Self then
+    FormInstance := nil;   // freed by its owner rather than through Close / CloseInstance
   FAnalyzer.Free;
 
 end;
 
-procedure TFormDeadCodeDetector.AnalyzerProgress( Sender: TObject );
+procedure TFormDeadCodeDetector.AnalyzerProgress( const Step: string; var Cancel: Boolean );
 begin
-
-  if Sender is TDeadCodeAnalyzer then
-    lblProgress.Caption := TDeadCodeAnalyzer( Sender ).ProgressFileName;
-
+  lblProgress.Caption := Step;
   Application.ProcessMessages;
-
+  Cancel := FCancelRequested;
 end;
 
 procedure TFormDeadCodeDetector.btnCloseClick( Sender: TObject );
@@ -235,21 +282,32 @@ begin
 end;
 
 procedure TFormDeadCodeDetector.btnScanClick( Sender: TObject );
-var
-  Project: IOTAProject;
 begin
 
-  Project := GetActiveProject;
+  // During a scan the button reads "Cancel".
+  if FScanning then
+  begin
+    FCancelRequested := True;
+    Exit;
+  end;
 
-  if Project = nil then
+  var oProject := GetActiveProject;
+
+  if oProject = nil then
   begin
     ShowMessage( 'No active project.' );
     Exit;
   end;
 
+  // Re-read the options on every scan, so an ignore pattern added from the list or the options
+  // page applies to this scan rather than only after the form is reopened.
+  if DeadCodeDetectorPlugin <> nil then
+    DeadCodeDetectorPlugin.ConfigureAnalyzer( FAnalyzer );
+
   Screen.Cursor     := crHourGlass;
-  btnScan.Enabled   := False;
   FScanning         := True;
+  FCancelRequested  := False;
+  btnScan.Caption   := '&Cancel';
   ListView.Selected := nil;   // drop any stale selection before re-scan
 
   try
@@ -258,19 +316,30 @@ begin
     lblSummary.Visible  := False;
     Application.ProcessMessages;
 
-    FAnalyzer.AnalyzeProject( Project, FDeadCode, AnalyzerProgress );
+    var iSkipped: Integer;
+    var bCompleted := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FDeadCode, iSkipped );
     PopulateList;
 
-    lblSummary.Caption := Format( 'Found %d potentially dead code items', [ Length( FDeadCode ) ] );
+    if not bCompleted then
+      lblSummary.Caption := 'Scan cancelled.'
+    else if iSkipped > 0 then
+      lblSummary.Caption := Format( 'Found %d potentially dead code items (%d files could not be read: ' +
+        'only private and unit-local symbols are reported)', [ Length( FDeadCode ), iSkipped ] )
+    else
+      lblSummary.Caption := Format( 'Found %d potentially dead code items', [ Length( FDeadCode ) ] );
     lblSummary.Visible := True;
   finally
     // Clear the progress label here so a raised AnalyzeProject leaves no stale
     // 'Scanning: X.pas' caption behind.
     lblProgress.Visible := False;
     FScanning           := False;
-    btnScan.Enabled     := True;
+    btnScan.Caption     := FScanCaption;
     Screen.Cursor       := crDefault;
   end;
+
+  // CloseInstance arrived during the scan: the form is no longer the singleton and must go.
+  if FormInstance <> Self then
+    Release;
 
 end;
 

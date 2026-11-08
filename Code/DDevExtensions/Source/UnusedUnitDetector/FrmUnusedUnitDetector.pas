@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -23,7 +23,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, UnusedUnitDetector, ToolsAPI;
+  System.Generics.Defaults, FrmBase, UnusedUnitDetector, UnusedUnitCore, ToolsAPI;
 
 type
   /// <summary>Main detector form for the Unused Unit Detector plugin.</summary>
@@ -57,28 +57,46 @@ type
     /// <summary>Summary line shown after a scan completes.</summary>
     lblSummary: TLabel;
     /// <summary>Closes the form.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
-    /// <summary>Runs the analyser against the active project.</summary>
+    /// <summary>Runs the analyser against the active project; while a scan runs, the button reads Cancel and stops it.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
-    /// <summary>Releases the singleton form instance and frees the form on close.</summary>
+    /// <summary>Frees the form and releases the singleton on close; vetoes the close while a scan is running.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Action">Set to caNone to veto the close while a scan runs; otherwise caFree, so the form is freed.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
-    /// <summary>Form OnCreate handler: initialises analyser and sort state.</summary>
+    /// <summary>Form OnCreate handler: creates the analyser, sets the sort state and remembers the Scan caption.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: frees the analyser.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the source file at the offending line when a row is double-clicked.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Copies selected (or all) rows to the clipboard as TSV.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Adds the selected row's unit name to the persistent ignore list.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuAddToIgnoreListClick( Sender: TObject );
     /// <summary>Re-opens the source file at the offending line.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the result list to a CSV file.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Toggles or switches the active sort column.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom-column comparer used by AlphaSort.</summary>
+    /// <param name="Sender">The object that raised the event.</param>
+    /// <param name="Item1">The first list item being compared.</param>
+    /// <param name="Item2">The second list item being compared.</param>
+    /// <param name="Data">Sort data passed by AlphaSort (unused).</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, level with or after Item2.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
   private
@@ -86,6 +104,10 @@ type
     FAnalyzer: TUnitAnalyzer;
     /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
+    /// <summary>Set by the Scan button (which reads "Cancel" during a scan) or by <see cref="CloseInstance"/> to stop the running scan.</summary>
+    FCancelRequested: Boolean;
+    /// <summary>Caption of the Scan button, restored when a scan ends.</summary>
+    FScanCaption: string;
     /// <summary>Most recent scan result.</summary>
     FUnusedUnits: TArray<TUnusedUnitInfo>;
     /// <summary>Index of the currently active sort column.</summary>
@@ -94,14 +116,21 @@ type
     FSortAscending: Boolean;
     /// <summary>Refreshes the list view from <see cref="FUnusedUnits"/>.</summary>
     procedure PopulateList;
-    /// <summary>Analyser OnProgress callback that updates the progress label.</summary>
-    procedure AnalyzerProgress( Sender: TObject );
+    /// <summary>Scan progress callback: updates the progress label, pumps messages and reports a requested cancel.</summary>
+    /// <param name="Step">Text describing the current step.</param>
+    /// <param name="Cancel">Set to True when the user cancelled the scan.</param>
+    procedure AnalyzerProgress( const Step: string; var Cancel: Boolean );
     /// <summary>Re-opens the source file for the selected row at its offending line.</summary>
     procedure OpenSelectedFile;
   public
     /// <summary>Shows or focuses the singleton detector form.</summary>
     class procedure Execute;
-    /// <summary>Force-closes the singleton form, if open, so it cannot outlive the owning plugin on unload.</summary>
+    /// <summary>
+    /// Frees the singleton form, if open, so it cannot outlive the owning plugin on unload.
+    /// It covers an unload outside a scan.  An unload reached through a running scan's own message
+    /// pump cannot be made safe here: the scan is cancelled and the form hidden, and the form is
+    /// released when the scan unwinds - safe only while the plug-in's code is still loaded.
+    /// </summary>
     class procedure CloseInstance;
   end;
 
@@ -151,10 +180,23 @@ end;
 
 class procedure TFormUnusedUnitDetector.CloseInstance;
 begin
+  if FormInstance = nil then
+    Exit;
 
-  if FormInstance <> nil then
-    FreeAndNil( FormInstance );
+  var oForm := FormInstance;
+  FormInstance := nil;
 
+  if oForm.FScanning then
+  begin
+    // The scan is still on the stack (this call arrived through its message pump): freeing the
+    // form now would free FAnalyzer under it.  Stop the scan and let btnScanClick release the form.  That
+    // is safe only if the plug-in's code is still loaded when the scan unwinds; an unload cannot be
+    // refused or postponed from here.
+    oForm.FCancelRequested := True;
+    oForm.Hide;
+  end
+  else
+    oForm.Free;
 end;
 
 procedure TFormUnusedUnitDetector.FormClose( Sender: TObject; var Action: TCloseAction );
@@ -180,24 +222,24 @@ begin
   FAnalyzer      := TUnitAnalyzer.Create;
   FSortColumn    := 0;
   FSortAscending := True;
+  FScanCaption   := btnScan.Caption;
 
 end;
 
 procedure TFormUnusedUnitDetector.FormDestroy( Sender: TObject );
 begin
 
+  if FormInstance = Self then
+    FormInstance := nil;   // freed by its owner rather than through Close / CloseInstance
   FAnalyzer.Free;
 
 end;
 
-procedure TFormUnusedUnitDetector.AnalyzerProgress( Sender: TObject );
+procedure TFormUnusedUnitDetector.AnalyzerProgress( const Step: string; var Cancel: Boolean );
 begin
-
-  if Sender is TUnitAnalyzer then
-    lblProgress.Caption := 'Analysing: ' + TUnitAnalyzer( Sender ).ProgressFileName;
-
+  lblProgress.Caption := Step;
   Application.ProcessMessages;
-
+  Cancel := FCancelRequested;
 end;
 
 procedure TFormUnusedUnitDetector.btnCloseClick( Sender: TObject );
@@ -208,21 +250,31 @@ begin
 end;
 
 procedure TFormUnusedUnitDetector.btnScanClick( Sender: TObject );
-var
-  Project: IOTAProject;
 begin
 
-  Project := GetActiveProject;
+  // During a scan the button reads "Cancel".
+  if FScanning then
+  begin
+    FCancelRequested := True;
+    Exit;
+  end;
 
-  if Project = nil then
+  var oProject := GetActiveProject;
+
+  if oProject = nil then
   begin
     ShowMessage( 'No active project.' );
     Exit;
   end;
 
+  // Re-read the ignore list on every scan so an entry added since the form opened applies.
+  if UnusedUnitDetectorPlugin <> nil then
+    FAnalyzer.SetIgnoreList( UnusedUnitDetectorPlugin.IgnoreList );
+
   Screen.Cursor    := crHourGlass;
-  btnScan.Enabled  := False;
   FScanning        := True;
+  FCancelRequested := False;
+  btnScan.Caption  := '&Cancel';
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -230,17 +282,34 @@ begin
     lblSummary.Visible  := False;
     Application.ProcessMessages;
 
-    FAnalyzer.AnalyzeProject( Project, FUnusedUnits, AnalyzerProgress );
+    var iSkipped: Integer;
+    var bCompleted := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FUnusedUnits, iSkipped );
     PopulateList;
 
+    var sInlineNote := '';
+    if Length( FUnusedUnits ) > 0 then
+      sInlineNote := ' - rebuild after removing any (see hint)';
+
     lblProgress.Visible := False;
-    lblSummary.Caption  := Format( 'Found %d potentially unused unit references', [ Length( FUnusedUnits ) ] );
+    if not bCompleted then
+      lblSummary.Caption := 'Scan cancelled.'
+    else if iSkipped > 0 then
+      lblSummary.Caption := Format( 'Found %d potentially unused unit references (%d units not analysed: ' +
+        'unreadable unit or form, or an include file)', [ Length( FUnusedUnits ), iSkipped ] ) + sInlineNote
+    else
+      lblSummary.Caption := Format( 'Found %d potentially unused unit references', [ Length( FUnusedUnits ) ] ) + sInlineNote;
+    lblSummary.Hint     := UnusedUnitInlineNote;
+    lblSummary.ShowHint := True;
     lblSummary.Visible  := True;
   finally
     FScanning       := False;
-    btnScan.Enabled := True;
+    btnScan.Caption := FScanCaption;
     Screen.Cursor   := crDefault;
   end;
+
+  // CloseInstance arrived during the scan: the form is no longer the singleton and must go.
+  if FormInstance <> Self then
+    Release;
 
 end;
 

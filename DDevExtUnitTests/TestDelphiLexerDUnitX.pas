@@ -71,12 +71,49 @@ type
     /// </summary>
     [Test]
     procedure TestLineIsZeroBasedColumnOneBased;
+    /// <summary>
+    /// Proves a Delphi 12 multi-line string (<c>'''</c> to <c>'''</c>, including the five-quote
+    /// form) is one <c>tkString</c>, so the keywords, braces and apostrophes inside it are not
+    /// lexed as code, and that the next token's line accounts for the string's lines.
+    /// </summary>
+    [Test]
+    procedure TestMultilineString;
+    /// <summary>
+    /// Proves an <c>&amp;</c>-escaped reserved word (<c>&amp;End</c>, <c>&amp;Type</c>) is one
+    /// <c>tkIdent</c>; it used to lex as <c>&amp;</c> plus the keyword, so an analyser counting
+    /// begin/end saw a phantom <c>end</c>.
+    /// </summary>
+    [Test]
+    procedure TestEscapedIdentifier;
+    /// <summary>Proves binary literals (<c>%1010</c>) and digit separators (<c>1_000</c>, <c>$FF_FF</c>) are single <c>tkInt</c> tokens.</summary>
+    [Test]
+    procedure TestBinaryLiteralAndDigitSeparators;
+    /// <summary>
+    /// Proves malformed UTF-8 (a lead byte with its continuation bytes missing, at the end of the
+    /// text and mid-text) lexes to a finite token stream without reading past the text.
+    /// </summary>
+    [Test]
+    procedure TestTruncatedUtf8;
+    /// <summary>
+    /// Proves the file reader decodes a UTF-16 file with a BOM to the same text (it used to read
+    /// twice the file's length as characters) and a BOM-less UTF-8 file as UTF-8, not ANSI - even when
+    /// a read limit cuts a multi-byte character in half at the end of the block.
+    /// </summary>
+    [Test]
+    procedure TestFileReaderEncodings;
+    /// <summary>
+    /// Proves <c>NextTokenNoComment</c> skips comments and other directives but stops at an include
+    /// directive (<c>{$I file}</c>, <c>{$INCLUDE file}</c>), and not at the <c>{$I+}</c> switch.  The
+    /// test used to compare the arguments the wrong way round, so it never stopped.
+    /// </summary>
+    [Test]
+    procedure TestNextTokenNoCommentStopsAtInclude;
   end;
 
 implementation
 
 uses
-  System.SysUtils, System.Generics.Collections, DelphiLexer;
+  Winapi.Windows, System.SysUtils, System.IOUtils, System.Generics.Collections, DelphiLexer;
 
 /// <summary>Tokenises ASource and returns the ordered list of token kinds.</summary>
 /// <param name="ASource">Object Pascal source text to tokenise.</param>
@@ -200,6 +237,142 @@ begin
     Assert.IsNotNull( oProcToken, 'finds the procedure keyword' );
     Assert.AreEqual<Integer>( 1, oProcToken.Line, 'second source line reports Line 1' );
     Assert.AreEqual<Integer>( 1, oProcToken.Column, 'procedure starts at column 1' );
+  finally
+    oLexer.Free;
+  end;
+end;
+
+procedure TTestDelphiLexer.TestMultilineString;
+begin
+  AssertKinds(
+    'S := '''''' '#13#10 +
+    '  begin { it''s not code'#13#10 +
+    '  end'#13#10 +
+    '  '''''';'#13#10 +
+    'X',
+    [ tkIdent, tkAssign, tkString, tkSemicolon, tkIdent ], 'three-quote multi-line string is one token' );
+
+  AssertKinds(
+    'S := '''''''''''#13#10 +
+    '  holds ''''''three'''''' quotes'#13#10 +
+    '  '''''''''';',
+    [ tkIdent, tkAssign, tkString, tkSemicolon ], 'five-quote multi-line string is one token' );
+
+  var oLexer := TDelphiLexer.Create( 'test.pas', UTF8String( 'S := '''''''#13#10'  a'#13#10'  '''''';'#13#10'X' ) );
+  try
+    Assert.IsNotNull( FirstTokenOfKind( oLexer, tkIdent ), 'finds S' );
+    var oToken := FirstTokenOfKind( oLexer, tkIdent );   // X
+    Assert.IsNotNull( oToken, 'finds X after the string' );
+    Assert.AreEqual( 'X', oToken.Value, 'the token after the string is X' );
+    Assert.AreEqual<Integer>( 3, oToken.Line, 'X is on the fourth line (0-based 3)' );
+  finally
+    oLexer.Free;
+  end;
+
+  AssertKinds( 'S := '''''''' + X;', [ tkIdent, tkAssign, tkString, tkPlus, tkIdent, tkSemicolon ],
+    'the quote-character literal is an ordinary string' );
+end;
+
+procedure TTestDelphiLexer.TestEscapedIdentifier;
+begin
+  AssertKinds( 'X.&End := &Type;', [ tkIdent, tkQualifier, tkIdent, tkAssign, tkIdent, tkSemicolon ],
+    '&End and &Type are identifiers' );
+  AssertKinds( 'A & B', [ tkIdent, tkAmp, tkIdent ], 'a lone & is still a symbol' );
+end;
+
+procedure TTestDelphiLexer.TestBinaryLiteralAndDigitSeparators;
+begin
+  AssertKinds( 'X := %1010;', [ tkIdent, tkAssign, tkInt, tkSemicolon ], '%1010 is one integer' );
+  AssertKinds( 'X := 1_000_000;', [ tkIdent, tkAssign, tkInt, tkSemicolon ], '1_000_000 is one integer' );
+  AssertKinds( 'X := $FF_FF;', [ tkIdent, tkAssign, tkInt, tkSemicolon ], '$FF_FF is one integer' );
+end;
+
+/// <summary>Builds a UTF-8 string from raw bytes, with no code-page conversion.</summary>
+/// <param name="ABytes">The bytes, in order.</param>
+/// <returns>A UTF8String holding exactly ABytes.</returns>
+function RawUtf8( const ABytes: array of Byte ): UTF8String;
+begin
+  SetLength( Result, Length( ABytes ) );
+  for var i := 0 to High( ABytes ) do
+    Result[ i + 1 ] := AnsiChar( ABytes[ i ] );
+end;
+
+procedure TTestDelphiLexer.TestTruncatedUtf8;
+begin
+  for var sText in [ RawUtf8( [ $41, $20, $E4 ] ), RawUtf8( [ $41, $20, $E4, $B8 ] ), RawUtf8( [ $41, $20, $F0, $9F ] ) ] do
+  begin
+    var oLexer := TDelphiLexer.Create( 'test.pas', sText );
+    try
+      var iCount := 0;
+      var oToken: TToken;
+      while oLexer.NextToken( oToken ) and ( iCount < 100 ) do
+      begin
+        Assert.IsTrue( oToken.EndIndex <= Length( sText ), 'no token runs past the end of the text' );
+        Inc( iCount );
+      end;
+      Assert.IsTrue( iCount < 100, 'the token stream ends' );
+    finally
+      oLexer.Free;
+    end;
+  end;
+
+  var oLexer := TDelphiLexer.Create( 'test.pas', RawUtf8( [ $41, $20, $E4, $20, $42 ] ) );
+  try
+    Assert.IsNotNull( FirstTokenOfKind( oLexer, tkIdent ), 'A is read' );
+    var oB := FirstTokenOfKind( oLexer, tkIdent );
+    Assert.IsNotNull( oB, 'B after the stray lead byte is read' );
+    Assert.AreEqual( 'B', oB.Value, 'the stray byte does not swallow B' );
+  finally
+    oLexer.Free;
+  end;
+end;
+
+procedure TTestDelphiLexer.TestFileReaderEncodings;
+begin
+  var sDir := IncludeTrailingPathDelimiter( TPath.GetTempPath ) + 'DDevExtLexerTest' + IntToStr( GetCurrentProcessId );
+  ForceDirectories( sDir );
+  try
+    var sUtf16 := sDir + '\utf16.pas';
+    TFile.WriteAllText( sUtf16, 'unit Größe;', TEncoding.Unicode );   // with BOM
+    Assert.AreEqual( 'unit Größe;', UTF8ToString( LoadTextFileToUtf8String( sUtf16 ) ), 'UTF-16 LE with BOM' );
+
+    var sUtf8 := sDir + '\utf8.pas';
+    var oNoBom := TUTF8Encoding.Create( False );
+    try
+      TFile.WriteAllText( sUtf8, 'unit Größe;', oNoBom );   // no BOM
+    finally
+      oNoBom.Free;
+    end;
+    Assert.AreEqual( 'unit Größe;', UTF8ToString( LoadTextFileToUtf8String( sUtf8 ) ), 'UTF-8 without a BOM' );
+
+    // A read limit that ends the text inside a two-byte "ö" (the reader stops at a 4 KB block
+    // boundary; the "ö" straddles byte 8192): still UTF-8, not ANSI mojibake ("Ã").
+    var sLong := sDir + '\long.pas';
+    var oNoBom2 := TUTF8Encoding.Create( False );
+    try
+      TFile.WriteAllText( sLong, StringOfChar( 'a', 8191 ) + 'ö' + StringOfChar( 'b', 100 ), oNoBom2 );
+    finally
+      oNoBom2.Free;
+    end;
+    var sCut := UTF8ToString( LoadTextFileToUtf8String( sLong, 4096 ) );
+    Assert.IsTrue( sCut.StartsWith( 'aaaa' ), 'the text before the cut is kept' );
+    Assert.AreEqual( 0, Pos( 'Ã', sCut ), 'a sequence cut at the block end does not turn the file into ANSI' );
+  finally
+    TDirectory.Delete( sDir, True );
+  end;
+end;
+
+procedure TTestDelphiLexer.TestNextTokenNoCommentStopsAtInclude;
+begin
+  var oLexer := TDelphiLexer.Create( 'test.pas',
+    UTF8String( 'A { note } {$IFDEF X} {$I+} {$I Settings.inc} B (*$INCLUDE More.inc*) C' ) );
+  try
+    var sSeen := '';
+    var oToken: TToken;
+    while oLexer.NextTokenNoComment( oToken ) do
+      sSeen := sSeen + oToken.Value + ' ';
+    Assert.AreEqual( 'A {$I Settings.inc} B (*$INCLUDE More.inc*) C', Trim( sSeen ),
+      'comments, $IFDEF and $I+ are skipped; the two include directives are returned' );
   finally
     oLexer.Free;
   end;
