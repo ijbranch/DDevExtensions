@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- (2026-11-09) **35 tests (34 on Win32) for the core fixes**, each seen failing against the old behaviour (or a stub mimicking it) first: interceptor registry and dispatch including a non-native exception, settings load retry and locked/damaged classification, unique temporary names, feature switches of other IDE versions and space/quote parsing, Win64 property-accessor decoding - `TestVirtTreeHandlerDUnitX.pas`, `TestInterceptDispatchDUnitX.pas`, `TestPluginConfigCoreDUnitX.pas`, `TestFeatureSwitchesDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
 - (2026-11-09) **`TestLibraryPathBackupsDUnitX`**: two writers sharing one file, pinned backups not trimmed, ISO timestamps, legacy-file ids with raw timestamps that survive a save (locale-independent), corrupt-file quarantine, and an older build's file imported read-only - `TestLibraryPathBackupsDUnitX.pas`, `DDevExtUnitTestsDUnitX.dpr`
 - (2026-11-09) **Group-sorter tests** for `DependsOnTargets`, sanitised target names, tabs, custom targets, unterminated targets and line-break style - `TestProjectGroupSorterDUnitX.pas`
 - (2026-11-09) **Compactor tests** for unticked variables, divergent names, restricted reuse, relative entries and RemoveMissing - `TestPathCompactorDUnitX.pas`

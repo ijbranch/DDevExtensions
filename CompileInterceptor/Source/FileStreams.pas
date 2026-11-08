@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -57,6 +57,7 @@ type
     /// <summary>Returns a free buffer, allocating a new one if none are available.</summary>
     function AllocWrite: PByteArray;
     /// <summary>Returns <paramref name="P"/> to the pool, shrinking the pool if it has grown beyond the limit.</summary>
+    /// <param name="P">The buffer obtained from <see cref="AllocWrite"/>.</param>
     procedure ReleaseWrite(P: PByteArray);
   end;
 
@@ -317,7 +318,7 @@ var
 begin
   for i := 0 to FWriteBuffers.Count - 1 do
     if FWriteBuffers[i] <> nil then
-      VirtualFree(FWriteBuffers[i], MaxWritePoolBufferSize, MEM_FREE);
+      VirtualFree( FWriteBuffers[ i ], 0, MEM_RELEASE ); // MEM_FREE is not a free-type: the call failed and leaked the block
   FWriteBuffers.Free;
   FWriteBufferState.Free;
   inherited Destroy;
@@ -356,7 +357,7 @@ begin
     begin
       if FWriteBufferState[i] = nil then
       begin
-        VirtualFree(FWriteBuffers[i], MaxWritePoolBufferSize, MEM_FREE);
+        VirtualFree( FWriteBuffers[ i ], 0, MEM_RELEASE ); // MEM_FREE is not a free-type: the call failed and leaked the block
         FWriteBuffers.Delete(i);
         FWriteBufferState.Delete(i);
         if FWriteBuffers.Count = MaxWriteAvgBufferCount then

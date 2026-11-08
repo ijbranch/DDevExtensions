@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -33,6 +33,7 @@ uses
   FileStreams in 'FileStreams.pas',
   InterceptIntf in 'InterceptIntf.pas',
   InterceptImpl in 'InterceptImpl.pas',
+  InterceptDispatch in 'InterceptDispatch.pas',
   IdeDllNames in 'IdeDllNames.pas',
   ToolsAPIIntf in 'ToolsAPIIntf.pas';
 

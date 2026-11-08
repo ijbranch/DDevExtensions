@@ -98,95 +98,114 @@ uses
   MethodSeparators,
   {$ENDIF INCLUDE_METHODSEPARATORS}
   StartParameterManagerReg, FrmReloadFiles{, PrjDesktopState},
-  CodeInsightHandling;
+  CodeInsightHandling, FeatureSwitches, Winapi.Windows, System.IOUtils;
+
+/// <summary>
+/// Reports names in <c>DDevExtensions.DisabledFeatures</c> that match no feature of any DDevExtensions version: a
+/// mistyped switch would otherwise leave the feature running while the tester believes it is off.  Always logged;
+/// shown in a dialog once per distinct set of unknown names on this machine (remembered in the AppData folder),
+/// so a stale value does not nag at every start.
+/// </summary>
+/// <param name="Switches">The parsed switches, after every feature has been asked about.</param>
+procedure ReportUnknownFeatureNames(Switches: TFeatureSwitches);
+begin
+  var Unknown := Switches.UnknownNames;
+  if Length( Unknown ) = 0 then
+    Exit;
+  var NameList := string.Join( ';', Unknown );
+  var Text := 'DDevExtensions.DisabledFeatures names no feature called: ' + string.Join( ', ', Unknown ) +
+    '.  Those entries have no effect.';
+  OutputDebugString( PChar( Text ) );
+  var Marker := AppDataDirectory + '\DisabledFeatures.warned';
+  try
+    if FileExists( Marker ) and SameText( TFile.ReadAllText( Marker ).Trim, NameList ) then
+      Exit; // this exact set has been shown before
+    TFile.WriteAllText( Marker, NameList );
+  except
+    on E: EInOutError do
+      OutputDebugString( PChar( 'DDevExtensions: cannot use ' + Marker + ': ' + E.Message ) );
+    on E: EFileStreamError do
+      OutputDebugString( PChar( 'DDevExtensions: cannot use ' + Marker + ': ' + E.Message ) );
+  end;
+  MessageBox( 0, PChar( Text ), 'DDevExtensions', MB_OK or MB_ICONWARNING or MB_TASKMODAL );
+end;
 
 procedure RegisterIDEPlugins;
 var
-  DisabledPlugins: TStringList;
-  I: Integer;
+  DisabledPlugins: TFeatureSwitches;
 begin
-  DisabledPlugins := TStringList.Create;
-  DisabledPlugins.Delimiter := ';';
-  DisabledPlugins.DelimitedText := GetEnvironmentVariable('DDevExtensions.DisabledFeatures');
-  for I := 0 to DisabledPlugins.Count - 1 do
-    DisabledPlugins[I] := Trim(DisabledPlugins[I]);
-  DisabledPlugins.Sorted := True;
+  DisabledPlugins := TFeatureSwitches.Create(GetEnvironmentVariable('DDevExtensions.DisabledFeatures'));
   try
-    if DisabledPlugins.IndexOf('DSUFeatures') = -1 then
+    if not DisabledPlugins.IsDisabled('DSUFeatures') then
       RegisterLateLoader(FrmeOptionPageDSUFeatures.InitPlugin);
 
     {$IFDEF INCLUDE_FOCUSEDITOR}
-    if DisabledPlugins.IndexOf('FocusEditor') = -1 then
+    if not DisabledPlugins.IsDisabled('FocusEditor') then
       RegisterLateLoader(FocusEditor.InitPlugin); // Set focus to editor after debugging
     {$ENDIF}
 
-//    if DisabledPlugins.IndexOf('ProjectDesktopState') = -1 then
+//    if not DisabledPlugins.IsDisabled('ProjectDesktopState') then
 //      RegisterLateLoader(PrjDesktopState.InitPlugin);
 
     {$IFDEF INCLUDE_IDEMENUHANDLER}
-    if DisabledPlugins.IndexOf('IDEMenuHandler') = -1 then
+    if not DisabledPlugins.IsDisabled('IDEMenuHandler') then
       RegisterLateLoader(IDEMenuHandler.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_FORMDESIGNER}
-    if DisabledPlugins.IndexOf('FormDesigner') = -1 then
+    if not DisabledPlugins.IsDisabled('FormDesigner') then
       RegisterLateLoader(FrmeOptionPageFormDesigner.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_COMPONENTSELECTOR}
-    if DisabledPlugins.IndexOf('ComponentSelector') = -1 then
+    if not DisabledPlugins.IsDisabled('ComponentSelector') then
       RegisterLateLoader(ComponentSelector.InitPlugin);
     {$ENDIF}
 
   {------------------------------------------------------------------------------}
 
-    if DisabledPlugins.IndexOf('ProjectSettingsSetVersioninfo') = -1 then
+    if not DisabledPlugins.IsDisabled('ProjectSettingsSetVersioninfo') then
       RegisterLateLoader(FrmProjectSettingsSetVersioninfo.InitPlugin);
 
     {$IFDEF INCLUDE_COMPILEPROGRESS}
-    if DisabledPlugins.IndexOf('CompileProgress') = -1 then
+    if not DisabledPlugins.IsDisabled('CompileProgress') then
       RegisterLateLoader(CompileProgress.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_UNITSELECTOR}
-    if DisabledPlugins.IndexOf('UnitSelector') = -1 then
+    if not DisabledPlugins.IsDisabled('UnitSelector') then
       RegisterLateLoader(FrmeOptionPageUnitSelector.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_FILECLEANER}
-    if DisabledPlugins.IndexOf('FileCleaner') = -1 then
+    if not DisabledPlugins.IsDisabled('FileCleaner') then
       RegisterLateLoader(FrmeOptionPageFileCleaner.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_COMPILEBACKUP}
-    if DisabledPlugins.IndexOf('CompileBackup') = -1 then
+    if not DisabledPlugins.IsDisabled('CompileBackup') then
       RegisterLateLoader(FrmeOptionPageCompileBackup.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion <= 32.0} // 10.2 Tokyo-
     {$IFDEF INCLUDE_OLDPALETTE}
-    if DisabledPlugins.IndexOf('OldPalette') = -1 then
+    if not DisabledPlugins.IsDisabled('OldPalette') then
       RegisterLateLoader(FrmeOptionPageOldPalette.InitPlugin);
     {$ENDIF}
     {$IFEND}
 
     {$IFDEF INCLUDE_KEYBINDINGS}
-    if DisabledPlugins.IndexOf('Keybindings') = -1 then
+    if not DisabledPlugins.IsDisabled('Keybindings') then
       RegisterLateLoader(FrmeOptionPageKeybindings.InitPlugin);
     {$ENDIF}
 
-    {$IFDEF INCLUDE_EDITOR}
-    if DisabledPlugins.IndexOf('Editor') = -1 then
-      RegisterLateLoader(FrmeOptionPageEditor.InitPlugin); // Delphi 2006+
-    {$ENDIF}
-
     {$IFDEF INCLUDE_STARTPARAMETERTEAM}
-    if DisabledPlugins.IndexOf('StartParameterTeam') = -1 then
+    if not DisabledPlugins.IsDisabled('StartParameterTeam') then
       RegisterLateLoader(FrmeOptionPageStartParameterTeam.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_STRUCVIEWSEARCH}
-    if DisabledPlugins.IndexOf('StrucViewSearch') = -1 then
+    if not DisabledPlugins.IsDisabled('StrucViewSearch') then
       RegisterLateLoader(StrucViewSearch.InitPlugin);
     {$ENDIF}
 
@@ -199,99 +218,100 @@ begin
     // 6. Review work items (TODO/FIXME Aggregator)
 
     {$IFDEF INCLUDE_DEPENDENCYVIEWER}
-    if DisabledPlugins.IndexOf('DependencyViewer') = -1 then
+    if not DisabledPlugins.IsDisabled('DependencyViewer') then
       RegisterLateLoader(DependencyViewer.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_CODEQUALITYANALYZER}
-    if DisabledPlugins.IndexOf('CodeQualityAnalyzer') = -1 then
+    if not DisabledPlugins.IsDisabled('CodeQualityAnalyzer') then
       RegisterLateLoader(CodeQualityAnalyzer.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_UNUSEDUNITDETECTOR}
-    if DisabledPlugins.IndexOf('UnusedUnitDetector') = -1 then
+    if not DisabledPlugins.IsDisabled('UnusedUnitDetector') then
       RegisterLateLoader(UnusedUnitDetector.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DEADCODEDETECTOR}
-    if DisabledPlugins.IndexOf('DeadCodeDetector') = -1 then
+    if not DisabledPlugins.IsDisabled('DeadCodeDetector') then
       RegisterLateLoader(DeadCodeDetector.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_UNREACHABLECODEDETECTOR}
-    if DisabledPlugins.IndexOf('UnreachableCodeDetector') = -1 then
+    if not DisabledPlugins.IsDisabled('UnreachableCodeDetector') then
       RegisterLateLoader(UnreachableCodeDetector.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_EMPTYEVENTHANDLERDETECTOR}
-    if DisabledPlugins.IndexOf('EmptyEventHandlerDetector') = -1 then
+    if not DisabledPlugins.IsDisabled('EmptyEventHandlerDetector') then
       RegisterLateLoader(EmptyEventHandlerDetector.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_USESCLAUSEMANAGER}
-    if DisabledPlugins.IndexOf('UsesClauseManager') = -1 then
+    if not DisabledPlugins.IsDisabled('UsesClauseManager') then
       RegisterLateLoader(UsesClauseManager.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DECIRCULARISER}
-    if DisabledPlugins.IndexOf('Decirculariser') = -1 then
+    if not DisabledPlugins.IsDisabled('Decirculariser') then
       RegisterLateLoader(Decirculariser.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_DFMPASCONSISTENCY}
-    if DisabledPlugins.IndexOf('DfmPasConsistency') = -1 then
+    if not DisabledPlugins.IsDisabled('DfmPasConsistency') then
       RegisterLateLoader(DfmPasConsistency.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_CODESTYLECHECKER}
-    if DisabledPlugins.IndexOf('CodeStyleChecker') = -1 then
+    if not DisabledPlugins.IsDisabled('CodeStyleChecker') then
       RegisterLateLoader(CodeStyleChecker.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_TODOAGGREGATOR}
-    if DisabledPlugins.IndexOf('TodoAggregator') = -1 then
+    if not DisabledPlugins.IsDisabled('TodoAggregator') then
       RegisterLateLoader(TodoAggregator.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_LIBRARYPATHSORTER}
-    if DisabledPlugins.IndexOf('LibraryPathSorter') = -1 then
+    if not DisabledPlugins.IsDisabled('LibraryPathSorter') then
       RegisterLateLoader(LibraryPathSorter.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_PATHCOMPACTOR}
-    if DisabledPlugins.IndexOf('PathCompactor') = -1 then
+    if not DisabledPlugins.IsDisabled('PathCompactor') then
       RegisterLateLoader(PathCompactor.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_PROJECTGROUPSORTER}
-    if DisabledPlugins.IndexOf('ProjectGroupSorter') = -1 then
+    if not DisabledPlugins.IsDisabled('ProjectGroupSorter') then
       RegisterLateLoader(ProjectGroupSorter.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_EXTERNALMODMONITOR}
-    if DisabledPlugins.IndexOf('ExternalModMonitor') = -1 then
+    if not DisabledPlugins.IsDisabled('ExternalModMonitor') then
       RegisterLateLoader(ExternalModMonitor.InitPlugin);
     {$ENDIF}
 
     {$IFDEF INCLUDE_METHODSEPARATORS}
-    if DisabledPlugins.IndexOf('MethodSeparators') = -1 then
+    if not DisabledPlugins.IsDisabled('MethodSeparators') then
       RegisterLateLoader(MethodSeparators.InitPlugin);
     {$ENDIF}
 
     {$IF CompilerVersion < 21.0}
-    if DisabledPlugins.IndexOf('ProjectMgrShortCuts') = -1 then
+    if not DisabledPlugins.IsDisabled('ProjectMgrShortCuts') then
       RegisterLateLoader(ProjectMgrShortCuts.InitPlugin);
     {$IFEND}
 
-    if DisabledPlugins.IndexOf('StartParameter') = -1 then
+    if not DisabledPlugins.IsDisabled('StartParameter') then
       RegisterExpertLoader(StartParameterManagerReg.InitPlugin);
 
-    if DisabledPlugins.IndexOf('ReloadFiles') = -1 then
+    if not DisabledPlugins.IsDisabled('ReloadFiles') then
       RegisterExpertLoader(FrmReloadFiles.InitPlugin);
 
-    if DisabledPlugins.IndexOf('CodeInsightHandling') = -1 then
+    if not DisabledPlugins.IsDisabled('CodeInsightHandling') then
       RegisterLateLoader(CodeInsightHandling.InitPlugin);
 
+    ReportUnknownFeatureNames(DisabledPlugins);
   finally
     DisabledPlugins.Free;
   end;

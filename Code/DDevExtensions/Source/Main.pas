@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -250,13 +250,20 @@ begin
   if AppDataDirectory = '' then
     AppDataDirectory := ExtractFileDir(ExtractFileDir((ParamStr(0))));
   AppDataDirectory := AppDataDirectory + '\DDevExtensions';
-  // If the AppData directory cannot be created (locked-down / redirected APPDATA),
-  // fall back beside the executable so later config saves are not silently lost.
+  // If the AppData directory cannot be created (locked-down / redirected APPDATA), fall back to a folder a
+  // standard user can write: %LOCALAPPDATA%, then the temp folder.  (The IDE's own bin folder, the old
+  // fallback, is under Program Files and not writable either.)
   if not ForceDirectories(AppDataDirectory) then
   begin
-    OutputDebugString(PChar('DDevExtensions: cannot create ' + AppDataDirectory +
-      '; falling back to the executable directory.'));
-    AppDataDirectory := ExtractFileDir(ParamStr(0));
+    var Wanted := AppDataDirectory;
+    AppDataDirectory := IncludeTrailingPathDelimiter( GetEnvironmentVariable( 'LOCALAPPDATA' ) ) + 'DDevExtensions';
+    if ( GetEnvironmentVariable( 'LOCALAPPDATA' ) = '' ) or not ForceDirectories( AppDataDirectory ) then
+    begin
+      AppDataDirectory := IncludeTrailingPathDelimiter( GetEnvironmentVariable( 'TEMP' ) ) + 'DDevExtensions';
+      ForceDirectories( AppDataDirectory );
+    end;
+    OutputDebugString( PChar( 'DDevExtensions: cannot create ' + Wanted + '; settings are kept in ' +
+      AppDataDirectory + ' instead.' ) );
   end;
 end;
 
@@ -306,10 +313,9 @@ var
   I, Index: Integer;
   Item, SeparatorItem, AnchorItem: TMenuItem;
 begin
-  // IDELoaded is reached from both the splash poll timer and the splash
-  // component's destructor; run it exactly once. Otherwise the submenu and every
-  // late loader (notifiers, hooks) would be created twice and the previous
-  // DDevExtensionsMenu would leak.
+  // IDELoaded is reached from the splash poll timer; run it exactly once.  Otherwise
+  // the submenu and every late loader (notifiers, hooks) would be created twice and
+  // the previous DDevExtensionsMenu would leak.
   if Assigned(DDevExtensionsMenu) then
     Exit;
 
@@ -328,27 +334,38 @@ begin
   SeparatorItem.Caption := '-';
   DDevExtensionsMenu.Add(SeparatorItem);
 
-  // Add DDevExtensions submenu to Tools menu
-  Item := FindMenuItem('ToolsMenu');
-  if Item <> nil then
-  begin
-    // Resolve a known anchor and compute the insert position from it. Resolving
-    // the anchor first avoids the -2 magic intermediate (IndexOf(nil) - 1) when
-    // neither anchor exists on this personality, in which case we insert near top.
-    Index := -1;
-    AnchorItem := FindMenuItem('ToolsDebuggerOptionsItem');
-    if AnchorItem <> nil then
-      Index := Item.IndexOf(AnchorItem) + 1   // insert after the Debugger Options item
-    else
+  // Add DDevExtensions submenu to Tools menu.  This runs inside a Windows timer callback, where an escaping
+  // exception is swallowed by user32 (x64) and, with the run-once guard above, would silently leave every
+  // late loader unrun.  A failure to place the submenu is reported and the features still start.
+  try
+    Item := FindMenuItem('ToolsMenu');
+    if Item <> nil then
     begin
-      AnchorItem := FindMenuItem('ToolsToolsItem');
+      // Resolve a known anchor and compute the insert position from it. Resolving
+      // the anchor first avoids the -2 magic intermediate (IndexOf(nil) - 1) when
+      // neither anchor exists on this personality, in which case we insert near top.
+      Index := -1;
+      AnchorItem := FindMenuItem('ToolsDebuggerOptionsItem');
       if AnchorItem <> nil then
-        Index := Item.IndexOf(AnchorItem);     // insert before the Tools item
+        Index := Item.IndexOf(AnchorItem) + 1   // insert after the Debugger Options item
+      else
+      begin
+        AnchorItem := FindMenuItem('ToolsToolsItem');
+        if AnchorItem <> nil then
+          Index := Item.IndexOf(AnchorItem);     // insert before the Tools item
+      end;
+      if Index >= 1 then
+        Item.Insert(Index, DDevExtensionsMenu)
+      else
+        Item.Insert(1, DDevExtensionsMenu);
     end;
-    if Index >= 1 then
-      Item.Insert(Index, DDevExtensionsMenu)
-    else
-      Item.Insert(1, DDevExtensionsMenu);
+  except
+    on E: Exception do
+    begin
+      OutputDebugString( PChar( 'DDevExtensions: cannot add the Tools > DDevExtensions menu: ' + E.ClassName + ': ' +
+        E.Message ) );
+      Application.HandleException( Application );
+    end;
   end;
 
   Configuration.BeginUpdate;

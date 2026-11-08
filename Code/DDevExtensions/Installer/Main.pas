@@ -133,8 +133,10 @@ type
     /// <summary>Handler for the Quit button — closes the form.</summary>
     procedure btnQuitClick(Sender: TObject);
     /// <summary>Handler for the Install button — iterates ticked IDEs and calls <see cref="DoInstall"/>.</summary>
+    /// <param name="Sender">The Install button.</param>
     procedure btnInstallClick(Sender: TObject);
     /// <summary>Handler for the Uninstall button — iterates ticked IDEs and calls <see cref="DoUninstall"/>.</summary>
+    /// <param name="Sender">The Uninstall button.</param>
     procedure btnUninstallClick(Sender: TObject);
     /// <summary>Form constructor: detects installed IDEs and populates the check-list, pre-ticking those already registered.</summary>
     procedure FormCreate(Sender: TObject);
@@ -178,12 +180,26 @@ type
     /// copies the appropriate <c>DDevExtensions&lt;Version&gt;.dll</c>, the matching <c>.map</c>
     /// (when present), and <see cref="TEnvData.CompInterceptorDll"/>, then registers the wizard.
     /// </summary>
+    /// <exception cref="Exception">Raised when the install folder cannot be determined or created, a file cannot be copied, or the expert cannot be registered.</exception>
+    /// <param name="EnvData">The IDE target to install into.</param>
     procedure DoInstall(const EnvData: TEnvData);
     /// <summary>
     /// Reverses <see cref="DoInstall"/> for a single IDE target — deletes the files copied at
     /// install time, removes the registry entry and tries to remove the now-empty install dir.
     /// </summary>
+    /// <param name="EnvData">The IDE target to uninstall from.</param>
     procedure DoUninstall(const EnvData: TEnvData);
+    /// <summary>
+    /// True when another IDE row that shares the CompileInterceptor DLL of <paramref name="EnvData"/> (same
+    /// bitness, same install folder) still has DDevExtensions registered, so the DLL must stay.
+    /// </summary>
+    /// <param name="EnvData">The row being uninstalled (already unregistered).</param>
+    /// <returns>True when the shared interceptor DLL is still needed.</returns>
+    function InterceptorStillNeeded(const EnvData: TEnvData): Boolean;
+    /// <summary>Runs <paramref name="Action"/> for every ticked row, carrying on past a failing row, and reports the outcome.</summary>
+    /// <param name="Action">DoInstall or DoUninstall.</param>
+    /// <param name="Verb">Installation or Uninstallation, for the report.</param>
+    procedure ProcessTickedRows(const Action: TProc<TEnvData>; const Verb: string);
   protected
     /// <summary>
     /// Per-frame action-state update: enables the Install / Uninstall buttons only when at
@@ -205,6 +221,7 @@ type
     /// </summary>
     /// <param name="EnvData">Target IDE metadata.</param>
     /// <returns>Absolute install directory (created by <see cref="DoInstall"/> if missing).</returns>
+    /// <exception cref="Exception">The per-user AppData folder could not be determined.</exception>
     function GetInstallDir(const EnvData: TEnvData): string;
   end;
 
@@ -251,6 +268,9 @@ begin
     Result := GetRootDir(EnvData)
   else
     Result := FAppDataDirectory;
+  // An empty AppData path would make this '\DDevExtensions': the root of the current drive
+  if Result = '' then
+    raise Exception.Create( 'The per-user AppData folder could not be determined, so there is nowhere to install to.' );
   Result := Result + '\DDevExtensions';
 end;
 
@@ -259,44 +279,56 @@ begin
   Close;
 end;
 
-procedure TFormMain.btnInstallClick(Sender: TObject);
-var
-  i: Integer;
+procedure TFormMain.ProcessTickedRows(const Action: TProc<TEnvData>; const Verb: string);
 begin
-  pbProgress.Position := 0;
-  pbProgress.Visible := True;
+  var Failures := TStringList.Create;
   try
-    for i := 0 to cbxEnvs.Items.Count - 1 do
-    begin
-      if cbxEnvs.Checked[i] then
-        DoInstall(EnvDatas[TEnvKind(cbxEnvs.Items.Objects[i])]);
-      pbProgress.Position := i + 1;
-      SafeProcessMessages;
+    pbProgress.Position := 0;
+    pbProgress.Visible := True;
+    try
+      // One row failing ( a DLL locked by a running IDE, say ) must not abandon the rows after it, and the
+      // user must be told exactly which rows did not complete
+      for var i := 0 to cbxEnvs.Items.Count - 1 do
+      begin
+        if cbxEnvs.Checked[ i ] then
+        try
+          Action( EnvDatas[ TEnvKind( cbxEnvs.Items.Objects[ i ] ) ] );
+        except
+          on E: Exception do
+            Failures.Add( cbxEnvs.Items[ i ] + ': ' + E.Message );
+        end;
+        pbProgress.Position := i + 1;
+        SafeProcessMessages;
+      end;
+    finally
+      pbProgress.Visible := False;
     end;
-    MessageDlg('Installation was successful.', mtInformation, [mbOk], 0);
+    if Failures.Count = 0 then
+      MessageDlg( Verb + ' was successful.', mtInformation, [ mbOk ], 0 )
+    else
+      MessageDlg( Verb + ' did not complete for:' + sLineBreak + sLineBreak + Failures.Text + sLineBreak +
+        'Close every running Delphi IDE and try again.', mtError, [ mbOk ], 0 );
   finally
-    pbProgress.Visible := False;
+    Failures.Free;
   end;
 end;
 
-procedure TFormMain.btnUninstallClick(Sender: TObject);
-var
-  i: Integer;
+procedure TFormMain.btnInstallClick(Sender: TObject);
 begin
-  pbProgress.Position := 0;
-  pbProgress.Visible := True;
-  try
-    for i := 0 to cbxEnvs.Items.Count - 1 do
+  ProcessTickedRows(
+    procedure(Env: TEnvData)
     begin
-      if cbxEnvs.Checked[i] then
-        DoUninstall(EnvDatas[TEnvKind(cbxEnvs.Items.Objects[i])]);
-      pbProgress.Position := i + 1;
-      SafeProcessMessages;
-    end;
-  finally
-    pbProgress.Visible := False;
-  end;
-  MessageDlg('Uninstallation was successful.', mtInformation, [mbOk], 0)
+      DoInstall( Env );
+    end, 'Installation' );
+end;
+
+procedure TFormMain.btnUninstallClick(Sender: TObject);
+begin
+  ProcessTickedRows(
+    procedure(Env: TEnvData)
+    begin
+      DoUninstall( Env );
+    end, 'Uninstallation' );
 end;
 
 procedure TFormMain.UpdateActions;
@@ -473,7 +505,9 @@ begin
 
   InstallFile(InstallDir, Format('DDevExtensions%s.dll', [EnvData.Version]));
   InstallFile(InstallDir, Format('DDevExtensions%s.map', [EnvData.Version]), False);
-  InstallFile(InstallDir, EnvData.CompInterceptorDll, False);
+  // The 32-bit IDE's Compile Progress loads the interceptor and fails at every IDE start without it, so it is
+  // required there; the 64-bit IDE never loads it
+  InstallFile(InstallDir, EnvData.CompInterceptorDll, SameText( EnvData.ExpertsSubKey, 'Experts' ));
   RegisterExpert(EnvData, 'DDevExtensions', InstallDir + PathDelim + Format('DDevExtensions%s.dll', [EnvData.Version]));
 end;
 
@@ -481,16 +515,31 @@ procedure TFormMain.DoUninstall(const EnvData: TEnvData);
 var
   InstallDir: string;
 begin
+  // Unregister first and always: the registry entry is what makes the IDE load the DLL, so it must go even
+  // when the folder has already gone, and a file that cannot be deleted afterwards ( locked by a running IDE )
+  // then leaves a harmless stray file, not an entry pointing at a missing DLL
+  UnregisterExpert(EnvData, 'DDevExtensions');
   InstallDir := GetInstallDir(EnvData);
   if DirectoryExists(InstallDir) then
   begin
     UninstallFile(InstallDir, Format('DDevExtensions%s.dll', [EnvData.Version]));
     UninstallFile(InstallDir, Format('DDevExtensions%s.map', [EnvData.Version]));
-    UninstallFile(InstallDir, EnvData.CompInterceptorDll);
-    UnregisterExpert(EnvData, 'DDevExtensions');
+    // Every row of one bitness shares this DLL in the one folder: keep it while another IDE still uses it
+    if not InterceptorStillNeeded( EnvData ) then
+      UninstallFile(InstallDir, EnvData.CompInterceptorDll);
 
     RemoveDir(InstallDir); // try to delete the directory
   end;
+end;
+
+function TFormMain.InterceptorStillNeeded(const EnvData: TEnvData): Boolean;
+begin
+  Result := False;
+  for var ek := Low( TEnvKind ) to High( TEnvKind ) do
+    if SameText( EnvDatas[ ek ].CompInterceptorDll, EnvData.CompInterceptorDll ) and
+       not ( SameText( EnvDatas[ ek ].Key, EnvData.Key ) and SameText( EnvDatas[ ek ].ExpertsSubKey, EnvData.ExpertsSubKey ) ) and
+       HasExpert( EnvDatas[ ek ], 'DDevExtensions' ) then
+      Exit( True );
 end;
 
 procedure TFormMain.FormCanResize(Sender: TObject; var NewWidth, NewHeight: Integer;

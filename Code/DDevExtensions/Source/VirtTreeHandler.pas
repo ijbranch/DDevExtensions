@@ -1,4 +1,4 @@
-unit VirtTreeHandler;
+﻿unit VirtTreeHandler;
 
 /// <summary>
 /// Generic adapter that drives the IDE's internal Virtual Tree (the IDE
@@ -116,6 +116,7 @@ type
     /// <summary>Sets the node's selected state.</summary>
     procedure SetSelected(Node: PVirtualNode; const Value: Boolean);
     /// <summary>Returns the currently focused node, or nil.</summary>
+    /// <returns>The tree's focused node, or nil.</returns>
     function GetFocusedNode: PVirtualNode;
     /// <summary>Focuses the given node.</summary>
     procedure SetFocusedNode(Node: PVirtualNode);
@@ -186,6 +187,18 @@ type
     property Images: TCustomImageList read GetImages;
   end;
 
+/// <summary>
+/// Decodes a published property's <c>GetProc</c>/<c>SetProc</c> accessor into the code address of the
+/// accessor method, for a property whose accessor is a method (static or virtual).
+/// </summary>
+/// <param name="Instance">Object whose class supplies the virtual method table.</param>
+/// <param name="Accessor">The raw <c>PPropInfo.GetProc</c> or <c>PPropInfo.SetProc</c> value.</param>
+/// <returns>
+/// The method's code address, or <c>nil</c> when <paramref name="Instance"/> or <paramref name="Accessor"/> is
+/// nil or the accessor is a field (a field accessor has no code to call).
+/// </returns>
+function ResolvePropAccessorCode(Instance: TObject; Accessor: Pointer): Pointer;
+
 implementation
 
 uses
@@ -204,29 +217,29 @@ begin
   raise Exception.Create(Msg);
 end;
 
+function ResolvePropAccessorCode(Instance: TObject; Accessor: Pointer): Pointer;
+begin
+  Result := nil;
+  if ( Instance = nil ) or ( Accessor = nil ) then
+    Exit;
+  // The slot flags occupy the top byte of a pointer-width value: $FF... on Win32 is bits 24..31, on Win64
+  // bits 56..63.  System.TypInfo declares the masks at the right width for the platform being compiled.
+  var Slot := UIntPtr( Accessor ) and UIntPtr( PROPSLOT_MASK );
+  if Slot = UIntPtr( PROPSLOT_FIELD ) then
+    Exit; // a field, not a method: nothing to call
+  if Slot = UIntPtr( PROPSLOT_VIRTUAL ) then
+    // Virtual method: the low 16 bits are the byte offset into the instance's VMT
+    Result := PPointer( PNativeUInt( Instance )^ + ( UIntPtr( Accessor ) and $FFFF ) )^
+  else
+    Result := Accessor; // static method: the value is the code address
+end;
+
 procedure GetPropAccessor(Instance: TObject; Accessor: Pointer; var M);
-type
-  PINT_PTR = ^INT_PTR;
-var
-  Offset: INT_PTR;
 begin
   TMethod(M).Data := Instance;
-  if (Instance = nil) or (Accessor = nil) then
-    TMethod(M).Code := @NotSupported
-  else
-  begin
-    Offset := INT_PTR(Accessor);
-    if (Offset and $FF000000) = $FE000000 then
-    begin
-      // Virtual dispatch, but with offset, not slot
-      TMethod(M).Code := PPointer(PINT_PTR(Instance)^ + SmallInt(Offset))^;
-    end
-    else
-    begin
-      // Static dispatch
-      TMethod(M).Code := Pointer(Offset);
-    end;
-  end;
+  TMethod(M).Code := ResolvePropAccessorCode(Instance, Accessor);
+  if TMethod(M).Code = nil then
+    TMethod(M).Code := @NotSupported;
 end;
 
 { TreePropertyAccessor }
@@ -325,8 +338,13 @@ begin
     if TreeType <> nil then
     begin
       Prop := TreeType.GetProperty('FocusedNode');
-      if Prop <> nil then
-        Result := PVirtualNode(Prop.GetValue(FTree).AsObject);
+      if ( Prop <> nil ) and ( Prop.PropertyType <> nil ) and ( Prop.PropertyType.TypeKind = tkPointer ) then
+      begin
+        // FocusedNode is a pointer type: TValue.AsObject would raise EInvalidCast, so read the raw pointer
+        var Value := Prop.GetValue( FTree );
+        if not Value.IsEmpty then
+          Result := PVirtualNode( PPointer( Value.GetReferenceToRawData )^ );
+      end;
     end;
   finally
     Ctx.Free;

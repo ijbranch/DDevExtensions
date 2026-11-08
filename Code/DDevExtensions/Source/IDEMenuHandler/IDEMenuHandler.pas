@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -36,8 +36,6 @@ type
   /// </summary>
   TIDEMenuHandler = class(TObject)
   private
-    /// <summary>Cached reference to the IDE's Project menu item (used to inject sub-items).</summary>
-    FMenuProject: TMenuItem;
     /// <summary>List of TMenuItem instances created by the handler (frees them on destroy).</summary>
     FMenuItems: TObjectList;
     /// <summary>List of TAction instances created by the handler (frees them on destroy).</summary>
@@ -49,11 +47,6 @@ type
     /// <summary>Cached IDE menu item for View > Swap Source/Form.</summary>
     FViewSwapSourceFormItem: TMenuItem;
     {$ENDIF COMPILER9_UP}
-    {$IFDEF DELPHI2007_UP}
-    /// <summary>Action that triggers the (currently disabled) build-configuration sub-menu.</summary>
-    FActionSetActiveBuildConfiguration: TAction;
-    //FBuildConfigActions: TObjectList;
-    {$ENDIF DELPHI2007_UP}
 
     /// <summary>Action that opens the DDevExtensions File Selector dialog.</summary>
     FActionFileSelector: TAction;
@@ -76,6 +69,7 @@ type
       Execute: TNotifyEvent; InsertAfter, InsertAsChild: Boolean; ShortCut: TShortCut = scNone): TAction;
 
     /// <summary>Shared OnUpdate handler that adjusts visibility/enabled state of injected actions.</summary>
+    /// <param name="Sender">The action being updated.</param>
     procedure ActionUpdate(Sender: TObject);
 
     {$IFDEF COMPILER9_UP}
@@ -160,8 +154,6 @@ begin
   FMenuItems := TObjectList.Create;
   FActionItems := TObjectList.Create;
 
-  FMenuProject := FindMenuItem('ProjectMenu');
-
   {$IFDEF COMPILER9_UP}
   {$IFNDEF DELPHI2007_UP}
   FViewSwapSourceFormItem := FindMenuItem('ViewSwapSourceFormItem');
@@ -234,11 +226,6 @@ end;
 
 procedure TIDEMenuHandler.ActionUpdate(Sender: TObject);
 var
-  {$IFDEF DELPHI2007_UP}
-  //ActiveConfig, Config: IBuildConfiguration;
-  MenuProjectBuildConfigsItem: TMenuItem;
-  i: Integer;
-  {$ENDIF DELPHI2007_UP}
   IsDelphiPers, IsDelphiNetPers: Boolean;
 begin
   {$IFDEF COMPILER6_UP}
@@ -263,73 +250,9 @@ begin
     FActionFileSelector.Enabled := FActionFileSelector.Visible;
   end;
 
-  {$IFDEF DELPHI2007_UP}
-  { The ProjectBuildConfigsItem is created by the CBuilder-Personality and that
-    is too late for the PluginInit code. So we create the menu item here. }
-  // Re-resolve the Project menu each tick: the cached pointer can be freed when
-  // the IDE rebuilds the menu (personality switch / project-group reload), and
-  // Assigned() would still see a stale non-nil pointer (AV risk on the loop).
-  FMenuProject := FindMenuItem('ProjectMenu');
-  if Assigned(FMenuProject) and not Assigned(FActionSetActiveBuildConfiguration) then
-  begin
-    MenuProjectBuildConfigsItem := nil;
-    for i := 0 to FMenuProject.Count - 1 do
-    begin
-      if FMenuProject.Items[i].Name = 'ProjectBuildConfigsItem' then
-      begin
-        MenuProjectBuildConfigsItem := FMenuProject.Items[i];
-        Break;
-      end;
-    end;
-    if Assigned(MenuProjectBuildConfigsItem) then
-    begin
-      FActionSetActiveBuildConfiguration := AddMenuAction('ProjectMenu', MenuProjectBuildConfigsItem.Name,
-        'MenuProjectSetActiveBuildConfigItem', RsSetActiveBuildConfiguration, nil, False, False);
-      FActionSetActiveBuildConfiguration.OnUpdate := ActionUpdate;
-    end;
-  end;
-
-  if Assigned(FActionSetActiveBuildConfiguration) then
-    FActionSetActiveBuildConfiguration.Visible := IsDelphiPers;
-
-  if Assigned(FActionSetActiveBuildConfiguration) and (Sender = FActionSetActiveBuildConfiguration) then
-  begin
-    { Easier Build Configuration selection }
-(*    ProjOpts := nil;
-    if (ActiveProject <> nil) and not Active then
-      ProjOpts := GetProjectOptions(ActiveProject);
-
-    FActionSetActiveBuildConfiguration.Enabled := (ProjOpts <> nil) and (ProjOpts.GetBuildConfigurationCount > 1);
-
-    TMenuItem(FActionSetActiveBuildConfiguration.Tag).Clear;
-    FBuildConfigActions.Clear;
-    if (ProjOpts <> nil) and FActionSetActiveBuildConfiguration.Enabled then
-    begin
-      { Build sub menu }
-      ActiveConfig := ProjOpts.GetActiveConfiguration;
-      for i := 0 to ProjOpts.GetBuildConfigurationCount - 1 do
-      begin
-        Config := ProjOpts.GetBuildConfiguration(i);
-        SubAction := TAction.Create(nil);
-        SubAction.Caption := Config.Name;
-        SubAction.Hint := Config.Name;
-        SubAction.Tag := i;
-        SubAction.AutoCheck := True;
-        SubAction.Checked := Config = ActiveConfig;
-        SubAction.OnExecute := DoExecuteSetActiveBuildConfig;
-
-        MenuItem := TMenuItem.Create(SubAction);
-        MenuItem.Name := 'bcc32pch_MenuItemBuildConfig' + IntToStr(i);
-        MenuItem.Action := SubAction;
-        MenuItem.RadioItem := True;
-
-        FBuildConfigActions.Add(SubAction);
-        NServices.AddActionMenu(TMenuItem(FActionSetActiveBuildConfiguration.Tag).Name, SubAction, MenuItem, True, True);
-      end;
-    end;*)
-  end
-
-  {$ENDIF DELPHI2007_UP}
+  // ( The Project > "Set active build configuration" item that used to be created here had no OnExecute -
+  // its body was commented out years ago - yet showed enabled, and finding the Project menu cost a scan of
+  // the IDE main form's components on every idle tick.  It is no longer created. )
 end;
 
 function TIDEMenuHandler.AddMenuAction(const BaseMainItemName, BaseItemName, ItemName, Caption: string;

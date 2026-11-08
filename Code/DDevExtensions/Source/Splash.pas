@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -29,8 +29,6 @@ uses
 
 /// <summary>Registers the DDevExtensions name/bitmap with the IDE splash screen and starts the IDE-loaded poll timer.</summary>
 procedure ShowOnSplashScreen;
-/// <summary>Updates the (legacy) progress label shown during plug-in initialisation.</summary>
-procedure SetSplashProgress(const Text: string);
 /// <summary>Cancels the IDE-loaded poll timer (called during plug-in unload).</summary>
 procedure DoneSplash;
 
@@ -42,45 +40,26 @@ uses
 {$R Splash.res}
 
 var
-  LblProgress: TLabel;
+  /// <summary>Id of the IDE-loaded poll timer; 0 when none is running (SetTimer never returns 0 for a timer).</summary>
+  InitTimerId: UINT_PTR = 0;
 
-type
-  TSplashScreen = class(TComponent)
-  public
-    destructor Destroy; override;
-  end;
-
-destructor TSplashScreen.Destroy;
-begin
-  LblProgress := nil;
-  IDELoaded;
-  if Supports(BorlandIDEServices, IOTAAboutBoxServices) then
-    (BorlandIDEServices as IOTAAboutBoxServices).AddPluginInfo(sPluginName, 'DDevExtensions - Extensions for the IDE' +
-       sLineBreak + sLineBreak + sPluginSmallCopyright, 0);
-  inherited Destroy;
-end;
-
-procedure SetSplashProgress(const Text: string);
-begin
-  if Assigned(LblProgress) then
-    LblProgress.Caption := Text;
-end;
-
-var
-  InitTimerId: Integer = -1;
-
-procedure IsIDELoaded(wnd: HWND; Msg: Cardinal; idEvent: Cardinal; time: LongWord); stdcall;
+/// <summary>TIMERPROC polling for the IDE main form; calls <see cref="Main.IDELoaded"/> once it is visible.</summary>
+/// <param name="wnd">Unused (thread timer).</param>
+/// <param name="Msg">Always WM_TIMER.</param>
+/// <param name="idEvent">The timer id (pointer-width, as the TIMERPROC declares it).</param>
+/// <param name="time">Tick count; unused.</param>
+procedure IsIDELoaded(wnd: HWND; Msg: UINT; idEvent: UINT_PTR; time: DWORD); stdcall;
 begin
   if (Application = nil) or Application.Terminated then
   begin
     KillTimer(0, InitTimerId);
-    InitTimerId := -1;
+    InitTimerId := 0;
   end
   else
   if (Application.MainForm <> nil) and Application.MainForm.Visible then
   begin
     KillTimer(0, InitTimerId);
-    InitTimerId := -1;
+    InitTimerId := 0;
     IDELoaded;
   end;
 end;
@@ -96,17 +75,18 @@ begin
     SplashScreenServices.AddPluginBitmap(sPluginName, LoadBitmap(Hinstance, 'DDEVEXTENSIONSLOGO'));
   end;
 
-  if InitTimerId <> -1 then
+  if InitTimerId <> 0 then
     KillTimer(0, InitTimerId);
-  InitTimerId := -1;
+  InitTimerId := 0;
   if not SplashScreenInit then
     InitTimerId := SetTimer(0, 0, 100, @IsIDELoaded);
 end;
 
 procedure DoneSplash;
 begin
-  if InitTimerId <> -1 then
+  if InitTimerId <> 0 then
     KillTimer(0, InitTimerId);
+  InitTimerId := 0;
 end;
 
 end.

@@ -84,7 +84,17 @@ uses
   UnitMetrics in '..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas',
   TestUnitMetricsDUnitX in 'TestUnitMetricsDUnitX.pas',
   FrmExcelExport in '..\Code\DDevExtensions\Source\ExcelExport\FrmExcelExport.pas' {FormExcelExport},
-  TestExcelExportDUnitX in 'TestExcelExportDUnitX.pas';
+  TestExcelExportDUnitX in 'TestExcelExportDUnitX.pas',
+  IDEHooks in '..\Shared\IDE\IDEHooks.pas',
+  VirtTreeHandler in '..\Code\DDevExtensions\Source\VirtTreeHandler.pas',
+  TestVirtTreeHandlerDUnitX in 'TestVirtTreeHandlerDUnitX.pas',
+  InterceptIntf in '..\CompileInterceptor\Source\InterceptIntf.pas',
+  InterceptDispatch in '..\CompileInterceptor\Source\InterceptDispatch.pas',
+  TestInterceptDispatchDUnitX in 'TestInterceptDispatchDUnitX.pas',
+  PluginConfigCore in '..\Code\DDevExtensions\Source\PluginConfigCore.pas',
+  TestPluginConfigCoreDUnitX in 'TestPluginConfigCoreDUnitX.pas',
+  FeatureSwitches in '..\Code\DDevExtensions\Source\FeatureSwitches.pas',
+  TestFeatureSwitchesDUnitX in 'TestFeatureSwitchesDUnitX.pas';
 
 {$R *.res}
 

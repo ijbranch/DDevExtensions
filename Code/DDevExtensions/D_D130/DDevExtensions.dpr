@@ -24,15 +24,15 @@ library DDevExtensions;
 {$I ..\Source\DelphiExtension.inc}
 
 uses
-  Windows,
-  SysUtils,
-  Classes,
-  Forms,
-  Graphics,
-  StdCtrls,
-  ExtCtrls,
+  Winapi.Windows,
+  System.SysUtils,
+  System.Classes,
+  Vcl.Forms,
+  Vcl.Graphics,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
   ToolsAPI,
-  Dialogs,
+  Vcl.Dialogs,
   Main in '..\Source\Main.pas',
   AppConsts in '..\Source\AppConsts.pas',
   Splash in '..\Source\Splash.pas',
@@ -49,9 +49,11 @@ uses
   FrmeOptionPageUnitSelector in '..\Source\UnitSelector\FrmeOptionPageUnitSelector.pas' {FrameOptionPageUnitSelector: TFrame},
   FrmeOptionPageKeybindings in '..\Source\Keybindings\FrmeOptionPageKeybindings.pas' {FrameOptionPageKeybindings: TFrame},
   PluginConfig in '..\Source\PluginConfig.pas',
+  PluginConfigCore in '..\Source\PluginConfigCore.pas',
   FrmeOptionPageFileCleaner in '..\Source\FileCleaner\FrmeOptionPageFileCleaner.pas' {FrameOptionPageFileCleaner: TFrame},
   FrmeOptionPageCompileBackup in '..\Source\CompileBackup\FrmeOptionPageCompileBackup.pas' {FrameOptionPageCompileBackup: TFrame},
   RegisterPlugins in '..\Source\RegisterPlugins.pas',
+  FeatureSwitches in '..\Source\FeatureSwitches.pas',
   LabelMarginHelper in '..\Source\FormDesignerHelpers\LabelMarginHelper.pas',
   FrmeOptionPageFormDesigner in '..\Source\FormDesignerHelpers\FrmeOptionPageFormDesigner.pas' {FrameOptionPageFormDesigner: TFrame},
   FrmeBase in '..\Source\FrmeBase.pas' {FrameBase: TFrame},
@@ -179,6 +181,8 @@ begin
     begin
       {$IFNDEF CPUX64}
       MessageBox(0, PChar(E.Message), PChar('DDevExtensions - ' + string(E.ClassName)), MB_OK or MB_ICONERROR);
+      {$ELSE}
+      LogWin64UnloadStep('DoneWizard', E); // silent on screen, but never without a trace
       {$ENDIF}
       // Win64: the IDE tears down design-time BPLs (notably ElevateDB's
       // edbrun240rsdelphiwin6413.bpl) in a different order than Win32, and a
@@ -208,7 +212,16 @@ begin
     );
   end;
 
-  InstallHooks;
+  // No exception may leave this stdcall entry point into the IDE's expert loader: it would arrive there
+  // with no word of which expert failed.  Report it here, and keep Terminate so DoneWizard still undoes
+  // whatever part of InstallHooks did run.
+  try
+    InstallHooks;
+  except
+    on E: Exception do
+      MessageBox(0, PChar('DDevExtensions could not start completely:' + sLineBreak + sLineBreak +
+        string(E.ClassName) + ': ' + E.Message), 'DDevExtensions', MB_OK or MB_ICONERROR or MB_TASKMODAL);
+  end;
 end;
 
 exports

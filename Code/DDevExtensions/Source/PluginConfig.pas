@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -28,7 +28,8 @@ unit PluginConfig;
 interface
 
 uses
-  System.Variants, System.SysUtils, System.Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, System.TypInfo;
+  System.Variants, System.SysUtils, System.Classes, SimpleXmlIntf, SimpleXmlImport, FrmTreePages, System.TypInfo,
+  PluginConfigCore;
 
 type
   /// <summary>
@@ -67,10 +68,13 @@ type
     /// <param name="AFilename">Legacy stand-alone XML filename (used for one-off migration).</param>
     /// <param name="ARootNodeName">Name of the XML root node used for this plug-in's settings.</param>
     constructor Create(const AFilename, ARootNodeName: string); reintroduce;
+    /// <summary>Withdraws this configuration's option pages, so the Options dialog never calls into a freed object.</summary>
+    destructor Destroy; override;
 
     /// <summary>Streams every supported published property of <c>Self</c> into <paramref name="Node"/>.</summary>
     procedure SaveToXml(Node: IXmlNode); virtual;
     /// <summary>Loads every supported published property of <c>Self</c> from <paramref name="Node"/>.</summary>
+    /// <param name="Node">The XML node holding this plug-in's settings.</param>
     procedure LoadFromXml(Node: IXmlNode); virtual;
 
     /// <summary>Persists current settings into the shared <see cref="TConfiguration"/> document.</summary>
@@ -94,6 +98,20 @@ type
     FUpdateLock: Integer;
     /// <summary>The underlying XML document.</summary>
     FXml: IXmlDocument;
+    /// <summary>
+    /// True when the settings file could not be read and could not be moved aside either: saving would then
+    /// overwrite the user's only copy, so <see cref="Save"/> does nothing for the rest of the session.
+    /// </summary>
+    FSaveBlocked: Boolean;
+    /// <summary>Starts a new, empty document with a <c>DDevExtensions</c> root element.</summary>
+    procedure NewDocument;
+    /// <summary>
+    /// Handles a settings file that failed to load.  A damaged file (opened, but would not parse) is moved aside;
+    /// a file that could not be opened is left alone and saving is blocked for the session.  Warns once.
+    /// </summary>
+    /// <param name="Outcome">Why the load failed: <c>sloUnreadable</c> or <c>sloLocked</c>.</param>
+    /// <param name="Reason">The last load error, for the warning.</param>
+    procedure HandleLoadFailure(Outcome: TSettingsLoadOutcome; const Reason: string);
   public
     /// <summary>Creates an empty in-memory document with a <c>DDevExtensions</c> root element.</summary>
     constructor Create;
@@ -114,8 +132,14 @@ type
     /// <summary>Saves the document to a specific path without changing <see cref="Filename"/>.</summary>
     procedure SaveToFile(const AFilename: string);
     /// <summary>Loads the document from a file (creates an empty document if the file does not exist).</summary>
+    /// <exception cref="EInOutError">Raised and handled internally to classify a document with no root element; it never reaches the caller.</exception>
+    /// <param name="AFilename">The settings file to load.</param>
     procedure LoadFromFile(const AFilename: string);
-    /// <summary>Saves the document to <see cref="Filename"/>.</summary>
+    /// <summary>
+    /// Saves the document to <see cref="Filename"/> through a temporary file that then replaces it in one step,
+    /// so a crash mid-save cannot truncate the settings.  Does nothing while saving is blocked after a failed load.
+    /// </summary>
+    /// <exception cref="EInOutError">The finished temporary file could not replace the settings file.</exception>
     procedure Save;
 
     /// <summary>Begins a batch update; pairs with <see cref="EndUpdate"/> to defer writes.</summary>
@@ -134,6 +158,12 @@ implementation
 
 uses
   Winapi.Windows, FrmDDevExtOptions, IDEUtils, IDEHooks, Main;
+
+const
+  /// <summary>How many times <see cref="TConfiguration.LoadFromFile"/> tries to open and parse the settings file.</summary>
+  SettingsLoadAttempts = 4;
+  /// <summary>Pause between those attempts; 3 pauses of 150 ms keep the total under a second.</summary>
+  SettingsLoadRetryDelayMs = 150;
 
 var
   GlobalConfiguration: TConfiguration;
@@ -188,6 +218,12 @@ end;
 
 procedure TPluginConfig.Init;
 begin
+end;
+
+destructor TPluginConfig.Destroy;
+begin
+  TFormDDevExtOptions.UnregisterPages( GetOptionPages );
+  inherited Destroy;
 end;
 
 procedure TPluginConfig.LoadFromFile(const Filename: string);
@@ -294,8 +330,11 @@ begin
              (AnsiCompareText(PropName, 'Name') <> 0) then
           begin
             Xml := Node.ChildNodes.FindNode(PropName);
-            if (Xml <> nil) and ((PropList[i].PropType^.Kind in [tkString, tkUString, tkLString, tkWString, tkVariant]) or (Xml.Attributes['Value'] <> Null)) then
-            begin
+            // The XML wrapper returns '' for a missing attribute, so test for a real value: an integer or float
+            // property given '' raised EVariantTypeCastError and took the whole feature down with it
+            if (Xml <> nil) and ((PropList[i].PropType^.Kind in [tkString, tkUString, tkLString, tkWString, tkVariant, tkClass]) or
+               XmlValuePresent(Xml.Attributes['Value'])) then
+            try
               case PropList[i].PropType^.Kind of
                 tkInteger:
                   SetOrdProp(Self, PropList[i], Xml.Attributes['Value']);
@@ -323,10 +362,14 @@ begin
                     begin
                       N := Node.ChildNodes.FindNode(PropName);
                       if N <> nil then
-                        TStrings(Obj).CommaText := N.NodeValue;
+                        TStrings(Obj).CommaText := VarToStr(N.NodeValue); // an empty list's node has a Null value
                     end;
                   end;
               end;
+            except
+              on E: EVariantError do
+                // Keep the default for this one property; the others still load
+                OutputDebugString(PChar('PluginConfig: ' + RootNodeName + '.' + PropName + ' ignored - ' + E.Message));
             end;
           end;
         end;
@@ -348,8 +391,37 @@ end;
 constructor TConfiguration.Create;
 begin
   inherited Create;
+  NewDocument;
+end;
+
+procedure TConfiguration.NewDocument;
+begin
   FXml := NewXmlDocument;
   FXml.DocumentElement := FXml.CreateElement('DDevExtensions', '');
+end;
+
+procedure TConfiguration.HandleLoadFailure(Outcome: TSettingsLoadOutcome; const Reason: string);
+begin
+  // Start from defaults, but never let the next save overwrite the file: it is the user's only copy of every
+  // feature's settings
+  NewDocument;
+  var Text := Format( 'DDevExtensions could not read its settings file:' + sLineBreak + '%s' + sLineBreak + sLineBreak +
+    '%s' + sLineBreak + sLineBreak, [ Filename, Reason ] );
+  var Moved: string;
+  if ( Outcome = sloUnreadable ) and QuarantineFile( Filename, Now, Moved ) then
+    // Damaged content: move it aside, so a fresh file can be written and the old one recovered by hand
+    Text := Text + 'The file has been moved to:' + sLineBreak + Moved + sLineBreak + sLineBreak +
+      'Default settings are in use; a new settings file will be written when an option is changed.'
+  else
+  begin
+    // Could not be opened ( another IDE may hold it ), or could not be moved: its content may be good, so leave
+    // it exactly where it is and save nothing this session
+    FSaveBlocked := True;
+    Text := Text + 'The file has been left as it is, and settings will not be saved this session.  Default ' +
+      'settings are in use; restart the IDE to try again.';
+  end;
+  OutputDebugString( PChar( Text ) );
+  MessageBox( 0, PChar( Text ), 'DDevExtensions', MB_OK or MB_ICONWARNING or MB_TASKMODAL );
 end;
 
 destructor TConfiguration.Destroy;
@@ -396,19 +468,24 @@ end;
 procedure TConfiguration.LoadFromFile(const AFilename: string);
 begin
   FFilename := AFilename;
-  try
-    if FileExists(Filename) then
-      FXml := LoadXmlDocument(AFilename)
-    else
-    begin
-      FXml := NewXmlDocument;
-      FXml.DocumentElement := FXml.CreateElement('DDevExtensions', '');
-    end;
-    FXml.Options := FXml.Options + [doNodeAutoIndent];
-  except
-    if Assigned(ApplicationHandleException) then
-      ApplicationHandleException(Self);
-  end;
+  FSaveBlocked := False;
+  if FileExists(Filename) then
+  begin
+    // A few short retries ( under a second in all ): the other-bitness IDE may be saving the file right now
+    var Reason: string;
+    var Outcome := LoadSettingsWithRetry( Filename,
+      procedure(Name: string)
+      begin
+        FXml := LoadXmlDocument( Name );
+        if FXml.DocumentElement = nil then
+          raise EInOutError.Create( 'The file has no root element' );
+      end, SettingsLoadAttempts, SettingsLoadRetryDelayMs, Reason );
+    if Outcome <> sloLoaded then
+      HandleLoadFailure( Outcome, Reason );
+  end
+  else
+    NewDocument;
+  FXml.Options := FXml.Options + [doNodeAutoIndent];
   FModified := False;
 end;
 
@@ -422,9 +499,18 @@ end;
 procedure TConfiguration.Save;
 begin
   Assert(Filename <> '');
+  if FSaveBlocked then
+    Exit;
 
   ForceDirectories(ExtractFileDir(Filename));
-  FXml.SaveToFile(Filename);
+  var TempName := TempFileNameFor( Filename );
+  try
+    FXml.SaveToFile( TempName );
+  except
+    System.SysUtils.DeleteFile( TempName );
+    raise;
+  end;
+  ReplaceFileAtomically( TempName, Filename );
   FModified := False;
 end;
 

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -17,9 +17,8 @@ unit FrmeBase;
 /// so the tree-page host can manage layout.
 /// </summary>
 /// <remarks>
-/// The constructor temporarily redirects <c>TReader.NewInstance</c> via
-/// virtual-method patching so missing properties on legacy DFMs do not raise
-/// during loading.
+/// <see cref="TFrameBase.ReadState"/> lets an option page's DFM load past a property this IDE version does not
+/// know, logging what it skipped.
 /// </remarks>
 
 {$I DelphiExtension.inc}
@@ -49,15 +48,27 @@ type
     lblCaption: TLabel;
   private
     { Private-Deklarationen }
+    /// <summary>Reader error handler: skips the offending DFM entry and logs it, instead of failing the page.</summary>
+    /// <param name="Reader">The reader streaming this frame.</param>
+    /// <param name="Message">The reader's error message.</param>
+    /// <param name="Handled">Set to True to carry on reading.</param>
+    procedure ReaderError(Reader: TReader; const Message: string; var Handled: Boolean);
   protected
     /// <summary>Sets the page caption shown at the top of the frame.</summary>
     procedure SetTitle(const ACaption: string);
+    /// <summary>
+    /// Streams the frame's DFM with <see cref="ReaderError"/> attached to this reader only.  The handler used to
+    /// be installed by patching the VMT of the RTL's shared <c>TReader</c> class for the whole IDE while the frame
+    /// loaded, which also silenced DFM errors of any other form streamed in that window.
+    /// </summary>
+    /// <param name="Reader">The reader streaming this frame (one per inheritance level).</param>
+    procedure ReadState(Reader: TReader); override;
   public
     { Public-Deklarationen }
     /// <summary>
-    /// Constructs the frame, suppressing reader errors for unknown DFM
-    /// properties via temporary virtual-method patching of <c>TReader</c>.
+    /// Constructs the frame (DFM reader errors are handled by <see cref="ReadState"/>) and aligns it to its host.
     /// </summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
   end;
 
@@ -65,58 +76,23 @@ implementation
 
 {$R *.dfm}
 
-type
-  PPointer = ^Pointer;
-  {$IF not declared(SIZE_T)}
-  SIZE_T = DWORD;
-  {$IFEND}
+{ TFrameBase }
 
-function GetVirtualMethod(AClass: TClass; const Index: Integer): Pointer;
+procedure TFrameBase.ReaderError(Reader: TReader; const Message: string; var Handled: Boolean);
 begin
-  Result := PPointer(PAnsiChar(AClass) + Index * SizeOf(Pointer))^;
-end;
-
-procedure SetVirtualMethod(AClass: TClass; const Index: Integer; const Method: Pointer);
-var
-  WrittenBytes: SIZE_T;
-  PatchAddress: PPointer;
-begin
-  PatchAddress := Pointer(PAnsiChar(AClass) + Index * SizeOf(Pointer));
-  WriteProcessMemory(GetCurrentProcess, PatchAddress, @Method, SizeOf(Method), WrittenBytes);
-end;
-
-procedure ReaderError(Self: TObject; Reader: TReader; const Message: string; var Handled: Boolean);
-begin
+  OutputDebugString( PChar( 'DDevExtensions ' + ClassName + ': DFM entry skipped - ' + Message ) );
   Handled := True;
 end;
 
-function IgnoreReader_NewInstance(AClass: TClass): TObject;
-var
-  M: TMethod;
+procedure TFrameBase.ReadState(Reader: TReader);
 begin
-  M.Code := @ReaderError;
-  M.Data := nil;
-  Result := TReader.NewInstance;
-  TReader(Result).OnError := TReaderError(M);
+  Reader.OnError := ReaderError;
+  inherited ReadState( Reader );
 end;
 
-{ TFrameBase }
-
 constructor TFrameBase.Create(AOwner: TComponent);
-const
-  {$WARNINGS OFF}
-  Index = vmtNewInstance div SizeOf(Pointer);
-  {$WARNINGS ON}
-var
-  NewInst: procedure;
 begin
-  NewInst := GetVirtualMethod(TReader, Index);
-  try
-    SetVirtualMethod(TReader, Index, @IgnoreReader_NewInstance);
-    inherited Create(AOwner);
-  finally
-    SetVirtualMethod(TReader, Index, @NewInst);
-  end;
+  inherited Create(AOwner);
 
   Align := alClient;
   {$IFDEF COMPILER7_UP}

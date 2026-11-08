@@ -1,4 +1,4 @@
-unit TaskbarIntf;
+﻿unit TaskbarIntf;
 
 /// <summary>
 /// Delphi import declarations for the Windows 7+ Shell Taskbar API
@@ -243,6 +243,9 @@ function CreateTaskbarList: ITaskbarList;
 
 implementation
 
+uses
+  System.SysUtils;
+
 var
   CoInitialized: Boolean = False;
 
@@ -256,7 +259,9 @@ begin
     end;
   end;
 
-  Result := ITaskbarList(CreateComObject(CLSID_TaskbarList));
+  // Ask the object for the interface ( QueryInterface ) instead of hard-casting the IUnknown it returns
+  if not Supports( CreateComObject( CLSID_TaskbarList ), ITaskbarList, Result ) then
+    Result := nil;
   if Result <> nil then
     Result.HrInit;
 end;

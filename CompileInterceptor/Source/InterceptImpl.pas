@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -20,7 +20,7 @@ unit InterceptImpl;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, FileStreams, InterceptIntf;
+  System.SysUtils, System.Classes, FileStreams, InterceptIntf, InterceptDispatch;
 
 type
   /// <summary>
@@ -30,87 +30,99 @@ type
   /// </summary>
   TCompileInterceptorServices = class(TComponent, ICompileInterceptorServices)
   private
-    /// <summary>Registered <see cref="ICompileInterceptor"/> instances in registration order.</summary>
-    FItems: TInterfaceList;
-    /// <summary>Registration IDs, parallel to <see cref="FItems"/>.</summary>
-    FIds: TList;
-    /// <summary>Cached <see cref="TCompileInterceptOptions"/> values, parallel to <see cref="FItems"/>.</summary>
-    FOptions: TList;
-    /// <summary>Cached "any plug-in implements <c>AlterFile</c>" flag.</summary>
-    FHasAlterFile: Boolean;
-    /// <summary>Cached "any plug-in implements virtual file opening" flag.</summary>
-    FHasVirtualFiles: Boolean;
-    /// <summary>Cached "any plug-in implements <c>InspectFilename</c>" flag.</summary>
-    FHasInspectFilename: Boolean;
-    /// <summary>Cached "any plug-in implements <c>AlterMessage</c>" flag.</summary>
-    FHasAlterMessage: Boolean;
-    /// <summary>Cached "any plug-in implements <c>CompileProject</c>" flag.</summary>
-    FHasCompileProjects: Boolean;
-    /// <summary>Cached "any plug-in implements virtual output file creation" flag.</summary>
-    FHasVirtualOutFiles: Boolean;
-    /// <summary>Cached "any plug-in implements <c>FileNameDate</c>" flag.</summary>
-    FHasFileNameDates: Boolean;
+    /// <summary>The registrations and the event dispatch (see <c>InterceptDispatch</c>).</summary>
+    FRegistry: TInterceptorRegistry;
     /// <summary>Returns the count of registered interceptors.</summary>
+    /// <returns>The count.</returns>
     function GetCount: Integer;
-    /// <summary>Returns the registered interceptor at <paramref name="Index"/>.</summary>
-    function GetItem(Index: Integer): ICompileInterceptor;
-    /// <summary>Returns the cached options for the interceptor at <paramref name="Index"/>.</summary>
-    function GetOption(Index: Integer): TCompileInterceptOptions;
-    /// <summary>Recomputes the <c>FHas...</c> flags from the current option list (called after unregister).</summary>
-    procedure UpdateOptionCache;
+    /// <summary>Reads one <c>CIO_*</c> flag from the registry's option cache.</summary>
+    /// <param name="Index">The flag.</param>
+    /// <returns>True when any registered interceptor reports the flag.</returns>
+    function GetHasOption(Index: Integer): Boolean;
   public
     /// <summary>Creates the service container.</summary>
+    /// <param name="AOwner">Component owner (nil for the DLL's singleton).</param>
     constructor Create(AOwner: TComponent); override;
-    /// <summary>Releases the registered plug-ins and internal lists.</summary>
+    /// <summary>Releases the registered plug-ins and the registry.</summary>
     destructor Destroy; override;
   public
     { ICompileInterceptorServices }
     /// <summary>Registers a plug-in and returns the ID to pass back to <see cref="UnregisterInterceptor"/>.</summary>
+    /// <param name="Interceptor">The plug-in's interceptor.</param>
+    /// <returns>The registration id, or -1 when nothing was registered.</returns>
     function RegisterInterceptor(Interceptor: ICompileInterceptor): Integer; stdcall;
-    /// <summary>Unregisters the plug-in previously registered with the given <paramref name="Id"/>.</summary>
+    /// <summary>Unregisters the plug-in previously registered with the given <paramref name="Id"/>; an unknown id is ignored.</summary>
+    /// <param name="Id">Registration id.</param>
     procedure UnregisterInterceptor(Id: Integer); stdcall;
     /// <summary>Returns a virtual stream over the editor or on-disk content of <paramref name="Filename"/>.</summary>
+    /// <param name="Filename">The file.</param>
+    /// <returns>The content, or nil when the file cannot be opened.</returns>
     function GetFileContent(Filename: PWideChar): IVirtualStream; stdcall;
   public
     /// <summary>Asks each registered plug-in (in reverse registration order) to open a virtual file.</summary>
+    /// <param name="Filename">UTF-8 file name from the compiler.</param>
+    /// <param name="Stream">The virtual content, or nil.</param>
+    /// <returns>True when a plug-in answered.</returns>
     function OpenVirtualFile(Filename: PAnsiChar; out Stream: IVirtualStream): Boolean;
     /// <summary>Asks each registered plug-in to provide a virtual output stream for a file create.</summary>
+    /// <param name="Filename">UTF-8 file name from the compiler.</param>
+    /// <param name="Stream">The virtual output, or nil.</param>
+    /// <returns>True when a plug-in answered.</returns>
     function CreateVirtualFile(Filename: PAnsiChar; out Stream: IVirtualOutStream): Boolean;
     /// <summary>Lets registered plug-ins alter the content of a file just opened by the compiler.</summary>
+    /// <param name="Filename">UTF-8 file name from the compiler.</param>
+    /// <param name="Content">The original content.</param>
+    /// <param name="FileDate">The file's date stamp.</param>
+    /// <param name="FileSize">Size of <paramref name="Content"/>.</param>
+    /// <returns>The altered content, or nil.</returns>
     function AlterFile(Filename: PAnsiChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream;
     /// <summary>Notifies registered plug-ins that the compiler has opened or created <paramref name="Filename"/>.</summary>
+    /// <param name="Filename">UTF-8 file name from the compiler.</param>
+    /// <param name="FileMode">Opened or created.</param>
     procedure InspectFilename(Filename: PAnsiChar; FileMode: TInspectFileMode);
     /// <summary>Lets registered plug-ins alter a compiler/linker message before it is emitted.</summary>
+    /// <param name="IsCompilerMessage">True for a multi-line compiler message.</param>
+    /// <param name="MsgKind">Message kind.</param>
+    /// <param name="Code">Message code.</param>
+    /// <param name="Filename">File name, UTF-8.</param>
+    /// <param name="Line">Line.</param>
+    /// <param name="Column">Column.</param>
+    /// <param name="Msg">Message text, UTF-8.</param>
     /// <returns><c>True</c> if any plug-in modified one of the in/out parameters.</returns>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String): Boolean;
     /// <summary>Notifies plug-ins that a project compile is about to start; any plug-in may set <paramref name="Cancel"/>.</summary>
+    /// <param name="ProjectFilename">The project file.</param>
+    /// <param name="UnitPaths">Unit search path.</param>
+    /// <param name="SourcePaths">Source search path.</param>
+    /// <param name="DcuOutputDir">DCU output folder.</param>
+    /// <param name="IsCodeInsight">True for a Code Insight compile.</param>
+    /// <param name="Cancel">Set to cancel the compile.</param>
     procedure CompileProject(const ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: string;
       IsCodeInsight: Boolean; var Cancel: Boolean);
     /// <summary>Asks plug-ins to resolve the file timestamp for <paramref name="Filename"/>.</summary>
+    /// <param name="Filename">UTF-8 file name from the compiler.</param>
+    /// <param name="FileDate">The date stamp.</param>
+    /// <returns>True when a plug-in answered.</returns>
     function FileNameDate(Filename: PAnsiChar; out FileDate: Integer): Boolean;
 
     /// <summary>Number of registered plug-ins.</summary>
     property Count: Integer read GetCount;
-    /// <summary>Registered plug-ins indexed by registration order.</summary>
-    property Items[Index: Integer]: ICompileInterceptor read GetItem; default;
-    /// <summary>Cached option masks for each registered plug-in.</summary>
-    property Options[Index: Integer]: TCompileInterceptOptions read GetOption;
 
     /// <summary>True when at least one registered plug-in advertises <c>CIO_ALTERFILES</c>.</summary>
-    property HasAlterFile: Boolean read FHasAlterFile;
+    property HasAlterFile: Boolean index CIO_ALTERFILES read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_VIRTUALFILES</c>.</summary>
-    property HasVirtualFiles: Boolean read FHasVirtualFiles;
+    property HasVirtualFiles: Boolean index CIO_VIRTUALFILES read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_VIRTUALOUTFILES</c>.</summary>
-    property HasVirtualOutFiles: Boolean read FHasVirtualOutFiles;
+    property HasVirtualOutFiles: Boolean index CIO_VIRTUALOUTFILES read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_INSPECTFILENAMES</c>.</summary>
-    property HasInspectFilename: Boolean read FHasInspectFilename;
+    property HasInspectFilename: Boolean index CIO_INSPECTFILENAMES read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_ALTERMESSAGES</c>.</summary>
-    property HasAlterMessage: Boolean read FHasAlterMessage;
+    property HasAlterMessage: Boolean index CIO_ALTERMESSAGES read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_COMPILEPROJECTS</c>.</summary>
-    property HasCompileProjects: Boolean read FHasCompileProjects;
+    property HasCompileProjects: Boolean index CIO_COMPILEPROJECTS read GetHasOption;
     /// <summary>True when at least one registered plug-in advertises <c>CIO_FILENAMEDATES</c>.</summary>
-    property HasFileNameDate: Boolean read FHasFileNameDates;
+    property HasFileNameDate: Boolean index CIO_FILENAMEDATES read GetHasOption;
   end;
 
   /// <summary>
@@ -183,7 +195,7 @@ var
 implementation
 
 uses
-  CompilerHooks, IdeDllNames;
+  Winapi.Windows, CompilerHooks, IdeDllNames;
 
 function GetCompileInterceptorServices: ICompileInterceptorServices; stdcall;
 begin
@@ -277,28 +289,26 @@ end;
 
 { TCompileInterceptorServices }
 
-var
-  TCompileInterceptorServices_LastId: Integer = 0;
-
 constructor TCompileInterceptorServices.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FItems := TInterfaceList.Create;
-  FIds := TList.Create;
-  FOptions := TList.Create;
+  FRegistry := TInterceptorRegistry.Create;
 end;
 
 destructor TCompileInterceptorServices.Destroy;
 begin
-  FOptions.Free;
-  FItems.Free;
-  FIds.Free;
+  FRegistry.Free;
   inherited Destroy;
 end;
 
 function TCompileInterceptorServices.GetCount: Integer;
 begin
-  Result := FItems.Count;
+  Result := FRegistry.Count;
+end;
+
+function TCompileInterceptorServices.GetHasOption(Index: Integer): Boolean;
+begin
+  Result := FRegistry.HasOption( TCompileInterceptOptions( Index ) );
 end;
 
 function TCompileInterceptorServices.GetFileContent(Filename: PWideChar): IVirtualStream;
@@ -310,284 +320,64 @@ begin
     Result := TVirtualStream.Create(Stream, 0);
 end;
 
-function TCompileInterceptorServices.GetItem(Index: Integer): ICompileInterceptor;
-begin
-  Result := ICompileInterceptor(FItems[Index]);
-end;
-
-function TCompileInterceptorServices.GetOption(Index: Integer): TCompileInterceptOptions;
-begin
-  Result := TCompileInterceptOptions(FOptions[Index]);
-end;
-
 function TCompileInterceptorServices.OpenVirtualFile(Filename: PAnsiChar; out Stream: IVirtualStream): Boolean;
-var
-  I: Integer;
-  UniFilename: string;
-  Intf: ICompileInterceptor20;
 begin
-  UniFilename := UTF8ToString(Filename);
-  Result := False;
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if Options[I] and CIO_VIRTUALFILES <> 0 then
-    begin
-      try
-        if Supports(Items[I], ICompileInterceptor20, Intf) then
-          Result := Intf.OpenVirtualFile(PWideChar(UniFilename), {out} Stream)
-        else
-        begin
-          Stream := Items[I].GetVirtualFile(PWideChar(UniFilename));
-          Result := Stream <> nil;
-        end;
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-      if Result then
-        Exit;
-    end;
-  end;
+  Result := FRegistry.OpenVirtualFile( UTF8ToString( Filename ), Stream );
 end;
 
 function TCompileInterceptorServices.CreateVirtualFile(Filename: PAnsiChar; out Stream: IVirtualOutStream): Boolean;
-var
-  I: Integer;
-  UniFilename: string;
-  Intf: ICompileInterceptor20;
 begin
-  UniFilename := UTF8ToString(Filename);
-  Result := False;
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if (Options[I] and CIO_VIRTUALOUTFILES <> 0) and Supports(Items[I], ICompileInterceptor20, Intf) then
-    begin
-      try
-        Result := Intf.CreateVirtualFile(PWideChar(UniFilename), {out} Stream);
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-      if Result then
-        Exit;
-    end;
-  end;
+  Result := FRegistry.CreateVirtualFile( UTF8ToString( Filename ), Stream );
 end;
 
 function TCompileInterceptorServices.AlterFile(Filename: PAnsiChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream;
-var
-  I: Integer;
-  Stream: IVirtualStream;
-  StreamDate, StreamSize: Integer;
-  Buf: array of Byte;
-  UniFilename: string;
 begin
-  UniFilename := UTF8ToString(Filename);
-  Result := nil;
-  Stream := nil;
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if Options[I] and CIO_ALTERFILES <> 0 then
-    begin
-      if Stream <> nil then
-      begin
-        { The content is already altered. The next handler must use the new data }
-        Stream.FileStatus(StreamDate, StreamSize);
-        Stream.Seek(0, soFromBeginning);
-        SetLength(Buf, FileSize);
-        Content := nil;
-        if StreamSize > 0 then
-        begin
-          FileSize := Stream.Read(Buf[0], StreamSize);
-          if FileSize > 0 then
-            Stream.Seek(0, soFromBeginning);
-          Content := PByte(@Buf[0]);
-        end;
-      end;
-      try
-        Stream := Items[I].AlterFile(PWideChar(UniFilename), Content, FileDate, FileSize);
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-      if Stream <> nil then
-        Result := Stream;
-    end;
-  end;
+  Result := FRegistry.AlterFile( UTF8ToString( Filename ), Content, FileDate, FileSize );
 end;
 
 procedure TCompileInterceptorServices.InspectFilename(Filename: PAnsiChar; FileMode: TInspectFileMode);
-var
-  I: Integer;
-  UniFilename: string;
 begin
-  UniFilename := UTF8ToString(Filename);
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if Options[I] and CIO_INSPECTFILENAMES <> 0 then
-    begin
-      try
-        Items[I].InspectFilename(PWideChar(UniFilename), FileMode);
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-    end;
-  end;
+  FRegistry.InspectFilename( UTF8ToString( Filename ), FileMode );
 end;
 
 function TCompileInterceptorServices.AlterMessage(IsCompilerMessage: Boolean;
   var MsgKind: TMsgKind; var Code: Integer; var Filename: UTF8String; var Line,
   Column: Integer; var Msg: UTF8String): Boolean;
-var
-  I: Integer;
-  FilenameStr, MsgStr: IWideString;
 begin
-  Result := False;
-
-  FilenameStr := TWideStringAdapter.Create(UTF8ToString(Filename));
-  MsgStr := TWideStringAdapter.Create(UTF8ToString(Msg));
-
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if Options[I] and CIO_ALTERMESSAGES <> 0 then
-    begin
-      try
-        if Items[I].AlterMessage(IsCompilerMessage, MsgKind, Code, FilenameStr, Line, Column, MsgStr) then
-          Result := True;
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-    end;
-  end;
-
-  if Result then
-  begin
-    Filename := UTF8Encode(FilenameStr.Value);
-    Msg := UTF8Encode(FilenameStr.Value);
-  end;
+  Result := FRegistry.AlterMessage( IsCompilerMessage, MsgKind, Code, Filename, Line, Column, Msg );
 end;
 
 procedure TCompileInterceptorServices.CompileProject(const ProjectFilename, UnitPaths, SourcePaths,
   DcuOutputDir: string; IsCodeInsight: Boolean; var Cancel: Boolean);
-var
-  I: Integer;
 begin
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if Options[I] and CIO_COMPILEPROJECTS <> 0 then
-    begin
-      try
-        Items[I].CompileProject(PWideChar(ProjectFilename),
-                                PWideChar(UnitPaths),
-                                PWideChar(SourcePaths),
-                                PWideChar(DcuOutputDir),
-                                IsCodeInsight, Cancel);
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-    end;
-  end;
+  FRegistry.CompileProject( ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir, IsCodeInsight, Cancel );
 end;
 
 function TCompileInterceptorServices.FileNameDate(Filename: PAnsiChar; out FileDate: Integer): Boolean;
-var
-  I: Integer;
-  UniFilename: string;
-  Intf: ICompileInterceptor20;
 begin
-  UniFilename := UTF8ToString(Filename);
-  Result := False;
-  for I := Count - 1 downto 0 do // last item is the first
-  begin
-    if (Options[I] and CIO_FILENAMEDATES <> 0) and Supports(Items[I], ICompileInterceptor20, Intf) then
-    begin
-      try
-        Result := Intf.FileNameDate(PWideChar(UniFilename), {out} FileDate);
-      except
-        FItems.Delete(I); // remove broken handler
-      end;
-      if Result then
-      begin
-        if FileDate = -1 then
-          FileDate := 0;
-        Exit;
-      end;
-    end;
-  end;
+  Result := FRegistry.FileNameDate( UTF8ToString( Filename ), FileDate );
 end;
 
 function TCompileInterceptorServices.RegisterInterceptor(Interceptor: ICompileInterceptor): Integer;
-var
-  Index: Integer;
 begin
-  if Interceptor <> nil then
-  begin
-    try
-      Inc(TCompileInterceptorServices_LastId);
-      FItems.Add(Interceptor);
-      FIds.Add(Pointer(TCompileInterceptorServices_LastId));
-      Result := TCompileInterceptorServices_LastId;
-      Index := FOptions.Add(Pointer(Interceptor.GetOptions));
-
-      { Update option cache }
-      if Options[Index] and CIO_ALTERFILES <> 0 then
-        FHasAlterFile := True;
-      if Options[Index] and CIO_VIRTUALFILES <> 0 then
-        FHasVirtualFiles := True;
-      if Options[Index] and CIO_INSPECTFILENAMES <> 0 then
-        FHasInspectFilename := True;
-      if Options[Index] and CIO_ALTERMESSAGES <> 0 then
-        FHasAlterMessage := True;
-      if Options[Index] and CIO_COMPILEPROJECTS <> 0 then
-        FHasCompileProjects := True;
-      if Options[Index] and CIO_FILENAMEDATES <> 0 then
-        FHasFileNameDates := True;
-
-    except
-      ApplicationHandleException(Self);
-      Result := -1;
-    end;
-  end
-  else
+  // No exception may leave this stdcall method: it is called across the DLL boundary, and this DLL has no
+  // VCL Application to report one (ApplicationHandleException is nil here)
+  try
+    Result := FRegistry.Register( Interceptor );
+  except
+    // Bare except: an object raised by another module's RTL misses "on E: Exception"
+    OutputDebugString( PChar( 'CompileInterceptor: RegisterInterceptor failed: ' + ExceptObjectText( ExceptObject ) ) );
     Result := -1;
-end;
-
-procedure TCompileInterceptorServices.UnregisterInterceptor(Id: Integer);
-var
-  Index: Integer;
-begin
-  Index := FIds.IndexOf(Pointer(Id));
-  if Index <> -1 then
-  begin
-    try
-      FItems.Delete(Index);
-      FIds.Delete(Index);
-      FOptions.Delete(Index);
-      UpdateOptionCache;
-    except
-      ApplicationHandleException(Self);
-    end;
   end;
 end;
 
-procedure TCompileInterceptorServices.UpdateOptionCache;
-var
-  I: Integer;
+procedure TCompileInterceptorServices.UnregisterInterceptor(Id: Integer);
 begin
-  FHasAlterFile := False;
-  FHasVirtualFiles := False;
-  FHasInspectFilename := False;
-  FHasAlterMessage := False;
-  FHasCompileProjects := False;
-  for I := 0 to Count - 1 do
-  begin
-    if Options[I] and CIO_ALTERFILES <> 0 then
-      FHasAlterFile := True;
-    if Options[I] and CIO_VIRTUALFILES <> 0 then
-      FHasVirtualFiles := True;
-    if Options[I] and CIO_INSPECTFILENAMES <> 0 then
-      FHasInspectFilename := True;
-    if Options[I] and CIO_ALTERMESSAGES <> 0 then
-      FHasAlterMessage := True;
-    if Options[I] and CIO_COMPILEPROJECTS <> 0 then
-      FHasCompileProjects := True;
+  try
+    FRegistry.Unregister( Id );
+  except
+    // Bare except: an object raised by another module's RTL misses "on E: Exception"
+    OutputDebugString( PChar( 'CompileInterceptor: UnregisterInterceptor failed: ' + ExceptObjectText( ExceptObject ) ) );
   end;
 end;
 

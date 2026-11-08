@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -304,7 +304,10 @@ begin
       if CompList.Objects[k] = Pointer(Module) then
         CompList.Delete(k);
     if CompList.Count = 0 then
+    begin
       FPalettes.Delete(i);
+      CompList.Free; // the palette's list is owned here; deleting the entry alone leaked it
+    end;
   end;
   for i := FComponents.Count - 1 downto 0 do
   begin
@@ -371,6 +374,7 @@ var
 begin
   for i := 0 to FPalettes.Count - 1 do
     FPalettes.Objects[i].Free;
+  FPalettes.Clear; // the entries pointed at the lists just freed
   FComponents.Clear;
   FComponentClasses.Clear;
   ComponentsChanged;
@@ -488,5 +492,11 @@ begin
   CodeRestore(HookRegisterComponents);
   {$ENDIF NEED_COMPONENTMANAGER}
 end;
+
+initialization
+
+finalization
+  // Created on first use and never freed before: one leaked registry (and its lists) per IDE session
+  FreeAndNil(GlobalRegisteredComponents);
 
 end.

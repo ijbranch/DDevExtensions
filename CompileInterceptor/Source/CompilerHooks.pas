@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -64,7 +64,7 @@ function ReadFileContent(const Filename: string): TMemoryStream;
 implementation
 
 uses
-  InterceptImpl, InterceptIntf, IdeDllNames, ToolsAPIIntf;
+  InterceptImpl, InterceptIntf, InterceptDispatch, IdeDllNames, ToolsAPIIntf;
 
 type
   TIDENotifier = class(TComponent, IOTANotifier, IOTAIDENotifier, IOTAIDENotifier50)
@@ -226,6 +226,8 @@ var
   PascalComInOut: PPascalComInOut;
   OrgPascalComInOut: TPascalComInOut;
   OrgPascalStreamData: TOrgStreamData;
+  /// <summary>Set by <see cref="FiniCompileInterceptor"/>: the interceptor never initialises (or patches) again.</summary>
+  InterceptorFinalized: Boolean = False;
 
 function StrFileExt(P: PAnsiChar): PAnsiChar;
 begin
@@ -384,15 +386,18 @@ var
   Stream: TStream;
   hFile: THandle;
   VirtualStream: IVirtualStream;
+  Services: TCompileInterceptorServices;
 begin
   hFile := INVALID_HANDLE_VALUE;
   Result := TOpenFile(INVALID_HANDLE_VALUE);
   Stream := nil;
+  // Read the services once: FiniCompileInterceptor may clear the global while the compiler is in this call
+  Services := CompileInterceptorServices;
   try
-    if CompileInterceptorServices.HasInspectFilename then
-      CompileInterceptorServices.InspectFilename(Filename, ifmOpen);
-    if CompileInterceptorServices.HasVirtualFiles then
-      if CompileInterceptorServices.OpenVirtualFile(Filename, VirtualStream) then
+    if ( Services <> nil ) and Services.HasInspectFilename then
+      Services.InspectFilename(Filename, ifmOpen);
+    if ( Services <> nil ) and Services.HasVirtualFiles then
+      if Services.OpenVirtualFile(Filename, VirtualStream) then
         if VirtualStream = nil then
           Exit;
     if VirtualStream = nil then
@@ -400,10 +405,10 @@ begin
       hFile := OrgStreamData.Open(Filename);
       if hFile <> INVALID_HANDLE_VALUE then
       begin
-        if CompileInterceptorServices.HasAlterFile then
+        if ( Services <> nil ) and Services.HasAlterFile then
         begin
           Stream := TCachedOrgStream.Create(hFile, OrgStreamData, 0);
-          VirtualStream := CompileInterceptorServices.AlterFile(Filename, TCachedOrgStream(Stream).Memory, 0, Stream.Size);
+          VirtualStream := Services.AlterFile(Filename, TCachedOrgStream(Stream).Memory, 0, Stream.Size);
           if VirtualStream <> nil then
             FreeAndNil(Stream);
         end
@@ -429,9 +434,11 @@ begin
     else
       Result := TOpenFile.Create(Filename, hFile, Stream, True);
   except
-    on E: Exception do
+    // Bare except: an object raised by another module's RTL misses "on E: Exception" and would otherwise
+    // escape into the compiler
     begin
-      OrgPascalComInOut.BMessage(mkWarning, 0, Filename, 0, 0, 0, PAnsiChar(UTF8Encode('CompilerInterceptor: ' + E.Message)));
+      OrgPascalComInOut.BMessage(mkWarning, 0, Filename, 0, 0, 0,
+        PAnsiChar(UTF8Encode('CompilerInterceptor: ' + ExceptObjectText(ExceptObject))));
 
       if (Result <> nil) and (Result <> TOpenFile(INVALID_HANDLE_VALUE)) then
         Result.Free
@@ -578,13 +585,15 @@ function CreatePascalFile(const Filename: PAnsiChar): THandle; pascal;
 var
   hFile: THandle;
   VirtualStream: IVirtualOutStream;
+  Services: TCompileInterceptorServices;
 begin
   Result := INVALID_HANDLE_VALUE;
+  Services := CompileInterceptorServices; // read once, see OpenCompilerFile
   { WriteCache is not possible because Compiler calls SeekPascalFile() }
-  if CompileInterceptorServices.HasInspectFilename then
-    CompileInterceptorServices.InspectFilename(Filename, ifmCreate);
-  if CompileInterceptorServices.HasVirtualOutFiles then
-    if CompileInterceptorServices.CreateVirtualFile(Filename, {out} VirtualStream) then
+  if ( Services <> nil ) and Services.HasInspectFilename then
+    Services.InspectFilename(Filename, ifmCreate);
+  if ( Services <> nil ) and Services.HasVirtualOutFiles then
+    if Services.CreateVirtualFile(Filename, {out} VirtualStream) then
       if VirtualStream = nil then
         Exit;
   if VirtualStream <> nil then
@@ -608,13 +617,15 @@ function CreateVPascalFile(const Filename: PAnsiChar): THandle; pascal;
 var
   hFile: THandle;
   VirtualStream: IVirtualOutStream;
+  Services: TCompileInterceptorServices;
 begin
   Result := INVALID_HANDLE_VALUE;
+  Services := CompileInterceptorServices; // read once, see OpenCompilerFile
   { WriteCache is not possible because Compiler calls SeekPascalFile() }
-  if CompileInterceptorServices.HasInspectFilename then
-    CompileInterceptorServices.InspectFilename(Filename, ifmCreate);
-  if CompileInterceptorServices.HasVirtualOutFiles then
-    if CompileInterceptorServices.CreateVirtualFile(Filename, {out} VirtualStream) then
+  if ( Services <> nil ) and Services.HasInspectFilename then
+    Services.InspectFilename(Filename, ifmCreate);
+  if ( Services <> nil ) and Services.HasVirtualOutFiles then
+    if Services.CreateVirtualFile(Filename, {out} VirtualStream) then
       if VirtualStream = nil then
         Exit;
   if VirtualStream <> nil then
@@ -727,8 +738,9 @@ end;
 
 function FileNameDate(const Filename: PAnsiChar): Integer; pascal;
 begin
-  if CompileInterceptorServices.HasFileNameDate then
-    if CompileInterceptorServices.FileNameDate(FileName, {out} Result) then
+  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  if ( Services <> nil ) and Services.HasFileNameDate then
+    if Services.FileNameDate(FileName, {out} Result) then
       Exit;
   Result := OrgPascalComInOut.FileNameDate(FileName);
 end;
@@ -736,13 +748,13 @@ end;
 procedure BMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
   Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar); pascal;
 
-  procedure AlterMessage;
+  procedure AlterMessage(Services: TCompileInterceptorServices);
   var
     FilenameS, MsgS: UTF8String;
   begin
     FilenameS := Filename;
     MsgS := Msg;
-    if CompileInterceptorServices.AlterMessage(False, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
+    if Services.AlterMessage(False, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
     begin
       if MsgS <> '' then
         OrgPascalComInOut.BMessage(MsgKind, Code, PAnsiChar(FilenameS), Line, StartColumn, EndColumn, PAnsiChar(MsgS));
@@ -752,8 +764,9 @@ procedure BMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsi
   end;
 
 begin
-  if CompileInterceptorServices.HasAlterMessage then
-    AlterMessage
+  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  if ( Services <> nil ) and Services.HasAlterMessage then
+    AlterMessage(Services)
   else
     OrgPascalComInOut.BMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg);
 end;
@@ -761,13 +774,13 @@ end;
 function MultiLineMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
   Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
 
-  procedure AlterMessage;
+  procedure AlterMessage(Services: TCompileInterceptorServices);
   var
     FilenameS, MsgS: UTF8String;
   begin
     FilenameS := Filename;
     MsgS := Msg;
-    if CompileInterceptorServices.AlterMessage(True, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
+    if Services.AlterMessage(True, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
     begin
       if MsgS <> '' then
         Result := OrgPascalComInOut.MultiLineMessage(MsgKind, Code, PAnsiChar(FilenameS), Line, StartColumn, EndColumn, PAnsiChar(MsgS), ParentMessageLine)
@@ -779,8 +792,9 @@ function MultiLineMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename
   end;
 
 begin
-  if CompileInterceptorServices.HasAlterMessage then
-    AlterMessage
+  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  if ( Services <> nil ) and Services.HasAlterMessage then
+    AlterMessage(Services)
   else
     Result := OrgPascalComInOut.MultiLineMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine);
 end;
@@ -851,7 +865,7 @@ var
   PascalProc: ^PPascalComInOut;
   Services: IOTAServices50;
 begin
-  if Assigned(CompileInterceptorServices) then
+  if Assigned(CompileInterceptorServices) or InterceptorFinalized then
     Exit;
 
   CompileInterceptorServices := TCompileInterceptorServices.Create(nil);
@@ -863,9 +877,9 @@ begin
   // so patching it stomps unrelated bytes and produces a deterministic AV in the
   // compiler during dependency check. CompileInterceptorServices is still created
   // so RegisterInterceptor works; the actual file/message interception is inactive.
-  IDENotifier := TIDENotifier.Create(nil);
-  if SupportsIDEServices(Services) then
-    NotifierId := Services.AddNotifier(IDENotifier);
+  // No IDE notifier either: its only job is CompileProject dispatch, which is inactive
+  // here too, and an IDE notifier registered from a DLL is the shape behind the
+  // v3.17.6 Win64 teardown crash.
   Exit;
   {$ENDIF}
 
@@ -966,20 +980,63 @@ begin
     NotifierId := Services.AddNotifier(IDENotifier);
 end;
 
+/// <summary>
+/// Puts back each compiler callback this unit replaced, but only where the slot still holds our function: another
+/// expert may have hooked a slot after us, and overwriting the whole record would drop its hook.
+/// </summary>
+procedure RestoreHookedSlots;
+begin
+  if @PascalComInOut.Open = @OpenPascalFile then
+    PascalComInOut.Open := OrgPascalComInOut.Open;
+  if @PascalComInOut.Read = @ReadPascalFile then
+    PascalComInOut.Read := OrgPascalComInOut.Read;
+  if @PascalComInOut.CreateV = @CreateVPascalFile then
+    PascalComInOut.CreateV := OrgPascalComInOut.CreateV;
+  if @PascalComInOut.Create = @CreatePascalFile then
+    PascalComInOut.Create := OrgPascalComInOut.Create;
+  if @PascalComInOut.Flush = @FlushPascalFile then
+    PascalComInOut.Flush := OrgPascalComInOut.Flush;
+  if @PascalComInOut.Write = @WritePascalFile then
+    PascalComInOut.Write := OrgPascalComInOut.Write;
+  if @PascalComInOut.Seek = @SeekPascalFile then
+    PascalComInOut.Seek := OrgPascalComInOut.Seek;
+  if @PascalComInOut.FileStatus = @FileStatusPascalFile then
+    PascalComInOut.FileStatus := OrgPascalComInOut.FileStatus;
+  if @PascalComInOut.Close = @ClosePascalFile then
+    PascalComInOut.Close := OrgPascalComInOut.Close;
+  if @PascalComInOut.FileNameDate = @FileNameDate then
+    PascalComInOut.FileNameDate := OrgPascalComInOut.FileNameDate;
+  if @PascalComInOut.BMessage = @BMessagePascal then
+    PascalComInOut.BMessage := OrgPascalComInOut.BMessage;
+  if @PascalComInOut.MultiLineMessage = @MultiLineMessagePascal then
+    PascalComInOut.MultiLineMessage := OrgPascalComInOut.MultiLineMessage;
+end;
+
 procedure FiniCompileInterceptor;
 var
   Services: IOTAServices50;
 begin
   if not Assigned(CompileInterceptorServices) then
     Exit;
-  //CloseFile(LogFile);
-  CompileInterceptorServices.Free;
-  CompileInterceptorServices := nil;
-//  CppInitialize(OrgComInOut);
+  // From here on GetCompileInterceptorServices returns nil instead of re-initialising and re-patching
+  InterceptorFinalized := True;
+  // Unhook first: put the compiler's own callbacks back, so no compiler call can reach this DLL's hooks
+  // once the services are gone (or once the DLL is unloaded)
+  if PascalComInOut <> nil then
+  begin
+    RestoreHookedSlots;
+    PascalComInOut := nil;
+  end;
 
   if (NotifierId <> 0) and SupportsIDEServices(Services) then
     Services.RemoveNotifier(NotifierId);
-  IDENotifier.Free;
+  NotifierId := 0;
+  FreeAndNil(IDENotifier);
+
+  // Clear the global before freeing, so a hook already running on the compiler thread sees nil
+  var OldServices := CompileInterceptorServices;
+  CompileInterceptorServices := nil;
+  OldServices.Free;
 end;
 
 { TIDENotifier }
@@ -1093,7 +1150,13 @@ var
   ProjectFilename: string;
   SourcePaths, UnitPaths, DcuOutputDir: string;
   Prj: IOTAProject;
+  Services: TCompileInterceptorServices;
 begin
+  // Every compile ( Code Insight ones too ) arrives here: do the option and path work only when an
+  // interceptor asked for CompileProject
+  Services := CompileInterceptorServices;
+  if ( Services = nil ) or not Services.HasCompileProjects then
+    Exit;
   try
     ProjectFilename := '';
     if Project <> nil then
@@ -1138,15 +1201,10 @@ begin
 
     { Environment Options }
 
-    UnitPaths := UnitPaths + ';' + GetGlobalLibraryPath();
-    if UnitPaths[1] = ';' then
-      Delete(UnitPaths, 1, 1)
-    else if UnitPaths[Length(UnitPaths)] = ';' then
-      Delete(UnitPaths, Length(UnitPaths) - 1, 1);
-    UnitPaths := ReplaceMacros(UnitPaths);
+    UnitPaths := ReplaceMacros(CombineSearchPaths(UnitPaths, GetGlobalLibraryPath()));
 
     SourcePaths := UnitPaths;
-    CompileInterceptorServices.CompileProject(ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir,
+    Services.CompileProject(ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir,
       IsCodeInsight, Cancel);
 
 
@@ -1157,11 +1215,10 @@ begin
       WriteLn(f, Names[I].Name, ' = ', VarToStr(Options.Values[Names[I].Name]));
     CloseFile(f);}
   except
-    on E: Exception do
-    begin
-      if Assigned(OrgPascalComInOut.BMessage) then
-        OrgPascalComInOut.BMessage(mkWarning, 0, '', 0, 0, 0, PAnsiChar(UTF8Encode('CompilerInterceptor: ' + E.Message)));
-    end;
+    // Bare except: an object raised by another module's RTL misses "on E: Exception"
+    if Assigned(OrgPascalComInOut.BMessage) then
+      OrgPascalComInOut.BMessage(mkWarning, 0, '', 0, 0, 0,
+        PAnsiChar(UTF8Encode('CompilerInterceptor: ' + ExceptObjectText(ExceptObject))));
   end;
 end;
 
