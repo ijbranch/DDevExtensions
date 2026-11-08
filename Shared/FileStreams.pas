@@ -280,9 +280,10 @@ type
     procedure SetSize( const NewSize: Int64 ); override;
   public
     /// <summary>Custom allocator that uses GetMem for direct instances to avoid GetMemoryManager overhead.</summary>
-    /// <returns>The new instance: for this exact class, GetMem memory with only the VMT pointer set (fields are not zeroed); for a descendant, the inherited allocation.</returns>
+    /// <returns>The new instance: for this exact class, GetMem memory set up by InitInstance (class pointer stored,
+    /// fields zeroed); for a descendant, the inherited allocation.</returns>
     class function NewInstance: TObject; override;
-    /// <summary>Custom deallocator paired with NewInstance.</summary>
+    /// <summary>Custom deallocator paired with NewInstance: CleanupInstance, then FreeMem.</summary>
     procedure FreeInstance; override;
     /// <summary>Registers the reader with the file cache.</summary>
     /// <param name="AFileCache">Cache providing the data.</param>
@@ -331,9 +332,10 @@ type
     function GetReaderCount: Integer;
   public
     /// <summary>Custom allocator analogous to TFileCacheReaderStream.NewInstance.</summary>
-    /// <returns>The new instance: for this exact class, GetMem memory with only the VMT pointer set (fields are not zeroed); for a descendant, the inherited allocation.</returns>
+    /// <returns>The new instance: for this exact class, GetMem memory set up by InitInstance (class pointer stored,
+    /// fields zeroed); for a descendant, the inherited allocation.</returns>
     class function NewInstance: TObject; override;
-    /// <summary>Custom deallocator paired with NewInstance.</summary>
+    /// <summary>Custom deallocator paired with NewInstance: CleanupInstance, then FreeMem.</summary>
     procedure FreeInstance; override;
     /// <summary>Loads the entire file into memory using a TInjectStream for BOM normalisation.</summary>
     /// <param name="hFile">Open file handle.</param>
@@ -497,6 +499,9 @@ function ReadAllFileUcs2( Stream: TStream; BOMType: TBOMType; ExtraData: string 
 function ReadAllFileUcs4( Stream: TStream; BOMType: TBOMType ): UCS4String;
 
 implementation
+
+uses
+  System.Types;
 
 resourcestring
   RsNotSupported    = 'Operation "%s" not supported';
@@ -1109,8 +1114,11 @@ class function TFileCacheReaderStream.NewInstance: TObject;
 begin
   if Self = TFileCacheReaderStream then
   begin
-    GetMem( Pointer( Result ), InstanceSize );
-    PInteger( Result )^ := Integer( Self );
+    // InitInstance zero-fills and stores the full class pointer; the old PInteger store wrote only half
+    // of it on Win64 and left every field uninitialised.
+    var Memory: Pointer;
+    GetMem( Memory, InstanceSize );
+    Result          := InitInstance( Memory );
   end
   else
     Result          := inherited NewInstance;
@@ -1119,7 +1127,10 @@ end;
 procedure TFileCacheReaderStream.FreeInstance;
 begin
   if ClassType = TFileCacheReaderStream then
-    FreeMem( Pointer( Self ) )
+  begin
+    CleanupInstance;
+    FreeMem( Pointer( Self ) );
+  end
   else
     inherited FreeInstance;
 end;
@@ -1192,8 +1203,10 @@ class function TFileCache.NewInstance: TObject;
 begin
   if Self = TFileCache then
   begin
-    GetMem( Pointer( Result ), InstanceSize );
-    PInteger( Result )^ := Integer( Self );
+    // As TFileCacheReaderStream.NewInstance: InitInstance stores the full class pointer and zero-fills.
+    var Memory: Pointer;
+    GetMem( Memory, InstanceSize );
+    Result          := InitInstance( Memory );
   end
   else
     Result          := inherited NewInstance;
@@ -1202,7 +1215,10 @@ end;
 procedure TFileCache.FreeInstance;
 begin
   if ClassType = TFileCache then
-    FreeMem( Pointer( Self ) )
+  begin
+    CleanupInstance;
+    FreeMem( Pointer( Self ) );
+  end
   else
     inherited FreeInstance;
 end;
