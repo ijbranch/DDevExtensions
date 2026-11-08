@@ -1,4 +1,4 @@
-unit EExtraExceptionInfo;
+﻿unit EExtraExceptionInfo;
 
 //
 // You can add define's symbol name to the
@@ -157,18 +157,18 @@ implementation
 {$IFNDEF E_ADD_NO_CUSTOM_INFO}
 uses
   {$IFDEF COMPILER7_UP}
-  {$IFDEF USE_NAMESPACES}System.VarUtils{$ELSE}VarUtils{$ENDIF},
+  {$IFDEF USE_NAMESPACES}System.VarUtils{$ELSE}System.VarUtils{$ENDIF},
   {$ENDIF}
-  {$IFDEF USE_NAMESPACES}System.SysUtils{$ELSE}SysUtils{$ENDIF},
-  {$IFDEF USE_NAMESPACES}System.Classes{$ELSE}Classes{$ENDIF},
+  {$IFDEF USE_NAMESPACES}System.SysUtils{$ELSE}System.SysUtils{$ENDIF},
+  {$IFDEF USE_NAMESPACES}System.Classes{$ELSE}System.Classes{$ENDIF},
   {$IFDEF E_SYSTEM_WIN_COM_INFO}
-  {$IFDEF USE_NAMESPACES}System.Win.ComObj{$ELSE}ComObj{$ENDIF},
+  {$IFDEF USE_NAMESPACES}System.Win.ComObj{$ELSE}System.Win.ComObj{$ENDIF},
   {$ENDIF}
   {$IFDEF E_VCL_OLEAUTO_INFO}
-  {$IFDEF USE_NAMESPACES}Vcl.OleAuto{$ELSE}OleAuto{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Vcl.OleAuto{$ELSE}Vcl.OleAuto{$ENDIF},
   {$ENDIF}
   {$IFDEF E_DATA_DB_INFO}
-  {$IFDEF USE_NAMESPACES}Data.DB{$ELSE}DB{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Data.DB{$ELSE}Data.DB{$ENDIF},
   {$ENDIF}
   {$IFDEF E_SYSTEM_ZIP_INFO}
   System.Zip,
@@ -177,17 +177,17 @@ uses
   {$IFDEF USE_NAMESPACES}System.Net.Socket{$ELSE}Socket{$ENDIF},
   {$ENDIF}
   {$IFDEF E_SYSTEM_JSON_INFO}
-  {$IFDEF USE_NAMESPACES}System.JSON{$ELSE}JSON{$ENDIF},
+  {$IFDEF USE_NAMESPACES}System.JSON{$ELSE}System.JSON{$ENDIF},
   {$ENDIF}
   {$IFDEF E_XML_INFO}
-  {$IFDEF USE_NAMESPACES}Xml.xmldom{$ELSE}xmldom{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Xml.xmldom{$ELSE}Xml.xmldom{$ENDIF},
   {$IFDEF E_XML_OMNIXML}
   Xml.Internal.OmniXML,
   Xml.Internal.CodecUtilsWin32,
   {$ENDIF}
   {$ENDIF}
   {$IFDEF E_SOAP_INVOKEREGISTRY_INFO}
-  {$IFDEF USE_NAMESPACES}Soap.InvokeRegistry{$ELSE}InvokeRegistry{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Soap.InvokeRegistry{$ELSE}Soap.InvokeRegistry{$ENDIF},
   {$ENDIF}
   {$IFDEF E_REST_TYPES_INFO}
   REST.Types,
@@ -211,10 +211,10 @@ uses
   Datasnap.DSHTTPClient,
   {$ENDIF}
   {$IFDEF E_DATA_DBXCOMMON_INFO}
-  {$IFDEF USE_NAMESPACES}Data.DBXCommon{$ELSE}DBXCommon{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Data.DBXCommon{$ELSE}Data.DBXCommon{$ENDIF},
   {$ENDIF}
   {$IFDEF E_DATA_DBXSTREAM_INFO}
-  {$IFDEF USE_NAMESPACES}Data.DBXStream{$ELSE}DBXStream{$ENDIF},
+  {$IFDEF USE_NAMESPACES}Data.DBXStream{$ELSE}Data.DBXStream{$ENDIF},
   {$ENDIF}
   {$IFDEF E_DATA_DBXHTTPLAYER_INFO}
   Data.DBXHTTPLayer,

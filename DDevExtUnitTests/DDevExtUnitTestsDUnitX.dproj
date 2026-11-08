@@ -69,6 +69,7 @@
         <Defines>EUREKALOG_VER7;$(Defines)</Defines>
         <DCC_Define>EUREKALOG_VER7;$(DCC_Define)</DCC_Define>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
+        <DCC_DcuOutput>.\lib\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_MapFile>3</DCC_MapFile>
         <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
         <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>

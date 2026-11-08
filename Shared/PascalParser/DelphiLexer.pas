@@ -1621,7 +1621,7 @@ end;
 
 procedure TDelphiLexer.ReplaceText( StartIndex, Len: Integer; const Text: string );
 begin
-  ReplaceText( StartIndex, Len, UTF8Encode( Text ) );
+  Self.ReplaceText( StartIndex, Len, UTF8Encode( Text ) );
 end;
 
 procedure TDelphiLexer.RestartLexer;

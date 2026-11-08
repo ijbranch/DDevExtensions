@@ -1040,9 +1040,9 @@ begin
   if not Match( Tokens ) then
   begin
     if Look <> nil then
-      Error( Format( 'Unexpected token: %s', [ Look.Value ] ) )
+      Self.Error( Format( 'Unexpected token: %s', [ Look.Value ] ) )
     else
-      Error( 'Unexpected end of file' );
+      Self.Error( 'Unexpected end of file' );
   end;
   Result            := True;
 end;
@@ -1125,7 +1125,7 @@ begin
         else
         begin
           if Match( mfNo, [ tkLParan ] ) then
-            Error( Format( 'Call to undefined function: %s', [ Ident.Value ] ) )
+            Self.Error( Format( 'Call to undefined function: %s', [ Ident.Value ] ) )
           else
           begin
             if not GetConstValue( Ident.Value, Kind, S ) then
@@ -1358,7 +1358,7 @@ begin
   Bn                := BoolExpression;
   B                 := Bn.GetValue( BoolError );
   if BoolError <> '' then
-    Error( BoolError );
+    Self.Error( BoolError );
   Result            := B;
 end;
 

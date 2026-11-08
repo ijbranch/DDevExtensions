@@ -501,10 +501,10 @@ begin
     Next;
     Macro := Look;
     if Macro = nil then
-      Error('Invalid defined() syntax')
+      Self.Error('Invalid defined() syntax')
     else
       if (Macro.Kind <> tkIdent) then
-        Error(Format('defined() requires an identifier: %s', [Macro.Value]));
+        Self.Error(Format('defined() requires an identifier: %s', [Macro.Value]));
     Node := TBoolNodeConst.Create(FPreprocessor.GetDefined(Macro.Value));
     Next;
     Match(mfYes, [tkRParan]);
@@ -518,10 +518,10 @@ begin
     Next;
     Macro := Look;
     if Macro = nil then
-      Error('Invalid declared() syntax')
+      Self.Error('Invalid declared() syntax')
     else
       if (Macro.Kind <> tkIdent) then
-        Error(Format('declared() requires an identifier: %s', [Macro.Value]));
+        Self.Error(Format('declared() requires an identifier: %s', [Macro.Value]));
     Node := TBoolNodeConst.Create(FPreprocessor.GetDeclared(Macro.Value));
     Next;
     Match(mfYes, [tkRParan]);
@@ -575,17 +575,17 @@ begin
   if SameText( IdentToken.Value, 'defined' ) then
   begin
     if Length( Args ) <> 1 then
-      Error( 'Invalid defined() syntax' )
+      Self.Error( 'Invalid defined() syntax' )
     else if Args[ 0 ].Kind <> tkIdent then
-      Error( Format( 'defined() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
+      Self.Error( Format( 'defined() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
     Result          := FPreprocessor.GetDefined( Args[ 0 ].Value );
   end
   else if SameText( IdentToken.Value, 'declared' ) then
   begin
     if Length( Args ) <> 1 then
-      Error( 'Invalid declared() syntax' )
+      Self.Error( 'Invalid declared() syntax' )
     else if Args[ 0 ].Kind <> tkIdent then
-      Error( Format( 'declared() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
+      Self.Error( Format( 'declared() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
     Result          := FPreprocessor.GetDeclared( Args[ 0 ].Value );
   end
   else
@@ -661,7 +661,7 @@ begin
       Inc( InclCount );
   if InclCount > 50 then
   begin
-    Error( RsIncludeRecursion, [ ExtractFileName( Filename ) ], FPreprocToken );
+    Self.Error( RsIncludeRecursion, [ ExtractFileName( Filename ) ], FPreprocToken );
     Exit;
   end;
 
@@ -789,7 +789,7 @@ begin
       NameToken     := L.GetToken;
       if ( NameToken = nil ) or ( NameToken.Kind < tkIdent ) then
       begin
-        Error( RsUnknownCompilerDirective, [ ], Token );
+        Self.Error( RsUnknownCompilerDirective, [ ], Token );
         Exit;
       end;
 
@@ -832,7 +832,7 @@ begin
   Filename          := Trim( Copy( UTF8ToString( L.Text ), L.Index, MaxInt ) );
   if Filename = '' then
   begin
-    Error( RsFilenameExpected, [ ], Token );
+    Self.Error( RsFilenameExpected, [ ], Token );
     Exit; // an OnError handler that does not raise must not reach Filename[1]
   end;
   Len               := Length( Filename );
@@ -848,7 +848,7 @@ begin
       end;
     if Filename = '' then
     begin
-      Error( RsStringEndMissing, [ ], Token );
+      Self.Error( RsStringEndMissing, [ ], Token );
       Exit;
     end;
   end
@@ -867,9 +867,9 @@ end;
 procedure TDelphiPreprocessor.ParseIfEnd( Token: TToken; L: TDelphiLexer );
 begin
   if FIfdefStack.Count = 0 then
-    Error( RsNoIfdefOpen, [ ], Token )
+    Self.Error( RsNoIfdefOpen, [ ], Token )
   else if not FIfdefStack.IfEnd then
-    Error( RsExpected, [ '$ENDIF' ], Token );
+    Self.Error( RsExpected, [ '$ENDIF' ], Token );
 end;
 
 procedure TDelphiPreprocessor.ParseEndif( Token: TToken; L: TDelphiLexer );
@@ -877,7 +877,7 @@ begin
   // $ENDIF closes $IFDEF, $IFNDEF, $IFOPT and - since XE4 - $IF as well, so which kind of block it
   // closes is not checked (it used to demand $IFEND for $IF and raise on legal code).
   if FIfdefStack.Count = 0 then
-    Error( RsNoIfdefOpen, [ ], Token )
+    Self.Error( RsNoIfdefOpen, [ ], Token )
   else
     FIfdefStack.EndIf;
 end;
@@ -906,7 +906,7 @@ begin
   t                 := L.ParseIfdefToken;
   if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error( RsIdentifierExpected, [ ], Token );
+    Self.Error( RsIdentifierExpected, [ ], Token );
     FIfdefStack.Ifdef( False ); // default to undefined if no exception was raised
     Exit;
   end;
@@ -923,7 +923,7 @@ begin
   t                 := L.ParseIfdefToken;
   if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error( RsIdentifierExpected, [ ], Token );
+    Self.Error( RsIdentifierExpected, [ ], Token );
     FIfdefStack.Ifdef( True ); // default to undefined if no exception was raised
     Exit;
   end;
@@ -941,7 +941,7 @@ begin
   t                 := L.ParseIfdefToken;
   if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error( RsIdentifierExpected, [ ], Token );
+    Self.Error( RsIdentifierExpected, [ ], Token );
     FIfdefStack.Ifdef( False ); // default to undefined if no exception was raised
     Exit;
   end;
@@ -957,9 +957,9 @@ end;
 procedure TDelphiPreprocessor.ParseElse( Token: TToken; L: TDelphiLexer );
 begin
   if FIfdefStack.Count = 0 then
-    Error( RsNoIfdefOpen, [ ], Token )
+    Self.Error( RsNoIfdefOpen, [ ], Token )
   else if FIfdefStack.InElse then
-    Error( RsMultipleElseNotAllowed, [ ], Token )
+    Self.Error( RsMultipleElseNotAllowed, [ ], Token )
   else
     FIfdefStack._Else;
 end;
@@ -969,7 +969,7 @@ var
   p                 : TPreprocessorIfParser;
 begin
   if FIfdefStack.Count = 0 then
-    Error( RsNoIfdefOpen, [ ], Token )
+    Self.Error( RsNoIfdefOpen, [ ], Token )
   else
   begin
     // An earlier branch was taken, the block keeps every branch, or the whole block is excluded: the
@@ -998,7 +998,7 @@ begin
     t               := L.ParseIfdefToken;
     if ( t = nil ) or ( t.Kind < tkIdent ) then
     begin
-      Error( RsIdentifierExpected, [ ], Token );
+      Self.Error( RsIdentifierExpected, [ ], Token );
       Exit;
     end;
     Define( t.Value );
@@ -1014,7 +1014,7 @@ begin
     t               := L.ParseIfdefToken;
     if ( t = nil ) or ( t.Kind < tkIdent ) then
     begin
-      Error( RsIdentifierExpected, [ ], Token );
+      Self.Error( RsIdentifierExpected, [ ], Token );
       Exit;
     end;
     Undefine( t.Value );
