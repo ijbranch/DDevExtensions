@@ -34,6 +34,7 @@ interface
 /// Plugin entry point that creates or frees the ProjectGroupSorter plugin
 /// (its Tools-menu item).
 /// </summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

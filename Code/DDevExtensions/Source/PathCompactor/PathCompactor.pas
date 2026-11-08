@@ -51,6 +51,7 @@ type
     /// </summary>
     FCreatedVariableLocations: string;
     /// <summary>OnClick handler for the Tools-menu item.</summary>
+    /// <param name="Sender">The Tools-menu item.</param>
     procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Sets the default values on first creation.</summary>
@@ -98,6 +99,7 @@ type
   end;
 
 /// <summary>Plugin entry point that creates or frees PathCompactorPlugin.</summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin( Unload: Boolean );
 
 /// <summary>Singleton instance of the plugin (nil when not loaded).</summary>

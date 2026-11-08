@@ -55,6 +55,7 @@ type
     destructor Destroy; override;
 
     /// <summary>Returns a free buffer, allocating a new one if none are available.</summary>
+    /// <returns>A locked buffer of <see cref="MaxWritePoolBufferSize"/> bytes; pass it back to <see cref="ReleaseWrite"/>.</returns>
     function AllocWrite: PByteArray;
     /// <summary>Returns <paramref name="P"/> to the pool, shrinking the pool if it has grown beyond the limit.</summary>
     /// <param name="P">The buffer obtained from <see cref="AllocWrite"/>.</param>
@@ -96,24 +97,40 @@ type
     FOrgStreamData: POrgStreamData;
   protected
     /// <summary>32-bit <c>SetSize</c>: routes through <c>Seek</c>.</summary>
+    /// <param name="NewSize">Position to seek to.</param>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
     /// <summary>64-bit <c>SetSize</c>: routes through <c>Seek</c>.</summary>
+    /// <param name="NewSize">Position to seek to.</param>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates a stream over the compiler file handle <paramref name="AHandle"/> using the supplied callbacks.</summary>
+    /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
+    /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
     constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
 
     /// <summary>Reads up to <paramref name="Count"/> bytes via the original compiler read callback.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes read, or 0 when the handle is invalid.</returns>
     function Read(var Buffer; Count: Integer): Integer; override;
     /// <summary>Writes up to <paramref name="Count"/> bytes via the original compiler write callback.</summary>
+    /// <param name="Buffer">Bytes to write.</param>
+    /// <param name="Count">Number of bytes to write.</param>
+    /// <returns>Number of bytes written, or 0 when the handle is invalid.</returns>
     function Write(const Buffer; Count: Integer): Integer; override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Repositions via the original compiler seek callback (64-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The original seek callback's result, or 0 when the handle is invalid.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
     /// <summary>Repositions via the original compiler seek callback (32-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The original seek callback's result, or 0 when the handle is invalid.</returns>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
 
@@ -134,25 +151,45 @@ type
     FBuffer: PByteArray;
   protected
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates a buffered writer over <paramref name="AHandle"/> and acquires a pooled buffer.</summary>
+    /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
+    /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
     constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
     /// <summary>Flushes pending data and returns the buffer to the pool.</summary>
     destructor Destroy; override;
     /// <summary>Always raises <c>Exception</c> - read is not supported.</summary>
+    /// <param name="Buffer">Not used.</param>
+    /// <param name="Count">Not used.</param>
+    /// <returns>Never returns normally.</returns>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Buffers up to <paramref name="Count"/> bytes, flushing automatically when the buffer fills.</summary>
+    /// <param name="Buffer">Bytes to write.</param>
+    /// <param name="Count">Number of bytes to write.</param>
+    /// <returns>Always <paramref name="Count"/>.</returns>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - seek is not supported.</summary>
+    /// <param name="Offset">Not used.</param>
+    /// <param name="Origin">Not used.</param>
+    /// <returns>Never returns normally.</returns>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
     /// <summary>Always raises <c>Exception</c> - seek is not supported.</summary>
+    /// <param name="Offset">Not used.</param>
+    /// <param name="Origin">Not used.</param>
+    /// <returns>Never returns normally.</returns>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
     /// <summary>Writes the pending buffer through the underlying compiler write callback.</summary>
@@ -182,9 +219,13 @@ type
     {$ENDIF COMPILER10_UP}
   protected
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
@@ -193,16 +234,32 @@ type
     /// content read from <paramref name="AHandle"/>; UCS-2/UCS-4 source files are converted
     /// to UTF-8 with a synthetic UTF-8 BOM.
     /// </summary>
+    /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
+    /// <param name="AInjectData">Bytes to place ahead of the file content.</param>
+    /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
     constructor Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData);
     /// <summary>Reads from the injected prefix first, then continues into the underlying file.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes read.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Always raises <c>Exception</c> - write is not supported.</summary>
+    /// <param name="Buffer">Not used.</param>
+    /// <param name="Count">Not used.</param>
+    /// <returns>Never returns normally.</returns>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Repositions across the combined injected + file content (64-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
     /// <summary>Repositions across the combined injected + file content (32-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position.</returns>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
 
@@ -225,29 +282,49 @@ type
     FPosition: Integer;
   protected
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
+    /// <param name="NewSize">Not used.</param>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
     /// <summary>Custom allocator using <c>GetMem</c> instead of the default object manager.</summary>
+    /// <returns>The new instance.  Its memory is not zero-filled (only the class pointer is written), so the
+    /// constructor must set every field.</returns>
     class function NewInstance: TObject; override;
     /// <summary>Custom deallocator paired with <see cref="NewInstance"/>.</summary>
     procedure FreeInstance; override;
     /// <summary>Creates a reader bound to <paramref name="AFileCache"/> and registers itself with the cache.</summary>
+    /// <param name="AFileCache">Cache to read from.</param>
     constructor Create(AFileCache: TFileCache);
     /// <summary>Removes itself from the parent cache's reader list.</summary>
     destructor Destroy; override;
     /// <summary>Reads up to <paramref name="Count"/> bytes from the shared cache.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes copied; 0 at or past the end of the cache.</returns>
     function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Always raises <c>Exception</c> - write is not supported.</summary>
+    /// <param name="Buffer">Not used.</param>
+    /// <param name="Count">Not used.</param>
+    /// <returns>Never returns normally.</returns>
+    /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
     function Write(const Buffer; Count: Longint): Longint; override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Repositions within the cached content, clamped to [0, Size] (64-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position, clamped to [0, <see cref="TFileCache.Size"/>].</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
     /// <summary>Repositions within the cached content, clamped to [0, Size] (32-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position, clamped to [0, <see cref="TFileCache.Size"/>].</returns>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
   end;
@@ -267,18 +344,26 @@ type
     /// <summary>Live <see cref="TFileCacheReaderStream"/> instances over this cache.</summary>
     FReaders: TObjectList;
     /// <summary>Returns the reader at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based reader index.</param>
+    /// <returns>The reader at that index.</returns>
     function GetReader(Index: Integer): TFileCacheReaderStream;
     /// <summary>Returns the number of live readers.</summary>
+    /// <returns>The number of readers in <see cref="FReaders"/>.</returns>
     function GetReaderCount: Integer;
   public
     /// <summary>Custom allocator using <c>GetMem</c>.</summary>
+    /// <returns>The new instance.  Its memory is not zero-filled (only the class pointer is written), so the
+    /// constructor must set every field.</returns>
     class function NewInstance: TObject; override;
     /// <summary>Loads the entire content of the file referred to by <paramref name="hFile"/> into the cache.</summary>
+    /// <param name="hFile">File handle issued by the original compiler open callback.</param>
+    /// <param name="AOrgStreamData">Original compiler I/O callbacks used to read the file.</param>
     constructor Create(hFile: THandle; {ASize: Integer; }AOrgStreamData: POrgStreamData);
     /// <summary>Releases the cached bytes and reader list.</summary>
     destructor Destroy; override;
 
     /// <summary>Creates a new reader stream over this cache (does not transfer ownership).</summary>
+    /// <returns>A new reader positioned at the start of the cached content.</returns>
     function NewReader: TFileCacheReaderStream;
 
     /// <summary>Cached content size in bytes.</summary>
@@ -785,13 +870,17 @@ end;
 
 class function TFileCacheReaderStream.NewInstance: TObject;
 begin
-  GetMem(Pointer(Result), InstanceSize);
-  PInteger(Result)^ := Integer(Self);
+  // InitInstance zero-fills and stores the full class pointer; the old PInteger store wrote only half
+  // of it on Win64 and left every field uninitialised.
+  var Memory: Pointer;
+  GetMem( Memory, InstanceSize );
+  Result := InitInstance( Memory );
 end;
 
 procedure TFileCacheReaderStream.FreeInstance;
 begin
-  FreeMem(Pointer(Self));
+  CleanupInstance;
+  FreeMem( Pointer( Self ) );
 end;
 
 constructor TFileCacheReaderStream.Create(AFileCache: TFileCache);
@@ -870,8 +959,11 @@ end;
 
 class function TFileCache.NewInstance: TObject;
 begin
-  GetMem(Pointer(Result), InstanceSize);
-  PInteger(Result)^ := Integer(Self);
+  // InitInstance zero-fills and stores the full class pointer; the old PInteger store wrote only half
+  // of it on Win64 and left every field uninitialised.
+  var Memory: Pointer;
+  GetMem( Memory, InstanceSize );
+  Result := InitInstance( Memory );
 end;
 
 constructor TFileCache.Create(hFile: THandle; {Size: Integer; }AOrgStreamData: POrgStreamData);

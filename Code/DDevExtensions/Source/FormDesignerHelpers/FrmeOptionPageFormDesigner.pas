@@ -42,14 +42,19 @@ type
     /// <summary>True to suppress streaming of TCustomForm.TextHeight (Delphi 11+).</summary>
     FRemoveTextHeightProperty: Boolean;
     /// <summary>Updates FActive and refreshes the installed hooks.</summary>
+    /// <param name="Value">True to enable the form designer helpers.</param>
     procedure SetActive(const Value: Boolean);
     /// <summary>Updates FLabelMargin and refreshes hooks if the feature is active.</summary>
+    /// <param name="Value">True to enable the label margin helper.</param>
     procedure SetLabelMargin(const Value: Boolean);
     /// <summary>Updates FRemoveExplicitProperty and refreshes hooks if the feature is active.</summary>
+    /// <param name="Value">True to remove Explicit* properties when forms are saved.</param>
     procedure SetRemoveExplicitProperty(const Value: Boolean);
     /// <summary>Updates FRemovePixelsPerInchProperty and refreshes hooks if the feature is active.</summary>
+    /// <param name="Value">True to remove the PixelsPerInch property when forms are saved.</param>
     procedure SetRemovePixelsPerInchProperty(const Value: Boolean);
     /// <summary>Updates FRemoveTextHeightProperty and refreshes hooks if the feature is active.</summary>
+    /// <param name="Value">True to remove the TextHeight property when forms are saved.</param>
     procedure SetRemoveTextHeightProperty(const Value: Boolean);
   protected
     /// <summary>Returns the option-page descriptor that the IDE should display for this plug-in.</summary>
@@ -93,6 +98,7 @@ type
     /// <summary>Toggle for the TextHeight removal (Delphi 11+).</summary>
     chkRemoveTextHeightProperty: TCheckBox;
     /// <summary>Re-evaluates the enabled state of dependent check boxes when Active changes.</summary>
+    /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
     { Private-Deklarationen }
@@ -101,6 +107,7 @@ type
   public
     { Public-Deklarationen }
     /// <summary>Constructs the frame and disables version-restricted check boxes.</summary>
+    /// <param name="AOwner">Owner component.</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>Receives the TFormDesigner configuration object that backs this page.</summary>
     /// <param name="UserData">Must be a TFormDesigner instance.</param>

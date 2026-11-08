@@ -40,6 +40,8 @@ type
     /// <summary>Progress bar updated during the export.</summary>
     ProgressBar: TProgressBar;
     /// <summary>Prevents the user from cancelling the dialog before the export completes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="CanClose">Set False while ModalResult is mrCancel, so the dialog cannot be cancelled.</param>
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     /// <summary>Sheet name passed to Excel.</summary>

@@ -58,6 +58,7 @@ function UTF8Encode(US: PWideChar): RawByteString; overload;
 /// Reads <paramref name="Filename"/> through the IDE's original Pascal compiler open/read/close
 /// callbacks and returns its content as an in-memory stream.
 /// </summary>
+/// <param name="Filename">Path of the file to read.</param>
 /// <returns>A new <see cref="TMemoryStream"/>, or <c>nil</c> if the file could not be opened.</returns>
 function ReadFileContent(const Filename: string): TMemoryStream;
 

@@ -49,10 +49,13 @@ type
     /// <summary>Runs the code-style checker after each successful compile.</summary>
     chkRunStyleCheckAfterCompile: TCheckBox;
     /// <summary>Enables or disables the version-info format edit based on the check-box state.</summary>
+    /// <param name="Sender">The check box that was clicked.</param>
     procedure chkLastCompileVersionInfoClick(Sender: TObject);
     /// <summary>Enables or disables the high-memory-only check box based on the parent option.</summary>
+    /// <param name="Sender">The check box that was clicked.</param>
     procedure chkReleaseCompilerUnitCacheClick(Sender: TObject);
     /// <summary>Enables or disables build-statistics related options based on the parent option.</summary>
+    /// <param name="Sender">The check box that was clicked.</param>
     procedure chkEnableBuildStatisticsClick(Sender: TObject);
   private
     { Private-Deklarationen }

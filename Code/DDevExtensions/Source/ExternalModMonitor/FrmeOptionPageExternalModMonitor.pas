@@ -46,6 +46,7 @@ type
     /// <summary>Edit holding the project-load grace period in milliseconds ( minimum 500 ).</summary>
     edtProjectLoadGraceMs: TEdit;
     /// <summary>Enables or disables dependent controls when the master switch changes.</summary>
+    /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Configuration instance bound to this frame ( typed as TObject to avoid a circular unit reference ).</summary>

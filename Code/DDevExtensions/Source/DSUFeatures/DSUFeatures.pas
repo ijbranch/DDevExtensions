@@ -308,7 +308,16 @@ begin
     LibRtl := GetModuleHandle(rtl_bpl);
 
     APIHookList := TJclPeMapImgHooks.Create;
-    APIHookList.ReplaceImport(Pointer(LibCoreide), rtl_bpl, DbgStrictGetProcAddress(LibRtl, PAnsiChar(sLoadPackageEx)), @HookedLoadPackageEx);
+    // HookImport records the hook in APIHookList, so freeing the list on unload restores coreide's
+    // import; the class function ReplaceImport used before patched the slot without recording it,
+    // leaving coreide calling into this DLL after it was unloaded.
+    if ( LibCoreide = 0 ) or ( LibRtl = 0 ) then
+      OutputDebugString( PChar( Format( 'DDevExtensions: package-load hook skipped: %s or %s is not loaded',
+        [coreide_bpl, rtl_bpl] ) ) )
+    else
+    if not APIHookList.HookImport( Pointer( LibCoreide ), LibRtl, rtl_bpl, sLoadPackageEx, @HookedLoadPackageEx ) then
+      OutputDebugString( PChar( Format( 'DDevExtensions: could not hook %s''s import of LoadPackage from %s (error %d)',
+        [coreide_bpl, rtl_bpl, GetLastError] ) ) );
 
     //ReplaceVmtField(TMethodProperty, @TMethodProperty.NewInstance, @TMethodProperty_NewInstance);
   end
@@ -316,7 +325,7 @@ begin
   begin
     //ReplaceVmtField(TMethodProperty, @TMethodProperty_NewInstance, @TMethodProperty.NewInstance);
     CodeRestore(HookTCustomFormClose);
-    APIHookList.Free;
+    FreeAndNil( APIHookList );
   end;
 end;
 

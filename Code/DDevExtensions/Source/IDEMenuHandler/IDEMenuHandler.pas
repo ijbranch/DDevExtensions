@@ -65,6 +65,8 @@ type
     /// <param name="InsertAsChild">True to insert as a child of BaseItemName.</param>
     /// <param name="ShortCut">Initial keyboard shortcut (defaults to scNone).</param>
     /// <returns>The newly created TAction.</returns>
+    /// <exception cref="Exception">Neither <paramref name="BaseItemName"/> nor <paramref name="BaseMainItemName"/> names a
+    /// menu item of the IDE main form.</exception>
     function AddMenuAction(const BaseMainItemName, BaseItemName, ItemName, Caption: string;
       Execute: TNotifyEvent; InsertAfter, InsertAsChild: Boolean; ShortCut: TShortCut = scNone): TAction;
 
@@ -74,12 +76,15 @@ type
 
     {$IFDEF COMPILER9_UP}
     /// <summary>Override for View > Swap Source/Form that synthesises the shortcut on the editor.</summary>
+    /// <param name="Sender">The action being executed.</param>
     procedure ExecuteSwapSourceForm(Sender: TObject);
     /// <summary>Override for View > Swap Source/Form's update handler so it stays enabled.</summary>
+    /// <param name="Sender">The action being updated.</param>
     procedure UpdateSwapSourceForm(Sender: TObject);
     {$ENDIF COMPILER9_UP}
 
     /// <summary>OnExecute handler for the File Selector action; opens TFormFileSelector.</summary>
+    /// <param name="Sender">The action being executed.</param>
     procedure FileSelectorItemClick(Sender: TObject);
   public
     /// <summary>Creates the handler and injects every menu item/action it manages.</summary>

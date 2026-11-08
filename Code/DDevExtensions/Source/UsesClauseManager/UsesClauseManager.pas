@@ -54,14 +54,21 @@ type
   TUsesEdit = UsesClauseManagerCore.TUsesEdit;
 
 const
-  { An enumerated type alias does not bring its values into scope, so the values are
-    re-exported as constants alongside it. }
+  /// <summary>Uses-section value for the interface section, re-exported from UsesClauseManagerCore.</summary>
+  /// <remarks>An enumerated type alias does not bring its values into scope, so the values are
+  /// re-exported as constants alongside it.</remarks>
   usInterface = UsesClauseManagerCore.usInterface;
+  /// <summary>Uses-section value for the implementation section, re-exported from UsesClauseManagerCore.</summary>
   usImplementation = UsesClauseManagerCore.usImplementation;
+  /// <summary>Export kind for a type declaration, re-exported from UsesClauseManagerCore.</summary>
   ekType = UsesClauseManagerCore.ekType;
+  /// <summary>Export kind for a procedure, re-exported from UsesClauseManagerCore.</summary>
   ekProcedure = UsesClauseManagerCore.ekProcedure;
+  /// <summary>Export kind for a function, re-exported from UsesClauseManagerCore.</summary>
   ekFunction = UsesClauseManagerCore.ekFunction;
+  /// <summary>Export kind for a constant, re-exported from UsesClauseManagerCore.</summary>
   ekConst = UsesClauseManagerCore.ekConst;
+  /// <summary>Export kind for a variable, re-exported from UsesClauseManagerCore.</summary>
   ekVar = UsesClauseManagerCore.ekVar;
 
 type
@@ -93,9 +100,11 @@ type
     /// <summary>Project-wide exports database, built on demand and cached.</summary>
     FExportsDB: TUnitExportsDatabase;
     /// <summary>Menu click handler that opens the manager form.</summary>
+    /// <param name="Sender">The Uses Clause Manager menu item.</param>
     procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Returns the IDE Tools options page for this plugin.</summary>
+    /// <returns>A new 'Uses Clause Manager' page that hosts TFrameOptionPageUsesClause.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises default option values.</summary>
     procedure Init; override;

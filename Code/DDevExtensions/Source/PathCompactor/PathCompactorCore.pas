@@ -65,8 +65,10 @@ type
   /// <summary>Helper that exposes the registry value name and display name of a path-type value.</summary>
   TLibraryPathTypeHelper = record helper for TLibraryPathType
     /// <summary>Returns the registry value name corresponding to the path type.</summary>
+    /// <returns>The registry value name, such as "Search Path".</returns>
     function ToRegistryValueName: string;
     /// <summary>Returns a user-facing display name for the path type.</summary>
+    /// <returns>The display name, such as "Library Path".</returns>
     function ToDisplayName: string;
   end;
 
@@ -145,17 +147,25 @@ type
     FEntries: TArray<TPathEntry>;
   public
     /// <summary>Creates the set and splits AValue on semicolons, discarding empty entries.</summary>
+    /// <param name="APlatformName">The platform the value belongs to.</param>
+    /// <param name="APathType">The path type of the value.</param>
+    /// <param name="AValue">The semicolon-separated value as read from the registry.</param>
     constructor Create( const APlatformName: string; APathType: TLibraryPathType;
       const AValue: string );
 
     /// <summary>Rebuilds the semicolon-separated value from the entries, honouring NewRaw and Drop.</summary>
     /// <remarks>Joins with a plain <c>;</c> and never quotes — Delphi's native format uses no quotes.</remarks>
+    /// <returns>The rebuilt semicolon-separated value.</returns>
+    /// <exception cref="EPathCompactorError">The number of entries produced differs from KeptCount, so a path would be lost.</exception>
     function BuildResult: string;
     /// <summary>Number of entries that survive into <see cref="BuildResult"/>.</summary>
+    /// <returns>The number of entries not marked for removal.</returns>
     function KeptCount: Integer;
     /// <summary>Stored length of the value as it currently stands in the registry.</summary>
+    /// <returns>The length of the original value in characters.</returns>
     function OriginalLength: Integer;
     /// <summary>Stored length of the value <see cref="BuildResult"/> would produce.</summary>
+    /// <returns>The length of the rebuilt value in characters.</returns>
     function ResultLength: Integer;
 
     /// <summary>Platform name the value belongs to.</summary>
@@ -222,11 +232,21 @@ type
     procedure ApplyHygiene;
 
     /// <summary>Stored length of AEntry's raw text once AAcceptedSet has been applied.</summary>
+    /// <param name="AEntry">The entry to measure.</param>
+    /// <param name="AAcceptedSet">Indices of the candidates taken as accepted.</param>
+    /// <returns>
+    /// The entry's stored length with its longest matching accepted prefix replaced by $(NAME); its raw length when it is opaque or matches none.
+    /// </returns>
     function StoredLengthUnder( const AEntry: TPathEntry;
       const AAcceptedSet: TArray<Integer> ): Integer;
     /// <summary>Total stored-space characters saved across the scope by additionally accepting ACandidate.</summary>
+    /// <param name="ACandidateIndex">Index into the candidate array.</param>
+    /// <returns>The characters saved; 0 when the candidate is already accepted.</returns>
     function IncrementalSaving( ACandidateIndex: Integer ): Integer;
     /// <summary>Returns the length of the raw prefix of AEntry.Raw that expands to APrefix, or 0.</summary>
+    /// <param name="AEntry">The entry whose raw text is examined.</param>
+    /// <param name="APrefix">The expanded, normalised prefix.</param>
+    /// <returns>The length of the shortest raw segment prefix that expands to APrefix, or 0 when none does.</returns>
     function StoredPrefixLengthFor( const AEntry: TPathEntry; const APrefix: string ): Integer;
     /// <summary>Chooses a unique, legal variable name for APrefix.</summary>
     /// <returns>A legal variable name not used in either IDE list, the environment or this analysis.</returns>
@@ -243,8 +263,10 @@ type
     destructor Destroy; override;
 
     /// <summary>Replaces the macro table. The supplied list is copied, never retained or modified.</summary>
+    /// <param name="AMacros">The Name=Value macro table, highest precedence first.</param>
     procedure SetMacros( AMacros: TStrings );
     /// <summary>Replaces the reserved-name list (IDE built-ins plus the process environment).</summary>
+    /// <param name="ANames">The names that must never be redefined.</param>
     procedure SetReservedNames( ANames: TStrings );
     /// <summary>
     /// Supplies the macro names the OTHER IDE bitness defines but this one does
@@ -252,6 +274,7 @@ type
     /// than <c>UndefinedMacro</c>, and is never removed by cleanup — it still
     /// resolves in the other IDE, so deleting it would break that IDE.
     /// </summary>
+    /// <param name="ANames">The macro names only the other IDE bitness defines.</param>
     procedure SetDivergentNames( ANames: TStrings );
     /// <summary>
     /// Restricts which existing macros may be reused for a prefix. Without this call any
@@ -277,6 +300,9 @@ type
     /// Raised for <c>lptNamespacePrefixes</c>, which is a list of unit-scope
     /// prefixes rather than directories; compacting it would corrupt it.
     /// </exception>
+    /// <param name="APlatformName">The platform the value belongs to.</param>
+    /// <param name="APathType">The path type of the value.</param>
+    /// <param name="AValue">The semicolon-separated value as read from the registry.</param>
     procedure AddPathSet( const APlatformName: string; APathType: TLibraryPathType;
       const AValue: string );
 
@@ -284,22 +310,31 @@ type
     procedure Analyse;
 
     /// <summary>Returns the accepted candidates, in acceptance order.</summary>
+    /// <returns>Copies of the accepted candidates.</returns>
     function AcceptedVariables: TArray<TVarCandidate>;
     /// <summary>Total stored characters across every set before rewriting.</summary>
+    /// <returns>The sum of every set's original length.</returns>
     function TotalStoredBefore: Integer;
     /// <summary>Total stored characters across every set after rewriting.</summary>
+    /// <returns>The sum of every set's rebuilt length.</returns>
     function TotalStoredAfter: Integer;
     /// <summary>Number of entries flagged as duplicates across the whole scope.</summary>
+    /// <returns>The number of duplicate entries.</returns>
     function DuplicateCount: Integer;
     /// <summary>Number of entries whose directory is absent across the whole scope.</summary>
+    /// <returns>The number of entries whose directory is absent.</returns>
     function MissingCount: Integer;
     /// <summary>Number of entries referencing a macro that resolves nowhere.</summary>
+    /// <returns>The number of entries with an undefined macro.</returns>
     function UndefinedMacroCount: Integer;
     /// <summary>Number of entries whose macro resolves only in the other IDE bitness.</summary>
+    /// <returns>The number of entries with a divergent macro.</returns>
     function DivergentMacroCount: Integer;
     /// <summary>Number of entries currently marked for removal.</summary>
+    /// <returns>The number of entries marked for removal.</returns>
     function DropCount: Integer;
     /// <summary>Returns a description of every entry currently marked for removal.</summary>
+    /// <returns>One line per entry marked for removal.</returns>
     function DropSummary: TArray<string>;
 
     /// <summary>
@@ -344,17 +379,28 @@ type
 /// deliberately unlike <c>IDEUtils.ExpandDirMacros</c>, which deletes it.
 /// Cycles are broken by AMaxDepth.
 /// </summary>
+/// <param name="APath">The text to expand.</param>
+/// <param name="AMacros">Name=Value macro table; nil leaves APath unchanged.</param>
+/// <param name="AMaxDepth">The most substitutions to make.</param>
+/// <returns>APath with the known macros expanded.</returns>
 function ExpandLibraryMacros( const APath: string; AMacros: TStrings;
   AMaxDepth: Integer = 16 ): string;
 
 /// <summary>Returns APath absolute, with <c>..</c> resolved and any trailing separator removed.</summary>
 /// <remarks>A bare drive root such as <c>D:\</c> keeps its separator.</remarks>
+/// <param name="APath">The expanded path.</param>
+/// <returns>The normalised path.</returns>
 function NormalisePath( const APath: string ): string;
 
 /// <summary>True when APath equals APrefix or continues it at a directory-separator boundary.</summary>
+/// <param name="APath">The path to test.</param>
+/// <param name="APrefix">The directory prefix.</param>
+/// <returns>True when APath starts with APrefix at a segment boundary.</returns>
 function StartsWithSegment( const APath, APrefix: string ): Boolean;
 
 /// <summary>True when ASegment is a platform name or a build configuration name.</summary>
+/// <param name="ASegment">One path segment.</param>
+/// <returns>True for a platform or configuration name.</returns>
 function IsPlatformOrConfigToken( const ASegment: string ): Boolean;
 
 /// <summary>
@@ -364,6 +410,8 @@ function IsPlatformOrConfigToken( const ASegment: string ): Boolean;
 /// collision, so <c>...\tms.vcl.uipack\packages\d13</c> widens to
 /// <c>TMS_VCL_UIPACK_D13</c> rather than the useless <c>PACKAGES_D13</c>.
 /// </summary>
+/// <param name="ASegment">One path segment.</param>
+/// <returns>True for a structural folder name.</returns>
 function IsNoiseSegment( const ASegment: string ): Boolean;
 
 /// <summary>
@@ -372,6 +420,8 @@ function IsNoiseSegment( const ASegment: string ): Boolean;
 /// and similar. Such a name is harmless inside the IDE's own variable list but
 /// collides readily once every process on the machine inherits it.
 /// </summary>
+/// <param name="AName">A candidate variable name.</param>
+/// <returns>True for a common word.</returns>
 function IsGenericVariableName( const AName: string ): Boolean;
 
 /// <summary>
@@ -379,6 +429,8 @@ function IsGenericVariableName( const AName: string ): Boolean;
 /// such as <c>37.0</c>, <c>13</c> or <c>8.0.2</c>. Such a segment names nothing
 /// on its own and must not become a variable name.
 /// </summary>
+/// <param name="ASegment">One path segment.</param>
+/// <returns>True when the segment is only digits and separators.</returns>
 function IsVersionLikeSegment( const ASegment: string ): Boolean;
 
 /// <summary>
@@ -393,16 +445,22 @@ function IsVersionLikeSegment( const ASegment: string ): Boolean;
 /// resolve a collision with a meaningful name rather than a <c>_2</c> suffix.
 /// </param>
 /// <param name="AMaxLength">Longest name to emit; widened names are allowed to run longer.</param>
+/// <param name="APrefix">The expanded directory prefix.</param>
+/// <returns>An upper-case variable name; PATH when APrefix has no segments.</returns>
 function DeriveVariableName( const APrefix: string; AExtraSegments: Integer = 0;
   AMaxLength: Integer = 0 ): string;
 
 /// <summary>Splits a semicolon-separated path value, trimming entries and discarding empty ones.</summary>
+/// <param name="AList">Receives the entries.</param>
+/// <param name="AValue">The semicolon-separated value.</param>
 procedure SplitPathValue( AList: TStrings; const AValue: string );
 
 /// <summary>
 /// Returns the name of the first <c>$(NAME)</c> still present in APath, or an
 /// empty string when none remains.
 /// </summary>
+/// <param name="APath">The text to search.</param>
+/// <returns>The macro name without $( and ), or an empty string.</returns>
 function FirstMacroName( const APath: string ): string;
 
 implementation

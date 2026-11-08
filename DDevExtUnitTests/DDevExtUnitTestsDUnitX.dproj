@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{7150B71F-82D5-4102-B49C-CB030DF3747D}</ProjectGuid>
         <MainSource>DDevExtUnitTestsDUnitX.dpr</MainSource>
@@ -21,11 +21,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
         <Base_Win64>true</Base_Win64>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='WinARM64EC' and '$(Base)'=='true') or '$(Base_WinARM64EC)'!=''">
-        <Base_WinARM64EC>true</Base_WinARM64EC>
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
@@ -97,12 +92,6 @@
         <Defines>EUREKALOG;$(Defines)</Defines>
         <DCC_Define>EUREKALOG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_WinARM64EC)'!=''">
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-        <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <VerInfo_Locale>1033</VerInfo_Locale>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
         <DCC_DebugInformation>0</DCC_DebugInformation>
@@ -138,6 +127,62 @@
         </DelphiCompile>
         <DCCReference Include="..\Shared\PascalParser\gllDelphiDFMParser.pas"/>
         <DCCReference Include="TestDfmParserDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas"/>
+        <DCCReference Include="TestProjectGroupSorterDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\PathCompactor\PathCompactorCore.pas"/>
+        <DCCReference Include="TestPathCompactorDUnitX.pas"/>
+        <DCCReference Include="..\Shared\Xml\SimpleXmlIntf.pas"/>
+        <DCCReference Include="..\Shared\Xml\SimpleXmlDoc.pas"/>
+        <DCCReference Include="..\Shared\Xml\SimpleXmlImport.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\LibraryPathSorter\LibraryPathBackups.pas"/>
+        <DCCReference Include="TestLibraryPathBackupsDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\UsesClauseManager\UsesClauseManagerCore.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiLexer.pas"/>
+        <DCCReference Include="TestUsesClauseManagerCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\Decirculariser\DecirculariserCore.pas"/>
+        <DCCReference Include="TestDecirculariserCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\MethodSeparators\MethodSeparatorsCore.pas"/>
+        <DCCReference Include="TestMethodSeparatorsCoreDUnitX.pas"/>
+        <DCCReference Include="TestDelphiLexerDUnitX.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiParserContainers.pas"/>
+        <DCCReference Include="TestDelphiParserContainersDUnitX.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiExpr.pas"/>
+        <DCCReference Include="TestDelphiExprDUnitX.pas"/>
+        <DCCReference Include="..\Shared\PascalParser\DelphiPreproc.pas"/>
+        <DCCReference Include="TestDelphiPreprocDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\CompileProgress\UnitMetrics.pas"/>
+        <DCCReference Include="TestUnitMetricsDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\ExcelExport\FrmExcelExport.pas">
+            <Form>FormExcelExport</Form>
+        </DCCReference>
+        <DCCReference Include="TestExcelExportDUnitX.pas"/>
+        <DCCReference Include="..\Shared\IDE\IDEHooks.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\VirtTreeHandler.pas"/>
+        <DCCReference Include="TestVirtTreeHandlerDUnitX.pas"/>
+        <DCCReference Include="..\CompileInterceptor\Source\InterceptIntf.pas"/>
+        <DCCReference Include="..\CompileInterceptor\Source\InterceptDispatch.pas"/>
+        <DCCReference Include="TestInterceptDispatchDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\PluginConfigCore.pas"/>
+        <DCCReference Include="TestPluginConfigCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\FeatureSwitches.pas"/>
+        <DCCReference Include="TestFeatureSwitchesDUnitX.pas"/>
+        <DCCReference Include="..\Shared\IDE\IDEHashLists.pas"/>
+        <DCCReference Include="TestIDEHashListsDUnitX.pas"/>
+        <DCCReference Include="..\Shared\IDE\VersionInfoKeys.pas"/>
+        <DCCReference Include="TestVersionInfoKeysDUnitX.pas"/>
+        <DCCReference Include="TestSimpleXmlDocDUnitX.pas"/>
+        <DCCReference Include="..\Shared\FileWatcher.pas"/>
+        <DCCReference Include="TestFileWatcherDUnitX.pas"/>
+        <DCCReference Include="..\Shared\Hooking.pas"/>
+        <DCCReference Include="TestHookingDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\TodoAggregator\TodoAggregatorCore.pas"/>
+        <DCCReference Include="TestTodoAggregatorCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\DfmPasConsistency\DfmPasConsistencyCore.pas"/>
+        <DCCReference Include="TestDfmPasConsistencyCoreDUnitX.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\DependencyViewer\DependencyViewerCore.pas"/>
+        <DCCReference Include="TestDependencyViewerCoreDUnitX.pas"/>
+        <DCCReference Include="..\Shared\ImportHooking.pas"/>
+        <DCCReference Include="TestImportHookingDUnitX.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -167,7 +212,6 @@
             <Platforms>
                 <Platform value="Win32">False</Platform>
                 <Platform value="Win64">True</Platform>
-                <Platform value="WinARM64EC">False</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

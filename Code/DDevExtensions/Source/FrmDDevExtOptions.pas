@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -24,6 +24,7 @@ type
   /// <summary>Concrete options form used by DDevExtensions; descends from the generic <c>TFormOptions</c> tree-page host.</summary>
   TFormDDevExtOptions = class(TFormOptions)
     /// <summary>Sets the version and copyright labels at form creation time.</summary>
+    /// <param name="Sender">The form raising <c>OnCreate</c>.</param>
     procedure FormCreate(Sender: TObject);
   private
     { Private-Deklarationen }

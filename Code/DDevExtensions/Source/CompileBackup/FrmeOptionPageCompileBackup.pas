@@ -65,6 +65,7 @@ type
     procedure ModuleDestroying(Data: TModuleData);
 
     /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
+    /// <returns>The options page node for this feature.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Builds the backup file name for the supplied source file ( appends ".cbk" ).</summary>
     /// <param name="Filename">Source file name.</param>
@@ -91,6 +92,7 @@ type
     /// <summary>Bound to TCompileBackupConfig.DeleteBackupAfterClose.</summary>
     cbxDeleteBackupAfterClose: TCheckBox;
     /// <summary>Enables or disables dependent controls when the master switch changes.</summary>
+    /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
     { Private-Deklarationen }

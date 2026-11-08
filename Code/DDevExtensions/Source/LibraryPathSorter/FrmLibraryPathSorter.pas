@@ -120,12 +120,16 @@ type
     /// <summary>Caption label for the platform-category filter strip.</summary>
     lblPlatformFilter: TLabel;
     /// <summary>Closes the dialog.</summary>
+    /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Shows raw vs parsed registry counts and other diagnostics.</summary>
+    /// <param name="Sender">The Show Diagnostic menu item.</param>
     procedure mnuShowDiagnosticClick( Sender: TObject );
     /// <summary>Shows paths from Original that are missing in Working (with diff hints).</summary>
+    /// <param name="Sender">The Show Missing menu item.</param>
     procedure mnuShowMissingClick( Sender: TObject );
     /// <summary>Deletes the selected working entries after confirmation.</summary>
+    /// <param name="Sender">The Delete Entry menu item.</param>
     procedure mnuDeleteEntryClick( Sender: TObject );
     /// <summary>Validates the working list and writes it back to the registry.</summary>
     /// <param name="Sender">The Apply button.</param>
@@ -150,39 +154,75 @@ type
     /// <param name="Sender">The form.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Initialises form fields, populates the pickers and loads paths.</summary>
+    /// <param name="Sender">The form being created.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Reloads the path lists when the path type changes.</summary>
+    /// <param name="Sender">The path-type combo box.</param>
     procedure cboPathTypeChange( Sender: TObject );
     /// <summary>Reloads the path lists when the platform changes.</summary>
+    /// <param name="Sender">The platform combo box.</param>
     procedure cboPlatformChange( Sender: TObject );
     /// <summary>Updates Restore/Delete button states for the selected backup.</summary>
+    /// <param name="Sender">The backups list view.</param>
+    /// <param name="Item">The item whose selection changed.</param>
+    /// <param name="Selected">True when Item became selected, False when it lost the selection.</param>
     procedure lvBackupsSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
     /// <summary>Moves the selected working entry up by one position.</summary>
+    /// <param name="Sender">The Up button.</param>
     procedure btnWorkingUpClick( Sender: TObject );
     /// <summary>Moves the selected working entry down by one position.</summary>
+    /// <param name="Sender">The Down button.</param>
     procedure btnWorkingDownClick( Sender: TObject );
     /// <summary>Moves the selected working entry to the top of the list.</summary>
+    /// <param name="Sender">The Top button.</param>
     procedure btnWorkingTopClick( Sender: TObject );
     /// <summary>Moves the selected working entry to the bottom of the list.</summary>
+    /// <param name="Sender">The Bottom button.</param>
     procedure btnWorkingBottomClick( Sender: TObject );
     /// <summary>Resets the working list to a copy of the original list.</summary>
+    /// <param name="Sender">The Copy to Working button.</param>
     procedure btnCopyToWorkingClick( Sender: TObject );
     /// <summary>Alphabetises the working list with safety checks against path loss.</summary>
+    /// <param name="Sender">The Sort button.</param>
     procedure btnSortAlphaClick( Sender: TObject );
     /// <summary>Highlights matching items in the original list when working items are selected.</summary>
+    /// <param name="Sender">The working list box.</param>
     procedure lstWorkingClick( Sender: TObject );
     /// <summary>Drag-over handler: only accepts drags originating in the working list.</summary>
+    /// <param name="Sender">The working list box.</param>
+    /// <param name="Source">The drag source.</param>
+    /// <param name="X">Horizontal mouse position in client coordinates.</param>
+    /// <param name="Y">Vertical mouse position in client coordinates.</param>
+    /// <param name="State">The drag state.</param>
+    /// <param name="Accept">Set True only when Source is the working list box.</param>
     procedure lstWorkingDragOver( Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean );
     /// <summary>Drag-drop handler that reorders the working list to the drop position.</summary>
+    /// <param name="Sender">The working list box.</param>
+    /// <param name="Source">The drag source.</param>
+    /// <param name="X">Horizontal drop position in client coordinates.</param>
+    /// <param name="Y">Vertical drop position in client coordinates.</param>
     procedure lstWorkingDragDrop( Sender, Source: TObject; X, Y: Integer );
     /// <summary>Initiates an internal drag on plain left-click in the working list.</summary>
+    /// <param name="Sender">The working list box.</param>
+    /// <param name="Button">The mouse button pressed.</param>
+    /// <param name="Shift">The modifier keys and buttons held.</param>
+    /// <param name="X">Horizontal mouse position in client coordinates.</param>
+    /// <param name="Y">Vertical mouse position in client coordinates.</param>
     procedure lstWorkingMouseDown( Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer );
     /// <summary>Owner-draws working items, colouring duplicates red and invalid paths blue.</summary>
+    /// <param name="Control">The working list box.</param>
+    /// <param name="Index">The index of the item to draw.</param>
+    /// <param name="Rect">The item's rectangle.</param>
+    /// <param name="State">The item's owner-draw state.</param>
     procedure lstWorkingDrawItem( Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState );
     /// <summary>Owner-draws original items, marking missing-in-working pink and invalid blue.</summary>
+    /// <param name="Control">The original (current) list box.</param>
+    /// <param name="Index">The index of the item to draw.</param>
+    /// <param name="Rect">The item's rectangle.</param>
+    /// <param name="State">The item's owner-draw state.</param>
     procedure lstCurrentDrawItem( Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState );
   private
@@ -213,8 +253,13 @@ type
     /// <summary>The backups listed in lvBackups, in list order; Restore and Delete act on these records.</summary>
     FShownBackups: TArray<TPathBackup>;
     /// <summary>Returns True if the path at Index appears elsewhere in the listbox (case-insensitive).</summary>
+    /// <param name="AListBox">The list box to search.</param>
+    /// <param name="Index">The index of the item to test.</param>
+    /// <returns>True when another item in AListBox has the same path.</returns>
     function IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
     /// <summary>Returns True if APath also appears in the working listbox (trimmed compare).</summary>
+    /// <param name="APath">The path to look for.</param>
+    /// <returns>True when the working list contains APath.</returns>
     function IsPathInWorkingPanel( const APath: string ): Boolean;
     /// <summary>Returns True if APath resolves to an existing directory (results are cached).</summary>
     /// <returns>True when the expanded path is an existing directory.</returns>
@@ -223,8 +268,11 @@ type
     /// <summary>Clears FPathValidityCache (called on platform/path-type change).</summary>
     procedure InvalidatePathCache;
     /// <summary>Expands $(PLATFORM) and $(BDS)-style macros in APath for validity checking.</summary>
+    /// <param name="APath">The library-path entry, macros unexpanded.</param>
+    /// <returns>APath with $(PLATFORM) replaced by the selected platform and other known macros expanded; an unresolvable macro is left intact.</returns>
     function ExpandPathMacros( const APath: string ): string;
     /// <summary>Returns the macro table, building it on first use.</summary>
+    /// <returns>The cached Name=Value macro table; owned by the form.</returns>
     function MacroTable: TStrings;
     /// <summary>Updates the panel-header captions with current counts and warning markers.</summary>
     procedure UpdatePanelLabels;
@@ -239,18 +287,27 @@ type
     /// <summary>Refreshes lvBackups from the backup manager.</summary>
     procedure LoadBackupHistory;
     /// <summary>Sets lblStatus.Caption.</summary>
+    /// <param name="AMessage">The text to show.</param>
     procedure UpdateStatus( const AMessage: string );
     /// <summary>Recomputes the enabled state of the working-list and Apply buttons.</summary>
     procedure UpdateButtonStates;
     /// <summary>Returns the path type currently selected in cboPathType.</summary>
+    /// <returns>The selected path type.</returns>
     function GetSelectedPathType: TLibraryPathType;
     /// <summary>Returns the platform currently selected in cboPlatform.</summary>
+    /// <returns>The selected platform name, or Win32 when nothing is selected.</returns>
     function GetSelectedPlatform: string;
     /// <summary>Moves the selected listbox item by Delta positions, clamped to the list.</summary>
+    /// <param name="AListBox">The list box whose selected item moves.</param>
+    /// <param name="Delta">Positions to move; negative moves up.</param>
     procedure MoveListItem( AListBox: TListBox; Delta: Integer );
     /// <summary>Moves the selected listbox item to the top or the bottom.</summary>
+    /// <param name="AListBox">The list box whose selected item moves.</param>
+    /// <param name="ToTop">True to move to the top, False to the bottom.</param>
     procedure MoveListItemToEnd( AListBox: TListBox; ToTop: Boolean );
     /// <summary>Joins listbox items with semicolons (no quoting; matches Delphi's native format).</summary>
+    /// <param name="AListBox">The list box to read.</param>
+    /// <returns>The items joined with semicolons.</returns>
     function GetPathsFromListBox( AListBox: TListBox ): string;
     /// <summary>Writes APaths to the registry, performs a read-back verification and reloads.</summary>
     /// <param name="APaths">The new semicolon-separated value.</param>
@@ -261,14 +318,18 @@ type
     /// <summary>Persists the form geometry, split-pane sizes and category-checkbox states.</summary>
     procedure SaveFormSettings;
     /// <summary>Returns the high-level category of APlatform (Windows, Android, iOS, ...).</summary>
+    /// <param name="APlatform">The platform name.</param>
+    /// <returns>ARM, Windows, Android, iOS, macOS, Linux or Other.</returns>
     function CategorizePlatform( const APlatform: string ): string;
     /// <summary>(Re)builds the FPlatformCategories dictionary from FAllPlatforms.</summary>
     procedure BuildPlatformCategories;
     /// <summary>Creates the dynamic platform-category checkboxes on pnlPlatformFilter.</summary>
     procedure CreatePlatformCheckboxes;
     /// <summary>OnClick for an individual category checkbox; refilters the platform dropdown.</summary>
+    /// <param name="Sender">The category checkbox clicked.</param>
     procedure PlatformCheckboxClick( Sender: TObject );
     /// <summary>OnClick for the "All" checkbox; toggles the category checkboxes' enabled state.</summary>
+    /// <param name="Sender">The All checkbox.</param>
     procedure AllCheckboxClick( Sender: TObject );
     /// <summary>Synchronises the category checkboxes with the "All" checkbox state.</summary>
     procedure UpdateCategoryCheckboxes;

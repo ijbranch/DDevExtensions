@@ -75,14 +75,22 @@ type
     /// <summary>Increment counter advanced on every change; used by external code to detect cache invalidation.</summary>
     FLastModifyCount: Cardinal;
     /// <summary>Returns the palette name at the given index.</summary>
+    /// <param name="Index">Zero-based palette index, 0 to <see cref="PaletteCount"/> - 1.</param>
+    /// <returns>The palette page name.</returns>
     function GetPalette(Index: Integer): string;
     /// <summary>Returns the number of distinct palette categories.</summary>
+    /// <returns>The number of palette pages in <see cref="FPalettes"/>.</returns>
     function GetPaletteCount: Integer;
     /// <summary>Returns the registered component class at the given flat index.</summary>
+    /// <param name="Index">Zero-based flat component index, 0 to <see cref="ComponentCount"/> - 1.</param>
+    /// <returns>The component class registered at that index.</returns>
     function GetComponentClass(Index: Integer): TComponentClass;
     /// <summary>Returns the total number of registered components across all palettes.</summary>
+    /// <returns>The number of entries in <see cref="FComponents"/>.</returns>
     function GetComponentCount: Integer;
     /// <summary>Returns the owning BPL module handle for the component at the given flat index.</summary>
+    /// <param name="Index">Zero-based flat component index, 0 to <see cref="ComponentCount"/> - 1.</param>
+    /// <returns>The module handle stored with that component.</returns>
     function GetComponentModule(Index: Integer): HMODULE;
   protected
     /// <summary>Bumps <see cref="FLastModifyCount"/> and notifies every subscribed change listener.</summary>
@@ -111,6 +119,8 @@ type
     /// designer's class group (e.g. VCL vs FMX).
     /// </summary>
     /// <param name="ComponentClass">Component class to test.</param>
+    /// <returns>True when the class may be shown for the active designer; always True for a nil class, a class
+    /// outside the <c>TControl</c> group, or a compiler without class groups.</returns>
     class function IsInActiveControlGroup(ComponentClass: TComponentClass): Boolean;
 
     /// <summary>Returns a freshly allocated, owned <c>TStringList</c> of the component names registered on the given palette.</summary>
@@ -118,12 +128,20 @@ type
     /// <returns>Caller-owned list; the caller must free it.</returns>
     function CreateComponentByNameList(PaletteIndex: Integer): TStrings;
     /// <summary>Returns the palette index that contains the given component class, or -1 if not found.</summary>
+    /// <param name="ComponentClass">Component class to look up.</param>
+    /// <returns>The zero-based palette index, or -1 when the class is not registered.</returns>
     function PaletteOf(ComponentClass: TComponentClass): Integer; overload;
     /// <summary>Returns the palette index that contains the named component, or -1 if not found.</summary>
+    /// <param name="ComponentName">Component name to look up (as registered on the palette).</param>
+    /// <returns>The zero-based palette index of the first palette listing the name, or -1.</returns>
     function PaletteOf(const ComponentName: string): Integer; overload;
     /// <summary>Returns the BPL module that registered <paramref name="ComponentClass"/>, or 0 if unknown.</summary>
+    /// <param name="ComponentClass">Component class to look up.</param>
+    /// <returns>The owning module handle, or 0 when the class is not registered.</returns>
     function FindModule(ComponentClass: TComponentClass): HMODULE;
     /// <summary>Returns the registered component class whose name matches <paramref name="ComponentName"/>, or nil.</summary>
+    /// <param name="ComponentName">Class name to match (case-insensitive, <c>ClassNameIs</c>).</param>
+    /// <returns>The first registered class with that name, or nil.</returns>
     function FindComponentClass(const ComponentName: string): TComponentClass;
 
     /// <summary>Number of distinct palette pages.</summary>
@@ -139,8 +157,10 @@ type
     property ComponentModules[Index: Integer]: HMODULE read GetComponentModule;
 
     /// <summary>Subscribes a change-notification listener (idempotent).</summary>
+    /// <param name="Notifier">Listener to add; ignored when it is already subscribed.</param>
     procedure AddNotifier(Notifier: IComponentChangeNotifier);
     /// <summary>Removes a previously subscribed change-notification listener.</summary>
+    /// <param name="Notifier">Listener to remove; nothing happens when it is not subscribed.</param>
     procedure RemoveNotifier(Notifier: IComponentChangeNotifier);
 
     /// <summary>Counter that is incremented on every change; useful for cache invalidation.</summary>
@@ -148,6 +168,7 @@ type
   end;
 
 /// <summary>Lazily creates and returns the global registered-components singleton.</summary>
+/// <returns>The shared <see cref="TRegisteredComponents"/> instance, created on first call.</returns>
 function RegisteredComponents: TRegisteredComponents;
 /// <summary>
 /// Loads the palette bitmap for the given component class, walking up the

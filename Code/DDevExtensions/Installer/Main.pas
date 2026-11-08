@@ -60,7 +60,8 @@ type
     ExpertsSubKey: string;
     /// <summary>Path to the IDE host executable relative to <see cref="GetRootDir"/>, e.g. <c>'bin\bds.exe'</c> or <c>'bin64\bds.exe'</c>.</summary>
     HostExeRelPath: string;
-    /// <summary>File name of the <c>CompileInterceptor</c> helper DLL deployed alongside the plug-in (per-bitness: <c>CompileInterceptorW.dll</c> or <c>CompileInterceptorWx64.dll</c>).</summary>
+    /// <summary>File name of the <c>CompileInterceptor</c> helper DLL deployed alongside the plug-in
+    /// (per-bitness: <c>CompileInterceptorW.dll</c> or <c>CompileInterceptorWx64.dll</c>).</summary>
     CompInterceptorDll: string;
   end;
 
@@ -131,6 +132,7 @@ type
     /// <summary>Progress bar advanced as each ticked IDE is processed.</summary>
     pbProgress: TProgressBar;
     /// <summary>Handler for the Quit button — closes the form.</summary>
+    /// <param name="Sender">The Quit button.</param>
     procedure btnQuitClick(Sender: TObject);
     /// <summary>Handler for the Install button — iterates ticked IDEs and calls <see cref="DoInstall"/>.</summary>
     /// <param name="Sender">The Install button.</param>
@@ -139,8 +141,13 @@ type
     /// <param name="Sender">The Uninstall button.</param>
     procedure btnUninstallClick(Sender: TObject);
     /// <summary>Form constructor: detects installed IDEs and populates the check-list, pre-ticking those already registered.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormCreate(Sender: TObject);
     /// <summary>Suppresses resizing while the form is visible (cancels every resize attempt).</summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="NewWidth">Proposed width (not changed).</param>
+    /// <param name="NewHeight">Proposed height (not changed).</param>
+    /// <param name="Resize">Set to False while the form is visible.</param>
     procedure FormCanResize(Sender: TObject; var NewWidth, NewHeight: Integer; var Resize: Boolean);
   private
     /// <summary>Cached path to the per-user <c>AppData</c> roaming directory, populated in <see cref="FormCreate"/>.</summary>
@@ -154,16 +161,20 @@ type
     /// </summary>
     /// <param name="InstallDir">Destination directory.</param>
     /// <param name="FileName">Source file name (relative to installer) or absolute path.</param>
-    /// <param name="Force">When <c>True</c>, the copy is mandatory and a missing source raises. When <c>False</c>, a missing source is silently skipped — used for optional companion files such as <c>.map</c>.</param>
+    /// <param name="Force">When <c>True</c>, the copy is mandatory and a missing source raises.  When <c>False</c>, a missing
+    /// source is silently skipped — used for optional companion files such as <c>.map</c>.</param>
+    /// <exception cref="Exception">The installation directory is empty or a root, cannot be created, or the copy fails.</exception>
     procedure InstallFile(const InstallDir, FileName: string; Force: Boolean = True);
     /// <summary>Writes the wizard registration value under <c>HKCU\Software\&lt;Key&gt;\&lt;ExpertsSubKey&gt;</c>.</summary>
     /// <param name="EnvData">Target IDE metadata.</param>
     /// <param name="Name">Wizard name (the registry value name, conventionally <c>'DDevExtensions'</c>).</param>
     /// <param name="Filename">Absolute path to the registered DLL.</param>
+    /// <exception cref="Exception">The expert registry key cannot be opened or created.</exception>
     procedure RegisterExpert(const EnvData: TEnvData; const Name, Filename: string);
     /// <summary>Deletes a single file from <paramref name="InstallDir"/> if it exists.</summary>
     /// <param name="InstallDir">Directory that the file resides in.</param>
     /// <param name="FileName">File name (or path; only the file name component is used).</param>
+    /// <exception cref="Exception">The file exists but cannot be deleted.</exception>
     procedure UninstallFile(const InstallDir, FileName: string);
     /// <summary>Removes the wizard registration value under <c>HKCU\Software\&lt;Key&gt;\&lt;ExpertsSubKey&gt;</c>.</summary>
     /// <param name="EnvData">Target IDE metadata.</param>
@@ -180,7 +191,8 @@ type
     /// copies the appropriate <c>DDevExtensions&lt;Version&gt;.dll</c>, the matching <c>.map</c>
     /// (when present), and <see cref="TEnvData.CompInterceptorDll"/>, then registers the wizard.
     /// </summary>
-    /// <exception cref="Exception">Raised when the install folder cannot be determined or created, a file cannot be copied, or the expert cannot be registered.</exception>
+    /// <exception cref="Exception">Raised when the install folder cannot be determined or created, a file cannot be copied,
+    /// or the expert cannot be registered.</exception>
     /// <param name="EnvData">The IDE target to install into.</param>
     procedure DoInstall(const EnvData: TEnvData);
     /// <summary>

@@ -55,6 +55,7 @@ type
     procedure ReaderError(Reader: TReader; const Message: string; var Handled: Boolean);
   protected
     /// <summary>Sets the page caption shown at the top of the frame.</summary>
+    /// <param name="ACaption">Text to show in the frame's caption label.</param>
     procedure SetTitle(const ACaption: string);
     /// <summary>
     /// Streams the frame's DFM with <see cref="ReaderError"/> attached to this reader only.  The handler used to

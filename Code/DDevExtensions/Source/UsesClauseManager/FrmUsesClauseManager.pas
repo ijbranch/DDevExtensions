@@ -70,7 +70,8 @@ type
     lblDetails: TLabel;
     /// <summary>Builds (or rebuilds) the project-wide exports database.</summary>
     btnBuildDB: TButton;
-    /// <summary>Closes the form.</summary>
+    /// <summary>Closes the form, unless an exports-database build is running.</summary>
+    /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Runs the analyser on the currently active editor source.</summary>
     /// <param name="Sender">The Analyze button.</param>
@@ -79,30 +80,48 @@ type
     /// <param name="Sender">The Apply button.</param>
     procedure btnApplyClick( Sender: TObject );
     /// <summary>Builds the exports database from the active project's search path.</summary>
+    /// <param name="Sender">The Build DB button.</param>
     procedure btnBuildDBClick( Sender: TObject );
-    /// <summary>Frees per-placement string lists and releases the singleton form.</summary>
+    /// <summary>Vetoes the close while an exports-database build is running; otherwise clears the singleton reference and frees the form.</summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="Action">Set to caNone while busy, otherwise caFree.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Form OnCreate handler: initialises sort and current-file state.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: frees placement string lists.</summary>
     /// <param name="Sender">The form being destroyed.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Re-opens the source file when a row is double-clicked.</summary>
+    /// <param name="Sender">The placements list view.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Updates the details memo when the selection changes.</summary>
+    /// <param name="Sender">The placements list view.</param>
+    /// <param name="Item">The item whose selection changed.</param>
+    /// <param name="Selected">True if Item became selected; only then are the details shown.</param>
     procedure ListViewSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
-    /// <summary>Copies selected rows (or all rows) to the clipboard as TSV.</summary>
+    /// <summary>Copies the selected rows (all rows when none is selected) to the clipboard as tab-separated text with a header line.</summary>
+    /// <param name="Sender">The Copy to Clipboard menu item.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Moves only the selected units to their recommended sections.</summary>
     /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuMoveUnitClick( Sender: TObject );
     /// <summary>Re-opens the source file in the editor.</summary>
+    /// <param name="Sender">The Open File menu item.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the placement table to a CSV file.</summary>
+    /// <param name="Sender">The Export button.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Toggles or switches the active sort column.</summary>
+    /// <param name="Sender">The placements list view.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom-column comparer used by AlphaSort.</summary>
+    /// <param name="Sender">The placements list view.</param>
+    /// <param name="Item1">First item to compare.</param>
+    /// <param name="Item2">Second item to compare.</param>
+    /// <param name="Data">Sort data supplied by the list view; not used.</param>
+    /// <param name="Compare">Receives the case-insensitive comparison of the sort column, negated when sorting descending.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
   private
@@ -114,13 +133,16 @@ type
     FSortAscending: Boolean;
     /// <summary>Path of the file most recently analysed.</summary>
     FCurrentFileName: string;
-    /// <summary>True while the exports-database build is running; used to veto closing the form mid-build (the build pumps the message queue via DBProgress).</summary>
+    /// <summary>True while the exports-database build is running; used to veto closing the form mid-build
+    /// (the build pumps the message queue via DBProgress).</summary>
     FBusy: Boolean;
     /// <summary>Refreshes the list view from <see cref="FPlacements"/>.</summary>
     procedure PopulateList;
     /// <summary>Database OnProgress callback that updates the progress label.</summary>
+    /// <param name="Sender">The TUnitExportsDatabase being built; its ProgressFileName is shown.</param>
     procedure DBProgress( Sender: TObject );
     /// <summary>Renders the supplied placement's identifiers and reason into the details memo.</summary>
+    /// <param name="Placement">The placement to describe.</param>
     procedure ShowDetails( const Placement: TUnitPlacement );
     /// <summary>Re-opens <see cref="FCurrentFileName"/> in the IDE editor.</summary>
     procedure OpenSelectedFile;

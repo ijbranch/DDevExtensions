@@ -58,17 +58,25 @@ type
   TVariableLocations = set of TVariableLocation;
 
 /// <summary>Registry sub-key holding the IDE macro overrides for THIS IDE's bitness.</summary>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <returns>The 64-bit IDE's key in a Win64 build, otherwise the 32-bit IDE's key.</returns>
 function EnvironmentVariablesKey( const ABaseRegistryKey: string ): string;
 
 /// <summary>Registry sub-key holding the 32-bit IDE's macro overrides.</summary>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <returns>ABaseRegistryKey\Environment Variables.</returns>
 function EnvironmentVariablesKey32( const ABaseRegistryKey: string ): string;
 
 /// <summary>Registry sub-key holding the 64-bit IDE's macro overrides.</summary>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <returns>ABaseRegistryKey\Environment Variables x64.</returns>
 function EnvironmentVariablesKey64( const ABaseRegistryKey: string ): string;
 
 /// <summary>
 /// Reads one IDE macro-override list into AList as <c>Name=Value</c> pairs.
 /// </summary>
+/// <param name="AKey">The registry key under HKEY_CURRENT_USER.</param>
+/// <param name="AList">Receives the pairs; cleared first, and left empty when the key does not exist.</param>
 procedure ReadIdeVariables( const AKey: string; AList: TStrings );
 
 /// <summary>
@@ -79,6 +87,8 @@ procedure ReadIdeVariables( const AKey: string; AList: TStrings );
 /// A divergence means any shared library-path entry using that macro resolves
 /// in one IDE only. The compactor reports these; it never repairs them silently.
 /// </remarks>
+/// <param name="ABaseRegistryKey">The IDE's base registry key.</param>
+/// <returns>The divergent variables; empty when the lists agree.</returns>
 function FindDivergences( const ABaseRegistryKey: string ): TArray<TEnvVarDivergence>;
 
 /// <summary>
@@ -156,6 +166,7 @@ procedure BuildMacroTable( AList: TStrings; const ABaseRegistryKey, APlatformNam
 procedure BuildReservedNames( AList: TStrings );
 
 /// <summary>Returns the IDE installation root — the value of <c>$(BDS)</c>.</summary>
+/// <returns>The parent folder of the IDE's bin folder.</returns>
 function BdsRootDir: string;
 
 /// <summary>

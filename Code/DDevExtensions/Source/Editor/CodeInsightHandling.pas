@@ -1,4 +1,4 @@
-unit CodeInsightHandling;
+﻿unit CodeInsightHandling;
 
 /// <summary>
 /// Hooks TIDEPopupListBox.EditorKey so that pressing TAB inside a Code Insight pop-up

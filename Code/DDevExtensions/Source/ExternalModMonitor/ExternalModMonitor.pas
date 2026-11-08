@@ -154,9 +154,15 @@ type
     procedure HandleFileNotification( NotifyCode: TOTAFileNotification;
       const FileName: string; var Cancel: Boolean );
     /// <summary>BeforeCompile callback; sets FCompiling to True so file changes are ignored during the build.</summary>
+    /// <param name="Project">The project about to be compiled.</param>
+    /// <param name="IsCodeInsight">True when the compile is for Code Insight.</param>
+    /// <param name="Cancel">Set True to cancel the compile; left unchanged.</param>
     procedure HandleBeforeCompile( const Project: IOTAProject;
       IsCodeInsight: Boolean; var Cancel: Boolean );
     /// <summary>AfterCompile callback; clears FCompiling and discards any change events queued during the build.</summary>
+    /// <param name="Project">The project that was compiled.</param>
+    /// <param name="Succeeded">True when the compile succeeded.</param>
+    /// <param name="IsCodeInsight">True when the compile was for Code Insight.</param>
     procedure HandleAfterCompile( const Project: IOTAProject;
       Succeeded: Boolean; IsCodeInsight: Boolean );
     /// <summary>File-watcher callback ( on the main thread ); queues the file for refresh and resets the debounce timer.</summary>
@@ -167,9 +173,12 @@ type
     procedure HandleDebounceTimer( Sender: TObject );
 
     /// <summary>Returns True when FileName has an extension on the monitored list.</summary>
+    /// <param name="FileName">File name to test; the extension is compared case-insensitively.</param>
+    /// <returns>True when the extension is in the monitored set.</returns>
     function IsMonitoredExtension( const FileName: string ): Boolean;
     /// <summary>Looks up the IOTAModule for FileName among the modules currently open in the IDE.</summary>
     /// <returns>The matching module, or nil if it is not open.</returns>
+    /// <param name="FileName">File name of the module to find.</param>
     function FindOpenModule( const FileName: string ): IOTAModule;
     /// <summary>
     /// Returns True when any editor of Module ( source, form designer or project ) has unsaved
@@ -182,11 +191,13 @@ type
     /// <param name="RefreshedFiles">List of file names just refreshed.</param>
     procedure ShowBalloonNotification( RefreshedFiles: TStringList );
     /// <summary>Removes the tray notification icon when the cleanup timer fires.</summary>
+    /// <param name="Sender">The cleanup timer.</param>
     procedure HandleNotifyCleanup( Sender: TObject );
   protected
     /// <summary>Sets default values for newly created configurations.</summary>
     procedure Init; override;
     /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
+    /// <returns>The options page node for this feature.</returns>
     function GetOptionPages: TTreePage; override;
   public
     /// <summary>Constructs the configuration, the file watcher, the timers and the IDE notifier.</summary>

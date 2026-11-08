@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* (C) 2005,2006 Andreas Hausladen                                            *}
 {*                                                                            *}
@@ -28,18 +28,23 @@ type
   IListViewSort = interface
     ['{3EB61BB0-EAD6-4E9D-BA1C-86618B715592}']
     /// <summary>Sorts the list view by the given column index.</summary>
+    /// <param name="AColumn">Column index to sort on; sorting the current column again toggles the direction.</param>
     procedure Sort(AColumn: Integer);
     /// <summary>Re-applies the current sort, optionally on a new column.</summary>
     /// <param name="NewColumn">New column to sort on, or -1 to keep the current one.</param>
     procedure Resort(NewColumn: Integer = -1);
 
     /// <summary>Returns the index of the column currently used for sorting.</summary>
+    /// <returns>The zero-based sort column index.</returns>
     function GetColumn: Integer;
     /// <summary>Returns the underlying <c>TListView</c>.</summary>
+    /// <returns>The list view this sorter was created for.</returns>
     function GetListView: TListView;
     /// <summary>Returns whether the current sort is ascending.</summary>
+    /// <returns>True when the sort direction flag is ascending.</returns>
     function GetSortAsc: Boolean;
     /// <summary>Sets the ascending/descending sort direction.</summary>
+    /// <param name="Value">True for ascending, False for descending.</param>
     procedure SetSortAsc(Value: Boolean);
 
     /// <summary>Active sort column. Assigning re-sorts the list view.</summary>
@@ -80,29 +85,39 @@ type
     /// <summary>User-supplied callback that overrides the comparison kind per column.</summary>
     FOnSortKind: TSortKindEvent;
   protected
-    { The function calling Compare will invert the result automatically if necessary. }
     /// <summary>
     /// Compares two list items according to the current column and the kind
     /// supplied by <see cref="OnSortKind"/>.
     /// </summary>
-    /// <remarks>The wrapping callback inverts the result automatically when descending.</remarks>
+    /// <remarks>The wrapping sort callback clamps the result to -1..1 and negates it when <see cref="SortAsc"/> is True.</remarks>
+    /// <param name="Item1">First item to compare.</param>
+    /// <param name="Item2">Second item to compare.</param>
+    /// <returns>Negative, zero or positive; numeric, float and percentage kinds compare in reverse (<c>Item2</c> against
+    /// <c>Item1</c>), and a missing sub-item compares as an empty string.</returns>
     function Compare(Item1, Item2: TListItem): Integer; virtual;
 
     /// <summary>Returns the active sort column.</summary>
+    /// <returns>The zero-based sort column index.</returns>
     function GetColumn: Integer;
     /// <summary>Returns the wrapped list view.</summary>
+    /// <returns>The list view passed to <see cref="Create"/>.</returns>
     function GetListView: TListView;
   public
     /// <summary>Creates a sorter owned by and attached to <paramref name="AListView"/>.</summary>
+    /// <param name="AListView">List view to sort; it also becomes the sorter's owner, so it frees the sorter.</param>
     constructor Create(AListView: TListView); reintroduce;
 
     /// <summary>Sorts on <paramref name="AColumn"/>; clicking the same column again toggles direction.</summary>
+    /// <param name="AColumn">Column index to sort on (its absolute value is used); an index beyond the column count only records it.</param>
     procedure Sort(AColumn: Integer);
     /// <summary>Re-applies the current sort, optionally on a new column.</summary>
+    /// <param name="NewColumn">New column to sort on, or -1 to keep the current one.</param>
     procedure Resort(NewColumn: Integer = -1);
     /// <summary>Returns the current sort direction.</summary>
+    /// <returns>True when the sort direction flag is ascending.</returns>
     function GetSortAsc: Boolean;
     /// <summary>Sets the sort direction and re-sorts.</summary>
+    /// <param name="Value">True for ascending, False for descending.</param>
     procedure SetSortAsc(Value: Boolean);
 
     /// <summary>The list view being sorted.</summary>
@@ -121,38 +136,62 @@ type
 /// always selected, falling back to the nearest item, then
 /// <paramref name="DefaultItem"/>, then the last item.
 /// </summary>
+/// <param name="Sender">The <c>TListView</c> that received the mouse-down.</param>
+/// <param name="Button">Mouse button pressed (not used).</param>
+/// <param name="Shift">Shift state at the click (not used).</param>
+/// <param name="X">Client X co-ordinate of the click.</param>
+/// <param name="Y">Client Y co-ordinate of the click.</param>
+/// <param name="DefaultItem">Item to select when no item is at or above the click point; may be nil.</param>
 procedure ListViewMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer; DefaultItem: TListItem);
 /// <summary>Clears <paramref name="ListView"/> inside a Begin/EndUpdate pair.</summary>
+/// <param name="ListView">List view to act on.</param>
 procedure ListViewClear(ListView: TListView);
 
 /// <summary>Enables or disables a windowed control and recolours it (<c>clWindow</c>/<c>clBtnFace</c>) accordingly.</summary>
+/// <param name="Ctrl">Windowed control to enable or disable.</param>
+/// <param name="Enable">True to enable and colour it <c>clWindow</c>, False to disable and colour it <c>clBtnFace</c>.</param>
 procedure EnableWinCtrl(Ctrl: TWinControl; Enable: Boolean);
 
 /// <summary>Shows a Yes/No confirmation dialog and returns True for Yes.</summary>
 /// <param name="Text">Message body.</param>
 /// <param name="DefBtn">Default button (<c>mbYes</c> or <c>mbNo</c>).</param>
+/// <returns>True when the user chose Yes.</returns>
 function ConfirmDlg2(const Text: string; DefBtn: TMsgDlgBtn = mbYes): Boolean; overload;
 /// <summary>Format-string overload of <see cref="ConfirmDlg2"/>.</summary>
+/// <param name="Fmt">Format string for the message body.</param>
+/// <param name="Args">Arguments for <paramref name="Fmt"/>.</param>
+/// <param name="DefBtn">Default button (<c>mbYes</c> or <c>mbNo</c>).</param>
+/// <returns>True when the user chose Yes.</returns>
 function ConfirmDlg2(const Fmt: string; const Args: array of const;
   DefBtn: TMsgDlgBtn = mbYes): Boolean; overload;
 
 /// <summary>Shows an information dialog with an OK button.</summary>
+/// <param name="Text">Message body.</param>
 procedure InformDlg(const Text: string); overload;
 /// <summary>Format-string overload of <see cref="InformDlg"/>.</summary>
+/// <param name="Fmt">Format string for the message body.</param>
+/// <param name="Args">Arguments for <paramref name="Fmt"/>.</param>
 procedure InformDlg(const Fmt: string; const Args: array of const); overload;
 
 /// <summary>Shows an error dialog with an OK button.</summary>
+/// <param name="Text">Message body.</param>
 procedure ErrorDlg(const Text: string); overload;
 /// <summary>Format-string overload of <see cref="ErrorDlg"/>.</summary>
+/// <param name="Fmt">Format string for the message body.</param>
+/// <param name="Args">Arguments for <paramref name="Fmt"/>.</param>
 procedure ErrorDlg(const Fmt: string; const Args: array of const); overload;
 
 /// <summary>Shows a warning dialog with an OK button.</summary>
+/// <param name="Text">Message body.</param>
 procedure WarningDlg(const Text: string); overload;
 /// <summary>Format-string overload of <see cref="WarningDlg"/>.</summary>
+/// <param name="Fmt">Format string for the message body.</param>
+/// <param name="Args">Arguments for <paramref name="Fmt"/>.</param>
 procedure WarningDlg(const Fmt: string; const Args: array of const); overload;
 
 /// <summary>Enables double-buffering on a list view to reduce flicker.</summary>
+/// <param name="ListView">List view to act on.</param>
 procedure FixListViewFlicker(ListView: TListView);
 
 implementation

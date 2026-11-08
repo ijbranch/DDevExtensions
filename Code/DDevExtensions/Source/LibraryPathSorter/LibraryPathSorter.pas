@@ -58,14 +58,20 @@ type
     /// <summary>BorlandIDEServices.GetBaseRegistryKey snapshot taken at construction.</summary>
     FBaseRegistryKey: string;
     /// <summary>Returns the registry sub-key for the Library values of the supplied platform.</summary>
+    /// <param name="APlatform">The platform name; empty gives the Library key itself.</param>
+    /// <returns>The registry key path relative to HKEY_CURRENT_USER.</returns>
     function GetLibraryKey( const APlatform: string ): string;
   public
     /// <summary>Creates the handler and snapshots BaseRegistryKey from BorlandIDEServices.</summary>
     constructor Create;
 
     /// <summary>Returns the platforms with installed Library sub-keys (Win32 is always present).</summary>
+    /// <returns>A new sorted list of platform names that the caller must free.</returns>
     function GetAvailablePlatforms: TStringList;
     /// <summary>Reads the named path value from the registry (returns empty if missing).</summary>
+    /// <param name="PathType">The path value to read.</param>
+    /// <param name="APlatform">The platform sub-key.</param>
+    /// <returns>The stored value, or an empty string when it is missing.</returns>
     function ReadPaths( PathType: TLibraryPathType; const APlatform: string ): string;
     /// <summary>Writes the supplied semicolon-separated paths to the named registry value and verifies them by read-back.</summary>
     /// <param name="PathType">The value to write.</param>
@@ -74,6 +80,10 @@ type
     /// <exception cref="ELibraryPathError">The key could not be opened, or the value did not read back as written.</exception>
     procedure WritePaths( PathType: TLibraryPathType; const APlatform, APaths: string );
     /// <summary>Returns APaths sorted (case-insensitively by default), preserving duplicates.</summary>
+    /// <param name="APaths">The semicolon-separated paths.</param>
+    /// <param name="CaseInsensitive">True (the default) to sort ignoring case.</param>
+    /// <returns>The sorted paths joined with semicolons; empty entries are dropped.</returns>
+    /// <exception cref="Exception">The sorted list does not hold the same number of entries as the input (a path would be lost).</exception>
     function SortPaths( const APaths: string; CaseInsensitive: Boolean = True ): string;
 
     /// <summary>Base registry key under which the Library sub-key lives.</summary>
@@ -92,6 +102,7 @@ type
     /// <summary>Owned registry path handler.</summary>
     FPathHandler: TLibraryPathHandler;
     /// <summary>OnClick handler for the Tools-menu item.</summary>
+    /// <param name="Sender">The Tools-menu item.</param>
     procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Sets the default value for Enabled (True) on first creation.</summary>
@@ -113,6 +124,7 @@ type
   end;
 
 /// <summary>Plugin entry point that creates or frees LibraryPathSorterPlugin.</summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin( Unload: Boolean );
 
 /// <summary>Singleton instance of the plugin (nil when not loaded).</summary>

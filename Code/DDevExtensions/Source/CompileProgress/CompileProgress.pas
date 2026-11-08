@@ -35,7 +35,6 @@ type
   /// dependency between CompileProgress and CodeStyleChecker. Describes one detected
   /// coding-style violation in a Delphi source file.
   /// </summary>
-  // Local copy of TStyleViolation to avoid circular dependency with CodeStyleChecker
   TStyleViolation = record
     /// <summary>Absolute file name where the violation was detected.</summary>
     FileName: string;
@@ -144,11 +143,13 @@ type
     /// <returns>True for project files; True for all files if none have been registered.</returns>
     function IsProjectFile(const FileName: string): Boolean;
     /// <summary>Returns a thread-safe snapshot of the recorded unit information.</summary>
+    /// <returns>A copy of the unit records, safe to use after the lock is released.</returns>
     function GetUnits: TArray<TBuildUnitInfo>;
     /// <summary>Stores the supplied violations as a copy under the lock.</summary>
     /// <param name="Violations">Violations produced by the style checker.</param>
     procedure SetStyleViolations( const Violations: TArray<TStyleViolation> );
     /// <summary>Returns a thread-safe snapshot of the recorded style violations.</summary>
+    /// <returns>A copy of the style violations, safe to use after the lock is released.</returns>
     function GetStyleViolations: TArray<TStyleViolation>;
     /// <summary>Total milliseconds across all units in the most recent build.</summary>
     property TotalBuildTime: Int64 read GetTotalBuildTime;
@@ -213,10 +214,13 @@ type
     procedure UpdateLastCompileVersionInfo(const Project: IOTAProject);
     {$IFEND}
     /// <summary>Setter for AskCompileFromDiffProject.</summary>
+    /// <param name="Value">True to ask before compiling a file from a non-active project.</param>
     procedure SetAskCompileFromDiffProject(const Value: Boolean);
     /// <summary>Setter for ReleaseCompilerUnitCache; updates the active hook.</summary>
+    /// <param name="Value">True to release the unit cache of inactive projects after every compile.</param>
     procedure SetReleaseCompilerUnitCache(const Value: Boolean);
     /// <summary>Setter for ReleaseCompilerUnitCacheHigh; updates the active hook.</summary>
+    /// <param name="Value">True to restrict the unit-cache release to high memory pressure.</param>
     procedure SetReleaseCompilerUnitCacheHigh(const Value: Boolean);
     /// <summary>Setter for EnableBuildStatistics; toggles the menu item visibility.</summary>
     /// <param name="Value">True to collect build statistics and show the menu item.</param>
@@ -224,6 +228,7 @@ type
     /// <summary>Shows the singleton Build Statistics dialog.</summary>
     procedure ShowBuildStatisticsDialog;
     /// <summary>Click handler for the Build Statistics menu item.</summary>
+    /// <param name="Sender">The Build Statistics menu item.</param>
     procedure BuildStatsMenuItemClick(Sender: TObject);
   {$IF CompilerVersion < 22.0} // XE has its own option
   private
@@ -234,6 +239,7 @@ type
     /// <summary>Original bytes preserved at FRebuildAddress so the patch can be reversed.</summary>
     FRebuildOrgBytes: array[0..2] of Byte;
     /// <summary>Setter for DisableRebuildDlg; applies or reverses the in-memory patch.</summary>
+    /// <param name="Value">True to suppress the IDE's rebuild confirmation dialog.</param>
     procedure SetDisableRebuildDlg(const Value: Boolean);
   {$IFEND}
   protected
@@ -249,26 +255,49 @@ type
     procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean);
   protected
     /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
+    /// <returns>The options page node for this feature.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises default values when the configuration object is first created.</summary>
     procedure Init; override;
 
     { ICompileInterceptor }
     /// <summary>Returns the set of compile-interceptor features required by this plug-in.</summary>
+    /// <returns>CIO_INSPECTFILENAMES: only file-name inspection is requested.</returns>
     function GetOptions: TCompileInterceptOptions; stdcall;
-    /// <summary>ICompileInterceptor: returns a virtual replacement for Filename, or nil for none.</summary>
+    /// <summary>ICompileInterceptor: would return a virtual replacement for Filename; this plug-in supplies none.</summary>
+    /// <param name="Filename">File the compiler is about to open.</param>
+    /// <returns>Always nil.</returns>
     function GetVirtualFile(Filename: PWideChar): IVirtualStream; stdcall;
     /// <summary>ICompileInterceptor: optionally returns altered file content; this plug-in returns nil.</summary>
+    /// <param name="Filename">File the compiler has read.</param>
+    /// <param name="Content">The file's content.</param>
+    /// <param name="FileDate">The file's date stamp.</param>
+    /// <param name="FileSize">Size of Content in bytes.</param>
+    /// <returns>Always nil.</returns>
     function AlterFile(Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream; stdcall;
     /// <summary>ICompileInterceptor: receives notifications when the compiler opens or closes a file.</summary>
     /// <param name="Filename">File being inspected.</param>
     /// <param name="FileMode">Whether the file was opened or closed.</param>
     procedure InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode); stdcall;
     /// <summary>ICompileInterceptor: optionally rewrites compiler messages; this plug-in does not.</summary>
+    /// <param name="IsCompilerMessage">True when the message comes from the compiler.</param>
+    /// <param name="MsgKind">Kind of message; left unchanged.</param>
+    /// <param name="Code">Message code; left unchanged.</param>
+    /// <param name="Filename">File the message refers to.</param>
+    /// <param name="Line">Line number; left unchanged.</param>
+    /// <param name="Column">Column number; left unchanged.</param>
+    /// <param name="Msg">Message text.</param>
+    /// <returns>Always False: the message is not altered.</returns>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; const Filename: IWideString; var Line, Column: Integer;
       const Msg: IWideString): Boolean; stdcall;
     /// <summary>ICompileInterceptor: invoked when the compiler starts work on a project; not used by this plug-in.</summary>
+    /// <param name="ProjectFilename">Project being compiled.</param>
+    /// <param name="UnitPaths">Unit search path.</param>
+    /// <param name="SourcePaths">Source search path.</param>
+    /// <param name="DcuOutputDir">DCU output directory.</param>
+    /// <param name="IsCodeInsight">True when the compile is for Code Insight.</param>
+    /// <param name="Cancel">Set True to cancel the compile; left unchanged.</param>
     procedure CompileProject(ProjectFilename: PWideChar; UnitPaths: PWideChar;
       SourcePaths: PWideChar; DcuOutputDir: PWideChar; IsCodeInsight: Boolean;
       var Cancel: Boolean); stdcall;

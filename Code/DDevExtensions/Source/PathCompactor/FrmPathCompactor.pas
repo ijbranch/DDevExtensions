@@ -112,8 +112,11 @@ type
     /// <param name="Sender">The form being created.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Frees the analysis, macro table, backup manager and path handler.</summary>
+    /// <param name="Sender">The form being destroyed.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Clears the singleton and frees the form.</summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="Action">Set so the form frees itself.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Runs the analysis over the ticked platforms and path types.</summary>
     /// <param name="Sender">The Analyse button.</param>
@@ -122,8 +125,10 @@ type
     /// <param name="Sender">The Apply button.</param>
     procedure btnApplyClick( Sender: TObject );
     /// <summary>Closes the dialog.</summary>
+    /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Refreshes the preview panes for the newly selected path set.</summary>
+    /// <param name="Sender">The preview set combo box.</param>
     procedure cboPreviewSetChange( Sender: TObject );
     /// <summary>
     /// Includes or excludes the ticked variable from the rewrite, so the values written never
@@ -152,10 +157,13 @@ type
     /// <summary>Fills the platform and path-type check lists.</summary>
     procedure PopulateScope;
     /// <summary>Path types offered in the dialog. Namespace Prefixes is deliberately absent.</summary>
+    /// <returns>Every path type except Namespace Prefixes.</returns>
     function OfferedPathTypes: TArray<TLibraryPathType>;
     /// <summary>Returns the platforms the user has ticked.</summary>
+    /// <returns>The ticked platform names.</returns>
     function SelectedPlatforms: TArray<string>;
     /// <summary>Returns the path types the user has ticked.</summary>
+    /// <returns>The ticked path types.</returns>
     function SelectedPathTypes: TArray<TLibraryPathType>;
 
     /// <summary>Rebuilds the summary grid from the current analysis.</summary>
@@ -170,16 +178,22 @@ type
     procedure UpdateStatus;
 
     /// <summary>Total expanded length of a set, before rewriting.</summary>
+    /// <param name="APathSet">The path set to measure.</param>
+    /// <returns>The sum of the expanded (or raw, when not expanded) entry lengths plus the separating semicolons.</returns>
     function ExpandedLengthBefore( APathSet: TPathSet ): Integer;
     /// <summary>Total expanded length of a set, after rewriting.</summary>
+    /// <param name="APathSet">The path set to measure.</param>
+    /// <returns>The same measure as ExpandedLengthBefore, leaving out the entries marked for removal.</returns>
     function ExpandedLengthAfter( APathSet: TPathSet ): Integer;
     /// <summary>True when the IDE's own options dialog is currently showing.</summary>
+    /// <returns>True when a visible form other than this one looks like an IDE options dialog.</returns>
     function IdeOptionsDialogIsOpen: Boolean;
     /// <summary>
-    /// Returns the macro names the OTHER IDE bitness defines but this one does
+    /// Fills AList with the macro names the OTHER IDE bitness defines but this one does
     /// not, so an entry using one is reported as divergent rather than dead and
     /// is never removed by cleanup.
     /// </summary>
+    /// <param name="AList">Receives the names; cleared first.</param>
     procedure BuildDivergentNames( AList: TStrings );
     /// <summary>
     /// Writes the analysed compaction as one unit: builds every value, refuses if any has

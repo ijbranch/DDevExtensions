@@ -30,6 +30,7 @@ type
     /// <summary>Cookie of the IOTAModuleNotifier registration (-1 once removed).</summary>
     FNotifier: Integer;
     /// <summary>Returns the .local include list (creating the include entry on demand).</summary>
+    /// <returns>The parameter list of the .params.local include.</returns>
     function GetLocalParameters: TStartParamList;
   protected
     { IOTANotifier }
@@ -44,15 +45,22 @@ type
 
     { IOTAModuleNotifier }
     /// <summary>IOTAModuleNotifier callback that authorises overwrite-on-save (always True).</summary>
+    /// <returns>Always True.</returns>
     function CheckOverwrite: Boolean;
     /// <summary>Renames the .params and .params.local files when the project is renamed.</summary>
+    /// <param name="NewName">The project's new file name.</param>
     procedure ModuleRenamed(const NewName: string);
   public
     /// <summary>Creates the bookkeeping object, registers the IDE notifier and creates an empty list.</summary>
+    /// <param name="AOwner">The toolbar control that owns this tracker.</param>
+    /// <param name="AProject">The project to track.</param>
     constructor Create(AOwner: TStartParameterControl; const AProject: IOTAProject);
     /// <summary>Unregisters the IDE notifier and frees the parameter list.</summary>
     destructor Destroy; override;
     /// <summary>Returns the .params (or .params.local) file path for the supplied project file.</summary>
+    /// <param name="AFileName">The project file name.</param>
+    /// <param name="ALocal">True for the .params.local file name.</param>
+    /// <returns>AFileName with its extension replaced by .params, plus .local when ALocal is True.</returns>
     class function GetParamFileName(const AFileName: string; ALocal: Boolean): string;
 
     /// <summary>Loads the project's parameters from disk (or clears them if the file is missing).</summary>
@@ -81,6 +89,8 @@ type
     /// <summary>The TProjectParameters whose parameters are currently displayed.</summary>
     FActiveParams: TProjectParameters;
     /// <summary>Returns the TProjectParameters tracking the supplied project, or nil.</summary>
+    /// <param name="AProject">The project to look up.</param>
+    /// <returns>The tracker for AProject, or nil when it is not tracked.</returns>
     function FindProject(const AProject: IOTAProject): TProjectParameters;
     /// <summary>Popup-menu handler that opens (or creates and opens) the clicked .params file.</summary>
     /// <param name="Sender">The Edit File menu item.</param>
@@ -91,13 +101,17 @@ type
     /// <summary>Persists the new active parameter when the selection changes.</summary>
     procedure Change; override;
     /// <summary>Refreshes the parameter list when the control gains focus.</summary>
+    /// <param name="Msg">The WM_SETFOCUS message.</param>
     procedure WMSetFocus(var Msg: TWMSetFocus); message WM_SETFOCUS;
     /// <summary>Provides the resolved parameter string as the control's tooltip.</summary>
+    /// <param name="Msg">The CM_HINTSHOW message whose hint text is set.</param>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
     /// <summary>Copies the active resolved parameter string to the clipboard on Ctrl+C.</summary>
+    /// <param name="Msg">The WM_COPY message.</param>
     procedure WMCopy(var Msg: TWMCopy); message WM_COPY;
 
     /// <summary>Builds the right-click popup menu listing the editable .params files.</summary>
+    /// <param name="Sender">The popup menu about to show.</param>
     procedure DoPopup(Sender: TObject);
 
     { IOTANotifier }
@@ -112,10 +126,16 @@ type
 
     { IOTAIDENotifier }
     /// <summary>Refreshes the parameter list when the active project changes.</summary>
+    /// <param name="NotifyCode">The IDE file notification; only ofnActiveProjectChanged is handled.</param>
+    /// <param name="FileName">The file the notification is about (not used).</param>
+    /// <param name="Cancel">Left unchanged.</param>
     procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
     /// <summary>IOTAIDENotifier callback (before compile); no-op.</summary>
+    /// <param name="Project">The project about to be compiled (not used).</param>
+    /// <param name="Cancel">Left unchanged.</param>
     procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); overload;
     /// <summary>IOTAIDENotifier callback (after compile); no-op.</summary>
+    /// <param name="Succeeded">Whether the compile succeeded (not used).</param>
     procedure AfterCompile(Succeeded: Boolean); overload;
 
     /// <summary>Forces the design-time width on load.</summary>
@@ -124,10 +144,14 @@ type
     procedure DropDown; override;
     {$IF CompilerVersion >= 33.0} // 10.3 Rio+
     /// <summary>Owner-drawing implementation that mirrors the platforms combo's font/brush.</summary>
+    /// <param name="Index">The index of the item to draw.</param>
+    /// <param name="Rect">The item's rectangle.</param>
+    /// <param name="State">The item's owner-draw state.</param>
     procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
     {$IFEND}
   public
     /// <summary>Creates the control and registers the IOTAServices notifier.</summary>
+    /// <param name="AOwner">The owning component (the IDE toolbar).</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>Unregisters the IOTAServices notifier and frees the project tracker list.</summary>
     destructor Destroy; override;
@@ -143,6 +167,7 @@ type
     /// <returns>True when a non-default parameter is selected.</returns>
     class function GetActiveParams(var Params: string; AllowReload: Boolean): Boolean; static;
     /// <summary>Returns True when no specific start parameter is selected.</summary>
+    /// <returns>True when the default (project) parameters are in use.</returns>
     class function IsDefaultParams: Boolean; static;
   published
     /// <summary>Inherited Enabled, republished for IDE persistence.</summary>

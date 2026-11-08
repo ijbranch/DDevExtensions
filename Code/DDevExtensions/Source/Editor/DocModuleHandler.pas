@@ -1,4 +1,4 @@
-unit DocModuleHandler;
+﻿unit DocModuleHandler;
 
 /// <summary>
 /// Re-declares enough of Delphi's internal Docmodul.pas / Delphimodule.pas types so plug-ins
@@ -27,26 +27,47 @@ type
     FFilter: IOTAFileFilter;
   public
     /// <summary>Returns a read or write stream onto the named virtual file.</summary>
+    /// <param name="FileName">Name of the file inside the virtual file system.</param>
+    /// <param name="Mode">File open mode (fmOpenRead, fmCreate and so on) passed through to the IDE.</param>
+    /// <returns>The IDE's stream onto the file.</returns>
     function GetFileStream(const FileName: string; Mode: Integer): TVirtualStream; virtual; abstract;
     /// <summary>Returns the modification timestamp of the file.</summary>
+    /// <param name="FileName">Name of the file to query.</param>
+    /// <returns>The file's modification timestamp as the IDE reports it.</returns>
     function FileAge(const FileName: string): Longint; virtual; abstract;
     /// <summary>Renames a file inside the virtual file system.</summary>
+    /// <param name="OldName">Current name of the file.</param>
+    /// <param name="NewName">Name the file is to take.</param>
+    /// <returns>True if the file was renamed.</returns>
     function RenameFile(const OldName, NewName: string): Boolean; virtual; abstract;
     /// <summary>True if the file is read-only.</summary>
+    /// <param name="FileName">Name of the file to query.</param>
+    /// <returns>True if the file cannot be written.</returns>
     function IsReadonly(const FileName: string): Boolean; virtual; abstract;
     /// <summary>True if this file system is backed by real files on disk.</summary>
+    /// <returns>True if the file system stores its files on disk.</returns>
     function IsFileBased: Boolean; virtual; abstract;
     /// <summary>Removes the named file.</summary>
+    /// <param name="FileName">Name of the file to remove.</param>
+    /// <returns>True if the file was removed.</returns>
     function DeleteFile(const FileName: string): Boolean; virtual; abstract;
     /// <summary>True if the named file exists.</summary>
+    /// <param name="FileName">Name of the file to look for.</param>
+    /// <returns>True if the file exists in this file system.</returns>
     function FileExists(const FileName: string): Boolean; virtual; abstract;
     /// <summary>Returns a unique temporary filename in the same logical location.</summary>
+    /// <param name="FileName">File whose location the temporary name is based on.</param>
+    /// <returns>A temporary file name beside FileName.</returns>
     function GetTempFileName(const FileName: string): string; virtual; abstract;
     /// <summary>Returns the conventional backup filename for the file.</summary>
+    /// <param name="FileName">File whose backup name is wanted.</param>
+    /// <returns>The backup file name for FileName.</returns>
     function GetBackupFileName(const FileName: string): string; virtual; abstract;
     /// <summary>Returns the unique IDString that identifies this file system.</summary>
+    /// <returns>The file system's identifying string.</returns>
     function GetIDString: string; virtual; abstract;
     /// <summary>Returns the IOTAFileFilter installed on this file system.</summary>
+    /// <returns>The installed file filter, or nil if none.</returns>
     function GetFilter: IOTAFileFilter; virtual; abstract;
     //procedure SetFilter(const AFilter: IOTAFileFilter);
     //property Filter: IOTAFileFilter read GetFilter write SetFilter;
@@ -62,51 +83,70 @@ type
   TDocModule = class(TObject)
   public
     /// <summary>True if the underlying module has been put dormant by the IDE.</summary>
+    /// <returns>True if the module is dormant (read from the IDE object's field at the offset resolved by InitDocModuleHandler).</returns>
     function IsDormant: Boolean;
   public
     /// <summary>Returns True if the file's date on disk differs from the loaded copy.</summary>
+    /// <returns>True if the file on disk has changed since it was loaded.</returns>
     function CheckFileDate: Boolean;
     /// <summary>Returns True if the IDE believes this module can safely be reloaded.</summary>
+    /// <returns>True if the module can be reloaded.</returns>
     function CanReloadFile: Boolean;
     /// <summary>Returns True if the in-memory copy is dirty.</summary>
+    /// <returns>True if the module has unsaved changes.</returns>
     function GetModified: Boolean;
     /// <summary>Re-reads the module from disk via the IDE's standard reload mechanism.</summary>
     procedure ReloadFile;
     /// <summary>Returns the absolute file name backing the module.</summary>
+    /// <returns>The module's file name.</returns>
     function GetFileName: string;
     /// <summary>Returns the IDE display name of the module.</summary>
+    /// <returns>The module's display name.</returns>
     function GetModuleName: string;
     /// <summary>Returns the form name associated with the module, or empty for code-only units.</summary>
+    /// <returns>The form name, or an empty string for a unit without a form.</returns>
     function GetFormName: string;
     /// <summary>True if the module owns a form/datamodule.</summary>
+    /// <returns>True if the module has a form or data module.</returns>
     function HasForm: Boolean;
     /// <summary>Toggles between the source view and the form designer.</summary>
+    /// <returns>The IDE's result for the swap; True if the view was switched.</returns>
     function SwapSourceFormView: Boolean;
     /// <summary>True if the module satisfies the IDE's preconditions for being freed.</summary>
+    /// <returns>True if the module can be freed.</returns>
     function GetCanFree: Boolean;
     {$IF CompilerVersion >= 22.0} // XE+
     /// <summary>True if the module can be freed or sent dormant. Available from XE onward.</summary>
     /// <param name="DormantOk">True to accept "go dormant" as success.</param>
+    /// <returns>True if the module can be freed, or (with DormantOk) sent dormant.</returns>
     function CanFreeOrGoDormant(const DormantOk: Boolean): Boolean;
     {$IFEND}
     /// <summary>Populates List with TDocModule instances that depend on this module.</summary>
+    /// <param name="List">List that receives the dependent TDocModule instances.</param>
     procedure GetDependentModules(List: TList);
     /// <summary>Populates List with TDocModule instances that this module depends on.</summary>
+    /// <param name="List">List that receives the TDocModule instances this module depends on.</param>
     procedure GetModuleDependencies(List: TList);
     /// <summary>Asks the IDE to put the module into a dormant state.</summary>
+    /// <returns>True if the module went dormant.</returns>
     function GoDormant: Boolean;
     /// <summary>Activates the source editor for the module.</summary>
     /// <param name="Activate">True to give the editor input focus.</param>
     procedure ShowEditor(Activate: Boolean);
     /// <summary>Activates the editor for the named auxiliary file in the module.</summary>
+    /// <param name="FileName">The auxiliary file whose editor is to be shown.</param>
+    /// <param name="Activate">True to give the editor input focus.</param>
     procedure ShowEditorName(const FileName: string; Activate: Boolean);
     /// <summary>Activates the module, optionally treating it as opened by an external viewer.</summary>
+    /// <param name="IsExternalViewer">True if the module is being opened by an external viewer.</param>
     procedure Activate(IsExternalViewer: Boolean);
     /// <summary>Marks the module as modified.</summary>
     procedure Modified;
     /// <summary>Returns the virtual file system that hosts the module.</summary>
+    /// <returns>The module's virtual file system.</returns>
     function GetFileSystem: TVirtualFileSystem;
     /// <summary>Returns the IDE's internal "code IDocModule" interface implementation.</summary>
+    /// <returns>The IDE object that implements the module's code IDocModule.</returns>
     function GetCodeIDocModule: TInterfacedObject;
 
     /// <summary>True if the in-memory copy is dirty.</summary>
@@ -134,12 +174,22 @@ type
   IDocStream = interface
     ['{B7B8F53F-2A84-4CDD-97D9-B7D9CDAC33F8}']
     /// <summary>Reads up to Length bytes from the stream into Buffer.</summary>
+    /// <param name="Buffer">Buffer that receives the bytes read.</param>
+    /// <param name="Length">Most bytes to read.</param>
+    /// <returns>Number of bytes actually read.</returns>
     function Read(var Buffer; Length: Int64): Int64;
     /// <summary>Writes Length bytes from Buffer into the stream.</summary>
+    /// <param name="Buffer">Buffer holding the bytes to write.</param>
+    /// <param name="Length">Number of bytes to write.</param>
+    /// <returns>Number of bytes actually written.</returns>
     function Write(var Buffer; Length: Int64): Int64;
     /// <summary>Repositions the stream pointer relative to Origin.</summary>
+    /// <param name="Offset">Distance to move the stream pointer.</param>
+    /// <param name="Origin">Position the offset is measured from (soFromBeginning, soFromCurrent or soFromEnd).</param>
+    /// <returns>The new stream position.</returns>
     function Seek(Offset: Int64; Origin: Integer): Int64;
     /// <summary>Truncates or extends the stream to Size bytes.</summary>
+    /// <param name="Size">New stream size in bytes.</param>
     procedure SetSize(Size: Int64);
   end;
 
@@ -147,8 +197,10 @@ type
   IDatedStream = interface(IDocStream)
     ['{A8613563-3389-4BA7-9A8A-5A8FF324F317}']
     /// <summary>Returns the modification time recorded on the stream.</summary>
+    /// <returns>The stream's modification time.</returns>
     function GetModifyTime: Longint;
     /// <summary>Sets the modification time recorded on the stream.</summary>
+    /// <param name="Time">Modification time to record.</param>
     procedure SetModifyTime(Time: Longint);
   end;
 
@@ -156,16 +208,22 @@ type
   IFile = interface
     ['{346E7BA0-D47E-11D3-BA96-0080C78ADCDB}']
     /// <summary>Opens the file as an IDocStream for streaming the form resource.</summary>
+    /// <returns>A stream onto the form resource.</returns>
     function FormFileOpen: IDocStream;
     /// <summary>Returns the absolute file name.</summary>
+    /// <returns>The file's absolute name.</returns>
     function GetFileName: string;
     /// <summary>Returns the file's modification time at the moment it was loaded.</summary>
+    /// <returns>The modification time recorded when the file was loaded.</returns>
     function GetTimeAtLoad: Longint;
     /// <summary>Returns the file's current modification time on disk.</summary>
+    /// <returns>The file's current modification time on disk.</returns>
     function GetModifyTime: Longint;
     /// <summary>Returns True if the file on disk has been modified since loading.</summary>
+    /// <returns>True if the file on disk has changed since it was loaded.</returns>
     function CheckFileDate: Boolean;
     /// <summary>Renames the file at the IDE level.</summary>
+    /// <param name="NewFileName">The file's new name.</param>
     procedure Rename(const NewFileName: string);
     /// <summary>Saves the file via the IDE's persistence mechanism.</summary>
     procedure Save;
@@ -210,78 +268,118 @@ type
     /// <summary>Closes the root and discards any unsaved changes.</summary>
     procedure Close;
     /// <summary>Adds a new component from the supplied palette item at the default location.</summary>
+    /// <param name="Item">Palette item describing the component to create.</param>
     procedure CreateComponent(Item: IInternalPaletteItem);
     /// <summary>Adds a new component at design coordinates (X, Y).</summary>
+    /// <param name="Item">Palette item describing the component to create.</param>
+    /// <param name="X">Horizontal design position.</param>
+    /// <param name="Y">Vertical design position.</param>
     procedure CreateComponentPos(Item: IInternalPaletteItem; X, Y: Integer);
     /// <summary>Looks up the class name for a component by its design-time name.</summary>
+    /// <param name="CompName">Design-time name of the component.</param>
+    /// <returns>The component's class name.</returns>
     function FindCompClass(const CompName: string): string;
     {$IF CompilerVersion >= 23.0} // XE2+
     /// <summary>Freezes property updates until ThawProperties is called (XE2+).</summary>
     procedure FreezeProperties;
     {$IFEND}
     /// <summary>Returns the name of the form's ancestor class, if any.</summary>
+    /// <returns>The ancestor class name, or an empty string if none.</returns>
     function GetAncestorName: string;
     /// <summary>Returns the number of components on the root.</summary>
+    /// <returns>The number of components on the root.</returns>
     function GetCompCount: Integer;
     /// <summary>Walks every dependent root, calling Proc for each.</summary>
+    /// <param name="Proc">Callback invoked for each dependent root.</param>
     procedure GetDependentRoots(Proc: TGetRootProc);
     /// <summary>Returns the design-time class name (e.g. TForm1).</summary>
+    /// <returns>The design-time class name.</returns>
     function GetDesignClassName: string;
     /// <summary>Walks every dependency root, calling Proc for each.</summary>
+    /// <param name="Proc">Callback invoked for each dependency root.</param>
     procedure GetDependencies(Proc: TGetRootProc);
     /// <summary>Returns the IComponent info for the component at Index.</summary>
+    /// <param name="Index">Index of the component on the root.</param>
+    /// <returns>The component's palette information.</returns>
     function GetCompInfo(Index: Integer): ICompInfo;
     /// <summary>Returns the IDesignerModule that owns this root.</summary>
+    /// <returns>The owning designer module.</returns>
     function GetModule: IDesignerModule;
     /// <summary>Returns the design-time name of the component at Index.</summary>
+    /// <param name="Index">Index of the component on the root.</param>
+    /// <returns>The component's design-time name.</returns>
     function GetCompName(Index: Integer): string;
     /// <summary>Returns the design-time class name of the component at Index.</summary>
+    /// <param name="Index">Index of the component on the root.</param>
+    /// <returns>The component's class name.</returns>
     function GetCompType(Index: Integer): string;
     {$IF CompilerVersion >= 24.0} // XE3+
     /// <summary>Returns the form-family name (FMX vs VCL etc.) - XE3 onwards.</summary>
+    /// <returns>The form-family name.</returns>
     function GetFormFamilyName: string;
     {$IFEND}
     /// <summary>Returns the file system identifier in use.</summary>
+    /// <returns>The identifier of the file system in use.</returns>
     function GetFileSystem: string;
     /// <summary>Returns the underlying TComponent representing the form's root.</summary>
+    /// <returns>The root component.</returns>
     function GetRoot: TComponent;
     /// <summary>Returns the root's design-time name.</summary>
+    /// <returns>The root's design-time name.</returns>
     function GetRootName: string;
     /// <summary>Walks every unit referenced by the form, invoking Proc for each.</summary>
+    /// <param name="Proc">Callback invoked with each unit name.</param>
     procedure GetUnits(Proc: TGetStrProc);
     /// <summary>Returns the current TDesignerState (visible/iconic/zoomed).</summary>
+    /// <returns>The designer's current state.</returns>
     function GetState: TDesignerState;
     /// <summary>Hides the form designer.</summary>
     procedure Hide;
     /// <summary>Asks the IDE to put the root dormant.</summary>
     procedure GoDormant;
     /// <summary>Renames a method on the root.</summary>
+    /// <param name="CurName">Current method name.</param>
+    /// <param name="NewName">Name the method is to take.</param>
     procedure RenameRootMethod(const CurName, NewName: string);
     /// <summary>Renames the component CurName to NewName.</summary>
+    /// <param name="CurName">Current component name.</param>
+    /// <param name="NewName">Name the component is to take.</param>
+    /// <returns>True if the component was renamed.</returns>
     function RenameComponent(const CurName, NewName: string): Boolean;
     /// <summary>Removes any links the root holds to dependent forms.</summary>
     procedure RemoveDependentLinks;
     /// <summary>Switches the root to the supplied IDE file system.</summary>
+    /// <param name="FileSystem">Identifier of the file system to use.</param>
     procedure SetFileSystem(const FileSystem: string);
     /// <summary>Renames the root component.</summary>
+    /// <param name="AName">New name for the root component.</param>
     procedure SetRootName(const AName: string);
     /// <summary>Selects the named component in the designer.</summary>
+    /// <param name="Name">Design-time name of the component to select.</param>
     procedure SetSelection(const Name: string);
     /// <summary>Shows the form designer.</summary>
     procedure Show;
     /// <summary>Shows the form designer in the requested window state.</summary>
+    /// <param name="ShowState">Window state to show the designer in.</param>
     procedure ShowAs(ShowState: TShowState);
     /// <summary>Opens the help topic for the currently selected component.</summary>
     procedure ShowComponentHelp;
     /// <summary>Returns help meta-data for a particular property/member.</summary>
+    /// <param name="Member">Property or member name to look up.</param>
+    /// <param name="HelpFile">Receives the help file name.</param>
+    /// <param name="Context">Receives the help context.</param>
+    /// <param name="HelpType">Receives the kind of help reference.</param>
+    /// <returns>True if special help exists for Member.</returns>
     function SpecialPropertyHelp(const Member: string; out HelpFile, Context: string; out HelpType: THelpType): Boolean;
     {$IF CompilerVersion >= 23.0} // XE2+
     /// <summary>Re-enables property update notifications after FreezeProperties (XE2+).</summary>
     procedure ThawProperties;
     {$IFEND}
     /// <summary>Returns the IDesigner managing this root.</summary>
+    /// <returns>The root's designer.</returns>
     function GetDesigner: IDesigner;
     /// <summary>Returns the IOTAFormEditor presenting this root in the IDE.</summary>
+    /// <returns>The IDE form editor for this root.</returns>
     function GetFormEditor: IOTAFormEditor;
     /// <summary>The underlying TComponent root (typically the form).</summary>
     property Root: TComponent read GetRoot;
@@ -293,6 +391,13 @@ type
   IBaseComponentDesigner = interface
     ['{6EBEF997-E986-41B3-8E70-3112112F1AB7}']
     /// <summary>Creates a new IRoot for AModule from the file at AFileName.</summary>
+    /// <param name="AModule">Designer module that will own the root.</param>
+    /// <param name="AFileName">File the root is loaded from.</param>
+    /// <param name="Existing">True if the file already exists.</param>
+    /// <param name="ARootName">Design-time name of the root.</param>
+    /// <param name="AAncestor">Ancestor class name, if any.</param>
+    /// <param name="AFileSystem">Identifier of the file system holding the file.</param>
+    /// <returns>The new root.</returns>
     function CreateRoot(const AModule: IDesignerModule; const AFileName: string;
       Existing: Boolean; const ARootName, AAncestor,
       AFileSystem: string): IRoot;
@@ -395,6 +500,7 @@ var
 function InitDocModuleHandler: Boolean;
 
 /// <summary>Returns True if the IDE has its forms hosted as embedded designer panels.</summary>
+/// <returns>Always True from XE4 onward and on Win64; before XE4, the IDE's EmbeddedDesigner environment option (True if that option cannot be found).</returns>
 function IsEmbeddedDesigner: Boolean;
 
 implementation

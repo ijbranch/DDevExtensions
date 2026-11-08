@@ -46,12 +46,14 @@ type
     /// <summary>True while <see cref="LoadFromXml"/> is running so setters can suppress side effects.</summary>
     FLoading: Boolean;
     /// <summary>Loads from a stand-alone XML file on disk (legacy migration path).</summary>
+    /// <param name="Filename">Path of the legacy XML file; its document element is passed to <see cref="LoadFromXml"/>.</param>
     procedure LoadFromFile(const Filename: string);
   protected
     /// <summary>
     /// Override to return the option-page tree for this plug-in. The default
     /// returns nil (no options page).
     /// </summary>
+    /// <returns>The root page of this plug-in's option-page tree, or nil.</returns>
     function GetOptionPages: TTreePage; virtual;
     /// <summary>Override to perform construction-time initialisation before settings are loaded.</summary>
     procedure Init; virtual;
@@ -72,6 +74,7 @@ type
     destructor Destroy; override;
 
     /// <summary>Streams every supported published property of <c>Self</c> into <paramref name="Node"/>.</summary>
+    /// <param name="Node">The XML node that receives this plug-in's settings.</param>
     procedure SaveToXml(Node: IXmlNode); virtual;
     /// <summary>Loads every supported published property of <c>Self</c> from <paramref name="Node"/>.</summary>
     /// <param name="Node">The XML node holding this plug-in's settings.</param>
@@ -119,17 +122,27 @@ type
     destructor Destroy; override;
 
     /// <summary>Returns True if a child node with the given name exists under the document root.</summary>
+    /// <param name="NodeName">Name of the child element to look for.</param>
+    /// <returns>True when the document root has a child element of that name.</returns>
     function HasNode(const NodeName: string): Boolean;
     /// <summary>Returns the named child node under the document root, or nil if it does not exist.</summary>
+    /// <param name="NodeName">Name of the child element to look for.</param>
+    /// <returns>The child node, or nil when it does not exist.</returns>
     function FindNode(const NodeName: string): IXmlNode;
     /// <summary>Returns the named child node under the document root, creating it if needed.</summary>
+    /// <param name="NodeName">Name of the child element to find or add.</param>
+    /// <returns>The existing or newly added child node.</returns>
     function GetNode(const NodeName: string): IXmlNode; overload;
     /// <summary>Returns the named child node under <paramref name="ParentNode"/>, creating it if needed.</summary>
+    /// <param name="ParentNode">Node to search under and add to.</param>
+    /// <param name="NodeName">Name of the child element to find or add.</param>
+    /// <returns>The existing or newly added child node.</returns>
     class function GetNode(ParentNode: IXmlNode; const NodeName: string): IXmlNode; overload;
     /// <summary>Marks the document dirty; saves immediately if no <see cref="BeginUpdate"/> is active.</summary>
     procedure Modified;
 
     /// <summary>Saves the document to a specific path without changing <see cref="Filename"/>.</summary>
+    /// <param name="AFilename">Path of the file to write.</param>
     procedure SaveToFile(const AFilename: string);
     /// <summary>Loads the document from a file (creates an empty document if the file does not exist).</summary>
     /// <exception cref="EInOutError">Raised and handled internally to classify a document with no root element; it never reaches the caller.</exception>
@@ -152,6 +165,7 @@ type
   end;
 
 /// <summary>Lazily creates and returns the global configuration singleton.</summary>
+/// <returns>The shared <see cref="TConfiguration"/> instance, created on first call.</returns>
 function Configuration: TConfiguration;
 
 implementation

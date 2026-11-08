@@ -51,18 +51,14 @@ interface
 {.$I jedi\jedi.inc}
 
 uses
-  Windows,
+  Winapi.Windows,
   {$IFDEF CMD_COMPILER}
   SimpleRtl.Containers,
   {$ELSE}
-  Classes, Contnrs,
-  IniFiles, // for TStringHash
+  System.Classes, System.Contnrs,
+  System.IniFiles, // for TStringHash
   {$ENDIF CMD_COMPILER}
-  SysUtils;
-
-const
-  /// <summary>Sentinel handle representing the current process for VirtualProtectEx calls.</summary>
-  CurProcess = Cardinal(-1);
+  System.SysUtils;
 
 // API hooking classes
 type
@@ -240,18 +236,12 @@ function CreateImportLibraryList(MappedAddress: PAnsiChar): TStrings;
 
 implementation
 
+uses
+  System.Types; // lets the inline TObjectList.Remove in TJclPeMapImgHookItem.Unhook expand
+
 const
   CSTR_EQUAL = 2;
   IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT      = 13;  { Delay Load Import Descriptors }
-
-type
-  PWin9xDebugThunk = ^TWin9xDebugThunk;
-  TWin9xDebugThunk = packed record
-    PUSH: Byte;    // PUSH instruction opcode ($68)
-    Addr: Pointer; // The actual address of the DLL routine
-    JMP: Byte;     // JMP instruction opcode ($E9)
-    Rel: Integer;  // Relative displacement (a Kernel32 address)
-  end;
 
 type
   ULONGLONG = Int64;
@@ -303,12 +293,14 @@ type
   TImageThunkData32 = IMAGE_THUNK_DATA32;
   PImageThunkData32 = PIMAGE_THUNK_DATA32;
 
-  IMAGE_THUNK_DATA = IMAGE_THUNK_DATA32;
-  {$EXTERNALSYM IMAGE_THUNK_DATA}
-  PIMAGE_THUNK_DATA = PIMAGE_THUNK_DATA32;
-  {$EXTERNALSYM PIMAGE_THUNK_DATA}
-  TImageThunkData = TImageThunkData32;
-  PImageThunkData = PImageThunkData32;
+  { One import address table slot: IMAGE_THUNK_DATA32 in a 32-bit image, IMAGE_THUNK_DATA64 in a
+    64-bit one.  Only loaded images of this process's own bitness are walked, so the slot is
+    pointer-sized.  ( The 32-bit-only declaration used before walked a 64-bit table in 4-byte
+    steps, compared half addresses and wrote truncated pointers. ) }
+  PImageThunkData = ^TImageThunkData;
+  TImageThunkData = record
+    Function_: NativeUInt;
+  end;
 
 function IsWinNT: Boolean;
 var
@@ -388,7 +380,12 @@ begin
   else
     Result := True; // PE image is not available anymore (DLL got unloaded)
   if Result then
-    FBaseAddress := nil;
+    FBaseAddress := nil
+  else
+    // The slot no longer holds our address (another hook replaced it): leave it alone, but say so,
+    // because a chain that saved our address as its "original" would later call into freed code.
+    OutputDebugString( PChar( Format( 'ImportHooking: could not restore the %s import of %s; the slot was ' +
+      're-hooked by someone else', [ModuleName, FFunctionName] ) ) );
 end;
 
 function TJclPeMapImgHookItem.Unhook: Boolean;
@@ -479,8 +476,9 @@ begin
     SetLastError(ERROR_ALREADY_EXISTS);
     Exit;
   end;
-  if Result then
-    Result := ReplaceImport(Base, ModuleName, OriginalAddress, NewAddress);
+  // Clear the last error so a failure below reports its own cause (a VirtualProtect error is kept).
+  SetLastError( ERROR_SUCCESS );
+  Result := ReplaceImport(Base, ModuleName, OriginalAddress, NewAddress);
   if Result then
   begin
     Item := TJclPeMapImgHookItem.Create;
@@ -493,48 +491,42 @@ begin
     Add(Item);
   end
   else
-    SetLastError(ERROR_INVALID_PARAMETER);
+  if ( GetLastError = ERROR_SUCCESS ) then
+    SetLastError( ERROR_PROC_NOT_FOUND ); // no import slot held OriginalAddress
 end;
 
-{class function TJclPeMapImgHooks.IsWin9xDebugThunk(P: Pointer): Boolean;
+/// <summary>
+/// Points the import address table slot Slot at ToProc, making the page writable for the write.
+/// </summary>
+/// <param name="Slot">IAT slot to patch.</param>
+/// <param name="ToProc">New target.</param>
+/// <returns>True when the slot was written.</returns>
+function WriteImportSlot(Slot: PImageThunkData; ToProc: Pointer): Boolean;
+var
+  LastProtect, Dummy: DWORD;
 begin
-  with PWin9xDebugThunk(P)^ do
-    Result := (PUSH = $68) and (JMP = $E9);
-end;}
-
-function IsWin9xDebugThunk(AnAddr: Pointer): Boolean;
-{ -> EAX: AnAddr }
-asm
-  TEST EAX, EAX
-  JZ  @@NoThunk
-  CMP BYTE PTR [EAX].TWin9xDebugThunk.PUSH, $68
-  JNE @@NoThunk
-  CMP BYTE PTR [EAX].TWin9xDebugThunk.JMP, $E9
-  JNE @@NoThunk
-  XOR EAX, EAX
-  MOV AL, 1
-  JMP @@exit
-@@NoThunk:
-  XOR EAX, EAX
-@@exit:
+  Result := VirtualProtect(@Slot^.Function_, SizeOf(Slot^.Function_), PAGE_READWRITE, @LastProtect);
+  if Result then
+  begin
+    // One aligned pointer-sized store: a thread calling through the slot sees the old or the new
+    // target, never a mix.
+    Slot^.Function_ := NativeUInt(ToProc);
+    // According to Platform SDK documentation, the last parameter has to be (point to) a valid variable
+    VirtualProtect(@Slot^.Function_, SizeOf(Slot^.Function_), LastProtect, @Dummy);
+  end;
 end;
 
 class function TJclPeMapImgHooks.ReplaceImport(Base: Pointer; const ModuleName: string;
   FromProc, ToProc: Pointer): Boolean;
 var
-  FromProcDebugThunk, ImportThunk: PWin9xDebugThunk;
-  IsThunked: Boolean;
   NtHeader: PImageNtHeaders;
   ImportDir: TImageDataDirectory;
   ImportDesc: PImageImportDescriptor;
-  CurrName, RefName: PAnsiChar;
+  CurrName: PAnsiChar;
+  RefName: AnsiString;
   ImportEntry: PImageThunkData;
-  FoundProc: Boolean;
-  LastProtect, Dummy: Cardinal;
 begin
   Result := False;
-  FromProcDebugThunk := PWin9xDebugThunk(FromProc);
-  IsThunked := not IsWinNT and IsWin9xDebugThunk(FromProcDebugThunk);
   NtHeader := PeMapImgNtHeaders(Base);
   if (NtHeader = nil) or (FromProc = nil) then
     Exit;
@@ -542,38 +534,17 @@ begin
   if ImportDir.VirtualAddress = 0 then
     Exit;
   ImportDesc := PImageImportDescriptor(PAnsiChar(Base) + ImportDir.VirtualAddress);
-  RefName := PAnsiChar({$IFDEF UNICODE}UTF8Encode{$ENDIF}(ModuleName));
+  RefName := AnsiString(ModuleName);
   while ImportDesc^.Name <> 0 do
   begin
     CurrName := PAnsiChar(Base) + ImportDesc^.Name;
-    {$WARNINGS OFF}
-    if StrIComp(CurrName, RefName) = 0 then
-    {$WARNINGS ON}
+    if lstrcmpiA(CurrName, PAnsiChar(RefName)) = 0 then
     begin
       ImportEntry := PImageThunkData(PAnsiChar(Base) + ImportDesc^.FirstThunk);
       while ImportEntry^.Function_ <> 0 do
       begin
-        if IsThunked then
-        begin
-          ImportThunk := PWin9xDebugThunk(ImportEntry^.Function_);
-          FoundProc := IsWin9xDebugThunk(ImportThunk) and (ImportThunk^.Addr = FromProcDebugThunk^.Addr);
-        end
-        else
-          FoundProc := Pointer(ImportEntry^.Function_) = FromProc;
-        if FoundProc then
-        begin
-          if VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc),
-            PAGE_READWRITE, @LastProtect) then
-          begin
-            ImportEntry^.Function_ := Cardinal(ToProc);
-
-            // According to Platform SDK documentation, the last parameter
-            // has to be (point to) a valid variable
-            VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc),
-              LastProtect, Dummy);
-            Result := True;
-          end;
-        end;
+        if (Pointer(ImportEntry^.Function_) = FromProc) and WriteImportSlot(ImportEntry, ToProc) then
+          Result := True;
         Inc(ImportEntry);
       end;
     end;
@@ -583,17 +554,13 @@ end;
 
 function TJclPeMapImgHooks.EnumImports(Base: Pointer; EvReplaceImport: TReplaceImportEvent): Boolean;
 var
-  ImportThunk: PWin9xDebugThunk;
   NtHeader: PImageNtHeaders;
   ImportDir: TImageDataDirectory;
   ImportDesc: PImageImportDescriptor;
   CurrName: PAnsiChar;
   ImportEntry: PImageThunkData;
-  FoundProc: Boolean;
-  LastProtect, Dummy: Cardinal;
   FromProc, ToProc: Pointer;
   Item: TJclPeMapImgHookItem;
-  WinNT: Boolean;
 begin
   Result := False;
   NtHeader := PeMapImgNtHeaders(Base);
@@ -602,7 +569,6 @@ begin
   ImportDir := NtHeader.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
   if ImportDir.VirtualAddress = 0 then
     Exit;
-  WinNT := IsWinNT;
   ImportDesc := PImageImportDescriptor(PAnsiChar(Base) + ImportDir.VirtualAddress);
   while ImportDesc^.Name <> 0 do
   begin
@@ -614,35 +580,18 @@ begin
       while ImportEntry^.Function_ <> 0 do
       begin
         FromProc := Pointer(ImportEntry^.Function_);
-        if not WinNT then
-        begin
-          ImportThunk := PWin9xDebugThunk(FromProc);
-          if IsWin9xDebugThunk(ImportThunk) then
-            FromProc := ImportThunk^.Addr;
-        end;
         ToProc := nil;
-        FoundProc := EvReplaceImport(CurrName, FromProc, ToProc);
-        if FoundProc and Assigned(ToProc) then
+        if EvReplaceImport(CurrName, FromProc, ToProc) and Assigned(ToProc) and
+           WriteImportSlot(ImportEntry, ToProc) then
         begin
-          if VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc),
-            PAGE_READWRITE, @LastProtect) then
-          begin
-            ImportEntry^.Function_ := Cardinal(ToProc);
-            // According to Platform SDK documentation, the last parameter
-            // has to be (point to) a valid variable
-            VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc),
-              LastProtect, Dummy);
-
-            Item := TJclPeMapImgHookItem.Create;
-            Item.FBaseAddress := Base;
-            //Item.FFunctionName := FunctionName;
-            //Item.FModuleName := ModuleName;
-            Item.FOriginalAddress := FromProc;
-            Item.FNewAddress := ToProc;
-            Item.FList := Self;
-            Add(Item);
-            Result := True;
-          end;
+          Item := TJclPeMapImgHookItem.Create;
+          Item.FBaseAddress := Base;
+          Item.FModuleName := string(AnsiString(CurrName));
+          Item.FOriginalAddress := FromProc;
+          Item.FNewAddress := ToProc;
+          Item.FList := Self;
+          Add(Item);
+          Result := True;
         end;
         Inc(ImportEntry);
       end;
@@ -653,18 +602,14 @@ end;
 
 class function TJclPeMapImgHooks.GetImportEntryPtr(Base: Pointer; const ModuleName: string; FromProc: Pointer): PPointer;
 var
-  FromProcDebugThunk, ImportThunk: PWin9xDebugThunk;
-  IsThunked: Boolean;
   NtHeader: PImageNtHeaders;
   ImportDir: TImageDataDirectory;
   ImportDesc: PImageImportDescriptor;
-  CurrName, RefName: PAnsiChar;
+  CurrName: PAnsiChar;
+  RefName: AnsiString;
   ImportEntry: PImageThunkData;
-  FoundProc: Boolean;
 begin
   Result := nil;
-  FromProcDebugThunk := PWin9xDebugThunk(FromProc);
-  IsThunked := not IsWinNT and IsWin9xDebugThunk(FromProcDebugThunk);
   NtHeader := PeMapImgNtHeaders(Base);
   if NtHeader = nil then
     Exit;
@@ -672,27 +617,18 @@ begin
   if ImportDir.VirtualAddress = 0 then
     Exit;
   ImportDesc := PImageImportDescriptor(PAnsiChar(Base) + ImportDir.VirtualAddress);
-  RefName := PAnsiChar({$IFDEF UNICODE}UTF8Encode{$ENDIF}(ModuleName));
+  RefName := AnsiString(ModuleName);
   while ImportDesc^.Name <> 0 do
   begin
     CurrName := PAnsiChar(Base) + ImportDesc^.Name;
-    {$WARNINGS OFF}
-    if StrIComp(CurrName, RefName) = 0 then
-    {$WARNINGS ON}
+    if lstrcmpiA(CurrName, PAnsiChar(RefName)) = 0 then
     begin
       ImportEntry := PImageThunkData(PAnsiChar(Base) + ImportDesc^.FirstThunk);
       while ImportEntry^.Function_ <> 0 do
       begin
-        if IsThunked then
+        if Pointer(ImportEntry^.Function_) = FromProc then
         begin
-          ImportThunk := PWin9xDebugThunk(ImportEntry^.Function_);
-          FoundProc := IsWin9xDebugThunk(ImportThunk) and (ImportThunk^.Addr = FromProcDebugThunk^.Addr);
-        end
-        else
-          FoundProc := Pointer(ImportEntry^.Function_) = FromProc;
-        if FoundProc then
-        begin
-          Result := @ImportEntry^.Function_;
+          Result := PPointer(@ImportEntry^.Function_);
           Exit;
         end;
         Inc(ImportEntry);
@@ -739,18 +675,17 @@ const
 type
   USHORT = Word;
 
+  { IMAGE_DELAYLOAD_DESCRIPTOR ( RVA form ): eight DWORDs on Win32 and Win64 alike.  The pointer
+    and thunk fields declared before made the record larger on Win64, so stepping to the next
+    descriptor landed in the wrong place. }
   ImgDelayDescr = packed record
     grAttrs: DWORD;                 // attributes
-    szName: DWORD;                  // pointer to dll name
-    phmod: PDWORD;                  // address of module handle
-    { TODO : probably wrong declaration }
-    pIAT: TImageThunkData;          // address of the IAT
-    { TODO : probably wrong declaration }
-    pINT: TImageThunkData;          // address of the INT
-    { TODO : probably wrong declaration }
-    pBoundIAT: TImageThunkData;     // address of the optional bound IAT
-    { TODO : probably wrong declaration }
-    pUnloadIAT: TImageThunkData;    // address of optional copy of original IAT
+    szName: DWORD;                  // RVA of the DLL name
+    phmod: DWORD;                   // RVA of the module handle
+    pIAT: DWORD;                    // RVA of the IAT
+    pINT: DWORD;                    // RVA of the INT
+    pBoundIAT: DWORD;               // RVA of the optional bound IAT
+    pUnloadIAT: DWORD;              // RVA of the optional copy of the original IAT
     dwTimeStamp: DWORD;             // 0 if not bound,
                                     // O.W. date/time stamp of DLL bound to (Old BIND)
   end;

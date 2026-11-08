@@ -79,6 +79,7 @@ type
     /// <summary>Toggles the RemoveEmptyHistory option.</summary>
     cbxRemoveEmptyHistory: TCheckBox;
     /// <summary>Enables or disables the dependent check boxes when Active changes.</summary>
+    /// <param name="Sender">The "Active" check box.</param>
     procedure cbxActiveClick(Sender: TObject);
   private
     { Private-Deklarationen }

@@ -40,6 +40,7 @@ type
     FActive: Boolean;
   protected
     /// <summary>Returns the options-page descriptor for the IDE's options dialog.</summary>
+    /// <returns>The page descriptor naming the frame class and this object as its user data.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises Active to False.</summary>
     procedure Init; override;
@@ -93,6 +94,7 @@ type
   public
     { Public-Deklarationen }
     /// <summary>Receives the configuration object from the host page.</summary>
+    /// <param name="UserData">The TStartParameterTeam object to edit.</param>
     procedure SetUserData(UserData: TObject);
     /// <summary>Pushes the current Active value into the checkbox.</summary>
     procedure LoadData;
@@ -105,6 +107,7 @@ type
   end;
 
 /// <summary>Plugin entry point that creates or frees the global TStartParameterTeam.</summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

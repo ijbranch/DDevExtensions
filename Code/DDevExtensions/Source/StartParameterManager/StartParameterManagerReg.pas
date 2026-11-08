@@ -1,4 +1,4 @@
-unit StartParameterManagerReg;
+﻿unit StartParameterManagerReg;
 
 /// <summary>
 /// Registers the Start Parameter toolbar and combo control with the IDE, and intercepts the
@@ -22,17 +22,21 @@ type
     FActionCustomize: TAction;
   protected
     /// <summary>OnExecute for FActionCustomize (currently a no-op placeholder).</summary>
+    /// <param name="Sender">The Customize action.</param>
     procedure StartParameterExecute(Sender: TObject);
     /// <summary>OnUpdate for FActionCustomize that surfaces the current parameter as a hint.</summary>
+    /// <param name="Sender">The Customize action.</param>
     procedure StartParameterUpdate(Sender: TObject);
   public
     /// <summary>Creates the toolbar and control and installs the GetRunParams hooks.</summary>
+    /// <param name="AOwner">The owning component; nil for the global instance.</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>Removes the hooks and frees the toolbar before the DLL unloads.</summary>
     destructor Destroy; override;
   end;
 
 /// <summary>Plugin entry point that creates or frees the global TStartParameterManager.</summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

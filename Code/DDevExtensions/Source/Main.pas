@@ -35,7 +35,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Hooking, IDEUtils, Splash, System.Win.Registry, Vcl.Forms, Vcl.Menus,
   Vcl.Graphics, Vcl.Controls, Vcl.ExtCtrls, Vcl.ActnList, AppConsts, ToolsAPI, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ComCtrls, Winapi.ActiveX, Winapi.ShlObj, ImportHooking;
+  Vcl.StdCtrls, Vcl.ComCtrls, Winapi.ActiveX, Winapi.ShlObj;
 
 type
   /// <summary>
@@ -87,8 +87,6 @@ procedure LogWin64UnloadStep(const StepName: string; E: Exception);
 {$ENDIF}
 
 var
-  /// <summary>Global PE-import-table hook list shared by features that need to redirect Windows API calls.</summary>
-  APIHookList: TJclPeMapImgHooks;
   /// <summary>Per-user directory used to persist DDevExtensions configuration files.</summary>
   AppDataDirectory: string;
   /// <summary>Sub-menu inserted into the IDE Tools menu; hosts every DDevExtensions menu item.</summary>

@@ -92,48 +92,77 @@ type
     /// <summary>Pop-up menu item: open the source file at the offending location.</summary>
     mnuStyleOpenFile: TMenuItem;
     /// <summary>Click handler for btnClose.</summary>
+    /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Click handler for btnCopyToClipboard.</summary>
+    /// <param name="Sender">The Copy to Clipboard button.</param>
     procedure btnCopyToClipboardClick( Sender: TObject );
     /// <summary>Click handler for btnExportCSV.</summary>
     /// <param name="Sender">The button that was clicked.</param>
     procedure btnExportCSVClick( Sender: TObject );
     /// <summary>Closes the form by setting Action to caFree and clearing the singleton reference.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Action">Set to caFree so the form is freed on close.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Initialises default sort and filter state when the form is created.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Toggles or sets the sort column when a build-statistics column header is clicked.</summary>
+    /// <param name="Sender">The build-statistics list view.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom comparison callback for sorting build-statistics list items.</summary>
+    /// <param name="Sender">The build-statistics list view.</param>
+    /// <param name="Item1">First item to compare.</param>
+    /// <param name="Item2">Second item to compare.</param>
+    /// <param name="Data">Sort data supplied by the list view; not used.</param>
+    /// <param name="Compare">Receives a negative, zero or positive value ordering Item1 against Item2.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Sorts the build-statistics list ascending by unit name.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuSortByNameClick( Sender: TObject );
     /// <summary>Sorts the build-statistics list descending by compile time.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuSortByTimeClick( Sender: TObject );
     /// <summary>Sorts the build-statistics list descending by lines of code.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuSortByLOCClick( Sender: TObject );
     /// <summary>Sorts the build-statistics list descending by cyclomatic complexity.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuSortByComplexityClick( Sender: TObject );
     /// <summary>Updates FFileFilter and re-populates the list when the filter combo changes.</summary>
+    /// <param name="Sender">The filter combo box.</param>
     procedure cmbFilterChange( Sender: TObject );
     /// <summary>Opens the source file for the selected unit in the IDE.</summary>
+    /// <param name="Sender">The build-statistics list view.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Updates the bottom-panel summary labels when the active tab changes.</summary>
+    /// <param name="Sender">The page control.</param>
     procedure PageControlChange( Sender: TObject );
     /// <summary>Toggles or sets the sort column for the style-issues list.</summary>
+    /// <param name="Sender">The style-issues list view.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure lvStyleIssuesColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom comparison callback for sorting style-issue list items.</summary>
+    /// <param name="Sender">The style-issues list view.</param>
+    /// <param name="Item1">First item to compare.</param>
+    /// <param name="Item2">Second item to compare.</param>
+    /// <param name="Data">Sort data supplied by the list view; not used.</param>
+    /// <param name="Compare">Receives a negative, zero or positive value ordering Item1 against Item2.</param>
     procedure lvStyleIssuesCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Opens the source file at the violation location when a style row is double-clicked.</summary>
+    /// <param name="Sender">The style-issues list view.</param>
     procedure lvStyleIssuesDblClick( Sender: TObject );
     /// <summary>Click handler for the style-issues "Copy to Clipboard" pop-up menu item.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuStyleCopyToClipboardClick( Sender: TObject );
     /// <summary>Click handler for the style-issues "Export CSV" pop-up menu item.</summary>
     /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuStyleExportCSVClick( Sender: TObject );
     /// <summary>Click handler for the "Open File" style-issues pop-up menu item; delegates to lvStyleIssuesDblClick.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure mnuStyleOpenFileClick( Sender: TObject );
   private
     /// <summary>Source of build statistics data displayed by the form.</summary>
@@ -160,6 +189,7 @@ type
     function FormatDuration( Ms: Int64 ): string;
     /// <summary>Returns True when the supplied file belongs to the currently compiled project.</summary>
     /// <param name="FileName">Source file name to test.</param>
+    /// <returns>True when FileName is one of the current project's files.</returns>
     function IsProjectFile( const FileName: string ): Boolean;
     /// <summary>Opens the source file referenced by Violation in the IDE editor and centres on the violation line.</summary>
     /// <param name="Violation">Style violation describing the file and location to navigate to.</param>

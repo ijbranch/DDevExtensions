@@ -68,18 +68,27 @@ type
     /// <param name="AParent">Parent control (typically the Structure View form).</param>
     procedure CreateComboBox(AParent: TWinControl);
     /// <summary>Filter timer tick; calls UpdateList once typing has paused.</summary>
+    /// <param name="Sender">The filter timer.</param>
     procedure TimerFilterTimer(Sender: TObject);
     /// <summary>Restarts the debounce timer when the search text changes.</summary>
+    /// <param name="Sender">The search combo whose text changed.</param>
     procedure EditChange(Sender: TObject);
     /// <summary>Treats Enter as either "click selected item" or "force filter refresh".</summary>
     /// <param name="Sender">The combo edit raising the event.</param>
     /// <param name="Key">Character pressed; set to #0 to swallow.</param>
     procedure EditKeyPress(Sender: TObject; var Key: Char);
     /// <summary>List mouse-up handler that activates the item under the cursor.</summary>
+    /// <param name="Sender">The drop-down list box.</param>
+    /// <param name="Button">The mouse button released.</param>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="X">Horizontal client position of the release.</param>
+    /// <param name="Y">Vertical client position of the release; the item at (X, Y) is activated when there is one.</param>
     procedure ListMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     /// <summary>Navigates the Structure View tree to the selected drop-down item and opens its source.</summary>
+    /// <param name="Sender">The control that triggered the navigation.</param>
     procedure ClickItem(Sender: TObject);
     /// <summary>Refreshes the drop-down list before it opens, provided the application is still running.</summary>
+    /// <param name="Sender">The search combo about to drop down.</param>
     procedure BeforeDropDown(Sender: TObject);
     /// <summary>Rebuilds FItems and the list box contents from the current Structure View context using the active filter.</summary>
     procedure UpdateList;

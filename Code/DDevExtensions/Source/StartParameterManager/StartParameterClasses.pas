@@ -101,12 +101,14 @@ type
     /// <summary>Cached condition result (-1 means not yet evaluated).</summary>
     FConditionEvalValue: Integer;
     /// <summary>Setter for Condition; resets the cached result and marks the list modified.</summary>
+    /// <param name="AValue">The new condition expression.</param>
     procedure SetCondition(const AValue: string);
   protected
     /// <summary>Marks the owning list as modified (and invalidates condition caches).</summary>
     procedure MarkModified;
   public
     /// <summary>Creates an item belonging to AOwner.</summary>
+    /// <param name="AOwner">The list the item belongs to.</param>
     constructor Create(AOwner: TStartParamList);
     /// <summary>Removes the item from its owner and deletes its XML node.</summary>
     destructor Destroy; override;
@@ -114,11 +116,15 @@ type
     /// <summary>Synonym for Free, used to remove the item.</summary>
     procedure Delete;
     /// <summary>Restores common state (FNode, Condition) from an XML node; subclasses extend.</summary>
+    /// <param name="ANode">The XML element to read; kept as the item's backing node.</param>
+    /// <param name="AErrors">Receives a message for each invalid or missing attribute.</param>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); virtual;
     /// <summary>Persists common state (Condition) into an XML node; subclasses extend.</summary>
+    /// <param name="ANode">The XML element to write; kept as the item's backing node.</param>
     procedure SaveToXml(ANode: IXmlNode); virtual;
 
     /// <summary>Evaluates Condition (resolving macros first); empty Condition is treated as True.</summary>
+    /// <returns>True when the condition holds or is empty; the result is cached until the list is modified.</returns>
     function EvalCondition: Boolean;
 
     /// <summary>Optional condition expression that must evaluate to True for the item to apply.</summary>
@@ -138,19 +144,26 @@ type
     /// <summary>If True, missing include files raise an error; otherwise they are silently skipped.</summary>
     FForce: Boolean;
     /// <summary>Returns the include file name with macros and relative paths resolved.</summary>
+    /// <returns>The include file name, macros expanded and made absolute relative to the owning .params file.</returns>
     function GetResolvedFileName: string;
     /// <summary>Setter for FileName; marks the list modified on change.</summary>
+    /// <param name="AValue">The new include file name.</param>
     procedure SetFileName(const AValue: string);
     /// <summary>Setter for Force; marks the list modified on change.</summary>
+    /// <param name="AValue">The new Force flag.</param>
     procedure SetForce(const AValue: Boolean);
   public
     /// <summary>Creates an Include item and its owned child TStartParamList.</summary>
+    /// <param name="AOwner">The list the item belongs to.</param>
     constructor Create(AOwner: TStartParamList);
     /// <summary>Frees the owned child TStartParamList.</summary>
     destructor Destroy; override;
     /// <summary>Restores File, Force and Condition attributes from XML.</summary>
+    /// <param name="ANode">The &lt;Include&gt; XML element to read.</param>
+    /// <param name="AErrors">Receives a message when the File attribute is missing or unexpected attributes are present.</param>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
     /// <summary>Persists File, Force and Condition attributes to XML.</summary>
+    /// <param name="ANode">The &lt;Include&gt; XML element to write.</param>
     procedure SaveToXml(ANode: IxmlNode); override;
 
     /// <summary>If True, missing include files raise an error.</summary>
@@ -183,25 +196,39 @@ type
     /// <summary>1-based line index inside the source file (mkFile); 0 means whole file.</summary>
     FLine: string;
     /// <summary>Computes the macro's resolved value (recursively resolving nested macros).</summary>
+    /// <returns>
+    /// The literal value with macros expanded (mkValue), or the file contents, line or regular-expression match (mkFile); empty when the file is missing,
+    /// the line is beyond the end or the expression does not match.
+    /// </returns>
     function GetResolvedValue: string;
     /// <summary>Setter for FileName; marks the list modified on change.</summary>
+    /// <param name="AValue">The new source file name.</param>
     procedure SetFileName(const AValue: string);
     /// <summary>Setter for Kind; marks the list modified on change.</summary>
+    /// <param name="AValue">The new macro kind.</param>
     procedure SetKind(const AValue: TStartParamMacroKind);
     /// <summary>Setter for Line; marks the list modified on change.</summary>
+    /// <param name="AValue">The new line number text (may contain macros).</param>
     procedure SetLine(const AValue: string);
     /// <summary>Setter for RegEx; marks the list modified on change.</summary>
+    /// <param name="AValue">The new regular expression (may contain macros).</param>
     procedure SetRegEx(const AValue: string);
     /// <summary>Setter for Value; marks the list modified on change.</summary>
+    /// <param name="AValue">The new literal value.</param>
     procedure SetValue(const AValue: string);
     /// <summary>Setter for Name; marks the list modified on change.</summary>
+    /// <param name="AValue">The new macro name.</param>
     procedure SetName(const AValue: string);
     /// <summary>Returns the macro's source file name with macros and relative paths resolved.</summary>
+    /// <returns>The source file name, macros expanded and made absolute relative to the owning .params file.</returns>
     function GetResolvedFileName: string;
   public
     /// <summary>Restores Name, Value, FromFile, Line, RegEx and Condition attributes from XML.</summary>
+    /// <param name="ANode">The &lt;Macro&gt; XML element to read.</param>
+    /// <param name="AErrors">Receives a message when the name is missing or the attributes are invalid.</param>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
     /// <summary>Persists Name, Value, FromFile, Line, RegEx and Condition attributes to XML.</summary>
+    /// <param name="ANode">The &lt;Macro&gt; XML element to write.</param>
     procedure SaveToXml(ANode: IxmlNode); override;
 
     /// <summary>Macro kind: value or file-backed.</summary>
@@ -240,15 +267,21 @@ type
     /// <summary>Cached resolved parameter value.</summary>
     FResolvedValue: string;
     /// <summary>Computes (and caches) the parameter value with macros resolved.</summary>
+    /// <returns>The parameter value with every macro expanded.</returns>
     function GetResolvedValue: string;
     /// <summary>Setter for Value; marks the list modified on change.</summary>
+    /// <param name="AValue">The new raw parameter value.</param>
     procedure SetValue(const AValue: string);
     /// <summary>Setter for Name; marks the list modified on change.</summary>
+    /// <param name="Value">The new display name.</param>
     procedure SetName(const Value: string);
   public
     /// <summary>Restores Name, Value and Condition attributes from XML.</summary>
+    /// <param name="ANode">The &lt;Param&gt; XML element to read.</param>
+    /// <param name="AErrors">Receives a message when the name is missing or the attributes are invalid.</param>
     procedure LoadFromXml(ANode: IXMLNode; AErrors: TStrings); override;
     /// <summary>Persists Name, Value and Condition attributes to XML.</summary>
+    /// <param name="ANode">The &lt;Param&gt; XML element to write.</param>
     procedure SaveToXml(ANode: IxmlNode); override;
 
     /// <summary>Display name of the parameter.</summary>
@@ -268,10 +301,13 @@ type
     FIndex: Integer;
   public
     /// <summary>Initialises the enumerator over AList.</summary>
+    /// <param name="AList">The list of TStartParam objects to enumerate; not owned.</param>
     constructor Create(AList: TList);
     /// <summary>Advances to the next element; returns False at end.</summary>
+    /// <returns>True when a further element is available, False at the end of the list.</returns>
     function MoveNext: Boolean;
     /// <summary>Returns the element at the current index.</summary>
+    /// <returns>The TStartParam at the current index.</returns>
     function GetCurrent: TStartParam;
     /// <summary>Element at the current index.</summary>
     property Current: TStartParam read GetCurrent;
@@ -284,10 +320,12 @@ type
     FList: TList;
   public
     /// <summary>Takes ownership of AList.</summary>
+    /// <param name="AList">The list of TStartParam objects; freed with this object.</param>
     constructor Create(AList: TList);
     /// <summary>Frees the underlying list.</summary>
     destructor Destroy; override;
     /// <summary>Returns an enumerator over the list.</summary>
+    /// <returns>A new enumerator positioned before the first element.</returns>
     function GetEnumerator: TStartParamListEnumerator;
   end;
 
@@ -309,20 +347,36 @@ type
     /// <summary>Last-modified time of the loaded source file (for change detection).</summary>
     FFileTime: TDateTime;
     /// <summary>Returns the number of items in the list.</summary>
+    /// <returns>The number of items (includes, macros and params) directly in this list.</returns>
     function GetCount: Integer;
     /// <summary>Returns the item at the given index.</summary>
+    /// <param name="Index">Zero-based item index.</param>
+    /// <returns>The item at Index.</returns>
     function GetItem(Index: Integer): TStartParamBase;
     /// <summary>Loads an &lt;Include&gt; XML node into the list (recursively loading the included file).</summary>
+    /// <param name="ANode">The &lt;Include&gt; XML element.</param>
+    /// <param name="AErrors">Receives load errors, including a missing file when the include is forced.</param>
+    /// <param name="ARecursionCount">Current include depth; the included file is loaded at one level deeper.</param>
     procedure LoadIncludeNode(ANode: IXMLNode; AErrors: TStrings; ARecursionCount: Integer);
     /// <summary>Returns ActiveParamName, clearing it if the parameter no longer exists.</summary>
+    /// <returns>The active parameter name, or an empty string when none is set or it no longer exists.</returns>
     function GetActiveParamName: string;
     /// <summary>Recursively appends every available TStartParam (respecting Condition) to AList.</summary>
+    /// <param name="AList">Receives the TStartParam objects found.</param>
+    /// <param name="AIgnoreCondition">True to collect every parameter regardless of its own and its includes' Condition.</param>
     procedure CollectParams(AList: TList; AIgnoreCondition: Boolean);
     /// <summary>Setter for ActiveParamName; marks the list modified on change.</summary>
+    /// <param name="AValue">The name of the parameter to make active.</param>
     procedure SetActiveParamName(const AValue: string);
     /// <summary>Internal recursive loader that enforces the include depth limit.</summary>
+    /// <param name="AFileName">The .params file to load.</param>
+    /// <param name="ARecursionCount">Current include depth; loading fails beyond 30.</param>
+    /// <exception cref="EStartParameterError">
+    /// The include depth exceeds 30, the root element is not StartParameters, or any item reported an error while loading.
+    /// </exception>
     procedure InternLoadFromFile(const AFileName: string; ARecursionCount: Integer);
     /// <summary>Removes the supplied XML node and surrounding indentation whitespace.</summary>
+    /// <param name="Node">The XML node to remove.</param>
     procedure DeleteNode(Node: IXMLNode);
     /// <summary>Lazily creates the backing IXmlDocument with auto-indent enabled.</summary>
     procedure RequireXmlDoc;
@@ -330,36 +384,57 @@ type
     /// <summary>Marks this list modified and invalidates every item's cached condition result.</summary>
     procedure MarkModified;
     /// <summary>Recursively expands $(Macro) and built-in tokens inside AValue, stopping before AStopItem.</summary>
+    /// <param name="AStopItem">The item being resolved; macros declared at or after it are not used, which prevents self-reference.</param>
+    /// <param name="AValue">The text to expand.</param>
+    /// <returns>AValue with built-in tokens, declared macros and, failing those, environment variables substituted.</returns>
     function ResolveValue(AStopItem: TStartParamBase; const AValue: string): string;
     /// <summary>Locates the last matching macro by name, recursing into includes and the parent list.</summary>
+    /// <param name="AStopItem">The item at which the search of this list stops; nil searches every item.</param>
+    /// <param name="AMacroName">The macro name (case-insensitive).</param>
+    /// <returns>The last matching macro whose Condition holds, searching the parent list when none is found here; nil when none exists.</returns>
     function FindMacro(AStopItem: TStartParamBase; const AMacroName: string): TStartParamMacro;
   public
     /// <summary>Creates the list (with optional parent Include item).</summary>
+    /// <param name="AParent">The Include item that owns this list, or nil for the root list.</param>
     constructor Create(AParent: TStartParamInclude);
     /// <summary>Frees the owned items.</summary>
     destructor Destroy; override;
     /// <summary>Removes every item from the list and clears the XML document.</summary>
     procedure Clear;
     /// <summary>Loads the list from the supplied .params file.</summary>
+    /// <param name="AFileName">The .params file to load.</param>
+    /// <exception cref="EStartParameterError">The file is not a valid .params file, includes nest too deeply, or an item failed to load.</exception>
     procedure LoadFromFile(const AFileName: string);
     /// <summary>Saves the list to the supplied .params file.</summary>
     /// <param name="AFileName">The .params file to write.</param>
     procedure SaveToFile(const AFileName: string);
     /// <summary>Saves the list to its currently associated file (or the parent's resolved file).</summary>
+    /// <exception cref="EStartParameterError">The list has no file name and no parent Include to take one from.</exception>
     procedure Save;
     /// <summary>Re-reads the file if its modification time changed; recurses into includes.</summary>
     /// <returns>True if any list (this or an included one) was actually reloaded.</returns>
     function Reload: Boolean;
     /// <summary>Returns the last param matching AParamName whose Condition holds (recursing into includes).</summary>
+    /// <param name="AParamName">The parameter name (case-insensitive).</param>
+    /// <returns>The matching parameter, or nil when none matches.</returns>
     function FindParam(const AParamName: string): TStartParam;
     /// <summary>Returns the child include list whose unresolved file name matches AIncludeFileName, or nil.</summary>
+    /// <param name="AIncludeFileName">The include file name as written in the file (case-insensitive).</param>
+    /// <returns>The include's parameter list, or nil when this list has no such include.</returns>
     function FindIncludeParamList(const AIncludeFileName: string): TStartParamList;
     /// <summary>Returns an enumerable of the available parameters, respecting Condition by default.</summary>
+    /// <param name="AIgnoreCondition">True to include parameters whose Condition does not hold.</param>
+    /// <returns>A new enumeration object the caller must free.</returns>
     function AvailableParams(AIgnoreCondition: Boolean = False): TStartParamListEnumeration;
 
     /// <summary>Adds AItem to the list and returns it.</summary>
+    /// <param name="AItem">The item to add; the list takes ownership.</param>
+    /// <returns>AItem.</returns>
     function Add(AItem: TStartParamBase): TStartParamBase;
     /// <summary>Returns an existing matching include or creates a new one for AIncludeFileName.</summary>
+    /// <param name="AIncludeFileName">The include file name as it is to be written.</param>
+    /// <param name="AForceInclude">The Force flag to set on the include.</param>
+    /// <returns>The existing or newly created include item.</returns>
     function AddInclude(const AIncludeFileName: string; AForceInclude: Boolean): TStartParamInclude;
 
     /// <summary>Number of items in the list.</summary>
@@ -1176,9 +1251,9 @@ begin
           else if SameText(S, 'MonthName') then
             NewS := FormatDateTime('mmmm', Date)
           else if SameText(S, 'LastMonthShortName') then
-            NewS := FormatDateTime('mmm', IncMonth(Date))
+            NewS := FormatDateTime( 'mmm', IncMonth( Date, -1 ) )
           else if SameText(S, 'LastMonthName') then
-            NewS := FormatDateTime('mmmm', IncMonth(Date))
+            NewS := FormatDateTime( 'mmmm', IncMonth( Date, -1 ) )
           else if SameText(S, 'LastYear') then
             NewS := IntToStr(YearOf(Date) - 1)
           else

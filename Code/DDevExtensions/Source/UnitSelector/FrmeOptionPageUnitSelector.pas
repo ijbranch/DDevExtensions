@@ -52,6 +52,7 @@ type
     procedure SetReplaceUseUnit(const Value: Boolean);
   protected
     /// <summary>Returns the option page tree node registered for this feature.</summary>
+    /// <returns>A new 'Find Unit/Use Unit' page that hosts TFrameOptionPageUnitSelector.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Sets default values when no configuration file exists.</summary>
     procedure Init; override;

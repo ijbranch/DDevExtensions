@@ -109,7 +109,9 @@ uses
   DfmPasConsistencyCore in '..\Code\DDevExtensions\Source\DfmPasConsistency\DfmPasConsistencyCore.pas',
   TestDfmPasConsistencyCoreDUnitX in 'TestDfmPasConsistencyCoreDUnitX.pas',
   DependencyViewerCore in '..\Code\DDevExtensions\Source\DependencyViewer\DependencyViewerCore.pas',
-  TestDependencyViewerCoreDUnitX in 'TestDependencyViewerCoreDUnitX.pas';
+  TestDependencyViewerCoreDUnitX in 'TestDependencyViewerCoreDUnitX.pas',
+  ImportHooking in '..\Shared\ImportHooking.pas',
+  TestImportHookingDUnitX in 'TestImportHookingDUnitX.pas';
 
 {$R *.res}
 

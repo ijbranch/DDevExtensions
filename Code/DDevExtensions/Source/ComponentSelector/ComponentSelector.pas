@@ -101,6 +101,7 @@ type
     /// <summary>Toggles grouping of results by palette page.</summary>
     FCheckBoxPaletteSort: TCheckBox;
     /// <summary>Custom WM_PAINT handler that draws the search prompt when unfocused.</summary>
+    /// <param name="Msg">The WM_PAINT message.</param>
     procedure WMPaint(var Msg: TWMPaint); message WM_PAINT;
   protected
     /// <summary>Returns focus to the drop-down panel after a checkbox click.</summary>
@@ -180,6 +181,7 @@ type
     /// <param name="Value">The new shortcut.</param>
     procedure SetHotkey(const Value: TShortCut);
     /// <summary>Returns the currently configured hotkey shortcut.</summary>
+    /// <returns>The focus-hotkey action's shortcut.</returns>
     function GetHotkey: TShortCut;
   protected
     /// <summary>Determines whether <paramref name="AClassName"/> matches the current filter text.</summary>
@@ -193,6 +195,7 @@ type
     procedure UpdateComponentList;
 //    procedure DoTimer(Sender: TObject); //testing
     /// <summary>Returns the option page tree node registered for this feature.</summary>
+    /// <returns>A new 'Component Selector' page that hosts TFrameOptionPageComponentSelector.</returns>
     function GetOptionPages: TTreePage; virtual;
     /// <summary>Loads the toolbar geometry, options and hotkey from the registry.</summary>
     procedure LoadToolbarConfig;
@@ -231,6 +234,7 @@ type
   end;
 
 /// <summary>Returns the singleton <see cref="TComponentSelector"/> instance, or nil when the plugin is unloaded.</summary>
+/// <returns>The global controller, or nil.</returns>
 function ComponentSelectorCtrl: TComponentSelector;
 /// <summary>Plugin entry point; creates or destroys the singleton controller.</summary>
 /// <param name="Unload">When true, the controller is freed; otherwise it is created.</param>

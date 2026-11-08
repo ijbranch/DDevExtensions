@@ -136,24 +136,39 @@ type
     FVirtualStream: IVirtualStream;
   protected
     /// <summary>Routes 32-bit <c>SetSize</c> via <c>Seek</c>.</summary>
+    /// <param name="NewSize">Position to seek to.</param>
     procedure SetSize(NewSize: Longint); override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Routes 64-bit <c>SetSize</c> via <c>Seek</c>.</summary>
+    /// <param name="NewSize">Position to seek to.</param>
     procedure SetSize(const NewSize: Int64); override;
     {$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates an adapter that delegates to <paramref name="AVirtualStream"/>.</summary>
+    /// <param name="AVirtualStream">Virtual stream to read from; the adapter keeps a reference to it.</param>
     constructor Create(AVirtualStream: IVirtualStream);
 
     /// <summary>Reads up to <paramref name="Count"/> bytes from the underlying virtual stream.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Count">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes read.</returns>
     function Read(var Buffer; Count: Integer): Integer; override;
     /// <summary>Always fails (returns -1) - the underlying virtual stream is read-only.</summary>
+    /// <param name="Buffer">Not used.</param>
+    /// <param name="Count">Not used.</param>
+    /// <returns>Always -1.</returns>
     function Write(const Buffer; Count: Integer): Integer; override;
     {$IFDEF COMPILER6_UP}
     /// <summary>Repositions the underlying virtual stream (64-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position reported by the virtual stream.</returns>
     function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
     {$ELSE}
     /// <summary>Repositions the underlying virtual stream (legacy 32-bit overload).</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin">Reference point: beginning, current position or end.</param>
+    /// <returns>The new position reported by the virtual stream.</returns>
     function Seek(Offset: Longint; Origin: Word): Longint; override;
     {$ENDIF COMPILER6_UP}
   end;
@@ -176,15 +191,26 @@ type
     /// <paramref name="AAutoDelete"/> is True (default), the wrapped stream is freed when
     /// this instance is released.
     /// </summary>
+    /// <param name="AStream">Stream that supplies the file content.</param>
+    /// <param name="AFileDate">DOS-format file date reported by <see cref="FileStatus"/>.</param>
+    /// <param name="AAutoDelete">True to free <paramref name="AStream"/> when this instance is destroyed.</param>
     constructor Create(AStream: TStream; AFileDate: Integer; AAutoDelete: Boolean = True);
     /// <summary>Frees the wrapped stream if <see cref="FAutoDelete"/> is set.</summary>
     destructor Destroy; override;
 
     /// <summary>Repositions the wrapped stream.</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin"><c>soFromBeginning</c>, <c>soFromCurrent</c> or <c>soFromEnd</c>.</param>
+    /// <returns>The new position in the wrapped stream.</returns>
     function Seek(Offset: Integer; Origin: Integer): Integer; stdcall;
     /// <summary>Reads up to <paramref name="Size"/> bytes from the wrapped stream.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Size">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes read.</returns>
     function Read(var Buffer; Size: Integer): Integer; stdcall;
     /// <summary>Returns the wrapped stream's size and the cached file date.</summary>
+    /// <param name="FileDate">Receives the file date passed to the constructor.</param>
+    /// <param name="FileSize">Receives the wrapped stream's size in bytes.</param>
     procedure FileStatus(out FileDate: Integer; out FileSize: Integer); stdcall;
   end;
 

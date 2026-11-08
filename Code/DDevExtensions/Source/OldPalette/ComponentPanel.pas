@@ -1,4 +1,4 @@
-{-----------------------------------------------------------------------------
+﻿{-----------------------------------------------------------------------------
 The contents of this file are subject to the Mozilla Public License
 Version 1.1 (the "License"); you may not use this file except in compliance
 with the License. You may obtain a copy of the License at
@@ -57,6 +57,7 @@ type
     /// <summary>Hint window class used by this button's tooltips.</summary>
     FHintWindowClass: THintWindowClass;
     /// <summary>Inserts <see cref="FHintWindowClass"/> into the hint info before display.</summary>
+    /// <param name="Msg">The hint message; its HintInfo receives the hint window class.</param>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
   public
     /// <summary>Hint window class used when the button shows a tooltip.</summary>
@@ -69,8 +70,7 @@ type
   /// states, transparent backgrounds and BiDi text. Used by <see cref="TJvNoFrameButton"/>
   /// to render its bitmap without forcing the glyph to live on the button itself.
   /// </summary>
-  { VCL Buttons unit does not publish TJvButtonGlyph class,
-    so we do it for other programers (Delphi 3 version) }
+  /// <remarks>The VCL Buttons unit does not publish its glyph class, so this one is published for other programmers ( from the Delphi 3 version ).</remarks>
   TJvButtonGlyph = class(TObject)
   private
     /// <summary>Cached image list holding the rendered per-state glyphs.</summary>
@@ -90,28 +90,53 @@ type
     /// <summary>True when the button inherits its BiDi mode from its parent.</summary>
     FParentBiDiMode: Boolean;
     /// <summary>Setter that invalidates cached glyphs when BiDi mode changes.</summary>
+    /// <param name="Value">The new bidirectional mode.</param>
     procedure SetBiDiMode(Value: TBiDiMode);
     /// <summary>Setter that invalidates cached glyphs when the parent BiDi flag changes.</summary>
+    /// <param name="Value">True to inherit the bidirectional mode from the parent.</param>
     procedure SetParentBiDiMode(Value: Boolean);
     /// <summary>Notification handler called when the source glyph bitmap changes.</summary>
+    /// <param name="Sender">The source glyph bitmap.</param>
     procedure GlyphChanged(Sender: TObject);
     /// <summary>Setter that copies the new bitmap and infers the glyph count.</summary>
+    /// <param name="Value">The bitmap to copy as the source glyph.</param>
     procedure SetGlyph(Value: TBitmap);
     /// <summary>Setter that updates the number of frames and invalidates caches.</summary>
+    /// <param name="Value">Number of frames in the source bitmap.</param>
     procedure SetNumGlyphs(Value: TNumGlyphs);
     /// <summary>Setter that updates the background colour used for disabled rendering.</summary>
+    /// <param name="Value">The new background colour.</param>
     procedure SetColor(Value: TColor);
     /// <summary>Discards cached per-state bitmaps so they will be re-created on demand.</summary>
     procedure Invalidate;
     /// <summary>Builds and caches the glyph for the requested state and returns its index.</summary>
+    /// <param name="State">Button state whose glyph is wanted; bsDown falls back to bsUp when there are fewer than 3 frames.</param>
+    /// <returns>Index of the glyph in the image list, or -1 when the source bitmap is empty.</returns>
     function CreateButtonGlyph(State: TButtonState): Integer;
     /// <summary>Paints the cached glyph for <paramref name="State"/> at <paramref name="GlyphPos"/>.</summary>
+    /// <param name="Canvas">Canvas to paint on.</param>
+    /// <param name="GlyphPos">Top-left position of the glyph.</param>
+    /// <param name="State">Button state to paint.</param>
+    /// <param name="Transparent">True to paint the glyph transparently.</param>
     procedure DrawButtonGlyph(Canvas: TCanvas; const GlyphPos: TPoint;
       State: TButtonState; Transparent: Boolean);
     /// <summary>Draws the caption text into <paramref name="TextBounds"/> respecting BiDi and disabled state.</summary>
+    /// <param name="Canvas">Canvas to paint on.</param>
+    /// <param name="Caption">Text to draw.</param>
+    /// <param name="TextBounds">Rectangle to draw the text in.</param>
+    /// <param name="State">Button state; a disabled state draws embossed text.</param>
     procedure DrawButtonText(Canvas: TCanvas; const Caption: string;
       TextBounds: TRect; State: TButtonState); virtual;
     /// <summary>Calculates glyph and text positions for the supplied client rect, layout and margins.</summary>
+    /// <param name="Canvas">Canvas used to measure the caption.</param>
+    /// <param name="Client">Button client rectangle.</param>
+    /// <param name="Offset">Offset applied to the glyph and text, e.g. when the button is pressed.</param>
+    /// <param name="Caption">Button caption.</param>
+    /// <param name="Layout">Glyph position relative to the text.</param>
+    /// <param name="Margin">Distance from the edge to the glyph, or -1 to centre.</param>
+    /// <param name="Spacing">Distance between glyph and text, or -1 to centre.</param>
+    /// <param name="GlyphPos">Receives the glyph position.</param>
+    /// <param name="TextBounds">Receives the text rectangle.</param>
     procedure CalcButtonLayout(Canvas: TCanvas; const Client: TRect;
       const Offset: TPoint; const Caption: string; Layout: TButtonLayout;
       Margin, Spacing: Integer; var GlyphPos: TPoint; var TextBounds: TRect);
@@ -119,6 +144,9 @@ type
     /// <summary>Original (uncached) glyph bitmap supplied by the caller.</summary>
     FOriginal: TBitmap;
     /// <summary>Calculates the bounding rectangle required to render <paramref name="Caption"/>.</summary>
+    /// <param name="Canvas">Canvas used to measure the text.</param>
+    /// <param name="TextRect">Rectangle adjusted to fit the text.</param>
+    /// <param name="Caption">Text to measure.</param>
     procedure CalcTextRect(Canvas: TCanvas; var TextRect: TRect; const Caption: string); virtual;
   public
     /// <summary>Creates the helper and registers it with the shared glyph cache.</summary>
@@ -127,7 +155,15 @@ type
     destructor Destroy; override;
     /// <summary>Renders glyph and caption for the supplied state and returns the text rectangle used.</summary>
     /// <returns>The bounding rectangle of the rendered text.</returns>
-    { return the text rectangle }
+    /// <param name="Canvas">Canvas to paint on.</param>
+    /// <param name="Client">Button client rectangle.</param>
+    /// <param name="Offset">Offset applied to the glyph and text.</param>
+    /// <param name="Caption">Button caption.</param>
+    /// <param name="Layout">Glyph position relative to the text.</param>
+    /// <param name="Margin">Distance from the edge to the glyph, or -1 to centre.</param>
+    /// <param name="Spacing">Distance between glyph and text, or -1 to centre.</param>
+    /// <param name="State">Button state to paint.</param>
+    /// <param name="Transparent">True to paint the glyph transparently.</param>
     function Draw(Canvas: TCanvas; const Client: TRect; const Offset: TPoint;
       const Caption: string; Layout: TButtonLayout; Margin, Spacing: Integer;
       State: TButtonState; Transparent: Boolean): TRect;
@@ -137,9 +173,15 @@ type
     /// <param name="AColor">Background colour for disabled rendering.</param>
     /// <param name="IgnoreOld">Skip restoring the original glyph for performance.</param>
     /// <returns>The bounding rectangle of the rendered text.</returns>
-    { DrawExternal draws any glyph (not glyph property) -
-      if you don't needed to save previous glyph set IgnoreOld to True -
-      this increases performance }
+    /// <param name="Canvas">Canvas to paint on.</param>
+    /// <param name="Client">Button client rectangle.</param>
+    /// <param name="Offset">Offset applied to the glyph and text.</param>
+    /// <param name="Caption">Button caption.</param>
+    /// <param name="Layout">Glyph position relative to the text.</param>
+    /// <param name="Margin">Distance from the edge to the glyph, or -1 to centre.</param>
+    /// <param name="Spacing">Distance between glyph and text, or -1 to centre.</param>
+    /// <param name="State">Button state to paint.</param>
+    /// <param name="Transparent">True to paint the glyph transparently.</param>
     function DrawExternal(AGlyph: TBitmap; ANumGlyphs: TNumGlyphs; AColor: TColor; IgnoreOld: Boolean;
       Canvas: TCanvas; const Client: TRect; const Offset: TPoint; const Caption: string;
       Layout: TButtonLayout; Margin, Spacing: Integer; State: TButtonState; Transparent: Boolean): TRect;
@@ -183,15 +225,25 @@ type
     /// <summary>True after the auto-repeat has produced at least one click.</summary>
     FClicked: Boolean;
     /// <summary>Setter for <see cref="NoBorder"/> that triggers a repaint.</summary>
+    /// <param name="Value">True to paint without an outer border.</param>
     procedure SetNoBorder(Value: Boolean);
     /// <summary>Timer tick handler implementing auto-repeat.</summary>
+    /// <param name="Sender">The repeat timer.</param>
     procedure TimerExpired(Sender: TObject);
   protected
     /// <summary>Custom paint method delegating to <see cref="DefaultDrawing"/>.</summary>
     procedure Paint; override;
     /// <summary>Starts the auto-repeat timer when armed.</summary>
+    /// <param name="Button">The mouse button pressed.</param>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="X">Horizontal client position.</param>
+    /// <param name="Y">Vertical client position.</param>
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X: Integer; Y: Integer); override;
     /// <summary>Stops auto-repeat and ensures the synthetic click does not double-fire.</summary>
+    /// <param name="Button">The mouse button released.</param>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="X">Horizontal client position.</param>
+    /// <param name="Y">Vertical client position.</param>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X: Integer; Y: Integer); override;
   public
     /// <summary>Creates the button with default repeat timings.</summary>
@@ -200,6 +252,8 @@ type
     /// <summary>Releases the repeat timer and glyph drawer.</summary>
     destructor Destroy; override;
     /// <summary>Default paint routine used when no <see cref="OnPaint"/> handler is set.</summary>
+    /// <param name="IsDown">True when the button is drawn pressed.</param>
+    /// <param name="State">Button state to paint.</param>
     procedure DefaultDrawing(const IsDown: Boolean; const State: TButtonState);
     /// <summary>Exposes the inherited canvas for custom painting.</summary>
     property Canvas;
@@ -257,41 +311,61 @@ type
     /// <summary>Optional callback invoked to paint the panel's content area.</summary>
     FOnPaintContent: TJvPaintPanelContentEvent;
     /// <summary>Returns the button at <paramref name="Index"/> or nil when out of range.</summary>
+    /// <param name="Index">Zero-based button index.</param>
+    /// <returns>The button, or nil when Index is out of range.</returns>
     function GetButton(Index: Integer): TJvExSpeedButton;
     /// <summary>Returns the number of buttons in the panel.</summary>
+    /// <returns>Number of component buttons.</returns>
     function GetButtonCount: Integer;
     /// <summary>Setter that grows or shrinks the button list to the requested count.</summary>
+    /// <param name="AButtonCount">New number of buttons; a negative value is ignored.</param>
     procedure SetButtonCount(AButtonCount: Integer);
     /// <summary>Setter that resizes all buttons horizontally.</summary>
+    /// <param name="AButtonWidth">New button width in pixels.</param>
     procedure SetButtonWidth(AButtonWidth: Integer);
     /// <summary>Setter that resizes all buttons vertically.</summary>
+    /// <param name="AButtonHeight">New button height in pixels.</param>
     procedure SetButtonHeight(AButtonHeight: Integer);
     /// <summary>Setter for <see cref="FirstVisible"/> with bounds checking.</summary>
+    /// <param name="AButton">Index of the first visible button; clamped to the button range.</param>
     procedure SetFirstVisible(AButton: Integer);
     /// <summary>Internal click dispatcher that raises <see cref="OnClick"/> with the button index.</summary>
+    /// <param name="Sender">The button that was clicked.</param>
     procedure BtnClick(Sender: TObject);
     /// <summary>Internal double-click dispatcher that raises <see cref="OnDblClick"/>.</summary>
+    /// <param name="Sender">The button that was double-clicked.</param>
     procedure BtnDblClick(Sender: TObject);
     /// <summary>Click handler for the left/right scroll arrows.</summary>
+    /// <param name="Sender">The left or right scroll arrow.</param>
     procedure MoveClick(Sender: TObject);
     /// <summary>Returns the maximum number of buttons currently fitting in the visible area.</summary>
+    /// <returns>Number of buttons that fit beside the pointer button and the two scroll arrows.</returns>
     function GetVisibleCount: Integer;
     /// <summary>Setter that selects the button at <paramref name="Value"/>.</summary>
+    /// <param name="Value">Index of the button to select.</param>
     procedure SetSelectedButton(Value: Integer);
     /// <summary>Returns the index of the currently selected button, or -1.</summary>
+    /// <returns>Index of the selected button, or -1 when none is selected.</returns>
     function GetSelectedButton: Integer;
     /// <summary>Suppresses Caption changes; the panel renders no caption.</summary>
+    /// <param name="Msg">The WM_SETTEXT message; handled, then the caption is cleared.</param>
     procedure WMSetText(var Msg: TWMSetText); message WM_SETTEXT;
     /// <summary>Forwards the panel's hint window class to the displayed tooltip.</summary>
+    /// <param name="Msg">The hint message; its HintInfo receives the hint window class.</param>
     procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
   protected
     /// <summary>Repositions all child buttons to honour the current sizes and scroll position.</summary>
     procedure Resize; override;
     /// <summary>Translates mouse wheel events into left/right scrolling.</summary>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="WheelDelta">Wheel movement; each WHEEL_DELTA step scrolls one page.</param>
+    /// <param name="MousePos">Mouse position.</param>
+    /// <returns>True: the wheel event is always handled.</returns>
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     /// <summary>Paints the panel background and delegates content drawing to <see cref="PaintContent"/>.</summary>
     procedure Paint; override;
     /// <summary>Calls <see cref="OnPaintContent"/> if assigned to allow custom content drawing.</summary>
+    /// <param name="R">Content rectangle to paint.</param>
     procedure PaintContent(const R: TRect);
   public
     /// <summary>Creates the panel and its fixed pointer/arrow buttons.</summary>

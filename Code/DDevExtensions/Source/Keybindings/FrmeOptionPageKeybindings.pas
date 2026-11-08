@@ -66,10 +66,12 @@ type
     /// <summary>User-chosen shortcut to move the current line/block down.</summary>
     FMoveLineBlockDownKey: TShortCut;
     /// <summary>Updates FActive and (un)registers the keyboard binding with the IDE.</summary>
+    /// <param name="Value">True to register the binding, False to remove it.</param>
     procedure SetActive(const Value: Boolean);
     /// <summary>Moves the caret to the interface or implementation section header.</summary>
     /// <param name="EditBuffer">The active editor buffer to navigate.</param>
-    /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section (so the Up/Down shortcuts are directional).</param>
+    /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section
+    /// (so the Up/Down shortcuts are directional).</param>
     procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
     /// <summary>IOTAKeyboardBinding callback: runs <see cref="HandleKeyBinding"/> and lets no exception
     /// leave it, because one unwinding out of the IDE's ProcessKeyStroke wedged every later keystroke
@@ -88,8 +90,14 @@ type
     procedure HandleKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
       var BindingResult: TKeyBindingResult);
     /// <summary>Internal worker for CtrlMoveCursor that consumes a single token starting at the caret.</summary>
+    /// <param name="EditPosition">Edit position at the caret; it is moved past the token.</param>
+    /// <param name="InComment">True if the caret is in a comment, where any run of non-alphanumeric, non-blank characters counts as one token.</param>
     procedure InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
     /// <summary>Smart Ctrl-Left/Ctrl-Right cursor movement with optional selection extension.</summary>
+    /// <param name="EditBuffer">The active buffer, whose block is extended when selecting; may be nil.</param>
+    /// <param name="View">The edit view, used to tell whether the caret is in a comment.</param>
+    /// <param name="EditPosition">The edit position to move.</param>
+    /// <param name="ForwardMove">True for Ctrl-Right, False for Ctrl-Left.</param>
     procedure CtrlMoveCursor(EditBuffer: IOTAEditBuffer; View: IOTAEditView;
       EditPosition: IOTAEditPosition; ForwardMove: Boolean);
     /// <summary>Moves the current line or selected block up or down within the buffer.</summary>
@@ -99,11 +107,13 @@ type
     procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
     /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
     /// <param name="EditBuffer">The active editor buffer (resolution itself uses the IDE's active control).</param>
-    /// <returns>True if the Find Declaration action was located and executed; False if it could not be resolved, so the caller leaves the keystroke unhandled for the IDE's own handler.</returns>
+    /// <returns>True if the Find Declaration action was located and executed; False if it could not be resolved,
+    /// so the caller leaves the keystroke unhandled for the IDE's own handler.</returns>
     function FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
     //procedure ReturnPressed(EditBuffer: IOTAEditBuffer);
   protected
     /// <summary>Returns the option-page descriptor for the IDE Tools > Options dialog.</summary>
+    /// <returns>A new 'Key Bindings' page that hosts TFrameOptionPageKeybindings.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises preferences to factory defaults.</summary>
     procedure Init; override;
@@ -117,12 +127,16 @@ type
 
     { IOTAKeyboardBinding }
     /// <summary>Adds every active key binding to the IDE's keyboard service.</summary>
+    /// <param name="BindingServices">The IDE service the shortcuts are added to.</param>
     procedure BindKeyboard(const BindingServices: IOTAKeyBindingServices);
     /// <summary>Returns btPartial - this binding only handles selected shortcuts.</summary>
+    /// <returns>Always btPartial.</returns>
     function GetBindingType: TBindingType;
     /// <summary>Returns the display name shown in Tools > Options &gt; Editor &gt; Key Mappings.</summary>
+    /// <returns>'DDevExtensions KeyBindings'.</returns>
     function GetDisplayName: string;
     /// <summary>Returns the unique internal name of the binding.</summary>
+    /// <returns>'DDevExtensions.KeyBindings'.</returns>
     function GetName: string;
     /// <summary>IOTAKeyboardBinding hook fired after a save; no-op.</summary>
     procedure AfterSave;
@@ -207,14 +221,19 @@ type
     /// <summary>Hot-key control for capturing the Section-Toggle-Down shortcut.</summary>
     hkSectionDown: THotKey;
     /// <summary>Re-evaluates dependent control enabled state when Active changes.</summary>
+    /// <param name="Sender">The Active check box.</param>
     procedure cbxActiveClick(Sender: TObject);
     /// <summary>Enables/disables the swap-order check box based on cbxExtendedHome.</summary>
+    /// <param name="Sender">The Extended Home check box.</param>
     procedure cbxExtendedHomeClick(Sender: TObject);
     /// <summary>Enables/disables cbxIndentSingleLine based on cbxTabIndent.</summary>
+    /// <param name="Sender">The Tab Indent check box.</param>
     procedure cbxTabIndentClick(Sender: TObject);
     /// <summary>Enables/disables the Move-Line shortcut controls based on the master check box.</summary>
+    /// <param name="Sender">The Move Line/Block check box.</param>
     procedure chkMoveLineBlockClick(Sender: TObject);
     /// <summary>Enables/disables the Section-Toggle shortcut controls based on the master check box.</summary>
+    /// <param name="Sender">The Section Toggle check box.</param>
     procedure chkSectionToggleClick(Sender: TObject);
   private
     { Private-Deklarationen }

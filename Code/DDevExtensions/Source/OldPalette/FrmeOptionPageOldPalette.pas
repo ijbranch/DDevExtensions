@@ -55,11 +55,16 @@ type
     /// <param name="Value">True to show the palette band.</param>
     procedure SetActive(const Value: Boolean);
     /// <summary>Setter that rebuilds the palette popup menu when the sort option toggles.</summary>
+    /// <param name="Value">True to sort the palette pop-up menu alphabetically.</param>
     procedure SetAlphaSortPopupMenu(const Value: Boolean);
   protected
     /// <summary>Hooked OnBandMove constraining the Old Palette band to full ControlBar width.</summary>
+    /// <param name="Sender">The control bar.</param>
+    /// <param name="Control">The band control being moved.</param>
+    /// <param name="ARect">Proposed band rectangle; widened to the bar's client width for the Old Palette band.</param>
     procedure DoBandMove(Sender: TObject; Control: TControl; var ARect: TRect);
     /// <summary>Returns the option page tree node registered for this feature.</summary>
+    /// <returns>The options page node for this feature.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Sets default values when no configuration file exists.</summary>
     procedure Init; override;

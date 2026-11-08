@@ -50,6 +50,7 @@ type
     FPropertyName: string;
   public
     /// <summary>Stores the property name to look up.</summary>
+    /// <param name="APropertyName">Name of the tree property whose accessor the tagged field binds to.</param>
     constructor Create(const APropertyName: string);
     /// <summary>Property name to look up via RTTI.</summary>
     property PropertyName: string read FPropertyName;
@@ -70,6 +71,7 @@ type
     FSignature: AnsiString;
   public
     /// <summary>Stores the mangled symbol name.</summary>
+    /// <param name="ASignature">Mangled export name to import from <c>vclide.bpl</c>.</param>
     constructor Create(const ASignature: AnsiString);
     /// <summary>Mangled function signature used to import the symbol.</summary>
     property Signature: AnsiString read FSignature;
@@ -105,31 +107,52 @@ type
     /// <summary>Walks every published field of <c>Self</c> and binds it according to its attribute (TreeMethod, TreePropertyAccessor or TreeImport).</summary>
     procedure InitMethods;
     /// <summary>Resolves a tree method by RTTI name and stores the resulting <c>TMethod</c> in <paramref name="M"/>.</summary>
+    /// <param name="TreeType">RTTI type of the wrapped tree, or nil.</param>
+    /// <param name="MethodName">Name of the tree method to resolve.</param>
+    /// <param name="M">Receives a <c>TMethod</c> bound to the tree; its code is <c>NotSupported</c> when the method is not found.</param>
     procedure GetMethod(TreeType: TRttiType; const MethodName: string; var M);
     /// <summary>Resolves a property getter or setter by RTTI name and stores the resulting <c>TMethod</c> in <paramref name="M"/>.</summary>
+    /// <param name="TreeType">RTTI type of the wrapped tree, or nil.</param>
+    /// <param name="PropertyName">Name of the tree property whose accessor is wanted.</param>
+    /// <param name="Setter">True for the write accessor, False for the read accessor.</param>
+    /// <param name="M">Receives a <c>TMethod</c> bound to the tree; its code is <c>NotSupported</c> when the property is not found.</param>
     procedure GetProperty(TreeType: TRttiType; const PropertyName: string; Setter: Boolean; var M);
 
     /// <summary>Returns the text of the given column on the given node.</summary>
+    /// <param name="Node">Tree node to query.</param>
+    /// <param name="Column">Zero-based column index.</param>
+    /// <returns>The cell text.</returns>
     function GetText(Node: PVirtualNode; Column: Integer): string;
     /// <summary>Returns whether the node is selected.</summary>
+    /// <param name="Node">Tree node to query.</param>
+    /// <returns>True when the node is selected.</returns>
     function GetSelected(Node: PVirtualNode): Boolean;
     /// <summary>Sets the node's selected state.</summary>
+    /// <param name="Node">Tree node to change.</param>
+    /// <param name="Value">True to select the node, False to deselect it.</param>
     procedure SetSelected(Node: PVirtualNode; const Value: Boolean);
     /// <summary>Returns the currently focused node, or nil.</summary>
     /// <returns>The tree's focused node, or nil.</returns>
     function GetFocusedNode: PVirtualNode;
     /// <summary>Focuses the given node.</summary>
+    /// <param name="Node">Node to focus.</param>
     procedure SetFocusedNode(Node: PVirtualNode);
     /// <summary>Returns the tree's <c>Images</c> property reflected via RTTI.</summary>
+    /// <returns>The tree's image list, or nil when none is assigned.</returns>
     function GetImages: TCustomImageList;
     /// <summary>Returns the parent of the given node, or nil for top-level nodes.</summary>
+    /// <param name="Node">Tree node to query.</param>
+    /// <returns>The parent node, or nil for a top-level node.</returns>
     function GetNodeParent(Node: PVirtualNode): PVirtualNode;
     /// <summary>Returns the tree's <c>OnGetText</c> handler.</summary>
+    /// <returns>The handler currently assigned to the tree's <c>OnGetText</c> event.</returns>
     function GetOnGetText: TVSTGetTextEvent;
     /// <summary>Installs an <c>OnGetText</c> handler on the tree.</summary>
+    /// <param name="Value">Handler to assign to the tree's <c>OnGetText</c> event.</param>
     procedure SetOnGetText(const Value: TVSTGetTextEvent);
   public
     /// <summary>Wraps <paramref name="ATree"/> and binds every accessor field.</summary>
+    /// <param name="ATree">The IDE Virtual Tree control to wrap; not owned.</param>
     constructor Create(ATree: TCustomControl);
     /// <summary>Forwards a synthetic <c>DblClick</c> to the wrapped tree.</summary>
     procedure DblClick;

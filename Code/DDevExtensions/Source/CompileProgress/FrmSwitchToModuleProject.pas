@@ -47,6 +47,7 @@ type
     /// <summary>When checked the project switch is only applied for this single compile.</summary>
     CheckBoxTempSwitch: TCheckBox;
     /// <summary>Form-create handler that localises the captions of all controls.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate(Sender: TObject);
     /// <summary>
     /// Toggles CheckBoxTempSwitch once per press of the Shift key itself; Shift held as a

@@ -76,20 +76,31 @@ type
     mniShowInExplorer: TMenuItem;
     /// <summary>Pop-up menu used for "Diff &lt;filename&gt;" entries on a multi-editor module.</summary>
     PopupMenuDiff: TPopupMenu;
-    /// <summary>Handles the four selection-changing menu items via Sender comparison.</summary>
+    /// <summary>Handles the five selection-changing menu items (all, none, invert, only modified, only unmodified) by comparing Sender.</summary>
+    /// <param name="Sender">The selection menu item that was clicked; it decides which rows change.</param>
     procedure mniDeselectAllClick(Sender: TObject);
     /// <summary>Pre-populates the diff sub-items before the modules pop-up appears.</summary>
+    /// <param name="Sender">The modules pop-up menu.</param>
     procedure PopupMenuModulesPopup(Sender: TObject);
     /// <summary>Localises captions, hooks the list-view window proc and probes installed diff tools.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormCreate(Sender: TObject);
     /// <summary>Posts WM_LISTVIEWSELCHANGED to refresh the diff controls.</summary>
+    /// <param name="Sender">The modules list view.</param>
+    /// <param name="Item">The item whose selection changed.</param>
+    /// <param name="Selected">True if Item became selected.</param>
     procedure ListViewModulesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     /// <summary>Spawns the configured diff tool against the selected editor's content.</summary>
     /// <param name="Sender">The Diff button.</param>
     procedure btnDiffClick(Sender: TObject);
     /// <summary>Opens Windows Explorer with the selected file pre-selected.</summary>
+    /// <param name="Sender">The Show in Explorer menu item.</param>
     procedure mniShowInExplorerClick(Sender: TObject);
     /// <summary>Greys out the row caption for modules that cannot be reloaded.</summary>
+    /// <param name="Sender">The modules list view.</param>
+    /// <param name="Item">The row being drawn.</param>
+    /// <param name="State">The row's draw state.</param>
+    /// <param name="DefaultDraw">Left True so the list view still draws the row.</param>
     procedure ListViewModulesCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
   private
@@ -113,21 +124,29 @@ type
     /// <param name="Modules">List of TDocModule items to reload.</param>
     class procedure ReloadFiles(Modules: TList); static;
     /// <summary>Appends one TDocModule to the list view in the appropriate group.</summary>
+    /// <param name="AModule">The module to add.</param>
     procedure AddModuleListItem(AModule: TDocModule);
     /// <summary>Appends every module from the supplied list, deduplicating against FModules.</summary>
+    /// <param name="AModules">List of TDocModule items to add.</param>
     procedure AddModules(AModules: TList);
     /// <summary>OnClick for dynamically created "Diff &lt;filename&gt;" menu items.</summary>
+    /// <param name="Sender">The TFileEditorMenuItem clicked; it carries the editor to diff.</param>
     procedure DiffMenuItemClick(Sender: TObject);
     /// <summary>Writes the editor's in-memory contents to a temp file and launches the diff tool.</summary>
     /// <param name="Editor">The IOTAEditor whose content should be diffed against disk.</param>
     procedure DiffEditor(Editor: IOTAEditor);
     /// <summary>Updates the Diff combo box and button based on the current selection.</summary>
+    /// <param name="Msg">The posted WM_LISTVIEWSELCHANGED message.</param>
     procedure WMListViewSelChanged(var Msg: TMessage); message WM_LISTVIEWSELCHANGED;
     /// <summary>Subclass replacement for ListViewModules.WindowProc; intercepts double-clicks.</summary>
+    /// <param name="Msg">The window message sent to the list view.</param>
     procedure ListViewWndProc(var Msg: TMessage);
     /// <summary>Handles a double-click on a list item by triggering Diff or its sub-menu.</summary>
+    /// <param name="Item">The list item that was double-clicked.</param>
     procedure ListItemDblClick(Item: TListItem);
     /// <summary>Builds the list of "Diff &lt;filename&gt;" entries for the supplied pop-up menu.</summary>
+    /// <param name="ADocModule">The module whose editors get a Diff entry.</param>
+    /// <param name="APopupMenu">The pop-up menu that receives the entries.</param>
     procedure AddDiffPopupItems(ADocModule: TDocModule; APopupMenu: TPopupMenu);
   public
     { Public-Deklarationen }

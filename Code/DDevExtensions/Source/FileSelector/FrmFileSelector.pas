@@ -29,10 +29,9 @@ uses
 
 type
   /// <summary>
-  /// Specialised <see cref="ComCtrls.TListView"/> that suppresses item-by-item callbacks
-  /// when clearing in OwnerData mode for significantly faster bulk clears.
+  /// Specialised <see cref="Vcl.ComCtrls.TListView"/> that fixes Clear() in OwnerData mode: when every item is deleted
+  /// it does not fetch each item (OnData) first, which makes bulk clears much faster.
   /// </summary>
-  { Fix Clear() in OwnerData Mode. We don't need to get every item (OnData) if we delete them all. }
   TListView = class(Vcl.ComCtrls.TListView)
   protected
     /// <summary>Intercepts CN_NOTIFY/LVN_DELETEALLITEMS to short-circuit OwnerData clears.</summary>
@@ -72,6 +71,8 @@ type
   TInfoList = class(TObjectList)
   private
     /// <summary>Returns the <see cref="TInfo"/> at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index of the entry.</param>
+    /// <returns>The entry at Index.</returns>
     function GetItem(Index: NativeInt): TInfo;
   public
     /// <summary>Default indexed access to the contained items.</summary>
@@ -146,7 +147,7 @@ type
     btnOpen: TButton;
     /// <summary>Context menu for the main list view.</summary>
     popListView: TPopupMenu;
-    /// <summary>Context-menu item invoking <see cref="ActionExportToExcel"/>'s open behaviour.</summary>
+    /// <summary>Context-menu item that opens the selected file(s), as the Open button does.</summary>
     mniOpenFile: TMenuItem;
     /// <summary>Context-menu item bound to <see cref="ActionAddToInsertList"/>.</summary>
     mniAddtoInsertList: TMenuItem;
@@ -179,87 +180,173 @@ type
     /// <summary>Toggles whether each inserted unit goes on its own line.</summary>
     mniEveryUnitOnSingleLine: TMenuItem;
     /// <summary>Owner-draws an item in the filter-field combo, including the column glyph.</summary>
+    /// <param name="Control">The filter-field combo box.</param>
+    /// <param name="Index">Index of the item being drawn.</param>
+    /// <param name="Rect">Area to draw the item in.</param>
+    /// <param name="State">The item's owner-draw state.</param>
     procedure cbxFilterFieldDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
     /// <summary>Updates the active filter column when the combo selection changes.</summary>
+    /// <param name="Sender">The filter-field combo box.</param>
     procedure cbxFilterFieldChange(Sender: TObject);
     /// <summary>Handles Enter in the filter edit to commit the search immediately.</summary>
+    /// <param name="Sender">The filter edit.</param>
+    /// <param name="Key">The character typed; set to #0 when it is Enter.</param>
     procedure edtFilterKeyPress(Sender: TObject; var Key: Char);
-    /// <summary>Forwards arrow keys from the filter edit to the list view for navigation.</summary>
+    /// <summary>Sends key-downs from the filter edit to the list view (for navigation), except Alt+F4, Delete, Left, Right,
+    /// Home/End without Ctrl and Shift/Ctrl+Insert, which stay in the edit and are also offered to ListViewKeyDown.</summary>
+    /// <param name="Sender">The filter edit.</param>
+    /// <param name="Key">The key pressed; set to 0 when it is sent to the list view.</param>
+    /// <param name="Shift">The modifier keys held.</param>
     procedure edtFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     /// <summary>Restarts the debounce timer when the filter text changes.</summary>
+    /// <param name="Sender">The filter edit.</param>
     procedure edtFilterChange(Sender: TObject);
     /// <summary>Performs the debounced filter rebuild after typing pauses.</summary>
+    /// <param name="Sender">The filter debounce timer.</param>
     procedure TimerFilterUpdateTimer(Sender: TObject);
     /// <summary>Exports the currently filtered list to an Excel workbook.</summary>
+    /// <param name="Sender">The Export to Excel action.</param>
     procedure ActionExportToExcelExecute(Sender: TObject);
-    /// <summary>Opens the double-clicked file in the IDE.</summary>
+    /// <summary>Double-click on a row: clicks Use Unit when it is visible and enabled, otherwise Open when enabled.</summary>
+    /// <param name="Sender">The file list view.</param>
     procedure ListViewDblClick(Sender: TObject);
-    /// <summary>Handles mouse-down on the list view to support drag-source initiation.</summary>
+    /// <summary>On a right-click, selects the row under the mouse so the context menu acts on it.</summary>
+    /// <param name="Sender">The list view clicked.</param>
+    /// <param name="Button">The mouse button pressed.</param>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="X">Horizontal client position of the click.</param>
+    /// <param name="Y">Vertical client position of the click.</param>
     procedure ListViewMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    /// <summary>Sorts the list view by the clicked column.</summary>
+    /// <summary>Sorts by the clicked column: a new column sorts descending first, the same column again reverses the order.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
     /// <summary>Initialises the form: filter combo, list view columns, settings, etc.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormCreate(Sender: TObject);
-    /// <summary>Selects all text in the filter edit when it gains focus.</summary>
+    /// <summary>Repaints the filter edit when it gains focus.</summary>
+    /// <param name="Sender">The filter edit.</param>
     procedure edtFilterEnter(Sender: TObject);
-    /// <summary>Restores selection state when the filter edit loses focus.</summary>
+    /// <summary>Repaints the filter edit when it loses focus.</summary>
+    /// <param name="Sender">The filter edit.</param>
     procedure edtFilterExit(Sender: TObject);
-    /// <summary>Persists settings and tears down owned helpers when the form closes.</summary>
+    /// <summary>Clears the global FormFileSelector reference and frees the row lists.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormDestroy(Sender: TObject);
     /// <summary>Owner-draws an item in the directory filter combo.</summary>
+    /// <param name="Control">The directory filter combo box.</param>
+    /// <param name="Index">Index of the item being drawn; an empty item is shown as '.'.</param>
+    /// <param name="Rect">Area to draw the item in.</param>
+    /// <param name="State">The item's owner-draw state.</param>
     procedure cbxFilterDirectoryDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
     /// <summary>Updates the directory filter when the combo selection changes.</summary>
+    /// <param name="Sender">The directory filter combo box.</param>
     procedure cbxFilterDirectoryChange(Sender: TObject);
-    /// <summary>Handles list view key presses for shortcuts (Enter, etc.).</summary>
+    /// <summary>List view shortcuts: Ctrl+A selects all, Ctrl+Enter opens, Shift+Enter uses the units in the interface section,
+    /// and pressing Shift unchecks "use in implementation".</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Key">The key pressed; set to 0 when a shortcut handles it.</param>
+    /// <param name="Shift">The modifier keys held.</param>
     procedure ListViewKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
-    /// <summary>Custom-draws each list item to highlight opened files and other states.</summary>
+    /// <summary>Draws opened files in blue, units already in the interface uses in bold (implementation uses: bold and underlined)
+    /// and shades every other row.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Item">The row being drawn.</param>
+    /// <param name="State">The row's draw state.</param>
+    /// <param name="DefaultDraw">Set True so the list view still draws the row.</param>
     procedure ListViewCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
-    /// <summary>Returns a tooltip string for the hovered list item.</summary>
+    /// <summary>Builds the tooltip for the hovered row: file name and size, plus the form name and file when the unit has a .dfm.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Item">The hovered row.</param>
+    /// <param name="InfoTip">Receives the tooltip text.</param>
     procedure ListViewInfoTip(Sender: TObject; Item: TListItem; var InfoTip: string);
     /// <summary>OwnerData callback that supplies a list item from the filtered cache.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Item">The item to fill from the filtered row at its index.</param>
     procedure ListViewData(Sender: TObject; Item: TListItem);
     /// <summary>Updates the action and button states when the list selection changes.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Item">The item whose selection changed.</param>
+    /// <param name="Selected">True if Item became selected.</param>
     procedure ListViewSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
-    /// <summary>Adjusts column widths when the form is resized.</summary>
+    /// <summary>Stretches the directory filter combo to the toolbar's right edge when the form is resized.</summary>
+    /// <param name="Sender">The form.</param>
     procedure FormResize(Sender: TObject);
     /// <summary>Context-menu handler that opens the highlighted file.</summary>
+    /// <param name="Sender">The Open File menu item.</param>
     procedure mniOpenFileClick(Sender: TObject);
-    /// <summary>Refreshes button enabled state on key release.</summary>
+    /// <summary>Re-checks "use in implementation" when Shift is released.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Key">The key released.</param>
+    /// <param name="Shift">The modifier keys still held.</param>
     procedure ListViewKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
-    /// <summary>Refreshes button enabled state on filter-edit key release.</summary>
+    /// <summary>Sends key-ups from the filter edit to the list view, with the same exceptions as edtFilterKeyDown, which go to ListViewKeyUp.</summary>
+    /// <param name="Sender">The filter edit.</param>
+    /// <param name="Key">The key released; set to 0 when it is sent to the list view.</param>
+    /// <param name="Shift">The modifier keys still held.</param>
     procedure edtFilterKeyUp(Sender: TObject; var Key: Word;
       Shift: TShiftState);
-    /// <summary>Handles Delete/etc keys in the queued insertion list.</summary>
+    /// <summary>Delete removes the selected units from the queued insertion list.</summary>
+    /// <param name="Sender">The queued insertion list view.</param>
+    /// <param name="Key">The key pressed; set to 0 when it is Delete.</param>
+    /// <param name="Shift">The modifier keys held.</param>
     procedure ListViewInsertUnitsKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     /// <summary>Enables the remove action only when items are selected.</summary>
+    /// <param name="Sender">The Remove from Insert List action.</param>
     procedure ActionRemoveFromInsertListUpdate(Sender: TObject);
     /// <summary>Removes the selected items from the queued insertion list.</summary>
+    /// <param name="Sender">The Remove from Insert List action.</param>
     procedure ActionRemoveFromInsertListExecute(Sender: TObject);
-    /// <summary>Enables the add action only when files are selected in the main list.</summary>
+    /// <summary>Enables the add action when several rows are selected, or one row that is not already queued.</summary>
+    /// <param name="Sender">The Add to Insert List action.</param>
     procedure ActionAddToInsertListUpdate(Sender: TObject);
     /// <summary>Adds the selected main-list rows to the queued insertion list.</summary>
+    /// <param name="Sender">The Add to Insert List action.</param>
     procedure ActionAddToInsertListExecute(Sender: TObject);
     /// <summary>Enables the clear action only when the queue is non-empty.</summary>
+    /// <param name="Sender">The Clear Insert List action.</param>
     procedure ActionClearInsertListUpdate(Sender: TObject);
     /// <summary>Empties the queued insertion list.</summary>
+    /// <param name="Sender">The Clear Insert List action.</param>
     procedure ActionClearInsertListExecute(Sender: TObject);
     /// <summary>Accepts drags from the queued insertion list back into the main list.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Source">The drag source; accepted only when it is the queued insertion list.</param>
+    /// <param name="X">Horizontal client position of the drag.</param>
+    /// <param name="Y">Vertical client position of the drag.</param>
+    /// <param name="State">The drag state.</param>
+    /// <param name="Accept">Receives True when the drop is accepted.</param>
     procedure ListViewDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
       var Accept: Boolean);
-    /// <summary>Handles drops from the queued insertion list onto the main list.</summary>
+    /// <summary>A drop from the queued insertion list removes the selected units from that list.</summary>
+    /// <param name="Sender">The file list view.</param>
+    /// <param name="Source">The drag source.</param>
+    /// <param name="X">Horizontal client position of the drop.</param>
+    /// <param name="Y">Vertical client position of the drop.</param>
     procedure ListViewDragDrop(Sender, Source: TObject; X, Y: Integer);
     /// <summary>Accepts drags from the main list into the queued insertion list.</summary>
+    /// <param name="Sender">The queued insertion list view.</param>
+    /// <param name="Source">The drag source; accepted only when it is the file list view.</param>
+    /// <param name="X">Horizontal client position of the drag.</param>
+    /// <param name="Y">Vertical client position of the drag.</param>
+    /// <param name="State">The drag state.</param>
+    /// <param name="Accept">Receives True when the drop is accepted.</param>
     procedure ListViewInsertUnitsDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
       var Accept: Boolean);
-    /// <summary>Handles drops from the main list onto the queued insertion list.</summary>
+    /// <summary>A drop from the file list adds its selected rows to the queued insertion list.</summary>
+    /// <param name="Sender">The queued insertion list view.</param>
+    /// <param name="Source">The drag source.</param>
+    /// <param name="X">Horizontal client position of the drop.</param>
+    /// <param name="Y">Vertical client position of the drop.</param>
     procedure ListViewInsertUnitsDragDrop(Sender, Source: TObject; X, Y: Integer);
     /// <summary>Pops up the options menu beneath the Options button.</summary>
+    /// <param name="Sender">The Options button.</param>
     procedure btnOptionsClick(Sender: TObject);
   private
     { Private-Deklarationen }
@@ -306,7 +393,10 @@ type
     /// <param name="NewSelLen">Receives the length of the matched prefix when applicable.</param>
     /// <returns>True when the row should be visible.</returns>
     function FilterInfo(Info: TInfo; var NewSelLen: Integer): Boolean;
-    /// <summary>Returns true when <paramref name="S"/> matches every token in the filter text.</summary>
+    /// <summary>Tests S (lower-cased, with '.' appended) against the filter tokens: a token with a wildcard is matched with
+    /// MatchStr, any other must occur in S.  One matching token is enough.</summary>
+    /// <param name="S">The text to test, such as a unit or form name.</param>
+    /// <returns>True when there is no filter or any token matches; False for an empty S under an active filter.</returns>
     function FilterListViewData(S: string): Boolean;
 
     /// <summary>Enumerates project files and populates <see cref="FAllData"/>.</summary>
@@ -324,11 +414,14 @@ type
     procedure UpdateData;
     /// <summary>Inserts the supplied <see cref="TInfo"/> files into the active editor's uses clause.</summary>
     /// <param name="Files">List of <see cref="TInfo"/> entries to insert.</param>
+    /// <exception cref="Exception">Raised when the uses clause's insertion point cannot be located (sParseErrorUsesLocationNotFound).</exception>
     procedure UseSelectedUnits(Files: TList);
-    /// <summary>Returns the currently active source editor.</summary>
+    /// <summary>Finds the .pas source editor of the IDE's current module.</summary>
+    /// <returns>The .pas source editor, or nil when the current module is not a .pas unit.</returns>
     function GetCurrentSourceEditor: IOTASourceEditor;
-    /// <summary>Returns true when the file extension indicates a binary resource.</summary>
+    /// <summary>Tells whether a project file is a compiled unit (.dcu or .dcuil) that cannot be opened as source.</summary>
     /// <param name="Filename">File to inspect.</param>
+    /// <returns>True for a .dcu or .dcuil file.</returns>
     function IsBinaryFile(const Filename: string): Boolean;
 
     /// <summary>Refreshes the enabled state of all command buttons.</summary>
@@ -352,10 +445,17 @@ type
   end;
 
 /// <summary>Returns true when the supplied string contains a wildcard character (* or ?).</summary>
+/// <param name="S">The filter token to inspect.</param>
+/// <returns>True if S contains * or ?.</returns>
 function ContainsAsterisk(const S: string): Boolean;
 /// <summary>Pattern-matches <paramref name="S"/> against <paramref name="MatchString"/> using ? and * wildcards.</summary>
+/// <param name="S">The text to match.</param>
+/// <param name="MatchString">The pattern, where ? matches one character and * any run of characters.</param>
+/// <returns>True if S matches the pattern (case-sensitive).</returns>
 function MatchStr(const S: string; const MatchString: string): Boolean;
-/// <summary>Splits <paramref name="Text"/> into whitespace-delimited tokens added to <paramref name="List"/>.</summary>
+/// <summary>Splits <paramref name="Text"/> on spaces and adds each token to <paramref name="List"/>.</summary>
+/// <param name="Text">The filter text to split.</param>
+/// <param name="List">The list that receives the tokens.</param>
 procedure SplitFilterText(const Text: string; List: TStrings);
 
 implementation

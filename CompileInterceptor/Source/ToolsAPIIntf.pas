@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -121,10 +121,15 @@ type
     /// <summary>Shows the IDE editor for these options.</summary>
     procedure EditOptions;
     /// <summary>Returns the current value of the named option.</summary>
+    /// <param name="ValueName">Option name.</param>
+    /// <returns>The option value as a Variant.</returns>
     function GetOptionValue(const ValueName: string): Variant;
     /// <summary>Sets the named option's value.</summary>
+    /// <param name="ValueName">Option name.</param>
+    /// <param name="Value">New option value.</param>
     procedure SetOptionValue(const ValueName: string; const Value: Variant);
     /// <summary>Returns the full set of option names and kinds exposed by this bag.</summary>
+    /// <returns>Array of the option names and their kinds.</returns>
     function GetOptionNames: TOTAOptionNameArray;
     /// <summary>Indexed access to options by name.</summary>
     property Values[const ValueName: string]: Variant read GetOptionValue write SetOptionValue;
@@ -144,8 +149,10 @@ type
   IOTAProjectOptions70 = interface(IOTAProjectOptions40)
     ['{F899EBC6-E6E2-11D2-AA90-00C04FA370E9}']
     /// <summary>Sets the project options' modified flag.</summary>
+    /// <param name="State">True to mark the options modified, False to clear the flag.</param>
     procedure SetModifiedState(State: Boolean);
     /// <summary>Returns whether the project options have been modified since loading.</summary>
+    /// <returns>True when the options are modified.</returns>
     function GetModifiedState: Boolean;
 
     /// <summary>Modified flag for project options.</summary>
@@ -156,6 +163,7 @@ type
   IOTAProjectOptions = interface(IOTAProjectOptions70)
     ['{2888E741-E7FB-4BBC-A093-4B0903D9D990}']
     /// <summary>Returns the resolved output binary file name for the project.</summary>
+    /// <returns>The full path of the output file.</returns>
     function GetTargetName: string;
 
     /// <summary>Resolved output binary file name for the project.</summary>
@@ -166,8 +174,12 @@ type
   IOTAProjectBuilder40 = interface(IUnknown)
     ['{F17A7BD5-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns whether the project's source has changed since the last build.</summary>
+    /// <returns>True when the project needs to be built.</returns>
     function GetShouldBuild: Boolean;
     /// <summary>Builds the project; <paramref name="Wait"/> blocks until completion.</summary>
+    /// <param name="CompileMode">Make, build, syntax check or single-unit make.</param>
+    /// <param name="Wait">True to wait for the compile to finish.</param>
+    /// <returns>True when the compile succeeded.</returns>
     function BuildProject(CompileMode: TOTACompileMode; Wait: Boolean): Boolean;
 
     /// <summary>True when the project must be (re)built.</summary>
@@ -178,6 +190,10 @@ type
   IOTAProjectBuilder = interface(IOTAProjectBuilder40)
     ['{08A5B1F5-FCDA-11D2-AC82-00C04FB173DC}']
     /// <summary>Builds the project; <paramref name="ClearMessages"/> clears the message pane first.</summary>
+    /// <param name="CompileMode">Make, build, syntax check or single-unit make.</param>
+    /// <param name="Wait">True to wait for the compile to finish.</param>
+    /// <param name="ClearMessages">True to clear the message pane before compiling.</param>
+    /// <returns>True when the compile succeeded.</returns>
     function BuildProject(CompileMode: TOTACompileMode; Wait, ClearMessages: Boolean): Boolean; overload;
   end;
 
@@ -185,8 +201,10 @@ type
   IOTAModuleNotifier = interface(IOTANotifier)
     ['{F17A7BCE-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns whether the module is allowed to be overwritten on disk.</summary>
+    /// <returns>True to allow the module to be overwritten.</returns>
     function CheckOverwrite: Boolean;
     /// <summary>Called when the module has been renamed in the IDE.</summary>
+    /// <param name="NewName">The module's new file name.</param>
     procedure ModuleRenamed(const NewName: string);
   end;
 
@@ -194,16 +212,23 @@ type
   IOTAEditor = interface(IUnknown)
     ['{F17A7BD0-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Adds an editor notifier and returns its registration index.</summary>
+    /// <param name="ANotifier">Notifier to add.</param>
+    /// <returns>Index to pass to <see cref="RemoveNotifier"/>.</returns>
     function AddNotifier(const ANotifier: IOTANotifier): Integer;
     /// <summary>Returns the file name backing this editor.</summary>
+    /// <returns>The editor's file name.</returns>
     function GetFileName: string;
     /// <summary>Returns whether the editor's content has been modified since the last save.</summary>
+    /// <returns>True when the editor has unsaved changes.</returns>
     function GetModified: Boolean;
     /// <summary>Returns the module that owns this editor.</summary>
+    /// <returns>The owning module.</returns>
     function GetModule: IOTAModule;
     /// <summary>Marks the editor's content as modified; returns whether the state actually changed.</summary>
+    /// <returns>True when the editor could be marked modified.</returns>
     function MarkModified: Boolean;
     /// <summary>Removes a previously added editor notifier.</summary>
+    /// <param name="Index">Index returned by <see cref="AddNotifier"/>.</param>
     procedure RemoveNotifier(Index: Integer);
     /// <summary>Brings this editor to the foreground in the IDE.</summary>
     procedure Show;
@@ -220,32 +245,50 @@ type
   IOTAModule40 = interface(IUnknown)
     ['{F17A7BCC-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Adds a module notifier and returns its registration index.</summary>
+    /// <param name="ANotifier">Notifier to add.</param>
+    /// <returns>Index to pass to <see cref="RemoveNotifier"/>.</returns>
     function AddNotifier(const ANotifier: IOTAModuleNotifier): Integer;
     /// <summary>Adds the module to the project's interface (i.e. project source uses clause).</summary>
     procedure AddToInterface;
     /// <summary>Closes the module, prompting to save if needed; returns whether the close succeeded.</summary>
+    /// <returns>True when the module was closed.</returns>
     function Close: Boolean;
     /// <summary>Returns the module's primary file name.</summary>
+    /// <returns>The module's file name.</returns>
     function GetFileName: string;
     /// <summary>Returns the file system identifier the module is read through.</summary>
+    /// <returns>The file system identifier, or an empty string for the default file system.</returns>
     function GetFileSystem: string;
     /// <summary>Returns the number of editors associated with the module.</summary>
+    /// <returns>The number of editors.</returns>
     function GetModuleFileCount: Integer;
     /// <summary>Returns the editor at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the editor count.</param>
+    /// <returns>The editor at that index.</returns>
     function GetModuleFileEditor(Index: Integer): IOTAEditor;
     /// <summary>Returns the owner-project count (deprecated; use <see cref="IOTAModule70.GetOwnerModuleCount"/>).</summary>
+    /// <returns>The number of owner projects.</returns>
     function GetOwnerCount: Integer; //deprecated;
     /// <summary>Returns the owner project at <paramref name="Index"/> (deprecated).</summary>
+    /// <param name="Index">Zero-based index, below the owner count.</param>
+    /// <returns>The owner project at that index.</returns>
     function GetOwner(Index: Integer): IOTAProject; //deprecated;
     /// <summary>Returns whether the module declares COM coclasses.</summary>
+    /// <returns>True when the module declares COM coclasses.</returns>
     function HasCoClasses: Boolean;
     /// <summary>Removes a previously added module notifier.</summary>
+    /// <param name="Index">Index returned by <see cref="AddNotifier"/>.</param>
     procedure RemoveNotifier(Index: Integer);
     /// <summary>Saves the module, optionally prompting for a new name and forcing the write.</summary>
+    /// <param name="ChangeName">True to prompt for a new file name (Save As).</param>
+    /// <param name="ForceSave">True to save even when the module is unmodified.</param>
+    /// <returns>True when the module was saved.</returns>
     function Save(ChangeName, ForceSave: Boolean): Boolean;
     /// <summary>Sets the module's primary file name.</summary>
+    /// <param name="AFileName">New file name.</param>
     procedure SetFileName(const AFileName: string);
     /// <summary>Sets the file system identifier the module is read through.</summary>
+    /// <param name="AFileSystem">File system identifier, or an empty string for the default file system.</param>
     procedure SetFileSystem(const AFileSystem: string);
 
     /// <summary>Owner project count (deprecated).</summary>
@@ -262,6 +305,8 @@ type
   IOTAModule50 = interface(IOTAModule40)
     ['{15D3FB81-EF27-488E-B2B4-26B59CA89D9D}']
     /// <summary>Closes the module, optionally without prompting the user.</summary>
+    /// <param name="ForceClosed">True to close without prompting to save.</param>
+    /// <returns>True when the module was closed.</returns>
     function CloseModule(ForceClosed: Boolean): Boolean;
     /// <summary>Number of editors associated with the module.</summary>
     property ModuleFileCount: Integer read GetModuleFileCount;
@@ -273,10 +318,14 @@ type
   IOTAModule70 = interface(IOTAModule50)
     ['{2438BFB8-C742-48CD-8F50-DE6C7F764A55}']
     /// <summary>Returns the active editor for this module.</summary>
+    /// <returns>The active editor.</returns>
     function GetCurrentEditor: IOTAEditor;
     /// <summary>Returns the number of modules that own this module.</summary>
+    /// <returns>The number of owner modules.</returns>
     function GetOwnerModuleCount: Integer;
     /// <summary>Returns the owner module at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the owner module count.</param>
+    /// <returns>The owner module at that index.</returns>
     function GetOwnerModule(Index: Integer): IOTAModule;
     /// <summary>Marks the module as modified.</summary>
     procedure MarkModified;
@@ -289,12 +338,13 @@ type
     property OwnerModules[Index: Integer]: IOTAModule read GetOwnerModule;
   end;
 
-  /// <summary>Module interface (Delphi 14 baseline) adding helpers to surface a specific filename.</summary>
+  /// <summary>Module interface (Delphi 2010 baseline) adding helpers to surface a specific filename.</summary>
   IOTAModule140 = interface(IOTAModule70)
     ['{7FF96161-E610-4414-B8B1-D1ECA76FEAFB}']
     /// <summary>Brings the module to the foreground.</summary>
     procedure Show;
     /// <summary>Brings the module to the foreground showing the editor for <paramref name="FileName"/>.</summary>
+    /// <param name="FileName">File of the module whose editor is shown.</param>
     procedure ShowFilename(const FileName: string);
   end;
 
@@ -302,8 +352,10 @@ type
   IOTAModule = interface(IOTAModule140)
     ['{C0D4CBA8-54A3-48EA-BE63-98CE3D9F0F43}']
     /// <summary>Refreshes the module from disk; <paramref name="ForceRefresh"/> bypasses change checks.</summary>
+    /// <param name="ForceRefresh">True to reload even when the file appears unchanged.</param>
     procedure Refresh(ForceRefresh: Boolean);
     /// <summary>Populates <paramref name="FileList"/> with the file names associated with this module.</summary>
+    /// <param name="FileList">List that receives the file names.</param>
     procedure GetAssociatedFilesFromModule(FileList: TStrings);
   end;
 
@@ -311,18 +363,25 @@ type
   IOTAModuleInfo50 = interface(IUnknown)
     ['{F17A7BD6-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns the module's <c>omt*</c> type.</summary>
+    /// <returns>The module type.</returns>
     function GetModuleType: TOTAModuleType;
     /// <summary>Returns the module's symbolic name.</summary>
+    /// <returns>The module name.</returns>
     function GetName: string;
     /// <summary>Returns the module's primary file name.</summary>
+    /// <returns>The module's file name.</returns>
     function GetFileName: string;
     /// <summary>Returns the design-time form name (empty for non-form modules).</summary>
+    /// <returns>The form name, or an empty string.</returns>
     function GetFormName: string;
     /// <summary>Returns the design class associated with the module.</summary>
+    /// <returns>The design class name.</returns>
     function GetDesignClass: string;
     /// <summary>Populates <paramref name="CoClasses"/> with COM coclass names declared in the module.</summary>
+    /// <param name="CoClasses">List that receives the coclass names.</param>
     procedure GetCoClasses(CoClasses: TStrings);
     /// <summary>Opens the module in the IDE and returns its <see cref="IOTAModule"/>.</summary>
+    /// <returns>The opened module.</returns>
     function OpenModule: IOTAModule;
 
     /// <summary>The module's <c>omt*</c> type.</summary>
@@ -341,8 +400,10 @@ type
   IOTAModuleInfo160 = interface(IOTAModuleInfo50)
     ['{B3EEB4D2-ECDD-4CDC-B96E-B5C8F6D050A8}']
     /// <summary>Returns the module's custom identifier (used by some designers).</summary>
+    /// <returns>The custom identifier.</returns>
     function GetCustomId: string;
     /// <summary>Populates <paramref name="Files"/> with extra files associated with the module.</summary>
+    /// <param name="Files">List that receives the file names.</param>
     procedure GetAdditionalFiles(Files: TStrings);
 
     /// <summary>The module's custom identifier.</summary>
@@ -353,12 +414,16 @@ type
   IOTAModuleInfo = interface(IOTAModuleInfo160)
     ['{006DD7BE-55FD-4707-8C7E-3602C9721810}']
     /// <summary>Sets the target device name for the module.</summary>
+    /// <param name="Value">Device name.</param>
     procedure SetDeviceName(const Value: string);
     /// <summary>Returns the target device name for the module.</summary>
+    /// <returns>The device name.</returns>
     function GetDevicename: string;
     /// <summary>Sets the per-module build action (e.g. compile, copy, none).</summary>
+    /// <param name="Value">Build action name.</param>
     procedure SetBuildAction(const Value: string);
     /// <summary>Returns the per-module build action.</summary>
+    /// <returns>The build action name.</returns>
     function GetBuildAction: string;
 
     /// <summary>The target device name for the module.</summary>
@@ -371,12 +436,17 @@ type
   IOTAProject40 = interface(IOTAModule)
     ['{F17A7BCA-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns the number of source modules in the project.</summary>
+    /// <returns>The number of modules in the project.</returns>
     function GetModuleCount: Integer;
     /// <summary>Returns the module info at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the module count.</param>
+    /// <returns>The module info at that index.</returns>
     function GetModule(Index: Integer): IOTAModuleInfo;
     /// <summary>Returns the project's options bag.</summary>
+    /// <returns>The project options.</returns>
     function GetProjectOptions: IOTAProjectOptions;
     /// <summary>Returns the project's builder.</summary>
+    /// <returns>The project builder.</returns>
     function GetProjectBuilder: IOTAProjectBuilder;
 
     /// <summary>Project options bag.</summary>
@@ -389,8 +459,11 @@ type
   IOTAProject70 = interface(IOTAProject40)
     ['{06C88136-F367-4D47-B8B4-CCACB3D7439A}']
     /// <summary>Adds <paramref name="AFileName"/> to the project; <paramref name="IsUnitOrForm"/> distinguishes source from arbitrary file.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
     procedure AddFile(const AFileName: string; IsUnitOrForm: Boolean);
     /// <summary>Removes <paramref name="AFileName"/> from the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
     procedure RemoveFile(const AFileName: string);
   end;
 
@@ -398,13 +471,20 @@ type
   IOTAProject90 = interface(IOTAProject70)
     ['{BBBE4CC6-36DE-4986-BD9E-9DF0F06FC8F1}']
     /// <summary>Adds a file as a child of <paramref name="Parent"/>.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
+    /// <param name="Parent">File name of the parent node the file is added under.</param>
     procedure AddFileWithParent(const AFileName: string; IsUnitOrForm: Boolean;
       const Parent: string);
     /// <summary>Returns the project's persistent GUID.</summary>
+    /// <returns>The project GUID.</returns>
     function GetProjectGUID: TGUID;
     /// <summary>Returns the project personality identifier (e.g. <c>Delphi.Personality</c>).</summary>
+    /// <returns>The personality identifier.</returns>
     function GetPersonality: string;
     /// <summary>Locates the module info matching <paramref name="FileName"/>, or returns <c>nil</c>.</summary>
+    /// <param name="FileName">File to look up.</param>
+    /// <returns>The matching module info, or nil.</returns>
     function FindModuleInfo(const FileName: string): IOTAModuleInfo;
 
     /// <summary>Persistent project GUID.</summary>
@@ -417,6 +497,9 @@ type
   IOTAProject100 = interface(IOTAProject90)
     ['{D0090018-D879-41FC-8F83-AA4F40098ACF}']
     /// <summary>Renames a file within the project; returns whether the rename succeeded.</summary>
+    /// <param name="OldFileName">Current file name.</param>
+    /// <param name="NewFileName">New file name.</param>
+    /// <returns>True when the file was renamed.</returns>
     function Rename(const OldFileName, NewFileName: string): Boolean;
   end;
 
@@ -424,35 +507,48 @@ type
   IOTAProject120 = interface(IOTAProject100)
     ['{3D7E07CB-392D-4EFB-841D-A6C6E338CF13}']
     /// <summary>Returns the project type identifier (e.g. application, package, library).</summary>
+    /// <returns>The project type identifier.</returns>
     function GetProjectType: string;
 
     /// <summary>Project type identifier.</summary>
     property ProjectType: string read GetProjectType;
   end;
 
-  /// <summary>Project interface (Delphi 14 / XE baseline) adding file enumeration and transactions.</summary>
+  /// <summary>Project interface (Delphi 2010 baseline) adding file enumeration and transactions.</summary>
   IOTAProject140 = interface(IOTAProject120)
     ['{6B1A57F9-34A3-4824-96F0-750A63328C4E}']
     /// <summary>Populates <paramref name="FileList"/> with the complete set of files in the project.</summary>
+    /// <param name="FileList">List that receives the file names.</param>
     procedure GetCompleteFileList(FileList: TStrings);
     /// <summary>Populates <paramref name="FileList"/> with files associated with <paramref name="FileName"/>.</summary>
+    /// <param name="FileName">File whose associated files are wanted.</param>
+    /// <param name="FileList">List that receives the file names.</param>
     procedure GetAssociatedFiles(const FileName: string; FileList: TStrings);
     /// <summary>Returns the in-progress rename transaction, if any, for <paramref name="FileName"/>.</summary>
+    /// <param name="FileName">File to look up.</param>
+    /// <param name="InitialName">Receives the name at the start of the transaction.</param>
+    /// <param name="CurrentName">Receives the current name.</param>
+    /// <returns>True when a transaction exists for the file.</returns>
     function GetFileTransaction(const FileName: string; var InitialName,
       CurrentName: string): Boolean;
   end;
 
-  /// <summary>Project interface (Delphi 15 / XE2 baseline) adding batched file transaction support.</summary>
-  // WARNING: IOTAModule must be adjusted as well because IOTAProject40 derives from it
+  /// <summary>Project interface (Delphi XE baseline) adding batched file transaction support.</summary>
+  /// <remarks>IOTAModule must be adjusted as well when this interface changes, because IOTAProject40 derives from it.</remarks>
   IOTAProject150 = interface(IOTAProject140)
     ['{A6287B50-DA09-44EF-AA80-9D1CAFDE7857}']
     /// <summary>Begins a batched file transaction.</summary>
     procedure BeginFileTransactionUpdate;
     /// <summary>Ends a batched file transaction; <paramref name="CommitUpdate"/> commits or rolls back.</summary>
+    /// <param name="CommitUpdate">True to commit the transaction, False to roll it back.</param>
     procedure EndFileTransactionUpdate(CommitUpdate: Boolean);
     /// <summary>Populates <paramref name="FileList"/> with files added or deleted within the current transaction.</summary>
+    /// <param name="FileList">List that receives the added and deleted files.</param>
     procedure GetAddedDeletedFiles(const FileList: IInterfaceList);
     /// <summary>Populates <paramref name="FileList"/> with the rename history of <paramref name="FileName"/>.</summary>
+    /// <param name="FileName">File to look up.</param>
+    /// <param name="FileList">List that receives the transaction entries.</param>
+    /// <returns>True when a transaction exists for the file.</returns>
     function GetFileTransactionList(const FileName: string; FileList: IInterfaceList): Boolean;
   end;
 
@@ -460,16 +556,22 @@ type
   IOTAProject160 = interface(IOTAProject150)
     ['{F5EA2A72-485D-49E8-B60A-B0E7C7B80A27}']
     /// <summary>Returns the current build configuration name.</summary>
+    /// <returns>The configuration name.</returns>
     function GetConfiguration: string;
     /// <summary>Returns the framework type (e.g. <c>VCL</c>, <c>FMX</c>).</summary>
+    /// <returns>The framework type identifier.</returns>
     function GetFrameworkType: string;
     /// <summary>Returns the current target platform identifier.</summary>
+    /// <returns>The platform identifier.</returns>
     function GetPlatform: string;
     /// <summary>Sets the current build configuration name.</summary>
+    /// <param name="Value">Configuration name.</param>
     procedure SetConfiguration(const Value: string);
     /// <summary>Sets the current target platform identifier.</summary>
+    /// <param name="Value">Platform identifier.</param>
     procedure SetPlatform(const Value: string);
     /// <summary>Returns the supported target platform identifiers for this project.</summary>
+    /// <returns>The supported platform identifiers.</returns>
     function GetSupportedPlatforms: TArrayOfString;
 
     /// <summary>Current build configuration.</summary>
@@ -486,6 +588,7 @@ type
   IOTAProject = interface(IOTAProject160)
     ['{0E4BFB1D-2F3B-4CD6-A9A2-4903713B59E0}']
     /// <summary>Returns the application type identifier (e.g. console, GUI).</summary>
+    /// <returns>The application type identifier.</returns>
     function GetApplicationType: string;
 
     /// <summary>Application type identifier.</summary>
@@ -503,11 +606,17 @@ type
   IOTAIDENotifier = interface(IOTANotifier)
     ['{E052204F-ECE9-11D1-AB19-00C04FB16FB3}']
     /// <summary>Called for IDE file/desktop/package notifications.</summary>
+    /// <param name="NotifyCode">Kind of notification.</param>
+    /// <param name="FileName">File the notification is about.</param>
+    /// <param name="Cancel">Set to True to cancel the operation, where the notification allows it.</param>
     procedure FileNotification(NotifyCode: TOTAFileNotification;
       const FileName: string; var Cancel: Boolean);
     /// <summary>Legacy hook called before a project is compiled.</summary>
+    /// <param name="Project">Project about to be compiled.</param>
+    /// <param name="Cancel">Set to True to cancel the compile.</param>
     procedure BeforeCompile(const Project: IInterface; var Cancel: Boolean); overload;
     /// <summary>Legacy hook called after a project compile completes.</summary>
+    /// <param name="Succeeded">True when the compile succeeded.</param>
     procedure AfterCompile(Succeeded: Boolean); overload;
   end;
 
@@ -515,9 +624,14 @@ type
   IOTAIDENotifier50 = interface(IOTAIDENotifier)
     ['{AC7D29F1-D9A9-11D2-A8C1-00C04FA32F53}']
     /// <summary>Called before a compile, distinguishing real builds from code-insight passes.</summary>
+    /// <param name="Project">Project about to be compiled.</param>
+    /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
+    /// <param name="Cancel">Set to True to cancel the compile.</param>
     procedure BeforeCompile(const Project: IInterface; IsCodeInsight: Boolean;
       var Cancel: Boolean); overload;
     /// <summary>Called after a compile, distinguishing real builds from code-insight passes.</summary>
+    /// <param name="Succeeded">True when the compile succeeded.</param>
+    /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
     procedure AfterCompile(Succeeded: Boolean; IsCodeInsight: Boolean); overload;
   end;
 
@@ -525,16 +639,23 @@ type
   IOTAServices50 = interface(IUnknown)
     ['{7FD1CE91-E053-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Adds an IDE notifier and returns its registration index.</summary>
+    /// <param name="Notifier">Notifier to add.</param>
+    /// <returns>Index to pass to <see cref="RemoveNotifier"/>.</returns>
     function AddNotifier(const Notifier: IOTAIDENotifier): Integer;
     /// <summary>Removes a previously added IDE notifier.</summary>
+    /// <param name="Index">Index returned by <see cref="AddNotifier"/>.</param>
     procedure RemoveNotifier(Index: Integer);
     /// <summary>Returns the IDE's base registry key (e.g. <c>Software\Embarcadero\BDS\37.0</c>).</summary>
+    /// <returns>The base registry key.</returns>
     function GetBaseRegistryKey: string;
     /// <summary>Returns a friendly product identifier string.</summary>
+    /// <returns>The product identifier.</returns>
     function GetProductIdentifier: string;
     /// <summary>Returns the IDE main window handle for parenting custom dialogs.</summary>
+    /// <returns>The IDE main window handle.</returns>
     function GetParentHandle: HWND;
     /// <summary>Returns the environment options bag.</summary>
+    /// <returns>The environment options.</returns>
     function GetEnvironmentOptions: IOTAEnvironmentOptions;
   end;
 
@@ -542,6 +663,7 @@ type
   IOTAServices60 = interface(IOTAServices50)
     ['{577ECE00-59EE-4F21-8190-9FD8A45FE550}']
     /// <summary>Returns the type identifier of the currently active designer.</summary>
+    /// <returns>The active designer type identifier.</returns>
     function GetActiveDesignerType: string;
   end;
 
@@ -549,10 +671,13 @@ type
   IOTAServices70 = interface(IOTAServices60)
     ['{0044BB24-425D-D611-9CF1-00C04FA06AFC}']
     /// <summary>Returns the IDE root installation directory.</summary>
+    /// <returns>The root directory.</returns>
     function GetRootDirectory: string;
     /// <summary>Returns the IDE bin directory.</summary>
+    /// <returns>The bin directory.</returns>
     function GetBinDirectory: string;
     /// <summary>Returns the IDE template directory.</summary>
+    /// <returns>The template directory.</returns>
     function GetTemplateDirectory: string;
   end;
 
@@ -560,6 +685,7 @@ type
   IOTAServices100 = interface(IOTAServices70)
     ['{33B33186-3CEC-4624-970E-417A8FE14089}']
     /// <summary>Returns the per-user roaming application data directory for the IDE.</summary>
+    /// <returns>The roaming application data directory.</returns>
     function GetApplicationDataDirectory: string;
   end;
 
@@ -567,13 +693,15 @@ type
   IOTAServices110 = interface(IOTAServices100)
     ['{17A48937-2C9C-4543-AB6D-2CF13BAE544B}']
     /// <summary>Returns the per-user local (non-roaming) application data directory for the IDE.</summary>
+    /// <returns>The local application data directory.</returns>
     function GetLocalApplicationDataDirectory: string;
   end;
 
-  /// <summary>IDE services (Delphi 14 / XE baseline) exposing the preferred UI language list.</summary>
+  /// <summary>IDE services (Delphi 2010 baseline) exposing the preferred UI language list.</summary>
   IOTAServices140 = interface(IOTAServices110)
     ['{80E56DFA-82B2-425A-921E-8E5ED6164A11}']
     /// <summary>Returns the IDE's preferred UI languages as a delimited string.</summary>
+    /// <returns>The preferred UI languages.</returns>
     function GetIDEPreferredUILanguages: string;
   end;
 
@@ -581,12 +709,19 @@ type
   IOTAServices160 = interface(IOTAServices140)
     ['{86602DE0-50BF-4AE5-BAF4-D9438BD33218}']
     /// <summary>Returns the directory the IDE was started from.</summary>
+    /// <returns>The startup directory.</returns>
     function GetStartupDirectory: string;
     /// <summary>Returns whether <paramref name="FileName"/> is a project file recognised by the IDE.</summary>
+    /// <param name="FileName">File to test.</param>
+    /// <returns>True when the file is a project.</returns>
     function IsProject(const FileName: string): Boolean;
     /// <summary>Returns whether <paramref name="FileName"/> is a project group file.</summary>
+    /// <param name="FileName">File to test.</param>
+    /// <returns>True when the file is a project group.</returns>
     function IsProjectGroup(const FileName: string): Boolean;
     /// <summary>Persists <paramref name="Stream"/> to a temporary location and returns the file name.</summary>
+    /// <param name="Stream">Stream to save.</param>
+    /// <returns>The name of the file written.</returns>
     function SaveStream(const Stream: IStream): string;
   end;
 
@@ -594,6 +729,8 @@ type
   IOTAServices = interface(IOTAServices160)
     ['{D1358CFB-9B5C-4E6C-BC4B-C6D06C6689C1}']
     /// <summary>Expands <c>$(BDS)</c>-style macros in <paramref name="S"/>.</summary>
+    /// <param name="S">Text containing macros.</param>
+    /// <returns>The text with the macros expanded.</returns>
     function ExpandRootMacro(const S: string): string;
   end;
 
@@ -615,12 +752,17 @@ type
   IOTAProject40_140 = interface(IOTAModule140)
     ['{F17A7BCA-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns the number of source modules in the project.</summary>
+    /// <returns>The number of modules in the project.</returns>
     function GetModuleCount: Integer;
     /// <summary>Returns the module info at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the module count.</param>
+    /// <returns>The module info at that index.</returns>
     function GetModule(Index: Integer): IOTAModuleInfo;
     /// <summary>Returns the project's options bag.</summary>
+    /// <returns>The project options.</returns>
     function GetProjectOptions: IOTAProjectOptions;
     /// <summary>Returns the project's builder.</summary>
+    /// <returns>The project builder.</returns>
     function GetProjectBuilder: IOTAProjectBuilder;
 
     /// <summary>Project options bag.</summary>
@@ -633,8 +775,11 @@ type
   IOTAProject70_140 = interface(IOTAProject40_140)
     ['{06C88136-F367-4D47-B8B4-CCACB3D7439A}']
     /// <summary>Adds <paramref name="AFileName"/> to the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
     procedure AddFile(const AFileName: string; IsUnitOrForm: Boolean);
     /// <summary>Removes <paramref name="AFileName"/> from the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
     procedure RemoveFile(const AFileName: string);
   end;
 
@@ -642,13 +787,20 @@ type
   IOTAProject90_140 = interface(IOTAProject70_140)
     ['{BBBE4CC6-36DE-4986-BD9E-9DF0F06FC8F1}']
     /// <summary>Adds a file as a child of <paramref name="Parent"/>.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
+    /// <param name="Parent">File name of the parent node the file is added under.</param>
     procedure AddFileWithParent(const AFileName: string; IsUnitOrForm: Boolean;
       const Parent: string);
     /// <summary>Returns the project's persistent GUID.</summary>
+    /// <returns>The project GUID.</returns>
     function GetProjectGUID: TGUID;
     /// <summary>Returns the project personality identifier.</summary>
+    /// <returns>The personality identifier.</returns>
     function GetPersonality: string;
     /// <summary>Locates the module info matching <paramref name="FileName"/>.</summary>
+    /// <param name="FileName">File to look up.</param>
+    /// <returns>The matching module info, or nil.</returns>
     function FindModuleInfo(const FileName: string): IOTAModuleInfo;
 
     /// <summary>Persistent project GUID.</summary>
@@ -665,12 +817,17 @@ type
   IOTAProject40_70 = interface(IOTAModule70)
     ['{F17A7BCA-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns the number of source modules in the project.</summary>
+    /// <returns>The number of modules in the project.</returns>
     function GetModuleCount: Integer;
     /// <summary>Returns the module info at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the module count.</param>
+    /// <returns>The module info at that index.</returns>
     function GetModule(Index: Integer): IOTAModuleInfo;
     /// <summary>Returns the project's options bag.</summary>
+    /// <returns>The project options.</returns>
     function GetProjectOptions: IOTAProjectOptions;
     /// <summary>Returns the project's builder.</summary>
+    /// <returns>The project builder.</returns>
     function GetProjectBuilder: IOTAProjectBuilder;
 
     /// <summary>Project options bag.</summary>
@@ -683,8 +840,11 @@ type
   IOTAProject_70 = interface(IOTAProject40_70)
     ['{06C88136-F367-4D47-B8B4-CCACB3D7439A}']
     /// <summary>Adds <paramref name="AFileName"/> to the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
     procedure AddFile(const AFileName: string; IsUnitOrForm: Boolean);
     /// <summary>Removes <paramref name="AFileName"/> from the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
     procedure RemoveFile(const AFileName: string);
   end;
 
@@ -701,12 +861,17 @@ type
   IOTAProject40_50 = interface(IOTAModule50)
     ['{F17A7BCA-E07D-11D1-AB0B-00C04FB16FB3}']
     /// <summary>Returns the number of source modules in the project.</summary>
+    /// <returns>The number of modules in the project.</returns>
     function GetModuleCount: Integer;
     /// <summary>Returns the module info at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based index, below the module count.</param>
+    /// <returns>The module info at that index.</returns>
     function GetModule(Index: Integer): IOTAModuleInfo;
     /// <summary>Returns the project's options bag.</summary>
+    /// <returns>The project options.</returns>
     function GetProjectOptions: IOTAProjectOptions;
     /// <summary>Returns the project's builder.</summary>
+    /// <returns>The project builder.</returns>
     function GetProjectBuilder: IOTAProjectBuilder;
 
     /// <summary>Project options bag.</summary>
@@ -719,8 +884,11 @@ type
   IOTAProject_50 = interface(IOTAProject40_70)
     ['{06C88136-F367-4D47-B8B4-CCACB3D7439A}']
     /// <summary>Adds <paramref name="AFileName"/> to the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
+    /// <param name="IsUnitOrForm">True when the file is a unit or form, False for any other file.</param>
     procedure AddFile(const AFileName: string; IsUnitOrForm: Boolean);
     /// <summary>Removes <paramref name="AFileName"/> from the project.</summary>
+    /// <param name="AFileName">Full path of the file.</param>
     procedure RemoveFile(const AFileName: string);
   end;
 
@@ -730,6 +898,7 @@ type
 /// the running IDE supports, by querying <c>BorlandIDEServices</c> from newest to oldest.
 /// </summary>
 /// <returns><c>True</c> when an IDE services interface was resolved; <c>False</c> when none is available.</returns>
+/// <param name="Intf">Receives the services interface, or nil.</param>
 function SupportsIDEServices(out Intf: IOTAServices50): Boolean;
 
 implementation

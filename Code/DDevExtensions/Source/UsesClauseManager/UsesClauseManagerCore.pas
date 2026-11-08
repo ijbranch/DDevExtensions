@@ -123,12 +123,21 @@ type
     /// database is skipped and logged, never added.</remarks>
     procedure ScanSource( const UnitName, UnitPath: string; const Source: UTF8String );
     /// <summary>Returns the list of exports for a unit, or nil if the unit was not scanned.</summary>
+    /// <param name="UnitName">Unit name, matched case-insensitively.</param>
+    /// <returns>The unit's exports, owned by the database, or nil.</returns>
     function GetExports( const UnitName: string ): TList<TUnitExport>;
     /// <summary>Returns the units that export the given identifier, or nil if unknown.</summary>
+    /// <param name="Identifier">Identifier, matched case-insensitively.</param>
+    /// <returns>The providing units, owned by the database, or nil.</returns>
     function FindUnitsForIdentifier( const Identifier: string ): TStringList;
     /// <summary>Picks the preferred providing unit for an identifier, honouring the RTL/VCL priority list.</summary>
+    /// <param name="Identifier">The identifier being resolved.</param>
+    /// <param name="CandidateUnits">The units that export it; may be nil.</param>
+    /// <returns>The only candidate; else the first whose unqualified name is on the priority list; else the first candidate.
+    /// An empty string when there are no candidates.</returns>
     function GetPreferredUnit( const Identifier: string; const CandidateUnits: TStringList ): string;
     /// <summary>Returns the number of units currently held in the database.</summary>
+    /// <returns>The number of units scanned into the database.</returns>
     function GetUnitCount: Integer;
     /// <summary>Name of the file currently being scanned (updated for the <c>OnProgress</c> callback).</summary>
     property ProgressFileName: string read FProgressFileName;

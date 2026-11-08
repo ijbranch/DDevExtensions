@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* CompileInterceptor IDE Plugin                                              *}
 {*                                                                            *}
@@ -61,12 +61,17 @@ type
   IUnicodeString = interface
     ['{3B33C7A5-63F4-4700-A6D5-4072D707536C}']
     /// <summary>Returns a pointer to the wrapped string's character data.</summary>
+    /// <returns>Pointer to the null-terminated character data; valid while the string is unchanged.</returns>
     function GetValue: PWideChar;
     /// <summary>Sets the wrapped string from a null-terminated wide string.</summary>
+    /// <param name="P">Null-terminated wide string to copy.</param>
     procedure SetValue(P: PWideChar);
     /// <summary>Sets the wrapped string from a wide buffer with explicit length.</summary>
+    /// <param name="P">First character to copy.</param>
+    /// <param name="Len">Number of characters to copy.</param>
     procedure SetString(P: PWideChar; Len: Integer);
     /// <summary>Returns the wrapped string's length in characters.</summary>
+    /// <returns>The length in characters.</returns>
     function GetLength: Integer;
 
     /// <summary>Read/write access to the wrapped wide string.</summary>
@@ -82,10 +87,18 @@ type
   IVirtualStream = interface
     ['{6BBD7B93-9402-4534-ADD3-A3D287FD70E9}']
     /// <summary>Repositions the stream pointer.</summary>
+    /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
+    /// <param name="Origin"><c>soFromBeginning</c> (0), <c>soFromCurrent</c> (1) or <c>soFromEnd</c> (2).</param>
+    /// <returns>The new position.</returns>
     function Seek(Offset: Integer; Origin: Integer): Integer; stdcall;
     /// <summary>Reads up to <paramref name="Size"/> bytes into <paramref name="Buffer"/>.</summary>
+    /// <param name="Buffer">Receives the bytes read.</param>
+    /// <param name="Size">Maximum number of bytes to read.</param>
+    /// <returns>Number of bytes read.</returns>
     function Read(var Buffer; Size: Integer): Integer; stdcall;
     /// <summary>Returns the virtual file's date stamp and size in bytes.</summary>
+    /// <param name="FileDate">Receives the DOS-format file date.</param>
+    /// <param name="FileSize">Receives the size in bytes.</param>
     procedure FileStatus(out FileDate: Integer; out FileSize: Integer); stdcall;
   end;
 
@@ -96,6 +109,9 @@ type
   IVirtualOutStream = interface(IVirtualStream)
     ['{9715EB14-952D-42B6-B0BF-4B949337CD8A}']
     /// <summary>Writes <paramref name="Size"/> bytes from <paramref name="Buffer"/> to the virtual stream.</summary>
+    /// <param name="Buffer">Bytes to write.</param>
+    /// <param name="Size">Number of bytes to write.</param>
+    /// <returns>Number of bytes written.</returns>
     function Write(const Buffer; Size: Integer): Integer; stdcall;
   end;
 
@@ -107,6 +123,7 @@ type
   ICompileInterceptor = interface
     ['{186D90CD-598B-4162-8E03-0BF8298A0826}']
     /// <summary>Returns the bitmask of <c>CIO_*</c> flags advertising which interceptor methods are supported.</summary>
+    /// <returns>The supported <c>CIO_*</c> flags.</returns>
     function GetOptions: TCompileInterceptOptions; stdcall;
 
     /// <summary>
@@ -116,28 +133,50 @@ type
     /// </summary>
     /// <remarks>Not called when the plug-in implements <see cref="ICompileInterceptor20"/>.</remarks>
     /// <seealso cref="ICompileInterceptor20.OpenVirtualFile"/>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <returns>The stream that supplies the file content, or nil to let the compiler open the file normally.</returns>
     function GetVirtualFile(Filename: PWideChar): IVirtualStream; stdcall; // deprecated 'implement OpenVirtualFile'
 
     /// <summary>
     /// Called when a file is not handled as virtual and <c>CIO_ALTERFILES</c> is set, giving the
     /// plug-in a chance to substitute the file content. <paramref name="FileDate"/> is obsolete and always 0.
     /// </summary>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <param name="Content">The file content as read from disk or the editor.</param>
+    /// <param name="FileDate">Obsolete; always 0.</param>
+    /// <param name="FileSize">Number of bytes at <paramref name="Content"/>.</param>
+    /// <returns>A stream with the replacement content, or nil to keep the original content.</returns>
     function AlterFile(Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream; stdcall;
 
     /// <summary>
     /// Called when a file is being opened or created and <c>CIO_INSPECTFILENAMES</c> is set.
     /// Lets the plug-in observe (but not alter) which files the compiler is touching.
     /// </summary>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <param name="FileMode">Whether the file is being opened or created.</param>
     procedure InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode); stdcall;
 
     /// <summary>
     /// Called when the compiler is about to emit a message and <c>CIO_ALTERMESSAGES</c> is set.
     /// </summary>
     /// <returns><c>True</c> if any of the in/out parameters were modified.</returns>
+    /// <param name="IsCompilerMessage">True when the message comes from the compiler itself.</param>
+    /// <param name="MsgKind">Message severity; may be changed.</param>
+    /// <param name="Code">Message number; may be changed.</param>
+    /// <param name="Filename">File the message refers to; may be changed.</param>
+    /// <param name="Line">Line number; may be changed.</param>
+    /// <param name="Column">Column number; may be changed.</param>
+    /// <param name="Msg">Message text; may be changed.</param>
     function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind; var Code: Integer;
       const Filename: IUnicodeString; var Line, Column: Integer; const Msg: IUnicodeString): Boolean; stdcall;
 
     /// <summary>Called immediately before a project is compiled when <c>CIO_COMPILEPROJECTS</c> is set.</summary>
+    /// <param name="ProjectFilename">Full path of the project being compiled.</param>
+    /// <param name="UnitPaths">Unit search path.</param>
+    /// <param name="SourcePaths">Source search path.</param>
+    /// <param name="DcuOutputDir">Unit output directory.</param>
+    /// <param name="IsCodeInsight">True when the compile is a Code Insight background compile.</param>
+    /// <param name="Cancel">Set to True to cancel the compile.</param>
     procedure CompileProject(ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: PWideChar;
       IsCodeInsight: Boolean; var Cancel: Boolean); stdcall;
   end;
@@ -154,6 +193,9 @@ type
     /// <c>False</c> falls back to the default create. Returning <c>True</c> with a non-nil
     /// stream redirects compiler output into that stream instead of creating a file.
     /// </summary>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <param name="Stream">Receives the stream that takes the compiler output.</param>
+    /// <returns>True when the plug-in handled the create; False to fall back to the default create.</returns>
     function CreateVirtualFile(Filename: PWideChar; out Stream: IVirtualOutStream): Boolean; stdcall;
 
     /// <summary>
@@ -163,6 +205,9 @@ type
     /// to the next handler (and ultimately to <see cref="AlterFile"/> if <c>CIO_ALTERFILES</c> is set).
     /// Requires <c>CIO_VIRTUALFILES</c>.
     /// </summary>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <param name="Stream">Receives the stream that supplies the file content, or nil.</param>
+    /// <returns>True when the plug-in handled the open; False to defer to the next handler.</returns>
     function OpenVirtualFile(Filename: PWideChar; out Stream: IVirtualStream): Boolean; stdcall;
 
     /// <summary>
@@ -170,6 +215,8 @@ type
     /// Requires <c>CIO_FILENAMEDATES</c>.
     /// </summary>
     /// <returns><c>True</c> if the plug-in handled the request and <paramref name="AFileDate"/> is valid.</returns>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <param name="AFileDate">Receives the DOS-format file date when the function returns True.</param>
     function FileNameDate(Filename: PWideChar; out AFileDate: Integer): Boolean; stdcall;
   end;
 
@@ -181,14 +228,19 @@ type
   ICompileInterceptorServices = interface
     ['{CA696A1B-77EF-4EEB-9F22-9EE6E53B2B76}']
     /// <summary>Registers a compile interceptor and returns an opaque ID for later unregistration.</summary>
+    /// <param name="Interceptor">The plug-in's interceptor.</param>
+    /// <returns>The ID to pass to <see cref="UnregisterInterceptor"/>.</returns>
     function RegisterInterceptor(Interceptor: ICompileInterceptor): Integer; stdcall;
     /// <summary>Removes the compile interceptor that was registered under the supplied <paramref name="Id"/>.</summary>
+    /// <param name="Id">ID returned by <see cref="RegisterInterceptor"/>.</param>
     procedure UnregisterInterceptor(Id: Integer); stdcall;
 
     /// <summary>
     /// Returns the content of <paramref name="Filename"/>. If the file is open in the editor,
     /// the editor's in-memory content is returned, otherwise the on-disk content is read.
     /// </summary>
+    /// <param name="Filename">Full path of the file, as a null-terminated wide string.</param>
+    /// <returns>A stream over the file content.</returns>
     function GetFileContent(Filename: PWideChar): IVirtualStream; stdcall;
   end;
 
@@ -200,15 +252,21 @@ type
   protected
     { IUnicodeString }
     /// <summary>Returns the wrapped string's length in characters.</summary>
+    /// <returns>The length of <see cref="FValue"/> in characters.</returns>
     function GetLength: Integer;
     /// <summary>Returns a pointer to the wrapped string's character data.</summary>
+    /// <returns>Pointer to the character data of <see cref="FValue"/>.</returns>
     function GetValue: PWideChar;
     /// <summary>Sets the wrapped string from a wide buffer with explicit length.</summary>
+    /// <param name="P">First character to copy.</param>
+    /// <param name="Len">Number of characters to copy.</param>
     procedure SetString(P: PWideChar; Len: Integer);
     /// <summary>Sets the wrapped string from a null-terminated wide string.</summary>
+    /// <param name="P">Null-terminated wide string to copy.</param>
     procedure SetValue(P: PWideChar);
   public
     /// <summary>Creates an adapter wrapping <paramref name="AValue"/>.</summary>
+    /// <param name="AValue">Initial string value.</param>
     constructor Create(const AValue: string);
   end;
 

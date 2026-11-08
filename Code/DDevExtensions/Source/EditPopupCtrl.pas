@@ -1,4 +1,4 @@
-unit EditPopupCtrl;
+﻿unit EditPopupCtrl;
 
 /// <summary>
 /// Drop-down edit primitives used by DDevExtensions search/selector UIs:
@@ -29,16 +29,24 @@ type
     /// <summary>Owning edit control whose drop-down this panel implements.</summary>
     FEdit: TDropDownEditBase;
     /// <summary>Suppresses focus activation when the user clicks the panel.</summary>
+    /// <param name="Message"><c>WM_MOUSEACTIVATE</c> message; its result is set to <c>MA_NOACTIVATE</c>.</param>
     procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
     /// <summary>Closes the drop-down when the panel is deactivated.</summary>
+    /// <param name="Msg"><c>WM_ACTIVATE</c> message; only <c>WA_INACTIVE</c> closes the drop-down.</param>
     procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
   protected
     /// <summary>Adds <c>WS_POPUP</c>/<c>WS_EX_TOOLWINDOW</c> style flags so the panel floats and saves bits.</summary>
+    /// <param name="Params">Window creation parameters to adjust.</param>
     procedure CreateParams(var Params: TCreateParams); override;
     /// <summary>Closes the drop-down on a left-mouse-up.</summary>
+    /// <param name="Button">Mouse button released; only <c>mbLeft</c> closes the drop-down.</param>
+    /// <param name="Shift">Shift state, passed to the inherited handler.</param>
+    /// <param name="X">Client X co-ordinate, passed to the inherited handler.</param>
+    /// <param name="Y">Client Y co-ordinate, passed to the inherited handler.</param>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
   public
     /// <summary>Marks the panel <c>csNoDesignVisible</c>/<c>csReplicatable</c>.</summary>
+    /// <param name="AOwner">Component that owns and frees this control.</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>The owning drop-down edit.</summary>
     property Edit: TDropDownEditBase read FEdit write FEdit;
@@ -52,11 +60,17 @@ type
     /// <summary>If True, a mouse click in the list executes the selected item rather than just selecting it.</summary>
     FAllowMouseExecute: Boolean;
     /// <summary>Suppresses focus activation when the user clicks the list.</summary>
+    /// <param name="Message"><c>WM_MOUSEACTIVATE</c> message; its result is set to <c>MA_NOACTIVATE</c>.</param>
     procedure WMMouseActivate(var Message: TMessage); message WM_MOUSEACTIVATE;
     /// <summary>Closes the drop-down when the list loses activation.</summary>
+    /// <param name="Msg"><c>WM_ACTIVATE</c> message; only <c>WA_INACTIVE</c> closes the drop-down.</param>
     procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
   protected
     /// <summary>Closes the drop-down on a left-mouse-up.</summary>
+    /// <param name="Button">Mouse button released; only <c>mbLeft</c> closes the drop-down.</param>
+    /// <param name="Shift">Shift state, passed to the inherited handler.</param>
+    /// <param name="X">Client X co-ordinate, passed to the inherited handler.</param>
+    /// <param name="Y">Client Y co-ordinate, passed to the inherited handler.</param>
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
   public
     /// <summary>Releases the control without re-creating the window handle.</summary>
@@ -89,34 +103,51 @@ type
     /// <summary>If True, the drop-down may be shown even when the list has no items.</summary>
     FAllowEmptyList: Boolean;
     /// <summary>Closes the drop-down when the IDE broadcasts a cancel-mode targeted outside the popup.</summary>
+    /// <param name="Msg"><c>CM_CANCELMODE</c> message; its <c>Sender</c> is the control that requested cancel mode.</param>
     procedure CMCancelMode(var Msg: TCMCancelMode); message CM_CANCELMODE;
     /// <summary>Repaints when the edit gains focus.</summary>
+    /// <param name="Message"><c>WM_SETFOCUS</c> message, passed to the inherited handler.</param>
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     /// <summary>Closes the drop-down when focus moves outside the popup.</summary>
+    /// <param name="Message"><c>WM_KILLFOCUS</c> message; its <c>FocusedWnd</c> says where focus went.</param>
     procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
     /// <summary>Handles <see cref="WM_DROPDOWN"/> by opening the popup if the edit is focused.</summary>
+    /// <param name="Msg"><see cref="WM_DROPDOWN"/> message (no parameters used).</param>
     procedure WMDropDown(var Msg: TMessage); message WM_DROPDOWN;
     /// <summary>Paints the edit background (Delphi 2009+ no longer does this implicitly).</summary>
+    /// <param name="Message"><c>WM_ERASEBKGND</c> message; its <c>DC</c> is filled and its result set to 1.</param>
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     /// <summary>Returns the current drop-down panel height.</summary>
+    /// <returns>The height of the popup panel in pixels.</returns>
     function GetDropDownHeight: Integer;
     /// <summary>Returns the current drop-down panel width.</summary>
+    /// <returns>The width of the popup panel in pixels.</returns>
     function GetDropDownWidth: Integer;
     /// <summary>Sets the drop-down height and re-positions if visible.</summary>
+    /// <param name="Value">New height in pixels.</param>
     procedure SetDropDownHeight(const Value: Integer);
     /// <summary>Sets the drop-down width and re-positions if visible.</summary>
+    /// <param name="Value">New width in pixels.</param>
     procedure SetDropDownWidth(const Value: Integer);
   protected
     /// <summary>Routes navigation/character keys to the list box and opens the drop-down on first key.</summary>
+    /// <param name="Key">Virtual key code; set to 0 when the key is consumed.</param>
+    /// <param name="Shift">Modifier keys held down.</param>
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     /// <summary>Selects all text when the edit gains keyboard focus.</summary>
     procedure DoEnter; override;
     /// <summary>Posts a <see cref="WM_DROPDOWN"/> when the user clicks the edit while the popup is hidden.</summary>
+    /// <param name="Button">Mouse button pressed.</param>
+    /// <param name="Shift">Shift state at the click.</param>
+    /// <param name="X">Client X co-ordinate of the click.</param>
+    /// <param name="Y">Client Y co-ordinate of the click.</param>
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
     /// <summary>Suppresses the Beep when the user presses Esc.</summary>
+    /// <param name="Key">Character typed; Esc (#27) is replaced with #0.</param>
     procedure KeyPress(var Key: Char); override;
   public
     /// <summary>Creates the popup panel/list-box pair and applies default styles.</summary>
+    /// <param name="AOwner">Component that owns and frees this control.</param>
     constructor Create(AOwner: TComponent); override;
     /// <summary>Hides the drop-down (no-op if already hidden).</summary>
     procedure CloseUp;
@@ -153,17 +184,23 @@ type
     /// <summary>Index in <see cref="FImages"/> of the glyph to draw.</summary>
     FImageIndex: Integer;
     /// <summary>Sets <see cref="FImages"/> with appropriate free-notification wiring.</summary>
+    /// <param name="Value">Image list to use, or nil for no glyph.</param>
     procedure SetImages(const Value: TCustomImageList);
     /// <summary>Updates the edit's left margin to make space for the glyph; returns True if a margin change was applied.</summary>
+    /// <returns>True when the left margin was changed; False when it already matched or no window handle exists.</returns>
     function UpdateEditMargins: Boolean; reintroduce;
   protected
     /// <summary>Draws the glyph after the standard edit paints itself.</summary>
+    /// <param name="Msg"><c>WM_PAINT</c> message, passed to the inherited handler before the glyph is drawn.</param>
     procedure WMPaint(var Msg: TWMPaint); message WM_PAINT;
     /// <summary>Detaches the image list when it is being destroyed.</summary>
+    /// <param name="AComponent">Component being inserted or removed.</param>
+    /// <param name="Operation"><c>opRemove</c> when <paramref name="AComponent"/> is being destroyed.</param>
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     /// <summary>Applies edit margins after the window is created.</summary>
     procedure CreateWnd; override;
     /// <summary>Handles theme/colour control messages and updates margins on resize.</summary>
+    /// <param name="Msg">Window message to handle.</param>
     procedure WndProc(var Msg: TMessage); override;
   public
     /// <summary>Detaches the image list and releases the control.</summary>

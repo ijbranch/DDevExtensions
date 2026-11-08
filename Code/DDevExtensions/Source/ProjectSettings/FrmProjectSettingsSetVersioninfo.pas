@@ -208,72 +208,108 @@ type
     /// <summary>Sets each project's Original Filename to its target output file name.</summary>
     btnApplyAutoSetOriginalFilename: TButton;
     /// <summary>Reflects the OnExit of an edit field into its corresponding TUpDown spinner.</summary>
+    /// <param name="Sender">The version edit box being left.</param>
     procedure edtFileVersionExit(Sender: TObject);
     /// <summary>Loads the version-info fields for the newly selected project.</summary>
+    /// <param name="Sender">The projects list view.</param>
+    /// <param name="Item">The item whose selection changed.</param>
+    /// <param name="Selected">True when Item became selected, False when it lost the selection.</param>
     procedure lvwProjectsSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     /// <summary>Greys out projects without a valid VersionInfo resource on non-icon tabs.</summary>
+    /// <param name="Sender">The projects list view.</param>
+    /// <param name="Item">The item about to be drawn.</param>
+    /// <param name="State">The item's draw state (not used).</param>
+    /// <param name="DefaultDraw">Always set True so the list view draws the item itself.</param>
     procedure lvwProjectsCustomDrawItem(Sender: TCustomListView;
       Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
     /// <summary>Generic Apply handler that writes the corresponding string field to the projects.</summary>
+    /// <param name="Sender">The Apply button clicked; it selects which version string is written.</param>
+    /// <exception cref="Exception">Sender is not one of the known string Apply buttons (a programming error).</exception>
     procedure btnApplyStringClick(Sender: TObject);
     /// <summary>Applies the file version triplet (Major/Minor/Release) to the projects.</summary>
     /// <param name="Sender">The Apply File Version button.</param>
     procedure btnApplyFileVersionClick(Sender: TObject);
     /// <summary>Computes today minus the start day and writes the value to edtDaysBetween.</summary>
+    /// <param name="Sender">The Days Between button.</param>
     procedure btnDaysbetweenClick(Sender: TObject);
     /// <summary>Hides the "applied" notification when the timer elapses.</summary>
+    /// <param name="Sender">The hide timer.</param>
     procedure TimerAppliedHideTimer(Sender: TObject);
     /// <summary>Applies the Build component of the file version to the projects.</summary>
     /// <param name="Sender">The Apply Build button.</param>
     procedure btnApplyBuildClick(Sender: TObject);
     /// <summary>Initialises FIcon, sets default tab and adjusts platform check visibility.</summary>
+    /// <param name="Sender">The form being created.</param>
     procedure FormCreate(Sender: TObject);
     /// <summary>Enables/disables Major-related sub-options based on cbxIncMajor.</summary>
+    /// <param name="Sender">The Increment Major checkbox.</param>
     procedure cbxIncMajorClick(Sender: TObject);
     /// <summary>Enables/disables Minor-related sub-options based on cbxIncMinor.</summary>
+    /// <param name="Sender">The Increment Minor checkbox.</param>
     procedure cbxIncMinorClick(Sender: TObject);
     /// <summary>Performs the configured version increment across the eligible projects.</summary>
     /// <param name="Sender">The Execute Increment button.</param>
     procedure btnExecuteIncrementClick(Sender: TObject);
     /// <summary>Toggles the apply-to-selected-only mode and updates UI accordingly.</summary>
+    /// <param name="Sender">The Apply to Selected Only checkbox.</param>
     procedure cbxApplyToSelectedOnlyClick(Sender: TObject);
     /// <summary>Enables/disables Release-related sub-options based on cbxIncRelease.</summary>
+    /// <param name="Sender">The Increment Release checkbox.</param>
     procedure cbxIncReleaseClick(Sender: TObject);
     /// <summary>Enables/disables Build-related sub-options based on cbxIncBuild.</summary>
+    /// <param name="Sender">The Increment Build checkbox.</param>
     procedure cbxIncBuildClick(Sender: TObject);
     /// <summary>Loads a new icon from disk into FIcon.</summary>
+    /// <param name="Sender">The Load Icon button.</param>
     procedure btnLoadMainIconClick(Sender: TObject);
     /// <summary>Writes the loaded icon to the eligible projects' main icon resource.</summary>
+    /// <param name="Sender">The Apply Icon button.</param>
     procedure btnApplyMainIconClick(Sender: TObject);
     /// <summary>Refreshes the icon preview when a different icon image is selected.</summary>
+    /// <param name="Sender">The icon-images list box.</param>
     procedure lbxMainIconsClick(Sender: TObject);
     /// <summary>Frees FIcon when the form is destroyed.</summary>
+    /// <param name="Sender">The form being destroyed.</param>
     procedure FormDestroy(Sender: TObject);
     /// <summary>Renders the currently selected icon image inside pbxMainIcon.</summary>
+    /// <param name="Sender">The icon preview paint box.</param>
     procedure pbxMainIconPaint(Sender: TObject);
     /// <summary>Clears the loaded icon and updates the preview.</summary>
+    /// <param name="Sender">The Remove Icon button.</param>
     procedure btnRemoveMainIconClick(Sender: TObject);
     /// <summary>Triggers a redraw of lvwProjects when the active page changes.</summary>
+    /// <param name="Sender">The page control.</param>
     procedure pgcPagesChange(Sender: TObject);
     /// <summary>Sets each project's Original Filename to ExtractFileName(TargetName).</summary>
+    /// <param name="Sender">The Auto-set Original Filename button.</param>
     procedure btnApplyAutoSetOriginalFilenameClick(Sender: TObject);
   private
     { Private-Deklarationen }
     /// <summary>Working icon resource used by the Main Icon tab.</summary>
     FIcon: TIconResource;
     /// <summary>Populates the projects list, runs the dialog and persists settings on close.</summary>
+    /// <param name="Projects">The projects to list (IOTAProject references).</param>
+    /// <returns>True if the user closed the dialog with OK.</returns>
     function DoExecute(Projects: TInterfaceList): Boolean; virtual;
     /// <summary>Returns the file creation date/time of the project's main file.</summary>
+    /// <param name="Project">The project whose main file is examined; may be nil.</param>
+    /// <returns>The local creation date and time of the project file, or today's date when Project is nil or its file is not found.</returns>
     function GetStartDateTimeOf(const Project: IOTAProject): TDateTime;
     /// <summary>Loads persisted dialog settings (apply-to-selected and platform flags).</summary>
     procedure LoadSettings;
     /// <summary>Saves persisted dialog settings (apply-to-selected and platform flags).</summary>
     procedure SaveSettings;
     /// <summary>Returns the projects eligible for the current Apply (respecting the checkbox filter).</summary>
+    /// <returns>
+    /// The projects with a valid VersionInfo resource: only the checked ones in apply-to-selected mode,
+    /// falling back to the selected project when none is checked.  May be empty.
+    /// </returns>
     function GetValidApplyProjects: IOTAProjectArray;
     /// <summary>Returns True if at least one project is eligible for the current Apply.</summary>
+    /// <returns>True when GetValidApplyProjects would return at least one project.</returns>
     function HasValidProjects: Boolean;
     /// <summary>Returns the currently selected project if it has a valid VersionInfo resource.</summary>
+    /// <returns>The selected project, or nil when nothing is selected or it has no valid VersionInfo resource.</returns>
     function GetSelectedApplyProject: IOTAProject;
   protected
     /// <summary>Refreshes the Main Icon preview and the icon-images list.</summary>
@@ -281,6 +317,7 @@ type
     /// <summary>Recomputes which Apply buttons are enabled based on the current state.</summary>
     procedure UpdateActions; override;
     /// <summary>Shows the transient "applied" notification with the supplied (or default) text.</summary>
+    /// <param name="Text">The message to show; empty shows "Versioninfo updated.".</param>
     procedure ApplyFinished(const Text: string = '');
   public
     { Public-Deklarationen }
@@ -291,6 +328,7 @@ type
   end;
 
 /// <summary>Plugin entry point that creates or frees the global TVersionInfoHandler.</summary>
+/// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
 procedure InitPlugin(Unload: Boolean);
 
 implementation

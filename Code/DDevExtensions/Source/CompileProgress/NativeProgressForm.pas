@@ -46,49 +46,71 @@ type
     /// <summary>Windows 7+ taskbar interface used for progress notifications.</summary>
     FTaskbarList3: ITaskbarList3;
     /// <summary>Reads the "current file" label on the IDE progress form.</summary>
+    /// <returns>The label caption, or an empty string when the label is not found.</returns>
     function GetCurrFile: string;
     /// <summary>Reads the "current lines" label on the IDE progress form.</summary>
+    /// <returns>The caption as a number, or 0 when it is missing or not numeric.</returns>
     function GetCurrLines: LongWord;
     /// <summary>Reads the "hint count" label on the IDE progress form.</summary>
+    /// <returns>The caption as a number, or 0 when it is missing or not numeric.</returns>
     function GetHintCount: Integer;
     /// <summary>Reads the "main file" label on the IDE progress form.</summary>
+    /// <returns>The label caption, or an empty string when the label is not found.</returns>
     function GetMainFile: string;
     /// <summary>Reads the "status" label on the IDE progress form.</summary>
+    /// <returns>The label caption, or an empty string when the label is not found.</returns>
     function GetStatus: string;
     /// <summary>Reads the "total lines" label on the IDE progress form.</summary>
+    /// <returns>The caption as a number, or 0 when it is missing or not numeric.</returns>
     function GetTotalLines: LongWord;
     /// <summary>Reads the "error count" label on the IDE progress form.</summary>
+    /// <returns>The caption as a number, or 0 when it is missing or not numeric.</returns>
     function GetErrorCount: Integer;
     /// <summary>Reads the "warning count" label on the IDE progress form.</summary>
+    /// <returns>The caption as a number, or 0 when it is missing or not numeric.</returns>
     function GetWarningCount: Integer;
     /// <summary>Writes the "current file" label.</summary>
+    /// <param name="Value">Text to show.</param>
     procedure SetCurrFile(const Value: string);
     /// <summary>Writes the "current lines" label.</summary>
+    /// <param name="Value">Line count to show.</param>
     procedure SetCurrLines(const Value: LongWord);
     /// <summary>Writes the "error count" label.</summary>
+    /// <param name="Value">Error count to show.</param>
     procedure SetErrorCount(const Value: Integer);
     /// <summary>Writes the "hint count" label.</summary>
+    /// <param name="Value">Hint count to show.</param>
     procedure SetHintCount(const Value: Integer);
     /// <summary>Writes the "main file" label.</summary>
+    /// <param name="Value">File name to show.</param>
     procedure SetMainFile(const Value: string);
     /// <summary>Writes the "status" label.</summary>
+    /// <param name="Value">Status text to show.</param>
     procedure SetStatus(const Value: string);
     /// <summary>Writes the "total lines" label.</summary>
+    /// <param name="Value">Line count to show.</param>
     procedure SetTotalLines(const Value: LongWord);
     /// <summary>Writes the "warning count" label.</summary>
+    /// <param name="Value">Warning count to show.</param>
     procedure SetWarningCount(const Value: Integer);
     /// <summary>Adds or removes an overlay panel that overrides the status text on the IDE progress form.</summary>
+    /// <param name="Value">Status text to show over the IDE's own, or an empty string to remove the overlay.</param>
     procedure SetStatusOverwrite(const Value: string);
     /// <summary>Reads the value of the injected files-compiled label.</summary>
+    /// <returns>The count held in the label's Tag, or 0 when the label is absent.</returns>
     function GetFilesCompiled: Integer;
     /// <summary>Updates the injected files-compiled label and refreshes the progress bar.</summary>
+    /// <param name="Value">Number of files compiled so far.</param>
     procedure SetFilesCompiled(const Value: Integer);
     /// <summary>Sets the maximum file count and creates / repositions the progress bar.</summary>
+    /// <param name="Value">Total number of files expected.</param>
     procedure SetMaxFiles(const Value: Integer);
     /// <summary>Sets the count of project files compiled and refreshes the progress bar.</summary>
+    /// <param name="Value">Number of project files compiled so far.</param>
     procedure SetProjectFilesCompiled(const Value: Integer);
   protected
     /// <summary>Returns the window handle to use for taskbar progress notifications.</summary>
+    /// <returns>The main form's handle when Application.MainFormOnTaskBar is True, otherwise Application.Handle.</returns>
     function GetTaskbarFormHandle: HWND;
     /// <summary>Pushes the current progress and state to the Windows taskbar.</summary>
     procedure UpdateTaskbarProgress;
@@ -98,27 +120,44 @@ type
     function GetForm: TCustomForm;
     /// <summary>Looks up a TLabel control on the IDE progress form by component name.</summary>
     /// <param name="Name">Component name.</param>
+    /// <returns>The label, or nil when the form or a TLabel of that name is not found.</returns>
     function GetLabel(const Name: string): TLabel;
     /// <summary>Looks up a TCheckBox control on the IDE progress form by component name.</summary>
     /// <param name="Name">Component name.</param>
+    /// <returns>The check box, or nil when the form or a TCheckBox of that name is not found.</returns>
     function GetCheckBox(const Name: string): TCheckBox;
     /// <summary>Sets a label caption by component name.</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <param name="Value">Caption to set.</param>
     procedure SetString(const Name, Value: string);
     /// <summary>Sets a label caption to the textual form of an integer.</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <param name="Value">Number to show.</param>
     procedure SetInteger(const Name: string; Value: Integer);
     /// <summary>Sets a label caption to the textual form of an unsigned long.</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <param name="Value">Number to show.</param>
     procedure SetLongWord(const Name: string; Value: LongWord);
 
     /// <summary>Returns a label caption by component name, or empty string when not found.</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <returns>The caption, or an empty string when the label is not found.</returns>
     function GetString(const Name: string): string;
     /// <summary>Reads a label caption and converts it to an integer ( 0 on failure ).</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <returns>The caption as an Integer, or 0 when it is missing or not numeric.</returns>
     function GetInteger(const Name: string): Integer;
     /// <summary>Reads a label caption and converts it to a LongWord ( 0 on failure ).</summary>
+    /// <param name="Name">Component name of the label.</param>
+    /// <returns>The caption as a LongWord, or 0 when it is missing or not numeric.</returns>
     function GetLongWord(const Name: string): LongWord;
 
     /// <summary>Click handler for the auto-close check box on the IDE progress form.</summary>
+    /// <param name="Sender">The auto-close check box.</param>
     procedure DoAutoCloseClick(Sender: TObject);
     /// <summary>Detects when the injected progress bar is being destroyed.</summary>
+    /// <param name="AComponent">The component being inserted or removed.</param>
+    /// <param name="Operation">opInsert or opRemove.</param>
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
     /// <summary>Creates the wrapper and probes for Windows 7+ taskbar support.</summary>

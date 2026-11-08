@@ -125,19 +125,34 @@ type
     /// <summary>Tab control listing one tab per palette category.</summary>
     TabControl: TTabControl;
     /// <summary>Click handler for a component button on the strip.</summary>
+    /// <param name="Sender">The component panel.</param>
+    /// <param name="Button">Index of the clicked button.</param>
     procedure PaletteClick(Sender: TObject; Button: Integer);
     /// <summary>Double-click handler that selects and instantiates a component.</summary>
+    /// <param name="Sender">The component panel.</param>
+    /// <param name="Button">Index of the double-clicked button.</param>
     procedure PaletteDblClick(Sender: TObject; Button: Integer);
     /// <summary>Popup-menu item handler that switches to the corresponding palette page.</summary>
+    /// <param name="Sender">The menu item that was clicked.</param>
     procedure PaletteMenuItemClick(Sender: TObject);
     /// <summary>Mouse-down handler used to coax mouse-wheel focus on .NET personalities.</summary>
+    /// <param name="Sender">The tab bar.</param>
+    /// <param name="Button">The mouse button pressed.</param>
+    /// <param name="Shift">The modifier keys held.</param>
+    /// <param name="X">Horizontal client position.</param>
+    /// <param name="Y">Vertical client position.</param>
     procedure TabBarPaletteMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     /// <summary>OnPaintContent handler that gradient-fills the strip when needed.</summary>
+    /// <param name="Sender">The component panel.</param>
+    /// <param name="Canvas">Canvas to paint on.</param>
+    /// <param name="R">Content rectangle to paint.</param>
     procedure PalettePaintContent(Sender: TObject; Canvas: TCanvas; R: TRect);
     /// <summary>OnChange handler that mirrors the active tab into the button strip.</summary>
+    /// <param name="Sender">The tab control.</param>
     procedure TabControlChange(Sender: TObject);
     /// <summary>OnResize handler that constrains the tab control's height.</summary>
+    /// <param name="Sender">The tab control.</param>
     procedure TabControlResize(Sender: TObject);
   private
     { Private-Deklarationen }
@@ -171,21 +186,35 @@ type
     /// <summary>Original IDE handler for OnReorderCategory, restored on shutdown.</summary>
     FOrgReorderCategory: TCategoryReorderEvent;
     /// <summary>Hooked IDE selected-item handler that mirrors the selection on the Old Palette.</summary>
+    /// <param name="Sender">The IDE palette.</param>
+    /// <param name="Button">The newly selected palette item.</param>
     procedure PaletteSelectedItemChange(Sender: TObject; const Button: TButtonItem);
     /// <summary>Hooked IDE button-reorder handler that refreshes the cached tab buttons.</summary>
+    /// <param name="Sender">The IDE palette.</param>
+    /// <param name="Button">The palette item that was moved.</param>
+    /// <param name="SourceCategory">Category the item came from.</param>
+    /// <param name="TargetCategory">Category the item moved to.</param>
     procedure PaletteReorderButton(Sender: TObject; const Button: TButtonItem;
       const SourceCategory, TargetCategory: TButtonCategory);
     /// <summary>Hooked IDE category-reorder handler that triggers a reorder-only rebuild.</summary>
+    /// <param name="Sender">The IDE palette.</param>
+    /// <param name="SourceCategory">Category that was moved.</param>
+    /// <param name="TargetCategory">Category it was moved next to.</param>
     procedure PaletteReorderCategory(Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory);
     /// <summary>Returns the currently selected tab item, or nil.</summary>
+    /// <returns>The selected tab item, or nil when no tab is selected.</returns>
     function GetSelectedTab: TTabItem;
     /// <summary>Determines whether <paramref name="Categories"/> represent a form-designer palette.</summary>
+    /// <param name="Categories">The IDE palette categories to inspect.</param>
     procedure UpdateIsFormDesigner(Categories: TButtonCategories);
     /// <summary>Clears the cached component lists on every tab without removing the tabs.</summary>
     procedure ClearTabItemComponents;
     /// <summary>Returns the tab item at <paramref name="Index"/>.</summary>
+    /// <param name="Index">Zero-based tab index; not range-checked.</param>
+    /// <returns>The tab item stored against that tab.</returns>
     function GetTabItem(Index: Integer): TTabItem; inline;
     /// <summary>Returns the number of tabs in the tab control.</summary>
+    /// <returns>Number of tabs.</returns>
     function GetTabItemCount: Integer; inline;
   protected
     /// <summary>Detaches IDE hooks and clears the tabs when the tool form is gone.</summary>
@@ -193,16 +222,23 @@ type
     /// <summary>Frees all <see cref="TTabItem"/> instances and clears the tab control.</summary>
     procedure ClearTabs;
     /// <summary>Programmatically changes the active tab and synchronises the strip.</summary>
+    /// <param name="NewTabIndex">Index of the tab to activate.</param>
     procedure ChangeTabIndex(NewTabIndex: Integer);
     /// <summary>Populates the button strip from <paramref name="ComponentList"/>.</summary>
+    /// <param name="ComponentList">Components of the selected palette page.</param>
     procedure TabSelected(ComponentList: TObjectList);
     /// <summary>Releases hooks if the IDE component palette is being freed.</summary>
+    /// <param name="AComponent">The component being inserted or removed.</param>
+    /// <param name="Operation">opInsert or opRemove.</param>
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     /// <summary>Suppresses default background erasing to avoid flicker.</summary>
+    /// <param name="Msg">The WM_ERASEBKGND message; marked handled without erasing.</param>
     procedure WMEraseBkgnd(var Msg: TWMEraseBkgnd); message WM_ERASEBKGND;
     /// <summary>Handler for <see cref="WM_REBUILD"/> that performs the deferred rebuild.</summary>
+    /// <param name="Msg">The WM_REBUILD message.</param>
     procedure WMRebuild(var Msg: TMessage); message WM_REBUILD;
     /// <summary>Subclassed tab-control window procedure intercepting mouse wheel events.</summary>
+    /// <param name="Msg">The message sent to the tab control.</param>
     procedure TabControlWndProc(var Msg: TMessage);
     /// <summary>Resets the deferred rebuild flag when the window handle is created.</summary>
     procedure CreateWnd; override;
