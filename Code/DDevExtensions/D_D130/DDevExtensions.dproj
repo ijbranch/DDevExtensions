@@ -129,17 +129,17 @@ $(PreBuildEvent)]]></PreBuildEvent>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>23</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.23.15.641;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.23.15.641;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
-        <VerInfo_Build>641</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.23.15.643;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.23.15.643;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Build>643</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Release>15</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Build>655</VerInfo_Build>
+        <VerInfo_Build>658</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>23</VerInfo_MinorVer>
         <VerInfo_Release>15</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.23.15.655;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.23.15.655;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.23.15.658;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.23.15.658;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_DcuOutput>lib\$(Platform)\debug</DCC_DcuOutput>
@@ -166,11 +166,11 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <VerInfo_Build>653</VerInfo_Build>
+        <VerInfo_Build>655</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>23</VerInfo_MinorVer>
         <VerInfo_Release>15</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.23.15.653;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.23.15.653;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensions;FileVersion=3.23.15.655;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensions;ProductName=DDevExtensions;ProductVersion=3.23.15.655;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>

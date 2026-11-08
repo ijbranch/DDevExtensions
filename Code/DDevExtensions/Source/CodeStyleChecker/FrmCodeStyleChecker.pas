@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -20,7 +20,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
   System.Generics.Defaults, FrmBase, CodeStyleChecker, ToolsAPI;
 
 type
@@ -34,6 +34,8 @@ type
     btnClose: TButton;
     /// <summary>Initiates a project-wide scan.</summary>
     btnScan: TButton;
+    /// <summary>Stops a running scan; shown only while one runs.</summary>
+    btnCancelScan: TBitBtn;
     /// <summary>List view displaying violations.</summary>
     ListView: TListView;
     /// <summary>Status text shown while a scan is in progress.</summary>
@@ -65,39 +67,66 @@ type
     /// <summary>Label for <see cref="cboSeverity"/>.</summary>
     lblSeverity: TLabel;
     /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Asks the running scan to stop at the next unit.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    procedure btnCancelScanClick( Sender: TObject );
     /// <summary>Releases the singleton instance when the form closes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Action">Set to caNone while a scan runs, which keeps the form open; otherwise caFree.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Creates the checker engine and populates the filter combos.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Frees the checker engine.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the file represented by the double-clicked row.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Context-menu handler that copies violation data to the clipboard.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Context-menu handler that opens the source file at the violation line.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the visible violations to a CSV file.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Cycles sort direction when a column header is clicked.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Item1">The first item to compare.</param>
+    /// <param name="Item2">The second item to compare.</param>
+    /// <param name="Data">Sort data passed to AlphaSort; not used.</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, with or after
+    /// Item2 in the current sort column and direction.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Re-applies filters when the category combo changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboCategoryChange( Sender: TObject );
     /// <summary>Re-applies filters when the rule combo changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboRuleChange( Sender: TObject );
     /// <summary>Re-applies filters when the severity combo changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboSeverityChange( Sender: TObject );
   private
     /// <summary>Engine performing the analysis.</summary>
     FChecker: TStyleChecker;
-    /// <summary>True while a project scan is running; used to veto closing the form mid-scan (the scan pumps the message queue, so an unguarded close would free the form and FChecker underneath it).</summary>
+    /// <summary>True while a project scan is running; used to veto closing the form mid-scan (the scan pumps the
+    /// message queue, so an unguarded close would free the form and FChecker underneath it).</summary>
     FScanning: Boolean;
+    /// <summary>Set by Cancel Scan; the running scan stops at the next unit.</summary>
+    FCancelRequested: Boolean;
     /// <summary>Latest scan results.</summary>
     FViolations: TArray<TStyleViolation>;
     /// <summary>Index of the column currently being sorted.</summary>
@@ -107,15 +136,19 @@ type
     /// <summary>Rebuilds the list view from <see cref="FViolations"/>, applying current filters.</summary>
     procedure PopulateList;
     /// <summary>Progress callback invoked by <see cref="TStyleChecker"/> between files.</summary>
+    /// <param name="Sender">The TStyleChecker; its ProgressFileName names the file about to be checked.</param>
     procedure CheckerProgress( Sender: TObject );
     /// <summary>Opens the file/line of the currently selected list item in the IDE.</summary>
     procedure OpenSelectedFile;
     /// <summary>Returns <c>True</c> when the supplied violation matches all currently active filters.</summary>
     /// <param name="Item">Violation under test.</param>
+    /// <returns>True when the violation should be listed.</returns>
     function PassesFilter( const Item: TStyleViolation ): Boolean;
   public
     /// <summary>Displays the singleton form, creating it if required.</summary>
     class procedure Execute;
+    /// <summary>Frees the singleton form, if open, so it cannot outlive the plugin on unload.</summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -127,7 +160,7 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Math, ToolsAPIHelpers;
+  ToolsAPIHelpers, IdeUnitSource;
 
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
@@ -152,6 +185,21 @@ begin
 
   FormInstance := TFormCodeStyleChecker.Create( Application );
   FormInstance.Show;
+
+end;
+
+class procedure TFormCodeStyleChecker.CloseInstance;
+begin
+
+  if ( FormInstance <> nil ) then
+    FreeAndNil( FormInstance );
+
+end;
+
+procedure TFormCodeStyleChecker.btnCancelScanClick( Sender: TObject );
+begin
+
+  FCancelRequested := True;
 
 end;
 
@@ -210,6 +258,10 @@ begin
 
   Application.ProcessMessages;
 
+  // Stop on Cancel Scan, and when the IDE is closing: the pump above swallowed its WM_QUIT.
+  if FCancelRequested or Application.Terminated then
+    Abort;
+
 end;
 
 procedure TFormCodeStyleChecker.btnCloseClick( Sender: TObject );
@@ -249,9 +301,11 @@ begin
     Exit;
   end;
 
-  Screen.Cursor    := crHourGlass;
-  btnScan.Enabled  := False;
-  FScanning        := True;
+  Screen.Cursor         := crHourGlass;
+  btnScan.Visible       := False;
+  btnCancelScan.Visible := True;
+  FCancelRequested      := False;
+  FScanning             := True;
 
   try
     lblProgress.Caption := 'Checking project...';
@@ -259,16 +313,29 @@ begin
     lblSummary.Visible  := False;
     Application.ProcessMessages;
 
-    FChecker.CheckProject( Project, FViolations, CheckerProgress );
+    try
+      FChecker.CheckProject( Project, FViolations, CheckerProgress );
+    except
+      on EAbort do
+      begin
+        FViolations := nil;
+        PopulateList;
+        lblProgress.Visible := False;
+        lblSummary.Caption  := 'Scan cancelled.';
+        lblSummary.Visible  := True;
+        Exit;
+      end;
+    end;
     PopulateList;
 
     lblProgress.Visible := False;
     lblSummary.Caption  := Format( 'Found %d style violations', [ Length( FViolations ) ] );
     lblSummary.Visible  := True;
   finally
-    FScanning       := False;
-    btnScan.Enabled := True;
-    Screen.Cursor   := crDefault;
+    FScanning             := False;
+    btnCancelScan.Visible := False;
+    btnScan.Visible       := True;
+    Screen.Cursor         := crDefault;
   end;
 
 end;
@@ -437,11 +504,6 @@ procedure TFormCodeStyleChecker.OpenSelectedFile;
 var
   Idx: Integer;
   Violation: TStyleViolation;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
 begin
 
   if ListView.Selected = nil then
@@ -454,55 +516,8 @@ begin
 
   Violation := FViolations[ Idx ];
 
-  if not FileExists( Violation.FileName ) then
-  begin
-    ShowMessage( 'Source file not found: ' + Violation.FileName );
-    Exit;
-  end;
-
-  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-  begin
-    try
-      Module := ModuleServices.OpenModule( Violation.FileName );
-    except
-      on E: Exception do
-      begin
-        ShowMessage( Format( 'Could not open %s'#13#10'%s', [ Violation.FileName, E.Message ] ) );
-        Exit;
-      end;
-    end;
-
-    if Module = nil then
-    begin
-      ShowMessage( 'Could not open ' + Violation.FileName );
-      Exit;
-    end;
-
-    SourceEditor := nil;
-
-    for I := 0 to Module.ModuleFileCount - 1 do
-    begin
-
-      if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-      begin
-        SourceEditor.Show;
-
-        if SourceEditor.EditViewCount > 0 then
-        begin
-          EditView := SourceEditor.EditViews[ 0 ];
-          EditView.SetTopLeft( Violation.Line, 1 );
-          // Synthetic violations (LongMethod, EmptyFinally) carry Column 0;
-          // IOTAEditView positions are 1-based, so clamp to a sensible caret.
-          EditView.Center( Violation.Line, Max( 1, Violation.Column ) );
-        end;
-
-        Break;
-      end;
-    end;
-
-    if SourceEditor = nil then
-      ShowMessage( 'No source editor available for ' + ExtractFileName( Violation.FileName ) );
-  end;
+  // Synthetic violations (LongMethod, EmptyFinally) carry Column 0; OpenFileAtLine clamps it to 1.
+  OpenFileAtLine( Violation.FileName, Violation.Line, Violation.Column );
 
 end;
 
@@ -539,7 +554,7 @@ begin
         ] ) );
     end;
 
-    Clipboard.AsText := SL.Text;
+    CopyTextToClipboard( SL.Text );
   finally
     SL.Free;
   end;
@@ -586,7 +601,8 @@ begin
       end;
 
       try
-        SL.SaveToFile( SaveDialog.FileName );
+        // UTF-8: identifiers and paths are not limited to the ANSI code page.
+        SL.SaveToFile( SaveDialog.FileName, TEncoding.UTF8 );
         ShowMessage( Format( 'Exported %d items to %s', [ ListView.Items.Count, SaveDialog.FileName ] ) );
       except
         on E: Exception do

@@ -34,6 +34,15 @@ inherited FormDependencyViewer: TFormDependencyViewer
       TabOrder = 0
       OnClick = btnScanProjectClick
     end
+    object btnCancelScan: TBitBtn
+      Left = 8
+      Top = 4
+      Width = 113
+      Height = 25
+      Caption = '&Cancel Scan'
+      Visible = False
+      OnClick = btnCancelScanClick
+    end
     object lblProgress: TLabel
       Left = 612
       Top = 10

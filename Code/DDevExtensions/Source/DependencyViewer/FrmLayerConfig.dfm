@@ -110,6 +110,8 @@ inherited FormLayerConfig: TFormLayerConfig
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine]
       TabOrder = 0
       OnDrawCell = StringGridRulesDrawCell
+      OnKeyPress = StringGridRulesKeyPress
+      OnMouseUp = StringGridRulesMouseUp
       OnSelectCell = StringGridRulesSelectCell
     end
   end

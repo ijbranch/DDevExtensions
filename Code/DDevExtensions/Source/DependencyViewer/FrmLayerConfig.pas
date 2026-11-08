@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -22,11 +22,11 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Grids, FrmBase, DependencyViewer;
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Grids, FrmBase, DependencyViewerCore;
 
 type
   /// <summary>Two-dimensional boolean matrix used to represent the allowed-dependency rules.</summary>
-  TBoolMatrix = array of array of Boolean;
+  TBoolMatrix = TArray<TArray<Boolean>>;
 
   /// <summary>
   /// Modal form for editing layer definitions and dependency rules.
@@ -63,27 +63,56 @@ type
     /// <summary>Resets layers and rules to the built-in defaults.</summary>
     btnDefaults: TButton;
     /// <summary>Form OnCreate handler: initialises internal state.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: releases the rules matrix.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Loads the selected layer's patterns into the memo.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListBoxLayersClick( Sender: TObject );
     /// <summary>Persists the memo's lines back into the selected layer's stored patterns.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure MemoPatternsChange( Sender: TObject );
     /// <summary>Prompts for a layer name and adds it to the list.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnAddLayerClick( Sender: TObject );
     /// <summary>Removes the selected layer and shrinks the rules matrix.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnDeleteLayerClick( Sender: TObject );
     /// <summary>Persists pending pattern edits before the dialog closes with OK.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnOKClick( Sender: TObject );
     /// <summary>Asks the user to confirm, then reloads the default configuration.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnDefaultsClick( Sender: TObject );
     /// <summary>Custom-draws each cell of the rules grid as a checkbox.</summary>
+    /// <param name="Sender">The rules grid.</param>
+    /// <param name="ACol">Grid column of the cell; 0 is the header column.</param>
+    /// <param name="ARow">Grid row of the cell; 0 is the header row.</param>
+    /// <param name="Rect">The cell's bounds on the grid canvas.</param>
+    /// <param name="State">The cell's draw state; a focused cell gets a focus rectangle.</param>
     procedure StringGridRulesDrawCell( Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState );
-    /// <summary>Toggles the boolean cell when the user clicks a non-diagonal data cell.</summary>
+    /// <summary>Lets the focus move to a data cell; moving the focus no longer toggles it.</summary>
+    /// <param name="Sender">The grid.</param>
+    /// <param name="ACol">Column about to be selected.</param>
+    /// <param name="ARow">Row about to be selected.</param>
+    /// <param name="CanSelect">False for the headers and the diagonal.</param>
     procedure StringGridRulesSelectCell( Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean );
+    /// <summary>Toggles the rule under the mouse when a data cell is clicked.</summary>
+    /// <param name="Sender">The grid.</param>
+    /// <param name="Button">The mouse button released.</param>
+    /// <param name="Shift">Modifier keys.</param>
+    /// <param name="X">Horizontal position in the grid.</param>
+    /// <param name="Y">Vertical position in the grid.</param>
+    procedure StringGridRulesMouseUp( Sender: TObject; Button: TMouseButton; Shift: TShiftState;
+      X, Y: Integer );
+    /// <summary>Toggles the focused rule when Space is pressed.</summary>
+    /// <param name="Sender">The grid.</param>
+    /// <param name="Key">The key pressed; cleared when it is Space.</param>
+    procedure StringGridRulesKeyPress( Sender: TObject; var Key: Char );
   private
     /// <summary>The layer configuration being edited (owned externally).</summary>
     FLayerConfig: TLayerConfig;
@@ -91,8 +120,14 @@ type
     FRulesMatrix: TBoolMatrix;
     /// <summary>Re-entrancy guard while loading data into controls.</summary>
     FUpdating: Boolean;
-    /// <summary>Loads layers, patterns and rules from <see cref="FLayerConfig"/> into the UI.</summary>
-    procedure LoadFromConfig;
+    /// <summary>Loads layers, patterns and rules into the UI.</summary>
+    /// <param name="AConfig">The configuration to show: the one being edited, or a set of defaults
+    /// that only OK will store.</param>
+    procedure LoadFromConfig( AConfig: TLayerConfig );
+    /// <summary>Flips one rule of the matrix, if the cell is a data cell off the diagonal.</summary>
+    /// <param name="ACol">Grid column ( the To layer + 1 ).</param>
+    /// <param name="ARow">Grid row ( the From layer + 1 ).</param>
+    procedure ToggleRule( ACol, ARow: Integer );
     /// <summary>Writes the current UI state back to <see cref="FLayerConfig"/> and saves it.</summary>
     procedure SaveToConfig;
     /// <summary>Refreshes the delete button's enabled state based on selection.</summary>
@@ -104,7 +139,8 @@ type
   public
     /// <summary>Shows the dialog modally and persists the changes when the user confirms.</summary>
     /// <param name="LayerConfig">The configuration to edit; updated in place if the user clicks OK.</param>
-    /// <returns>True when the user clicked OK and changes were saved; False on Cancel.</returns>
+    /// <returns>True when the user clicked OK; False on Cancel, which leaves the configuration exactly
+    /// as it was.</returns>
     class function Execute( LayerConfig: TLayerConfig ): Boolean;
   end;
 
@@ -121,7 +157,7 @@ begin
 
   try
     Form.FLayerConfig := LayerConfig;
-    Form.LoadFromConfig;
+    Form.LoadFromConfig( LayerConfig );
     Result := Form.ShowModal = mrOK;
 
     if Result then
@@ -154,18 +190,18 @@ begin
 
 end;
 
-procedure TFormLayerConfig.LoadFromConfig;
+procedure TFormLayerConfig.LoadFromConfig( AConfig: TLayerConfig );
 var
   Layers: TArray<TLayerDefinition>;
-  I, J, K: Integer;
-  Allowed: TArray<string>;
+  Names: TArray<string>;
+  I, J: Integer;
   SL: TStringList;
 begin
 
   FUpdating := True;
 
   try
-    Layers := FLayerConfig.GetLayers;
+    Layers := AConfig.GetLayers;
 
     // Populate layer list with patterns attached as Objects
     ListBoxLayers.Items.Clear;
@@ -181,36 +217,12 @@ begin
       ListBoxLayers.Items.AddObject( Layers[ I ].Name, SL );
     end;
 
-    // Initialize rules matrix
-    SetLength( FRulesMatrix, Length( Layers ), Length( Layers ) );
-
+    // The rules as ticks; a layer with no rule line ( "may use every layer" ) shows every box
+    // ticked, so OK on an untouched dialog does not change what the rules mean.
+    SetLength( Names, Length( Layers ) );
     for I := 0 to High( Layers ) do
-    begin
-
-      for J := 0 to High( Layers ) do
-        FRulesMatrix[ I, J ] := False;
-    end;
-
-    // Load allowed dependencies into matrix
-    for I := 0 to High( Layers ) do
-    begin
-      Allowed := FLayerConfig.GetAllowedDependencies( Layers[ I ].Name );
-
-      // Find index of each allowed target layer
-      for K := 0 to High( Allowed ) do
-      begin
-
-        for J := 0 to High( Layers ) do
-        begin
-
-          if SameText( Layers[ J ].Name, Allowed[ K ] ) then
-          begin
-            FRulesMatrix[ I, J ] := True;
-            Break;
-          end;
-        end;
-      end;
-    end;
+      Names[ I ] := Layers[ I ].Name;
+    FRulesMatrix := LayerRulesMatrix( AConfig, Names );
 
     RefreshLayerList;
     RefreshRulesGrid;
@@ -235,13 +247,17 @@ end;
 
 procedure TFormLayerConfig.SaveToConfig;
 var
-  I, J, K: Integer;
+  I: Integer;
   Patterns: TArray<string>;
-  Allowed: TArray<string>;
-  AllowedCount: Integer;
+  Names: TArray<string>;
 begin
 
-  FLayerConfig.Clear;
+  // A layer deleted here loses its rule line; a rule line for a layer the file never defined is
+  // not this dialog's to drop, so every other rule is kept as it was.
+  for var OldLayer in FLayerConfig.GetLayers do
+    if ( ListBoxLayers.Items.IndexOf( OldLayer.Name ) < 0 ) then
+      FLayerConfig.RemoveRules( OldLayer.Name );
+  FLayerConfig.ClearLayers;
 
   // Save layers with patterns
   for I := 0 to ListBoxLayers.Items.Count - 1 do
@@ -257,36 +273,16 @@ begin
   end;
 
   // Save rules
-  for I := 0 to ListBoxLayers.Items.Count - 1 do
-  begin
-    AllowedCount := 0;
+  Names := ListBoxLayers.Items.ToStringArray;
+  ApplyLayerRulesMatrix( FLayerConfig, Names, FRulesMatrix );
 
-    // Count allowed dependencies
-    for J := 0 to ListBoxLayers.Items.Count - 1 do
-    begin
-
-      if ( I <> J ) and FRulesMatrix[ I, J ] then
-        Inc( AllowedCount );
-    end;
-
-    // Build allowed array
-    SetLength( Allowed, AllowedCount );
-    K := 0;
-
-    for J := 0 to ListBoxLayers.Items.Count - 1 do
-    begin
-
-      if ( I <> J ) and FRulesMatrix[ I, J ] then
-      begin
-        Allowed[ K ] := ListBoxLayers.Items[ J ];
-        Inc( K );
-      end;
-    end;
-
-    FLayerConfig.SetAllowedDependencies( ListBoxLayers.Items[ I ], Allowed );
+  try
+    FLayerConfig.SaveToFile;
+  except
+    // A locked or read-only folder: the rules apply for this session, and the user is told.
+    on E: EFCreateError do
+      ShowMessage( 'The layer rules apply for this session but could not be saved:'#13#10 + E.Message );
   end;
-
-  FLayerConfig.SaveToFile;
 
 end;
 
@@ -585,9 +581,17 @@ begin
     if ListBoxLayers.Items.Objects[ I ] <> nil then
       TStringList( ListBoxLayers.Items.Objects[ I ] ).Free;
   end;
+  ListBoxLayers.Items.Clear;
 
-  FLayerConfig.LoadDefaults;
-  LoadFromConfig;
+  // Show the defaults without touching the configuration being edited: only OK stores them,
+  // and Cancel leaves the viewer's rules as they were.
+  var Defaults := TLayerConfig.Create( '' );
+  try
+    Defaults.LoadDefaults;
+    LoadFromConfig( Defaults );
+  finally
+    Defaults.Free;
+  end;
 
 end;
 
@@ -631,24 +635,54 @@ begin
   DrawFrameControl( StringGridRules.Canvas.Handle, CheckRect, DFC_BUTTON,
     DFCS_BUTTONCHECK or ( DFCS_CHECKED * Ord( IsChecked ) ) );
 
+  // Show where Space will act.
+  if ( gdFocused in State ) then
+    StringGridRules.Canvas.DrawFocusRect( Rect );
+
+end;
+
+procedure TFormLayerConfig.ToggleRule( ACol, ARow: Integer );
+begin
+
+  if ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow ) and
+     ( ARow - 1 < Length( FRulesMatrix ) ) and ( ACol - 1 < Length( FRulesMatrix ) ) then
+  begin
+    FRulesMatrix[ ARow - 1, ACol - 1 ] := not FRulesMatrix[ ARow - 1, ACol - 1 ];
+    StringGridRules.Invalidate;
+  end;
+
+end;
+
+procedure TFormLayerConfig.StringGridRulesMouseUp( Sender: TObject; Button: TMouseButton; Shift: TShiftState;
+  X, Y: Integer );
+var
+  iCol, iRow: Integer;
+begin
+
+  if ( Button <> mbLeft ) then
+    Exit;
+  StringGridRules.MouseToCell( X, Y, iCol, iRow );
+  ToggleRule( iCol, iRow );
+
+end;
+
+procedure TFormLayerConfig.StringGridRulesKeyPress( Sender: TObject; var Key: Char );
+begin
+
+  if ( Key = ' ' ) then
+  begin
+    ToggleRule( StringGridRules.Col, StringGridRules.Row );
+    Key := #0;
+  end;
+
 end;
 
 procedure TFormLayerConfig.StringGridRulesSelectCell( Sender: TObject;
   ACol, ARow: Integer; var CanSelect: Boolean );
 begin
 
-  // Toggle checkbox on click
-  if ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow ) then
-  begin
-
-    if ( ARow - 1 < Length( FRulesMatrix ) ) and ( ACol - 1 < Length( FRulesMatrix ) ) then
-    begin
-      FRulesMatrix[ ARow - 1, ACol - 1 ] := not FRulesMatrix[ ARow - 1, ACol - 1 ];
-      StringGridRules.Invalidate;
-    end;
-  end;
-
-  CanSelect := False;
+  // Selecting a cell only moves the focus: arrow keys used to flip every rule they passed.
+  CanSelect := ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow );
 
 end;
 

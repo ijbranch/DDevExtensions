@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -21,71 +21,9 @@ interface
 
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Menus, System.Variants,
-  ToolsAPI, FrmTreePages, PluginConfig, Main;
+  ToolsAPI, FrmTreePages, PluginConfig, Main, TodoAggregatorCore;
 
 type
-  /// <summary>
-  /// Single hit produced by the TODO scanner: source location, category (TODO, FIXME, ...),
-  /// optional priority and the comment body text.
-  /// </summary>
-  TTodoItem = record
-    /// <summary>Full path to the source file containing the comment.</summary>
-    FileName: string;
-    /// <summary>Unit name (file name without extension).</summary>
-    UnitName: string;
-    /// <summary>1-based line number of the comment.</summary>
-    Line: Integer;
-    /// <summary>1-based column where the comment starts (matches TToken.Column and IOTAEditView.Center).</summary>
-    Column: Integer;
-    /// <summary>Matched category keyword (e.g. TODO, FIXME, HACK, BUG, NOTE, XXX).</summary>
-    Category: string;      // TODO, FIXME, HACK, BUG, NOTE, XXX
-    /// <summary>Parsed priority text: High, Normal or Low (defaults to Normal).</summary>
-    Priority: string;      // High, Medium, Low
-    /// <summary>Comment body text after the category and optional priority/colon.</summary>
-    Text: string;          // Full comment text
-  end;
-
-  /// <summary>
-  /// Lexer-driven scanner that walks the comment tokens of a Delphi source file and
-  /// extracts items matching the configured pattern list.
-  /// </summary>
-  TTodoScanner = class
-  private
-    /// <summary>Most recently scanned file name, exposed via ProgressFileName for UI feedback.</summary>
-    FProgressFileName: string;
-    /// <summary>Active list of category keywords to recognise.</summary>
-    FPatterns: TStringList;
-    /// <summary>Parses one comment body looking for any configured keyword and optional priority.</summary>
-    /// <param name="CommentText">Text of the comment without delimiters.</param>
-    /// <param name="Category">Receives the matched keyword in its configured case.</param>
-    /// <param name="Priority">Receives the parsed priority (High, Normal or Low).</param>
-    /// <param name="Text">Receives the trimmed remainder of the comment.</param>
-    /// <returns>True if a pattern was recognised; False otherwise.</returns>
-    function ParseTodoComment( const CommentText: string; out Category, Priority, Text: string ): Boolean;
-  public
-    /// <summary>Creates the scanner with the default pattern list (TODO, FIXME, HACK, BUG, NOTE, XXX).</summary>
-    constructor Create;
-    /// <summary>Releases the pattern list.</summary>
-    destructor Destroy; override;
-    /// <summary>Replaces the active patterns from a comma-separated string.</summary>
-    /// <param name="PatternList">Comma-separated list of keywords.</param>
-    procedure SetPatterns( const PatternList: string );
-    /// <summary>Scans a single .pas file and returns matching TODO items.</summary>
-    /// <param name="FileName">Path to a Pascal source file.</param>
-    /// <param name="TodoItems">Receives the matches (empty array on no matches or failure).</param>
-    /// <returns>True if the file was readable and scanning completed.</returns>
-    function ScanFile( const FileName: string; out TodoItems: TArray<TTodoItem> ): Boolean;
-    /// <summary>Scans every .pas module in the supplied IDE project, raising OnProgress per file.</summary>
-    /// <param name="Project">IDE project to walk.</param>
-    /// <param name="AllTodoItems">Receives the aggregated matches.</param>
-    /// <param name="OnProgress">Optional callback invoked before each file is scanned.</param>
-    /// <returns>True on success; False if Project is nil.</returns>
-    function ScanProject( const Project: IOTAProject; out AllTodoItems: TArray<TTodoItem>;
-      OnProgress: TNotifyEvent ): Boolean;
-    /// <summary>Name of the file currently being scanned, suitable for status labels.</summary>
-    property ProgressFileName: string read FProgressFileName;
-  end;
-
   /// <summary>
   /// Persistent plugin configuration that owns the menu entry and exposes Enabled/Patterns
   /// as published settings (stored in TodoAggregator.xml).
@@ -99,6 +37,7 @@ type
     /// <summary>Menu item added under the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
     /// <summary>OnClick handler that opens the aggregator window.</summary>
+    /// <param name="Sender">The menu item clicked.</param>
     procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Returns the configuration page shown in the IDE Options dialog.</summary>
@@ -121,6 +60,18 @@ type
   end;
 
 /// <summary>
+/// Collects the tagged comments of every .pas unit of a project, reading each open unit from its
+/// editor buffer and any other from disk.  A file that cannot be opened is skipped.
+/// </summary>
+/// <param name="AScanner">The scanner, with its patterns set.</param>
+/// <param name="AProject">The project to scan; nil gives no items.</param>
+/// <param name="AOnProgress">Called with the scanner before each unit; it may raise
+/// <c>EAbort</c> to stop the scan.</param>
+/// <returns>Every item found, unit by unit.</returns>
+function ScanProjectTodos( AScanner: TTodoScanner; const AProject: IOTAProject;
+  AOnProgress: TNotifyEvent ): TArray<TTodoItem>;
+
+/// <summary>
 /// Creates or destroys the singleton TodoAggregator plugin instance.
 /// </summary>
 /// <param name="Unload">True to shut down, False to start up.</param>
@@ -133,251 +84,52 @@ var
 implementation
 
 uses
-  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, ToolsAPIHelpers, AppConsts, IdeUnitSource,
   FrmTodoAggregator, FrmeOptionPageTodoAggregator;
 
-{ TTodoScanner }
-
-constructor TTodoScanner.Create;
-begin
-
-  inherited Create;
-  FPatterns                := TStringList.Create;
-  FPatterns.CaseSensitive  := False;
-  FPatterns.Duplicates     := dupIgnore;
-  // Default patterns
-  FPatterns.Add( 'TODO' );
-  FPatterns.Add( 'FIXME' );
-  FPatterns.Add( 'HACK' );
-  FPatterns.Add( 'BUG' );
-  FPatterns.Add( 'NOTE' );
-  FPatterns.Add( 'XXX' );
-
-end;
-
-destructor TTodoScanner.Destroy;
-begin
-
-  FPatterns.Free;
-  inherited Destroy;
-
-end;
-
-procedure TTodoScanner.SetPatterns( const PatternList: string );
+function ScanProjectTodos( AScanner: TTodoScanner; const AProject: IOTAProject;
+  AOnProgress: TNotifyEvent ): TArray<TTodoItem>;
 var
-  I: Integer;
-  SL: TStringList;
-begin
-
-  FPatterns.Clear;
-  SL := TStringList.Create;
-
-  try
-    SL.Delimiter       := ',';
-    SL.StrictDelimiter := True;
-    SL.DelimitedText   := PatternList;
-
-    for I := 0 to SL.Count - 1 do
-    begin
-      if Trim( SL[ I ] ) <> '' then
-        FPatterns.Add( Trim( SL[ I ] ) );
-    end;
-  finally
-    SL.Free;
-  end;
-
-end;
-
-function TTodoScanner.ParseTodoComment( const CommentText: string;
-  out Category, Priority, Text: string ): Boolean;
-var
-  I, J: Integer;
-  Pattern: string;
-  UpperComment: string;
-  PatternPos: Integer;
-  PriorityStart, PriorityEnd: Integer;
-  PriorityText: string;
-begin
-
-  Result       := False;
-  Category     := '';
-  Priority     := 'Normal';
-  Text         := '';
-  UpperComment := UpperCase( CommentText );
-
-  // Search for any of the configured patterns
-  for I := 0 to FPatterns.Count - 1 do
-  begin
-    Pattern    := UpperCase( FPatterns[ I ] );
-    PatternPos := Pos( Pattern, UpperComment );
-
-    if PatternPos > 0 then
-    begin
-      // Found a match - verify it's a word boundary (not part of another word)
-      if ( PatternPos > 1 ) and CharInSet( CommentText[ PatternPos - 1 ], [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] ) then
-        Continue;
-
-      if ( PatternPos + Length( Pattern ) <= Length( CommentText ) ) and
-         CharInSet( CommentText[ PatternPos + Length( Pattern ) ], [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] ) then
-        Continue;
-
-      Category := FPatterns[ I ];  // Use original case from patterns
-
-      // Check for priority in parentheses: TODO(high): or FIXME(low):
-      J := PatternPos + Length( Pattern );
-
-      if ( J <= Length( CommentText ) ) and ( CommentText[ J ] = '(' ) then
-      begin
-        PriorityStart := J + 1;
-        PriorityEnd   := PriorityStart;
-
-        while ( PriorityEnd <= Length( CommentText ) ) and ( CommentText[ PriorityEnd ] <> ')' ) do
-          Inc( PriorityEnd );
-
-        if PriorityEnd <= Length( CommentText ) then
-        begin
-          PriorityText := Trim( Copy( CommentText, PriorityStart, PriorityEnd - PriorityStart ) );
-
-          if SameText( PriorityText, 'high' ) or SameText( PriorityText, '!' ) or SameText( PriorityText, '1' ) then
-            Priority := 'High'
-          else if SameText( PriorityText, 'low' ) or SameText( PriorityText, '3' ) then
-            Priority := 'Low'
-          else if SameText( PriorityText, 'medium' ) or SameText( PriorityText, 'normal' ) or SameText( PriorityText, '2' ) then
-            Priority := 'Normal';
-
-          J := PriorityEnd + 1;
-        end;
-      end;
-
-      // Skip colon and whitespace after category/priority
-      while ( J <= Length( CommentText ) ) and ( CharInSet( CommentText[ J ], [ ':', ' ', #9 ] ) ) do
-        Inc( J );
-
-      Text   := Trim( Copy( CommentText, J, MaxInt ) );
-      Result := True;
-      Exit;
-    end;
-  end;
-
-end;
-
-function TTodoScanner.ScanFile( const FileName: string;
-  out TodoItems: TArray<TTodoItem> ): Boolean;
-var
-  Content: UTF8String;
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  CommentBody: string;
-  TodoList: TList<TTodoItem>;
-  TodoItem: TTodoItem;
-  Category, Priority, Text: string;
-  UnitName: string;
-begin
-
-  Result := False;
-  SetLength( TodoItems, 0 );
-
-  if not FileExists( FileName ) then
-    Exit;
-
-  try
-    Content := LoadTextFileToUtf8String( FileName );
-  except
-    on E: Exception do
-    begin
-      // Skip this file but record why rather than swallowing silently.
-      OutputDebugString( PChar( 'DDevExtensions TodoAggregator: ' + FileName + ' - ' + E.Message ) );
-      Exit;
-    end;
-  end;
-
-  UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
-  TodoList := TList<TTodoItem>.Create;
-
-  try
-    Lexer := TDelphiLexer.Create( FileName, Content );
-
-    try
-      while Lexer.NextToken( Token ) do
-      begin
-        if Token.Kind = tkComment then
-        begin
-          CommentBody := Token.GetCommentBody;
-
-          if ParseTodoComment( CommentBody, Category, Priority, Text ) then
-          begin
-            TodoItem.FileName := FileName;
-            TodoItem.UnitName := UnitName;
-            TodoItem.Line     := Token.Line + 1;  // Token.Line is 0-based
-            TodoItem.Column   := Token.Column;
-            TodoItem.Category := Category;
-            TodoItem.Priority := Priority;
-            TodoItem.Text     := Text;
-            TodoList.Add( TodoItem );
-          end;
-        end;
-      end;
-
-      TodoItems := TodoList.ToArray;
-      Result    := True;
-    finally
-      Lexer.Free;
-    end;
-  finally
-    TodoList.Free;
-  end;
-
-end;
-
-function TTodoScanner.ScanProject( const Project: IOTAProject;
-  out AllTodoItems: TArray<TTodoItem>; OnProgress: TNotifyEvent ): Boolean;
-var
-  I: Integer;
-  ModuleInfo: IOTAModuleInfo;
-  FileName: string;
-  TodoItems: TArray<TTodoItem>;
   AllTodos: TList<TTodoItem>;
-  TodoItem: TTodoItem;
+  Content: UTF8String;
 begin
-
-  Result := False;
-  SetLength( AllTodoItems, 0 );
-
-  if Project = nil then
+  Result := nil;
+  if ( AProject = nil ) then
     Exit;
 
   AllTodos := TList<TTodoItem>.Create;
-
   try
-    for I := 0 to Project.GetModuleCount - 1 do
+    { The file list is taken once: the progress callback pumps messages, and the project can change
+      or close meanwhile - after each pump the scan stops if it is no longer the active project. }
+    var Identity := ProjectIdentity( AProject );
+    for var sFileName in ProjectPascalFiles( AProject ) do
     begin
-      ModuleInfo := Project.GetModule( I );
-      FileName   := ModuleInfo.FileName;
-
-      if SameText( ExtractFileExt( FileName ), '.pas' ) then
+      AScanner.ProgressFileName := ExtractFileName( sFileName );
+      if Assigned( AOnProgress ) then
       begin
+        AOnProgress( AScanner );
+        CheckProjectUnchanged( Identity );
+      end;
 
-        if Assigned( OnProgress ) then
+      { Open units are read from the editor, so unsaved TODOs count and lines match the buffer. }
+      try
+        if ( not ReadUnitSource( sFileName, Content ) ) then
+          Continue;
+      except
+        { A locked or vanished file is skipped; the rest of the project is still scanned. }
+        on E: EFOpenError do
         begin
-          FProgressFileName := ExtractFileName( FileName );
-          OnProgress( Self );
-        end;
-
-        if ScanFile( FileName, TodoItems ) then
-        begin
-
-          for TodoItem in TodoItems do
-            AllTodos.Add( TodoItem );
+          OutputDebugString( PChar( 'DDevExtensions TodoAggregator: ' + sFileName + ' - ' + E.Message ) );
+          Continue;
         end;
       end;
-    end;
 
-    AllTodoItems := AllTodos.ToArray;
-    Result       := True;
+      AllTodos.AddRange( AScanner.ScanSource( Content, sFileName ) );
+    end;
+    Result := AllTodos.ToArray;
   finally
     AllTodos.Free;
   end;
-
 end;
 
 { TTodoAggregatorPlugin }
@@ -442,8 +194,10 @@ begin
     TodoAggregatorPlugin := TTodoAggregatorPlugin.Create
   else
   begin
-    TodoAggregatorPlugin.Free;
-    TodoAggregatorPlugin := nil;
+    { Close the form first: it is modeless and owned by the IDE's Application, so it would
+      otherwise outlive the code that implements it. }
+    TFormTodoAggregator.CloseInstance;
+    FreeAndNil( TodoAggregatorPlugin );
   end;
 
 end;

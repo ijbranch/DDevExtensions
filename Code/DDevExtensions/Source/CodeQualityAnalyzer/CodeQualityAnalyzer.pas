@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -123,9 +123,11 @@ type
     FMemoryLeakIgnorePatterns: string;
 
     /// <summary>Menu OnClick handler that launches the analyser form.</summary>
+    /// <param name="Sender">The menu item clicked.</param>
     procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Returns the option page representing this plugin in the IDE options dialog.</summary>
+    /// <returns>A new page for the options dialog, which owns it.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
@@ -147,8 +149,10 @@ type
       Plugin: TCodeQualityAnalyzerPlugin ): TArray<TCodeQualityIssue>;
 
     /// <summary>Splits <see cref="MagicNumberWhitelist"/> into its individual values.</summary>
+    /// <returns>The comma-separated values, each trimmed.</returns>
     function GetMagicNumberWhitelistArray: TArray<string>;
     /// <summary>Splits <see cref="MemoryLeakIgnorePatterns"/> into its individual values.</summary>
+    /// <returns>The comma-separated patterns, each trimmed.</returns>
     function GetMemoryLeakIgnorePatternsArray: TArray<string>;
   published
     /// <summary>Persisted master enable flag.</summary>
@@ -193,8 +197,12 @@ var
   CodeQualityAnalyzerPlugin: TCodeQualityAnalyzerPlugin;
 
 /// <summary>Returns a human-readable label for the supplied <paramref name="Category"/>.</summary>
+/// <param name="Category">The category to name.</param>
+/// <returns>The label shown in the results list and the category filter.</returns>
 function IssueCategoryToString( Category: TIssueCategory ): string;
 /// <summary>Returns a human-readable label for the supplied <paramref name="Severity"/>.</summary>
+/// <param name="Severity">The severity to name.</param>
+/// <returns>The label shown in the results list and the severity filter.</returns>
 function IssueSeverityToString( Severity: TIssueSeverity ): string;
 
 /// <summary>
@@ -240,7 +248,12 @@ begin
   if not Unload then
     CodeQualityAnalyzerPlugin := TCodeQualityAnalyzerPlugin.Create
   else
+  begin
+    { Close the form first: it is modeless and owned by the IDE's Application, so it would
+      otherwise outlive the code that implements it. }
+    TFormCodeQualityAnalyzer.CloseInstance;
     FreeAndNil( CodeQualityAnalyzerPlugin );
+  end;
 end;
 
 { TCodeQualityAnalyzerPlugin }

@@ -62,6 +62,15 @@ object FormCodeQualityAnalyzer: TFormCodeQualityAnalyzer
       TabOrder = 0
       OnClick = btnScanClick
     end
+    object btnCancelScan: TBitBtn
+      Left = 8
+      Top = 8
+      Width = 100
+      Height = 25
+      Caption = '&Cancel Scan'
+      Visible = False
+      OnClick = btnCancelScanClick
+    end
     object cboCategory: TComboBox
       Left = 455
       Top = 10
@@ -197,6 +206,7 @@ object FormCodeQualityAnalyzer: TFormCodeQualityAnalyzer
     DefaultExt = 'csv'
     Filter = 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*'
     Title = 'Export to CSV'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Left = 408
     Top = 200
   end

@@ -53,6 +53,15 @@ inherited FormTodoAggregator: TFormTodoAggregator
       TabOrder = 0
       OnClick = btnScanClick
     end
+    object btnCancelScan: TBitBtn
+      Left = 8
+      Top = 8
+      Width = 90
+      Height = 25
+      Caption = '&Cancel Scan'
+      Visible = False
+      OnClick = btnCancelScanClick
+    end
     object cboCategory: TComboBox
       Left = 382
       Top = 10

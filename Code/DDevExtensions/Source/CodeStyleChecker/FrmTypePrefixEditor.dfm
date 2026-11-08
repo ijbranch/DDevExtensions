@@ -21,7 +21,7 @@ object FormTypePrefixEditor: TFormTypePrefixEditor
     Height = 26
     Caption = 
       'Enter one rule per line in the format: Type=Prefix'#13#10'Example: Str' +
-      'ing=s, Integer=i, Boolean=l'
+      'ing=s, Integer=i, Boolean=l.  Start a line with # to switch the rule off.'
   end
   object lblWarning: TLabel
     Left = 16

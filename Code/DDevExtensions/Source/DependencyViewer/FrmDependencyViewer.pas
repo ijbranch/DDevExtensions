@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -22,8 +22,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
-  System.Generics.Defaults, System.Math, FrmBase, DependencyViewer, ToolsAPI;
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
+  System.Generics.Defaults, System.Math, FrmBase, DependencyViewer, DependencyViewerCore, ToolsAPI;
 
 type
   /// <summary>Direction in which the tree displays dependencies: outgoing (vmUses) or incoming (vmUsedBy).</summary>
@@ -42,6 +42,8 @@ type
     btnClose: TButton;
     /// <summary>Scans the active IDE project.</summary>
     btnScanProject: TButton;
+    /// <summary>Stops a running scan or Graphviz render; shown only while one runs.</summary>
+    btnCancelScan: TBitBtn;
     /// <summary>Tree of units and their dependencies (or dependents) for the chosen view mode.</summary>
     TreeView: TTreeView;
     /// <summary>Splitter between the tree and the right-hand details panel.</summary>
@@ -93,40 +95,69 @@ type
     /// <summary>Save dialog used by the DOT/Graphviz export.</summary>
     SaveDialogGraph: TSaveDialog;
     /// <summary>Closes the form.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>Scans the active project and populates the views.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnScanProjectClick( Sender: TObject );
+    /// <summary>Asks the running scan or render to stop.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    procedure btnCancelScanClick( Sender: TObject );
     /// <summary>Releases the singleton form instance and frees the form on close.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Action">Set to caNone while a scan runs, which keeps the form open; otherwise caFree.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Lazily populates a node's children when the user expands it.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Node">The node about to expand; its placeholder child is replaced by the real ones.</param>
+    /// <param name="AllowExpansion">Left True: the node may always expand.</param>
     procedure TreeViewExpanding( Sender: TObject; Node: TTreeNode;
       var AllowExpansion: Boolean );
     /// <summary>Highlights the cycle members for the selected circular reference.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListBoxCircularClick( Sender: TObject );
     /// <summary>Opens the source file of the first unit in the selected circular reference.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListBoxCircularDblClick( Sender: TObject );
     /// <summary>Exports the detected circular references to a chosen file.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportCircularClick( Sender: TObject );
     /// <summary>Form OnCreate handler: initialises owned resources.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Form OnDestroy handler: releases owned resources.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Updates view-mode and depth-display flags then re-populates the tree.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ViewModeChanged( Sender: TObject );
     /// <summary>Custom-draws cycle-member nodes with a highlight background and bold red text.</summary>
+    /// <param name="Sender">The tree view.</param>
+    /// <param name="Node">The node being painted.</param>
+    /// <param name="State">The node's draw state; a selected node keeps the selection colours.</param>
+    /// <param name="Stage">The paint stage; only cdPrePaint is handled.</param>
+    /// <param name="PaintImages">Set True: the node images are painted as usual.</param>
+    /// <param name="DefaultDraw">Set True: the tree still draws the node text, in the colours set here.</param>
     procedure TreeViewAdvancedCustomDrawItem( Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: Boolean );
     /// <summary>Updates the impact summary panel for the newly selected node.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Node">The newly selected node, or nil.</param>
     procedure TreeViewChange( Sender: TObject; Node: TTreeNode );
     /// <summary>Opens the layer configuration dialog and re-checks violations.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnLayersClick( Sender: TObject );
     /// <summary>Detects layer violations using the current configuration and displays them.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnCheckLayersClick( Sender: TObject );
     /// <summary>Exports the layer violations to a chosen file.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportViolationsClick( Sender: TObject );
     /// <summary>Opens the source file of the source unit of the double-clicked violation.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListBoxViolationsDblClick( Sender: TObject );
     /// <summary>Exports the dependency graph to DOT and renders it via Graphviz when available.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportGraphClick( Sender: TObject );
   private
     /// <summary>Scanner that holds the current project's dependency graph.</summary>
@@ -143,8 +174,24 @@ type
     FHighlightedUnits: TStringList;
     /// <summary>All units that participate in any detected cycle (used to mark "(!)" in captions).</summary>
     FUnitsInAnyCycle: TStringList;
-    /// <summary>True while a scan is running; guards against re-entrant scan / close (ScannerProgress pumps messages).</summary>
+    /// <summary>True while a scan or a Graphviz render runs; guards against a second scan and vetoes closing the form,
+    /// since both pump messages ( ScanProgress, RenderDot ).</summary>
     FScanning: Boolean;
+    /// <summary>Set by Cancel; the running scan or render stops.</summary>
+    FCancelRequested: Boolean;
+    /// <summary>Empties every view that holds pointers into the scanner's units, before they are freed.</summary>
+    procedure ClearResults;
+    /// <summary>Shows Cancel in place of Scan Project while a scan or render runs, and back.</summary>
+    /// <param name="ABusy">True while the work runs.</param>
+    /// <param name="ACancelCaption">Caption of the Cancel button while it is shown.</param>
+    procedure SetBusy( ABusy: Boolean; const ACancelCaption: string );
+    /// <summary>Runs Graphviz on a DOT file, pumping messages so the IDE stays responsive.</summary>
+    /// <param name="ADotExe">Path of dot.exe.</param>
+    /// <param name="ADotFile">The DOT file to render.</param>
+    /// <param name="APngFile">The PNG file to write.</param>
+    /// <param name="AMessage">Receives why rendering did not succeed; empty on success.</param>
+    /// <returns>True when dot.exe finished with exit code 0.</returns>
+    function RenderDot( const ADotExe, ADotFile, APngFile: string; out AMessage: string ): Boolean;
     /// <summary>Builds the top-level tree and adds dummy children for lazy expansion.</summary>
     procedure PopulateTree;
     /// <summary>Populates the circular-references list box and updates its header colour.</summary>
@@ -154,40 +201,60 @@ type
     /// <summary>Auto-sizes the tree panel based on the longest top-level node caption.</summary>
     procedure AutoSizeTreePanel;
     /// <summary>Adds outgoing-dependency child nodes for a unit (vmUses mode).</summary>
+    /// <param name="ParentNode">The node the children are added under.</param>
+    /// <param name="UnitInfo">The unit whose dependencies are listed.</param>
     procedure AddDependencyNodes( ParentNode: TTreeNode; UnitInfo: TUnitInfo );
     /// <summary>Adds reverse-dependency child nodes for a unit (vmUsedBy mode).</summary>
+    /// <param name="ParentNode">The node the children are added under.</param>
+    /// <param name="UnitName">The unit whose dependents are listed.</param>
     procedure AddReverseDependencyNodes( ParentNode: TTreeNode; const UnitName: string );
-    /// <summary>Scanner OnProgress handler that updates the progress label.</summary>
-    procedure ScannerProgress( Sender: TObject );
+    /// <summary>Scan progress: shows the unit, pumps messages and stops on Cancel or IDE close.</summary>
+    /// <param name="AUnitName">The unit about to be read.</param>
+    /// <exception cref="EAbort">Raised to stop the scan.</exception>
+    procedure ScanProgress( const AUnitName: string );
     /// <summary>Formats a tree node caption with optional cycle marker and depth indicator.</summary>
+    /// <param name="UnitName">The unit name, without path or extension.</param>
+    /// <param name="Depth">The unit's dependency depth, shown as "[n]" when depth display is on.</param>
+    /// <returns>The caption, with "(!) " in front for a unit in a circular reference.</returns>
     function FormatNodeCaption( const UnitName: string; Depth: Integer ): string;
     /// <summary>Highlights all units that participate in the supplied circular reference.</summary>
+    /// <param name="CircRef">The circular reference whose group members are highlighted.</param>
     procedure HighlightCycleMembers( const CircRef: TCircularReference );
     /// <summary>Removes any cycle highlight markers from the tree.</summary>
     procedure ClearHighlights;
     /// <summary>Opens the source file for the named unit in the IDE editor.</summary>
+    /// <param name="UnitName">The unit to open; a unit outside the scanned project is ignored.</param>
     procedure OpenUnitFile( const UnitName: string );
     /// <summary>Recalculates and displays the impact summary for the selected unit.</summary>
+    /// <param name="UnitName">The unit whose dependents are counted.</param>
     procedure UpdateImpactSummary( const UnitName: string );
     /// <summary>Resets the impact summary panel to its empty state.</summary>
     procedure ClearImpactSummary;
     /// <summary>Writes the circular references to a CSV file.</summary>
+    /// <param name="FileName">The file to write.</param>
     procedure ExportCircularRefsToCSV( const FileName: string );
     /// <summary>Writes the circular references to a human-readable text file.</summary>
+    /// <param name="FileName">The file to write.</param>
     procedure ExportCircularRefsToTXT( const FileName: string );
     /// <summary>Populates the layer violations list and updates its header.</summary>
     procedure PopulateLayerViolations;
     /// <summary>Writes layer violations to a CSV file.</summary>
+    /// <param name="FileName">The file to write.</param>
     procedure ExportViolationsToCSV( const FileName: string );
     /// <summary>Writes layer violations to a human-readable text file.</summary>
+    /// <param name="FileName">The file to write.</param>
     procedure ExportViolationsToTXT( const FileName: string );
     /// <summary>Writes the dependency graph as a Graphviz DOT file (with a legend).</summary>
+    /// <param name="FileName">The file to write.</param>
     procedure ExportToDOT( const FileName: string );
     /// <summary>Locates the Graphviz dot.exe executable, returning an empty string if not found.</summary>
+    /// <returns>The full path of dot.exe; empty when it is not found.</returns>
     function FindGraphvizDot: string;
   public
     /// <summary>Shows or focuses the singleton viewer form.</summary>
     class procedure Execute;
+    /// <summary>Frees the singleton form, if open, so it cannot outlive the plugin on unload.</summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -199,7 +266,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers, Main, FrmLayerConfig, Winapi.ShellAPI;
+  System.IOUtils, ToolsAPIHelpers, Main, FrmLayerConfig, Winapi.ShellAPI, IdeUnitSource;
 
 class procedure TFormDependencyViewer.Execute;
 begin
@@ -216,6 +283,55 @@ begin
 
   FormInstance := TFormDependencyViewer.Create( Application );
   FormInstance.Show;
+
+end;
+
+class procedure TFormDependencyViewer.CloseInstance;
+begin
+
+  if ( FormInstance <> nil ) then
+    FreeAndNil( FormInstance );
+
+end;
+
+procedure TFormDependencyViewer.btnCancelScanClick( Sender: TObject );
+begin
+
+  FCancelRequested := True;
+
+end;
+
+procedure TFormDependencyViewer.SetBusy( ABusy: Boolean; const ACancelCaption: string );
+begin
+
+  FScanning                := ABusy;
+  btnCancelScan.Caption    := ACancelCaption;
+  btnCancelScan.Visible    := ABusy;
+  btnScanProject.Visible   := not ABusy;
+  btnExportGraph.Enabled   := not ABusy;
+  btnCheckLayers.Enabled   := not ABusy;
+  btnLayers.Enabled        := not ABusy;
+  if ABusy then
+    Screen.Cursor := crHourGlass
+  else
+    Screen.Cursor := crDefault;
+
+end;
+
+procedure TFormDependencyViewer.ClearResults;
+begin
+
+  // The tree nodes, highlights and impact panel point into TUnitInfo objects the next scan frees;
+  // a message pumped during that scan must find nothing left to paint, click or expand.
+  TreeView.Items.Clear;
+  FHighlightedUnits.Clear;
+  FUnitsInAnyCycle.Clear;
+  ListBoxCircular.Items.Clear;
+  lblCircularRefs.Caption := 'Circular References:';
+  ClearImpactSummary;
+  FLayerViolations := nil;
+  ListBoxViolations.Items.Clear;
+  lblLayerViolations.Caption := 'Layer Violations: (run Check Layers)';
 
 end;
 
@@ -239,7 +355,6 @@ procedure TFormDependencyViewer.FormCreate( Sender: TObject );
 begin
 
   FScanner            := TDependencyScanner.Create;
-  FScanner.OnProgress := ScannerProgress;
   FLayerConfig        := TLayerConfig.Create( AppDataDirectory + '\LayerConfig.txt' );
   FLayerConfig.LoadFromFile;
   FViewMode           := vmUses;
@@ -270,11 +385,15 @@ begin
 
 end;
 
-procedure TFormDependencyViewer.ScannerProgress( Sender: TObject );
+procedure TFormDependencyViewer.ScanProgress( const AUnitName: string );
 begin
 
-  lblProgress.Caption := 'Scanning: ' + FScanner.ProgressUnit;
+  lblProgress.Caption := 'Scanning: ' + AUnitName;
   Application.ProcessMessages;
+
+  // Stop on Cancel Scan, and when the IDE is closing: the pump above swallowed its WM_QUIT.
+  if FCancelRequested or Application.Terminated then
+    Abort;
 
 end;
 
@@ -304,16 +423,31 @@ begin
     Exit;
   end;
 
-  Screen.Cursor := crHourGlass;
-  FScanning     := True;
+  FCancelRequested := False;
+  SetBusy( True, '&Cancel Scan' );
 
   try
+    ClearResults;
     lblProgress.Caption := 'Scanning project...';
     lblProgress.Visible := True;
     Application.ProcessMessages;
 
-    FScanner.RespectConditionals := DependencyViewerPlugin.RespectConditionals;
-    FScanner.ScanProject( Project );
+    if ( DependencyViewerPlugin <> nil ) then
+      FScanner.RespectConditionals := DependencyViewerPlugin.RespectConditionals;
+    try
+      ScanDependencyProject( FScanner, Project,
+        procedure( AUnitName: string )
+        begin
+          ScanProgress( AUnitName );
+        end );
+    except
+      on EAbort do
+      begin
+        FScanner.Clear;
+        lblProgress.Caption := 'Scan cancelled.';
+        Exit;
+      end;
+    end;
     BuildUnitsInAnyCycleList;
     PopulateTree;
     AutoSizeTreePanel;
@@ -321,8 +455,7 @@ begin
 
     lblProgress.Caption := Format( 'Scanned %d units.', [ Length( FScanner.GetAllUnits ) ] );
   finally
-    FScanning     := False;
-    Screen.Cursor := crDefault;
+    SetBusy( False, '' );
   end;
 
 end;
@@ -388,12 +521,10 @@ begin
 
   FUnitsInAnyCycle.Clear;
 
+  // Every member of every entangled group, not only those on its representative cycle.
   for CircRef in FScanner.CircularReferences do
-  begin
-    // Add all units in this cycle (except the last which duplicates the first)
-    for I := 0 to High( CircRef.Steps ) - 1 do
-      FUnitsInAnyCycle.Add( CircRef.Steps[ I ].UnitName );
-  end;
+    for I := 0 to High( CircRef.Members ) do
+      FUnitsInAnyCycle.Add( CircRef.Members[ I ] );
 
 end;
 
@@ -462,6 +593,10 @@ begin
 
         S := S + CircRef.Steps[ I ].UnitName;
       end;
+
+      // The chain is the shortest cycle through the group; say when the group is larger.
+      if ( Length( CircRef.Members ) > Max( 0, Length( CircRef.Steps ) - 1 ) ) then
+        S := S + Format( '   (group of %d units)', [ Length( CircRef.Members ) ] );
 
       ListBoxCircular.Items.Add( S );
     end;
@@ -679,9 +814,13 @@ begin
 
   FShowDepth := chkShowDepth.Checked;
 
-  // Re-scan project if we have previously scanned
-  if Length( FScanner.GetAllUnits ) > 0 then
-    btnScanProjectClick( Sender );
+  // The scan result does not depend on the view: redraw the tree, do not read the project again.
+  if ( not FScanning ) and ( Length( FScanner.GetAllUnits ) > 0 ) then
+  begin
+    ClearHighlights;
+    PopulateTree;
+    AutoSizeTreePanel;
+  end;
 
 end;
 
@@ -695,9 +834,9 @@ begin
 
   FHighlightedUnits.Clear;
 
-  // Don't include the last step as it's the same as the first (closing the cycle)
-  for I := 0 to High( CircRef.Steps ) - 1 do
-    FHighlightedUnits.Add( CircRef.Steps[ I ].UnitName );
+  // Every member of the group, including any not on its representative cycle.
+  for I := 0 to High( CircRef.Members ) do
+    FHighlightedUnits.Add( CircRef.Members[ I ] );
 
   // Highlighting is rendered by TreeViewAdvancedCustomDrawItem from
   // FHighlightedUnits. Do NOT mutate Node.Text with '>>>'/'<<<' markers - that
@@ -779,10 +918,6 @@ end;
 procedure TFormDependencyViewer.OpenUnitFile( const UnitName: string );
 var
   UnitInfo: TUnitInfo;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I: Integer;
 begin
 
   UnitInfo := FScanner.GetUnitInfo( UnitName );
@@ -790,27 +925,7 @@ begin
   if ( UnitInfo = nil ) or ( UnitInfo.FileName = '' ) then
     Exit;
 
-  if not FileExists( UnitInfo.FileName ) then
-    Exit;
-
-  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-  begin
-    Module := ModuleServices.OpenModule( UnitInfo.FileName );
-
-    if Module <> nil then
-    begin
-
-      for I := 0 to Module.ModuleFileCount - 1 do
-      begin
-
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-          Break;
-        end;
-      end;
-    end;
-  end;
+  OpenFileAtLine( UnitInfo.FileName, 0, 1 );
 
 end;
 
@@ -929,7 +1044,7 @@ begin
     // (Steps closes back on the first unit, so distinct units = Length - 1),
     // matching the count reported by the TXT export and avoiding two exports
     // disagreeing on the same data.
-    Line := 'Index,UnitCount';
+    Line := 'Index,GroupUnitCount';
 
     for I := 1 to MaxSteps do
       Line := Line + Format( ',Unit%d,UsesType%d', [ I, I ] );
@@ -942,7 +1057,7 @@ begin
     for CircRef in FScanner.CircularReferences do
     begin
       Inc( StepCount );
-      Line := Format( '%d,%d', [ StepCount, Max( 0, Length( CircRef.Steps ) - 1 ) ] );
+      Line := Format( '%d,%d', [ StepCount, Length( CircRef.Members ) ] );
 
       for I := 0 to High( CircRef.Steps ) do
       begin
@@ -963,7 +1078,7 @@ begin
       SL.Add( Line );
     end;
 
-    SL.SaveToFile( FileName );
+    SL.SaveToFile( FileName, TEncoding.UTF8 );
   finally
     SL.Free;
   end;
@@ -992,8 +1107,9 @@ begin
     for CircRef in FScanner.CircularReferences do
     begin
       Inc( RefNum );
-      SL.Add( Format( '--- Circular Reference #%d (%d units) ---', [ RefNum, Max( 0, Length( CircRef.Steps ) - 1 ) ] ) );
+      SL.Add( Format( '--- Circular Reference #%d (%d units) ---', [ RefNum, Length( CircRef.Members ) ] ) );
       SL.Add( '' );
+      SL.Add( '  Group: ' + string.Join( ', ', CircRef.Members ) );
 
       // Build the chain representation
       Line := '';
@@ -1036,7 +1152,7 @@ begin
       SL.Add( '' );
     end;
 
-    SL.SaveToFile( FileName );
+    SL.SaveToFile( FileName, TEncoding.UTF8 );
   finally
     SL.Free;
   end;
@@ -1171,17 +1287,10 @@ end;
 
 procedure TFormDependencyViewer.btnExportGraphClick( Sender: TObject );
 var
-  Units: TArray<TUnitInfo>;
-  DotExe, PngFile: string;
-  ExitCode: DWORD;
-  SI: TStartupInfo;
-  PI: TProcessInformation;
-  CmdLine: string;
+  DotExe, PngFile, sMessage: string;
 begin
 
-  Units := FScanner.GetAllUnits;
-
-  if Length( Units ) = 0 then
+  if ( Length( FScanner.GetAllUnits ) = 0 ) then
   begin
     ShowMessage( 'No scan results to export. Please scan a project first.' );
     Exit;
@@ -1189,49 +1298,107 @@ begin
 
   DotExe := FindGraphvizDot;
 
-  if DotExe = '' then
+  if ( DotExe = '' ) then
   begin
     ShowMessage( 'Graphviz dot.exe not found.' );
     Exit;
   end;
 
-  if SaveDialogGraph.Execute then
-  begin
+  if ( not SaveDialogGraph.Execute ) then
+    Exit;
+
+  // The dialog asked about the .dot; the .png beside it is overwritten too, so ask about that.
+  PngFile := ChangeFileExt( SaveDialogGraph.FileName, '.png' );
+  if FileExists( PngFile ) and ( MessageDlg( Format( '%s already exists.'#13#10'Replace it?', [ PngFile ] ),
+    mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
+    Exit;
+
+  try
     ExportToDOT( SaveDialogGraph.FileName );
-
-    PngFile := ChangeFileExt( SaveDialogGraph.FileName, '.png' );
-    CmdLine := '"' + DotExe + '" -Tpng "' + SaveDialogGraph.FileName + '" -o "' + PngFile + '"';
-
-    ZeroMemory( @SI, SizeOf( SI ) );
-    SI.cb := SizeOf( SI );
-    SI.dwFlags := STARTF_USESHOWWINDOW;
-    SI.wShowWindow := SW_HIDE;
-    ZeroMemory( @PI, SizeOf( PI ) );
-
-    if CreateProcess( nil, PChar( CmdLine ), nil, nil, False, CREATE_NO_WINDOW, nil, nil, SI, PI ) then
+  except
+    on E: EFCreateError do
     begin
+      ShowMessage( 'Could not write file:'#13#10 + E.Message );
+      Exit;
+    end;
+    on E: EInOutError do
+    begin
+      ShowMessage( 'Could not write file:'#13#10 + E.Message );
+      Exit;
+    end;
+  end;
 
-      try
-        WaitForSingleObject( PI.hProcess, 30000 );
-        GetExitCodeProcess( PI.hProcess, ExitCode );
-      finally
-        CloseHandle( PI.hProcess );
-        CloseHandle( PI.hThread );
-      end;
+  if RenderDot( DotExe, SaveDialogGraph.FileName, PngFile, sMessage ) then
+  begin
+    ShellExecute( 0, 'open', PChar( PngFile ), nil, nil, SW_SHOWNORMAL );
+    ShowMessage( Format( 'Exported dependency graph to:%s%s%s%s',
+      [ sLineBreak, SaveDialogGraph.FileName, sLineBreak, PngFile ] ) );
+  end
+  else
+    ShowMessage( Format( 'DOT file saved to %s, but %s', [ SaveDialogGraph.FileName, sMessage ] ) );
 
-      if ( ExitCode = 0 ) and FileExists( PngFile ) then
+end;
+
+function TFormDependencyViewer.RenderDot( const ADotExe, ADotFile, APngFile: string; out AMessage: string ): Boolean;
+const
+  /// <summary>How long a render may run before it is stopped, in milliseconds.</summary>
+  RENDER_TIMEOUT_MS = 120000;
+var
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  ExitCode: DWORD;
+  CmdLine: string;
+begin
+
+  Result   := False;
+  AMessage := '';
+  CmdLine  := '"' + ADotExe + '" -Tpng "' + ADotFile + '" -o "' + APngFile + '"';
+  UniqueString( CmdLine );  // CreateProcessW may write to the command-line buffer
+
+  ZeroMemory( @SI, SizeOf( SI ) );
+  SI.cb          := SizeOf( SI );
+  SI.dwFlags     := STARTF_USESHOWWINDOW;
+  SI.wShowWindow := SW_HIDE;
+  ZeroMemory( @PI, SizeOf( PI ) );
+
+  if ( not CreateProcess( nil, PChar( CmdLine ), nil, nil, False, CREATE_NO_WINDOW, nil, nil, SI, PI ) ) then
+  begin
+    AMessage := 'Graphviz could not be started: ' + SysErrorMessage( Winapi.Windows.GetLastError );
+    Exit;
+  end;
+
+  FCancelRequested := False;
+  SetBusy( True, '&Cancel Render' );
+  try
+    lblProgress.Caption := 'Rendering the graph with Graphviz...';
+    var iStart := GetTickCount64;
+    // Wait without blocking the IDE: wake for the process or for any message, and pump.
+    while ( MsgWaitForMultipleObjects( 1, PI.hProcess, False, 200, QS_ALLINPUT ) <> WAIT_OBJECT_0 ) do
+    begin
+      Application.ProcessMessages;
+      if FCancelRequested or Application.Terminated or ( GetTickCount64 - iStart > RENDER_TIMEOUT_MS ) then
       begin
-        ShellExecute( 0, 'open', PChar( PngFile ), nil, nil, SW_SHOWNORMAL );
-        ShowMessage( Format( 'Exported dependency graph to:%s%s%s%s',
-          [ sLineBreak, SaveDialogGraph.FileName, sLineBreak, PngFile ] ) );
-      end
-      else
-        ShowMessage( Format( 'DOT file saved to %s but Graphviz rendering failed (exit code %d).',
-          [ SaveDialogGraph.FileName, ExitCode ] ) );
-    end
-    else
-      ShowMessage( Format( 'DOT file saved to %s but failed to launch Graphviz.',
-        [ SaveDialogGraph.FileName ] ) );
+        // Do not leave dot.exe running to write the PNG behind the user's back.
+        TerminateProcess( PI.hProcess, 1 );
+        WaitForSingleObject( PI.hProcess, 5000 );
+        if FCancelRequested or Application.Terminated then
+          AMessage := 'rendering was cancelled.'
+        else
+          AMessage := Format( 'Graphviz did not finish within %d seconds and was stopped.', [ RENDER_TIMEOUT_MS div 1000 ] );
+        Exit;
+      end;
+    end;
+
+    if ( not GetExitCodeProcess( PI.hProcess, ExitCode ) ) then
+      ExitCode := DWORD( -1 );
+    Result := ( ExitCode = 0 ) and FileExists( APngFile );
+    if ( not Result ) then
+      AMessage := Format( 'Graphviz rendering failed (exit code %d).', [ ExitCode ] );
+  finally
+    CloseHandle( PI.hProcess );
+    CloseHandle( PI.hThread );
+    lblProgress.Caption := '';
+    SetBusy( False, '' );
   end;
 
 end;
@@ -1287,6 +1454,17 @@ begin
 
 end;
 
+/// <summary>A unit name as a quoted Graphviz ID: never a DOT keyword, and unique per name.</summary>
+/// <param name="AName">The unit name.</param>
+/// <returns>The name in double quotes, with any backslash or quote escaped.</returns>
+function DotId( const AName: string ): string;
+begin
+
+  Result := '"' + StringReplace( StringReplace( AName, '\', '\\', [ rfReplaceAll ] ), '"', '\"',
+    [ rfReplaceAll ] ) + '"';
+
+end;
+
 procedure TFormDependencyViewer.ExportToDOT( const FileName: string );
 var
   SL: TStringList;
@@ -1311,11 +1489,8 @@ begin
       CycleUnits.Duplicates := dupIgnore;
 
       for CircRef in FScanner.CircularReferences do
-      begin
-
-        for I := 0 to High( CircRef.Steps ) - 1 do
-          CycleUnits.Add( CircRef.Steps[ I ].UnitName );
-      end;
+        for I := 0 to High( CircRef.Members ) do
+          CycleUnits.Add( CircRef.Members[ I ] );
 
       SL.Add( 'digraph Dependencies {' );
       SL.Add( '  rankdir=LR;' );
@@ -1325,10 +1500,11 @@ begin
 
       Units := FScanner.GetAllUnits;
 
-      // Emit nodes
+      // Emit nodes. IDs are quoted: unquoted, a unit named Graph, Node, Edge or Strict is a DOT
+      // keyword, and replacing '.' would make A.B and A_B the same node.
       for UnitInfo in Units do
       begin
-        NodeName := StringReplace( UnitInfo.UnitName, '.', '_', [ rfReplaceAll ] );
+        NodeName := DotId( UnitInfo.UnitName );
 
         // Project units (have a source file) = light green; external/RTL = light blue
         if UnitInfo.FileName <> '' then
@@ -1337,11 +1513,11 @@ begin
           FillColour := 'lightblue';
 
         if CycleUnits.IndexOf( UnitInfo.UnitName ) >= 0 then
-          SL.Add( Format( '  %s [label="%s", fillcolor=%s, color=red, penwidth=2];',
-            [ NodeName, UnitInfo.UnitName, FillColour ] ) )
+          SL.Add( Format( '  %s [label=%s, fillcolor=%s, color=red, penwidth=2];',
+            [ NodeName, NodeName, FillColour ] ) )
         else
-          SL.Add( Format( '  %s [label="%s", fillcolor=%s];',
-            [ NodeName, UnitInfo.UnitName, FillColour ] ) );
+          SL.Add( Format( '  %s [label=%s, fillcolor=%s];',
+            [ NodeName, NodeName, FillColour ] ) );
       end;
 
       SL.Add( '' );
@@ -1349,7 +1525,7 @@ begin
       // Emit edges
       for UnitInfo in Units do
       begin
-        NodeName := StringReplace( UnitInfo.UnitName, '.', '_', [ rfReplaceAll ] );
+        NodeName := DotId( UnitInfo.UnitName );
 
         for Dep in UnitInfo.Dependencies do
         begin
@@ -1369,8 +1545,9 @@ begin
               EdgeColour := 'forestgreen';
             end;
 
+            // The target's ID is its node's: the unit's own spelling, not the uses entry's.
             SL.Add( Format( '  %s -> %s [style=%s, color=%s];',
-              [ NodeName, StringReplace( Dep.UnitName, '.', '_', [ rfReplaceAll ] ),
+              [ NodeName, DotId( FScanner.GetUnitInfo( Dep.UnitName ).UnitName ),
                 EdgeStyle, EdgeColour ] ) );
           end;
         end;
@@ -1393,7 +1570,9 @@ begin
       SL.Add( '  }' );
       SL.Add( '}' );
 
-      SL.SaveToFile( FileName );
+      // UTF-8 without a BOM: Graphviz reads UTF-8 by default and does not expect a BOM.
+      SL.WriteBOM := False;
+      SL.SaveToFile( FileName, TEncoding.UTF8 );
     finally
       CycleUnits.Free;
     end;
@@ -1428,7 +1607,7 @@ begin
           Violation.TargetUnit, Violation.TargetLayer, UsesType ] ) );
     end;
 
-    SL.SaveToFile( FileName );
+    SL.SaveToFile( FileName, TEncoding.UTF8 );
   finally
     SL.Free;
   end;
@@ -1472,7 +1651,7 @@ begin
       SL.Add( '' );
     end;
 
-    SL.SaveToFile( FileName );
+    SL.SaveToFile( FileName, TEncoding.UTF8 );
   finally
     SL.Free;
   end;

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -35,19 +35,25 @@ type
     btnOK: TButton;
     /// <summary>Cancel button — discards changes.</summary>
     btnCancel: TButton;
-    /// <summary>Restores the plugin defaults via <see cref="TCodeStyleCheckerPlugin.InitDefaultTypePrefixRules"/>.</summary>
+    /// <summary>Shows the built-in rules ( <see cref="TCodeStyleCheckerPlugin.DefaultTypePrefixRules"/> );
+    /// they are stored only on OK.</summary>
     btnResetDefaults: TButton;
     /// <summary>OnClick handler for <see cref="btnResetDefaults"/>.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnResetDefaultsClick( Sender: TObject );
     /// <summary>Form creation handler (placeholder used by the form designer).</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>Re-validates the rule list whenever the memo content changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure memRulesChange( Sender: TObject );
   private
     /// <summary>Plugin whose <c>TypePrefixRules</c> the form is editing.</summary>
     FPlugin: TCodeStyleCheckerPlugin;
-    /// <summary>Loads the plugin's rules into the memo.</summary>
-    procedure LoadRules;
+    /// <summary>Shows rules in the memo, one <c>TypePattern=Prefix</c> per line; a disabled rule is
+    /// shown with a leading <c>#</c> so that OK keeps it.</summary>
+    /// <param name="ARules">The rules to show.</param>
+    procedure LoadRules( const ARules: TArray<TTypePrefixRule> );
     /// <summary>Parses the memo content and writes the result back to the plugin.</summary>
     procedure SaveRules;
     /// <summary>Detects rules whose pattern is a prefix of another rule and reports them in <see cref="lblWarning"/>.</summary>
@@ -78,7 +84,7 @@ begin
 
   try
     Form.FPlugin := APlugin;
-    Form.LoadRules;
+    Form.LoadRules( APlugin.TypePrefixRules );
 
     if Form.ShowModal = mrOK then
     begin
@@ -98,19 +104,20 @@ begin
 
 end;
 
-procedure TFormTypePrefixEditor.LoadRules;
+procedure TFormTypePrefixEditor.LoadRules( const ARules: TArray<TTypePrefixRule> );
 var
   I: Integer;
-  Rules: TArray<TTypePrefixRule>;
 begin
 
   memRules.Lines.Clear;
-  Rules := FPlugin.TypePrefixRules;
 
-  for I := 0 to High( Rules ) do
+  for I := 0 to High( ARules ) do
   begin
-    if Rules[ I ].Enabled then
-      memRules.Lines.Add( Rules[ I ].TypePattern + '=' + Rules[ I ].Prefix );
+    // A disabled rule is shown commented out rather than dropped, so OK does not delete it.
+    if ARules[ I ].Enabled then
+      memRules.Lines.Add( ARules[ I ].TypePattern + '=' + ARules[ I ].Prefix )
+    else
+      memRules.Lines.Add( '#' + ARules[ I ].TypePattern + '=' + ARules[ I ].Prefix );
   end;
 
   CheckForConflicts;
@@ -146,6 +153,11 @@ begin
     if Line = '' then
       Continue;
 
+    // "#Pattern=Prefix" is a rule kept but switched off.
+    var bEnabled := not Line.StartsWith( '#' );
+    if ( not bEnabled ) then
+      Line := Trim( Copy( Line, 2, MaxInt ) );
+
     EqPos := Pos( '=', Line );
 
     if EqPos > 0 then
@@ -157,7 +169,7 @@ begin
       begin
         Rules[ Count ].TypePattern := TypePattern;
         Rules[ Count ].Prefix      := Prefix;
-        Rules[ Count ].Enabled     := True;
+        Rules[ Count ].Enabled     := bEnabled;
         Inc( Count );
       end;
     end;
@@ -171,8 +183,8 @@ end;
 procedure TFormTypePrefixEditor.btnResetDefaultsClick( Sender: TObject );
 begin
 
-  FPlugin.InitDefaultTypePrefixRules;
-  LoadRules;
+  // Show the defaults only: the plugin's rules change when OK is pressed, not before.
+  LoadRules( TCodeStyleCheckerPlugin.DefaultTypePrefixRules );
 
 end;
 
@@ -200,7 +212,8 @@ begin
     begin
       Line := Trim( memRules.Lines[ I ] );
 
-      if Line = '' then
+      // A disabled ( "#" ) rule takes no part in matching, so it cannot conflict.
+      if ( Line = '' ) or Line.StartsWith( '#' ) then
         Continue;
 
       EqPos := Pos( '=', Line );

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -82,6 +82,7 @@ type
     FPlugin: TCodeQualityAnalyzerPlugin;
   public
     /// <summary>Standard frame constructor.</summary>
+    /// <param name="AOwner">The component that owns the frame.</param>
     constructor Create( AOwner: TComponent ); override;
 
     /// <summary>Loads control state from <see cref="FPlugin"/>.</summary>
@@ -100,6 +101,17 @@ type
 implementation
 
 {$R *.dfm}
+
+/// <summary>A threshold typed into an edit box, when it is a whole number of at least 1.</summary>
+/// <param name="AText">The text typed.</param>
+/// <param name="ACurrent">The value in force, kept when the text is not a valid threshold.</param>
+/// <returns>The typed value, or <paramref name="ACurrent"/>.</returns>
+function PositiveOr( const AText: string; ACurrent: Integer ): Integer;
+begin
+  // 0 or a negative threshold would report every string or every comment.
+  if ( not TryStrToInt( Trim( AText ), Result ) ) or ( Result < 1 ) then
+    Result := ACurrent;
+end;
 
 { TFrameOptionPageCodeQuality }
 
@@ -164,13 +176,13 @@ begin
 
   // Hardcoded Strings
   FPlugin.CheckHardcodedStrings := chkHardcodedStrings.Checked;
-  FPlugin.MinStringLength := StrToIntDef( edtMinLength.Text, 3 );
+  FPlugin.MinStringLength := PositiveOr( edtMinLength.Text, FPlugin.MinStringLength );
   FPlugin.ExcludeFormatStrings := chkExcludeFormat.Checked;
   FPlugin.ExcludeSQLKeywords := chkExcludeSQL.Checked;
 
   // Commented-Out Code
   FPlugin.CheckCommentedCode := chkCommentedCode.Checked;
-  FPlugin.CommentCodeThreshold := StrToIntDef( edtThreshold.Text, 3 );
+  FPlugin.CommentCodeThreshold := PositiveOr( edtThreshold.Text, FPlugin.CommentCodeThreshold );
 
   // Exception Handling
   FPlugin.CheckEmptyExcept := chkEmptyExcept.Checked;

@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -21,7 +21,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
   FrmBase, CodeQualityAnalyzer, ToolsAPI;
 
 type
@@ -35,6 +35,8 @@ type
     btnClose: TButton;
     /// <summary>Initiates a project-wide scan.</summary>
     btnScan: TButton;
+    /// <summary>Stops a running scan; shown only while one runs.</summary>
+    btnCancelScan: TBitBtn;
     /// <summary>List view displaying issues.</summary>
     ListView: TListView;
     /// <summary>Status text shown while scanning.</summary>
@@ -62,31 +64,55 @@ type
     /// <summary>Label for <see cref="cboSeverity"/>.</summary>
     lblSeverity: TLabel;
     /// <summary>OnClick handler for <see cref="btnClose"/>.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>OnClick handler for <see cref="btnScan"/> — runs a project scan.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Asks the running scan to stop at the next unit.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    procedure btnCancelScanClick( Sender: TObject );
     /// <summary>Initialises sort state and populates the filter combos.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
-    /// <summary>Clears the result set and hides labels when the form closes.</summary>
+    /// <summary>Clears the result set and hides labels when the form closes; refuses to close while
+    /// a scan runs.</summary>
+    /// <param name="Sender">The form.</param>
+    /// <param name="Action">Set to caNone while a scan runs.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Clears the singleton reference when the form is destroyed.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the file referenced by the double-clicked row.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>Context-menu handler that copies issue data to the clipboard.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Context-menu handler that opens the source file at the issue line.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the visible issues to a CSV file.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Cycles the sort direction when a column header is clicked.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Item1">The first item to compare.</param>
+    /// <param name="Item2">The second item to compare.</param>
+    /// <param name="Data">Sort data passed to AlphaSort; not used.</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, with or after
+    /// Item2 in the current sort column and direction.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Re-applies filters when the category combo changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboCategoryChange( Sender: TObject );
     /// <summary>Re-applies filters when the severity combo changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboSeverityChange( Sender: TObject );
   private
     /// <summary>Latest scan results.</summary>
@@ -95,6 +121,10 @@ type
     FSortColumn: Integer;
     /// <summary>Sort direction flag.</summary>
     FSortAscending: Boolean;
+    /// <summary>True while a scan runs; the scan pumps messages, so this vetoes closing the form.</summary>
+    FScanning: Boolean;
+    /// <summary>Set by Cancel Scan; the running scan stops at the next unit.</summary>
+    FCancelRequested: Boolean;
     /// <summary>Rebuilds the list view, delegating to <see cref="ApplyFilters"/>.</summary>
     procedure PopulateList;
     /// <summary>Opens the file/line of the currently selected list item in the IDE.</summary>
@@ -105,6 +135,8 @@ type
     /// <summary>Displays the singleton form, creating it if required.</summary>
     /// <returns><c>True</c> when the form was shown.</returns>
     class function Execute: Boolean;
+    /// <summary>Frees the singleton form, if open, so it cannot outlive the plugin on unload.</summary>
+    class procedure CloseInstance;
   end;
 
 implementation
@@ -112,7 +144,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers;
+  ToolsAPIHelpers, IdeUnitSource;
 
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
@@ -134,6 +166,17 @@ begin
   FormCodeQualityAnalyzerInstance.Show;
   FormCodeQualityAnalyzerInstance.BringToFront;
   Result := True;
+end;
+
+class procedure TFormCodeQualityAnalyzer.CloseInstance;
+begin
+  if ( FormCodeQualityAnalyzerInstance <> nil ) then
+    FreeAndNil( FormCodeQualityAnalyzerInstance );
+end;
+
+procedure TFormCodeQualityAnalyzer.btnCancelScanClick( Sender: TObject );
+begin
+  FCancelRequested := True;
 end;
 
 procedure TFormCodeQualityAnalyzer.FormCreate( Sender: TObject );
@@ -164,6 +207,12 @@ end;
 
 procedure TFormCodeQualityAnalyzer.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
+  // The scan pumps messages: closing now would clear the list under it.
+  if FScanning then
+  begin
+    Action := caNone;
+    Exit;
+  end;
   // Clear results when dialog is closed
   ListView.Items.Clear;
   SetLength( FResults, 0 );
@@ -187,8 +236,6 @@ procedure TFormCodeQualityAnalyzer.btnScanClick( Sender: TObject );
 var
   Project: IOTAProject;
   ModuleInfo: IOTAModuleInfo;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
   I, J: Integer;
   Source: UTF8String;
   UnitResults: TArray<TCodeQualityIssue>;
@@ -215,10 +262,25 @@ begin
 
   ProjectName := ExtractFileName( Project.FileName );
 
+  { The file list and the project's identity are taken now, before the first message pump: the
+    project can change or close while the scan runs. }
+  var Identity := ProjectIdentity( Project );
+  var Files: TArray<string> := nil;
+  for I := 0 to Project.GetModuleCount - 1 do
+  begin
+    ModuleInfo := Project.GetModule( I );
+    if ( ModuleInfo <> nil ) and ( SameText( ExtractFileExt( ModuleInfo.FileName ), '.pas' ) or
+       SameText( ExtractFileExt( ModuleInfo.FileName ), '.pp' ) ) then
+      Files := Files + [ ModuleInfo.FileName ];
+  end;
+
   AllResults := TList<TCodeQualityIssue>.Create;
   try
-    Screen.Cursor := crHourGlass;
-    btnScan.Enabled := False;
+    Screen.Cursor         := crHourGlass;
+    btnScan.Visible       := False;
+    btnCancelScan.Visible := True;
+    FCancelRequested      := False;
+    FScanning             := True;
     try
       lblProgress.Caption := 'Scanning ' + ProjectName + '...';
       lblProgress.Visible := True;
@@ -226,52 +288,33 @@ begin
       Application.ProcessMessages;
 
       SkippedCount := 0;
-      for I := 0 to Project.GetModuleCount - 1 do
+      for var sFile in Files do
       begin
-        ModuleInfo := Project.GetModule( I );
-        if ModuleInfo = nil then
-          Continue;
+        // Stop on Cancel Scan, when the IDE is closing ( the pump swallowed its WM_QUIT ), and when
+        // the scanned project was closed or another made active.
+        if FCancelRequested or Application.Terminated or ( not IsActiveProject( Identity ) ) then
+        begin
+          FResults := nil;
+          PopulateList;
+          lblProgress.Visible := False;
+          lblSummary.Caption  := 'Scan cancelled.';
+          lblSummary.Visible  := True;
+          Exit;
+        end;
 
-        // Only scan Pascal files
-        if not ( SameText( ExtractFileExt( ModuleInfo.FileName ), '.pas' ) or
-                 SameText( ExtractFileExt( ModuleInfo.FileName ), '.pp' ) ) then
-          Continue;
-
-        lblProgress.Caption := 'Scanning: ' + ExtractFileName( ModuleInfo.FileName );
+        lblProgress.Caption := 'Scanning: ' + ExtractFileName( sFile );
         Application.ProcessMessages;
 
         Source := '';
         try
-          // Try to get source from open editor first
-          Module := ModuleInfo.OpenModule;
-          if Module <> nil then
-          begin
-            SourceEditor := nil;
-            for J := 0 to Module.ModuleFileCount - 1 do
-            begin
-              if Supports( Module.ModuleFileEditors[ J ], IOTASourceEditor, SourceEditor ) then
-                Break;
-            end;
-
-            if SourceEditor <> nil then
-              Source := GetEditorSource( SourceEditor );
-          end;
-
-          // If no editor source, try to read from file
-          if ( Source = '' ) and FileExists( ModuleInfo.FileName ) then
-          begin
-            var Sl := TStringList.Create;
-            try
-              Sl.LoadFromFile( ModuleInfo.FileName );
-              Source := UTF8String( Sl.Text );
-            finally
-              Sl.Free;
-            end;
-          end;
+          // The editor buffer of an open unit, otherwise the file on disk ( decoded as the IDE
+          // decodes it ); a scan never opens a module.
+          if ( not ReadUnitSource( sFile, Source ) ) then
+            Source := '';
 
           if Source <> '' then
           begin
-            UnitResults := TCodeQualityAnalyzerPlugin.AnalyzeUnit( Source, ModuleInfo.FileName,
+            UnitResults := TCodeQualityAnalyzerPlugin.AnalyzeUnit( Source, sFile,
               CodeQualityAnalyzerPlugin );
             for J := 0 to Length( UnitResults ) - 1 do
               AllResults.Add( UnitResults[ J ] );
@@ -298,8 +341,10 @@ begin
           [ Length( FResults ), ProjectName ] );
       lblSummary.Visible := True;
     finally
-      btnScan.Enabled := True;
-      Screen.Cursor := crDefault;
+      FScanning             := False;
+      btnCancelScan.Visible := False;
+      btnScan.Visible       := True;
+      Screen.Cursor         := crDefault;
     end;
   finally
     AllResults.Free;
@@ -429,52 +474,13 @@ end;
 procedure TFormCodeQualityAnalyzer.OpenSelectedFile;
 var
   Item: TListItem;
-  FileName: string;
-  LineNum: Integer;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
 begin
   Item := ListView.Selected;
-  if Item = nil then
+  if ( Item = nil ) then
     Exit;
 
-  FileName := SafeGetSubItem( Item, 4 );  // File path is in SubItems[4]
-  LineNum := StrToIntDef( SafeGetSubItem( Item, 0 ), 1 );
-
-  if not FileExists( FileName ) then
-  begin
-    ShowMessage( 'File not found: ' + FileName );
-    Exit;
-  end;
-
-  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-  begin
-    Module := ModuleServices.OpenModule( FileName );
-    if Module <> nil then
-    begin
-      for I := 0 to Module.ModuleFileCount - 1 do
-      begin
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-          if SourceEditor.EditViewCount > 0 then
-          begin
-            EditView := SourceEditor.EditViews[ 0 ];
-            if EditView <> nil then
-            begin
-              EditView.Position.Move( LineNum, 1 );
-              EditView.MoveViewToCursor;
-              EditView.Paint;
-            end;
-          end;
-          Break;
-        end;
-      end;
-    end;
-  end;
+  // File path is in SubItems[4], the line in SubItems[0].
+  OpenFileAtLine( SafeGetSubItem( Item, 4 ), StrToIntDef( SafeGetSubItem( Item, 0 ), 1 ), 1 );
 end;
 
 procedure TFormCodeQualityAnalyzer.mnuOpenFileClick( Sender: TObject );
@@ -504,7 +510,7 @@ begin
         ] ) );
     end;
 
-    Clipboard.AsText := SL.Text;
+    CopyTextToClipboard( SL.Text );
   finally
     SL.Free;
   end;
@@ -542,7 +548,8 @@ begin
       end;
 
       try
-        SL.SaveToFile( SaveDialog.FileName );
+        // UTF-8: descriptions quote string literals, which are not limited to the ANSI code page.
+        SL.SaveToFile( SaveDialog.FileName, TEncoding.UTF8 );
         ShowMessage( Format( 'Exported %d items to %s', [ ListView.Items.Count, SaveDialog.FileName ] ) );
       except
         on E: Exception do

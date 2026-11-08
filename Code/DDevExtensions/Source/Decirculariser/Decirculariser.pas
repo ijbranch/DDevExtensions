@@ -72,8 +72,10 @@ type
 /// </summary>
 /// <param name="AProject">The project whose units are analysed.</param>
 /// <param name="AAnalyser">The analyser the units are added to.</param>
-/// <param name="AFiles">Receives each added unit's file, keyed by lower-case unit name.</param>
-/// <param name="AOnProgress">Called with each file name before it is read; nil for none.</param>
+/// <param name="AFiles">Receives each added unit's file, keyed by lower-case unit name; an empty
+/// file marks a name that two project units share.</param>
+/// <param name="AOnProgress">Called with each file name before it is read; nil for none.  It may
+/// raise <c>EAbort</c> to stop the scan.</param>
 /// <returns>The number of units added.  A file that cannot be read is skipped.</returns>
 function AddProjectUnits( const AProject: IOTAProject; AAnalyser: TDecirculariser;
   AFiles: TDictionary<string, string>; AOnProgress: TProc<string> ): Integer;
@@ -86,7 +88,7 @@ function AddProjectUnits( const AProject: IOTAProject; AAnalyser: TDecircularise
 /// <param name="AFileName">The unit to edit.</param>
 /// <param name="AUnitNames">The entries to delete from its implementation uses clause.</param>
 /// <param name="AFailures">Receives one line per entry that was not deleted, with the reason.</param>
-/// <returns>The number of entries deleted.</returns>
+/// <returns>The number of entries deleted; none when the buffer is read-only.</returns>
 function RemoveDeadEntries( const AFileName: string; const AUnitNames: TArray<string>;
   AFailures: TStrings ): Integer;
 
@@ -101,92 +103,51 @@ var
 implementation
 
 uses
-  Winapi.Windows, System.IOUtils, UsesClauseManagerCore, ToolsAPIHelpers,
+  UsesClauseManagerCore, ToolsAPIHelpers, IdeUnitSource,
   FrmDecirculariser, FrmeOptionPageDecirculariser;
-
-/// <summary>The open source editor of AFileName, or nil when the file is not open.</summary>
-function FindSourceEditor( const AFileName: string; AOpen: Boolean ): IOTASourceEditor;
-var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  I: Integer;
-begin
-  Result := nil;
-  if not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-    Exit;
-
-  Module := ModuleServices.FindModule( AFileName );
-  if ( Module = nil ) and AOpen then
-    Module := ModuleServices.OpenModule( AFileName );
-  if Module = nil then
-    Exit;
-
-  for I := 0 to Module.ModuleFileCount - 1 do
-    if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, Result ) and
-       SameText( Result.FileName, AFileName ) then
-      Exit;
-  Result := nil;
-end;
-
-/// <summary>A file's text as UTF-8 without a BOM; a file that is not valid UTF-8 is read as ANSI.</summary>
-function ReadSourceFile( const AFileName: string ): UTF8String;
-var
-  Bytes: TBytes;
-  iStart: Integer;
-begin
-  Bytes  := TFile.ReadAllBytes( AFileName );
-  iStart := 0;
-  if ( Length( Bytes ) >= 3 ) and ( Bytes[ 0 ] = $EF ) and ( Bytes[ 1 ] = $BB ) and ( Bytes[ 2 ] = $BF ) then
-    iStart := 3;
-  if Length( Bytes ) <= iStart then
-    Exit( '' );
-
-  if ( MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS,
-    PAnsiChar( @Bytes[ iStart ] ), Length( Bytes ) - iStart, nil, 0 ) = 0 ) then
-    Exit( UTF8Encode( TEncoding.ANSI.GetString( Bytes, iStart, Length( Bytes ) - iStart ) ) );
-
-  SetString( Result, PAnsiChar( @Bytes[ iStart ] ), Length( Bytes ) - iStart );
-end;
 
 function AddProjectUnits( const AProject: IOTAProject; AAnalyser: TDecirculariser;
   AFiles: TDictionary<string, string>; AOnProgress: TProc<string> ): Integer;
 var
-  I: Integer;
-  sFile: string;
   sUnit: string;
-  Editor: IOTASourceEditor;
   Source: UTF8String;
 begin
   Result := 0;
-  if AProject = nil then
+  if ( AProject = nil ) then
     Exit;
 
-  for I := 0 to AProject.GetModuleCount - 1 do
+  { The file list is taken once: the progress callback pumps messages, and the project can change
+    or close meanwhile - after each pump the scan stops if it is no longer the active project. }
+  var Identity := ProjectIdentity( AProject );
+  for var sFile in ProjectPascalFiles( AProject ) do
   begin
-    sFile := AProject.GetModule( I ).FileName;
-    if not SameText( ExtractFileExt( sFile ), '.pas' ) then
-      Continue;
-
     if Assigned( AOnProgress ) then
+    begin
       AOnProgress( sFile );
+      CheckProjectUnchanged( Identity );
+    end;
 
     { An open unit is read from the editor, so the analysis sees what the user sees. }
-    Editor := FindSourceEditor( sFile, False );
     try
-      if Editor <> nil then
-        Source := GetEditorSource( Editor )
-      else if FileExists( sFile ) then
-        Source := ReadSourceFile( sFile )
-      else
+      if ( not ReadUnitSource( sFile, Source ) ) then
         Continue;
     except
-      { One unreadable unit should not cost the whole analysis. }
-      Continue;
+      { One unreadable unit should not cost the whole analysis: a locked or vanished file. }
+      on EFOpenError do
+        Continue;
+      on EInOutError do
+        Continue;
     end;
 
     sUnit := ChangeFileExt( ExtractFileName( sFile ), '' );
     AAnalyser.AddUnit( sUnit, Source );
-    AFiles.AddOrSetValue( LowerCase( sUnit ), sFile );
+    { Two project units of one name ( in different folders ) cannot both be the edge's file: an
+      empty entry marks the name ambiguous, so nothing navigates to or edits the wrong one. }
+    var sKnown: string;
+    if AFiles.TryGetValue( LowerCase( sUnit ), sKnown ) and ( not SameText( sKnown, sFile ) ) then
+      AFiles[ LowerCase( sUnit ) ] := ''
+    else
+      AFiles.AddOrSetValue( LowerCase( sUnit ), sFile );
     Inc( Result );
   end;
 end;
@@ -195,6 +156,7 @@ function RemoveDeadEntries( const AFileName: string; const AUnitNames: TArray<st
   AFailures: TStrings ): Integer;
 var
   Editor: IOTASourceEditor;
+  Buffer: IOTAEditBuffer;
   Source, NewSource: UTF8String;
   sReason: string;
   sUnit: string;
@@ -202,10 +164,20 @@ var
 begin
   Result := 0;
   Editor := FindSourceEditor( AFileName, True );
-  if Editor = nil then
+  if ( Editor = nil ) then
   begin
     for sUnit in AUnitNames do
       AFailures.Add( Format( '%s in %s: the file could not be opened in the editor',
+        [ sUnit, ExtractFileName( AFileName ) ] ) );
+    Exit;
+  end;
+
+  { A read-only buffer ( read-only file, version-control lock ) refuses the write: say so up front
+    rather than letting the writer raise in the middle of a multi-file removal. }
+  if Supports( Editor, IOTAEditBuffer, Buffer ) and Buffer.IsReadOnly then
+  begin
+    for sUnit in AUnitNames do
+      AFailures.Add( Format( '%s in %s: the file is read-only in the editor',
         [ sUnit, ExtractFileName( AFileName ) ] ) );
     Exit;
   end;
@@ -220,7 +192,7 @@ begin
     else
       AFailures.Add( Format( '%s in %s: %s', [ sUnit, ExtractFileName( AFileName ), sReason ] ) );
 
-  if Result = 0 then
+  if ( Result = 0 ) then
     Exit;
 
   { One undoable write of the whole buffer, as the Uses Clause Manager does: Ctrl+Z restores it. }

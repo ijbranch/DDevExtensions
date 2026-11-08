@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -20,8 +20,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, TodoAggregator, ToolsAPI;
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Buttons, System.Generics.Collections,
+  System.Generics.Defaults, FrmBase, TodoAggregator, TodoAggregatorCore, ToolsAPI;
 
 type
   /// <summary>
@@ -36,6 +36,8 @@ type
     btnClose: TButton;
     /// <summary>Scans the active project for TODO comments.</summary>
     btnScan: TButton;
+    /// <summary>Stops a running scan; shown only while one runs.</summary>
+    btnCancelScan: TBitBtn;
     /// <summary>List view that presents matched TODO items.</summary>
     ListView: TListView;
     /// <summary>Status label showing the file currently being scanned.</summary>
@@ -63,37 +65,62 @@ type
     /// <summary>Label for the priority combo box.</summary>
     lblPriority: TLabel;
     /// <summary>OnClick handler for the Close button.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnCloseClick( Sender: TObject );
     /// <summary>OnClick handler for the Scan button; runs the project scanner and refreshes the list.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Asks the running scan to stop at the next unit.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    procedure btnCancelScanClick( Sender: TObject );
     /// <summary>OnClose handler that releases the singleton instance.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Action">Set to caNone while a scan runs, which keeps the form open; otherwise caFree.</param>
     procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>OnCreate handler that initialises the scanner and filter combo boxes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );
     /// <summary>OnDestroy handler that frees the scanner.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure FormDestroy( Sender: TObject );
     /// <summary>Double-click handler that opens the selected file in the IDE editor.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure ListViewDblClick( Sender: TObject );
     /// <summary>OnClick handler for the copy-to-clipboard menu item.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>OnClick handler for the open-file menu item.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>OnClick handler for the Export button.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnExportClick( Sender: TObject );
     /// <summary>Toggles ascending/descending order on column header clicks.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Column">The column whose header was clicked.</param>
     procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom-sort comparator honouring numeric and priority columns.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    /// <param name="Item1">The first item to compare.</param>
+    /// <param name="Item2">The second item to compare.</param>
+    /// <param name="Data">Sort data passed to AlphaSort; not used.</param>
+    /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, with or after
+    /// Item2 in the current sort column and direction.</param>
     procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer );
     /// <summary>Refreshes the visible list when the category filter changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboCategoryChange( Sender: TObject );
     /// <summary>Refreshes the visible list when the priority filter changes.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure cboPriorityChange( Sender: TObject );
   private
     /// <summary>Owned scanner that performs the TODO extraction.</summary>
     FScanner: TTodoScanner;
     /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
+    /// <summary>Set by Cancel Scan; the running scan stops at the next unit.</summary>
+    FCancelRequested: Boolean;
     /// <summary>Cached results from the last scan.</summary>
     FTodoItems: TArray<TTodoItem>;
     /// <summary>Index of the column the list is currently sorted by.</summary>
@@ -103,6 +130,7 @@ type
     /// <summary>Rebuilds the list view from FTodoItems applying the active filters.</summary>
     procedure PopulateList;
     /// <summary>Scanner progress callback that updates the status label.</summary>
+    /// <param name="Sender">The TTodoScanner; its ProgressFileName names the file about to be scanned.</param>
     procedure ScannerProgress( Sender: TObject );
     /// <summary>Opens the source file referenced by the currently selected list row.</summary>
     procedure OpenSelectedFile;
@@ -113,6 +141,8 @@ type
   public
     /// <summary>Shows the singleton aggregator form, creating it if necessary.</summary>
     class procedure Execute;
+    /// <summary>Frees the singleton form, if open, so it cannot outlive the plugin on unload.</summary>
+    class procedure CloseInstance;
   end;
 
 var
@@ -124,7 +154,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPIHelpers;
+  ToolsAPIHelpers, IdeUnitSource;
 
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
@@ -148,6 +178,14 @@ begin
 
   FormInstance := TFormTodoAggregator.Create( Application );
   FormInstance.Show;
+
+end;
+
+class procedure TFormTodoAggregator.CloseInstance;
+begin
+
+  if ( FormInstance <> nil ) then
+    FreeAndNil( FormInstance );
 
 end;
 
@@ -213,6 +251,17 @@ begin
 
   Application.ProcessMessages;
 
+  // Stop on Cancel Scan, and when the IDE is closing: the pump above swallowed its WM_QUIT.
+  if FCancelRequested or Application.Terminated then
+    Abort;
+
+end;
+
+procedure TFormTodoAggregator.btnCancelScanClick( Sender: TObject );
+begin
+
+  FCancelRequested := True;
+
 end;
 
 procedure TFormTodoAggregator.btnCloseClick( Sender: TObject );
@@ -235,9 +284,12 @@ begin
     Exit;
   end;
 
-  Screen.Cursor    := crHourGlass;
-  btnScan.Enabled  := False;
-  FScanning        := True;
+  Screen.Cursor         := crHourGlass;
+  btnScan.Enabled       := False;
+  btnScan.Visible       := False;
+  btnCancelScan.Visible := True;
+  FCancelRequested      := False;
+  FScanning             := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -247,17 +299,32 @@ begin
 
     // Re-apply patterns here, not just in FormCreate: this is a persistent
     // singleton, so Options edits made while it stays open must take effect.
-    FScanner.SetPatterns( TodoAggregatorPlugin.Patterns );
-    FScanner.ScanProject( Project, FTodoItems, ScannerProgress );
+    if ( TodoAggregatorPlugin <> nil ) then
+      FScanner.SetPatterns( TodoAggregatorPlugin.Patterns );
+    try
+      FTodoItems := ScanProjectTodos( FScanner, Project, ScannerProgress );
+    except
+      on EAbort do
+      begin
+        FTodoItems := nil;
+        PopulateList;
+        lblProgress.Visible := False;
+        lblSummary.Caption  := 'Scan cancelled.';
+        lblSummary.Visible  := True;
+        Exit;
+      end;
+    end;
     PopulateList;
 
     lblProgress.Visible := False;
     lblSummary.Caption  := Format( 'Found %d TODO items', [ Length( FTodoItems ) ] );
     lblSummary.Visible  := True;
   finally
-    FScanning       := False;
-    btnScan.Enabled := True;
-    Screen.Cursor   := crDefault;
+    FScanning             := False;
+    btnCancelScan.Visible := False;
+    btnScan.Visible       := True;
+    btnScan.Enabled       := True;
+    Screen.Cursor         := crDefault;
   end;
 
 end;
@@ -421,15 +488,9 @@ end;
 procedure TFormTodoAggregator.OpenSelectedFile;
 var
   Idx: Integer;
-  TodoItem: TTodoItem;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
 begin
 
-  if ListView.Selected = nil then
+  if ( ListView.Selected = nil ) then
     Exit;
 
   Idx := NativeInt( ListView.Selected.Data );
@@ -437,34 +498,7 @@ begin
   if ( Idx < 0 ) or ( Idx >= Length( FTodoItems ) ) then
     Exit;
 
-  TodoItem := FTodoItems[ Idx ];
-
-  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-  begin
-    Module := ModuleServices.OpenModule( TodoItem.FileName );
-
-    if Module <> nil then
-    begin
-
-      for I := 0 to Module.ModuleFileCount - 1 do
-      begin
-
-        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-        begin
-          SourceEditor.Show;
-
-          if SourceEditor.EditViewCount > 0 then
-          begin
-            EditView := SourceEditor.EditViews[ 0 ];
-            EditView.SetTopLeft( TodoItem.Line, 1 );
-            EditView.Center( TodoItem.Line, TodoItem.Column );
-          end;
-
-          Break;
-        end;
-      end;
-    end;
-  end;
+  OpenFileAtLine( FTodoItems[ Idx ].FileName, FTodoItems[ Idx ].Line, FTodoItems[ Idx ].Column );
 
 end;
 
@@ -495,18 +529,13 @@ begin
           SafeGetSubItem( Item, 0 ),
           SafeGetSubItem( Item, 1 ),
           SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 )
+          // A block comment's text can span lines; keep one row per item in the TSV.
+          StringReplace( StringReplace( SafeGetSubItem( Item, 3 ), #13#10, ' ', [ rfReplaceAll ] ),
+            #9, ' ', [ rfReplaceAll ] )
         ] ) );
     end;
 
-    // The clipboard can be transiently locked by another process; show a concise
-    // message instead of letting a raw EClipboardException reach the user.
-    try
-      Clipboard.AsText := SL.Text;
-    except
-      on E: Exception do
-        ShowMessage( 'Could not copy to clipboard:'#13#10 + E.Message );
-    end;
+    CopyTextToClipboard( SL.Text );
   finally
     SL.Free;
   end;
@@ -535,16 +564,17 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
+          StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
+          StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
           SafeGetSubItem( Item, 2 ),
           StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] )
         ] ) );
       end;
 
       try
-        SL.SaveToFile( SaveDialog.FileName );
+        // UTF-8: a TODO's text is not limited to the ANSI code page.
+        SL.SaveToFile( SaveDialog.FileName, TEncoding.UTF8 );
         ShowMessage( Format( 'Exported %d items to %s', [ ListView.Items.Count, SaveDialog.FileName ] ) );
       except
         on E: Exception do

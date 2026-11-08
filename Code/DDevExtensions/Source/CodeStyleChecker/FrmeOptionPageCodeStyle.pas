@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -81,6 +81,7 @@ type
     /// <summary>Free-form information label describing the anti-pattern checks.</summary>
     lblAntiPatternInfo: TLabel;
     /// <summary>OnClick handler that opens the type-prefix rule editor.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
     procedure btnEditRulesClick( Sender: TObject );
   private
     /// <summary>Plugin instance bound to this options frame.</summary>
@@ -89,6 +90,7 @@ type
     procedure UpdateRulesSummary;
   public
     /// <summary>Standard frame constructor.</summary>
+    /// <param name="AOwner">The component that owns the frame.</param>
     constructor Create( AOwner: TComponent ); override;
 
     /// <summary>Loads control state from <see cref="FPlugin"/>.</summary>
@@ -110,6 +112,19 @@ implementation
 
 uses
   FrmTypePrefixEditor;
+
+/// <summary>A threshold typed into an edit box, when it is a whole number of at least 1.</summary>
+/// <param name="AText">The text typed.</param>
+/// <param name="ACurrent">The value in force, kept when the text is not a valid threshold.</param>
+/// <returns>The typed value, or <paramref name="ACurrent"/>.</returns>
+function PositiveOr( const AText: string; ACurrent: Integer ): Integer;
+begin
+
+  // 0 or a negative limit would flag every method, block or parameter list.
+  if ( not TryStrToInt( Trim( AText ), Result ) ) or ( Result < 1 ) then
+    Result := ACurrent;
+
+end;
 
 { TFrameOptionPageCodeStyle }
 
@@ -175,9 +190,9 @@ begin
   FPlugin.CheckDeepNesting      := chkCheckDeepNesting.Checked;
   FPlugin.CheckLongMethods      := chkCheckLongMethods.Checked;
   FPlugin.CheckLongParamLists   := chkCheckLongParamLists.Checked;
-  FPlugin.MaxNestingDepth       := StrToIntDef( edtMaxNesting.Text, 4 );
-  FPlugin.MaxMethodLines        := StrToIntDef( edtMaxLines.Text, 100 );
-  FPlugin.MaxParameters         := StrToIntDef( edtMaxParams.Text, 6 );
+  FPlugin.MaxNestingDepth       := PositiveOr( edtMaxNesting.Text, FPlugin.MaxNestingDepth );
+  FPlugin.MaxMethodLines        := PositiveOr( edtMaxLines.Text, FPlugin.MaxMethodLines );
+  FPlugin.MaxParameters         := PositiveOr( edtMaxParams.Text, FPlugin.MaxParameters );
 
   FPlugin.Save;
 

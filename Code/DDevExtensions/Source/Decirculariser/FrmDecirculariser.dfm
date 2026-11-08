@@ -33,6 +33,15 @@ inherited FormDecirculariser: TFormDecirculariser
       TabOrder = 0
       OnClick = btnScanClick
     end
+    object btnCancelScan: TBitBtn
+      Left = 8
+      Top = 8
+      Width = 90
+      Height = 25
+      Caption = '&Cancel Scan'
+      Visible = False
+      OnClick = btnCancelScanClick
+    end
   end
   object lvGroups: TListView
     Left = 0

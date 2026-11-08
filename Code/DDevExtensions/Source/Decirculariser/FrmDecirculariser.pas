@@ -29,7 +29,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Generics.Collections,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls,
-  Vcl.Menus, Vcl.Clipbrd, FrmBase, DecirculariserCore;
+  Vcl.Menus, Vcl.Buttons, FrmBase, DecirculariserCore;
 
 type
   /// <summary>Main form of the Decirculariser plugin.</summary>
@@ -38,6 +38,8 @@ type
     pnlTop: TPanel;
     /// <summary>Scans the active project.</summary>
     btnScan: TButton;
+    /// <summary>Stops a running scan; shown only while one runs.</summary>
+    btnCancelScan: TBitBtn;
     /// <summary>Progress during a scan, then the summary of its result.</summary>
     lblSummary: TLabel;
     /// <summary>The entangled groups, most dangerous first.</summary>
@@ -67,6 +69,9 @@ type
     /// <summary>Scans the active project and lists the result.</summary>
     /// <param name="Sender">The control that raised the event.</param>
     procedure btnScanClick( Sender: TObject );
+    /// <summary>Asks the running scan to stop at the next unit.</summary>
+    /// <param name="Sender">The control that raised the event.</param>
+    procedure btnCancelScanClick( Sender: TObject );
     /// <summary>Deletes the selected dead entries after confirming them against a fresh analysis.</summary>
     /// <param name="Sender">The control that raised the event.</param>
     procedure btnRemoveClick( Sender: TObject );
@@ -112,10 +117,13 @@ type
     FFiles: TDictionary<string, string>;
     /// <summary>True while a scan runs; vetoes closing the form, since the scan pumps messages.</summary>
     FScanning: Boolean;
+    /// <summary>Set by Cancel Scan; the running scan stops at the next unit.</summary>
+    FCancelRequested: Boolean;
     /// <summary>Index into the analyser's groups of the group whose edges are listed; -1 for none.</summary>
     FGroupIndex: Integer;
     /// <summary>Analyses the active project afresh and lists the result.</summary>
-    /// <returns>False when there is no active project.</returns>
+    /// <returns>True when the scan ran to the end; False when there is no active project, or the
+    /// scan was cancelled or the IDE is closing ( the lists are then left empty ).</returns>
     function RunScan: Boolean;
     /// <summary>Fills the group list from the analyser and selects the first group.</summary>
     procedure PopulateGroups;
@@ -148,7 +156,7 @@ implementation
 {$R *.dfm}
 
 uses
-  ToolsAPI, ToolsAPIHelpers, Decirculariser;
+  ToolsAPI, ToolsAPIHelpers, IdeUnitSource, Decirculariser;
 
 class procedure TFormDecirculariser.Execute;
 begin
@@ -205,12 +213,17 @@ var
 begin
   Project := GetActiveProject;
   Result  := Project <> nil;
-  if not Result then
+  if ( not Result ) then
     Exit;
 
-  Screen.Cursor   := crHourGlass;
-  btnScan.Enabled := False;
-  FScanning       := True;
+  Screen.Cursor         := crHourGlass;
+  btnScan.Enabled       := False;
+  btnRemove.Enabled     := False;
+  btnCopyReport.Enabled := False;  // the analyser is rebuilt under the scan: no report until it ends
+  btnScan.Visible       := False;
+  btnCancelScan.Visible := True;
+  FCancelRequested      := False;
+  FScanning             := True;
   try
     { The rows index into the analyser about to be freed: drop them first. }
     FGroupIndex := -1;
@@ -220,38 +233,68 @@ begin
     FreeAndNil( FAnalyser );
     FFiles.Clear;
     FAnalyser := TDecirculariser.Create;
-    if DecirculariserPlugin <> nil then
+    if ( DecirculariserPlugin <> nil ) then
       FAnalyser.FewSymbolsLimit := DecirculariserPlugin.FewSymbolsLimit;
 
-    iUnits := AddProjectUnits( Project, FAnalyser, FFiles,
-      procedure( AFileName: string )
+    try
+      iUnits := AddProjectUnits( Project, FAnalyser, FFiles,
+        procedure( AFileName: string )
+        begin
+          lblSummary.Caption := 'Reading: ' + ExtractFileName( AFileName );
+          Application.ProcessMessages;
+          { Stop on Cancel Scan, and when the IDE is closing: the pump above swallowed its WM_QUIT. }
+          if FCancelRequested or Application.Terminated then
+            Abort;
+        end );
+    except
+      on EAbort do
       begin
-        lblSummary.Caption := 'Reading: ' + ExtractFileName( AFileName );
-        Application.ProcessMessages;
-      end );
+        FreeAndNil( FAnalyser );
+        FFiles.Clear;
+        lblSummary.Caption := 'Scan cancelled.';
+        Exit( False );
+      end;
+    end;
 
     lblSummary.Caption := 'Analysing...';
     Application.ProcessMessages;
+    if FCancelRequested or Application.Terminated then
+    begin
+      FreeAndNil( FAnalyser );
+      FFiles.Clear;
+      lblSummary.Caption := 'Scan cancelled.';
+      Exit( False );
+    end;
     FAnalyser.Analyse;
     PopulateGroups;
 
     iFragile := 0;
     for Group in FAnalyser.Groups do
-      if Group.Kind = dcgFragile then
+      if ( Group.Kind = dcgFragile ) then
         Inc( iFragile );
     lblSummary.Caption := Format( '%d units, %d entangled group(s), %d FRAGILE',
       [ iUnits, Length( FAnalyser.Groups ), iFragile ] );
   finally
-    FScanning       := False;
-    btnScan.Enabled := True;
-    Screen.Cursor   := crDefault;
+    FScanning             := False;
+    btnCancelScan.Visible := False;
+    btnScan.Visible       := True;
+    btnScan.Enabled       := True;
+    Screen.Cursor         := crDefault;
+    UpdateButtons;
   end;
 end;
 
 procedure TFormDecirculariser.btnScanClick( Sender: TObject );
 begin
-  if not RunScan then
-    ShowMessage( 'No active project.' );
+  if ( GetActiveProject = nil ) then
+    ShowMessage( 'No active project.' )
+  else
+    RunScan;
+end;
+
+procedure TFormDecirculariser.btnCancelScanClick( Sender: TObject );
+begin
+  FCancelRequested := True;
 end;
 
 procedure TFormDecirculariser.PopulateGroups;
@@ -388,7 +431,7 @@ begin
       Break;
     end;
   btnRemove.Enabled     := bAny;
-  btnCopyReport.Enabled := FAnalyser <> nil;
+  btnCopyReport.Enabled := ( FAnalyser <> nil ) and ( not FScanning );
 end;
 
 procedure TFormDecirculariser.btnRemoveClick( Sender: TObject );
@@ -433,9 +476,10 @@ begin
       Exit;
 
     { The list may be stale: re-analyse what is in the editors now and delete only what is still dead. }
-    if not RunScan then
+    if ( not RunScan ) then
     begin
-      ShowMessage( 'No active project.' );
+      if ( GetActiveProject = nil ) then
+        ShowMessage( 'No active project.' );
       Exit;
     end;
 
@@ -451,6 +495,13 @@ begin
       if not bStillDead or not FFiles.TryGetValue( LowerCase( Ref.FromUnit ), sFile ) then
       begin
         Failures.Add( Format( '%s in %s: no longer a dead entry, skipped', [ Ref.ToUnit, Ref.FromUnit ] ) );
+        Continue;
+      end;
+      if ( sFile = '' ) then
+      begin
+        { Two project units share this name, so which file the edge lives in is not known. }
+        Failures.Add( Format( '%s in %s: the project has more than one unit named %s - remove it by hand',
+          [ Ref.ToUnit, Ref.FromUnit, Ref.FromUnit ] ) );
         Continue;
       end;
 
@@ -482,8 +533,8 @@ end;
 
 procedure TFormDecirculariser.btnCopyReportClick( Sender: TObject );
 begin
-  if FAnalyser <> nil then
-    Clipboard.AsText := FAnalyser.Report;
+  if ( FAnalyser <> nil ) then
+    CopyTextToClipboard( FAnalyser.Report );
 end;
 
 procedure TFormDecirculariser.btnCloseClick( Sender: TObject );
@@ -495,34 +546,17 @@ procedure TFormDecirculariser.OpenSelectedFile;
 var
   Candidate: TDcBreakCandidate;
   sFile: string;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
 begin
-  if not TryCandidateOf( lvCandidates.Selected, Candidate ) then
+  if ( not TryCandidateOf( lvCandidates.Selected, Candidate ) ) then
     Exit;
-  if not FFiles.TryGetValue( LowerCase( Candidate.Edge.FromUnit ), sFile ) then
+  if ( not FFiles.TryGetValue( LowerCase( Candidate.Edge.FromUnit ), sFile ) ) then
     Exit;
-  if not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
+  if ( sFile = '' ) then
+  begin
+    ShowMessage( Format( 'The project has more than one unit named %s.', [ Candidate.Edge.FromUnit ] ) );
     Exit;
-
-  Module := ModuleServices.OpenModule( sFile );
-  if Module = nil then
-    Exit;
-  for I := 0 to Module.ModuleFileCount - 1 do
-    if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
-    begin
-      SourceEditor.Show;
-      if SourceEditor.EditViewCount > 0 then
-      begin
-        EditView := SourceEditor.EditViews[ 0 ];
-        EditView.SetTopLeft( Candidate.Edge.LineNumber, 1 );
-        EditView.Center( Candidate.Edge.LineNumber, 1 );
-      end;
-      Break;
-    end;
+  end;
+  OpenFileAtLine( sFile, Candidate.Edge.LineNumber, 1 );
 end;
 
 procedure TFormDecirculariser.lvCandidatesDblClick( Sender: TObject );
@@ -553,7 +587,7 @@ begin
           sLine := sLine + #9 + Item.SubItems[ I ];
         SL.Add( sLine );
       end;
-    Clipboard.AsText := SL.Text;
+    CopyTextToClipboard( SL.Text );
   finally
     SL.Free;
   end;

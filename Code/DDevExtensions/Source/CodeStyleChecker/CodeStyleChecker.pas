@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -115,7 +115,8 @@ type
     /// <summary>Releases the internal rule list.</summary>
     destructor Destroy; override;
     /// <summary>
-    /// Analyses a single Pascal file and returns all violations encountered.
+    /// Analyses a single Pascal unit and returns all violations encountered.  An open unit is read
+    /// from its editor buffer, so unsaved changes count and lines match the buffer; any other from disk.
     /// </summary>
     /// <param name="FileName">Absolute path of the source file.</param>
     /// <param name="Violations">Receives the array of detected violations.</param>
@@ -184,13 +185,17 @@ type
     /// <summary>Threshold used by the long-parameter-list check.</summary>
     FMaxParameters: Integer;
     /// <summary>Menu OnClick handler that opens the checker form.</summary>
+    /// <param name="Sender">The menu item clicked.</param>
     procedure MenuItemClick( Sender: TObject );
     /// <summary>Serialises the type-prefix rules to a single delimited string for persistence.</summary>
+    /// <returns>TypePattern|Prefix|Enabled entries separated by ";", Enabled as 1 or 0.</returns>
     function GetTypePrefixRulesAsString: string;
     /// <summary>Restores the type-prefix rules from the delimited string written by the getter.</summary>
+    /// <param name="Value">The persisted text: TypePattern|Prefix|Enabled entries separated by ";"; empty restores the built-in defaults.</param>
     procedure SetTypePrefixRulesFromString( const Value: string );
   protected
     /// <summary>Returns the option page used in the DDevExtensions options dialog.</summary>
+    /// <returns>A new page for the options dialog, which owns it.</returns>
     function GetOptionPages: TTreePage; override;
     /// <summary>Initialises configuration to its built-in defaults.</summary>
     procedure Init; override;
@@ -205,6 +210,9 @@ type
     /// Resets <see cref="TypePrefixRules"/> to the built-in defaults (s/i/l/r/f/v/c/r and array variants).
     /// </summary>
     procedure InitDefaultTypePrefixRules;
+    /// <summary>The built-in type-prefix rules, without changing the plugin's own.</summary>
+    /// <returns>The default rules, all enabled.</returns>
+    class function DefaultTypePrefixRules: TArray<TTypePrefixRule>;
     /// <summary>User-defined type-prefix rules consulted when checking variables and fields.</summary>
     property TypePrefixRules: TArray<TTypePrefixRule> read FTypePrefixRules write FTypePrefixRules;
   published
@@ -262,7 +270,7 @@ var
 implementation
 
 uses
-  Vcl.Forms, Vcl.Controls, System.StrUtils, ToolsAPIHelpers, AppConsts, DelphiLexer,
+  Vcl.Forms, Vcl.Controls, System.StrUtils, ToolsAPIHelpers, AppConsts, DelphiLexer, IdeUnitSource,
   FrmCodeStyleChecker, FrmeOptionPageCodeStyle;
 
 type
@@ -638,9 +646,6 @@ begin
   Result := False;
   SetLength( Violations, 0 );
 
-  if not FileExists( FileName ) then
-    Exit;
-
   // Get enabled checks from plugin
   if CodeStyleCheckerPlugin <> nil then
   begin
@@ -685,9 +690,12 @@ begin
   end;
 
   try
-    Content := LoadTextFileToUtf8String( FileName );
+    if ( not ReadUnitSource( FileName, Content ) ) then
+      Exit;
   except
-    Exit;
+    // A locked or vanished file is skipped; the caller scans the rest of the project.
+    on EFOpenError do
+      Exit;
   end;
 
   UnitName            := ChangeFileExt( ExtractFileName( FileName ), '' );
@@ -1372,8 +1380,6 @@ end;
 function TStyleChecker.CheckProject( const Project: IOTAProject;
   out AllViolations: TArray<TStyleViolation>; OnProgress: TNotifyEvent ): Boolean;
 var
-  I: Integer;
-  ModuleInfo: IOTAModuleInfo;
   FileName: string;
   Violations: TArray<TStyleViolation>;
   AllViolationList: TList<TStyleViolation>;
@@ -1389,20 +1395,18 @@ begin
   AllViolationList := TList<TStyleViolation>.Create;
 
   try
-    for I := 0 to Project.GetModuleCount - 1 do
+    { The file list is taken once: the progress callback pumps messages, and the project can change
+      or close meanwhile - after each pump the scan stops if it is no longer the active project. }
+    var Identity := ProjectIdentity( Project );
+    for FileName in ProjectPascalFiles( Project ) do
     begin
-      ModuleInfo := Project.GetModule( I );
-      if ModuleInfo = nil then
-        Continue;
-      FileName := ModuleInfo.FileName;
-
-      if SameText( ExtractFileExt( FileName ), '.pas' ) then
       begin
 
         if Assigned( OnProgress ) then
         begin
           FProgressFileName := ExtractFileName( FileName );
           OnProgress( Self );
+          CheckProjectUnchanged( Identity );
         end;
 
         try
@@ -1561,64 +1565,71 @@ begin
 
 end;
 
+class function TCodeStyleCheckerPlugin.DefaultTypePrefixRules: TArray<TTypePrefixRule>;
+begin
+
+  SetLength( Result, 13 );
+
+  // Simple types
+  Result[ 0 ].TypePattern := 'String';
+  Result[ 0 ].Prefix      := 's';
+  Result[ 0 ].Enabled     := True;
+
+  Result[ 1 ].TypePattern := 'Integer';
+  Result[ 1 ].Prefix      := 'i';
+  Result[ 1 ].Enabled     := True;
+
+  Result[ 2 ].TypePattern := 'Boolean';
+  Result[ 2 ].Prefix      := 'l';
+  Result[ 2 ].Enabled     := True;
+
+  Result[ 3 ].TypePattern := 'Real';
+  Result[ 3 ].Prefix      := 'r';
+  Result[ 3 ].Enabled     := True;
+
+  Result[ 4 ].TypePattern := 'Double';
+  Result[ 4 ].Prefix      := 'f';
+  Result[ 4 ].Enabled     := True;
+
+  Result[ 5 ].TypePattern := 'Single';
+  Result[ 5 ].Prefix      := 'f';
+  Result[ 5 ].Enabled     := True;
+
+  Result[ 6 ].TypePattern := 'Variant';
+  Result[ 6 ].Prefix      := 'v';
+  Result[ 6 ].Enabled     := True;
+
+  Result[ 7 ].TypePattern := 'Char';
+  Result[ 7 ].Prefix      := 'c';
+  Result[ 7 ].Enabled     := True;
+
+  Result[ 8 ].TypePattern := 'Currency';
+  Result[ 8 ].Prefix      := 'r';
+  Result[ 8 ].Enabled     := True;
+
+  // Array types
+  Result[ 9 ].TypePattern  := 'array of String';
+  Result[ 9 ].Prefix       := 'sa';
+  Result[ 9 ].Enabled      := True;
+
+  Result[ 10 ].TypePattern := 'array of Integer';
+  Result[ 10 ].Prefix      := 'na';
+  Result[ 10 ].Enabled     := True;
+
+  Result[ 11 ].TypePattern := 'array of Double';
+  Result[ 11 ].Prefix      := 'na';
+  Result[ 11 ].Enabled     := True;
+
+  Result[ 12 ].TypePattern := 'array of Byte';
+  Result[ 12 ].Prefix      := 'na';
+  Result[ 12 ].Enabled     := True;
+
+end;
+
 procedure TCodeStyleCheckerPlugin.InitDefaultTypePrefixRules;
 begin
 
-  SetLength( FTypePrefixRules, 13 );
-
-  // Simple types
-  FTypePrefixRules[ 0 ].TypePattern := 'String';
-  FTypePrefixRules[ 0 ].Prefix      := 's';
-  FTypePrefixRules[ 0 ].Enabled     := True;
-
-  FTypePrefixRules[ 1 ].TypePattern := 'Integer';
-  FTypePrefixRules[ 1 ].Prefix      := 'i';
-  FTypePrefixRules[ 1 ].Enabled     := True;
-
-  FTypePrefixRules[ 2 ].TypePattern := 'Boolean';
-  FTypePrefixRules[ 2 ].Prefix      := 'l';
-  FTypePrefixRules[ 2 ].Enabled     := True;
-
-  FTypePrefixRules[ 3 ].TypePattern := 'Real';
-  FTypePrefixRules[ 3 ].Prefix      := 'r';
-  FTypePrefixRules[ 3 ].Enabled     := True;
-
-  FTypePrefixRules[ 4 ].TypePattern := 'Double';
-  FTypePrefixRules[ 4 ].Prefix      := 'f';
-  FTypePrefixRules[ 4 ].Enabled     := True;
-
-  FTypePrefixRules[ 5 ].TypePattern := 'Single';
-  FTypePrefixRules[ 5 ].Prefix      := 'f';
-  FTypePrefixRules[ 5 ].Enabled     := True;
-
-  FTypePrefixRules[ 6 ].TypePattern := 'Variant';
-  FTypePrefixRules[ 6 ].Prefix      := 'v';
-  FTypePrefixRules[ 6 ].Enabled     := True;
-
-  FTypePrefixRules[ 7 ].TypePattern := 'Char';
-  FTypePrefixRules[ 7 ].Prefix      := 'c';
-  FTypePrefixRules[ 7 ].Enabled     := True;
-
-  FTypePrefixRules[ 8 ].TypePattern := 'Currency';
-  FTypePrefixRules[ 8 ].Prefix      := 'r';
-  FTypePrefixRules[ 8 ].Enabled     := True;
-
-  // Array types
-  FTypePrefixRules[ 9 ].TypePattern  := 'array of String';
-  FTypePrefixRules[ 9 ].Prefix       := 'sa';
-  FTypePrefixRules[ 9 ].Enabled      := True;
-
-  FTypePrefixRules[ 10 ].TypePattern := 'array of Integer';
-  FTypePrefixRules[ 10 ].Prefix      := 'na';
-  FTypePrefixRules[ 10 ].Enabled     := True;
-
-  FTypePrefixRules[ 11 ].TypePattern := 'array of Double';
-  FTypePrefixRules[ 11 ].Prefix      := 'na';
-  FTypePrefixRules[ 11 ].Enabled     := True;
-
-  FTypePrefixRules[ 12 ].TypePattern := 'array of Byte';
-  FTypePrefixRules[ 12 ].Prefix      := 'na';
-  FTypePrefixRules[ 12 ].Enabled     := True;
+  FTypePrefixRules := DefaultTypePrefixRules;
 
 end;
 
@@ -1629,8 +1640,10 @@ begin
     CodeStyleCheckerPlugin := TCodeStyleCheckerPlugin.Create
   else
   begin
-    CodeStyleCheckerPlugin.Free;
-    CodeStyleCheckerPlugin := nil;
+    { Close the form first: it is modeless and owned by the IDE's Application, so it would
+      otherwise outlive the code that implements it. }
+    TFormCodeStyleChecker.CloseInstance;
+    FreeAndNil( CodeStyleCheckerPlugin );
   end;
 
 end;

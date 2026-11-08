@@ -103,7 +103,13 @@ uses
   FileWatcher in '..\Shared\FileWatcher.pas',
   TestFileWatcherDUnitX in 'TestFileWatcherDUnitX.pas',
   Hooking in '..\Shared\Hooking.pas',
-  TestHookingDUnitX in 'TestHookingDUnitX.pas';
+  TestHookingDUnitX in 'TestHookingDUnitX.pas',
+  TodoAggregatorCore in '..\Code\DDevExtensions\Source\TodoAggregator\TodoAggregatorCore.pas',
+  TestTodoAggregatorCoreDUnitX in 'TestTodoAggregatorCoreDUnitX.pas',
+  DfmPasConsistencyCore in '..\Code\DDevExtensions\Source\DfmPasConsistency\DfmPasConsistencyCore.pas',
+  TestDfmPasConsistencyCoreDUnitX in 'TestDfmPasConsistencyCoreDUnitX.pas',
+  DependencyViewerCore in '..\Code\DDevExtensions\Source\DependencyViewer\DependencyViewerCore.pas',
+  TestDependencyViewerCoreDUnitX in 'TestDependencyViewerCoreDUnitX.pas';
 
 {$R *.res}
 

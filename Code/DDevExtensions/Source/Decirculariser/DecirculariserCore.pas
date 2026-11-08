@@ -248,10 +248,32 @@ function HasStartupCode( const ASource: UTF8String ): Boolean;
 function RemoveUsesEntry( const ASource: UTF8String; const AUnitName: string; ASection: TUsesSection;
   out ANewSource: UTF8String; out AReason: string ): Boolean;
 
+/// <summary>
+/// The strongly-connected components of a directed graph that hold more than one node, found by
+/// an iterative Tarjan ( a recursive one overflows the stack on an estate-sized graph ).
+/// </summary>
+/// <param name="ANodes">Every node of the graph.  The walk starts from them in this order, so a
+/// sorted array gives a repeatable result.</param>
+/// <param name="AAdjacency">Each node's successors; a node with none may be missing.  A successor
+/// that is not in <paramref name="ANodes"/> is walked like any other node.</param>
+/// <returns>Each component of two or more nodes once, its members sorted case-insensitively.  A
+/// single node, even one with an edge to itself, is not a component here.</returns>
+function FindStronglyConnectedGroups( const ANodes: TArray<string>;
+  AAdjacency: TObjectDictionary<string, TStringList> ): TArray<TArray<string>>;
+
+/// <summary>
+/// Decodes the bytes of a source file to UTF-8 text without a BOM: a UTF-8 BOM is dropped, valid
+/// UTF-8 is taken as it is, and anything else is read in the ANSI code page.
+/// </summary>
+/// <param name="ABytes">The file's bytes.</param>
+/// <returns>The text as UTF-8, without a BOM; empty for an empty file.</returns>
+/// <remarks>A UTF-16 file ( FF FE / FE FF BOM ) is decoded as UTF-16.</remarks>
+function DecodeSourceBytes( const ABytes: TBytes ): UTF8String;
+
 implementation
 
 uses
-  System.Generics.Defaults, System.Math, DelphiLexer;
+  Winapi.Windows, System.Generics.Defaults, System.Math, System.IOUtils, DelphiLexer;
 
 const
   /// <summary>Default for <see cref="TDecirculariser.FewSymbolsLimit"/>.</summary>
@@ -567,34 +589,31 @@ function TDecirculariser.AddDirectory( const ADirectory: string ): Integer;
 var
   SR: TSearchRec;
   sPath: string;
-  sFile: string;
-  sl: TStringList;
+  Source: UTF8String;
 begin
   Result := 0;
   sPath  := IncludeTrailingPathDelimiter( ADirectory );
-  if not DirectoryExists( sPath ) then
+  if ( not DirectoryExists( sPath ) ) then
     Exit;
 
-  if FindFirst( sPath + '*.pas', faAnyFile, SR ) <> 0 then
+  if ( FindFirst( sPath + '*.pas', faAnyFile, SR ) <> 0 ) then
     Exit;
   try
     repeat
-      sFile := sPath + SR.Name;
-      sl := TStringList.Create;
       try
-        try
-          sl.LoadFromFile( sFile );
-        except
-          { A file that will not load is skipped rather than aborting the scan - one
-            unreadable unit should not cost the whole analysis. }
+        { Decoded as the IDE reads it: a UTF-8 file without a BOM is UTF-8, not ANSI. }
+        Source := DecodeSourceBytes( TFile.ReadAllBytes( sPath + SR.Name ) );
+      except
+        { A locked or vanished file is skipped rather than aborting the scan - one unreadable
+          unit should not cost the whole analysis. }
+        on EInOutError do
           Continue;
-        end;
-        AddUnit( ChangeFileExt( SR.Name, '' ), UTF8Encode( sl.Text ) );
-        Inc( Result );
-      finally
-        sl.Free;
+        on EFOpenError do
+          Continue;
       end;
-    until FindNext( SR ) <> 0;
+      AddUnit( ChangeFileExt( SR.Name, '' ), Source );
+      Inc( Result );
+    until ( FindNext( SR ) <> 0 );
   finally
     System.SysUtils.FindClose( SR );
   end;
@@ -679,131 +698,160 @@ begin
   end;
 end;
 
-function TDecirculariser.FindGroups: TArray<TArray<string>>;
+function FindStronglyConnectedGroups( const ANodes: TArray<string>;
+  AAdjacency: TObjectDictionary<string, TStringList> ): TArray<TArray<string>>;
+type
+  /// <summary>One node of the explicit walk: the node and the next successor to visit.</summary>
+  TFrame = record
+    /// <summary>The node this frame walks.</summary>
+    Node: string;
+    /// <summary>Index of the next successor to visit.</summary>
+    Next: Integer;
+  end;
 var
-  Nodes: TArray<string>;
   Index, LowLink: TDictionary<string, Integer>;
   OnStack: TDictionary<string, Boolean>;
-  Adjacency: TObjectDictionary<string, TStringList>;
   Stack: TStack<string>;
-  Counter: Integer;
-  Result_: TList<TArray<string>>;
-  Edge: TDcEdge;
-  Node: string;
-  sKey: string;
-  Members: TStringList;
+  Frames: TList<TFrame>;
+  Groups: TList<TArray<string>>;
+  iCounter: Integer;
+
+  procedure Visit( const ANode: string );
+  var
+    Frame: TFrame;
+  begin
+    Index.AddOrSetValue( ANode, iCounter );
+    LowLink.AddOrSetValue( ANode, iCounter );
+    Inc( iCounter );
+    Stack.Push( ANode );
+    OnStack.AddOrSetValue( ANode, True );
+    Frame.Node := ANode;
+    Frame.Next := 0;
+    Frames.Add( Frame );
+  end;
 
   procedure StrongConnect( const ARoot: string );
-  type
-    TFrame = record
-      Node: string;
-      Next: Integer;
-    end;
   var
-    Frames: TList<TFrame>;
     Frame: TFrame;
-    Child: string;
+    sChild, sPopped: string;
     Neighbours: TStringList;
-    Popped: string;
     Comp: TStringList;
-    Arr: TArray<string>;
-    J: Integer;
   begin
-    { Iterative, with an explicit frame stack. A recursive Tarjan overflows on an
-      estate-sized graph, and the depth here is bounded only by the unit count. }
-    Frames := TList<TFrame>.Create;
-    try
-      Frame.Node := ARoot;
-      Frame.Next := 0;
-      Frames.Add( Frame );
+    Visit( ARoot );
+    while ( Frames.Count > 0 ) do
+    begin
+      Frame := Frames[ Frames.Count - 1 ];
+      if ( not AAdjacency.TryGetValue( Frame.Node, Neighbours ) ) then
+        Neighbours := nil;
 
-      Index.AddOrSetValue( ARoot, Counter );
-      LowLink.AddOrSetValue( ARoot, Counter );
-      Inc( Counter );
-      Stack.Push( ARoot );
-      OnStack.AddOrSetValue( ARoot, True );
-
-      while Frames.Count > 0 do
+      if ( Neighbours <> nil ) and ( Frame.Next < Neighbours.Count ) then
       begin
-        Frame := Frames[ Frames.Count - 1 ];
-        if not Adjacency.TryGetValue( Frame.Node, Neighbours ) then
-          Neighbours := nil;
+        sChild := Neighbours[ Frame.Next ];
+        Inc( Frame.Next );
+        Frames[ Frames.Count - 1 ] := Frame;
 
-        if ( Neighbours <> nil ) and ( Frame.Next < Neighbours.Count ) then
-        begin
-          Child := Neighbours[ Frame.Next ];
-          Inc( Frame.Next );
-          Frames[ Frames.Count - 1 ] := Frame;
+        if ( not Index.ContainsKey( sChild ) ) then
+          Visit( sChild )
+        else if OnStack.ContainsKey( sChild ) and OnStack[ sChild ] then
+          LowLink[ Frame.Node ] := Min( LowLink[ Frame.Node ], Index[ sChild ] );
+        Continue;
+      end;
 
-          if not Index.ContainsKey( Child ) then
+      { Every successor done - close this node off. }
+      Frames.Delete( Frames.Count - 1 );
+      if ( Frames.Count > 0 ) then
+      begin
+        sChild := Frames[ Frames.Count - 1 ].Node;
+        LowLink[ sChild ] := Min( LowLink[ sChild ], LowLink[ Frame.Node ] );
+      end;
+
+      if ( LowLink[ Frame.Node ] = Index[ Frame.Node ] ) then
+      begin
+        Comp := TStringList.Create;
+        try
+          repeat
+            sPopped := Stack.Pop;
+            OnStack[ sPopped ] := False;
+            Comp.Add( sPopped );
+          until ( sPopped = Frame.Node );
+
+          { A single node is not an entanglement - only groups of two or more. }
+          if ( Comp.Count > 1 ) then
           begin
-            Index.AddOrSetValue( Child, Counter );
-            LowLink.AddOrSetValue( Child, Counter );
-            Inc( Counter );
-            Stack.Push( Child );
-            OnStack.AddOrSetValue( Child, True );
-
-            Frame.Node := Child;
-            Frame.Next := 0;
-            Frames.Add( Frame );
-          end
-          else if OnStack.ContainsKey( Child ) and OnStack[ Child ] then
-            LowLink[ Frame.Node ] := Min( LowLink[ Frame.Node ], Index[ Child ] );
-
-          Continue;
-        end;
-
-        { Every neighbour done - close this node off. }
-        Frames.Delete( Frames.Count - 1 );
-        if Frames.Count > 0 then
-        begin
-          Child := Frames[ Frames.Count - 1 ].Node;
-          LowLink[ Child ] := Min( LowLink[ Child ], LowLink[ Frame.Node ] );
-        end;
-
-        if LowLink[ Frame.Node ] = Index[ Frame.Node ] then
-        begin
-          Comp := TStringList.Create;
-          try
-            repeat
-              Popped := Stack.Pop;
-              OnStack[ Popped ] := False;
-              Comp.Add( FNames[ Popped ] );
-            until Popped = Frame.Node;
-
-            { A single unit is not an entanglement - only groups of two or more. }
-            if Comp.Count > 1 then
-            begin
-              Comp.Sort;
-              SetLength( Arr, Comp.Count );
-              for J := 0 to Comp.Count - 1 do
-                Arr[ J ] := Comp[ J ];
-              Result_.Add( Arr );
-            end;
-          finally
-            Comp.Free;
+            Comp.Sort;
+            Groups.Add( Comp.ToStringArray );
           end;
+        finally
+          Comp.Free;
         end;
       end;
-    finally
-      Frames.Free;
     end;
   end;
 
 begin
-  Index      := TDictionary<string, Integer>.Create;
-  LowLink    := TDictionary<string, Integer>.Create;
-  OnStack    := TDictionary<string, Boolean>.Create;
-  Adjacency  := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
-  Stack      := TStack<string>.Create;
-  Result_    := TList<TArray<string>>.Create;
+  Index   := TDictionary<string, Integer>.Create;
+  LowLink := TDictionary<string, Integer>.Create;
+  OnStack := TDictionary<string, Boolean>.Create;
+  Stack   := TStack<string>.Create;
+  Frames  := TList<TFrame>.Create;
+  Groups  := TList<TArray<string>>.Create;
   try
-    for Edge in FEdges do
+    iCounter := 0;
+    for var sNode in ANodes do
+      if ( not Index.ContainsKey( sNode ) ) then
+        StrongConnect( sNode );
+    Result := Groups.ToArray;
+  finally
+    Groups.Free;
+    Frames.Free;
+    Stack.Free;
+    OnStack.Free;
+    LowLink.Free;
+    Index.Free;
+  end;
+end;
+
+function DecodeSourceBytes( const ABytes: TBytes ): UTF8String;
+var
+  iStart: Integer;
+begin
+  if ( Length( ABytes ) >= 2 ) and ( ( ( ABytes[ 0 ] = $FF ) and ( ABytes[ 1 ] = $FE ) ) or
+     ( ( ABytes[ 0 ] = $FE ) and ( ABytes[ 1 ] = $FF ) ) ) then
+  begin
+    if ( ABytes[ 0 ] = $FF ) then
+      Exit( UTF8Encode( TEncoding.Unicode.GetString( ABytes, 2, Length( ABytes ) - 2 ) ) );
+    Exit( UTF8Encode( TEncoding.BigEndianUnicode.GetString( ABytes, 2, Length( ABytes ) - 2 ) ) );
+  end;
+
+  iStart := 0;
+  if ( Length( ABytes ) >= 3 ) and ( ABytes[ 0 ] = $EF ) and ( ABytes[ 1 ] = $BB ) and ( ABytes[ 2 ] = $BF ) then
+    iStart := 3;
+  if ( Length( ABytes ) <= iStart ) then
+    Exit( '' );
+
+  if ( MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS,
+    PAnsiChar( @ABytes[ iStart ] ), Length( ABytes ) - iStart, nil, 0 ) = 0 ) then
+    Exit( UTF8Encode( TEncoding.ANSI.GetString( ABytes, iStart, Length( ABytes ) - iStart ) ) );
+
+  SetString( Result, PAnsiChar( @ABytes[ iStart ] ), Length( ABytes ) - iStart );
+end;
+
+function TDecirculariser.FindGroups: TArray<TArray<string>>;
+var
+  Adjacency: TObjectDictionary<string, TStringList>;
+  Members: TStringList;
+  Nodes: TArray<string>;
+  Groups: TArray<TArray<string>>;
+  I, J: Integer;
+begin
+  Adjacency := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
+  try
+    for var Edge in FEdges do
     begin
-      sKey := LowerCase( Edge.FromUnit );
-      if not Adjacency.TryGetValue( sKey, Members ) then
+      var sKey := LowerCase( Edge.FromUnit );
+      if ( not Adjacency.TryGetValue( sKey, Members ) ) then
       begin
-        Members := TStringList.Create;
+        Members            := TStringList.Create;
         Members.Duplicates := dupIgnore;
         Members.Sorted     := True;
         Adjacency.Add( sKey, Members );
@@ -813,20 +861,19 @@ begin
 
     Nodes := FSources.Keys.ToArray;
     TArray.Sort<string>( Nodes );
-    Counter := 0;
-    for Node in Nodes do
-      if not Index.ContainsKey( Node ) then
-        StrongConnect( Node );
-
-    Result := Result_.ToArray;
+    Groups := FindStronglyConnectedGroups( Nodes, Adjacency );
   finally
-    Result_.Free;
-    Stack.Free;
     Adjacency.Free;
-    OnStack.Free;
-    LowLink.Free;
-    Index.Free;
   end;
+
+  { The walk works on the lower-case keys; report each member as it was named. }
+  for I := 0 to High( Groups ) do
+  begin
+    for J := 0 to High( Groups[ I ] ) do
+      Groups[ I ][ J ] := FNames[ Groups[ I ][ J ] ];
+    TArray.Sort<string>( Groups[ I ], TIStringComparer.Ordinal );
+  end;
+  Result := Groups;
 end;
 
 function TDecirculariser.CrossingSymbols( const AFromUnit, AToUnit: string;
