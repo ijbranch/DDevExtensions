@@ -23,7 +23,7 @@ uses
   WinApi.Windows, System.SysUtils;
 {$ELSE}
 uses
-  Windows, SysUtils;
+  Winapi.Windows, System.SysUtils;
 {$IFEND}
 
 type

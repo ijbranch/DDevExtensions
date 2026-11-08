@@ -21,7 +21,7 @@ unit ToolsAPIIntf;
 interface
 
 uses
-  Windows, SysUtils, TypInfo, Classes, ActiveX;
+  Winapi.Windows, System.SysUtils, System.TypInfo, System.Classes, Winapi.ActiveX;
 
 { Possible values for TOTAModuleType }
 /// <summary>Module type: a VCL form (<c>.dfm</c>).</summary>

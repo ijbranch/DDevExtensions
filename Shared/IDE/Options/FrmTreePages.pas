@@ -16,8 +16,8 @@ unit FrmTreePages;
 interface
 
 uses
-  Windows, Messages, Contnrs, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, ComCtrls, FrmBase;
+  Winapi.Windows, Winapi.Messages, System.Contnrs, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, FrmBase;
 
 type
   /// <summary>Implemented by every options page so the environment-options dialog can load/save the corresponding personality option.</summary>
@@ -195,9 +195,9 @@ implementation
 
 uses
   {$IFDEF COMPILER5}
-  Consts,
+  Vcl.Consts,
   {$ELSE}
-  RTLConsts,
+  System.RTLConsts,
   {$ENDIF COMPILER5}
   IDEUtils;
 

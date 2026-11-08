@@ -17,7 +17,7 @@ unit InterceptLoader;
 interface
 
 uses
-  Windows, SysUtils, InterceptIntf;
+  Winapi.Windows, System.SysUtils, InterceptIntf;
 
 /// <summary>
 /// Loads <c>CompileInterceptorW.dll</c> on demand and returns the host service interface

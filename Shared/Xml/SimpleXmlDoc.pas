@@ -19,10 +19,10 @@ uses
   {$IFDEF JEDI_XML}
   JclSimpleXml, JclStreams,
   {$ELSE}
-  XMLIntf, XMLDoc, xmldom,
+  Xml.XMLIntf, Xml.XMLDoc, Xml.xmldom,
   {$ENDIF JEDI_XML}
   SimpleXmlIntf,
-  Classes;
+  System.Classes;
 
 type
   {$IFDEF COMPILER5}
@@ -40,7 +40,7 @@ type
     FActive: Boolean;
     {$ELSE}
     /// <summary>Underlying MSXML document accessed via XMLIntf.</summary>
-    FXml: XMLIntf.IXMLDocument;
+    FXml: Xml.XMLIntf.IXMLDocument;
     {$ENDIF JEDI_XML}
     /// <summary>Manual reference count maintained by _AddRef / _Release.</summary>
     FRefCount: Integer;
@@ -496,14 +496,14 @@ end;
 type
   IInternalXmlNode = interface
     ['{0757223F-94C9-4FE6-AB72-E8E88494195E}']
-    function GetNode: XMLIntf.IXMLNode;
+    function GetNode: Xml.XMLIntf.IXMLNode;
   end;
 
   TXmlAttributes = class(TInterfacedObject, IXmlAttributes)
   private
-    FNode: XMLIntf.IXMLNode;
+    FNode: Xml.XMLIntf.IXMLNode;
   public
-    constructor Create(ANode: XMLIntf.IXMLNode);
+    constructor Create(ANode: Xml.XMLIntf.IXMLNode);
 
     procedure SetAttribute(const Index: string; const Value: Variant);
     function GetAttribute(const Index: string): Variant;
@@ -512,9 +512,9 @@ type
 
   TXmlChildNodes = class(TInterfacedObject, IXmlChildNodes)
   private
-    FNodes: XMLIntf.IXMLNodeList;
+    FNodes: Xml.XMLIntf.IXMLNodeList;
   public
-    constructor Create(ANodes: XMLIntf.IXMLNodeList);
+    constructor Create(ANodes: Xml.XMLIntf.IXMLNodeList);
 
     function GetCount: Integer;
     function GetNode(Index: Integer): IXmlNode;
@@ -532,11 +532,11 @@ type
   private
     FChilds: IXmlChildNodes;
     FAttributes: IXmlAttributes;
-    FNode: XMLIntf.IXMLNode;
+    FNode: Xml.XMLIntf.IXMLNode;
   protected
-    function GetNode: XMLIntf.IXMLNode;
+    function GetNode: Xml.XMLIntf.IXMLNode;
   public
-    constructor Create(ANode: XMLIntf.IXMLNode);
+    constructor Create(ANode: Xml.XMLIntf.IXMLNode);
     destructor Destroy; override;
 
     function GetNodeName: string;
@@ -577,7 +577,7 @@ end;
 constructor TXmlDocument.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FXml := XmlDoc.NewXMLDocument();
+  FXml := Xml.XMLDoc.NewXMLDocument();
   FXml.Encoding := 'UTF-8';
 end;
 
@@ -706,7 +706,7 @@ end;
 
 procedure TXmlDocument.SetOptions(const Value: TXmlDocOptions);
 begin
-  FXml.Options := XMLIntf.TXMLDocOptions(Value);
+  FXml.Options := Xml.XMLIntf.TXMLDocOptions(Value);
 end;
 
 procedure TXmlDocument.SetVersion(const Value: string);
@@ -728,7 +728,7 @@ end;
 
 { TXmlAttributes }
 
-constructor TXmlAttributes.Create(ANode: XMLIntf.IXmlNode);
+constructor TXmlAttributes.Create(ANode: Xml.XMLIntf.IXmlNode);
 begin
   inherited Create;
   FNode := ANode;
@@ -749,7 +749,7 @@ end;
 
 { TXmlNode }
 
-constructor TXmlNode.Create(ANode: XMLIntf.IXmlNode);
+constructor TXmlNode.Create(ANode: Xml.XMLIntf.IXmlNode);
 begin
   inherited Create;
   FNode := ANode;
@@ -779,7 +779,7 @@ begin
   Result := FChilds;
 end;
 
-function TXmlNode.GetNode: XMLIntf.IXmlNode;
+function TXmlNode.GetNode: Xml.XMLIntf.IXmlNode;
 begin
   Result := FNode;
 end;
@@ -822,7 +822,7 @@ begin
     FNodes.Add((Node as IInternalXmlNode).GetNode);
 end;
 
-constructor TXmlChildNodes.Create(ANodes: XMLIntf.IXMLNodeList);
+constructor TXmlChildNodes.Create(ANodes: Xml.XMLIntf.IXMLNodeList);
 begin
   inherited Create;
   FNodes := ANodes;

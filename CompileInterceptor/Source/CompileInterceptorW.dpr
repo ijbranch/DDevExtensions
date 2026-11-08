@@ -24,11 +24,11 @@ library CompileInterceptorW;
 {$ENDIF}
 
 uses
-  ShareMem,
-  Windows,
-  SysUtils,
-  Classes,
-  Registry,
+  System.ShareMem,
+  Winapi.Windows,
+  System.SysUtils,
+  System.Classes,
+  System.Win.Registry,
   CompilerHooks in 'CompilerHooks.pas',
   FileStreams in 'FileStreams.pas',
   InterceptIntf in 'InterceptIntf.pas',

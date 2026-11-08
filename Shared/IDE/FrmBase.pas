@@ -20,8 +20,8 @@ unit FrmBase;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs;
 
 type
   /// <summary>Base form class for plugin dialogs; see the unit summary for behavioural details.</summary>

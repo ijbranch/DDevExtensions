@@ -20,7 +20,7 @@
 interface
 
 uses
-  Windows, SysUtils, Classes, Graphics, Controls, Forms, StdCtrls;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.StdCtrls;
 
 type
   /// <summary>THintWindow descendant that paints AHint via the inline mark-up parser used by ItemHtDraw.</summary>

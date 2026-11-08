@@ -1,8 +1,8 @@
-library ExampleCompileInterceptor;
+﻿library ExampleCompileInterceptor;
 
 uses
-  SysUtils,
-  Classes,
+  System.SysUtils,
+  System.Classes,
   InterceptIntf in '..\Source\InterceptIntf.pas';
 
 {$R *.res}

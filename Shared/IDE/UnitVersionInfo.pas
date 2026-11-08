@@ -32,7 +32,7 @@ unit UnitVersionInfo;
 interface
 
 uses
-  Windows, Classes, SysUtils;
+  Winapi.Windows, System.Classes, System.SysUtils;
 
 type
   /// <summary>Wraps a VS_VERSION_INFO resource and exposes its StringFileInfo entries via indexed properties.</summary>

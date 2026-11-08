@@ -19,8 +19,8 @@ unit FrmOptions;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Contnrs, Graphics, Controls, Forms,
-  Dialogs, FrmTreePages, StdCtrls, ExtCtrls, ComCtrls, ShellAPI;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
+  Vcl.Dialogs, FrmTreePages, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, Winapi.ShellAPI;
 
 type
   /// <summary>Method-typed callback that returns a TTreePage to display in the options dialog.</summary>

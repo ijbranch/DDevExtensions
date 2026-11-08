@@ -17,7 +17,7 @@ unit ProjectResource;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs, ToolsAPI, TypInfo;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, System.TypInfo;
 
 type
   /// <summary>Decoded metadata for a single image inside an icon resource.</summary>

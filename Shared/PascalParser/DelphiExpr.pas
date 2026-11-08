@@ -17,7 +17,7 @@ unit DelphiExpr;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, DelphiLexer;
+  System.SysUtils, System.Classes, System.Contnrs, DelphiLexer;
 
 type
   /// <summary>Discriminator for the runtime type of an evaluated TExprNode value.</summary>
@@ -448,9 +448,9 @@ type
 
 implementation
 
-{.$AUTOBOX ON}
-{.$HINTS OFF}
-{.$WARNINGS OFF}
+//{$AUTOBOX ON}
+//{$HINTS OFF}
+//{$WARNINGS OFF}
 
 constructor TExprNodeUnaryMinus.Create(AOperand: IExprNode);
 begin

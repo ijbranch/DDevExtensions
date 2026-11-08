@@ -1,4 +1,4 @@
-unit TestAntiPatterns;
+﻿unit TestAntiPatterns;
 
 {------------------------------------------------------------------------------
   Test unit for DDevExtensions v3.7.0 Anti-Pattern Detection
@@ -41,7 +41,7 @@ type
 implementation
 
 uses
-  SysUtils, Classes;
+  System.SysUtils, System.Classes;
 
 constructor TAntiPatternTest.Create;
 begin

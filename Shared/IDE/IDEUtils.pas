@@ -15,7 +15,7 @@ unit IDEUtils;
 /// IDE-event subscription helpers (TIDEEvent, MainFormShown/Created/Destroyed).
 /// </summary>
 
-{.$I jedi\jedi.inc}
+//{$I jedi\jedi.inc}
 {$IFDEF VER170} {$DEFINE COMPILER9} {$ENDIF}  // Delphi 2005
 {$IFDEF VER180} {$DEFINE COMPILER10} {$ENDIF} // Delphi 2006
 {$IFDEF VER185} {$DEFINE COMPILER11} {$UNDEF COMPILER10} {$ENDIF} // Delphi 2007
@@ -374,7 +374,7 @@ var
 implementation
 
 uses
-  Registry, IDEHooks;
+  System.Win.Registry, IDEHooks;
 
 function ReadGlobalRegOption(const ValueName: string; DefaultValue: Boolean): Boolean;
 var

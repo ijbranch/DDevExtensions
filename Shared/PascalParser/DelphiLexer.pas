@@ -22,7 +22,7 @@ unit DelphiLexer;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, TypInfo;
+  System.SysUtils, System.Classes, System.Contnrs, System.TypInfo;
 
 const
   /// <summary>Control characters and the space, which the lexer skips between tokens.</summary>

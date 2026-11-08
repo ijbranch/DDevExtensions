@@ -22,7 +22,7 @@ unit FileStreams;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs;
 
 /// <summary>Maximum number of pooled write buffers retained when the pool shrinks back.</summary>
 const
@@ -383,7 +383,7 @@ var
 implementation
 
 uses
-  Types;
+  System.Types;
 
 resourcestring
   RsNotSupported = 'Operation "%s" not supported';

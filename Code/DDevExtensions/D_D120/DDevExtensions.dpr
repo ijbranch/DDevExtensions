@@ -20,15 +20,15 @@ library DDevExtensions;
 {$I ..\Source\DelphiExtension.inc}
 
 uses
-  Windows,
-  SysUtils,
-  Classes,
-  Forms,
-  Graphics,
-  StdCtrls,
-  ExtCtrls,
+  Winapi.Windows,
+  System.SysUtils,
+  System.Classes,
+  Vcl.Forms,
+  Vcl.Graphics,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls,
   ToolsAPI,
-  Dialogs,
+  Vcl.Dialogs,
   Main in '..\Source\Main.pas',
   AppConsts in '..\Source\AppConsts.pas',
   Splash in '..\Source\Splash.pas',

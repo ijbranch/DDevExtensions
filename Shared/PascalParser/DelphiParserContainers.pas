@@ -19,7 +19,7 @@ unit DelphiParserContainers;
 interface
 
 uses
-  SysUtils, Classes;
+  System.SysUtils, System.Classes;
 
 type
   /// <summary>Sorted TStringList that overrides CompareStrings to honour CaseSensitive without locale folding.</summary>

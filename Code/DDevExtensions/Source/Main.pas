@@ -209,7 +209,7 @@ type
 var
   PackageUnload: TPackageUnload;
 begin
-  {.$IFNDEF COMPILER9_UP}
+  //{$IFNDEF COMPILER9_UP}
   if (Application <> nil) and not Application.Terminated then
     try
       RegisteredComponents.DeletePackageComponents(Module);
@@ -217,7 +217,7 @@ begin
       on E: Exception do
         OutputDebugString(PChar('DDevExtensions: Error deleting package components: ' + E.Message));
     end;
-  {.$ENDIF ~COMPILER9_UP}
+  //{$ENDIF ~COMPILER9_UP}
   @PackageUnload := GetProcAddress(Module, 'Finalize'); //Do not localize
   if Assigned(PackageUnload) then
     PackageUnload

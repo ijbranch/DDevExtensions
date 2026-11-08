@@ -20,7 +20,7 @@ unit ModuleData;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, ToolsAPI, Forms, IDENotifiers;
+  System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, Vcl.Forms, IDENotifiers;
 
 type
   /// <summary>Forward declaration of the module-data registry.</summary>

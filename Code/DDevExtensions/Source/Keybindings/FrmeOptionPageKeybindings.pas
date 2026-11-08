@@ -16,7 +16,7 @@ unit FrmeOptionPageKeybindings;
 /// </summary>
 
 {$I ..\DelphiExtension.inc}
-{.$O-}
+//{$O-}
 
 interface
 

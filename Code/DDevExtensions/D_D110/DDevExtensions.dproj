@@ -44,7 +44,7 @@
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_DLL>true</VerInfo_DLL>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.24.16.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.24.16;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.24.16.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.24.16.601;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -103,7 +103,7 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>24</VerInfo_MinorVer>
         <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.24.16.601;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.24.16;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.24.16.601;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.24.16.601;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
     </PropertyGroup>
     <ProjectExtensions>

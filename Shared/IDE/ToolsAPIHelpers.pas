@@ -21,12 +21,12 @@ unit ToolsAPIHelpers;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs, ToolsAPI, Controls, ActnList,
-  CategoryButtons, PaletteAPI,
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, ToolsAPI, Vcl.Controls, Vcl.ActnList,
+  Vcl.CategoryButtons, PaletteAPI,
   {$IF CompilerVersion >= 23.0} // XE2+
   PlatformAPI,
   {$IFEND}
-  ExtCtrls, ComCtrls, Forms, ImgList, IDEHooks, TypInfo, Menus;
+  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Forms, Vcl.ImgList, IDEHooks, System.TypInfo, Vcl.Menus;
 
 type
   /// <summary>Identifies whether a unit owns a TForm, TFrame or TDataModule resource.</summary>
@@ -211,7 +211,7 @@ begin
   begin
     ModuleServices := BorlandIDEServices as IOTAModuleServices;
     for i := 0 to ModuleServices.ModuleCount - 1 do
-      if SysUtils.Supports(ModuleServices.Modules[i], IOTAProjectGroup, Result) then
+      if System.SysUtils.Supports(ModuleServices.Modules[i], IOTAProjectGroup, Result) then
         Break;
   end;
 end;

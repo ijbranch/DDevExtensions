@@ -18,7 +18,7 @@ unit IdeDllNames;
 interface
 
 uses
-  Windows, SysUtils;
+  Winapi.Windows, System.SysUtils;
 
 /// <summary>Highest IDE version (e.g. 370 = RAD Studio 13 / 37.0) that this build is known to support.</summary>
 /// <remarks>Adjust ToolsAPIIntf.pas if increasing this value.</remarks>

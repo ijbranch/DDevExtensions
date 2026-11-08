@@ -23,7 +23,7 @@ unit DelphiDesignerParser;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, DelphiPreproc, DelphiLexer;
+  System.SysUtils, System.Classes, System.Contnrs, DelphiPreproc, DelphiLexer;
 
 type
   /// <summary>Forward declaration of the class-list container.</summary>
@@ -937,7 +937,7 @@ const
 implementation
 
 uses
-  StrUtils;
+  System.StrUtils;
 
 const
   ClassAvailableTokens = [tkIdent..tkIdentStrictReserved] -

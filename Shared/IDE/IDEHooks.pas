@@ -20,7 +20,7 @@ unit IDEHooks;
   {$LEGACYIFEND ON}
 {$IFEND}
 
-{.$I jedi\jedi.inc}
+//{$I jedi\jedi.inc}
 {$IFDEF VER130} {$DEFINE COMPILER5} {$ENDIF}  // Delphi 5
 {$IFDEF VER140} {$DEFINE COMPILER6} {$ENDIF}  // Delphi 6
 {$IFDEF VER150} {$DEFINE COMPILER7} {$ENDIF}  // Delphi 7
@@ -33,7 +33,7 @@ unit IDEHooks;
 interface
 
 uses
-  Windows;
+  Winapi.Windows;
 
 const
   {$IFDEF EMBT_DEBUG_EDITION}

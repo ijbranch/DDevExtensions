@@ -21,7 +21,7 @@ unit CompilerHooks;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs, FileStreams, Variants;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs, FileStreams, System.Variants;
 
 var
   /// <summary>When True, the C++ compiler write path uses a buffered write stream (legacy option, kept for symmetry).</summary>

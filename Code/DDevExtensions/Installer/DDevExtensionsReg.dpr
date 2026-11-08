@@ -1,4 +1,4 @@
-{$SetPEFlags 1} // no reloc info in EXE
+﻿{$SetPEFlags 1} // no reloc info in EXE
 
 program DDevExtensionsReg;
 
@@ -8,7 +8,7 @@ program DDevExtensionsReg;
 {$IFEND}
 
 uses
-  Forms,
+  Vcl.Forms,
   Main in 'Main.pas' {FormMain},
   AppConsts in '..\Source\AppConsts.pas';
 

@@ -18,7 +18,7 @@ unit FileStreams;
 interface
 
 uses
-  Windows, SysUtils, Classes, Contnrs;
+  Winapi.Windows, System.SysUtils, System.Classes, System.Contnrs;
 
 const
   /// <summary>Maximum number of idle write buffers to keep cached in TBufferPool before freeing extras.</summary>

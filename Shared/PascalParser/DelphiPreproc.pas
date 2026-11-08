@@ -17,7 +17,7 @@ unit DelphiPreproc;
 interface
 
 uses
-  SysUtils, Classes, Contnrs, DelphiParserContainers, DelphiLexer, DelphiExpr;
+  System.SysUtils, System.Classes, System.Contnrs, DelphiParserContainers, DelphiLexer, DelphiExpr;
 
 type
   /// <summary>Notification raised when the preprocessor emits a token (such as a comment or directive).</summary>
