@@ -90,18 +90,18 @@ uses
 function ScanProjectTodos( AScanner: TTodoScanner; const AProject: IOTAProject;
   AOnProgress: TNotifyEvent ): TArray<TTodoItem>;
 var
-  AllTodos: TList<TTodoItem>;
-  Content: UTF8String;
+  AllTodos          : TList<TTodoItem>;
+  Content           : UTF8String;
 begin
-  Result := nil;
+  Result            := nil;
   if ( AProject = nil ) then
     Exit;
 
-  AllTodos := TList<TTodoItem>.Create;
+  AllTodos          := TList<TTodoItem>.Create;
   try
     { The file list is taken once: the progress callback pumps messages, and the project can change
       or close meanwhile - after each pump the scan stops if it is no longer the active project. }
-    var Identity := ProjectIdentity( AProject );
+    var Identity    := ProjectIdentity( AProject );
     for var sFileName in ProjectPascalFiles( AProject ) do
     begin
       AScanner.ProgressFileName := ExtractFileName( sFileName );
@@ -126,7 +126,7 @@ begin
 
       AllTodos.AddRange( AScanner.ScanSource( Content, sFileName ) );
     end;
-    Result := AllTodos.ToArray;
+    Result          := AllTodos.ToArray;
   finally
     AllTodos.Free;
   end;
@@ -142,7 +142,7 @@ begin
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'TODO/FIXME &Aggregator...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -161,15 +161,15 @@ end;
 procedure TTodoAggregatorPlugin.Init;
 begin
 
-  FEnabled  := True;
-  FPatterns := 'TODO,FIXME,HACK,BUG,NOTE,XXX';
+  FEnabled          := True;
+  FPatterns         := 'TODO,FIXME,HACK,BUG,NOTE,XXX';
 
 end;
 
 function TTodoAggregatorPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'TODO/FIXME Aggregator', TFrameOptionPageTodoAggregator, Self );
+  Result            := TTreePage.Create( 'TODO/FIXME Aggregator', TFrameOptionPageTodoAggregator, Self );
 
 end;
 
@@ -203,3 +203,4 @@ begin
 end;
 
 end.
+

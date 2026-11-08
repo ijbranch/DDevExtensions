@@ -282,127 +282,127 @@ type
 const
   // Common unit scope name mappings (XE2+)
   // This covers the most commonly used units that should use unit scope prefixes
-  UnitScopeMappings: array[ 0..96 ] of TUnitScopeMapping = (
+  UnitScopeMappings : array[ 0..96 ] of TUnitScopeMapping = (
     // System units
-    ( UnitName: 'SysUtils';        QualifiedName: 'System.SysUtils' ),
-    ( UnitName: 'Classes';         QualifiedName: 'System.Classes' ),
-    ( UnitName: 'Types';           QualifiedName: 'System.Types' ),
-    ( UnitName: 'TypInfo';         QualifiedName: 'System.TypInfo' ),
-    ( UnitName: 'Variants';        QualifiedName: 'System.Variants' ),
-    ( UnitName: 'VarUtils';        QualifiedName: 'System.VarUtils' ),
-    ( UnitName: 'StrUtils';        QualifiedName: 'System.StrUtils' ),
-    ( UnitName: 'DateUtils';       QualifiedName: 'System.DateUtils' ),
-    ( UnitName: 'Math';            QualifiedName: 'System.Math' ),
-    ( UnitName: 'IOUtils';         QualifiedName: 'System.IOUtils' ),
-    ( UnitName: 'IniFiles';        QualifiedName: 'System.IniFiles' ),
-    ( UnitName: 'Registry';        QualifiedName: 'System.Registry' ),
+    ( UnitName: 'SysUtils'; QualifiedName: 'System.SysUtils' ),
+    ( UnitName: 'Classes'; QualifiedName: 'System.Classes' ),
+    ( UnitName: 'Types'; QualifiedName: 'System.Types' ),
+    ( UnitName: 'TypInfo'; QualifiedName: 'System.TypInfo' ),
+    ( UnitName: 'Variants'; QualifiedName: 'System.Variants' ),
+    ( UnitName: 'VarUtils'; QualifiedName: 'System.VarUtils' ),
+    ( UnitName: 'StrUtils'; QualifiedName: 'System.StrUtils' ),
+    ( UnitName: 'DateUtils'; QualifiedName: 'System.DateUtils' ),
+    ( UnitName: 'Math'; QualifiedName: 'System.Math' ),
+    ( UnitName: 'IOUtils'; QualifiedName: 'System.IOUtils' ),
+    ( UnitName: 'IniFiles'; QualifiedName: 'System.IniFiles' ),
+    ( UnitName: 'Registry'; QualifiedName: 'System.Registry' ),
     ( UnitName: 'RegularExpressions'; QualifiedName: 'System.RegularExpressions' ),
-    ( UnitName: 'SyncObjs';        QualifiedName: 'System.SyncObjs' ),
-    ( UnitName: 'Contnrs';         QualifiedName: 'System.Contnrs' ),
-    ( UnitName: 'Actions';         QualifiedName: 'System.Actions' ),
-    ( UnitName: 'ImageList';       QualifiedName: 'System.ImageList' ),
-    ( UnitName: 'UITypes';         QualifiedName: 'System.UITypes' ),
-    ( UnitName: 'Rtti';            QualifiedName: 'System.Rtti' ),
-    ( UnitName: 'Masks';           QualifiedName: 'System.Masks' ),
-    ( UnitName: 'AnsiStrings';     QualifiedName: 'System.AnsiStrings' ),
-    ( UnitName: 'Character';       QualifiedName: 'System.Character' ),
-    ( UnitName: 'NetEncoding';     QualifiedName: 'System.NetEncoding' ),
-    ( UnitName: 'Hash';            QualifiedName: 'System.Hash' ),
-    ( UnitName: 'JSON';            QualifiedName: 'System.JSON' ),
-    ( UnitName: 'Zip';             QualifiedName: 'System.Zip' ),
-    ( UnitName: 'Zlib';            QualifiedName: 'System.Zlib' ),
-    ( UnitName: 'ZLibConst';       QualifiedName: 'System.ZLibConst' ),
-    ( UnitName: 'TimeSpan';        QualifiedName: 'System.TimeSpan' ),
+    ( UnitName: 'SyncObjs'; QualifiedName: 'System.SyncObjs' ),
+    ( UnitName: 'Contnrs'; QualifiedName: 'System.Contnrs' ),
+    ( UnitName: 'Actions'; QualifiedName: 'System.Actions' ),
+    ( UnitName: 'ImageList'; QualifiedName: 'System.ImageList' ),
+    ( UnitName: 'UITypes'; QualifiedName: 'System.UITypes' ),
+    ( UnitName: 'Rtti'; QualifiedName: 'System.Rtti' ),
+    ( UnitName: 'Masks'; QualifiedName: 'System.Masks' ),
+    ( UnitName: 'AnsiStrings'; QualifiedName: 'System.AnsiStrings' ),
+    ( UnitName: 'Character'; QualifiedName: 'System.Character' ),
+    ( UnitName: 'NetEncoding'; QualifiedName: 'System.NetEncoding' ),
+    ( UnitName: 'Hash'; QualifiedName: 'System.Hash' ),
+    ( UnitName: 'JSON'; QualifiedName: 'System.JSON' ),
+    ( UnitName: 'Zip'; QualifiedName: 'System.Zip' ),
+    ( UnitName: 'Zlib'; QualifiedName: 'System.Zlib' ),
+    ( UnitName: 'ZLibConst'; QualifiedName: 'System.ZLibConst' ),
+    ( UnitName: 'TimeSpan'; QualifiedName: 'System.TimeSpan' ),
     ( UnitName: 'Generics.Collections'; QualifiedName: 'System.Generics.Collections' ),
     ( UnitName: 'Generics.Defaults'; QualifiedName: 'System.Generics.Defaults' ),
     // Vcl units
-    ( UnitName: 'Forms';           QualifiedName: 'Vcl.Forms' ),
-    ( UnitName: 'Controls';        QualifiedName: 'Vcl.Controls' ),
-    ( UnitName: 'StdCtrls';        QualifiedName: 'Vcl.StdCtrls' ),
-    ( UnitName: 'ExtCtrls';        QualifiedName: 'Vcl.ExtCtrls' ),
-    ( UnitName: 'Dialogs';         QualifiedName: 'Vcl.Dialogs' ),
-    ( UnitName: 'Graphics';        QualifiedName: 'Vcl.Graphics' ),
-    ( UnitName: 'Menus';           QualifiedName: 'Vcl.Menus' ),
-    ( UnitName: 'ComCtrls';        QualifiedName: 'Vcl.ComCtrls' ),
-    ( UnitName: 'Buttons';         QualifiedName: 'Vcl.Buttons' ),
-    ( UnitName: 'ActnList';        QualifiedName: 'Vcl.ActnList' ),
-    ( UnitName: 'ImgList';         QualifiedName: 'Vcl.ImgList' ),
-    ( UnitName: 'Grids';           QualifiedName: 'Vcl.Grids' ),
-    ( UnitName: 'ValEdit';         QualifiedName: 'Vcl.ValEdit' ),
-    ( UnitName: 'DBGrids';         QualifiedName: 'Vcl.DBGrids' ),
-    ( UnitName: 'DBCtrls';         QualifiedName: 'Vcl.DBCtrls' ),
-    ( UnitName: 'Clipbrd';         QualifiedName: 'Vcl.Clipbrd' ),
-    ( UnitName: 'Printers';        QualifiedName: 'Vcl.Printers' ),
-    ( UnitName: 'Themes';          QualifiedName: 'Vcl.Themes' ),
-    ( UnitName: 'Styles';          QualifiedName: 'Vcl.Styles' ),
-    ( UnitName: 'Mask';            QualifiedName: 'Vcl.Mask' ),
-    ( UnitName: 'CheckLst';        QualifiedName: 'Vcl.CheckLst' ),
-    ( UnitName: 'FileCtrl';        QualifiedName: 'Vcl.FileCtrl' ),
+    ( UnitName: 'Forms'; QualifiedName: 'Vcl.Forms' ),
+    ( UnitName: 'Controls'; QualifiedName: 'Vcl.Controls' ),
+    ( UnitName: 'StdCtrls'; QualifiedName: 'Vcl.StdCtrls' ),
+    ( UnitName: 'ExtCtrls'; QualifiedName: 'Vcl.ExtCtrls' ),
+    ( UnitName: 'Dialogs'; QualifiedName: 'Vcl.Dialogs' ),
+    ( UnitName: 'Graphics'; QualifiedName: 'Vcl.Graphics' ),
+    ( UnitName: 'Menus'; QualifiedName: 'Vcl.Menus' ),
+    ( UnitName: 'ComCtrls'; QualifiedName: 'Vcl.ComCtrls' ),
+    ( UnitName: 'Buttons'; QualifiedName: 'Vcl.Buttons' ),
+    ( UnitName: 'ActnList'; QualifiedName: 'Vcl.ActnList' ),
+    ( UnitName: 'ImgList'; QualifiedName: 'Vcl.ImgList' ),
+    ( UnitName: 'Grids'; QualifiedName: 'Vcl.Grids' ),
+    ( UnitName: 'ValEdit'; QualifiedName: 'Vcl.ValEdit' ),
+    ( UnitName: 'DBGrids'; QualifiedName: 'Vcl.DBGrids' ),
+    ( UnitName: 'DBCtrls'; QualifiedName: 'Vcl.DBCtrls' ),
+    ( UnitName: 'Clipbrd'; QualifiedName: 'Vcl.Clipbrd' ),
+    ( UnitName: 'Printers'; QualifiedName: 'Vcl.Printers' ),
+    ( UnitName: 'Themes'; QualifiedName: 'Vcl.Themes' ),
+    ( UnitName: 'Styles'; QualifiedName: 'Vcl.Styles' ),
+    ( UnitName: 'Mask'; QualifiedName: 'Vcl.Mask' ),
+    ( UnitName: 'CheckLst'; QualifiedName: 'Vcl.CheckLst' ),
+    ( UnitName: 'FileCtrl'; QualifiedName: 'Vcl.FileCtrl' ),
     ( UnitName: 'CategoryButtons'; QualifiedName: 'Vcl.CategoryButtons' ),
-    ( UnitName: 'ButtonGroup';     QualifiedName: 'Vcl.ButtonGroup' ),
-    ( UnitName: 'ExtDlgs';         QualifiedName: 'Vcl.ExtDlgs' ),
-    ( UnitName: 'ToolWin';         QualifiedName: 'Vcl.ToolWin' ),
-    ( UnitName: 'AppEvnts';        QualifiedName: 'Vcl.AppEvnts' ),
-    ( UnitName: 'OleCtrls';        QualifiedName: 'Vcl.OleCtrls' ),
-    ( UnitName: 'StdActns';        QualifiedName: 'Vcl.StdActns' ),
-    ( UnitName: 'Samples';         QualifiedName: 'Vcl.Samples' ),
+    ( UnitName: 'ButtonGroup'; QualifiedName: 'Vcl.ButtonGroup' ),
+    ( UnitName: 'ExtDlgs'; QualifiedName: 'Vcl.ExtDlgs' ),
+    ( UnitName: 'ToolWin'; QualifiedName: 'Vcl.ToolWin' ),
+    ( UnitName: 'AppEvnts'; QualifiedName: 'Vcl.AppEvnts' ),
+    ( UnitName: 'OleCtrls'; QualifiedName: 'Vcl.OleCtrls' ),
+    ( UnitName: 'StdActns'; QualifiedName: 'Vcl.StdActns' ),
+    ( UnitName: 'Samples'; QualifiedName: 'Vcl.Samples' ),
     // Winapi units
-    ( UnitName: 'Windows';         QualifiedName: 'Winapi.Windows' ),
-    ( UnitName: 'Messages';        QualifiedName: 'Winapi.Messages' ),
-    ( UnitName: 'ShellAPI';        QualifiedName: 'Winapi.ShellAPI' ),
-    ( UnitName: 'ShlObj';          QualifiedName: 'Winapi.ShlObj' ),
-    ( UnitName: 'CommCtrl';        QualifiedName: 'Winapi.CommCtrl' ),
-    ( UnitName: 'CommDlg';         QualifiedName: 'Winapi.CommDlg' ),
-    ( UnitName: 'ActiveX';         QualifiedName: 'Winapi.ActiveX' ),
-    ( UnitName: 'WinSock';         QualifiedName: 'Winapi.WinSock' ),
-    ( UnitName: 'WinSock2';        QualifiedName: 'Winapi.WinSock2' ),
-    ( UnitName: 'WinInet';         QualifiedName: 'Winapi.WinInet' ),
-    ( UnitName: 'TlHelp32';        QualifiedName: 'Winapi.TlHelp32' ),
-    ( UnitName: 'PsAPI';           QualifiedName: 'Winapi.PsAPI' ),
-    ( UnitName: 'MMSystem';        QualifiedName: 'Winapi.MMSystem' ),
-    ( UnitName: 'RichEdit';        QualifiedName: 'Winapi.RichEdit' ),
-    ( UnitName: 'UxTheme';         QualifiedName: 'Winapi.UxTheme' ),
-    ( UnitName: 'DwmApi';          QualifiedName: 'Winapi.DwmApi' ),
-    ( UnitName: 'GDIPAPI';         QualifiedName: 'Winapi.GDIPAPI' ),
-    ( UnitName: 'GDIPOBJ';         QualifiedName: 'Winapi.GDIPOBJ' ),
-    ( UnitName: 'Winsvc';          QualifiedName: 'Winapi.Winsvc' ),
-    ( UnitName: 'ImageHlp';        QualifiedName: 'Winapi.ImageHlp' ),
+    ( UnitName: 'Windows'; QualifiedName: 'Winapi.Windows' ),
+    ( UnitName: 'Messages'; QualifiedName: 'Winapi.Messages' ),
+    ( UnitName: 'ShellAPI'; QualifiedName: 'Winapi.ShellAPI' ),
+    ( UnitName: 'ShlObj'; QualifiedName: 'Winapi.ShlObj' ),
+    ( UnitName: 'CommCtrl'; QualifiedName: 'Winapi.CommCtrl' ),
+    ( UnitName: 'CommDlg'; QualifiedName: 'Winapi.CommDlg' ),
+    ( UnitName: 'ActiveX'; QualifiedName: 'Winapi.ActiveX' ),
+    ( UnitName: 'WinSock'; QualifiedName: 'Winapi.WinSock' ),
+    ( UnitName: 'WinSock2'; QualifiedName: 'Winapi.WinSock2' ),
+    ( UnitName: 'WinInet'; QualifiedName: 'Winapi.WinInet' ),
+    ( UnitName: 'TlHelp32'; QualifiedName: 'Winapi.TlHelp32' ),
+    ( UnitName: 'PsAPI'; QualifiedName: 'Winapi.PsAPI' ),
+    ( UnitName: 'MMSystem'; QualifiedName: 'Winapi.MMSystem' ),
+    ( UnitName: 'RichEdit'; QualifiedName: 'Winapi.RichEdit' ),
+    ( UnitName: 'UxTheme'; QualifiedName: 'Winapi.UxTheme' ),
+    ( UnitName: 'DwmApi'; QualifiedName: 'Winapi.DwmApi' ),
+    ( UnitName: 'GDIPAPI'; QualifiedName: 'Winapi.GDIPAPI' ),
+    ( UnitName: 'GDIPOBJ'; QualifiedName: 'Winapi.GDIPOBJ' ),
+    ( UnitName: 'Winsvc'; QualifiedName: 'Winapi.Winsvc' ),
+    ( UnitName: 'ImageHlp'; QualifiedName: 'Winapi.ImageHlp' ),
     // Data units
-    ( UnitName: 'DB';              QualifiedName: 'Data.DB' ),
-    ( UnitName: 'DBCommon';        QualifiedName: 'Data.DBCommon' ),
-    ( UnitName: 'FMTBcd';          QualifiedName: 'Data.FMTBcd' ),
-    ( UnitName: 'SqlExpr';         QualifiedName: 'Data.SqlExpr' ),
-    ( UnitName: 'SqlTimSt';        QualifiedName: 'Data.SqlTimSt' ),
+    ( UnitName: 'DB'; QualifiedName: 'Data.DB' ),
+    ( UnitName: 'DBCommon'; QualifiedName: 'Data.DBCommon' ),
+    ( UnitName: 'FMTBcd'; QualifiedName: 'Data.FMTBcd' ),
+    ( UnitName: 'SqlExpr'; QualifiedName: 'Data.SqlExpr' ),
+    ( UnitName: 'SqlTimSt'; QualifiedName: 'Data.SqlTimSt' ),
     // Datasnap units
-    ( UnitName: 'DBClient';        QualifiedName: 'Datasnap.DBClient' ),
-    ( UnitName: 'Provider';        QualifiedName: 'Datasnap.Provider' ),
+    ( UnitName: 'DBClient'; QualifiedName: 'Datasnap.DBClient' ),
+    ( UnitName: 'Provider'; QualifiedName: 'Datasnap.Provider' ),
     // XML units
-    ( UnitName: 'XMLIntf';         QualifiedName: 'Xml.XMLIntf' ),
-    ( UnitName: 'XMLDoc';          QualifiedName: 'Xml.XMLDoc' ),
-    ( UnitName: 'XMLDom';          QualifiedName: 'Xml.XMLDom' ),
-    ( UnitName: 'OmniXML';         QualifiedName: 'Xml.OmniXML' ),
+    ( UnitName: 'XMLIntf'; QualifiedName: 'Xml.XMLIntf' ),
+    ( UnitName: 'XMLDoc'; QualifiedName: 'Xml.XMLDoc' ),
+    ( UnitName: 'XMLDom'; QualifiedName: 'Xml.XMLDom' ),
+    ( UnitName: 'OmniXML'; QualifiedName: 'Xml.OmniXML' ),
     // Internet units
-    ( UnitName: 'Web.HTTPApp';     QualifiedName: 'Web.HTTPApp' ),
+    ( UnitName: 'Web.HTTPApp'; QualifiedName: 'Web.HTTPApp' ),
     // Soap units
-    ( UnitName: 'InvokeRegistry';  QualifiedName: 'Soap.InvokeRegistry' ),
-    ( UnitName: 'XSBuiltIns';      QualifiedName: 'Soap.XSBuiltIns' ),
+    ( UnitName: 'InvokeRegistry'; QualifiedName: 'Soap.InvokeRegistry' ),
+    ( UnitName: 'XSBuiltIns'; QualifiedName: 'Soap.XSBuiltIns' ),
     // REST units
-    ( UnitName: 'REST.Client';     QualifiedName: 'REST.Client' ),
-    ( UnitName: 'REST.Types';      QualifiedName: 'REST.Types' )
-  );
+    ( UnitName: 'REST.Client'; QualifiedName: 'REST.Client' ),
+    ( UnitName: 'REST.Types'; QualifiedName: 'REST.Types' )
+    );
 
 function GetQualifiedUnitName( const UnitName: string ): string;
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
-  Result := '';
+  Result            := '';
 
   for I := Low( UnitScopeMappings ) to High( UnitScopeMappings ) do
   begin
     if SameText( UnitScopeMappings[ I ].UnitName, UnitName ) then
     begin
-      Result := UnitScopeMappings[ I ].QualifiedName;
+      Result        := UnitScopeMappings[ I ].QualifiedName;
       Exit;
     end;
   end;
@@ -415,7 +415,7 @@ constructor TStyleChecker.Create;
 begin
 
   inherited Create;
-  FRules := TObjectList<TStyleRule>.Create( True );
+  FRules            := TObjectList<TStyleRule>.Create( True );
   InitDefaultRules;
 
 end;
@@ -430,69 +430,69 @@ end;
 
 procedure TStyleChecker.InitDefaultRules;
 var
-  Rule: TStyleRule;
+  Rule              : TStyleRule;
 begin
 
   FRules.Clear;
 
   // Type names must start with T
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'TypePrefix';
-  Rule.Description := 'Type names should start with T';
-  Rule.Prefix      := 'T';
-  Rule.AppliesTo   := 'Types';
-  Rule.Enabled     := True;
-  Rule.Severity    := 'Warning';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'TypePrefix';
+  Rule.Description  := 'Type names should start with T';
+  Rule.Prefix       := 'T';
+  Rule.AppliesTo    := 'Types';
+  Rule.Enabled      := True;
+  Rule.Severity     := 'Warning';
   FRules.Add( Rule );
 
   // Interface names must start with I
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'InterfacePrefix';
-  Rule.Description := 'Interface names should start with I';
-  Rule.Prefix      := 'I';
-  Rule.AppliesTo   := 'Interfaces';
-  Rule.Enabled     := True;
-  Rule.Severity    := 'Warning';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'InterfacePrefix';
+  Rule.Description  := 'Interface names should start with I';
+  Rule.Prefix       := 'I';
+  Rule.AppliesTo    := 'Interfaces';
+  Rule.Enabled      := True;
+  Rule.Severity     := 'Warning';
   FRules.Add( Rule );
 
   // Field names must start with F
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'FieldPrefix';
-  Rule.Description := 'Field names should start with F';
-  Rule.Prefix      := 'F';
-  Rule.AppliesTo   := 'Fields';
-  Rule.Enabled     := True;
-  Rule.Severity    := 'Warning';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'FieldPrefix';
+  Rule.Description  := 'Field names should start with F';
+  Rule.Prefix       := 'F';
+  Rule.AppliesTo    := 'Fields';
+  Rule.Enabled      := True;
+  Rule.Severity     := 'Warning';
   FRules.Add( Rule );
 
   // Exception types must start with E
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'ExceptionPrefix';
-  Rule.Description := 'Exception type names should start with E';
-  Rule.Prefix      := 'E';
-  Rule.AppliesTo   := 'Exceptions';
-  Rule.Enabled     := True;
-  Rule.Severity    := 'Warning';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'ExceptionPrefix';
+  Rule.Description  := 'Exception type names should start with E';
+  Rule.Prefix       := 'E';
+  Rule.AppliesTo    := 'Exceptions';
+  Rule.Enabled      := True;
+  Rule.Severity     := 'Warning';
   FRules.Add( Rule );
 
   // Pointer types must start with P
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'PointerPrefix';
-  Rule.Description := 'Pointer type names should start with P';
-  Rule.Prefix      := 'P';
-  Rule.AppliesTo   := 'Pointers';
-  Rule.Enabled     := True;
-  Rule.Severity    := 'Info';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'PointerPrefix';
+  Rule.Description  := 'Pointer type names should start with P';
+  Rule.Prefix       := 'P';
+  Rule.AppliesTo    := 'Pointers';
+  Rule.Enabled      := True;
+  Rule.Severity     := 'Info';
   FRules.Add( Rule );
 
   // Parameter names should start with A
-  Rule             := TStyleRule.Create;
-  Rule.Name        := 'ParameterPrefix';
-  Rule.Description := 'Parameter names should start with A';
-  Rule.Prefix      := 'A';
-  Rule.AppliesTo   := 'Parameters';
-  Rule.Enabled     := False;  // Off by default - not universally followed
-  Rule.Severity    := 'Info';
+  Rule              := TStyleRule.Create;
+  Rule.Name         := 'ParameterPrefix';
+  Rule.Description  := 'Parameter names should start with A';
+  Rule.Prefix       := 'A';
+  Rule.AppliesTo    := 'Parameters';
+  Rule.Enabled      := False; // Off by default - not universally followed
+  Rule.Severity     := 'Info';
   FRules.Add( Rule );
 
 end;
@@ -502,66 +502,66 @@ function TStyleChecker.CheckName( const Name, RuleName, Prefix: string;
   var Violation: TStyleViolation ): Boolean;
 begin
 
-  Result := False;
+  Result            := False;
 
   if ( Length( Name ) > 0 ) and ( not SameText( Copy( Name, 1, Length( Prefix ) ), Prefix ) ) then
   begin
     Violation.FileName := FileName;
     Violation.UnitName := UnitName;
-    Violation.Line     := Line + 1;  // Convert from 0-based (lexer) to 1-based (IDE)
-    Violation.Column   := Column;
-    Violation.Rule     := RuleName;
+    Violation.Line  := Line + 1; // Convert from 0-based (lexer) to 1-based (IDE)
+    Violation.Column := Column;
+    Violation.Rule  := RuleName;
     Violation.Expected := Prefix + '...';
-    Violation.Actual   := Name;
+    Violation.Actual := Name;
     Violation.Severity := Severity;
     Violation.Category := 'NamingConvention';
-    Result             := True;
+    Result          := True;
   end;
 
 end;
 
 function IsBuiltInType( const Name: string ): Boolean;
 var
-  UpperName: string;
+  UpperName         : string;
 begin
 
-  UpperName := UpperCase( Name );
-  Result    := ( UpperName = 'BOOLEAN' ) or
-               ( UpperName = 'INTEGER' ) or
-               ( UpperName = 'CARDINAL' ) or
-               ( UpperName = 'INT64' ) or
-               ( UpperName = 'UINT64' ) or
-               ( UpperName = 'BYTE' ) or
-               ( UpperName = 'WORD' ) or
-               ( UpperName = 'LONGWORD' ) or
-               ( UpperName = 'SHORTINT' ) or
-               ( UpperName = 'SMALLINT' ) or
-               ( UpperName = 'LONGINT' ) or
-               ( UpperName = 'NATIVEINT' ) or
-               ( UpperName = 'NATIVEUINT' ) or
-               ( UpperName = 'SINGLE' ) or
-               ( UpperName = 'DOUBLE' ) or
-               ( UpperName = 'EXTENDED' ) or
-               ( UpperName = 'REAL' ) or
-               ( UpperName = 'CURRENCY' ) or
-               ( UpperName = 'COMP' ) or
-               ( UpperName = 'STRING' ) or
-               ( UpperName = 'ANSISTRING' ) or
-               ( UpperName = 'WIDESTRING' ) or
-               ( UpperName = 'UNICODESTRING' ) or
-               ( UpperName = 'SHORTSTRING' ) or
-               ( UpperName = 'CHAR' ) or
-               ( UpperName = 'ANSICHAR' ) or
-               ( UpperName = 'WIDECHAR' ) or
-               ( UpperName = 'PCHAR' ) or
-               ( UpperName = 'PANSICHAR' ) or
-               ( UpperName = 'PWIDECHAR' ) or
-               ( UpperName = 'POINTER' ) or
-               ( UpperName = 'VARIANT' ) or
-               ( UpperName = 'OLEVARIANT' ) or
-               ( UpperName = 'TDATETIME' ) or
-               ( UpperName = 'TDATE' ) or
-               ( UpperName = 'TTIME' );
+  UpperName         := UpperCase( Name );
+  Result            := ( UpperName = 'BOOLEAN' ) or
+    ( UpperName = 'INTEGER' ) or
+    ( UpperName = 'CARDINAL' ) or
+    ( UpperName = 'INT64' ) or
+    ( UpperName = 'UINT64' ) or
+    ( UpperName = 'BYTE' ) or
+    ( UpperName = 'WORD' ) or
+    ( UpperName = 'LONGWORD' ) or
+    ( UpperName = 'SHORTINT' ) or
+    ( UpperName = 'SMALLINT' ) or
+    ( UpperName = 'LONGINT' ) or
+    ( UpperName = 'NATIVEINT' ) or
+    ( UpperName = 'NATIVEUINT' ) or
+    ( UpperName = 'SINGLE' ) or
+    ( UpperName = 'DOUBLE' ) or
+    ( UpperName = 'EXTENDED' ) or
+    ( UpperName = 'REAL' ) or
+    ( UpperName = 'CURRENCY' ) or
+    ( UpperName = 'COMP' ) or
+    ( UpperName = 'STRING' ) or
+    ( UpperName = 'ANSISTRING' ) or
+    ( UpperName = 'WIDESTRING' ) or
+    ( UpperName = 'UNICODESTRING' ) or
+    ( UpperName = 'SHORTSTRING' ) or
+    ( UpperName = 'CHAR' ) or
+    ( UpperName = 'ANSICHAR' ) or
+    ( UpperName = 'WIDECHAR' ) or
+    ( UpperName = 'PCHAR' ) or
+    ( UpperName = 'PANSICHAR' ) or
+    ( UpperName = 'PWIDECHAR' ) or
+    ( UpperName = 'POINTER' ) or
+    ( UpperName = 'VARIANT' ) or
+    ( UpperName = 'OLEVARIANT' ) or
+    ( UpperName = 'TDATETIME' ) or
+    ( UpperName = 'TDATE' ) or
+    ( UpperName = 'TTIME' );
 
 end;
 
@@ -569,25 +569,25 @@ function MatchesTypePattern( const TypeName, Pattern: string ): Boolean;
 begin
 
   // Case-insensitive match - pattern matches if type name starts with pattern
-  Result := SameText( TypeName, Pattern ) or
-            ( Pos( UpperCase( Pattern ), UpperCase( TypeName ) ) = 1 );
+  Result            := SameText( TypeName, Pattern ) or
+    ( Pos( UpperCase( Pattern ), UpperCase( TypeName ) ) = 1 );
 
 end;
 
 function FindMoreSpecificRule( const TypeName: string; MatchedIndex: Integer ): string;
 var
-  J: Integer;
-  MatchedPattern: string;
+  J                 : Integer;
+  MatchedPattern    : string;
 begin
 
   // Check if there's a more specific rule (longer pattern) that also matches
   // Returns the pattern name if found, empty string if not
-  Result := '';
+  Result            := '';
 
   if CodeStyleCheckerPlugin = nil then
     Exit;
 
-  MatchedPattern := CodeStyleCheckerPlugin.TypePrefixRules[ MatchedIndex ].TypePattern;
+  MatchedPattern    := CodeStyleCheckerPlugin.TypePrefixRules[ MatchedIndex ].TypePattern;
 
   for J := 0 to High( CodeStyleCheckerPlugin.TypePrefixRules ) do
   begin
@@ -599,11 +599,11 @@ begin
 
     // Check if this rule's pattern is more specific (longer) and also matches
     if ( Length( CodeStyleCheckerPlugin.TypePrefixRules[ J ].TypePattern ) >
-         Length( MatchedPattern ) ) and
-       MatchesTypePattern( TypeName, CodeStyleCheckerPlugin.TypePrefixRules[ J ].TypePattern ) then
+      Length( MatchedPattern ) ) and
+      MatchesTypePattern( TypeName, CodeStyleCheckerPlugin.TypePrefixRules[ J ].TypePattern ) then
     begin
-      Result := CodeStyleCheckerPlugin.TypePrefixRules[ J ].TypePattern;
-      Exit;  // Return first more specific match found
+      Result        := CodeStyleCheckerPlugin.TypePrefixRules[ J ].TypePattern;
+      Exit; // Return first more specific match found
     end;
   end;
 
@@ -612,81 +612,81 @@ end;
 function TStyleChecker.CheckFile( const FileName: string;
   out Violations: TArray<TStyleViolation> ): Boolean;
 var
-  Content: UTF8String;
-  Lexer: TDelphiLexer;
+  Content           : UTF8String;
+  Lexer             : TDelphiLexer;
   Token, IdentToken, TypeToken: TToken;
-  ViolationList: TList<TStyleViolation>;
-  Violation: TStyleViolation;
+  ViolationList     : TList<TStyleViolation>;
+  Violation         : TStyleViolation;
   UnitName, TypeName, QualifiedName: string;
-  InType, InClass: Boolean;
+  InType, InClass   : Boolean;
   InPrivate, InProtected: Boolean;
   InParameterList, InMethodDeclaration: Boolean;
   InVarSection, InUsesClause: Boolean;
-  ParenDepth: Integer;
+  ParenDepth        : Integer;
   CheckTypes, CheckInterfaces, CheckFields: Boolean;
   CheckExceptions, CheckPointers, CheckParameters: Boolean;
   CheckVariablePrefixes, CheckUnitScopeNames: Boolean;
-  I: Integer;
+  I                 : Integer;
   // Anti-pattern detection variables
   CheckAntiPatterns, CheckEmptyFinally, CheckNestedWith: Boolean;
   CheckDeepNesting, CheckLongMethods, CheckLongParamLists: Boolean;
   MaxNestingDepth, MaxMethodLines, MaxParameters: Integer;
-  WithDepth: Integer;
-  NestingDepth: Integer;
-  MethodStartLine: Integer;
-  MethodName: string;
-  CurrentParamCount: Integer;
-  InFinally: Boolean;
-  FinallyLine: Integer;
-  FinallyHasContent: Boolean;
-  BeginEndDepth: Integer;
-  InMethodBody: Boolean;
+  WithDepth         : Integer;
+  NestingDepth      : Integer;
+  MethodStartLine   : Integer;
+  MethodName        : string;
+  CurrentParamCount : Integer;
+  InFinally         : Boolean;
+  FinallyLine       : Integer;
+  FinallyHasContent : Boolean;
+  BeginEndDepth     : Integer;
+  InMethodBody      : Boolean;
 begin
 
-  Result := False;
+  Result            := False;
   SetLength( Violations, 0 );
 
   // Get enabled checks from plugin
   if CodeStyleCheckerPlugin <> nil then
   begin
-    CheckTypes           := CodeStyleCheckerPlugin.CheckTypes;
-    CheckInterfaces      := CodeStyleCheckerPlugin.CheckInterfaces;
-    CheckFields          := CodeStyleCheckerPlugin.CheckFields;
-    CheckExceptions      := CodeStyleCheckerPlugin.CheckExceptions;
-    CheckPointers        := CodeStyleCheckerPlugin.CheckPointers;
-    CheckParameters      := CodeStyleCheckerPlugin.CheckParameters;
+    CheckTypes      := CodeStyleCheckerPlugin.CheckTypes;
+    CheckInterfaces := CodeStyleCheckerPlugin.CheckInterfaces;
+    CheckFields     := CodeStyleCheckerPlugin.CheckFields;
+    CheckExceptions := CodeStyleCheckerPlugin.CheckExceptions;
+    CheckPointers   := CodeStyleCheckerPlugin.CheckPointers;
+    CheckParameters := CodeStyleCheckerPlugin.CheckParameters;
     CheckVariablePrefixes := CodeStyleCheckerPlugin.CheckVariablePrefixes;
-    CheckUnitScopeNames  := CodeStyleCheckerPlugin.CheckUnitScopeNames;
+    CheckUnitScopeNames := CodeStyleCheckerPlugin.CheckUnitScopeNames;
     // Anti-pattern detection settings
-    CheckAntiPatterns    := CodeStyleCheckerPlugin.CheckAntiPatterns;
-    CheckEmptyFinally    := CodeStyleCheckerPlugin.CheckEmptyFinally;
-    CheckNestedWith      := CodeStyleCheckerPlugin.CheckNestedWith;
-    CheckDeepNesting     := CodeStyleCheckerPlugin.CheckDeepNesting;
-    CheckLongMethods     := CodeStyleCheckerPlugin.CheckLongMethods;
-    CheckLongParamLists  := CodeStyleCheckerPlugin.CheckLongParamLists;
-    MaxNestingDepth      := CodeStyleCheckerPlugin.MaxNestingDepth;
-    MaxMethodLines       := CodeStyleCheckerPlugin.MaxMethodLines;
-    MaxParameters        := CodeStyleCheckerPlugin.MaxParameters;
+    CheckAntiPatterns := CodeStyleCheckerPlugin.CheckAntiPatterns;
+    CheckEmptyFinally := CodeStyleCheckerPlugin.CheckEmptyFinally;
+    CheckNestedWith := CodeStyleCheckerPlugin.CheckNestedWith;
+    CheckDeepNesting := CodeStyleCheckerPlugin.CheckDeepNesting;
+    CheckLongMethods := CodeStyleCheckerPlugin.CheckLongMethods;
+    CheckLongParamLists := CodeStyleCheckerPlugin.CheckLongParamLists;
+    MaxNestingDepth := CodeStyleCheckerPlugin.MaxNestingDepth;
+    MaxMethodLines  := CodeStyleCheckerPlugin.MaxMethodLines;
+    MaxParameters   := CodeStyleCheckerPlugin.MaxParameters;
   end
   else
   begin
-    CheckTypes           := True;
-    CheckInterfaces      := True;
-    CheckFields          := True;
-    CheckExceptions      := True;
-    CheckPointers        := True;
-    CheckParameters      := False;
+    CheckTypes      := True;
+    CheckInterfaces := True;
+    CheckFields     := True;
+    CheckExceptions := True;
+    CheckPointers   := True;
+    CheckParameters := False;
     CheckVariablePrefixes := False;
-    CheckUnitScopeNames  := False;
-    CheckAntiPatterns    := False;
-    CheckEmptyFinally    := True;
-    CheckNestedWith      := True;
-    CheckDeepNesting     := True;
-    CheckLongMethods     := True;
-    CheckLongParamLists  := True;
-    MaxNestingDepth      := 4;
-    MaxMethodLines       := 100;
-    MaxParameters        := 6;
+    CheckUnitScopeNames := False;
+    CheckAntiPatterns := False;
+    CheckEmptyFinally := True;
+    CheckNestedWith := True;
+    CheckDeepNesting := True;
+    CheckLongMethods := True;
+    CheckLongParamLists := True;
+    MaxNestingDepth := 4;
+    MaxMethodLines  := 100;
+    MaxParameters   := 6;
   end;
 
   try
@@ -698,31 +698,31 @@ begin
       Exit;
   end;
 
-  UnitName            := ChangeFileExt( ExtractFileName( FileName ), '' );
-  ViolationList       := TList<TStyleViolation>.Create;
-  InType              := False;
-  InClass             := False;
-  InPrivate           := False;
-  InProtected         := False;
-  InParameterList     := False;
+  UnitName          := ChangeFileExt( ExtractFileName( FileName ), '' );
+  ViolationList     := TList<TStyleViolation>.Create;
+  InType            := False;
+  InClass           := False;
+  InPrivate         := False;
+  InProtected       := False;
+  InParameterList   := False;
   InMethodDeclaration := False;
-  InVarSection        := False;
-  InUsesClause        := False;
-  ParenDepth          := 0;
+  InVarSection      := False;
+  InUsesClause      := False;
+  ParenDepth        := 0;
   // Anti-pattern state initialization
-  WithDepth           := 0;
-  NestingDepth        := 0;
-  MethodStartLine     := 0;
-  MethodName          := '';
-  CurrentParamCount   := 0;
-  InFinally           := False;
-  FinallyLine         := 0;
-  FinallyHasContent   := False;
-  BeginEndDepth       := 0;
-  InMethodBody        := False;
+  WithDepth         := 0;
+  NestingDepth      := 0;
+  MethodStartLine   := 0;
+  MethodName        := '';
+  CurrentParamCount := 0;
+  InFinally         := False;
+  FinallyLine       := 0;
+  FinallyHasContent := False;
+  BeginEndDepth     := 0;
+  InMethodBody      := False;
 
   try
-    Lexer := TDelphiLexer.Create( FileName, Content );
+    Lexer           := TDelphiLexer.Create( FileName, Content );
 
     try
       while Lexer.NextToken( Token ) do
@@ -756,11 +756,11 @@ begin
               begin
                 Violation.FileName := FileName;
                 Violation.UnitName := UnitName;
-                Violation.Line     := IdentToken.Line + 1;
-                Violation.Column   := IdentToken.Column;
-                Violation.Rule     := 'UnitScopePrefix';
+                Violation.Line := IdentToken.Line + 1;
+                Violation.Column := IdentToken.Column;
+                Violation.Rule := 'UnitScopePrefix';
                 Violation.Expected := QualifiedName;
-                Violation.Actual   := IdentToken.Value;
+                Violation.Actual := IdentToken.Value;
                 Violation.Severity := 'Warning';
                 ViolationList.Add( Violation );
               end;
@@ -781,8 +781,8 @@ begin
         // Track type section
         if Token.Kind = tkI_type then
         begin
-          InType       := True;
-          InClass      := False;
+          InType    := True;
+          InClass   := False;
           InVarSection := False;
         end
         else if Token.Kind = tkI_var then
@@ -790,13 +790,13 @@ begin
           // Enter var section (but not inside a class - those are fields)
           if not InClass then
           begin
-            InType       := False;
+            InType  := False;
             InVarSection := True;
           end;
         end
         else if Token.Kind in [ tkI_const, tkI_implementation,
-                                tkI_procedure, tkI_function, tkI_constructor,
-                                tkI_destructor, tkI_begin ] then
+          tkI_procedure, tkI_function, tkI_constructor,
+          tkI_destructor, tkI_begin ] then
         begin
           // End var section on other keywords
           InVarSection := False;
@@ -805,7 +805,7 @@ begin
           // Method declarations inside a class shouldn't reset InClass
           if not InClass then
           begin
-            InType := False;
+            InType  := False;
             InClass := False;
           end
           else
@@ -823,17 +823,17 @@ begin
         // Track class context
         if Token.Kind = tkI_class then
         begin
-          InClass     := True;
+          InClass   := True;
           // Don't assume private - the implicit section before any visibility
           // keyword is "published" for forms (VCL components). Only check fields
           // after an explicit private/protected keyword.
-          InPrivate   := False;
+          InPrivate := False;
           InProtected := False;
         end
         else if Token.Kind = tkI_end then
         begin
-          InClass     := False;
-          InPrivate   := False;
+          InClass   := False;
+          InPrivate := False;
           InProtected := False;
         end;
 
@@ -842,17 +842,17 @@ begin
         begin
           if Token.Kind = tkI_private then
           begin
-            InPrivate   := True;
+            InPrivate := True;
             InProtected := False;
           end
           else if Token.Kind = tkI_protected then
           begin
-            InPrivate   := False;
+            InPrivate := False;
             InProtected := True;
           end
           else if Token.Kind in [ tkI_public, tkI_published ] then
           begin
-            InPrivate   := False;
+            InPrivate := False;
             InProtected := False;
           end;
         end;
@@ -904,15 +904,15 @@ begin
                 if Token.Kind = tkI_class then
                 begin
                   // We consumed the 'class' keyword via look-ahead, so set InClass here
-                  InClass     := True;
-                  InPrivate   := False;
+                  InClass := True;
+                  InPrivate := False;
                   InProtected := False;
 
                   // Check for T prefix
                   if CheckTypes then
                   begin
                     if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                       ViolationList.Add( Violation );
                   end;
                 end
@@ -922,7 +922,7 @@ begin
                   if CheckInterfaces then
                   begin
                     if CheckName( IdentToken.Value, 'InterfacePrefix', 'I', IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                       ViolationList.Add( Violation );
                   end;
                 end
@@ -932,7 +932,7 @@ begin
                   if CheckTypes then
                   begin
                     if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                       ViolationList.Add( Violation );
                   end;
                 end
@@ -942,7 +942,7 @@ begin
                   if CheckPointers then
                   begin
                     if CheckName( IdentToken.Value, 'PointerPrefix', 'P', IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
+                      IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
                       ViolationList.Add( Violation );
                   end;
                 end
@@ -950,12 +950,12 @@ begin
                 begin
                   // Type alias or enumeration - check if it's Exception-derived
                   if SameText( Token.Value, 'Exception' ) or
-                     ( Pos( 'EXCEPTION', UpperCase( Token.Value ) ) > 0 ) then
+                    ( Pos( 'EXCEPTION', UpperCase( Token.Value ) ) > 0 ) then
                   begin
                     if CheckExceptions then
                     begin
                       if CheckName( IdentToken.Value, 'ExceptionPrefix', 'E', IdentToken.Line,
-                         IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                        IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                         ViolationList.Add( Violation );
                     end;
                   end
@@ -967,7 +967,7 @@ begin
                     if CheckTypes and not IsBuiltInType( IdentToken.Value ) then
                     begin
                       if CheckName( IdentToken.Value, 'TypePrefix', 'T', IdentToken.Line,
-                         IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
+                        IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
                         ViolationList.Add( Violation );
                     end;
                   end;
@@ -975,7 +975,7 @@ begin
               end;
             end
             else if ( Token.Kind = tkColon ) and InClass and ( InPrivate or InProtected )
-                    and not InMethodDeclaration then
+              and not InMethodDeclaration then
             begin
               // It's a field declaration inside a class
               // Get the field's type to check for variable prefix rules
@@ -999,11 +999,11 @@ begin
                   begin
                     // Type matches a rule - check against type prefix, not F prefix
                     if CheckName( IdentToken.Value, 'FieldTypePrefix',
-                       CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
+                      IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                     begin
                       Violation.Expected := CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix +
-                                            '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
+                        '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
 
                       // Check for more specific rule that also matches
                       QualifiedName := FindMoreSpecificRule( TypeName, I );
@@ -1012,7 +1012,7 @@ begin
 
                       ViolationList.Add( Violation );
                     end;
-                    TypeName := '';  // Mark as handled
+                    TypeName := ''; // Mark as handled
                     Break;
                   end;
                 end;
@@ -1022,15 +1022,15 @@ begin
               if ( TypeName <> '' ) and CheckFields then
               begin
                 if CheckName( IdentToken.Value, 'FieldPrefix', 'F', IdentToken.Line,
-                   IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                  IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                   ViolationList.Add( Violation );
               end;
             end;
           end;
         end
-        // Check field declarations in classes (when not in type section or method declaration)
+          // Check field declarations in classes (when not in type section or method declaration)
         else if InClass and ( InPrivate or InProtected ) and ( Token.Kind = tkIdent )
-                and not InMethodDeclaration then
+          and not InMethodDeclaration then
         begin
           IdentToken := Token;
 
@@ -1060,11 +1060,11 @@ begin
                   begin
                     // Type matches a rule - check against type prefix, not F prefix
                     if CheckName( IdentToken.Value, 'FieldTypePrefix',
-                       CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
-                       IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                      CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
+                      IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                     begin
                       Violation.Expected := CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix +
-                                            '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
+                        '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
 
                       // Check for more specific rule that also matches
                       QualifiedName := FindMoreSpecificRule( TypeName, I );
@@ -1073,7 +1073,7 @@ begin
 
                       ViolationList.Add( Violation );
                     end;
-                    TypeName := '';  // Mark as handled
+                    TypeName := ''; // Mark as handled
                     Break;
                   end;
                 end;
@@ -1083,7 +1083,7 @@ begin
               if ( TypeName <> '' ) and CheckFields then
               begin
                 if CheckName( IdentToken.Value, 'FieldPrefix', 'F', IdentToken.Line,
-                   IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                  IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                   ViolationList.Add( Violation );
               end;
             end;
@@ -1114,7 +1114,7 @@ begin
             if Token.Kind in [ tkColon, tkComma, tkSemicolon ] then
             begin
               if CheckName( IdentToken.Value, 'ParameterPrefix', 'A', IdentToken.Line,
-                 IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
+                IdentToken.Column, FileName, UnitName, 'Info', Violation ) then
                 ViolationList.Add( Violation );
             end;
           end;
@@ -1122,7 +1122,7 @@ begin
 
         // Check variable declarations in var section
         if InVarSection and ( Token.Kind = tkIdent ) and CheckVariablePrefixes and
-           ( CodeStyleCheckerPlugin <> nil ) and not InClass then
+          ( CodeStyleCheckerPlugin <> nil ) and not InClass then
         begin
           IdentToken := Token;
 
@@ -1139,7 +1139,7 @@ begin
                 // Handle identifier types (String, Integer, TMyClass, etc.)
                 if TypeToken.Kind = tkIdent then
                   TypeName := TypeToken.Value
-                // Handle array of X types
+                    // Handle array of X types
                 else if TypeToken.Kind = tkI_array then
                 begin
                   // Look for 'of' keyword
@@ -1162,11 +1162,11 @@ begin
                     if MatchesTypePattern( TypeName, CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern ) then
                     begin
                       if CheckName( IdentToken.Value, 'VariablePrefix',
-                         CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
-                         IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
+                        CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix, IdentToken.Line,
+                        IdentToken.Column, FileName, UnitName, 'Warning', Violation ) then
                       begin
                         Violation.Expected := CodeStyleCheckerPlugin.TypePrefixRules[ I ].Prefix +
-                                              '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
+                          '... (for ' + CodeStyleCheckerPlugin.TypePrefixRules[ I ].TypePattern + ')';
 
                         // Check for more specific rule that also matches
                         QualifiedName := FindMoreSpecificRule( TypeName, I );
@@ -1176,7 +1176,7 @@ begin
                         ViolationList.Add( Violation );
                       end;
 
-                      Break;  // First matching rule wins
+                      Break; // First matching rule wins
                     end;
                   end;
                 end;
@@ -1193,7 +1193,7 @@ begin
           // Track method start/end for long method detection
           if Token.Kind in [ tkI_procedure, tkI_function, tkI_constructor, tkI_destructor ] then
           begin
-            if not InClass then  // Implementation section method
+            if not InClass then // Implementation section method
             begin
               MethodStartLine := Token.Line;
               MethodName := '';
@@ -1212,11 +1212,11 @@ begin
             begin
               Violation.FileName := FileName;
               Violation.UnitName := UnitName;
-              Violation.Line     := Token.Line + 1;
-              Violation.Column   := Token.Column;
-              Violation.Rule     := 'NestedWith';
+              Violation.Line := Token.Line + 1;
+              Violation.Column := Token.Column;
+              Violation.Rule := 'NestedWith';
               Violation.Expected := 'Avoid nested "with" statements';
-              Violation.Actual   := 'Nested "with" at depth ' + IntToStr( WithDepth );
+              Violation.Actual := 'Nested "with" at depth ' + IntToStr( WithDepth );
               Violation.Severity := 'Warning';
               Violation.Category := 'AntiPattern';
               ViolationList.Add( Violation );
@@ -1246,11 +1246,11 @@ begin
               begin
                 Violation.FileName := FileName;
                 Violation.UnitName := UnitName;
-                Violation.Line     := MethodStartLine + 1;
-                Violation.Column   := 0;
-                Violation.Rule     := 'LongMethod';
+                Violation.Line := MethodStartLine + 1;
+                Violation.Column := 0;
+                Violation.Rule := 'LongMethod';
                 Violation.Expected := 'Method should be < ' + IntToStr( MaxMethodLines ) + ' lines';
-                Violation.Actual   := MethodName + ' is ' + IntToStr( Token.Line - MethodStartLine + 1 ) + ' lines';
+                Violation.Actual := MethodName + ' is ' + IntToStr( Token.Line - MethodStartLine + 1 ) + ' lines';
                 Violation.Severity := 'Warning';
                 Violation.Category := 'AntiPattern';
                 ViolationList.Add( Violation );
@@ -1269,11 +1269,11 @@ begin
             begin
               Violation.FileName := FileName;
               Violation.UnitName := UnitName;
-              Violation.Line     := Token.Line + 1;
-              Violation.Column   := Token.Column;
-              Violation.Rule     := 'DeepNesting';
+              Violation.Line := Token.Line + 1;
+              Violation.Column := Token.Column;
+              Violation.Rule := 'DeepNesting';
               Violation.Expected := 'Nesting depth should be <= ' + IntToStr( MaxNestingDepth );
-              Violation.Actual   := 'Nesting depth is ' + IntToStr( NestingDepth );
+              Violation.Actual := 'Nesting depth is ' + IntToStr( NestingDepth );
               Violation.Severity := 'Warning';
               Violation.Category := 'AntiPattern';
               ViolationList.Add( Violation );
@@ -1289,7 +1289,7 @@ begin
           end
           else if Token.Kind = tkI_except then
           begin
-            InFinally := False;  // except ends finally
+            InFinally := False; // except ends finally
           end
           else if InFinally then
           begin
@@ -1301,11 +1301,11 @@ begin
               begin
                 Violation.FileName := FileName;
                 Violation.UnitName := UnitName;
-                Violation.Line     := FinallyLine + 1;
-                Violation.Column   := 0;
-                Violation.Rule     := 'EmptyFinally';
+                Violation.Line := FinallyLine + 1;
+                Violation.Column := 0;
+                Violation.Rule := 'EmptyFinally';
                 Violation.Expected := 'Finally block should contain cleanup code';
-                Violation.Actual   := 'Empty finally block';
+                Violation.Actual := 'Empty finally block';
                 Violation.Severity := 'Warning';
                 Violation.Category := 'AntiPattern';
                 ViolationList.Add( Violation );
@@ -1327,7 +1327,7 @@ begin
           end
           else if ( Token.Kind = tkI_until ) and ( NestingDepth > 0 ) then
           begin
-            Dec( NestingDepth );  // repeat..until
+            Dec( NestingDepth ); // repeat..until
           end;
 
           // Track parameter count for long parameter list detection
@@ -1344,11 +1344,11 @@ begin
               begin
                 Violation.FileName := FileName;
                 Violation.UnitName := UnitName;
-                Violation.Line     := Token.Line + 1;
-                Violation.Column   := Token.Column;
-                Violation.Rule     := 'LongParamList';
+                Violation.Line := Token.Line + 1;
+                Violation.Column := Token.Column;
+                Violation.Rule := 'LongParamList';
                 Violation.Expected := 'Parameter count should be <= ' + IntToStr( MaxParameters );
-                Violation.Actual   := IntToStr( CurrentParamCount ) + ' parameters';
+                Violation.Actual := IntToStr( CurrentParamCount ) + ' parameters';
                 Violation.Severity := 'Info';
                 Violation.Category := 'AntiPattern';
                 ViolationList.Add( Violation );
@@ -1366,8 +1366,8 @@ begin
         // End anti-pattern detection
       end;
 
-      Violations := ViolationList.ToArray;
-      Result     := True;
+      Violations    := ViolationList.ToArray;
+      Result        := True;
     finally
       Lexer.Free;
     end;
@@ -1380,24 +1380,24 @@ end;
 function TStyleChecker.CheckProject( const Project: IOTAProject;
   out AllViolations: TArray<TStyleViolation>; OnProgress: TNotifyEvent ): Boolean;
 var
-  FileName: string;
-  Violations: TArray<TStyleViolation>;
-  AllViolationList: TList<TStyleViolation>;
-  Violation: TStyleViolation;
+  FileName          : string;
+  Violations        : TArray<TStyleViolation>;
+  AllViolationList  : TList<TStyleViolation>;
+  Violation         : TStyleViolation;
 begin
 
-  Result := False;
+  Result            := False;
   SetLength( AllViolations, 0 );
 
   if Project = nil then
     Exit;
 
-  AllViolationList := TList<TStyleViolation>.Create;
+  AllViolationList  := TList<TStyleViolation>.Create;
 
   try
     { The file list is taken once: the progress callback pumps messages, and the project can change
       or close meanwhile - after each pump the scan stops if it is no longer the active project. }
-    var Identity := ProjectIdentity( Project );
+    var Identity    := ProjectIdentity( Project );
     for FileName in ProjectPascalFiles( Project ) do
     begin
       begin
@@ -1424,8 +1424,8 @@ begin
       end;
     end;
 
-    AllViolations := AllViolationList.ToArray;
-    Result        := True;
+    AllViolations   := AllViolationList.ToArray;
+    Result          := True;
   finally
     AllViolationList.Free;
   end;
@@ -1442,7 +1442,7 @@ begin
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Code &Style Checker...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -1461,34 +1461,34 @@ end;
 procedure TCodeStyleCheckerPlugin.Init;
 begin
 
-  FEnabled              := True;
-  FCheckTypes           := True;
-  FCheckInterfaces      := True;
-  FCheckFields          := True;
-  FCheckExceptions      := True;
-  FCheckPointers        := True;
-  FCheckParameters      := False;
-  FCheckVariablePrefixes := False;  // Off by default - user must enable
-  FCheckUnitScopeNames  := False;   // Off by default - user must enable
+  FEnabled          := True;
+  FCheckTypes       := True;
+  FCheckInterfaces  := True;
+  FCheckFields      := True;
+  FCheckExceptions  := True;
+  FCheckPointers    := True;
+  FCheckParameters  := False;
+  FCheckVariablePrefixes := False; // Off by default - user must enable
+  FCheckUnitScopeNames := False; // Off by default - user must enable
   InitDefaultTypePrefixRules;
 
   // Anti-pattern detection defaults
-  FCheckAntiPatterns   := False;  // Off by default - user must enable
-  FCheckEmptyFinally   := True;
-  FCheckNestedWith     := True;
-  FCheckDeepNesting    := True;
-  FCheckLongMethods    := True;
+  FCheckAntiPatterns := False; // Off by default - user must enable
+  FCheckEmptyFinally := True;
+  FCheckNestedWith  := True;
+  FCheckDeepNesting := True;
+  FCheckLongMethods := True;
   FCheckLongParamLists := True;
-  FMaxNestingDepth     := 4;
-  FMaxMethodLines      := 100;
-  FMaxParameters       := 6;
+  FMaxNestingDepth  := 4;
+  FMaxMethodLines   := 100;
+  FMaxParameters    := 6;
 
 end;
 
 function TCodeStyleCheckerPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Code Style Checker', TFrameOptionPageCodeStyle, Self );
+  Result            := TTreePage.Create( 'Code Style Checker', TFrameOptionPageCodeStyle, Self );
 
 end;
 
@@ -1508,12 +1508,12 @@ end;
 
 function TCodeStyleCheckerPlugin.GetTypePrefixRulesAsString: string;
 var
-  I: Integer;
-  SB: TStringBuilder;
+  I                 : Integer;
+  SB                : TStringBuilder;
 begin
 
   // Format: TypePattern|Prefix|Enabled;TypePattern|Prefix|Enabled;...
-  SB := TStringBuilder.Create;
+  SB                := TStringBuilder.Create;
 
   try
     for I := 0 to High( FTypePrefixRules ) do
@@ -1528,7 +1528,7 @@ begin
       SB.Append( IfThen( FTypePrefixRules[ I ].Enabled, '1', '0' ) );
     end;
 
-    Result := SB.ToString;
+    Result          := SB.ToString;
   finally
     SB.Free;
   end;
@@ -1537,9 +1537,9 @@ end;
 
 procedure TCodeStyleCheckerPlugin.SetTypePrefixRulesFromString( const Value: string );
 var
-  Rules: TArray<string>;
-  Parts: TArray<string>;
-  I: Integer;
+  Rules             : TArray<string>;
+  Parts             : TArray<string>;
+  I                 : Integer;
 begin
 
   if Value = '' then
@@ -1548,18 +1548,18 @@ begin
     Exit;
   end;
 
-  Rules := Value.Split( [ ';' ] );
+  Rules             := Value.Split( [ ';' ] );
   SetLength( FTypePrefixRules, Length( Rules ) );
 
   for I := 0 to High( Rules ) do
   begin
-    Parts := Rules[ I ].Split( [ '|' ] );
+    Parts           := Rules[ I ].Split( [ '|' ] );
 
     if Length( Parts ) >= 2 then
     begin
       FTypePrefixRules[ I ].TypePattern := Parts[ 0 ];
-      FTypePrefixRules[ I ].Prefix      := Parts[ 1 ];
-      FTypePrefixRules[ I ].Enabled     := ( Length( Parts ) < 3 ) or ( Parts[ 2 ] = '1' );
+      FTypePrefixRules[ I ].Prefix := Parts[ 1 ];
+      FTypePrefixRules[ I ].Enabled := ( Length( Parts ) < 3 ) or ( Parts[ 2 ] = '1' );
     end;
   end;
 
@@ -1572,64 +1572,64 @@ begin
 
   // Simple types
   Result[ 0 ].TypePattern := 'String';
-  Result[ 0 ].Prefix      := 's';
-  Result[ 0 ].Enabled     := True;
+  Result[ 0 ].Prefix := 's';
+  Result[ 0 ].Enabled := True;
 
   Result[ 1 ].TypePattern := 'Integer';
-  Result[ 1 ].Prefix      := 'i';
-  Result[ 1 ].Enabled     := True;
+  Result[ 1 ].Prefix := 'i';
+  Result[ 1 ].Enabled := True;
 
   Result[ 2 ].TypePattern := 'Boolean';
-  Result[ 2 ].Prefix      := 'l';
-  Result[ 2 ].Enabled     := True;
+  Result[ 2 ].Prefix := 'l';
+  Result[ 2 ].Enabled := True;
 
   Result[ 3 ].TypePattern := 'Real';
-  Result[ 3 ].Prefix      := 'r';
-  Result[ 3 ].Enabled     := True;
+  Result[ 3 ].Prefix := 'r';
+  Result[ 3 ].Enabled := True;
 
   Result[ 4 ].TypePattern := 'Double';
-  Result[ 4 ].Prefix      := 'f';
-  Result[ 4 ].Enabled     := True;
+  Result[ 4 ].Prefix := 'f';
+  Result[ 4 ].Enabled := True;
 
   Result[ 5 ].TypePattern := 'Single';
-  Result[ 5 ].Prefix      := 'f';
-  Result[ 5 ].Enabled     := True;
+  Result[ 5 ].Prefix := 'f';
+  Result[ 5 ].Enabled := True;
 
   Result[ 6 ].TypePattern := 'Variant';
-  Result[ 6 ].Prefix      := 'v';
-  Result[ 6 ].Enabled     := True;
+  Result[ 6 ].Prefix := 'v';
+  Result[ 6 ].Enabled := True;
 
   Result[ 7 ].TypePattern := 'Char';
-  Result[ 7 ].Prefix      := 'c';
-  Result[ 7 ].Enabled     := True;
+  Result[ 7 ].Prefix := 'c';
+  Result[ 7 ].Enabled := True;
 
   Result[ 8 ].TypePattern := 'Currency';
-  Result[ 8 ].Prefix      := 'r';
-  Result[ 8 ].Enabled     := True;
+  Result[ 8 ].Prefix := 'r';
+  Result[ 8 ].Enabled := True;
 
   // Array types
-  Result[ 9 ].TypePattern  := 'array of String';
-  Result[ 9 ].Prefix       := 'sa';
-  Result[ 9 ].Enabled      := True;
+  Result[ 9 ].TypePattern := 'array of String';
+  Result[ 9 ].Prefix := 'sa';
+  Result[ 9 ].Enabled := True;
 
   Result[ 10 ].TypePattern := 'array of Integer';
-  Result[ 10 ].Prefix      := 'na';
-  Result[ 10 ].Enabled     := True;
+  Result[ 10 ].Prefix := 'na';
+  Result[ 10 ].Enabled := True;
 
   Result[ 11 ].TypePattern := 'array of Double';
-  Result[ 11 ].Prefix      := 'na';
-  Result[ 11 ].Enabled     := True;
+  Result[ 11 ].Prefix := 'na';
+  Result[ 11 ].Enabled := True;
 
   Result[ 12 ].TypePattern := 'array of Byte';
-  Result[ 12 ].Prefix      := 'na';
-  Result[ 12 ].Enabled     := True;
+  Result[ 12 ].Prefix := 'na';
+  Result[ 12 ].Enabled := True;
 
 end;
 
 procedure TCodeStyleCheckerPlugin.InitDefaultTypePrefixRules;
 begin
 
-  FTypePrefixRules := DefaultTypePrefixRules;
+  FTypePrefixRules  := DefaultTypePrefixRules;
 
 end;
 
@@ -1649,3 +1649,4 @@ begin
 end;
 
 end.
+

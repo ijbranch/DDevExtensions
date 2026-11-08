@@ -24,9 +24,9 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.SyncObjs, Vcl.Menus, Hooking, IDEHooks, ToolsAPI, Vcl.Controls, Vcl.Forms,
   System.Win.Registry, FrmTreePages, IDENotifiers, InterceptIntf, InterceptLoader,
-  {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
   System.Rtti,
-  {$IFEND}
+{$IFEND}
   PluginConfig, Vcl.Dialogs;
 
 type
@@ -53,7 +53,7 @@ type
     /// <summary>Severity label ( e.g. "Warning", "Error" ).</summary>
     Severity: string;
     /// <summary>Category of the violation: "NamingConvention" or "AntiPattern".</summary>
-    Category: string;  // 'NamingConvention' or 'AntiPattern'
+    Category: string; // 'NamingConvention' or 'AntiPattern'
   end;
 
   /// <summary>
@@ -129,19 +129,19 @@ type
     /// <summary>Records the start of compilation for a unit.</summary>
     /// <param name="UnitName">Unit name without extension.</param>
     /// <param name="FileName">Full path to the source file.</param>
-    procedure StartUnit(const UnitName, FileName: string);
+    procedure StartUnit( const UnitName, FileName: string );
     /// <summary>Records the end of compilation for the unit currently being timed.</summary>
     procedure EndCurrentUnit;
     /// <summary>Finalises the build by closing any open unit, recording the result and trimming the array.</summary>
     /// <param name="Succeeded">True when the compile succeeded.</param>
-    procedure FinalizeBuild(Succeeded: Boolean);
+    procedure FinalizeBuild( Succeeded: Boolean );
     /// <summary>Adds a file to the project-files filter list ( stored upper-cased without path ).</summary>
     /// <param name="FileName">File name to register as belonging to the project.</param>
-    procedure AddProjectFile(const FileName: string);
+    procedure AddProjectFile( const FileName: string );
     /// <summary>Returns True when FileName matches an entry registered with AddProjectFile.</summary>
     /// <param name="FileName">File name to test.</param>
     /// <returns>True for project files; True for all files if none have been registered.</returns>
-    function IsProjectFile(const FileName: string): Boolean;
+    function IsProjectFile( const FileName: string ): Boolean;
     /// <summary>Returns a thread-safe snapshot of the recorded unit information.</summary>
     /// <returns>A copy of the unit records, safe to use after the lock is released.</returns>
     function GetUnits: TArray<TBuildUnitInfo>;
@@ -168,14 +168,14 @@ type
   /// ICompileInterceptor to receive compile-time file events and exposes the user
   /// settings that drive the various sub-features.
   /// </summary>
-  TCompileProgress = class(TPluginConfig, ICompileInterceptor)
+  TCompileProgress = class( TPluginConfig, ICompileInterceptor )
   private
-    {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
     /// <summary>Identifier returned by the compile-interceptor service registration.
     /// Win32 only: RegisterInterceptor/UnregisterInterceptor are not called on Win64
     /// (see TCompileProgress.Create / Destroy), so the field is unused there.</summary>
     FCompileInterceptorId: Integer;
-    {$ENDIF}
+{$ENDIF}
     /// <summary>IDE notifier that delivers Before/AfterCompile callbacks.</summary>
     FIDENotifier: TIDENotifier;
     /// <summary>List of .pas/.dcu file names expected during the current build, used to update the progress bar.</summary>
@@ -188,12 +188,12 @@ type
     FReleaseCompilerUnitCacheHigh: Boolean;
     /// <summary>Backing field for AutoSaveAfterSuccessfulCompile.</summary>
     FAutoSaveAfterSuccessfulCompile: Boolean;
-    {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
     /// <summary>Backing field for LastCompileVersionInfo ( pre-XE2 only ).</summary>
     FLastCompileVersionInfo: Boolean;
     /// <summary>Backing field for LastCompileVersionInfoFormat ( pre-XE2 only ).</summary>
     FLastCompileVersionInfoFormat: string;
-    {$IFEND}
+{$IFEND}
     /// <summary>Backing field for AskCompileFromDiffProject.</summary>
     FAskCompileFromDiffProject: Boolean;
     /// <summary>Backing field for AskCompileFromDiffProjectTemporary.</summary>
@@ -208,51 +208,51 @@ type
     FBuildStatistics: TBuildStatistics;
     /// <summary>Tools menu item that opens the Build Statistics dialog on demand.</summary>
     FBuildStatsMenuItem: TMenuItem;
-    {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
     /// <summary>Writes a "Last Compile" key into the project version info ( pre-XE2 only ).</summary>
     /// <param name="Project">Project to update.</param>
-    procedure UpdateLastCompileVersionInfo(const Project: IOTAProject);
-    {$IFEND}
+    procedure UpdateLastCompileVersionInfo( const Project: IOTAProject );
+{$IFEND}
     /// <summary>Setter for AskCompileFromDiffProject.</summary>
     /// <param name="Value">True to ask before compiling a file from a non-active project.</param>
-    procedure SetAskCompileFromDiffProject(const Value: Boolean);
+    procedure SetAskCompileFromDiffProject( const Value: Boolean );
     /// <summary>Setter for ReleaseCompilerUnitCache; updates the active hook.</summary>
     /// <param name="Value">True to release the unit cache of inactive projects after every compile.</param>
-    procedure SetReleaseCompilerUnitCache(const Value: Boolean);
+    procedure SetReleaseCompilerUnitCache( const Value: Boolean );
     /// <summary>Setter for ReleaseCompilerUnitCacheHigh; updates the active hook.</summary>
     /// <param name="Value">True to restrict the unit-cache release to high memory pressure.</param>
-    procedure SetReleaseCompilerUnitCacheHigh(const Value: Boolean);
+    procedure SetReleaseCompilerUnitCacheHigh( const Value: Boolean );
     /// <summary>Setter for EnableBuildStatistics; toggles the menu item visibility.</summary>
     /// <param name="Value">True to collect build statistics and show the menu item.</param>
-    procedure SetEnableBuildStatistics(const Value: Boolean);
+    procedure SetEnableBuildStatistics( const Value: Boolean );
     /// <summary>Shows the singleton Build Statistics dialog.</summary>
     procedure ShowBuildStatisticsDialog;
     /// <summary>Click handler for the Build Statistics menu item.</summary>
     /// <param name="Sender">The Build Statistics menu item.</param>
-    procedure BuildStatsMenuItemClick(Sender: TObject);
-  {$IF CompilerVersion < 22.0} // XE has its own option
+    procedure BuildStatsMenuItemClick( Sender: TObject );
+{$IF CompilerVersion < 22.0} // XE has its own option
   private
     /// <summary>Backing field for DisableRebuildDlg ( pre-XE only ).</summary>
     FDisableRebuildDlg: Boolean;
     /// <summary>Address of the patched code in the IDE binary used to suppress the rebuild dialog.</summary>
     FRebuildAddress: Pointer;
     /// <summary>Original bytes preserved at FRebuildAddress so the patch can be reversed.</summary>
-    FRebuildOrgBytes: array[0..2] of Byte;
+    FRebuildOrgBytes: array[ 0..2 ] of Byte;
     /// <summary>Setter for DisableRebuildDlg; applies or reverses the in-memory patch.</summary>
     /// <param name="Value">True to suppress the IDE's rebuild confirmation dialog.</param>
-    procedure SetDisableRebuildDlg(const Value: Boolean);
-  {$IFEND}
+    procedure SetDisableRebuildDlg( const Value: Boolean );
+{$IFEND}
   protected
     /// <summary>IDE callback invoked after every compile; finalises statistics, runs style checks, auto-saves, etc.</summary>
     /// <param name="Project">Project that was compiled.</param>
     /// <param name="Succeeded">True if the compile succeeded.</param>
     /// <param name="IsCodeInsight">True if this is a Code Insight background compile.</param>
-    procedure AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean);
+    procedure AfterCompile( const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean );
     /// <summary>IDE callback invoked before every compile; primes the progress bar and statistics.</summary>
     /// <param name="Project">Project about to be compiled.</param>
     /// <param name="IsCodeInsight">True if this is a Code Insight background compile.</param>
     /// <param name="Cancel">Set to True to cancel the compile.</param>
-    procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean);
+    procedure BeforeCompile( const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean );
   protected
     /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     /// <returns>The options page node for this feature.</returns>
@@ -267,18 +267,18 @@ type
     /// <summary>ICompileInterceptor: would return a virtual replacement for Filename; this plug-in supplies none.</summary>
     /// <param name="Filename">File the compiler is about to open.</param>
     /// <returns>Always nil.</returns>
-    function GetVirtualFile(Filename: PWideChar): IVirtualStream; stdcall;
+    function GetVirtualFile( Filename: PWideChar ): IVirtualStream; stdcall;
     /// <summary>ICompileInterceptor: optionally returns altered file content; this plug-in returns nil.</summary>
     /// <param name="Filename">File the compiler has read.</param>
     /// <param name="Content">The file's content.</param>
     /// <param name="FileDate">The file's date stamp.</param>
     /// <param name="FileSize">Size of Content in bytes.</param>
     /// <returns>Always nil.</returns>
-    function AlterFile(Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream; stdcall;
+    function AlterFile( Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer ): IVirtualStream; stdcall;
     /// <summary>ICompileInterceptor: receives notifications when the compiler opens or closes a file.</summary>
     /// <param name="Filename">File being inspected.</param>
     /// <param name="FileMode">Whether the file was opened or closed.</param>
-    procedure InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode); stdcall;
+    procedure InspectFilename( Filename: PWideChar; FileMode: TInspectFileMode ); stdcall;
     /// <summary>ICompileInterceptor: optionally rewrites compiler messages; this plug-in does not.</summary>
     /// <param name="IsCompilerMessage">True when the message comes from the compiler.</param>
     /// <param name="MsgKind">Kind of message; left unchanged.</param>
@@ -288,9 +288,9 @@ type
     /// <param name="Column">Column number; left unchanged.</param>
     /// <param name="Msg">Message text.</param>
     /// <returns>Always False: the message is not altered.</returns>
-    function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
+    function AlterMessage( IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
       var Code: Integer; const Filename: IWideString; var Line, Column: Integer;
-      const Msg: IWideString): Boolean; stdcall;
+      const Msg: IWideString ): Boolean; stdcall;
     /// <summary>ICompileInterceptor: invoked when the compiler starts work on a project; not used by this plug-in.</summary>
     /// <param name="ProjectFilename">Project being compiled.</param>
     /// <param name="UnitPaths">Unit search path.</param>
@@ -298,9 +298,9 @@ type
     /// <param name="DcuOutputDir">DCU output directory.</param>
     /// <param name="IsCodeInsight">True when the compile is for Code Insight.</param>
     /// <param name="Cancel">Set True to cancel the compile; left unchanged.</param>
-    procedure CompileProject(ProjectFilename: PWideChar; UnitPaths: PWideChar;
+    procedure CompileProject( ProjectFilename: PWideChar; UnitPaths: PWideChar;
       SourcePaths: PWideChar; DcuOutputDir: PWideChar; IsCodeInsight: Boolean;
-      var Cancel: Boolean); stdcall;
+      var Cancel: Boolean ); stdcall;
   public
     /// <summary>Constructs the plug-in, registers IDE notifiers, the compile interceptor and the menu item.</summary>
     constructor Create;
@@ -313,18 +313,18 @@ type
     property ReleaseCompilerUnitCache: Boolean read FReleaseCompilerUnitCache write SetReleaseCompilerUnitCache;
     /// <summary>When True ReleaseCompilerUnitCache is restricted to high memory-pressure situations.</summary>
     property ReleaseCompilerUnitCacheHigh: Boolean read FReleaseCompilerUnitCacheHigh write SetReleaseCompilerUnitCacheHigh;
-    {$IF CompilerVersion < 22.0} // XE has its own option
+{$IF CompilerVersion < 22.0} // XE has its own option
     /// <summary>Suppresses the IDE "Rebuild required" dialog ( pre-XE only ).</summary>
     property DisableRebuildDlg: Boolean read FDisableRebuildDlg write SetDisableRebuildDlg;
-    {$IFEND}
+{$IFEND}
     /// <summary>When True all modified files are saved automatically after a successful compile.</summary>
     property AutoSaveAfterSuccessfulCompile: Boolean read FAutoSaveAfterSuccessfulCompile write FAutoSaveAfterSuccessfulCompile;
-    {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
     /// <summary>When True a "Last Compile" version-info entry is written before every compile ( pre-XE2 only ).</summary>
     property LastCompileVersionInfo: Boolean read FLastCompileVersionInfo write FLastCompileVersionInfo;
     /// <summary>FormatDateTime mask used for the "Last Compile" version-info entry ( pre-XE2 only ).</summary>
     property LastCompileVersionInfoFormat: string read FLastCompileVersionInfoFormat write FLastCompileVersionInfoFormat;
-    {$IFEND}
+{$IFEND}
     /// <summary>When True the user is asked before compiling a file from a non-active project.</summary>
     property AskCompileFromDiffProject: Boolean read FAskCompileFromDiffProject write SetAskCompileFromDiffProject;
     /// <summary>Initial value for the "temporary switch" check box of the switch-project dialog.</summary>
@@ -343,7 +343,7 @@ type
 /// the original code and frees the instance when Unload is True.
 /// </summary>
 /// <param name="Unload">False to load the plug-in, True to unload it.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -353,38 +353,38 @@ uses
   FrmSwitchToModuleProject, CompilerClearOtherStates, FrmBuildStatistics,
   CodeStyleChecker;
 
-function TimeStr(dt: TDateTime; Exact: Boolean = False): string;
+function TimeStr( dt: TDateTime; Exact: Boolean = False ): string;
 var
-  ms: Cardinal;
-  h, m, s: Integer;
-  nms: Int64;
+  ms                : Cardinal;
+  h, m, s           : Integer;
+  nms               : Int64;
 begin
-  Result := '';
-  if Int(dt) > 0 then
-    Result := IntToStr(Trunc(dt)) + ' d ';
-  nms := Round(Frac(dt) * MSecsPerDay);
+  Result            := '';
+  if Int( dt ) > 0 then
+    Result          := IntToStr( Trunc( dt ) ) + ' d ';
+  nms               := Round( Frac( dt ) * MSecsPerDay );
 
-  ms := nms div 1000;
-  h := ms div 3600;
-  ms := ms mod 3600;
-  m := ms div 60;
-  s := ms mod 60;
+  ms                := nms div 1000;
+  h                 := ms div 3600;
+  ms                := ms mod 3600;
+  m                 := ms div 60;
+  s                 := ms mod 60;
 
-  Result := '';
+  Result            := '';
   if h > 0 then
-    Result := Result + IntToStr(h) + 'h ';
-  if (m > 0) or (h > 0) then
+    Result          := Result + IntToStr( h ) + 'h ';
+  if ( m > 0 ) or ( h > 0 ) then
   begin
     {if (h > 0) and (m < 10) then
       Result := Result + '0';}
-    Result := Result + IntToStr(m) + 'm ';
+    Result          := Result + IntToStr( m ) + 'm ';
   end;
   {if (m > 0) or (h > 0) and (s < 10) then
     Result := Result + '0';}
-  if Exact and (h = 0) and (m = 0) then
-    Result := Result + Format('%1.2f', [s + (nms mod 1000)/1000]) + 's'
+  if Exact and ( h = 0 ) and ( m = 0 ) then
+    Result          := Result + Format( '%1.2f', [ s + ( nms mod 1000 ) / 1000 ] ) + 's'
   else
-    Result := Result + IntToStr(s) + 's';
+    Result          := Result + IntToStr( s ) + 's';
 end;
 
 { TBuildStatistics }
@@ -393,8 +393,8 @@ constructor TBuildStatistics.Create;
 begin
 
   inherited Create;
-  FLock := TCriticalSection.Create;
-  FProjectFiles := TStringList.Create;
+  FLock             := TCriticalSection.Create;
+  FProjectFiles     := TStringList.Create;
   FProjectFiles.CaseSensitive := False;
   FProjectFiles.Sorted := True;
   FProjectFiles.Duplicates := dupIgnore;
@@ -418,12 +418,12 @@ begin
   try
     SetLength( FUnits, 0 );
     SetLength( FStyleViolations, 0 );
-    FUnitCount        := 0;
-    FCurrentUnit      := '';
+    FUnitCount      := 0;
+    FCurrentUnit    := '';
     FCurrentStartTime := 0;
-    FTotalBuildTime   := 0;
-    FBuildSucceeded   := False;
-    FProjectPath      := '';
+    FTotalBuildTime := 0;
+    FBuildSucceeded := False;
+    FProjectPath    := '';
     FProjectFiles.Clear;
   finally
     FLock.Leave;
@@ -431,21 +431,21 @@ begin
 
 end;
 
-procedure TBuildStatistics.AddProjectFile(const FileName: string);
+procedure TBuildStatistics.AddProjectFile( const FileName: string );
 begin
 
   FLock.Enter;
 
   try
     // Store just the filename (without path) for reliable matching
-    FProjectFiles.Add(AnsiUpperCase(ExtractFileName(FileName)));
+    FProjectFiles.Add( AnsiUpperCase( ExtractFileName( FileName ) ) );
   finally
     FLock.Leave;
   end;
 
 end;
 
-function TBuildStatistics.IsProjectFile(const FileName: string): Boolean;
+function TBuildStatistics.IsProjectFile( const FileName: string ): Boolean;
 begin
 
   FLock.Enter;
@@ -453,10 +453,10 @@ begin
   try
     // If no project files were added, consider all files as project files
     if FProjectFiles.Count = 0 then
-      Result := True
+      Result        := True
     else
       // Compare by filename only (without path) for reliable matching
-      Result := FProjectFiles.IndexOf(AnsiUpperCase(ExtractFileName(FileName))) >= 0;
+      Result        := FProjectFiles.IndexOf( AnsiUpperCase( ExtractFileName( FileName ) ) ) >= 0;
   finally
     FLock.Leave;
   end;
@@ -466,15 +466,15 @@ end;
 procedure TBuildStatistics.DoEndCurrentUnit;
 // Internal method - must be called while holding FLock
 var
-  EndTime: TDateTime;
-  DurationMs: Int64;
+  EndTime           : TDateTime;
+  DurationMs        : Int64;
 begin
 
   if ( FCurrentUnit <> '' ) and ( FUnitCount > 0 ) then
   begin
-    EndTime    := Now;
-    DurationMs := Round( ( EndTime - FCurrentStartTime ) * MSecsPerDay );
-    FUnits[ FUnitCount - 1 ].EndTime    := EndTime;
+    EndTime         := Now;
+    DurationMs      := Round( ( EndTime - FCurrentStartTime ) * MSecsPerDay );
+    FUnits[ FUnitCount - 1 ].EndTime := EndTime;
     FUnits[ FUnitCount - 1 ].DurationMs := DurationMs;
     FTotalBuildTime := FTotalBuildTime + DurationMs;
     FCurrentUnit    := '';
@@ -492,17 +492,17 @@ begin
     if FCurrentUnit <> '' then
       DoEndCurrentUnit;
 
-    FCurrentUnit      := UnitName;
+    FCurrentUnit    := UnitName;
     FCurrentStartTime := Now;
 
     // Expand array if needed
     if FUnitCount >= Length( FUnits ) then
       SetLength( FUnits, FUnitCount + 64 );
 
-    FUnits[ FUnitCount ].UnitName   := UnitName;
-    FUnits[ FUnitCount ].FileName   := FileName;
-    FUnits[ FUnitCount ].StartTime  := FCurrentStartTime;
-    FUnits[ FUnitCount ].EndTime    := 0;
+    FUnits[ FUnitCount ].UnitName := UnitName;
+    FUnits[ FUnitCount ].FileName := FileName;
+    FUnits[ FUnitCount ].StartTime := FCurrentStartTime;
+    FUnits[ FUnitCount ].EndTime := 0;
     FUnits[ FUnitCount ].DurationMs := 0;
     Inc( FUnitCount );
   finally
@@ -547,7 +547,7 @@ function TBuildStatistics.GetTotalBuildTime: Int64;
 begin
   FLock.Enter;
   try
-    Result := FTotalBuildTime;
+    Result          := FTotalBuildTime;
   finally
     FLock.Leave;
   end;
@@ -557,7 +557,7 @@ function TBuildStatistics.GetBuildSucceeded: Boolean;
 begin
   FLock.Enter;
   try
-    Result := FBuildSucceeded;
+    Result          := FBuildSucceeded;
   finally
     FLock.Leave;
   end;
@@ -567,7 +567,7 @@ function TBuildStatistics.GetUnitCount: Integer;
 begin
   FLock.Enter;
   try
-    Result := FUnitCount;
+    Result          := FUnitCount;
   finally
     FLock.Leave;
   end;
@@ -577,7 +577,7 @@ function TBuildStatistics.GetProjectPath: string;
 begin
   FLock.Enter;
   try
-    Result := FProjectPath;
+    Result          := FProjectPath;
   finally
     FLock.Leave;
   end;
@@ -587,7 +587,7 @@ procedure TBuildStatistics.SetProjectPath( const Value: string );
 begin
   FLock.Enter;
   try
-    FProjectPath := Value;
+    FProjectPath    := Value;
   finally
     FLock.Leave;
   end;
@@ -599,7 +599,7 @@ begin
   FLock.Enter;
 
   try
-    Result := Copy( FUnits, 0, FUnitCount );
+    Result          := Copy( FUnits, 0, FUnitCount );
   finally
     FLock.Leave;
   end;
@@ -612,7 +612,7 @@ begin
   FLock.Enter;
 
   try
-    Result := Copy( FStyleViolations );
+    Result          := Copy( FStyleViolations );
   finally
     FLock.Leave;
   end;
@@ -638,34 +638,34 @@ const
   /// notifier and the compile interceptor, neither of which is registered on the 64-bit
   /// IDE, so there the Tools menu item stays hidden instead of opening an empty dialog.
   /// </summary>
-  BuildStatisticsAvailable = {$IFDEF CPUX64} False {$ELSE} True {$ENDIF};
+  BuildStatisticsAvailable = {$IFDEF CPUX64}False{$ELSE}True{$ENDIF};
 
 var
-  OrgStartCompile, OrgCallStartCompile: procedure(Inst: TObject); register;
+  OrgStartCompile, OrgCallStartCompile: procedure( Inst: TObject ); register;
   GlobalCompileProgress: TCompileProgress;
 
-procedure HookedStartCompile(Inst: TForm);
+procedure HookedStartCompile( Inst: TForm );
 var
-  t: TDateTime;
+  t                 : TDateTime;
 begin
-  {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
   // Delphi 2010+ call StartCompile once, which then calls BeforeCompile for each project.
   // Older Delphi versions call BeforeCompile, then StartCompile for the first project.
   // BeforeCompile, then StartCompile for the second project, ...
   if GlobalCompileProgress <> nil then
   begin
-    TStringList(GlobalCompileProgress.FPasFiles).Sorted := False;
+    TStringList( GlobalCompileProgress.FPasFiles ).Sorted := False;
     GlobalCompileProgress.FPasFiles.Clear;
   end;
-  {$IFEND}
+{$IFEND}
 
   if FormNativeProgress <> nil then
-    FormNativeProgress.ShowProgressBar(True);
-  t := Now;
+    FormNativeProgress.ShowProgressBar( True );
+  t                 := Now;
   try
-    OrgCallStartCompile(Inst);
+    OrgCallStartCompile( Inst );
   finally
-    t := Now - t;
+    t               := Now - t;
     if GlobalCompileProgress <> nil then
       GlobalCompileProgress.FPasFiles.Clear;
   end;
@@ -674,98 +674,98 @@ begin
   begin
     FormNativeProgress.ProjectFilesCompiled := FormNativeProgress.MaxFiles;
     if FormNativeProgress <> nil then
-      FormNativeProgress.ShowProgressBar(False);
+      FormNativeProgress.ShowProgressBar( False );
 
-    FormNativeProgress.CurrFile := FormNativeProgress.CurrFile  + '     Time: ' + TimeStr(t);
+    FormNativeProgress.CurrFile := FormNativeProgress.CurrFile + '     Time: ' + TimeStr( t );
   end;
 end;
 
 type
-  TCompileMode = (cmMake, cmBuild, cmCheck, cmKibitz, cmClean, cmLink); // I really start to love the new RTTI :-)
+  TCompileMode = ( cmMake, cmBuild, cmCheck, cmKibitz, cmClean, cmLink ); // I really start to love the new RTTI :-)
 
 {$IF CompilerVersion >= 21.0} // Delphi 2010+
 var
-  OrgProjectGroupCompileActive, OrgCallProjectGroupCompileActive: function(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+  OrgProjectGroupCompileActive, OrgCallProjectGroupCompileActive: function( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
   OrgAppBuilderCompile: Pointer;
 
 {$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
   forward;
 {$ELSE}
-function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function HookedProjectGroupCompileActive( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
   forward;
 {$ENDIF}
 
-function CallOrgProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function CallOrgProjectGroupCompileActive( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
 begin
   { Compile/Build/Check/... }
-  Result := OrgCallProjectGroupCompileActive(Instance, CompileMode, Wait);
+  Result            := OrgCallProjectGroupCompileActive( Instance, CompileMode, Wait );
 end;
 {$ELSE}
 var
-  OrgCompileActiveProject, OrgCallCompileActiveProject: function(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+  OrgCompileActiveProject, OrgCallCompileActiveProject: function( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
 
-function CompileActiveProject(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function CompileActiveProject( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
   forward;
 
-function CallOrgProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function CallOrgProjectGroupCompileActive( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
 begin
   { Compile/Build/Check/... }
-  Result := OrgCallCompileActiveProject(Instance, CompileMode, Wait);
+  Result            := OrgCallCompileActiveProject( Instance, CompileMode, Wait );
 end;
 {$IFEND}
 
-function CompileActiveProject(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function CompileActiveProject( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
 
-  procedure CollectDependencies(const Dependencies: IOTAProjectGroupProjectDependencies;
-    const DependentProjects: TInterfaceList; const Project: IOTAProject);
+  procedure CollectDependencies( const Dependencies: IOTAProjectGroupProjectDependencies;
+    const DependentProjects: TInterfaceList; const Project: IOTAProject );
   var
-    List: IOTAProjectDependenciesList;
-    Prj: IOTAProject;
-    I: Integer;
+    List            : IOTAProjectDependenciesList;
+    Prj             : IOTAProject;
+    I               : Integer;
   begin
-    DependentProjects.Add(Project);
-    List := Dependencies.GetProjectDependencies(Project);
+    DependentProjects.Add( Project );
+    List            := Dependencies.GetProjectDependencies( Project );
     for I := 0 to List.ProjectCount - 1 do
     begin
-      Prj := List.Projects[I];
-      if DependentProjects.IndexOf(Prj) = -1 then
-        CollectDependencies(Dependencies, DependentProjects, Prj);
+      Prj           := List.Projects[ I ];
+      if DependentProjects.IndexOf( Prj ) = -1 then
+        CollectDependencies( Dependencies, DependentProjects, Prj );
     end;
   end;
 
 const
   sOptAutoCloseProgressDlg = 'AutoCloseProgressDlg';
 var
-  Module: IOTAModule;
+  Module            : IOTAModule;
   Project, ActiveProject: IOTAProject;
-  I: Integer;
-  Found: Boolean;
-  Dependencies: IOTAProjectGroupProjectDependencies;
-  ModuleServices: IOTAModuleServices;
-  Services: IOTAServices;
-  DependentProjects: TInterfaceList;
-  DontShowAgain: Boolean;
+  I                 : Integer;
+  Found             : Boolean;
+  Dependencies      : IOTAProjectGroupProjectDependencies;
+  ModuleServices    : IOTAModuleServices;
+  Services          : IOTAServices;
+  DependentProjects : TInterfaceList;
+  DontShowAgain     : Boolean;
   AutoClose, ConfigModified: Boolean;
 begin
-  if (GlobalCompileProgress <> nil) and GlobalCompileProgress.AskCompileFromDiffProject then
+  if ( GlobalCompileProgress <> nil ) and GlobalCompileProgress.AskCompileFromDiffProject then
   begin
-    ModuleServices :=  BorlandIDEServices as IOTAModuleServices;
-    Services := BorlandIDEServices as IOTAServices;
-    Module := ModuleServices.CurrentModule;
-    if (Module <> nil) and (Module.OwnerCount > 0) then
+    ModuleServices  := BorlandIDEServices as IOTAModuleServices;
+    Services        := BorlandIDEServices as IOTAServices;
+    Module          := ModuleServices.CurrentModule;
+    if ( Module <> nil ) and ( Module.OwnerCount > 0 ) then
     begin
       ActiveProject := GetActiveProject;
-      Project := ActiveProject;
+      Project       := ActiveProject;
       if Project <> nil then
       begin
-        Found := False;
+        Found       := False;
         { Check if one of the module's projects is the active project }
         for I := 0 to Module.OwnerCount - 1 do
         begin
-          if Module.Owners[I] = Project then
+          if Module.Owners[ I ] = Project then
           begin
-            Found := True;
+            Found   := True;
             Break;
           end;
         end;
@@ -773,17 +773,17 @@ begin
         { Check if one of the module's projects is in the active project's dependency tree }
         if not Found then
         begin
-          if Supports(ModuleServices.GetMainProjectGroup, IOTAProjectGroupProjectDependencies, Dependencies) then
+          if Supports( ModuleServices.GetMainProjectGroup, IOTAProjectGroupProjectDependencies, Dependencies ) then
           begin
             DependentProjects := TInterfaceList.Create;
             try
               { Obtain all projects on which the active project depend }
-              CollectDependencies(Dependencies, DependentProjects, Project);
+              CollectDependencies( Dependencies, DependentProjects, Project );
               Found := False;
               for I := 0 to Module.OwnerCount - 1 do
               begin
                 { Either the module's project is the active project or it is }
-                if DependentProjects.IndexOf(Module.Owners[I]) <> -1 then
+                if DependentProjects.IndexOf( Module.Owners[ I ] ) <> -1 then
                 begin
                   Found := True;
                   Break;
@@ -800,8 +800,8 @@ begin
         begin
           ConfigModified := False;
           try
-            case TFormSwitchToModuleProject.ShowDialog(Module, Project, DontShowAgain,
-                                                       GlobalCompileProgress.AskCompileFromDiffProjectTemporary) of
+            case TFormSwitchToModuleProject.ShowDialog( Module, Project, DontShowAgain,
+              GlobalCompileProgress.AskCompileFromDiffProjectTemporary ) of
               mrYes:
                 begin
                   ModuleServices.GetMainProjectGroup.ActiveProject := Project;
@@ -817,30 +817,30 @@ begin
 
                   // Variant -> Boolean via a value comparison; a hard Boolean()
                   // cast can read the wrong value depending on the variant type.
-                  AutoClose := Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] = True;
+                  AutoClose := Services.GetEnvironmentOptions.Values[ sOptAutoCloseProgressDlg ] = True;
                   { Compile/Build/Check/... the module's project. The active-project
                     restore is in an outer finally so a compile that raises cannot
                     leave the IDE pointing at the wrong active project. }
                   try
-                    {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
                     try
                       if not AutoClose then
-                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
-                      Result := OrgCallProjectGroupCompileActive(Instance, CompileMode, Wait);
+                        Services.GetEnvironmentOptions.Values[ sOptAutoCloseProgressDlg ] := True;
+                      Result := OrgCallProjectGroupCompileActive( Instance, CompileMode, Wait );
                     finally
                       if not AutoClose then
-                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
+                        Services.GetEnvironmentOptions.Values[ sOptAutoCloseProgressDlg ] := False;
                     end;
-                    {$ELSE}
+{$ELSE}
                     try
                       if not AutoClose then
-                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := True;
-                      Result := OrgCallCompileActiveProject(Instance, CompileMode, Wait);
+                        Services.GetEnvironmentOptions.Values[ sOptAutoCloseProgressDlg ] := True;
+                      Result := OrgCallCompileActiveProject( Instance, CompileMode, Wait );
                     finally
                       if not AutoClose then
-                        Services.GetEnvironmentOptions.Values[sOptAutoCloseProgressDlg] := False;
+                        Services.GetEnvironmentOptions.Values[ sOptAutoCloseProgressDlg ] := False;
                     end;
-                    {$IFEND}
+{$IFEND}
                   finally
                     { Restore the last active project so it is also compiled }
                     ModuleServices.GetMainProjectGroup.ActiveProject := ActiveProject;
@@ -856,7 +856,7 @@ begin
                     Exit;
                 end;
               mrCancel:
-                Exit(False);
+                Exit( False );
             end;
             if DontShowAgain then
             begin
@@ -872,10 +872,11 @@ begin
       end;
     end;
   end;
-  Result := CallOrgProjectGroupCompileActive(Instance, CompileMode, Wait);
+  Result            := CallOrgProjectGroupCompileActive( Instance, CompileMode, Wait );
 end;
 
 {$IF CompilerVersion >= 21.0} // Delphi 2010+
+
 {$IFDEF CPUX86}
 procedure HookedProjectGroupCompileActive;
 asm
@@ -902,48 +903,49 @@ asm
   jb CompileActiveProject
   jmp CallOrgProjectGroupCompileActive
 end;
+
 {$ELSE}
-function HookedProjectGroupCompileActive(Instance: TObject; CompileMode: TCompileMode; Wait: Boolean): Boolean;
+function HookedProjectGroupCompileActive( Instance: TObject; CompileMode: TCompileMode; Wait: Boolean ): Boolean;
 begin
   // Win64: the x86 caller-detection trick (inspecting the return address against
   // TAppBuilder.Compile via stack/eax) does not translate to x64 reliably, so always
   // route through the enhanced compile-active-project handler.
-  Result := CompileActiveProject(Instance, CompileMode, Wait);
+  Result            := CompileActiveProject( Instance, CompileMode, Wait );
 end;
 {$ENDIF}
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 // We can't hook into bds.exe because the copy protection will catch us. So we need to go a different
 // way than what we used to do in Delphi 2009.
 const
   StartCompileSymbol = '@Comprgrs@TProgressForm@StartCompile$qqrv';
   ProjectGroupCompileActiveSymbol = '@Projectgroup@TProjectGroup@CompileActive$qqr21Compintf@TCompileModeo';
 var
-  Ctx: TRttiContext;
-  MainType: TRttiType;
-  CompileMethod: TRttiMethod;
-  coreideLib: THandle;
+  Ctx               : TRttiContext;
+  MainType          : TRttiType;
+  CompileMethod     : TRttiMethod;
+  coreideLib        : THandle;
 begin
   if not Unload then
   begin
     GlobalCompileProgress := TCompileProgress.Create;
-    coreideLib := GetModuleHandle(coreide_bpl);
+    coreideLib      := GetModuleHandle( coreide_bpl );
 
-    @OrgStartCompile := DbgStrictGetProcAddress(coreideLib, StartCompileSymbol);
-    if Assigned(OrgStartCompile) then
-      @OrgCallStartCompile := RedirectOrgCall(@OrgStartCompile, @HookedStartCompile);
+    @OrgStartCompile := DbgStrictGetProcAddress( coreideLib, StartCompileSymbol );
+    if Assigned( OrgStartCompile ) then
+      @OrgCallStartCompile := RedirectOrgCall( @OrgStartCompile, @HookedStartCompile );
 
-    @OrgProjectGroupCompileActive := DbgStrictGetProcAddress(coreideLib, ProjectGroupCompileActiveSymbol);
-    if Assigned(OrgProjectGroupCompileActive) then
-      @OrgCallProjectGroupCompileActive := RedirectOrgCall(@OrgProjectGroupCompileActive, @HookedProjectGroupCompileActive);
+    @OrgProjectGroupCompileActive := DbgStrictGetProcAddress( coreideLib, ProjectGroupCompileActiveSymbol );
+    if Assigned( OrgProjectGroupCompileActive ) then
+      @OrgCallProjectGroupCompileActive := RedirectOrgCall( @OrgProjectGroupCompileActive, @HookedProjectGroupCompileActive );
 
     { Get "TAppBuilder.Compile" method address }
-    Ctx := TRttiContext.Create;
+    Ctx             := TRttiContext.Create;
     try
-      MainType := Ctx.GetType(Application.MainForm.ClassInfo);
+      MainType      := Ctx.GetType( Application.MainForm.ClassInfo );
       if MainType <> nil then
       begin
-        CompileMethod := MainType.GetMethod('Compile');
+        CompileMethod := MainType.GetMethod( 'Compile' );
         if CompileMethod <> nil then
           OrgAppBuilderCompile := CompileMethod.CodeAddress;
       end;
@@ -953,63 +955,64 @@ begin
   end
   else
   begin
-    RestoreOrgCall(@OrgStartCompile, @OrgCallStartCompile);
-    RestoreOrgCall(@OrgProjectGroupCompileActive, @OrgCallProjectGroupCompileActive);
+    RestoreOrgCall( @OrgStartCompile, @OrgCallStartCompile );
+    RestoreOrgCall( @OrgProjectGroupCompileActive, @OrgCallProjectGroupCompileActive );
     GlobalCompileProgress.Free;
   end;
 end;
 {$IFEND}
 
 {$IF CompilerVersion < 21.0} // Delphi 2009
-procedure InitPlugin(Unload: Boolean);
+
+procedure InitPlugin( Unload: Boolean );
 const
-  ProjectMakeCode: array[0..29] of SmallInt = (
-    $53,                                    // push ebx
-    $8B, $D8,                               // mov ebx,eax
-    $8B, $C3,                               // mov eax,ebx
-    $E8, -1, -1, -1, -1,                    // call $00420f60
-    $C6, $83, $74, $08, $00, $00, $0B,      // mov byte ptr [ebx+$00000874],$0b
-    $B1, $01,                               // mov cl,$01
-    $33, $D2,                               // xor edx,edx
-    $8B, $C3,                               // mov eax,ebx
+  ProjectMakeCode   : array[ 0..29 ] of SmallInt = (
+    $53, // push ebx
+    $8B, $D8, // mov ebx,eax
+    $8B, $C3, // mov eax,ebx
+    $E8, -1, -1, -1, -1, // call $00420f60
+    $C6, $83, $74, $08, $00, $00, $0B, // mov byte ptr [ebx+$00000874],$0b
+    $B1, $01, // mov cl,$01
+    $33, $D2, // xor edx,edx
+    $8B, $C3, // mov eax,ebx
     $E8, -1, -1, -1, -1, // <<              // call $004191fc
-    $5B,                                    // pop ebx
-    $C3                                     // ret
-  );
+    $5B, // pop ebx
+    $C3 // ret
+    );
 
   StartCompileSymbol = '@Comprgrs@TProgressForm@StartCompile$qqrv';
 var
-  coreideLib: THandle;
-  P: PByteArray;
+  coreideLib        : THandle;
+  P                 : PByteArray;
 begin
   if not Unload then
   begin
     GlobalCompileProgress := TCompileProgress.Create;
-    coreideLib := GetModuleHandle(coreide_bpl);
+    coreideLib      := GetModuleHandle( coreide_bpl );
 
-    @OrgStartCompile := DbgStrictGetProcAddress(coreideLib, StartCompileSymbol);
-    if Assigned(OrgStartCompile) then
-      @OrgCallStartCompile := RedirectOrgCall(@OrgStartCompile, @HookedStartCompile);
+    @OrgStartCompile := DbgStrictGetProcAddress( coreideLib, StartCompileSymbol );
+    if Assigned( OrgStartCompile ) then
+      @OrgCallStartCompile := RedirectOrgCall( @OrgStartCompile, @HookedStartCompile );
 
     { Hook "TAppBuilder.Compile" method }
-    P := Application.MainForm.MethodAddress('ProjectMake');
+    P               := Application.MainForm.MethodAddress( 'ProjectMake' );
     if P <> nil then
     begin
-      if FindMethodPtr(Pointer(P), ProjectMakeCode, 1) <> nil then
+      if FindMethodPtr( Pointer( P ), ProjectMakeCode, 1 ) <> nil then
       begin
-        if P[23] = $E8 then // a last check for changes in ProjectMakeCode
+        if P[ 23 ] = $E8 then // a last check for changes in ProjectMakeCode
         begin
-          @OrgCompileActiveProject := Pointer(INT_PTR(@P[23 + 5]) + PInteger(@P[24])^);
-          if Assigned(OrgCompileActiveProject) then
-            @OrgCallCompileActiveProject := RedirectOrgCall(@OrgCompileActiveProject, @CompileActiveProject);
+          @OrgCompileActiveProject := Pointer( INT_PTR( @P[ 23 + 5 ] ) + PInteger( @P[ 24 ] )^ );
+          if Assigned( OrgCompileActiveProject ) then
+            @OrgCallCompileActiveProject := RedirectOrgCall( @OrgCompileActiveProject, @CompileActiveProject );
         end;
       end;
     end;
   end
   else
   begin
-    RestoreOrgCall(@OrgStartCompile, @OrgCallStartCompile);
-    RestoreOrgCall(@OrgCompileActiveProject, @OrgCallCompileActiveProject);
+    RestoreOrgCall( @OrgStartCompile, @OrgCallStartCompile );
+    RestoreOrgCall( @OrgCompileActiveProject, @OrgCallCompileActiveProject );
     GlobalCompileProgress.Free;
   end;
 end;
@@ -1019,32 +1022,32 @@ end;
 
 constructor TCompileProgress.Create;
 var
-  MenuItem: TMenuItem;
+  MenuItem          : TMenuItem;
 begin
-  inherited Create(AppDataDirectory + '\CompileProgress.xml', 'CompileProgress');
-  FPasFiles := TStringList.Create;
-  FPasFilesLock := TCriticalSection.Create;
-  FBuildStatistics := TBuildStatistics.Create;
+  inherited Create( AppDataDirectory + '\CompileProgress.xml', 'CompileProgress' );
+  FPasFiles         := TStringList.Create;
+  FPasFilesLock     := TCriticalSection.Create;
+  FBuildStatistics  := TBuildStatistics.Create;
   FormNativeProgress := TNativeProgressForm.Create;
 
-  FIDENotifier := TIDENotifier.Create;
+  FIDENotifier      := TIDENotifier.Create;
   FIDENotifier.OnBeforeCompile := BeforeCompile;
   FIDENotifier.OnAfterCompile := AfterCompile;
 
-  {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
   // Win64: CompileInterceptorWx64.dll's TPascalComInOut callback-table patch
   // rewrites 8-byte function pointers as 4-byte (Cardinal arithmetic) — keep
   // RegisterInterceptor off until/unless that's redesigned. The Win64
   // CompileInterceptor is currently a no-op (InitCompileInterceptor early-exits).
-  FCompileInterceptorId := GetCompileInterceptorServices.RegisterInterceptor(Self);
-  {$ENDIF}
+  FCompileInterceptorId := GetCompileInterceptorServices.RegisterInterceptor( Self );
+{$ENDIF}
 
   // Add Build Statistics menu item under Tools menu
-  MenuItem := FindMenuItem( 'ToolsMenu' );
+  MenuItem          := FindMenuItem( 'ToolsMenu' );
 
   if MenuItem <> nil then
   begin
-    FBuildStatsMenuItem         := TMenuItem.Create( MenuItem );
+    FBuildStatsMenuItem := TMenuItem.Create( MenuItem );
     FBuildStatsMenuItem.Caption := 'Build &Statistics...';
     FBuildStatsMenuItem.OnClick := BuildStatsMenuItemClick;
     FBuildStatsMenuItem.Visible := BuildStatisticsAvailable and FEnableBuildStatistics;
@@ -1055,7 +1058,7 @@ end;
 
 destructor TCompileProgress.Destroy;
 begin
-  {$IFDEF CPUX64}
+{$IFDEF CPUX64}
   // Win64 shutdown: each step is independently swallowed + logged so that one
   // failure (typically a partially-torn-down ToolsAPI dispatch into rtl370.bpl)
   // doesn't abort the rest of the destructor.
@@ -1063,18 +1066,33 @@ begin
     if ( FBuildStatsMenuItem <> nil ) and ( FBuildStatsMenuItem.Parent <> nil ) then
       FBuildStatsMenuItem.Parent.Remove( FBuildStatsMenuItem );
     FreeAndNil( FBuildStatsMenuItem );
-  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatsMenuItem.Free', E); end;
+  except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FBuildStatsMenuItem.Free', E );
+  end;
   // RegisterInterceptor was never called on Win64 — see TCompileProgress.Create.
-  try FIDENotifier.Free;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.FIDENotifier.Free', E); end;
-  try FormNativeProgress.Free;                            except on E: Exception do LogWin64UnloadStep('TCompileProgress.FormNativeProgress.Free', E); end;
+  try
+  FIDENotifier.Free; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FIDENotifier.Free', E );
+  end;
+  try
+  FormNativeProgress.Free; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FormNativeProgress.Free', E );
+  end;
   // The Build Statistics dialog shows FBuildStatistics and is owned by the IDE's
   // Application: close it before its data goes and before the DLL unloads.
-  try TFormBuildStatistics.CloseInstance;                 except on E: Exception do LogWin64UnloadStep('TCompileProgress.CloseBuildStatistics', E); end;
-  try FBuildStatistics.Free;                             except on E: Exception do LogWin64UnloadStep('TCompileProgress.FBuildStatistics.Free', E); end;
-  try FPasFilesLock.Free;                                 except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFilesLock.Free', E); end;
-  try FPasFiles.Free;                                     except on E: Exception do LogWin64UnloadStep('TCompileProgress.FPasFiles.Free', E); end;
-  try inherited Destroy;                                  except on E: Exception do LogWin64UnloadStep('TCompileProgress.inherited Destroy', E); end;
-  {$ELSE}
+  try
+  TFormBuildStatistics.CloseInstance; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.CloseBuildStatistics', E );
+  end;
+  try
+  FBuildStatistics.Free; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FBuildStatistics.Free', E );
+  end;
+  try
+  FPasFilesLock.Free; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FPasFilesLock.Free', E );
+  end;
+  try
+  FPasFiles.Free; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.FPasFiles.Free', E );
+  end;
+  try
+  inherited Destroy; except on E: Exception do LogWin64UnloadStep( 'TCompileProgress.inherited Destroy', E );
+  end;
+{$ELSE}
   // Remove from the IDE Tools menu before freeing so the menu (which owns it)
   // cannot double-free it during its own teardown.
   if ( FBuildStatsMenuItem <> nil ) and ( FBuildStatsMenuItem.Parent <> nil ) then
@@ -1090,35 +1108,35 @@ begin
   FPasFilesLock.Free;
   FPasFiles.Free;
   inherited Destroy;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure TCompileProgress.Init;
 begin
   ReleaseCompilerUnitCache := False;
   ReleaseCompilerUnitCacheHigh := True;
-  {$IF CompilerVersion < 22.0} // XE has its own option
+{$IF CompilerVersion < 22.0} // XE has its own option
   DisableRebuildDlg := True;
-  {$IFEND}
+{$IFEND}
   AutoSaveAfterSuccessfulCompile := False;
   AskCompileFromDiffProject := True;
   AskCompileFromDiffProjectTemporary := True;
-  {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
   LastCompileVersionInfoFormat := 'yyyy-mm-dd hh:nn';
-  {$IFEND}
+{$IFEND}
   EnableBuildStatistics := True;
   ShowBuildStatisticsAfterCompile := False;
-  RunStyleCheckAfterCompile := False;  // Off by default
+  RunStyleCheckAfterCompile := False; // Off by default
 
-  SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
+  SetClearCompilerUnitCacheOtherStates( FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh );
 end;
 
 procedure TCompileProgress.AfterCompile( const Project: IOTAProject; Succeeded, IsCodeInsight: Boolean );
 var
-  StyleChecker: TStyleChecker;
-  CheckerViolations: TArray<CodeStyleChecker.TStyleViolation>;
-  LocalViolations: TArray<TStyleViolation>;
-  I: Integer;
+  StyleChecker      : TStyleChecker;
+  CheckerViolations : TArray<CodeStyleChecker.TStyleViolation>;
+  LocalViolations   : TArray<TStyleViolation>;
+  I                 : Integer;
 begin
 
   if ( not IsCodeInsight ) then
@@ -1136,35 +1154,35 @@ begin
       // IOTAIDENotifier callback, so a checker/parse failure must never escape
       // into the IDE's post-compile pipeline; log and swallow instead.
       if Succeeded and FRunStyleCheckAfterCompile and ( Project <> nil ) then
-      try
-        StyleChecker := TStyleChecker.Create;
         try
-          if StyleChecker.CheckProject( Project, CheckerViolations, nil ) then
-          begin
-            // Convert from CodeStyleChecker.TStyleViolation to local TStyleViolation
-            SetLength( LocalViolations, Length( CheckerViolations ) );
-            for I := 0 to High( CheckerViolations ) do
+          StyleChecker := TStyleChecker.Create;
+          try
+            if StyleChecker.CheckProject( Project, CheckerViolations, nil ) then
             begin
-              LocalViolations[I].FileName := CheckerViolations[I].FileName;
-              LocalViolations[I].UnitName := CheckerViolations[I].UnitName;
-              LocalViolations[I].Line     := CheckerViolations[I].Line;
-              LocalViolations[I].Column   := CheckerViolations[I].Column;
-              LocalViolations[I].Rule     := CheckerViolations[I].Rule;
-              LocalViolations[I].Expected := CheckerViolations[I].Expected;
-              LocalViolations[I].Actual   := CheckerViolations[I].Actual;
-              LocalViolations[I].Severity := CheckerViolations[I].Severity;
-              LocalViolations[I].Category := CheckerViolations[I].Category;
+              // Convert from CodeStyleChecker.TStyleViolation to local TStyleViolation
+              SetLength( LocalViolations, Length( CheckerViolations ) );
+              for I := 0 to High( CheckerViolations ) do
+              begin
+                LocalViolations[ I ].FileName := CheckerViolations[ I ].FileName;
+                LocalViolations[ I ].UnitName := CheckerViolations[ I ].UnitName;
+                LocalViolations[ I ].Line := CheckerViolations[ I ].Line;
+                LocalViolations[ I ].Column := CheckerViolations[ I ].Column;
+                LocalViolations[ I ].Rule := CheckerViolations[ I ].Rule;
+                LocalViolations[ I ].Expected := CheckerViolations[ I ].Expected;
+                LocalViolations[ I ].Actual := CheckerViolations[ I ].Actual;
+                LocalViolations[ I ].Severity := CheckerViolations[ I ].Severity;
+                LocalViolations[ I ].Category := CheckerViolations[ I ].Category;
+              end;
+              FBuildStatistics.SetStyleViolations( LocalViolations );
             end;
-            FBuildStatistics.SetStyleViolations( LocalViolations );
+          finally
+            StyleChecker.Free;
           end;
-        finally
-          StyleChecker.Free;
+        except
+          on E: Exception do
+            OutputDebugString( PChar( 'CompileProgress.AfterCompile style-check failed: ' +
+                E.ClassName + ': ' + E.Message ) );
         end;
-      except
-        on E: Exception do
-          OutputDebugString( PChar( 'CompileProgress.AfterCompile style-check failed: ' +
-            E.ClassName + ': ' + E.Message ) );
-      end;
 
       if FShowBuildStatisticsAfterCompile and ( FBuildStatistics.UnitCount > 0 ) then
         ShowBuildStatisticsDialog;
@@ -1173,12 +1191,12 @@ begin
 
 end;
 
-procedure TCompileProgress.BeforeCompile(const Project: IOTAProject;
-  IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TCompileProgress.BeforeCompile( const Project: IOTAProject;
+  IsCodeInsight: Boolean; var Cancel: Boolean );
 var
-  i: Integer;
-  Ext: string;
-  FileName: string;
+  i                 : Integer;
+  Ext               : string;
+  FileName          : string;
 begin
   // Everything below needs the project (file name, module list); without one there is
   // nothing to track, and an AV here would escape into the IDE's notifier dispatch.
@@ -1187,17 +1205,17 @@ begin
 
   if not IsCodeInsight then
   begin
-    {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
     if LastCompileVersionInfo then
-      UpdateLastCompileVersionInfo(Project);
-    {$IFEND}
+      UpdateLastCompileVersionInfo( Project );
+{$IFEND}
 
-    {$IF CompilerVersion <= 20.0} // Delphi 2009-
+{$IF CompilerVersion <= 20.0} // Delphi 2009-
     // Delphi 2009 and older call BeforeCompile and then StartCompile for the first project,
     // BeforeCompile and then StartCompile for the second project, ...
-    TStringList(FPasFiles).Sorted := False;
+    TStringList( FPasFiles ).Sorted := False;
     FPasFiles.Clear;
-    {$IFEND}
+{$IFEND}
     // BeforeCompile is called multiple times for multiple projects (Delphi 2010+)
     if FPasFiles.Count = 0 then
     begin
@@ -1211,26 +1229,26 @@ begin
       end;
     end;
 
-    FPasFiles.Add(ExtractFileName(Project.FileName));
+    FPasFiles.Add( ExtractFileName( Project.FileName ) );
     for i := 0 to Project.GetModuleCount - 1 do
     begin
-      FileName := Project.GetModule(i).FileName;
-      Ext := AnsiLowerCase(ExtractFileExt(FileName));
+      FileName      := Project.GetModule( i ).FileName;
+      Ext           := AnsiLowerCase( ExtractFileExt( FileName ) );
       if Ext = '.pas' then
       begin
-        FPasFiles.Add(ExtractFileName(FileName));
-        FPasFiles.Add(ChangeFileExt(ExtractFileName(FileName), '.dcu'));
+        FPasFiles.Add( ExtractFileName( FileName ) );
+        FPasFiles.Add( ChangeFileExt( ExtractFileName( FileName ), '.dcu' ) );
         // Add to build statistics for filtering
         if FEnableBuildStatistics then
-          FBuildStatistics.AddProjectFile(FileName);
+          FBuildStatistics.AddProjectFile( FileName );
       end;
     end;
-    TStringList(FPasFiles).Sorted := True;
+    TStringList( FPasFiles ).Sorted := True;
     FormNativeProgress.MaxFiles := FPasFiles.Count div 2;
   end;
 end;
 
-procedure TCompileProgress.SetAskCompileFromDiffProject(const Value: Boolean);
+procedure TCompileProgress.SetAskCompileFromDiffProject( const Value: Boolean );
 begin
   if Value <> FAskCompileFromDiffProject then
   begin
@@ -1238,16 +1256,16 @@ begin
   end;
 end;
 
-procedure TCompileProgress.SetReleaseCompilerUnitCache(const Value: Boolean);
+procedure TCompileProgress.SetReleaseCompilerUnitCache( const Value: Boolean );
 begin
   FReleaseCompilerUnitCache := Value;
-  SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
+  SetClearCompilerUnitCacheOtherStates( FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh );
 end;
 
-procedure TCompileProgress.SetReleaseCompilerUnitCacheHigh(const Value: Boolean);
+procedure TCompileProgress.SetReleaseCompilerUnitCacheHigh( const Value: Boolean );
 begin
   FReleaseCompilerUnitCacheHigh := Value;
-  SetClearCompilerUnitCacheOtherStates(FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh);
+  SetClearCompilerUnitCacheOtherStates( FReleaseCompilerUnitCache, FReleaseCompilerUnitCacheHigh );
 end;
 
 procedure TCompileProgress.SetEnableBuildStatistics( const Value: Boolean );
@@ -1275,7 +1293,8 @@ begin
 end;
 
 {$IF CompilerVersion < 22.0} // XE has its own option
-procedure TCompileProgress.SetDisableRebuildDlg(const Value: Boolean);
+
+procedure TCompileProgress.SetDisableRebuildDlg( const Value: Boolean );
 {
 Delphi 2009:
 20729AC5 8B45E4           mov eax,[ebp-$1c]
@@ -1318,8 +1337,8 @@ Delphi 2010:
 208A35A8 744C             jz $208a35f6
 }
 const
-  {$IFDEF COMPILER12} // Delphi 2009:
-  Bytes: array[0..37] of SmallInt = (
+{$IFDEF COMPILER12} // Delphi 2009:
+  Bytes             : array[ 0..37 ] of SmallInt = (
     $8B, $45, $E4,
     $8B, $10,
     $FF, $52, -1,
@@ -1334,9 +1353,9 @@ const
     $FF, $51, $0C,
     $84, $C0,
     $75, $08
-  );
-  {$ELSE} // Delphi 2010:
-  Bytes: array[0..60] of SmallInt = (
+    );
+{$ELSE} // Delphi 2010:
+  Bytes             : array[ 0..60 ] of SmallInt = (
     $8B, $45, $F8,
     $8B, $10,
     $FF, $52, -1,
@@ -1355,37 +1374,37 @@ const
     $E8, -1, -1, -1, -1,
     $83, $E8, $02,
     $74
-  );
-  {$ENDIF COMPILER12}
+    );
+{$ENDIF COMPILER12}
 
-  PatchBytes: array[0..2] of Byte = (
-    $31, $C0,         // xor eax,eax
-    $90               // nop
-  );
+  PatchBytes        : array[ 0..2 ] of Byte = (
+    $31, $C0, // xor eax,eax
+    $90 // nop
+    );
 
 var
-  P, EndP: PByte;
-  I: Integer;
-  Found: Boolean;
-  n: DWORD;
+  P, EndP           : PByte;
+  I                 : Integer;
+  Found             : Boolean;
+  n                 : DWORD;
 begin
   if FRebuildAddress = nil then
   begin
     { Find the position that must be patched }
-    P := DbgStrictGetProcAddress(GetModuleHandle(coreide_bpl), '@Debuggermgr@TDebuggerMgr@MakeCurrentProject$qqrv');
-    EndP := DbgStrictGetProcAddress(GetModuleHandle(coreide_bpl), '@Debuggermgr@TDebuggerMgr@GetSupportedDebugCommands$qqrv');
-    if (P <> nil) and (EndP > P) then
+    P               := DbgStrictGetProcAddress( GetModuleHandle( coreide_bpl ), '@Debuggermgr@TDebuggerMgr@MakeCurrentProject$qqrv' );
+    EndP            := DbgStrictGetProcAddress( GetModuleHandle( coreide_bpl ), '@Debuggermgr@TDebuggerMgr@GetSupportedDebugCommands$qqrv' );
+    if ( P <> nil ) and ( EndP > P ) then
     begin
       while P < EndP do
       begin
-        while (P < EndP) and (P[0] <> $8B) do
-          Inc(P);
-        if (P < EndP) then
+        while ( P < EndP ) and ( P[ 0 ] <> $8B ) do
+          Inc( P );
+        if ( P < EndP ) then
         begin
-          Found := True;
-          for I := 0 to High(Bytes) do
+          Found     := True;
+          for I := 0 to High( Bytes ) do
           begin
-            if (Bytes[I] <> -1) and (P[I] <> Byte(Bytes[I])) then
+            if ( Bytes[ I ] <> -1 ) and ( P[ I ] <> Byte( Bytes[ I ] ) ) then
             begin
               Found := False;
               Break;
@@ -1394,107 +1413,108 @@ begin
           if Found then
           begin
             FRebuildAddress := P + 5;
-            Move(FRebuildAddress^, FRebuildOrgBytes[0], 3);
+            Move( FRebuildAddress^, FRebuildOrgBytes[ 0 ], 3 );
             Break;
           end;
         end;
-        Inc(P);
+        Inc( P );
       end;
     end;
   end;
 
   if Value <> FDisableRebuildDlg then
   begin
-    if FDisableRebuildDlg and (FRebuildAddress <> nil) then
-      WriteProcessMemory(GetCurrentProcess, FRebuildAddress, @FRebuildOrgBytes, SizeOf(FRebuildOrgBytes), n);
+    if FDisableRebuildDlg and ( FRebuildAddress <> nil ) then
+      WriteProcessMemory( GetCurrentProcess, FRebuildAddress, @FRebuildOrgBytes, SizeOf( FRebuildOrgBytes ), n );
 
     FDisableRebuildDlg := Value;
 
-    if FDisableRebuildDlg and (FRebuildAddress <> nil) then
-      WriteProcessMemory(GetCurrentProcess, FRebuildAddress, @PatchBytes, SizeOf(PatchBytes), n);
+    if FDisableRebuildDlg and ( FRebuildAddress <> nil ) then
+      WriteProcessMemory( GetCurrentProcess, FRebuildAddress, @PatchBytes, SizeOf( PatchBytes ), n );
   end;
 end;
 {$IFEND}
 
 {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
-procedure TCompileProgress.UpdateLastCompileVersionInfo(const Project: IOTAProject);
+
+procedure TCompileProgress.UpdateLastCompileVersionInfo( const Project: IOTAProject );
 var
-  FormatSettings: TFormatSettings;
+  FormatSettings    : TFormatSettings;
 begin
-  {$IF CompilerVersion >= 22.0} // Delphi XE+
-  FormatSettings := TFormatSettings.Create((SUBLANG_NEUTRAL shl 10) or LANG_ENGLISH);
-  {$ELSE}
-  GetLocaleFormatSettings((SUBLANG_NEUTRAL shl 10) or LANG_ENGLISH, FormatSettings);
-  {$IFEND}
-  if Trim(LastCompileVersionInfoFormat) <> '' then
-    SetVersionInfoExtraKey(Project, 'Last Compile', FormatDateTime(LastCompileVersionInfoFormat, Now, FormatSettings))
+{$IF CompilerVersion >= 22.0} // Delphi XE+
+  FormatSettings    := TFormatSettings.Create( ( SUBLANG_NEUTRAL shl 10 ) or LANG_ENGLISH );
+{$ELSE}
+  GetLocaleFormatSettings( ( SUBLANG_NEUTRAL shl 10 ) or LANG_ENGLISH, FormatSettings );
+{$IFEND}
+  if Trim( LastCompileVersionInfoFormat ) <> '' then
+    SetVersionInfoExtraKey( Project, 'Last Compile', FormatDateTime( LastCompileVersionInfoFormat, Now, FormatSettings ) )
   else
-    SetVersionInfoExtraKey(Project, 'Last Compile', DateTimeToStr(Now, FormatSettings));
+    SetVersionInfoExtraKey( Project, 'Last Compile', DateTimeToStr( Now, FormatSettings ) );
 end;
 {$IFEND}
 
 function TCompileProgress.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Compilation', TFrameOptionPageCompilerProgress, Self);
+  Result            := TTreePage.Create( 'Compilation', TFrameOptionPageCompilerProgress, Self );
 end;
 
 function TCompileProgress.GetOptions: TCompileInterceptOptions;
 begin
-  Result := CIO_INSPECTFILENAMES;
+  Result            := CIO_INSPECTFILENAMES;
 end;
 
-procedure TCompileProgress.CompileProject(ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: PWideChar;
-  IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TCompileProgress.CompileProject( ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: PWideChar;
+  IsCodeInsight: Boolean; var Cancel: Boolean );
 begin
 end;
 
-function TCompileProgress.AlterFile(Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer): IVirtualStream;
+function TCompileProgress.AlterFile( Filename: PWideChar; Content: PByte; FileDate, FileSize: Integer ): IVirtualStream;
 begin
-  Result := nil;
+  Result            := nil;
 end;
 
-function TCompileProgress.AlterMessage(IsCompilerMessage: Boolean;
+function TCompileProgress.AlterMessage( IsCompilerMessage: Boolean;
   var MsgKind: TMsgKind; var Code: Integer; const Filename: IWideString;
-  var Line, Column: Integer; const Msg: IWideString): Boolean;
+  var Line, Column: Integer; const Msg: IWideString ): Boolean;
 begin
-  Result := False;
+  Result            := False;
 end;
 
-function TCompileProgress.GetVirtualFile(Filename: PWideChar): IVirtualStream;
+function TCompileProgress.GetVirtualFile( Filename: PWideChar ): IVirtualStream;
 begin
-  Result := nil;
+  Result            := nil;
 end;
 
-procedure TCompileProgress.InspectFilename(Filename: PWideChar; FileMode: TInspectFileMode);
+procedure TCompileProgress.InspectFilename( Filename: PWideChar; FileMode: TInspectFileMode );
 var
-  Index: Integer;
-  SFilename: string;
-  SFullFilename: string;
-  Ext: string;
+  Index             : Integer;
+  SFilename         : string;
+  SFullFilename     : string;
+  Ext               : string;
 begin
   if ( FileMode <> ifmOpen ) then
     Exit;
 
-  SFullFilename := Filename;
-  SFilename := ExtractFileName(SFullFilename);
-  Ext := AnsiLowerCase(ExtractFileExt(SFilename));
+  SFullFilename     := Filename;
+  SFilename         := ExtractFileName( SFullFilename );
+  Ext               := AnsiLowerCase( ExtractFileExt( SFilename ) );
 
   // Track build statistics for .pas files.  TBuildStatistics is lock-protected, so this
   // also runs when the IDE compiles in the background on its compiler thread.
-  if FEnableBuildStatistics and (Ext = '.pas') then
-    FBuildStatistics.StartUnit(ChangeFileExt(SFilename, ''), SFullFilename);
+  if FEnableBuildStatistics and ( Ext = '.pas' ) then
+    FBuildStatistics.StartUnit( ChangeFileExt( SFilename, '' ), SFullFilename );
 
   // FPasFiles and the IDE progress form are main-thread only; a background compile
   // shows no modal progress form, so there is no progress bar to advance.
   if ( GetCurrentThreadId = MainThreadId ) then
   begin
-    Index := FPasFiles.IndexOf(SFilename);
+    Index           := FPasFiles.IndexOf( SFilename );
     if Index <> -1 then
     begin
       //GlobalCompileProgress.FPasFiles.Delete(Index); // prevent the file to be listed twice
-      Index := FPasFiles.IndexOf(ChangeFileExt(SFilename, '.dcu'));
+      Index         := FPasFiles.IndexOf( ChangeFileExt( SFilename, '.dcu' ) );
       if Index <> -1 then
-        FPasFiles.Delete(Index);
+        FPasFiles.Delete( Index );
 
       if FormNativeProgress.Form <> nil then
         FormNativeProgress.ProjectFilesCompiled := FormNativeProgress.ProjectFilesCompiled + 1;
@@ -1506,3 +1526,4 @@ begin
 end;
 
 end.
+

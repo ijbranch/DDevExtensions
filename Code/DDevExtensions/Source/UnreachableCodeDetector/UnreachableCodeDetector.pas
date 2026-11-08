@@ -92,29 +92,29 @@ uses
 /// <returns>The defines, semicolon-separated; the legacy "Defines" option when the configuration API is unavailable.</returns>
 function ActiveDefines( const Project: IOTAProject ): string;
 begin
-  Result := '';
-  var oOptions := Project.ProjectOptions;
+  Result            := '';
+  var oOptions      := Project.ProjectOptions;
   if oOptions = nil then
     Exit;
 
   var oConfigs: IOTAProjectOptionsConfigurations;
   if Supports( oOptions, IOTAProjectOptionsConfigurations, oConfigs ) and ( oConfigs.ActiveConfiguration <> nil ) then
   begin
-    var oConfig := oConfigs.ActiveConfiguration;
+    var oConfig     := oConfigs.ActiveConfiguration;
     var oPlatformConfig := oConfig.PlatformConfiguration[ Project.CurrentPlatform ];
     if oPlatformConfig <> nil then
-      oConfig := oPlatformConfig;
+      oConfig       := oPlatformConfig;
     Exit( oConfig.GetValue( 'DCC_Define', True ) );
   end;
 
-  Result := VarToStrDef( oOptions.Values[ 'Defines' ], '' );
+  Result            := VarToStrDef( oOptions.Values[ 'Defines' ], '' );
 end;
 
 function ScanProject( Scanner: TUnreachableCodeScanner; const Project: IOTAProject; OnProgress: TSourceScanProgressEvent;
   out SkippedFiles: Integer ): Boolean;
 begin
-  Result       := False;
-  SkippedFiles := 0;
+  Result            := False;
+  SkippedFiles      := 0;
 
   if Project = nil then
     Exit;
@@ -129,17 +129,17 @@ begin
       Exit;
 
     try
-      var sSource := UTF8ToString( ReadModuleSource( sFileName ) );
+      var sSource   := UTF8ToString( ReadModuleSource( sFileName ) );
       Scanner.ScanSource( sSource, sFileName, ChangeFileExt( ExtractFileName( sFileName ), '' ) );
     except
       on E: EStreamError do
-        Inc( SkippedFiles );   // locked / unreadable unit: skip it, the rest of the scan still runs
+        Inc( SkippedFiles ); // locked / unreadable unit: skip it, the rest of the scan still runs
       on E: EOSError do
         Inc( SkippedFiles );
     end;
   end;
 
-  Result := True;
+  Result            := True;
 end;
 
 { TUnreachableCodeDetectorPlugin }
@@ -152,7 +152,7 @@ begin
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Unreachable Code Detector...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -171,14 +171,14 @@ end;
 procedure TUnreachableCodeDetectorPlugin.Init;
 begin
 
-  FEnabled := True;
+  FEnabled          := True;
 
 end;
 
 function TUnreachableCodeDetectorPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Unreachable Code', TFrameOptionPageUnreachableCode, Self );
+  Result            := TTreePage.Create( 'Unreachable Code', TFrameOptionPageUnreachableCode, Self );
 
 end;
 
@@ -216,3 +216,4 @@ begin
 end;
 
 end.
+

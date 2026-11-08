@@ -63,7 +63,7 @@ type
     IsInterface: Boolean;
   end;
 
-  {$WARN HIDING_MEMBER OFF}
+{$WARN HIDING_MEMBER OFF}
   /// <summary>
   /// Information about a single Pascal unit, including its parsed dependencies.
   /// </summary>
@@ -93,7 +93,7 @@ type
     /// <summary>True after the source has been parsed for its uses clauses.</summary>
     property Parsed: Boolean read FParsed write FParsed;
   end;
-  {$WARN HIDING_MEMBER ON}
+{$WARN HIDING_MEMBER ON}
 
   /// <summary>
   /// One step in a circular dependency path.
@@ -370,10 +370,10 @@ constructor TUnitInfo.Create( const AUnitName, AFileName: string );
 begin
 
   inherited Create;
-  FUnitName     := AUnitName;
-  FFileName     := AFileName;
-  FDependencies := TList<TUnitDependency>.Create;
-  FParsed       := False;
+  FUnitName         := AUnitName;
+  FFileName         := AFileName;
+  FDependencies     := TList<TUnitDependency>.Create;
+  FParsed           := False;
 
 end;
 
@@ -391,18 +391,18 @@ constructor TDependencyScanner.Create;
 begin
 
   inherited Create;
-  FUnits                     := TObjectDictionary<string, TUnitInfo>.Create( [ doOwnsValues ] );
-  FSearchPaths               := TStringList.Create;
+  FUnits            := TObjectDictionary<string, TUnitInfo>.Create( [ doOwnsValues ] );
+  FSearchPaths      := TStringList.Create;
   FSearchPaths.CaseSensitive := False;
-  FSearchPaths.Duplicates    := dupIgnore;
-  FCircularRefs              := TList<TCircularReference>.Create;
-  FReverseDeps               := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
-  FDepthMap                  := TDictionary<string, Integer>.Create;
-  FProjectDefines            := TStringList.Create;
+  FSearchPaths.Duplicates := dupIgnore;
+  FCircularRefs     := TList<TCircularReference>.Create;
+  FReverseDeps      := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
+  FDepthMap         := TDictionary<string, Integer>.Create;
+  FProjectDefines   := TStringList.Create;
   FProjectDefines.CaseSensitive := False;
-  FProjectDefines.Sorted     := True;
+  FProjectDefines.Sorted := True;
   FProjectDefines.Duplicates := dupIgnore;
-  FRespectConditionals       := True;
+  FRespectConditionals := True;
 
 end;
 
@@ -433,10 +433,10 @@ end;
 
 procedure TDependencyScanner.AddSearchPath( const Path: string );
 var
-  ExpandedPath: string;
+  ExpandedPath      : string;
 begin
 
-  ExpandedPath := ExcludeTrailingPathDelimiter( Path );
+  ExpandedPath      := ExcludeTrailingPathDelimiter( Path );
 
   if ( ExpandedPath <> '' ) and DirectoryExists( ExpandedPath ) then
     FSearchPaths.Add( ExpandedPath );
@@ -447,87 +447,87 @@ function TDependencyScanner.IsDefineDefined( const DefineName: string ): Boolean
 begin
 
   if ( FActiveDefines <> nil ) then
-    Result := FActiveDefines.IndexOf( DefineName ) >= 0
+    Result          := FActiveDefines.IndexOf( DefineName ) >= 0
   else
-    Result := FProjectDefines.IndexOf( DefineName ) >= 0;
+    Result          := FProjectDefines.IndexOf( DefineName ) >= 0;
 
 end;
 
 function TDependencyScanner.EvaluateIfCondition( const Condition: string ): Integer;
 
-  { One operand of an AND/OR list: [NOT] Defined(X), True or False.  Anything else - a constant,
-    a comparison ( "CompilerVersion>=36" ), Declared(X), a call - cannot be judged here: -1. }
+{ One operand of an AND/OR list: [NOT] Defined(X), True or False.  Anything else - a constant,
+  a comparison ( "CompilerVersion>=36" ), Declared(X), a call - cannot be judged here: -1. }
   function EvaluateSingleTerm( const Term: string ): Integer;
   var
     sTerm, sUpper, sName: string;
-    bNot: Boolean;
+    bNot            : Boolean;
   begin
-    sTerm  := Trim( Term );
-    bNot   := False;
+    sTerm           := Trim( Term );
+    bNot            := False;
     if SameText( Copy( sTerm, 1, 4 ), 'NOT ' ) then
     begin
-      bNot  := True;
-      sTerm := Trim( Copy( sTerm, 5, MaxInt ) );
+      bNot          := True;
+      sTerm         := Trim( Copy( sTerm, 5, MaxInt ) );
     end;
-    sUpper := UpperCase( sTerm );
+    sUpper          := UpperCase( sTerm );
 
     if sUpper.StartsWith( 'DEFINED(' ) and sUpper.EndsWith( ')' ) then
     begin
-      sName := Trim( Copy( sTerm, 9, Length( sTerm ) - 9 ) );
+      sName         := Trim( Copy( sTerm, 9, Length( sTerm ) - 9 ) );
       if ( sName = '' ) or ( Pos( '(', sName ) > 0 ) or ( Pos( ')', sName ) > 0 ) then
         Exit( -1 );
-      Result := Ord( IsDefineDefined( sName ) );
+      Result        := Ord( IsDefineDefined( sName ) );
     end
     else if ( sUpper = 'TRUE' ) then
-      Result := 1
+      Result        := 1
     else if ( sUpper = 'FALSE' ) then
-      Result := 0
+      Result        := 0
     else
       Exit( -1 );
 
     if bNot then
-      Result := 1 - Result;
+      Result        := 1 - Result;
   end;
 
   { The operands of S separated by Op ( ' OR ' / ' AND ', matched without regard to case ). }
   function SplitByOperator( const S, Op: string ): TArray<string>;
   var
-    sUpper: string;
-    iStart, iFound: Integer;
+    sUpper          : string;
+    iStart, iFound  : Integer;
   begin
-    Result := nil;
-    sUpper := UpperCase( S );
-    iStart := 1;
+    Result          := nil;
+    sUpper          := UpperCase( S );
+    iStart          := 1;
     repeat
-      iFound := Pos( Op, sUpper, iStart );
+      iFound        := Pos( Op, sUpper, iStart );
       if ( iFound = 0 ) then
-        Result := Result + [ Trim( Copy( S, iStart, MaxInt ) ) ]
+        Result      := Result + [ Trim( Copy( S, iStart, MaxInt ) ) ]
       else
       begin
-        Result := Result + [ Trim( Copy( S, iStart, iFound - iStart ) ) ];
-        iStart := iFound + Length( Op );
+        Result      := Result + [ Trim( Copy( S, iStart, iFound - iStart ) ) ];
+        iStart      := iFound + Length( Op );
       end;
     until ( iFound = 0 );
   end;
 
 var
-  sCond, sStripped: string;
+  sCond, sStripped  : string;
   bAny, bUnknown, bAll: Boolean;
 begin
 
   // Returns: 1 = true, 0 = false, -1 = unknown/cannot evaluate
-  sCond := Trim( Condition );
+  sCond             := Trim( Condition );
   if ( sCond = '' ) then
     Exit( -1 );
 
   { Only a flat AND/OR list of Defined() terms is judged.  Grouping parentheses would change what
     belongs to which operator, so an expression with any parenthesis that is not a Defined(X)
     call is left unknown - included, the safe side for a dependency list. }
-  sStripped := UpperCase( sCond );
+  sStripped         := UpperCase( sCond );
   while ( Pos( 'DEFINED(', sStripped ) > 0 ) do
   begin
-    var iOpen  := Pos( 'DEFINED(', sStripped );
-    var iClose := Pos( ')', sStripped, iOpen );
+    var iOpen       := Pos( 'DEFINED(', sStripped );
+    var iClose      := Pos( ')', sStripped, iOpen );
     if ( iClose = 0 ) then
       Exit( -1 );
     Delete( sStripped, iOpen, iClose - iOpen + 1 );
@@ -537,42 +537,42 @@ begin
 
   { OR of ANDs, each operand with its own NOT: "not Defined(A) and Defined(B)" is
     (not A) and B, never not (A and B). }
-  bAny     := False;
-  bUnknown := False;
+  bAny              := False;
+  bUnknown          := False;
   for var sOrPart in SplitByOperator( sCond, ' OR ' ) do
   begin
-    bAll := True;
+    bAll            := True;
     var bAndUnknown := False;
     for var sAndPart in SplitByOperator( sOrPart, ' AND ' ) do
       case EvaluateSingleTerm( sAndPart ) of
         0:
           begin
-            bAll := False;
+            bAll    := False;
             Break;
           end;
         -1:
           bAndUnknown := True;
       end;
     if bAll and ( not bAndUnknown ) then
-      bAny := True
+      bAny          := True
     else if bAll then
-      bUnknown := True;
+      bUnknown      := True;
   end;
 
   if bAny then
-    Result := 1
+    Result          := 1
   else if bUnknown then
-    Result := -1
+    Result          := -1
   else
-    Result := 0;
+    Result          := 0;
 
 end;
 
 procedure TDependencyScanner.ParseUsesClause( const Content: string; UnitInfo: TUnitInfo );
 type
   TCondState = record
-    Active: Boolean;       // Is this block active (condition was true)?
-    WasActive: Boolean;    // Was any branch in this IF/ELSE chain active?
+    Active: Boolean; // Is this block active (condition was true)?
+    WasActive: Boolean; // Was any branch in this IF/ELSE chain active?
     ParentActive: Boolean; // Was parent block active when we entered?
   end;
 const
@@ -581,18 +581,18 @@ const
   MAX_INCLUDE_DEPTH = 16;
 var
   InInterface, InImplementation: Boolean;
-  InUses: Boolean;
-  Token: string;
-  Dep: TUnitDependency;
-  CondStack: TList<TCondState>;
+  InUses            : Boolean;
+  Token             : string;
+  Dep               : TUnitDependency;
+  CondStack         : TList<TCondState>;
   DefineName, IfCondition: string;
 
   function IsCodeActive: Boolean;
   var
-    J: Integer;
+    J               : Integer;
   begin
 
-    Result := True;
+    Result          := True;
 
     if FRespectConditionals then
     begin
@@ -602,7 +602,7 @@ var
 
         if not CondStack[ J ].Active then
         begin
-          Result := False;
+          Result    := False;
           Exit;
         end;
       end;
@@ -618,26 +618,26 @@ var
 
       if SameText( Token, 'interface' ) then
       begin
-        InInterface      := True;
+        InInterface := True;
         InImplementation := False;
       end
       else if SameText( Token, 'implementation' ) then
       begin
-        InInterface      := False;
+        InInterface := False;
         InImplementation := True;
-        InUses           := False;
+        InUses      := False;
       end
       else if SameText( Token, 'uses' ) and IsCodeActive then
-        InUses := True
+        InUses      := True
       else if InUses and IsCodeActive and ( not SameText( Token, 'in' ) ) then
       begin
-        Dep.UnitName    := Token;
-        Dep.FileName    := '';
+        Dep.UnitName := Token;
+        Dep.FileName := '';
         Dep.IsInterface := InInterface;
         UnitInfo.Dependencies.Add( Dep );
       end;
 
-      Token := '';
+      Token         := '';
     end;
 
   end;
@@ -648,19 +648,19 @@ var
   // in it count - looked up beside the unit first, then on the search path.
   procedure IncludeFile( const AName: string; ADepth: Integer );
   var
-    sName, sContent: string;
+    sName, sContent : string;
   begin
 
     if ( ADepth >= MAX_INCLUDE_DEPTH ) then
       Exit;
 
-    sName := Trim( AName );
+    sName           := Trim( AName );
     if ( sName <> '' ) and CharInSet( sName[ 1 ], [ '''', '"' ] ) then
-      sName := Copy( sName, 2, Length( sName ) - 2 );
+      sName         := Copy( sName, 2, Length( sName ) - 2 );
     if ( sName = '' ) then
       Exit;
 
-    var Candidates := TStringList.Create;
+    var Candidates  := TStringList.Create;
     try
       if ( ExtractFileDrive( sName ) <> '' ) or sName.StartsWith( '\' ) then
         Candidates.Add( sName )
@@ -688,43 +688,43 @@ var
 
   procedure ProcessDirective( const Directive: string; ADepth: Integer );
   var
-    DirUpper: string;
-    NewState: TCondState;
-    TopState: TCondState;
-    EvalResult: Integer;
+    DirUpper        : string;
+    NewState        : TCondState;
+    TopState        : TCondState;
+    EvalResult      : Integer;
   begin
 
-    DirUpper := UpperCase( Trim( Directive ) );
+    DirUpper        := UpperCase( Trim( Directive ) );
 
     // {$IFDEF X}
     if Copy( DirUpper, 1, 6 ) = 'IFDEF ' then
     begin
-      DefineName          := Trim( Copy( Trim( Directive ), 7, MaxInt ) );
+      DefineName    := Trim( Copy( Trim( Directive ), 7, MaxInt ) );
       NewState.ParentActive := IsCodeActive;
-      NewState.Active     := NewState.ParentActive and IsDefineDefined( DefineName );
-      NewState.WasActive  := NewState.Active;
+      NewState.Active := NewState.ParentActive and IsDefineDefined( DefineName );
+      NewState.WasActive := NewState.Active;
       CondStack.Add( NewState );
     end
-    // {$IFNDEF X}
+      // {$IFNDEF X}
     else if Copy( DirUpper, 1, 7 ) = 'IFNDEF ' then
     begin
-      DefineName          := Trim( Copy( Trim( Directive ), 8, MaxInt ) );
+      DefineName    := Trim( Copy( Trim( Directive ), 8, MaxInt ) );
       NewState.ParentActive := IsCodeActive;
-      NewState.Active     := NewState.ParentActive and ( not IsDefineDefined( DefineName ) );
-      NewState.WasActive  := NewState.Active;
+      NewState.Active := NewState.ParentActive and ( not IsDefineDefined( DefineName ) );
+      NewState.WasActive := NewState.Active;
       CondStack.Add( NewState );
     end
-    // {$IFOPT R+}: a compiler switch cannot be judged here, so BOTH branches count ( WasActive
-    // stays False, so an {$ELSE} is taken too ) - but it is a block, and its {$ENDIF} must close
-    // it and not the enclosing one.
+      // {$IFOPT R+}: a compiler switch cannot be judged here, so BOTH branches count ( WasActive
+      // stays False, so an {$ELSE} is taken too ) - but it is a block, and its {$ENDIF} must close
+      // it and not the enclosing one.
     else if Copy( DirUpper, 1, 6 ) = 'IFOPT ' then
     begin
       NewState.ParentActive := IsCodeActive;
-      NewState.Active       := NewState.ParentActive;
-      NewState.WasActive    := False;
+      NewState.Active := NewState.ParentActive;
+      NewState.WasActive := False;
       CondStack.Add( NewState );
     end
-    // {$IF ...}
+      // {$IF ...}
     else if ( Copy( DirUpper, 1, 3 ) = 'IF ' ) or ( Copy( DirUpper, 1, 3 ) = 'IF(' ) then
     begin
 
@@ -734,7 +734,7 @@ var
         IfCondition := Trim( Copy( Trim( Directive ), 3, MaxInt ) );
 
       NewState.ParentActive := IsCodeActive;
-      EvalResult          := EvaluateIfCondition( IfCondition );
+      EvalResult    := EvaluateIfCondition( IfCondition );
 
       if EvalResult = 1 then
         NewState.Active := NewState.ParentActive
@@ -746,13 +746,13 @@ var
       NewState.WasActive := NewState.Active;
       CondStack.Add( NewState );
     end
-    // {$ELSEIF ...}
+      // {$ELSEIF ...}
     else if ( Copy( DirUpper, 1, 7 ) = 'ELSEIF ' ) or ( Copy( DirUpper, 1, 7 ) = 'ELSEIF(' ) then
     begin
 
       if CondStack.Count > 0 then
       begin
-        TopState := CondStack[ CondStack.Count - 1 ];
+        TopState    := CondStack[ CondStack.Count - 1 ];
 
         // Only consider ELSEIF if no previous branch was active
         if TopState.WasActive then
@@ -770,7 +770,7 @@ var
           // Unknown counts as true, as it does for {$IF}: the branch is included.
           if ( EvalResult <> 0 ) then
           begin
-            TopState.Active    := TopState.ParentActive;
+            TopState.Active := TopState.ParentActive;
             TopState.WasActive := True;
           end
           else
@@ -780,35 +780,35 @@ var
         CondStack[ CondStack.Count - 1 ] := TopState;
       end;
     end
-    // {$ELSE}
+      // {$ELSE}
     else if DirUpper = 'ELSE' then
     begin
 
       if CondStack.Count > 0 then
       begin
-        TopState := CondStack[ CondStack.Count - 1 ];
+        TopState    := CondStack[ CondStack.Count - 1 ];
 
         // ELSE is active only if no previous branch was active
         if TopState.WasActive then
           TopState.Active := False
         else
         begin
-          TopState.Active    := TopState.ParentActive;
+          TopState.Active := TopState.ParentActive;
           TopState.WasActive := True;
         end;
 
         CondStack[ CondStack.Count - 1 ] := TopState;
       end;
     end
-    // {$ENDIF} or {$IFEND}
+      // {$ENDIF} or {$IFEND}
     else if ( DirUpper = 'ENDIF' ) or ( DirUpper = 'IFEND' ) or
-            DirUpper.StartsWith( 'ENDIF ' ) or DirUpper.StartsWith( 'IFEND ' ) then
+      DirUpper.StartsWith( 'ENDIF ' ) or DirUpper.StartsWith( 'IFEND ' ) then
     begin
 
       if CondStack.Count > 0 then
         CondStack.Delete( CondStack.Count - 1 );
     end
-    // {$DEFINE X} / {$UNDEF X}: in force from here on, for this unit only.
+      // {$DEFINE X} / {$UNDEF X}: in force from here on, for this unit only.
     else if DirUpper.StartsWith( 'DEFINE ' ) then
     begin
       if IsCodeActive then
@@ -818,12 +818,12 @@ var
     begin
       if IsCodeActive then
       begin
-        var iIndex := FActiveDefines.IndexOf( Trim( Copy( Trim( Directive ), 7, MaxInt ) ) );
+        var iIndex  := FActiveDefines.IndexOf( Trim( Copy( Trim( Directive ), 7, MaxInt ) ) );
         if ( iIndex >= 0 ) then
           FActiveDefines.Delete( iIndex );
       end;
     end
-    // {$I file} / {$INCLUDE file} - not {$I+} / {$I-}, the I/O-checking switch.
+      // {$I file} / {$INCLUDE file} - not {$I+} / {$I-}, the I/O-checking switch.
     else if DirUpper.StartsWith( 'I ' ) or DirUpper.StartsWith( 'INCLUDE ' ) then
     begin
       if IsCodeActive then
@@ -836,19 +836,19 @@ var
   var
     I, Len, CloseIdx: Integer;
     InString, InComment, InLineComment: Boolean;
-    Ch: Char;
+    Ch              : Char;
     DirectiveContent: string;
   begin
 
-    I             := 1;
-    Len           := Length( AText );
-    InString      := False;
-    InComment     := False;
-    InLineComment := False;
+    I               := 1;
+    Len             := Length( AText );
+    InString        := False;
+    InComment       := False;
+    InLineComment   := False;
 
     while I <= Len do
     begin
-      Ch := AText[ I ];
+      Ch            := AText[ I ];
 
       // Handle line comments
       if InLineComment then
@@ -880,7 +880,7 @@ var
       begin
 
         if Ch = '''' then
-          InString := False;
+          InString  := False;
 
         Inc( I );
         Continue;
@@ -901,14 +901,14 @@ var
         AddToken;
         if ( I + 2 <= Len ) and ( AText[ I + 2 ] = '$' ) then
         begin
-          CloseIdx := Pos( '*)', AText, I + 3 );
+          CloseIdx  := Pos( '*)', AText, I + 3 );
           if ( CloseIdx = 0 ) then
             Break;
           ProcessDirective( Copy( AText, I + 3, CloseIdx - I - 3 ), ADepth );
-          I := CloseIdx + 2;
+          I         := CloseIdx + 2;
           Continue;
         end;
-        InComment := True;
+        InComment   := True;
         Inc( I, 2 );
         Continue;
       end;
@@ -918,9 +918,9 @@ var
       begin
         AddToken;
 
-        CloseIdx := Pos( '}', AText, I + 1 );
+        CloseIdx    := Pos( '}', AText, I + 1 );
         if ( CloseIdx = 0 ) then
-          Break;  // No closing brace: nothing after it can be read
+          Break; // No closing brace: nothing after it can be read
 
         // Extract content between braces
         DirectiveContent := Copy( AText, I + 1, CloseIdx - I - 1 );
@@ -929,27 +929,27 @@ var
         if ( Length( DirectiveContent ) > 0 ) and ( DirectiveContent[ 1 ] = '$' ) then
           ProcessDirective( Copy( DirectiveContent, 2, MaxInt ), ADepth );
 
-        I := CloseIdx + 1;
+        I           := CloseIdx + 1;
         Continue;
       end;
 
       if Ch = '''' then
       begin
         AddToken;
-        InString := True;
+        InString    := True;
         Inc( I );
         Continue;
       end;
 
       // Parse tokens
       if CharInSet( Ch, [ 'A'..'Z', 'a'..'z', '_', '0'..'9', '.' ] ) then
-        Token := Token + Ch
+        Token       := Token + Ch
       else
       begin
         AddToken;
 
         if InUses and ( Ch = ';' ) then
-          InUses := False;
+          InUses    := False;
       end;
 
       Inc( I );
@@ -961,17 +961,17 @@ var
 
 begin
 
-  InInterface      := False;
-  InImplementation := False;
-  InUses           := False;
-  Token            := '';
-  CondStack        := TList<TCondState>.Create;
+  InInterface       := False;
+  InImplementation  := False;
+  InUses            := False;
+  Token             := '';
+  CondStack         := TList<TCondState>.Create;
   // The unit's own $DEFINEs and $UNDEFs apply to the rest of this unit only.
-  FActiveDefines   := TStringList.Create;
+  FActiveDefines    := TStringList.Create;
   try
     FActiveDefines.CaseSensitive := False;
-    FActiveDefines.Sorted        := True;
-    FActiveDefines.Duplicates    := dupIgnore;
+    FActiveDefines.Sorted := True;
+    FActiveDefines.Duplicates := dupIgnore;
     FActiveDefines.Assign( FProjectDefines );
 
     ParseText( Content, 0 );
@@ -985,38 +985,38 @@ end;
 function TDependencyScanner.ReadSourceText( const AFileName: string; out AContent: string ): Boolean;
 begin
 
-  AContent := '';
+  AContent          := '';
   if Assigned( FOnReadSource ) then
     Exit( FOnReadSource( AFileName, AContent ) );
 
-  Result := FileExists( AFileName );
+  Result            := FileExists( AFileName );
   if Result then
-  try
-    AContent := string( DecodeSourceBytes( TFile.ReadAllBytes( AFileName ) ) );
-  except
-    // Locked or vanished between the check and the read: treated as unreadable.
-    on EInOutError do
-      Result := False;
-    on EFOpenError do
-      Result := False;
-  end;
+    try
+      AContent      := string( DecodeSourceBytes( TFile.ReadAllBytes( AFileName ) ) );
+    except
+      // Locked or vanished between the check and the read: treated as unreadable.
+      on EInOutError do
+        Result      := False;
+      on EFOpenError do
+        Result      := False;
+    end;
 
 end;
 
 procedure TDependencyScanner.ScanUnit( const UnitName, FileName: string );
 var
-  Content: string;
+  Content           : string;
 begin
 
   if FUnits.ContainsKey( LowerCase( UnitName ) ) and FUnits[ LowerCase( UnitName ) ].Parsed then
     Exit;
 
-  FProgressUnit := UnitName;
+  FProgressUnit     := UnitName;
   if Assigned( FOnProgress ) then
     FOnProgress( Self );
 
   if ( FileName = '' ) or ( not ReadSourceText( FileName, Content ) ) then
-    Content := '';
+    Content         := '';
   ScanSource( UnitName, FileName, Content );
 
 end;
@@ -1031,12 +1031,12 @@ end;
 
 procedure TDependencyScanner.ScanSource( const AUnitName, AFileName, AContent: string );
 var
-  UnitInfo: TUnitInfo;
+  UnitInfo          : TUnitInfo;
 begin
 
   if ( not FUnits.TryGetValue( LowerCase( AUnitName ), UnitInfo ) ) then
   begin
-    UnitInfo := TUnitInfo.Create( AUnitName, AFileName );
+    UnitInfo        := TUnitInfo.Create( AUnitName, AFileName );
     FUnits.Add( LowerCase( AUnitName ), UnitInfo );
   end;
 
@@ -1059,12 +1059,12 @@ end;
 
 procedure TDependencyScanner.ScanFile( const FileName: string );
 var
-  UnitName: string;
+  UnitName          : string;
 begin
 
   if FileExists( FileName ) and SameText( ExtractFileExt( FileName ), '.pas' ) then
   begin
-    UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
+    UnitName        := ChangeFileExt( ExtractFileName( FileName ), '' );
     AddSearchPath( ExtractFileDir( FileName ) );
     ScanUnit( UnitName, FileName );
   end;
@@ -1075,24 +1075,24 @@ function TDependencyScanner.GetUnitInfo( const UnitName: string ): TUnitInfo;
 begin
 
   if ( not FUnits.TryGetValue( LowerCase( UnitName ), Result ) ) then
-    Result := nil;
+    Result          := nil;
 
 end;
 
 function TDependencyScanner.GetAllUnits: TArray<TUnitInfo>;
 var
-  List: TList<TUnitInfo>;
-  Pair: TPair<string, TUnitInfo>;
+  List              : TList<TUnitInfo>;
+  Pair              : TPair<string, TUnitInfo>;
 begin
 
-  List := TList<TUnitInfo>.Create;
+  List              := TList<TUnitInfo>.Create;
 
   try
 
     for Pair in FUnits do
       List.Add( Pair.Value );
 
-    Result := List.ToArray;
+    Result          := List.ToArray;
   finally
     List.Free;
   end;
@@ -1103,7 +1103,7 @@ function TDependencyScanner.GetReverseDependencies( const UnitName: string ): TS
 begin
 
   if not FReverseDeps.TryGetValue( LowerCase( UnitName ), Result ) then
-    Result := nil;
+    Result          := nil;
 
 end;
 
@@ -1111,7 +1111,7 @@ function TDependencyScanner.GetUnitDepth( const UnitName: string ): Integer;
 begin
 
   if not FDepthMap.TryGetValue( LowerCase( UnitName ), Result ) then
-    Result := 0;
+    Result          := 0;
 
 end;
 
@@ -1121,29 +1121,29 @@ function TImpactAnalysis.RiskLevelText: string;
 begin
 
   case RiskLevel of
-    0: Result := 'Safe';
-    1: Result := 'Low';
-    2: Result := 'Medium';
-    3: Result := 'High';
+    0: Result       := 'Safe';
+    1: Result       := 'Low';
+    2: Result       := 'Medium';
+    3: Result       := 'High';
   else
-    Result := 'Unknown';
+    Result          := 'Unknown';
   end;
 
 end;
 
 function TDependencyScanner.AnalyzeImpact( const UnitName: string ): TImpactAnalysis;
 var
-  Visited: TStringList;
-  RevDeps: TStringList;
-  I: Integer;
+  Visited           : TStringList;
+  RevDeps           : TStringList;
+  I                 : Integer;
 
   procedure CollectTransitive( const Name: string );
   var
-    ChildRevDeps: TStringList;
-    J: Integer;
+    ChildRevDeps    : TStringList;
+    J               : Integer;
   begin
 
-    ChildRevDeps := GetReverseDependencies( Name );
+    ChildRevDeps    := GetReverseDependencies( Name );
 
     if ChildRevDeps = nil then
       Exit;
@@ -1162,10 +1162,10 @@ var
 
 begin
 
-  Result.UnitName := UnitName;
+  Result.UnitName   := UnitName;
 
   // Get direct dependents
-  RevDeps := GetReverseDependencies( UnitName );
+  RevDeps           := GetReverseDependencies( UnitName );
 
   if RevDeps <> nil then
   begin
@@ -1180,12 +1180,12 @@ begin
   Result.DirectCount := Length( Result.DirectDependents );
 
   // Collect transitive dependents
-  Visited := TStringList.Create;
+  Visited           := TStringList.Create;
 
   try
     Visited.CaseSensitive := False;
-    Visited.Sorted        := True;
-    Visited.Duplicates    := dupIgnore;
+    Visited.Sorted  := True;
+    Visited.Duplicates := dupIgnore;
 
     CollectTransitive( UnitName );
 
@@ -1201,23 +1201,23 @@ begin
 
   // Calculate risk level based on transitive impact
   if Result.TransitiveCount = 0 then
-    Result.RiskLevel := 0      // Safe - nothing depends on it
+    Result.RiskLevel := 0 // Safe - nothing depends on it
   else if Result.TransitiveCount <= 3 then
-    Result.RiskLevel := 1      // Low
+    Result.RiskLevel := 1 // Low
   else if Result.TransitiveCount <= 10 then
-    Result.RiskLevel := 2      // Medium
+    Result.RiskLevel := 2 // Medium
   else
-    Result.RiskLevel := 3;     // High - many units affected
+    Result.RiskLevel := 3; // High - many units affected
 
 end;
 
 procedure TDependencyScanner.BuildReverseDependencies;
 var
-  Pair: TPair<string, TUnitInfo>;
-  UnitInfo: TUnitInfo;
-  Dep: TUnitDependency;
-  LowerDepName: string;
-  RevList: TStringList;
+  Pair              : TPair<string, TUnitInfo>;
+  UnitInfo          : TUnitInfo;
+  Dep               : TUnitDependency;
+  LowerDepName      : string;
+  RevList           : TStringList;
 begin
 
   FReverseDeps.Clear;
@@ -1233,8 +1233,8 @@ begin
 
       if not FReverseDeps.TryGetValue( LowerDepName, RevList ) then
       begin
-        RevList            := TStringList.Create;
-        RevList.Sorted     := True;
+        RevList     := TStringList.Create;
+        RevList.Sorted := True;
         RevList.Duplicates := dupIgnore;
         FReverseDeps.Add( LowerDepName, RevList );
       end;
@@ -1247,12 +1247,12 @@ end;
 
 procedure TDependencyScanner.CalculateDepths;
 var
-  Calculating: TDictionary<string, Boolean>;
-  Pair: TPair<string, TUnitInfo>;
+  Calculating       : TDictionary<string, Boolean>;
+  Pair              : TPair<string, TUnitInfo>;
 begin
 
   FDepthMap.Clear;
-  Calculating := TDictionary<string, Boolean>.Create;
+  Calculating       := TDictionary<string, Boolean>.Create;
 
   try
 
@@ -1267,14 +1267,14 @@ end;
 function TDependencyScanner.CalculateUnitDepth( const UnitName: string;
   var Calculating: TDictionary<string, Boolean> ): Integer;
 var
-  UnitInfo: TUnitInfo;
-  Dep: TUnitDependency;
-  DepDepth: Integer;
+  UnitInfo          : TUnitInfo;
+  Dep               : TUnitDependency;
+  DepDepth          : Integer;
   LowerName, LowerDepName: string;
-  IsCalculating: Boolean;
+  IsCalculating     : Boolean;
 begin
 
-  LowerName := LowerCase( UnitName );
+  LowerName         := LowerCase( UnitName );
 
   // Return cached depth if already calculated
   if FDepthMap.TryGetValue( LowerName, Result ) then
@@ -1283,14 +1283,14 @@ begin
   // Check for circular dependency (being calculated)
   if Calculating.TryGetValue( LowerName, IsCalculating ) and IsCalculating then
   begin
-    Result := 0;
+    Result          := 0;
     Exit;
   end;
 
   // If unit not in project, depth is 0 (external dependency)
   if not FUnits.TryGetValue( LowerName, UnitInfo ) then
   begin
-    Result := 0;
+    Result          := 0;
     FDepthMap.Add( LowerName, Result );
     Exit;
   end;
@@ -1299,7 +1299,7 @@ begin
   Calculating.AddOrSetValue( LowerName, True );
 
   try
-    Result := 0;
+    Result          := 0;
 
     // Depth is 1 + max depth of dependencies (only project units count)
     for Dep in UnitInfo.Dependencies do
@@ -1308,10 +1308,10 @@ begin
 
       if FUnits.ContainsKey( LowerDepName ) then
       begin
-        DepDepth := CalculateUnitDepth( Dep.UnitName, Calculating );
+        DepDepth    := CalculateUnitDepth( Dep.UnitName, Calculating );
 
         if DepDepth + 1 > Result then
-          Result := DepDepth + 1;
+          Result    := DepDepth + 1;
       end;
     end;
 
@@ -1324,34 +1324,34 @@ end;
 
 procedure TDependencyScanner.DetectCircularReferences;
 var
-  Adjacency: TObjectDictionary<string, TStringList>;
-  Members: TStringList;
-  Nodes: TArray<string>;
-  Ref: TCircularReference;
+  Adjacency         : TObjectDictionary<string, TStringList>;
+  Members           : TStringList;
+  Nodes             : TArray<string>;
+  Ref               : TCircularReference;
 
   { The shortest cycle through AStart that stays inside the group: a breadth-first walk from it
     back to itself, recording for each unit the edge that reached it. }
   function ShortestCycle( const AStart: string; AGroup: TStringList ): TArray<TCircularReferenceStep>;
   var
-    Queue: TQueue<string>;
-    Parent: TDictionary<string, string>;
-    ViaInterface: TDictionary<string, Boolean>;
-    Chain: TList<TCircularReferenceStep>;
-    Step: TCircularReferenceStep;
-    sNode, sLast: string;
-    UnitInfo: TUnitInfo;
+    Queue           : TQueue<string>;
+    Parent          : TDictionary<string, string>;
+    ViaInterface    : TDictionary<string, Boolean>;
+    Chain           : TList<TCircularReferenceStep>;
+    Step            : TCircularReferenceStep;
+    sNode, sLast    : string;
+    UnitInfo        : TUnitInfo;
   begin
-    Result       := nil;
-    Queue        := TQueue<string>.Create;
-    Parent       := TDictionary<string, string>.Create;
-    ViaInterface := TDictionary<string, Boolean>.Create;
-    Chain        := TList<TCircularReferenceStep>.Create;
+    Result          := nil;
+    Queue           := TQueue<string>.Create;
+    Parent          := TDictionary<string, string>.Create;
+    ViaInterface    := TDictionary<string, Boolean>.Create;
+    Chain           := TList<TCircularReferenceStep>.Create;
     try
-      sLast := '';
+      sLast         := '';
       Queue.Enqueue( AStart );
       while ( Queue.Count > 0 ) and ( sLast = '' ) do
       begin
-        sNode := Queue.Dequeue;
+        sNode       := Queue.Dequeue;
         if ( not FUnits.TryGetValue( sNode, UnitInfo ) ) then
           Continue;
         for var Dep in UnitInfo.Dependencies do
@@ -1362,7 +1362,7 @@ var
           if ( sTo = AStart ) then
           begin
             { Back at the start: remember how, and stop. }
-            sLast := sNode;
+            sLast   := sNode;
             ViaInterface.AddOrSetValue( #0, Dep.IsInterface );
             Break;
           end;
@@ -1377,21 +1377,21 @@ var
         Exit;
 
       { Walk the parents back from the last unit to the start, then close the chain. }
-      sNode := sLast;
+      sNode         := sLast;
       while ( sNode <> AStart ) do
       begin
-        Step.UnitName    := FUnits[ sNode ].UnitName;
+        Step.UnitName := FUnits[ sNode ].UnitName;
         Step.IsInterface := ViaInterface[ sNode ];
         Chain.Insert( 0, Step );
-        sNode := Parent[ sNode ];
+        sNode       := Parent[ sNode ];
       end;
-      Step.UnitName    := FUnits[ AStart ].UnitName;
+      Step.UnitName := FUnits[ AStart ].UnitName;
       Step.IsInterface := False;
       Chain.Insert( 0, Step );
-      Step.UnitName    := FUnits[ AStart ].UnitName;
+      Step.UnitName := FUnits[ AStart ].UnitName;
       Step.IsInterface := ViaInterface[ #0 ];
       Chain.Add( Step );
-      Result := Chain.ToArray;
+      Result        := Chain.ToArray;
     finally
       Chain.Free;
       ViaInterface.Free;
@@ -1407,12 +1407,12 @@ begin
   { One entry per strongly-connected group, found by the same iterative Tarjan the Decirculariser
     uses: a group of n units can hold a factorial number of cycles, and walking from every unit
     reported each cycle once per member. }
-  Adjacency := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
+  Adjacency         := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
   try
     for var Pair in FUnits do
     begin
-      Members            := TStringList.Create;
-      Members.Sorted     := True;
+      Members := TStringList.Create;
+      Members.Sorted := True;
       Members.Duplicates := dupIgnore;
       for var Dep in Pair.Value.Dependencies do
         if FUnits.ContainsKey( LowerCase( Dep.UnitName ) ) then
@@ -1420,7 +1420,7 @@ begin
       Adjacency.Add( Pair.Key, Members );
     end;
 
-    Nodes := FUnits.Keys.ToArray;
+    Nodes           := FUnits.Keys.ToArray;
     TArray.Sort<string>( Nodes );
     for var Group in FindStronglyConnectedGroups( Nodes, Adjacency ) do
     begin
@@ -1428,7 +1428,7 @@ begin
       try
         GroupList.Sorted := True;
         GroupList.AddStrings( Group );
-        Ref.Steps := ShortestCycle( Group[ 0 ], GroupList );
+        Ref.Steps   := ShortestCycle( Group[ 0 ], GroupList );
         SetLength( Ref.Members, Length( Group ) );
         for var I := 0 to High( Group ) do
           Ref.Members[ I ] := FUnits[ Group[ I ] ].UnitName;
@@ -1448,17 +1448,17 @@ constructor TLayerConfig.Create( const AConfigFile: string );
 begin
 
   inherited Create;
-  FConfigFile  := AConfigFile;
-  FLayers      := TList<TLayerDefinition>.Create;
+  FConfigFile       := AConfigFile;
+  FLayers           := TList<TLayerDefinition>.Create;
   { Layer names are matched without regard to case everywhere else, so the rules are too: a
     hand-edited "ui=Core" line belongs to layer UI. }
-  FAllowedDeps := TDictionary<string, TStringList>.Create( TIStringComparer.Ordinal );
+  FAllowedDeps      := TDictionary<string, TStringList>.Create( TIStringComparer.Ordinal );
 
 end;
 
 destructor TLayerConfig.Destroy;
 var
-  Pair: TPair<string, TStringList>;
+  Pair              : TPair<string, TStringList>;
 begin
 
   for Pair in FAllowedDeps do
@@ -1479,7 +1479,7 @@ end;
 
 procedure TLayerConfig.RemoveRules( const LayerName: string );
 var
-  SL: TStringList;
+  SL                : TStringList;
 begin
 
   if FAllowedDeps.TryGetValue( LayerName, SL ) then
@@ -1492,7 +1492,7 @@ end;
 
 procedure TLayerConfig.Clear;
 var
-  Pair: TPair<string, TStringList>;
+  Pair              : TPair<string, TStringList>;
 begin
 
   FLayers.Clear;
@@ -1506,11 +1506,11 @@ end;
 
 procedure TLayerConfig.AddLayer( const Name: string; const Patterns: TArray<string> );
 var
-  Layer: TLayerDefinition;
+  Layer             : TLayerDefinition;
 begin
 
-  Layer.Name     := Name;
-  Layer.Patterns := Patterns;
+  Layer.Name        := Name;
+  Layer.Patterns    := Patterns;
   FLayers.Add( Layer );
 
 end;
@@ -1518,14 +1518,14 @@ end;
 procedure TLayerConfig.SetAllowedDependencies( const FromLayer: string;
   const ToLayers: TArray<string> );
 var
-  SL: TStringList;
-  I: Integer;
+  SL                : TStringList;
+  I                 : Integer;
 begin
 
-  SL := TStringList.Create;
-  SL.CaseSensitive := False;
-  SL.Sorted        := True;
-  SL.Duplicates    := dupIgnore;
+  SL                := TStringList.Create;
+  SL.CaseSensitive  := False;
+  SL.Sorted         := True;
+  SL.Duplicates     := dupIgnore;
 
   for I := 0 to High( ToLayers ) do
     SL.Add( ToLayers[ I ] );
@@ -1539,18 +1539,18 @@ end;
 
 function TLayerConfig.GetLayerForUnit( const UnitName: string ): string;
 var
-  Layer: TLayerDefinition;
-  Pattern: string;
+  Layer             : TLayerDefinition;
+  Pattern           : string;
   UpperUnit, UpperPattern: string;
 
   function MatchesWildcard( const S, Pattern: string ): Boolean;
   var
-    SI, PI: Integer;
+    SI, PI          : Integer;
   begin
     // Simple wildcard matching: * matches any sequence, ? matches single char
-    Result := False;
-    SI     := 1;
-    PI     := 1;
+    Result          := False;
+    SI              := 1;
+    PI              := 1;
 
     while ( SI <= Length( S ) ) and ( PI <= Length( Pattern ) ) do
     begin
@@ -1563,7 +1563,7 @@ var
 
         if PI > Length( Pattern ) then
         begin
-          Result := True;
+          Result    := True;
           Exit;
         end;
 
@@ -1573,7 +1573,7 @@ var
 
           if MatchesWildcard( Copy( S, SI, MaxInt ), Copy( Pattern, PI, MaxInt ) ) then
           begin
-            Result := True;
+            Result  := True;
             Exit;
           end;
 
@@ -1595,14 +1595,14 @@ var
     while ( PI <= Length( Pattern ) ) and ( Pattern[ PI ] = '*' ) do
       Inc( PI );
 
-    Result := ( SI > Length( S ) ) and ( PI > Length( Pattern ) );
+    Result          := ( SI > Length( S ) ) and ( PI > Length( Pattern ) );
 
   end;
 
 begin
 
-  Result    := '';
-  UpperUnit := UpperCase( UnitName );
+  Result            := '';
+  UpperUnit         := UpperCase( UnitName );
 
   for Layer in FLayers do
   begin
@@ -1613,7 +1613,7 @@ begin
 
       if MatchesWildcard( UpperUnit, UpperPattern ) then
       begin
-        Result := Layer.Name;
+        Result      := Layer.Name;
         Exit;
       end;
     end;
@@ -1623,10 +1623,10 @@ end;
 
 function TLayerConfig.IsDependencyAllowed( const FromLayer, ToLayer: string ): Boolean;
 var
-  SL: TStringList;
+  SL                : TStringList;
 begin
 
-  Result := True;
+  Result            := True;
 
   // Same layer is always allowed
   if SameText( FromLayer, ToLayer ) then
@@ -1637,28 +1637,28 @@ begin
     Exit;
 
   // Check if target layer is in allowed list
-  Result := SL.IndexOf( ToLayer ) >= 0;
+  Result            := SL.IndexOf( ToLayer ) >= 0;
 
 end;
 
 function TLayerConfig.HasRules( const LayerName: string ): Boolean;
 begin
 
-  Result := FAllowedDeps.ContainsKey( LayerName );
+  Result            := FAllowedDeps.ContainsKey( LayerName );
 
 end;
 
 function TLayerConfig.GetLayers: TArray<TLayerDefinition>;
 begin
 
-  Result := FLayers.ToArray;
+  Result            := FLayers.ToArray;
 
 end;
 
 function TLayerConfig.GetAllowedDependencies( const LayerName: string ): TArray<string>;
 var
-  SL: TStringList;
-  I: Integer;
+  SL                : TStringList;
+  I                 : Integer;
 begin
 
   if FAllowedDeps.TryGetValue( LayerName, SL ) then
@@ -1666,7 +1666,7 @@ begin
     SetLength( Result, SL.Count );
 
     for I := 0 to SL.Count - 1 do
-      Result[ I ] := SL[ I ];
+      Result[ I ]   := SL[ I ];
   end
   else
     SetLength( Result, 0 );
@@ -1694,7 +1694,7 @@ end;
 
 procedure TLayerConfig.LoadFromFile;
 var
-  SL: TStringList;
+  SL                : TStringList;
 begin
 
   if not FileExists( FConfigFile ) then
@@ -1703,7 +1703,7 @@ begin
     Exit;
   end;
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
     SL.LoadFromFile( FConfigFile );
     LoadFromStrings( SL );
@@ -1715,54 +1715,54 @@ end;
 
 procedure TLayerConfig.LoadFromStrings( SL: TStrings );
 var
-  Lines: TStringList;
-  I, J: Integer;
+  Lines             : TStringList;
+  I, J              : Integer;
   Line, LayerName, PatternStr, AllowedStr: string;
-  Patterns, Allowed: TArray<string>;
-  InLayers, InRules: Boolean;
+  Patterns, Allowed : TArray<string>;
+  InLayers, InRules : Boolean;
 begin
 
   Clear;
-  Lines    := TStringList.Create;
-  InLayers := False;
-  InRules  := False;
+  Lines             := TStringList.Create;
+  InLayers          := False;
+  InRules           := False;
 
   try
     for I := 0 to SL.Count - 1 do
     begin
-      Line := Trim( SL[ I ] );
+      Line          := Trim( SL[ I ] );
 
       if ( Line = '' ) or ( Line[ 1 ] = '#' ) then
         Continue;
 
       if Line = '[Layers]' then
       begin
-        InLayers := True;
-        InRules  := False;
+        InLayers    := True;
+        InRules     := False;
         Continue;
       end;
 
       if Line = '[Rules]' then
       begin
-        InLayers := False;
-        InRules  := True;
+        InLayers    := False;
+        InRules     := True;
         Continue;
       end;
 
       if InLayers then
       begin
         // Format: LayerName=Pattern1,Pattern2,Pattern3
-        J := Pos( '=', Line );
+        J           := Pos( '=', Line );
 
         if J > 0 then
         begin
-          LayerName  := Trim( Copy( Line, 1, J - 1 ) );
+          LayerName := Trim( Copy( Line, 1, J - 1 ) );
           PatternStr := Trim( Copy( Line, J + 1, MaxInt ) );
 
           Lines.Clear;
-          Lines.Delimiter       := ',';
+          Lines.Delimiter := ',';
           Lines.StrictDelimiter := True;
-          Lines.DelimitedText   := PatternStr;
+          Lines.DelimitedText := PatternStr;
 
           SetLength( Patterns, Lines.Count );
 
@@ -1776,17 +1776,17 @@ begin
       if InRules then
       begin
         // Format: FromLayer=ToLayer1,ToLayer2,ToLayer3
-        J := Pos( '=', Line );
+        J           := Pos( '=', Line );
 
         if J > 0 then
         begin
-          LayerName  := Trim( Copy( Line, 1, J - 1 ) );
+          LayerName := Trim( Copy( Line, 1, J - 1 ) );
           AllowedStr := Trim( Copy( Line, J + 1, MaxInt ) );
 
           Lines.Clear;
-          Lines.Delimiter       := ',';
+          Lines.Delimiter := ',';
           Lines.StrictDelimiter := True;
-          Lines.DelimitedText   := AllowedStr;
+          Lines.DelimitedText := AllowedStr;
 
           SetLength( Allowed, Lines.Count );
 
@@ -1805,19 +1805,19 @@ end;
 
 procedure TLayerConfig.SaveToFile;
 var
-  SL: TStringList;
+  SL                : TStringList;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
     SaveToStrings( SL );
     { UTF-8, and written beside the file then swapped in, so a failed write ( full disk, locked
       folder ) leaves the previous configuration intact instead of a truncated one. }
-    var sTemp := FConfigFile + '.tmp';
+    var sTemp       := FConfigFile + '.tmp';
     SL.SaveToFile( sTemp, TEncoding.UTF8 );
     if ( not MoveFileEx( PChar( sTemp ), PChar( FConfigFile ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) ) then
     begin
-      var iError := Winapi.Windows.GetLastError;
+      var iError    := Winapi.Windows.GetLastError;
       System.SysUtils.DeleteFile( sTemp );
       raise EFCreateError.CreateFmt( 'Could not save %s: %s', [ FConfigFile, SysErrorMessage( iError ) ] );
     end;
@@ -1829,10 +1829,10 @@ end;
 
 procedure TLayerConfig.SaveToStrings( SL: TStrings );
 var
-  Layer: TLayerDefinition;
-  I: Integer;
-  Line: string;
-  Pair: TPair<string, TStringList>;
+  Layer             : TLayerDefinition;
+  I                 : Integer;
+  Line              : string;
+  Pair              : TPair<string, TStringList>;
 begin
 
   SL.Clear;
@@ -1849,9 +1849,9 @@ begin
     begin
 
       if I > 0 then
-        Line := Line + ',';
+        Line        := Line + ',';
 
-      Line := Line + Layer.Patterns[ I ];
+      Line          := Line + Layer.Patterns[ I ];
     end;
 
     SL.Add( Line );
@@ -1868,9 +1868,9 @@ begin
     begin
 
       if I > 0 then
-        Line := Line + ',';
+        Line        := Line + ',';
 
-      Line := Line + Pair.Value[ I ];
+      Line          := Line + Pair.Value[ I ];
     end;
 
     SL.Add( Line );
@@ -1880,22 +1880,22 @@ end;
 
 function TDependencyScanner.DetectLayerViolations( LayerConfig: TLayerConfig ): TArray<TLayerViolation>;
 var
-  Violations: TList<TLayerViolation>;
-  Pair: TPair<string, TUnitInfo>;
-  UnitInfo: TUnitInfo;
-  Dep: TUnitDependency;
+  Violations        : TList<TLayerViolation>;
+  Pair              : TPair<string, TUnitInfo>;
+  UnitInfo          : TUnitInfo;
+  Dep               : TUnitDependency;
   SourceLayer, TargetLayer: string;
-  Violation: TLayerViolation;
+  Violation         : TLayerViolation;
 begin
 
-  Violations := TList<TLayerViolation>.Create;
+  Violations        := TList<TLayerViolation>.Create;
 
   try
 
     for Pair in FUnits do
     begin
-      UnitInfo    := Pair.Value;
-      SourceLayer := LayerConfig.GetLayerForUnit( UnitInfo.UnitName );
+      UnitInfo := Pair.Value;
+      SourceLayer   := LayerConfig.GetLayerForUnit( UnitInfo.UnitName );
 
       // Skip units that don't belong to any defined layer
       if SourceLayer = '' then
@@ -1912,9 +1912,9 @@ begin
         // Check if this dependency violates layer rules
         if not LayerConfig.IsDependencyAllowed( SourceLayer, TargetLayer ) then
         begin
-          Violation.SourceUnit  := UnitInfo.UnitName;
+          Violation.SourceUnit := UnitInfo.UnitName;
           Violation.SourceLayer := SourceLayer;
-          Violation.TargetUnit  := Dep.UnitName;
+          Violation.TargetUnit := Dep.UnitName;
           Violation.TargetLayer := TargetLayer;
           Violation.IsInterface := Dep.IsInterface;
           Violations.Add( Violation );
@@ -1922,7 +1922,7 @@ begin
       end;
     end;
 
-    Result := Violations.ToArray;
+    Result          := Violations.ToArray;
   finally
     Violations.Free;
   end;
@@ -1933,12 +1933,12 @@ function PredefinedSymbols( const APlatform: string ): TArray<string>;
 begin
   { What every Delphi compiler for Windows defines by itself, plus this compiler's VERnnn
     ( CompilerVersion 37.0 gives VER370 ). }
-  Result := [ 'MSWINDOWS', 'UNICODE', 'CONDITIONALEXPRESSIONS', 'NATIVECODE', 'ASSEMBLER',
+  Result            := [ 'MSWINDOWS', 'UNICODE', 'CONDITIONALEXPRESSIONS', 'NATIVECODE', 'ASSEMBLER',
     Format( 'VER%d', [ Round( CompilerVersion * 10 ) ] ) ];
   if SameText( APlatform, 'Win64' ) then
-    Result := Result + [ 'WIN64', 'CPUX64', 'CPU64BITS' ]
+    Result          := Result + [ 'WIN64', 'CPUX64', 'CPU64BITS' ]
   else
-    Result := Result + [ 'WIN32', 'CPUX86', 'CPU386', 'CPU32BITS' ];
+    Result          := Result + [ 'WIN32', 'CPUX86', 'CPU386', 'CPU32BITS' ];
 end;
 
 function LayerRulesMatrix( AConfig: TLayerConfig; const ALayerNames: TArray<string> ): TArray<TArray<Boolean>>;
@@ -1967,14 +1967,14 @@ begin
   for var I := 0 to High( ALayerNames ) do
   begin
     var Allowed: TArray<string> := nil;
-    var bAll := True;
+    var bAll        := True;
     for var J := 0 to High( ALayerNames ) do
       if ( I <> J ) then
       begin
         if AMatrix[ I ][ J ] then
-          Allowed := Allowed + [ ALayerNames[ J ] ]
+          Allowed   := Allowed + [ ALayerNames[ J ] ]
         else
-          bAll := False;
+          bAll      := False;
       end;
     { Every box ticked means "may use every layer": stored as no rule line, which keeps meaning
       that for layers added later, rather than freezing today's list. }
@@ -1986,3 +1986,4 @@ begin
 end;
 
 end.
+

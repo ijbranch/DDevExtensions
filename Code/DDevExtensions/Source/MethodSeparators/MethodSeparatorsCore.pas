@@ -93,7 +93,7 @@ type
     raRefresh,
     /// <summary>Too soon to re-read: use the cache and repaint shortly so the check still happens.</summary>
     raDefer
-  );
+    );
 
 /// <summary>
 /// Decides whether the paint cycle in progress re-reads its file.  A file is read at
@@ -123,8 +123,8 @@ uses
   System.Generics.Collections, DelphiLexer;
 
 const
-  RoutineKinds = [tkI_procedure, tkI_function, tkI_constructor, tkI_destructor, tkI_operator];
-  StructureKinds = [tkI_class, tkI_object, tkI_interface, tkI_dispinterface];
+  RoutineKinds      = [ tkI_procedure, tkI_function, tkI_constructor, tkI_destructor, tkI_operator ];
+  StructureKinds    = [ tkI_class, tkI_object, tkI_interface, tkI_dispinterface ];
 
 type
   /// <summary>Single-use scanner that walks the significant tokens of one source.</summary>
@@ -161,7 +161,7 @@ type
     function Execute: TArray<Integer>;
   end;
 
-{ TSeparatorOptions }
+  { TSeparatorOptions }
 
 class function TSeparatorOptions.Default: TSeparatorOptions;
 begin
@@ -178,11 +178,11 @@ constructor TSeparatorScanner.Create( const Source: UTF8String; const Options: T
 begin
 
   inherited Create;
-  FText := Source;
-  FOptions := Options;
-  FAll := TList<TToken>.Create;
-  FSig := TList<Integer>.Create;
-  FLines := TList<Integer>.Create;
+  FText             := Source;
+  FOptions          := Options;
+  FAll              := TList<TToken>.Create;
+  FSig              := TList<Integer>.Create;
+  FLines            := TList<Integer>.Create;
 
 end;
 
@@ -198,15 +198,15 @@ end;
 
 function TSeparatorScanner.Execute: TArray<Integer>;
 var
-  Lexer: TDelphiLexer;
-  Token: TToken;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
 begin
 
-  Lexer := TDelphiLexer.Create( '', FText );
+  Lexer             := TDelphiLexer.Create( '', FText );
   try
     while Lexer.NextToken( Token ) do
     begin
-      if not ( Token.Kind in [tkComment, tkDirective] ) then
+      if not ( Token.Kind in [ tkComment, tkDirective ] ) then
         FSig.Add( FAll.Count );
       FAll.Add( Token );
     end;
@@ -218,12 +218,12 @@ begin
   end;
 
   FLines.Sort;
-  var Unique := TList<Integer>.Create;
+  var Unique        := TList<Integer>.Create;
   try
     for var Line in FLines do
       if ( Unique.Count = 0 ) or ( Unique.Last <> Line ) then
         Unique.Add( Line );
-    Result := Unique.ToArray;
+    Result          := Unique.ToArray;
   finally
     Unique.Free;
   end;
@@ -234,53 +234,53 @@ function TSeparatorScanner.Kind( SigIndex: Integer ): TTokenKind;
 begin
 
   if ( SigIndex >= 0 ) and ( SigIndex < FSig.Count ) then
-    Result := FAll[FSig[SigIndex]].Kind
+    Result          := FAll[ FSig[ SigIndex ] ].Kind
   else
-    Result := tkNone;
+    Result          := tkNone;
 
 end;
 
 function TSeparatorScanner.EndLine( Token: TToken ): Integer;
 var
-  I: Integer;
-  Last: Integer;
+  I                 : Integer;
+  Last              : Integer;
 begin
 
   // A token spans Index..EndIndex inclusive; a line break the lexer swallowed at
   // its end ( a "//" comment ) does not move it onto the next line.
-  Result := Token.Line;
-  Last := Token.EndIndex;
+  Result            := Token.Line;
+  Last              := Token.EndIndex;
   if Last > Length( FText ) then
-    Last := Length( FText );
-  while ( Last >= Token.Index ) and ( FText[Last] in [#10, #13] ) do
+    Last            := Length( FText );
+  while ( Last >= Token.Index ) and ( FText[ Last ] in [ #10, #13 ] ) do
     Dec( Last );
   for I := Token.Index to Last do
-    if FText[I] = #10 then
+    if FText[ I ] = #10 then
       Inc( Result );
 
 end;
 
 function TSeparatorScanner.FirstLineOf( SigIndex: Integer ): Integer;
 var
-  AllIndex: Integer;
-  Candidate: TToken;
+  AllIndex          : Integer;
+  Candidate         : TToken;
 begin
 
   // Climb over comment and directive lines stacked directly above the block, so
   // its documentation sits below the separator.  A comment trailing code on its
   // own line belongs to that code and stops the climb.
-  AllIndex := FSig[SigIndex];
-  Result := FAll[AllIndex].Line;
+  AllIndex          := FSig[ SigIndex ];
+  Result            := FAll[ AllIndex ].Line;
   while AllIndex > 0 do
   begin
-    Candidate := FAll[AllIndex - 1];
-    if not ( Candidate.Kind in [tkComment, tkDirective] ) then
+    Candidate       := FAll[ AllIndex - 1 ];
+    if not ( Candidate.Kind in [ tkComment, tkDirective ] ) then
       Break;
     if EndLine( Candidate ) < Result - 1 then
       Break;
-    if ( AllIndex > 1 ) and ( EndLine( FAll[AllIndex - 2] ) >= Candidate.Line ) then
+    if ( AllIndex > 1 ) and ( EndLine( FAll[ AllIndex - 2 ] ) >= Candidate.Line ) then
       Break;
-    Result := Candidate.Line;
+    Result          := Candidate.Line;
     Dec( AllIndex );
   end;
 
@@ -296,17 +296,17 @@ end;
 
 function TSeparatorScanner.SkipBackOverAttributes( SigIndex: Integer ): Integer;
 var
-  Depth: Integer;
-  I: Integer;
+  Depth             : Integer;
+  I                 : Integer;
 begin
 
   // SigIndex is the first token of a declaration; step back over each
   // [Attribute] group immediately before it.
-  Result := SigIndex;
+  Result            := SigIndex;
   while Kind( Result - 1 ) = tkRBracket do
   begin
-    Depth := 0;
-    I := Result - 1;
+    Depth           := 0;
+    I               := Result - 1;
     while I >= 0 do
     begin
       if Kind( I ) = tkRBracket then
@@ -321,7 +321,7 @@ begin
     end;
     if I < 0 then
       Exit;
-    Result := I;
+    Result          := I;
   end;
 
 end;
@@ -330,7 +330,7 @@ function TSeparatorScanner.IsDeclarationBoundary( SigIndex: Integer ): Boolean;
 begin
 
   // True when a declaration may start right after SigIndex.
-  Result := Kind( SigIndex ) in [tkNone, tkSemicolon, tkRBracket, tkI_implementation, tkI_interface];
+  Result            := Kind( SigIndex ) in [ tkNone, tkSemicolon, tkRBracket, tkI_implementation, tkI_interface ];
 
 end;
 
@@ -342,24 +342,24 @@ begin
   // anonymous method ( ", procedure" ).
   case Kind( SigIndex ) of
     tkI_class:
-      Result := ( Kind( SigIndex + 1 ) in RoutineKinds ) and IsDeclarationBoundary( SigIndex - 1 );
+      Result        := ( Kind( SigIndex + 1 ) in RoutineKinds ) and IsDeclarationBoundary( SigIndex - 1 );
     tkI_procedure, tkI_function, tkI_constructor, tkI_destructor, tkI_operator:
-      Result := IsDeclarationBoundary( SigIndex - 1 );
+      Result        := IsDeclarationBoundary( SigIndex - 1 );
   else
-    Result := False;
+    Result          := False;
   end;
 
 end;
 
 function TSeparatorScanner.IsMethodHeader( SigIndex: Integer ): Boolean;
 var
-  NameIndex: Integer;
+  NameIndex         : Integer;
 begin
 
-  NameIndex := SigIndex + 1;
+  NameIndex         := SigIndex + 1;
   if Kind( SigIndex ) = tkI_class then
     Inc( NameIndex );
-  Result := ( Kind( NameIndex ) >= tkIdent ) and ( Kind( NameIndex + 1 ) in [tkQualifier, tkLessThan] );
+  Result            := ( Kind( NameIndex ) >= tkIdent ) and ( Kind( NameIndex + 1 ) in [ tkQualifier, tkLessThan ] );
 
 end;
 
@@ -367,7 +367,7 @@ function TSeparatorScanner.IsRecordOpener( SigIndex: Integer ): Boolean;
 begin
 
   // "record" also appears as a generic constraint ( <T: record> ), which has no body.
-  Result := ( Kind( SigIndex ) = tkI_record ) and not ( Kind( SigIndex + 1 ) in [tkGreaterThan, tkComma, tkSemicolon] );
+  Result            := ( Kind( SigIndex ) = tkI_record ) and not ( Kind( SigIndex + 1 ) in [ tkGreaterThan, tkComma, tkSemicolon ] );
 
 end;
 
@@ -379,19 +379,19 @@ begin
   // "class" / "object" / "interface" open a type only directly after "=" ( or
   // "= packed" ), which rules out "class procedure", "of object", constraints
   // and the interface section keyword.
-  Result := ( Kind( SigIndex ) in StructureKinds ) and
+  Result            := ( Kind( SigIndex ) in StructureKinds ) and
     ( ( Kind( SigIndex - 1 ) = tkEqual ) or ( ( Kind( SigIndex - 1 ) = tkI_packed ) and ( Kind( SigIndex - 2 ) = tkEqual ) ) );
 
 end;
 
 function TSeparatorScanner.TypeDeclarationStart( OpenerIndex: Integer ): Integer;
 var
-  Depth: Integer;
+  Depth             : Integer;
 begin
 
   // Opener is preceded by "Name [<Params>] = [packed]"; return the index of Name
   // ( or of its attributes ), or -1 when the shape is not a named declaration.
-  Result := OpenerIndex - 1;
+  Result            := OpenerIndex - 1;
   if Kind( Result ) = tkI_packed then
     Dec( Result );
   if Kind( Result ) <> tkEqual then
@@ -399,7 +399,7 @@ begin
   Dec( Result );
   if Kind( Result ) = tkGreaterThan then
   begin
-    Depth := 0;
+    Depth           := 0;
     while Result >= 0 do
     begin
       if Kind( Result ) = tkGreaterThan then
@@ -416,18 +416,18 @@ begin
   end;
   if ( Result < 0 ) or ( Kind( Result ) < tkIdent ) then
     Exit( -1 );
-  Result := SkipBackOverAttributes( Result );
+  Result            := SkipBackOverAttributes( Result );
 
 end;
 
 function TSeparatorScanner.SkipMatching( SigIndex: Integer; Open, Close: TTokenKind ): Integer;
 var
-  Depth: Integer;
+  Depth             : Integer;
 begin
 
   // SigIndex is on Open; return the index after its matching Close.
-  Depth := 0;
-  Result := SigIndex;
+  Depth             := 0;
+  Result            := SigIndex;
   while Result < FSig.Count do
   begin
     if Kind( Result ) = Open then
@@ -445,12 +445,12 @@ end;
 
 function TSeparatorScanner.SkipBlock( SigIndex: Integer ): Integer;
 var
-  Depth: Integer;
+  Depth             : Integer;
 begin
 
   // SigIndex is on "begin" or "asm"; return the index after the matching "end".
   // An asm block has no nested blocks, and its labels may look like keywords.
-  Result := SigIndex;
+  Result            := SigIndex;
   if Kind( Result ) = tkI_asm then
   begin
     Inc( Result );
@@ -459,13 +459,13 @@ begin
     Exit( Result + 1 );
   end;
 
-  Depth := 0;
+  Depth             := 0;
   while Result < FSig.Count do
   begin
     case Kind( Result ) of
       tkI_asm:
         begin
-          Result := SkipBlock( Result );
+          Result    := SkipBlock( Result );
           Continue;
         end;
       tkI_begin, tkI_case, tkI_try:
@@ -484,36 +484,36 @@ end;
 
 function TSeparatorScanner.SkipStructure( SigIndex: Integer; out HasBody: Boolean ): Integer;
 var
-  Opener: TTokenKind;
-  Depth: Integer;
-  Nested: Boolean;
+  Opener            : TTokenKind;
+  Depth             : Integer;
+  Nested            : Boolean;
 begin
 
   // SigIndex is on an opener accepted by IsStructureOpener.  Returns the index
   // after the closing "end", or of the ";" of a body-less declaration such as
   // "TFoo = class;", "TFoo = class( TBar );" or "TRef = class of TFoo".
-  HasBody := False;
-  Opener := Kind( SigIndex );
-  Result := SigIndex + 1;
+  HasBody           := False;
+  Opener            := Kind( SigIndex );
+  Result            := SigIndex + 1;
   if Opener <> tkI_record then
   begin
     if ( Opener = tkI_class ) and ( Kind( Result ) = tkI_of ) then
       Exit;
     // Modifiers: sealed, abstract, helper for TType.
-    while ( Kind( Result ) >= tkIdent ) and ( Kind( Result ) < tkIdentStrictReserved ) or ( Kind( Result ) in [tkI_for, tkQualifier] ) do
+    while ( Kind( Result ) >= tkIdent ) and ( Kind( Result ) < tkIdentStrictReserved ) or ( Kind( Result ) in [ tkI_for, tkQualifier ] ) do
     begin
       if ( Kind( Result + 1 ) = tkColon ) then
         Break; // A field directly after "class": the body has started.
       Inc( Result );
     end;
     if Kind( Result ) = tkLParan then
-      Result := SkipMatching( Result, tkLParan, tkRParan );
+      Result        := SkipMatching( Result, tkLParan, tkRParan );
     if Kind( Result ) = tkSemicolon then
       Exit;
   end;
 
-  HasBody := True;
-  Depth := 1;
+  HasBody           := True;
+  Depth             := 1;
   while Result < FSig.Count do
   begin
     if Kind( Result ) = tkI_end then
@@ -526,7 +526,7 @@ begin
       Inc( Depth )
     else if IsStructureOpener( Result ) then
     begin
-      Result := SkipStructure( Result, Nested );
+      Result        := SkipStructure( Result, Nested );
       Continue;
     end;
     Inc( Result );
@@ -536,19 +536,19 @@ end;
 
 function TSeparatorScanner.HasElseDirectiveBefore( SigIndex: Integer ): Boolean;
 var
-  AllIndex: Integer;
-  Token: TToken;
+  AllIndex          : Integer;
+  Token             : TToken;
 begin
 
   // True when an {$ELSE} or {$ELSEIF} sits between SigIndex and the significant token before it.
-  Result := False;
+  Result            := False;
   if ( SigIndex <= 0 ) or ( SigIndex >= FSig.Count ) then
     Exit;
-  for AllIndex := FSig[SigIndex - 1] + 1 to FSig[SigIndex] - 1 do
+  for AllIndex := FSig[ SigIndex - 1 ] + 1 to FSig[ SigIndex ] - 1 do
   begin
-    Token := FAll[AllIndex];
+    Token           := FAll[ AllIndex ];
     if ( Token.Kind = tkDirective ) and
-      UpperCase( Token.Value ).TrimLeft( ['{', '(', '*', '$', ' '] ).StartsWith( 'ELSE' ) then
+      UpperCase( Token.Value ).TrimLeft( [ '{', '(', '*', '$', ' ' ] ).StartsWith( 'ELSE' ) then
       Exit( True );
   end;
 
@@ -556,9 +556,9 @@ end;
 
 function TSeparatorScanner.SkipRoutine( SigIndex: Integer; AllowBody: Boolean ): Integer;
 var
-  Depth: Integer;
-  HasBody: Boolean;
-  Ignored: Boolean;
+  Depth             : Integer;
+  HasBody           : Boolean;
+  Ignored           : Boolean;
 begin
 
   // SigIndex is on a header accepted by IsRoutineStart.  Skips the header, its
@@ -567,14 +567,14 @@ begin
   // Alternative headers for one body ( "{$IFDEF X} procedure A( I: Int64 );
   // {$ELSE} procedure A( I: Integer ); {$ENDIF}" ) are skipped as one header, or
   // the second would be taken for a nested routine and swallow what follows.
-  Result := SigIndex;
+  Result            := SigIndex;
   repeat
     if Kind( Result ) = tkI_class then
       Inc( Result );
     Inc( Result );
 
     // Header up to the ";" outside the parameter list.
-    Depth := 0;
+    Depth           := 0;
     while Result < FSig.Count do
     begin
       case Kind( Result ) of
@@ -591,11 +591,11 @@ begin
     Inc( Result );
 
     // Directive clauses: overload; inline; external 'x' name 'y'; deprecated 'z'; ...
-    HasBody := AllowBody;
-    while ( ( Kind( Result ) >= tkIdent ) and ( Kind( Result ) < tkIdentStrictReserved ) ) or ( Kind( Result ) in [tkI_inline, tkI_library] ) do
+    HasBody         := AllowBody;
+    while ( ( Kind( Result ) >= tkIdent ) and ( Kind( Result ) < tkIdentStrictReserved ) ) or ( Kind( Result ) in [ tkI_inline, tkI_library ] ) do
     begin
-      if Kind( Result ) in [tkI_forward, tkI_external] then
-        HasBody := False;
+      if Kind( Result ) in [ tkI_forward, tkI_external ] then
+        HasBody     := False;
       while ( Result < FSig.Count ) and ( Kind( Result ) <> tkSemicolon ) do
         Inc( Result );
       Inc( Result );
@@ -610,7 +610,7 @@ begin
     case Kind( Result ) of
       tkI_begin, tkI_asm:
         begin
-          Result := SkipBlock( Result );
+          Result    := SkipBlock( Result );
           if Kind( Result ) = tkSemicolon then
             Inc( Result );
           Exit;
@@ -623,9 +623,9 @@ begin
     if IsRoutineStart( Result ) and IsMethodHeader( Result ) then
       Exit;
     if IsRoutineStart( Result ) then
-      Result := SkipRoutine( Result, True )
+      Result        := SkipRoutine( Result, True )
     else if IsStructureOpener( Result ) then
-      Result := SkipStructure( Result, Ignored )
+      Result        := SkipStructure( Result, Ignored )
     else
       Inc( Result );
   end;
@@ -634,22 +634,22 @@ end;
 
 procedure TSeparatorScanner.Scan;
 var
-  P: Integer;
-  InImplementation: Boolean;
-  InSectionCode: Boolean;
-  Marking: Boolean;
-  Start: Integer;
-  HasBody: Boolean;
-  Next: Integer;
+  P                 : Integer;
+  InImplementation  : Boolean;
+  InSectionCode     : Boolean;
+  Marking           : Boolean;
+  Start             : Integer;
+  HasBody           : Boolean;
+  Next              : Integer;
 begin
 
   // A program, library or package has no interface section: all of it is "implementation".
-  InImplementation := Kind( 0 ) <> tkI_unit;
-  InSectionCode := False;
-  P := 0;
+  InImplementation  := Kind( 0 ) <> tkI_unit;
+  InSectionCode     := False;
+  P                 := 0;
   while P < FSig.Count do
   begin
-    Marking := InImplementation or FOptions.IncludeInterface;
+    Marking         := InImplementation or FOptions.IncludeInterface;
     case Kind( P ) of
       tkI_implementation:
         begin
@@ -671,7 +671,7 @@ begin
           // compound statement inside an initialization section is neither.
           if FOptions.IncludeSections and InImplementation and not InSectionCode then
             AddSeparator( P );
-          P := SkipBlock( P );
+          P         := SkipBlock( P );
           Continue;
         end;
       tkI_end:
@@ -683,22 +683,22 @@ begin
     begin
       if Marking then
         AddSeparator( SkipBackOverAttributes( P ) );
-      Next := SkipRoutine( P, InImplementation );
+      Next          := SkipRoutine( P, InImplementation );
     end
     else if IsStructureOpener( P ) then
     begin
-      Start := TypeDeclarationStart( P );
-      Next := SkipStructure( P, HasBody );
+      Start         := TypeDeclarationStart( P );
+      Next          := SkipStructure( P, HasBody );
       if HasBody and Marking and FOptions.IncludeTypes and ( Start >= 0 ) then
         AddSeparator( Start );
     end
     else
-      Next := P + 1;
+      Next          := P + 1;
 
     // Every branch must make progress, whatever the source looks like.
     if Next <= P then
-      Next := P + 1;
-    P := Next;
+      Next          := P + 1;
+    P               := Next;
   end;
 
 end;
@@ -707,15 +707,15 @@ end;
 
 function FindSeparatorLines( const Source: UTF8String; const Options: TSeparatorOptions ): TArray<Integer>;
 var
-  Scanner: TSeparatorScanner;
+  Scanner           : TSeparatorScanner;
 begin
 
   if Source = '' then
     Exit( nil );
 
-  Scanner := TSeparatorScanner.Create( Source, Options );
+  Scanner           := TSeparatorScanner.Create( Source, Options );
   try
-    Result := Scanner.Execute;
+    Result          := Scanner.Execute;
   finally
     Scanner.Free;
   end;
@@ -724,10 +724,10 @@ end;
 
 function IsSeparatorLine( const Lines: TArray<Integer>; Line: Integer ): Boolean;
 var
-  FoundIndex: Integer;
+  FoundIndex        : Integer;
 begin
 
-  Result := TArray.BinarySearch<Integer>( Lines, Line, FoundIndex );
+  Result            := TArray.BinarySearch<Integer>( Lines, Line, FoundIndex );
 
 end;
 
@@ -735,31 +735,31 @@ function DecideRecheck( CycleChecked: Boolean; NowTick, CheckedTick: UInt64; Int
 begin
 
   if CycleChecked then
-    Result := raNone
+    Result          := raNone
   else if ( NowTick < CheckedTick ) or ( NowTick - CheckedTick >= IntervalMs ) then
-    Result := raRefresh // A tick that went backwards is treated as "long ago", never as "just now".
+    Result          := raRefresh // A tick that went backwards is treated as "long ago", never as "just now".
   else
-    Result := raDefer;
+    Result          := raDefer;
 
 end;
 
 function IsPascalSourceFile( const FileName: string ): Boolean;
 var
-  Ext: string;
+  Ext               : string;
 begin
 
-  Ext := ExtractFileExt( FileName );
-  Result := SameText( Ext, '.pas' ) or SameText( Ext, '.dpr' ) or SameText( Ext, '.dpk' );
+  Ext               := ExtractFileExt( FileName );
+  Result            := SameText( Ext, '.pas' ) or SameText( Ext, '.dpr' ) or SameText( Ext, '.dpk' );
 
 end;
 
 function ColorLuminance( Color: TColor ): Integer;
 var
-  Rgb: Cardinal;
+  Rgb               : Cardinal;
 begin
 
-  Rgb := Cardinal( Color ) and $00FFFFFF;
-  Result := ( Integer( Rgb and $FF ) * 299 + Integer( ( Rgb shr 8 ) and $FF ) * 587 + Integer( ( Rgb shr 16 ) and $FF ) * 114 ) div 1000;
+  Rgb               := Cardinal( Color ) and $00FFFFFF;
+  Result            := ( Integer( Rgb and $FF ) * 299 + Integer( ( Rgb shr 8 ) and $FF ) * 587 + Integer( ( Rgb shr 16 ) and $FF ) * 114 ) div 1000;
 
 end;
 
@@ -767,23 +767,23 @@ end;
 function BlendColor( Base, Target: TColor; Percent: Integer ): TColor;
 var
   BaseRgb, TargetRgb: Cardinal;
-  Shift: Integer;
-  Channel: Integer;
-  Mixed: Cardinal;
+  Shift             : Integer;
+  Channel           : Integer;
+  Mixed             : Cardinal;
 begin
 
-  BaseRgb := Cardinal( Base ) and $00FFFFFF;
-  TargetRgb := Cardinal( Target ) and $00FFFFFF;
-  Mixed := 0;
-  Shift := 0;
+  BaseRgb           := Cardinal( Base ) and $00FFFFFF;
+  TargetRgb         := Cardinal( Target ) and $00FFFFFF;
+  Mixed             := 0;
+  Shift             := 0;
   while Shift <= 16 do
   begin
-    Channel := Integer( ( BaseRgb shr Shift ) and $FF );
-    Channel := Channel + ( Integer( ( TargetRgb shr Shift ) and $FF ) - Channel ) * Percent div 100;
-    Mixed := Mixed or ( Cardinal( Channel ) shl Shift );
+    Channel         := Integer( ( BaseRgb shr Shift ) and $FF );
+    Channel         := Channel + ( Integer( ( TargetRgb shr Shift ) and $FF ) - Channel ) * Percent div 100;
+    Mixed           := Mixed or ( Cardinal( Channel ) shl Shift );
     Inc( Shift, 8 );
   end;
-  Result := TColor( Mixed );
+  Result            := TColor( Mixed );
 
 end;
 
@@ -791,9 +791,9 @@ function AutoSeparatorColor( Background: TColor ): TColor;
 begin
 
   if ColorLuminance( Background ) >= 128 then
-    Result := BlendColor( Background, TColors.Black, 25 )
+    Result          := BlendColor( Background, TColors.Black, 25 )
   else
-    Result := BlendColor( Background, TColors.White, 30 );
+    Result          := BlendColor( Background, TColors.White, 30 );
 
 end;
 
@@ -801,10 +801,11 @@ function ResolveSeparatorColor( Background, Custom: TColor; UseCustom: Boolean )
 begin
 
   if UseCustom and ( Abs( ColorLuminance( Custom ) - ColorLuminance( Background ) ) >= MinSeparatorContrast ) then
-    Result := TColor( Cardinal( Custom ) and $00FFFFFF )
+    Result          := TColor( Cardinal( Custom ) and $00FFFFFF )
   else
-    Result := AutoSeparatorColor( Background );
+    Result          := AutoSeparatorColor( Background );
 
 end;
 
 end.
+

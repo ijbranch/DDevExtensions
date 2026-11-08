@@ -107,7 +107,7 @@ type
 function LeafName( const AInclude: string ): string;
 begin
   // Strip directory and the .dproj extension: "DBiAdmin\DBiAdmin.dproj" -> "DBiAdmin"
-  Result := TPath.GetFileNameWithoutExtension( StringReplace( AInclude, '\', PathDelim, [rfReplaceAll] ) );
+  Result            := TPath.GetFileNameWithoutExtension( StringReplace( AInclude, '\', PathDelim, [ rfReplaceAll ] ) );
 end;
 
 /// <summary>Returns the value of attribute AName in ALine, or empty when it is absent.</summary>
@@ -116,14 +116,14 @@ end;
 /// <returns>The text between the quotes, or empty.</returns>
 function AttributeValue( const ALine, AName: string ): string;
 begin
-  Result := '';
-  var Start := Pos( AName + '="', ALine );
+  Result            := '';
+  var Start         := Pos( AName + '="', ALine );
   if ( Start = 0 ) then
     Exit;
   Inc( Start, Length( AName ) + 2 );
-  var Stop := PosEx( '"', ALine, Start );
+  var Stop          := PosEx( '"', ALine, Start );
   if ( Stop > 0 ) then
-    Result := Copy( ALine, Start, Stop - Start );
+    Result          := Copy( ALine, Start, Stop - Start );
 end;
 
 /// <summary>Strips a <c>:Clean</c> / <c>:Make</c> style suffix from a target name.</summary>
@@ -131,11 +131,11 @@ end;
 /// <returns>The part before the first colon.</returns>
 function BaseTargetName( const ATarget: string ): string;
 begin
-  var Colon := Pos( ':', ATarget );
+  var Colon         := Pos( ':', ATarget );
   if ( Colon > 0 ) then
-    Result := Copy( ATarget, 1, Colon - 1 )
+    Result          := Copy( ATarget, 1, Colon - 1 )
   else
-    Result := ATarget;
+    Result          := ATarget;
 end;
 
 /// <summary>True when the two lists hold the same lines, ignoring order, apart from CallTarget lines.</summary>
@@ -147,28 +147,28 @@ function IsPermutation( AInput, AOutput: TStrings ): Boolean;
   procedure Collect( ASource: TStrings; ATarget: TStringList; var ACallTargets: Integer );
   begin
     for var I := 0 to ASource.Count - 1 do
-      if ( Pos( '<CallTarget ', ASource[I] ) > 0 ) then
+      if ( Pos( '<CallTarget ', ASource[ I ] ) > 0 ) then
         Inc( ACallTargets )
       else
-        ATarget.Add( ASource[I] );
+        ATarget.Add( ASource[ I ] );
   end;
 
 begin
-  var InSorted := TStringList.Create;
-  var OutSorted := TStringList.Create;
+  var InSorted      := TStringList.Create;
+  var OutSorted     := TStringList.Create;
   try
-    var InCalls := 0;
-    var OutCalls := 0;
+    var InCalls     := 0;
+    var OutCalls    := 0;
     Collect( AInput, InSorted, InCalls );
     Collect( AOutput, OutSorted, OutCalls );
     InSorted.CaseSensitive := True;
     OutSorted.CaseSensitive := True;
     InSorted.Sort;
     OutSorted.Sort;
-    Result := ( InCalls = OutCalls ) and ( InSorted.Count = OutSorted.Count );
+    Result          := ( InCalls = OutCalls ) and ( InSorted.Count = OutSorted.Count );
     if Result then
       for var I := 0 to InSorted.Count - 1 do
-        if ( InSorted[I] <> OutSorted[I] ) then
+        if ( InSorted[ I ] <> OutSorted[ I ] ) then
           Exit( False );
   finally
     OutSorted.Free;
@@ -194,22 +194,22 @@ type
     Index: Integer;
   end;
 begin
-  Result := ALine;
-  var Value := AttributeValue( ALine, 'Targets' );
+  Result            := ALine;
+  var Value         := AttributeValue( ALine, 'Targets' );
   if ( Value = '' ) then
     Exit;
 
-  var Parts := Value.Split( [';'] );
-  var Tokens := TList<TToken>.Create;
+  var Parts         := Value.Split( [ ';' ] );
+  var Tokens        := TList<TToken>.Create;
   try
     for var P := Low( Parts ) to High( Parts ) do
     begin
-      var Token := Default( TToken );
-      Token.Text := Parts[P];
-      Token.Index := P;
-      Token.Rank := MaxInt;
+      var Token     := Default( TToken );
+      Token.Text    := Parts[ P ];
+      Token.Index   := P;
+      Token.Rank    := MaxInt;
       for var E := 0 to AEntries.Count - 1 do
-        if ( AEntries[E].TargetName <> '' ) and SameText( AEntries[E].TargetName, BaseTargetName( Parts[P] ) ) then
+        if ( AEntries[ E ].TargetName <> '' ) and SameText( AEntries[ E ].TargetName, BaseTargetName( Parts[ P ] ) ) then
         begin
           Token.Rank := E;
           Break;
@@ -218,26 +218,26 @@ begin
     end;
 
     Tokens.Sort( TComparer<TToken>.Construct(
-      function( const L, R: TToken ): Integer
-      begin
-        if ( L.Rank < R.Rank ) then
-          Result := -1
-        else if ( L.Rank > R.Rank ) then
-          Result := 1
-        else
-          Result := L.Index - R.Index;
-      end ) );
+        function( const L, R: TToken ): Integer
+        begin
+          if ( L.Rank < R.Rank ) then
+            Result  := -1
+          else if ( L.Rank > R.Rank ) then
+            Result  := 1
+          else
+            Result  := L.Index - R.Index;
+        end ) );
 
-    var NewValue := '';
+    var NewValue    := '';
     for var T := 0 to Tokens.Count - 1 do
     begin
       if ( T > 0 ) then
-        NewValue := NewValue + ';';
-      NewValue := NewValue + Tokens[T].Text;
+        NewValue    := NewValue + ';';
+      NewValue      := NewValue + Tokens[ T ].Text;
     end;
 
-    var Start := Pos( 'Targets="', ALine ) + Length( 'Targets="' );
-    Result := Copy( ALine, 1, Start - 1 ) + NewValue + Copy( ALine, Start + Length( Value ), MaxInt );
+    var Start       := Pos( 'Targets="', ALine ) + Length( 'Targets="' );
+    Result          := Copy( ALine, 1, Start - 1 ) + NewValue + Copy( ALine, Start + Length( Value ), MaxInt );
   finally
     Tokens.Free;
   end;
@@ -245,40 +245,40 @@ end;
 
 function SortGroupProjectText( const AText: string ): string;
 var
-  InLines, OutLines: TStringList;
-  Entries: TList<TProjEntry>;
-  Blocks: TList<TTargetBlock>;
-  Pending: TList<string>;
-  Entry: TProjEntry;
-  Block: TTargetBlock;
-  I: Integer;
+  InLines, OutLines : TStringList;
+  Entries           : TList<TProjEntry>;
+  Blocks            : TList<TTargetBlock>;
+  Pending           : TList<string>;
+  Entry             : TProjEntry;
+  Block             : TTargetBlock;
+  I                 : Integer;
 begin
-  InLines := TStringList.Create;
-  OutLines := TStringList.Create;
-  Entries := TList<TProjEntry>.Create;
-  Blocks := TList<TTargetBlock>.Create;
-  Pending := TList<string>.Create;
+  InLines           := TStringList.Create;
+  OutLines          := TStringList.Create;
+  Entries           := TList<TProjEntry>.Create;
+  Blocks            := TList<TTargetBlock>.Create;
+  Pending           := TList<string>.Create;
   try
-    InLines.Text := AText;
+    InLines.Text    := AText;
     // Keep the file's own line break: the IDE writes CRLF, hand-edited files may not.
     if ( Pos( #13#10, AText ) > 0 ) or ( Pos( #10, AText ) = 0 ) then
       OutLines.LineBreak := #13#10
     else
       OutLines.LineBreak := #10;
 
-    I := 0;
+    I               := 0;
 
     // 1. Copy the header up to (not including) the first <Projects ...> element.
-    while ( I < InLines.Count ) and not StartsText( '<Projects Include="', TrimLeft( InLines[I] ) ) do
+    while ( I < InLines.Count ) and not StartsText( '<Projects Include="', TrimLeft( InLines[ I ] ) ) do
     begin
-      OutLines.Add( InLines[I] );
+      OutLines.Add( InLines[ I ] );
       Inc( I );
     end;
 
     // 2. Collect the consecutive <Projects>...</Projects> blocks.
-    while ( I < InLines.Count ) and StartsText( '<Projects Include="', TrimLeft( InLines[I] ) ) do
+    while ( I < InLines.Count ) and StartsText( '<Projects Include="', TrimLeft( InLines[ I ] ) ) do
     begin
-      var Line := InLines[I];
+      var Line      := InLines[ I ];
       var BlockLines := TList<string>.Create;
       try
         if EndsText( '/>', TrimRight( Line ) ) then
@@ -293,17 +293,17 @@ begin
           var Closed := False;
           while ( I < InLines.Count ) and not Closed do
           begin
-            BlockLines.Add( InLines[I] );
-            Closed := SameText( Trim( InLines[I] ), '</Projects>' );
+            BlockLines.Add( InLines[ I ] );
+            Closed  := SameText( Trim( InLines[ I ] ), '</Projects>' );
             Inc( I );
           end;
           if not Closed then
             raise EGroupProjSortError.Create( 'A <Projects> element is not closed.' );
         end;
 
-        Entry := Default( TProjEntry );
+        Entry       := Default( TProjEntry );
         Entry.Include := AttributeValue( Line, 'Include' );
-        Entry.Name := LeafName( Entry.Include );
+        Entry.Name  := LeafName( Entry.Include );
         Entry.Index := Entries.Count;
         Entry.Lines := BlockLines.ToArray;
         Entries.Add( Entry );
@@ -314,19 +314,19 @@ begin
 
     // 3. Copy the middle (</ItemGroup>, ProjectExtensions, ...) until either the
     //    first <Target ...> or the trailing <Import .../> / EOF.
-    var Middle := TList<string>.Create;
+    var Middle      := TList<string>.Create;
     try
-      while ( I < InLines.Count ) and not StartsText( '<Target Name="', TrimLeft( InLines[I] ) ) and
-        not StartsText( '<Import ', TrimLeft( InLines[I] ) ) do
+      while ( I < InLines.Count ) and not StartsText( '<Target Name="', TrimLeft( InLines[ I ] ) ) and
+        not StartsText( '<Import ', TrimLeft( InLines[ I ] ) ) do
       begin
-        Middle.Add( InLines[I] );
+        Middle.Add( InLines[ I ] );
         Inc( I );
       end;
 
       // 4. Parse the target region into blocks, up to the <Import> / EOF.
-      while ( I < InLines.Count ) and not StartsText( '<Import ', TrimLeft( InLines[I] ) ) do
+      while ( I < InLines.Count ) and not StartsText( '<Import ', TrimLeft( InLines[ I ] ) ) do
       begin
-        var Line := InLines[I];
+        var Line    := InLines[ I ];
         if not StartsText( '<Target Name="', TrimLeft( Line ) ) then
         begin
           // Blank lines and comments travel with the target that follows them.
@@ -335,8 +335,8 @@ begin
           Continue;
         end;
 
-        Block := Default( TTargetBlock );
-        Block.Name := AttributeValue( Line, 'Name' );
+        Block       := Default( TTargetBlock );
+        Block.Name  := AttributeValue( Line, 'Name' );
         Block.Owner := -1;
         var BlockLines := TList<string>.Create;
         try
@@ -347,14 +347,14 @@ begin
           Inc( I );
           while ( I < InLines.Count ) and not Closed do
           begin
-            BlockLines.Add( InLines[I] );
-            if ( Block.ProjectInclude = '' ) and ( Pos( '<MSBuild ', InLines[I] ) > 0 ) then
-              Block.ProjectInclude := AttributeValue( InLines[I], 'Projects' );
-            Closed := SameText( Trim( InLines[I] ), '</Target>' );
+            BlockLines.Add( InLines[ I ] );
+            if ( Block.ProjectInclude = '' ) and ( Pos( '<MSBuild ', InLines[ I ] ) > 0 ) then
+              Block.ProjectInclude := AttributeValue( InLines[ I ], 'Projects' );
+            Closed  := SameText( Trim( InLines[ I ] ), '</Target>' );
             Inc( I );
           end;
           if not Closed then
-            raise EGroupProjSortError.CreateFmt( 'The <Target Name="%s"> element is not closed.', [Block.Name] );
+            raise EGroupProjSortError.CreateFmt( 'The <Target Name="%s"> element is not closed.', [ Block.Name ] );
           Block.Lines := BlockLines.ToArray;
         finally
           BlockLines.Free;
@@ -365,19 +365,19 @@ begin
       // 5. Assign each per-project target block to its project, by the project path it builds.
       for var B := 0 to Blocks.Count - 1 do
       begin
-        Block := Blocks[B];
+        Block       := Blocks[ B ];
         if ( Block.ProjectInclude = '' ) then
           Continue;
         for var E := 0 to Entries.Count - 1 do
-          if SameText( Entries[E].Include, Block.ProjectInclude ) then
+          if SameText( Entries[ E ].Include, Block.ProjectInclude ) then
           begin
             Block.Owner := E;
-            Blocks[B] := Block;
-            Entry := Entries[E];
+            Blocks[ B ] := Block;
+            Entry   := Entries[ E ];
             if ( Entry.TargetName = '' ) then
             begin
               Entry.TargetName := BaseTargetName( Block.Name );
-              Entries[E] := Entry;
+              Entries[ E ] := Entry;
             end;
             Break;
           end;
@@ -385,12 +385,12 @@ begin
 
       // 6. Sort the member projects by name (case-insensitive, ordinal, stable).
       Entries.Sort( TComparer<TProjEntry>.Construct(
-        function( const L, R: TProjEntry ): Integer
-        begin
-          Result := CompareStr( LowerCase( L.Name ), LowerCase( R.Name ) );
-          if ( Result = 0 ) then
-            Result := L.Index - R.Index;
-        end ) );
+          function( const L, R: TProjEntry ): Integer
+          begin
+            Result  := CompareStr( LowerCase( L.Name ), LowerCase( R.Name ) );
+            if ( Result = 0 ) then
+              Result := L.Index - R.Index;
+          end ) );
 
       // 7. Emit the sorted <Projects> blocks and the middle.
       for Entry in Entries do
@@ -406,7 +406,7 @@ begin
     var ProjectBlocksEmitted := False;
     for var B := 0 to Blocks.Count - 1 do
     begin
-      Block := Blocks[B];
+      Block         := Blocks[ B ];
       if ( Block.Owner >= 0 ) then
       begin
         if ProjectBlocksEmitted then
@@ -414,8 +414,8 @@ begin
         ProjectBlocksEmitted := True;
         for Entry in Entries do
           for var K := 0 to Blocks.Count - 1 do
-            if ( Blocks[K].Owner = Entry.Index ) then
-              OutLines.AddStrings( Blocks[K].Lines );
+            if ( Blocks[ K ].Owner = Entry.Index ) then
+              OutLines.AddStrings( Blocks[ K ].Lines );
         Continue;
       end;
 
@@ -430,7 +430,7 @@ begin
     // 9. Copy the remainder (<Import .../>, </Project>, ...).
     while ( I < InLines.Count ) do
     begin
-      OutLines.Add( InLines[I] );
+      OutLines.Add( InLines[ I ] );
       Inc( I );
     end;
 
@@ -439,8 +439,8 @@ begin
       raise EGroupProjSortError.Create(
         'The sorted project group would not contain exactly the original lines; nothing was changed.' );
 
-    Result := OutLines.Text;
-    if ( AText <> '' ) and not CharInSet( AText[Length( AText )], [#10, #13] ) then
+    Result          := OutLines.Text;
+    if ( AText <> '' ) and not CharInSet( AText[ Length( AText ) ], [ #10, #13 ] ) then
       SetLength( Result, Length( Result ) - Length( OutLines.LineBreak ) );
   finally
     Pending.Free;
@@ -452,3 +452,4 @@ begin
 end;
 
 end.
+

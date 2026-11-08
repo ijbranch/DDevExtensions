@@ -29,7 +29,7 @@ type
   /// Persistent configuration for the Old Palette feature, including band geometry,
   /// tab style, font and behavioural toggles. Owns the lifecycle of the in-IDE band.
   /// </summary>
-  TOldPaletteConfig = class(TPluginConfig)
+  TOldPaletteConfig = class( TPluginConfig )
   private
     /// <summary>Whether the Old Palette band is currently shown in the IDE.</summary>
     FActive: Boolean;
@@ -53,16 +53,16 @@ type
     FSmallFonts: Boolean;
     /// <summary>Setter that creates or destroys the in-IDE palette band.</summary>
     /// <param name="Value">True to show the palette band.</param>
-    procedure SetActive(const Value: Boolean);
+    procedure SetActive( const Value: Boolean );
     /// <summary>Setter that rebuilds the palette popup menu when the sort option toggles.</summary>
     /// <param name="Value">True to sort the palette pop-up menu alphabetically.</param>
-    procedure SetAlphaSortPopupMenu(const Value: Boolean);
+    procedure SetAlphaSortPopupMenu( const Value: Boolean );
   protected
     /// <summary>Hooked OnBandMove constraining the Old Palette band to full ControlBar width.</summary>
     /// <param name="Sender">The control bar.</param>
     /// <param name="Control">The band control being moved.</param>
     /// <param name="ARect">Proposed band rectangle; widened to the bar's client width for the Old Palette band.</param>
-    procedure DoBandMove(Sender: TObject; Control: TControl; var ARect: TRect);
+    procedure DoBandMove( Sender: TObject; Control: TControl; var ARect: TRect );
     /// <summary>Returns the option page tree node registered for this feature.</summary>
     /// <returns>The options page node for this feature.</returns>
     function GetOptionPages: TTreePage; override;
@@ -75,7 +75,7 @@ type
     destructor Destroy; override;
     /// <summary>Loads values from XML and re-applies the active flag after loading completes.</summary>
     /// <param name="Node">The XML node containing the persisted state.</param>
-    procedure LoadFromXml(Node: IXmlNode); override;
+    procedure LoadFromXml( Node: IXmlNode ); override;
   published
     /// <summary>Whether the Old Palette band is shown in the IDE.</summary>
     property Active: Boolean read FActive write SetActive;
@@ -99,7 +99,7 @@ type
   /// <summary>
   /// IDE options page frame for configuring the Old Palette feature.
   /// </summary>
-  TFrameOptionPageOldPalette = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageOldPalette = class( TFrameBase, ITreePageComponent )
     /// <summary>Toggles the Old Palette feature on or off.</summary>
     cbxActive: TCheckBox;
     /// <summary>Toggles multi-line tabs.</summary>
@@ -116,14 +116,14 @@ type
     chkSmallFonts: TCheckBox;
     /// <summary>Enables or disables dependent controls when the active state changes.</summary>
     /// <param name="Sender">The active checkbox.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Configuration object the page edits.</summary>
     FOldPaletteConfig: TOldPaletteConfig;
   public
     /// <summary>Receives the <see cref="TOldPaletteConfig"/> instance edited by this page.</summary>
     /// <param name="UserData">The configuration cast to TObject.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Populates the controls from the configuration's current values.</summary>
     procedure LoadData;
     /// <summary>Writes the control values back to the configuration and persists them.</summary>
@@ -136,7 +136,7 @@ type
 
 /// <summary>Plugin entry point; creates or destroys the singleton configuration.</summary>
 /// <param name="Unload">When true, the configuration is freed; otherwise it is created.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -146,19 +146,19 @@ uses
 {$R *.dfm}
 
 var
-  OldPaletteConfig: TOldPaletteConfig;
+  OldPaletteConfig  : TOldPaletteConfig;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
     OldPaletteConfig := TOldPaletteConfig.Create
   else
-    FreeAndNil(OldPaletteConfig);
+    FreeAndNil( OldPaletteConfig );
 end;
 
 { TFrameOptionPageOldPalette }
 
-procedure TFrameOptionPageOldPalette.SetUserData(UserData: TObject);
+procedure TFrameOptionPageOldPalette.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
   if ( UserData is TOldPaletteConfig ) then
@@ -167,7 +167,7 @@ begin
     FOldPaletteConfig := nil;
 end;
 
-procedure TFrameOptionPageOldPalette.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageOldPalette.cbxActiveClick( Sender: TObject );
 begin
   inherited;
   cbxMultiline.Enabled := cbxActive.Checked;
@@ -175,7 +175,7 @@ begin
   lblStyleCaption.Enabled := cbxActive.Checked;
   chkAlphaSortPopupMenu.Enabled := cbxActive.Checked;
   chkSmallFonts.Enabled := cbxActive.Checked;
-  cbxStyle.Enabled := cbxActive.Checked;
+  cbxStyle.Enabled  := cbxActive.Checked;
 end;
 
 procedure TFrameOptionPageOldPalette.LoadData;
@@ -188,23 +188,23 @@ begin
   cbxRaggedRight.Checked := FOldPaletteConfig.RaggedRight;
   chkAlphaSortPopupMenu.Checked := FOldPaletteConfig.AlphaSortPopupMenu;
   chkSmallFonts.Checked := FOldPaletteConfig.SmallFonts;
-  cbxStyle.ItemIndex := Integer(FOldPaletteConfig.Style);
+  cbxStyle.ItemIndex := Integer( FOldPaletteConfig.Style );
 
-  cbxActiveClick(cbxActive);
-  {$IFDEF CPUX64}
+  cbxActiveClick( cbxActive );
+{$IFDEF CPUX64}
   // The Old Palette re-syncs with the IDE's palette only through a LoadPalette code
   // redirect, which is inert on the 64-bit IDE; without it the band would keep
   // pointers to palette items the IDE has freed.  It is therefore never shown there.
   cbxActive.Enabled := False;
-  cbxActive.Hint := 'Not available on the 64-bit IDE';
+  cbxActive.Hint    := 'Not available on the 64-bit IDE';
   cbxActive.ShowHint := True;
   cbxMultiline.Enabled := False;
   cbxRaggedRight.Enabled := False;
   lblStyleCaption.Enabled := False;
   chkAlphaSortPopupMenu.Enabled := False;
   chkSmallFonts.Enabled := False;
-  cbxStyle.Enabled := False;
-  {$ENDIF}
+  cbxStyle.Enabled  := False;
+{$ENDIF}
 end;
 
 procedure TFrameOptionPageOldPalette.SaveData;
@@ -218,11 +218,11 @@ begin
   FOldPaletteConfig.AlphaSortPopupMenu := chkAlphaSortPopupMenu.Checked;
   FOldPaletteConfig.SmallFonts := chkSmallFonts.Checked;
   if cbxStyle.ItemIndex <> -1 then
-    FOldPaletteConfig.Style := TTabStyle(cbxStyle.ItemIndex);
+    FOldPaletteConfig.Style := TTabStyle( cbxStyle.ItemIndex );
   FOldPaletteConfig.Save;
 
   if FrameOldPalette <> nil then
-    FrameOldPalette.InitTabControl(FOldPaletteConfig);
+    FrameOldPalette.InitTabControl( FOldPaletteConfig );
 end;
 
 procedure TFrameOptionPageOldPalette.Selected;
@@ -237,74 +237,74 @@ end;
 
 constructor TOldPaletteConfig.Create;
 begin
-  inherited Create(AppDataDirectory + '\OldPalette.xml', 'OldPalette');
+  inherited Create( AppDataDirectory + '\OldPalette.xml', 'OldPalette' );
 end;
 
 destructor TOldPaletteConfig.Destroy;
 begin
-  Active := False;
+  Active            := False;
   inherited Destroy;
 end;
 
-procedure TOldPaletteConfig.DoBandMove(Sender: TObject; Control: TControl; var ARect: TRect);
+procedure TOldPaletteConfig.DoBandMove( Sender: TObject; Control: TControl; var ARect: TRect );
 begin
   if Control = FrameOldPalette then
   begin
-    ARect.Right := TControl(Sender).ClientWidth;
+    ARect.Right     := TControl( Sender ).ClientWidth;
     if ARect.Left >= ARect.Right - 10 then
-      ARect.Left := ARect.Right - 10;
+      ARect.Left    := ARect.Right - 10;
   end;
-  if Assigned(FOrgBandMove) then
-    FOrgBandMove(Sender, Control, ARect);
+  if Assigned( FOrgBandMove ) then
+    FOrgBandMove( Sender, Control, ARect );
 end;
 
 function TOldPaletteConfig.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Old Palette', TFrameOptionPageOldPalette, Self);
+  Result            := TTreePage.Create( 'Old Palette', TFrameOptionPageOldPalette, Self );
 end;
 
 procedure TOldPaletteConfig.Init;
 begin
   inherited Init;
-  FActive := False;
-  FLeft := 0;
-  FTop := -1;
-  FMultiLine := False;
-  FRaggedRight := True;
-  FStyle := tsTabs;
-  FSmallFonts := False;
+  FActive           := False;
+  FLeft             := 0;
+  FTop              := -1;
+  FMultiLine        := False;
+  FRaggedRight      := True;
+  FStyle            := tsTabs;
+  FSmallFonts       := False;
 end;
 
-procedure TOldPaletteConfig.LoadFromXml(Node: IXmlNode);
+procedure TOldPaletteConfig.LoadFromXml( Node: IXmlNode );
 begin
-  FLoading := True;
-  inherited LoadFromXml(Node);
-  FLoading := False;
+  FLoading          := True;
+  inherited LoadFromXml( Node );
+  FLoading          := False;
   if Active then
   begin
-    FActive := False;
-    SetActive(True);
+    FActive         := False;
+    SetActive( True );
   end;
 end;
 
-procedure TOldPaletteConfig.SetActive(const Value: Boolean);
+procedure TOldPaletteConfig.SetActive( const Value: Boolean );
 var
-  ControlBar: TControlBar;
+  ControlBar        : TControlBar;
 begin
   if Value <> FActive then
   begin
-    FActive := Value;
+    FActive         := Value;
     if FLoading then
       Exit;
-    {$IFDEF CPUX64}
+{$IFDEF CPUX64}
     // Never shown on the 64-bit IDE (see TFrameOptionPageOldPalette.LoadData); the
     // persisted flag is kept so the 32-bit IDE sharing this file is unaffected.
     Exit;
-    {$ENDIF}
+{$ENDIF}
     if Application.MainForm <> nil then
-      ControlBar := TControlBar(Application.MainForm.FindComponent('ControlBar1'))
+      ControlBar    := TControlBar( Application.MainForm.FindComponent( 'ControlBar1' ) )
     else
-      ControlBar := nil;
+      ControlBar    := nil;
     if not Active then
     begin
       if ControlBar <> nil then
@@ -317,20 +317,20 @@ begin
       begin
         FOrgBandMove := ControlBar.OnBandMove;
         ControlBar.OnBandMove := DoBandMove;
-        if not Assigned(FrameOldPalette) then
-          FrameOldPalette := TFrameOldPalette.Create(Self);
+        if not Assigned( FrameOldPalette ) then
+          FrameOldPalette := TFrameOldPalette.Create( Self );
         FrameOldPalette.Left := FLeft;
         if FTop = -1 then
-          FTop := ControlBar.RowSize * 3;
+          FTop      := ControlBar.RowSize * 3;
         FrameOldPalette.Top := FTop;
         FrameOldPalette.Parent := ControlBar;
-        FrameOldPalette.Init(Self);
+        FrameOldPalette.Init( Self );
       end;
     end;
   end;
 end;
 
-procedure TOldPaletteConfig.SetAlphaSortPopupMenu(const Value: Boolean);
+procedure TOldPaletteConfig.SetAlphaSortPopupMenu( const Value: Boolean );
 begin
   if Value <> FAlphaSortPopupMenu then
   begin

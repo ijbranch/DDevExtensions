@@ -29,7 +29,7 @@ type
   /// <summary>
   /// Persistent plugin configuration that drives the post-save cleanup logic.
   /// </summary>
-  TFileCleaner = class(TPluginConfig)
+  TFileCleaner = class( TPluginConfig )
   private
     /// <summary>Module-save notifier registered with the IDE.</summary>
     FModuleNotifier: TModuleDataNotifier;
@@ -49,7 +49,7 @@ type
     procedure Init; override;
     /// <summary>Module-save callback that performs the configured cleanup actions.</summary>
     /// <param name="Data">Module data describing the file just saved.</param>
-    procedure DoModuleAfterSave(Data: TModuleData); virtual;
+    procedure DoModuleAfterSave( Data: TModuleData ); virtual;
   public
     /// <summary>Creates the configuration object and registers the module-save notifier.</summary>
     constructor Create;
@@ -69,7 +69,7 @@ type
   /// <summary>
   /// VCL frame that hosts the File Cleaner options page in the IDE Options tree.
   /// </summary>
-  TFrameOptionPageFileCleaner = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageFileCleaner = class( TFrameBase, ITreePageComponent )
     /// <summary>Master enable check box.</summary>
     cbxActive: TCheckBox;
     /// <summary>Toggles the DeleteDdp option.</summary>
@@ -80,14 +80,14 @@ type
     cbxRemoveEmptyHistory: TCheckBox;
     /// <summary>Enables or disables the dependent check boxes when Active changes.</summary>
     /// <param name="Sender">The "Active" check box.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Backing configuration object supplied via SetUserData.</summary>
     FFileCleaner: TFileCleaner;
   public
     /// <summary>Stores the supplied configuration object for later Load/Save calls.</summary>
     /// <param name="UserData">Configuration object expected to be a TFileCleaner instance.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Loads configuration values into the frame controls.</summary>
     procedure LoadData;
     /// <summary>Reads frame controls back into the configuration and persists.</summary>
@@ -102,7 +102,7 @@ type
 /// Creates or destroys the singleton FileCleaner instance and its module notifier.
 /// </summary>
 /// <param name="Unload">True to shut down, False to start up.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -112,56 +112,56 @@ uses
 {$R *.dfm}
 
 var
-  FileCleaner: TFileCleaner;
+  FileCleaner       : TFileCleaner;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
-    FileCleaner := TFileCleaner.Create
+    FileCleaner     := TFileCleaner.Create
   else
-    FreeAndNil(FileCleaner);
+    FreeAndNil( FileCleaner );
 end;
 
 { TFrameOptionPageFileCleaner }
 
-procedure TFrameOptionPageFileCleaner.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageFileCleaner.cbxActiveClick( Sender: TObject );
 begin
   cbxDeleteDdp.Enabled := cbxActive.Checked;
   cbxRemoveEmptyModel.Enabled := cbxActive.Checked;
   cbxRemoveEmptyHistory.Enabled := cbxActive.Checked;
 end;
 
-procedure TFrameOptionPageFileCleaner.SetUserData(UserData: TObject);
+procedure TFrameOptionPageFileCleaner.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
-  if not (UserData is TFileCleaner) then
-    FFileCleaner := nil
+  if not ( UserData is TFileCleaner ) then
+    FFileCleaner    := nil
   else
-    FFileCleaner := TFileCleaner(UserData);
+    FFileCleaner    := TFileCleaner( UserData );
 end;
 
 procedure TFrameOptionPageFileCleaner.LoadData;
 begin
-  if not Assigned(FFileCleaner) then
+  if not Assigned( FFileCleaner ) then
     Exit;
 
   cbxActive.Checked := FFileCleaner.Active;
   cbxDeleteDdp.Checked := FFileCleaner.DeleteDdp;
   cbxRemoveEmptyModel.Checked := FFileCleaner.RemoveEmptyModel;
   cbxRemoveEmptyHistory.Checked := FFileCleaner.RemoveEmptyHistory;
-  {$IFDEF COMPILER9_UP}
+{$IFDEF COMPILER9_UP}
   cbxRemoveEmptyModel.Visible := True;
-  {$ENDIF COMPILER9_UP}
-  {$IFDEF COMPILER10_UP}
+{$ENDIF COMPILER9_UP}
+{$IFDEF COMPILER10_UP}
   cbxRemoveEmptyHistory.Visible := True;
-  {$ENDIF COMPILER10_UP}
+{$ENDIF COMPILER10_UP}
 
-  cbxActiveClick(cbxActive);
+  cbxActiveClick( cbxActive );
 end;
 
 procedure TFrameOptionPageFileCleaner.SaveData;
 begin
-  if not Assigned(FFileCleaner) then
+  if not Assigned( FFileCleaner ) then
     Exit;
 
   FFileCleaner.DeleteDdp := cbxDeleteDdp.Checked;
@@ -184,9 +184,9 @@ end;
 
 constructor TFileCleaner.Create;
 begin
-  inherited Create(AppDataDirectory + '\FileCleaner.xml', 'FileCleaner');
+  inherited Create( AppDataDirectory + '\FileCleaner.xml', 'FileCleaner' );
 
-  FModuleNotifier := TModuleDataNotifier.Create;
+  FModuleNotifier   := TModuleDataNotifier.Create;
   FModuleNotifier.AfterSave := DoModuleAfterSave;
 end;
 
@@ -194,68 +194,69 @@ destructor TFileCleaner.Destroy;
 begin
   // Stop AfterSave processing before tearing down the notifier (the old
   // Active := False after the Free was a no-op on an object being destroyed).
-  Active := False;
-  FreeAndNil(FModuleNotifier);
+  Active            := False;
+  FreeAndNil( FModuleNotifier );
   inherited Destroy;
 end;
 
 procedure TFileCleaner.Init;
 begin
   inherited Init;
-  DeleteDdp := False;
+  DeleteDdp         := False;
   RemoveEmptyHistory := True;
   // Off by default: Together (whose "Model"/"Modell" folders this cleans up) is gone from
   // current IDEs, and an empty "Model" folder is now usually a deliberate project folder.
-  RemoveEmptyModel := False;
-  Active := True;
+  RemoveEmptyModel  := False;
+  Active            := True;
 end;
 
 function TFileCleaner.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('File Cleaner', TFrameOptionPageFileCleaner, Self);
+  Result            := TTreePage.Create( 'File Cleaner', TFrameOptionPageFileCleaner, Self );
 end;
 
-procedure TFileCleaner.DoModuleAfterSave(Data: TModuleData);
+procedure TFileCleaner.DoModuleAfterSave( Data: TModuleData );
 var
-  Ext: string;
-  Filename: string;
-  IsProjectExt: Boolean;
+  Ext               : string;
+  Filename          : string;
+  IsProjectExt      : Boolean;
 begin
   if Active then
   begin
-    Filename := Data.Module.FileName;
+    Filename        := Data.Module.FileName;
     // A module without a folder in its name (never saved to disk) would make every
     // relative RemoveDir/DeleteFile below act on the IDE's current directory.
     if ( ExtractFilePath( Filename ) = '' ) then
       Exit;
     // Use the Unicode-safe LowerCase rather than the legacy ANSI round-trip,
     // which can corrupt non-ASCII path characters on non-Latin code pages.
-    Ext := LowerCase(ExtractFileExt(FileName));
-    IsProjectExt := (Ext = '.dpr') or (Ext = '.dpk') or (Ext = '.bpr') or (Ext = '.bpk') or (Ext = '.bdsproj');
-    if (Ext = '.pas') or (Ext = '.cpp') or (Ext = '.dfm') or (Ext = '.nfm') or (Ext = '.xfm') or (Ext = '.h') or
-       IsProjectExt then
+    Ext             := LowerCase( ExtractFileExt( FileName ) );
+    IsProjectExt    := ( Ext = '.dpr' ) or ( Ext = '.dpk' ) or ( Ext = '.bpr' ) or ( Ext = '.bpk' ) or ( Ext = '.bdsproj' );
+    if ( Ext = '.pas' ) or ( Ext = '.cpp' ) or ( Ext = '.dfm' ) or ( Ext = '.nfm' ) or ( Ext = '.xfm' ) or ( Ext = '.h' ) or
+      IsProjectExt then
     begin
       try
         if DeleteDdp and not IsProjectExt then
-          DeleteFile(ChangeFileExt(FileName, '.ddp'));
-        {$IFDEF COMPILER9_UP}
+          DeleteFile( ChangeFileExt( FileName, '.ddp' ) );
+{$IFDEF COMPILER9_UP}
         if RemoveEmptyModel then
         begin
-          RemoveDir(ExtractFilePath(FileName) + 'Modell');
-          RemoveDir(ExtractFilePath(FileName) + 'Model');
+          RemoveDir( ExtractFilePath( FileName ) + 'Modell' );
+          RemoveDir( ExtractFilePath( FileName ) + 'Model' );
         end;
-        {$ENDIF COMPILER9_UP}
-        {$IFDEF COMPILER10_UP}
+{$ENDIF COMPILER9_UP}
+{$IFDEF COMPILER10_UP}
         if RemoveEmptyHistory then
-          RemoveDir(ExtractFilePath(FileName) + '__history');
-        {$ENDIF COMPILER10_UP}
+          RemoveDir( ExtractFilePath( FileName ) + '__history' );
+{$ENDIF COMPILER10_UP}
       except
         on E: Exception do
           // Best-effort cleanup must never disrupt the IDE save pipeline; log and continue.
-          OutputDebugString(PChar('DDevExtensions FileCleaner: ' + FileName + ' - ' + E.Message));
+          OutputDebugString( PChar( 'DDevExtensions FileCleaner: ' + FileName + ' - ' + E.Message ) );
       end;
     end;
   end;
 end;
 
 end.
+

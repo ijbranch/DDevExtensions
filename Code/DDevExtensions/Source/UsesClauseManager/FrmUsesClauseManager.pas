@@ -172,7 +172,7 @@ type
 
 var
   /// <summary>Singleton manager form instance (nil when the form is not open).</summary>
-  FormInstance: TFormUsesClauseManager = nil;
+  FormInstance      : TFormUsesClauseManager = nil;
 
 implementation
 
@@ -184,9 +184,9 @@ uses
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 end;
 
 class procedure TFormUsesClauseManager.Execute;
@@ -199,7 +199,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormUsesClauseManager.Create( Application );
+  FormInstance      := TFormUsesClauseManager.Create( Application );
   FormInstance.Show;
 
 end;
@@ -219,27 +219,27 @@ begin
   // while BuildFromSearchPath is still on the stack.
   if FBusy then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormUsesClauseManager.FormCreate( Sender: TObject );
 begin
-  FSortColumn := 0;
-  FSortAscending := True;
-  FCurrentFileName := '';
+  FSortColumn       := 0;
+  FSortAscending    := True;
+  FCurrentFileName  := '';
 end;
 
 procedure TFormUsesClauseManager.FormDestroy( Sender: TObject );
 begin
   ClearPlacements;
   if FormInstance = Self then
-    FormInstance := nil;
+    FormInstance    := nil;
 end;
 
 procedure TFormUsesClauseManager.DBProgress( Sender: TObject );
@@ -258,9 +258,9 @@ end;
 
 procedure TFormUsesClauseManager.btnBuildDBClick( Sender: TObject );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
-  Project := GetActiveProject;
+  Project           := GetActiveProject;
   if Project = nil then
   begin
     ShowMessage( 'No active project.' );
@@ -270,10 +270,10 @@ begin
   if UsesClauseManagerPlugin = nil then
     Exit;
 
-  Screen.Cursor := crHourGlass;
+  Screen.Cursor     := crHourGlass;
   btnBuildDB.Enabled := False;
   btnAnalyze.Enabled := False;
-  FBusy := True;
+  FBusy             := True;
   try
     lblProgress.Caption := 'Building exports database...';
     lblProgress.Visible := True;
@@ -287,20 +287,20 @@ begin
       [ UsesClauseManagerPlugin.ExportsDB.UnitCount ] );
     lblSummary.Visible := True;
   finally
-    FBusy := False;
+    FBusy           := False;
     btnBuildDB.Enabled := True;
     btnAnalyze.Enabled := True;
-    Screen.Cursor := crDefault;
+    Screen.Cursor   := crDefault;
   end;
 end;
 
 procedure TFormUsesClauseManager.btnAnalyzeClick( Sender: TObject );
 var
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I: Integer;
-  Source: UTF8String;
-  Refactorer: TUsesClauseRefactorer;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  I                 : Integer;
+  Source            : UTF8String;
+  Refactorer        : TUsesClauseRefactorer;
 begin
   if UsesClauseManagerPlugin = nil then
     Exit;
@@ -313,14 +313,14 @@ begin
   end;
 
   // Get current editor
-  Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
+  Module            := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
   if Module = nil then
   begin
     ShowMessage( 'No file open in editor.' );
     Exit;
   end;
 
-  SourceEditor := nil;
+  SourceEditor      := nil;
   for I := 0 to Module.ModuleFileCount - 1 do
   begin
     if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
@@ -333,24 +333,24 @@ begin
     Exit;
   end;
 
-  FCurrentFileName := SourceEditor.FileName;
+  FCurrentFileName  := SourceEditor.FileName;
 
-  Screen.Cursor := crHourGlass;
+  Screen.Cursor     := crHourGlass;
   btnAnalyze.Enabled := False;
-  FBusy := True;
+  FBusy             := True;
   try
     lblProgress.Caption := 'Analysing ' + ExtractFileName( FCurrentFileName ) + '...';
     lblProgress.Visible := True;
     lblSummary.Visible := False;
     Application.ProcessMessages;
 
-    Source := GetEditorSource( SourceEditor );
+    Source          := GetEditorSource( SourceEditor );
 
-    Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
+    Refactorer      := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
     try
       // The previous result's string lists are freed, not leaked, when a unit is analysed again.
       ClearPlacements;
-      FPlacements := Refactorer.Analyze( Source );
+      FPlacements   := Refactorer.Analyze( Source );
     finally
       Refactorer.Free;
     end;
@@ -361,9 +361,9 @@ begin
     lblSummary.Caption := Format( 'Found %d units to analyse', [ Length( FPlacements ) ] );
     lblSummary.Visible := True;
   finally
-    FBusy := False;
+    FBusy           := False;
     btnAnalyze.Enabled := True;
-    Screen.Cursor := crDefault;
+    Screen.Cursor   := crDefault;
   end;
 end;
 
@@ -374,8 +374,8 @@ end;
 
 procedure TFormUsesClauseManager.PopulateList;
 var
-  Placement: TUnitPlacement;
-  Item: TListItem;
+  Placement         : TUnitPlacement;
+  Item              : TListItem;
 
   function SectionToStr( Section: TUsesSection ): string;
   begin
@@ -383,7 +383,7 @@ var
       usInterface: Result := 'interface';
       usImplementation: Result := 'implementation';
     else
-      Result := '?';
+      Result        := '?';
     end;
   end;
 
@@ -395,15 +395,15 @@ begin
     for Placement in FPlacements do
     begin
       Item := ListView.Items.Add;
-      Item.Caption := Placement.UnitName;
+      Item.Caption  := Placement.UnitName;
       Item.SubItems.Add( SectionToStr( Placement.CurrentSection ) );
       Item.SubItems.Add( SectionToStr( Placement.RecommendedSection ) );
       Item.SubItems.Add( Placement.Reason );
-      Item.Data := Pointer( NativeInt( ListView.Items.Count - 1 ) );
+      Item.Data     := Pointer( NativeInt( ListView.Items.Count - 1 ) );
 
       // Highlight units that should be moved
       if Placement.CurrentSection <> Placement.RecommendedSection then
-        Item.SubItems.Objects[ 0 ] := TObject( 1 );  // Mark for highlighting
+        Item.SubItems.Objects[ 0 ] := TObject( 1 ); // Mark for highlighting
     end;
   finally
     ListView.Items.EndUpdate;
@@ -418,7 +418,7 @@ begin
 
   memoDetails.Lines.Add( 'Identifiers used in INTERFACE section:' );
   if ( Placement.IdentifiersUsedInInterface <> nil ) and
-     ( Placement.IdentifiersUsedInInterface.Count > 0 ) then
+    ( Placement.IdentifiersUsedInInterface.Count > 0 ) then
     memoDetails.Lines.Add( '  ' + Placement.IdentifiersUsedInInterface.CommaText )
   else
     memoDetails.Lines.Add( '  (none)' );
@@ -426,7 +426,7 @@ begin
   memoDetails.Lines.Add( '' );
   memoDetails.Lines.Add( 'Identifiers used in IMPLEMENTATION section:' );
   if ( Placement.IdentifiersUsedInImplementation <> nil ) and
-     ( Placement.IdentifiersUsedInImplementation.Count > 0 ) then
+    ( Placement.IdentifiersUsedInImplementation.Count > 0 ) then
     memoDetails.Lines.Add( '  ' + Placement.IdentifiersUsedInImplementation.CommaText )
   else
     memoDetails.Lines.Add( '  (none)' );
@@ -438,11 +438,11 @@ end;
 procedure TFormUsesClauseManager.ListViewSelectItem( Sender: TObject;
   Item: TListItem; Selected: Boolean );
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
   if Selected and ( Item <> nil ) then
   begin
-    Idx := NativeInt( Item.Data );
+    Idx             := NativeInt( Item.Data );
     if ( Idx >= 0 ) and ( Idx < Length( FPlacements ) ) then
       ShowDetails( FPlacements[ Idx ] );
   end;
@@ -452,11 +452,11 @@ procedure TFormUsesClauseManager.ListViewColumnClick( Sender: TObject;
   Column: TListColumn );
 begin
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
   ListView.AlphaSort;
 end;
@@ -464,25 +464,25 @@ end;
 procedure TFormUsesClauseManager.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
-    S1 := SafeGetSubItem( Item1, SubIdx );
-    S2 := SafeGetSubItem( Item2, SubIdx );
+    SubIdx          := FSortColumn - 1;
+    S1              := SafeGetSubItem( Item1, SubIdx );
+    S2              := SafeGetSubItem( Item2, SubIdx );
   end;
 
-  Compare := CompareText( S1, S2 );
+  Compare           := CompareText( S1, S2 );
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 end;
 
 procedure TFormUsesClauseManager.ListViewDblClick( Sender: TObject );
@@ -492,17 +492,17 @@ end;
 
 procedure TFormUsesClauseManager.OpenSelectedFile;
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  I: Integer;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  I                 : Integer;
 begin
   if FCurrentFileName = '' then
     Exit;
 
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( FCurrentFileName );
+    Module          := ModuleServices.OpenModule( FCurrentFileName );
     if Module <> nil then
     begin
       for I := 0 to Module.ModuleFileCount - 1 do
@@ -539,16 +539,16 @@ begin
     Placement.IdentifiersUsedInInterface.Free;
     Placement.IdentifiersUsedInImplementation.Free;
   end;
-  FPlacements := nil;
+  FPlacements       := nil;
 end;
 
 function TFormUsesClauseManager.AnalysedSourceEditor( const AAction: string ): IOTASourceEditor;
 var
-  Module: IOTAModule;
-  Buffer: IOTAEditBuffer;
+  Module            : IOTAModule;
+  Buffer            : IOTAEditBuffer;
 begin
-  Result := nil;
-  Module := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
+  Result            := nil;
+  Module            := ( BorlandIDEServices as IOTAModuleServices ).CurrentModule;
   if Module = nil then
   begin
     ShowMessage( 'No file open in editor.' );
@@ -568,7 +568,7 @@ begin
   if ( FCurrentFileName <> '' ) and not SameText( Result.FileName, FCurrentFileName ) then
   begin
     ShowMessage( Format( 'The analysed file (%s) is no longer the active editor file (%s).'#13#10 +
-      'Please analyse it again before you %s.', [ ExtractFileName( FCurrentFileName ), ExtractFileName( Result.FileName ), AAction ] ) );
+        'Please analyse it again before you %s.', [ ExtractFileName( FCurrentFileName ), ExtractFileName( Result.FileName ), AAction ] ) );
     Exit( nil );
   end;
 
@@ -581,16 +581,16 @@ end;
 
 procedure TFormUsesClauseManager.MoveUnits( ASelectedOnly: Boolean );
 var
-  SourceEditor: IOTASourceEditor;
-  Source: UTF8String;
-  Refactorer: TUsesClauseRefactorer;
-  Fresh, Moves: TArray<TUnitPlacement>;
-  Selected: TStringList;
-  Edits: TArray<TUsesEdit>;
+  SourceEditor      : IOTASourceEditor;
+  Source            : UTF8String;
+  Refactorer        : TUsesClauseRefactorer;
+  Fresh, Moves      : TArray<TUnitPlacement>;
+  Selected          : TStringList;
+  Edits             : TArray<TUsesEdit>;
   ErrorMessage, MovedNames: string;
-  Writer: IOTAEditWriter;
-  Stale: Boolean;
-  MoveCount: Integer;
+  Writer            : IOTAEditWriter;
+  Stale             : Boolean;
+  MoveCount         : Integer;
 begin
   if ( UsesClauseManagerPlugin = nil ) or FBusy then
     Exit;
@@ -602,14 +602,14 @@ begin
   end;
 
   if ASelectedOnly then
-    SourceEditor := AnalysedSourceEditor( 'move units' )
+    SourceEditor    := AnalysedSourceEditor( 'move units' )
   else
-    SourceEditor := AnalysedSourceEditor( 'apply changes' );
+    SourceEditor    := AnalysedSourceEditor( 'apply changes' );
   if SourceEditor = nil then
     Exit;
 
-  Selected := TStringList.Create;
-  Refactorer := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
+  Selected          := TStringList.Create;
+  Refactorer        := TUsesClauseRefactorer.Create( UsesClauseManagerPlugin.ExportsDB );
   try
     Selected.CaseSensitive := False;
     if ASelectedOnly then
@@ -619,20 +619,20 @@ begin
 
     { Re-analyse the buffer as it is NOW.  Edits made since the list was built ( a unit added to or
       removed from a clause ) would otherwise be undone by applying the old result. }
-    Source := GetEditorSource( SourceEditor );
-    Fresh := Refactorer.Analyze( Source );
+    Source          := GetEditorSource( SourceEditor );
+    Fresh           := Refactorer.Analyze( Source );
 
-    Stale := Length( Fresh ) <> Length( FPlacements );
+    Stale           := Length( Fresh ) <> Length( FPlacements );
     if not Stale then
       for var I := 0 to High( Fresh ) do
         if not SameText( Fresh[ I ].UnitName, FPlacements[ I ].UnitName ) or
-           ( Fresh[ I ].CurrentSection <> FPlacements[ I ].CurrentSection ) or
-           ( Fresh[ I ].RecommendedSection <> FPlacements[ I ].RecommendedSection ) then
-          Stale := True;
+          ( Fresh[ I ].CurrentSection <> FPlacements[ I ].CurrentSection ) or
+          ( Fresh[ I ].RecommendedSection <> FPlacements[ I ].RecommendedSection ) then
+          Stale     := True;
     if Stale then
     begin
       ClearPlacements;
-      FPlacements := Fresh;
+      FPlacements   := Fresh;
       PopulateList;
       memoDetails.Lines.Clear;
       lblSummary.Caption := Format( 'Found %d units to analyse', [ Length( FPlacements ) ] );
@@ -644,13 +644,13 @@ begin
     try
       // The moves: never a unit the analyser could not classify, and, for "move selected", only
       // the selected units.  Moves shares Fresh's string lists; only Fresh frees them.
-      Moves := Copy( Fresh );
-      MoveCount := 0;
-      MovedNames := '';
+      Moves         := Copy( Fresh );
+      MoveCount     := 0;
+      MovedNames    := '';
       for var I := 0 to High( Moves ) do
       begin
         if ( Pos( 'No direct usage', Moves[ I ].Reason ) > 0 ) or
-           ( ASelectedOnly and ( Selected.IndexOf( Moves[ I ].UnitName ) < 0 ) ) then
+          ( ASelectedOnly and ( Selected.IndexOf( Moves[ I ].UnitName ) < 0 ) ) then
           Moves[ I ].RecommendedSection := Moves[ I ].CurrentSection;
         if Moves[ I ].CurrentSection <> Moves[ I ].RecommendedSection then
         begin
@@ -671,8 +671,8 @@ begin
       end;
 
       if not ASelectedOnly and ( MessageDlg( Format( 'This will move %d unit(s) between uses clauses:'#13#10#13#10 +
-        '%s'#13#10#13#10 + 'Do you want to continue?', [ MoveCount, MovedNames ] ),
-        mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
+            '%s'#13#10#13#10 + 'Do you want to continue?', [ MoveCount, MovedNames ] ),
+          mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
         Exit;
 
       // The buffer can change while the dialog is up ( the IDE reloading a file changed on disk ),
@@ -696,7 +696,7 @@ begin
       Screen.Cursor := crHourGlass;
       try
         try
-          Writer := SourceEditor.CreateUndoableWriter;
+          Writer    := SourceEditor.CreateUndoableWriter;
           for var Edit in Edits do
           begin
             Writer.CopyTo( Edit.Offset );
@@ -705,10 +705,10 @@ begin
             if Edit.Text <> '' then
               Writer.Insert( PAnsiChar( Edit.Text ) );
           end;
-          Writer := nil;
+          Writer    := nil;
         except
           // Releasing the writer ends its undo group, so whatever was written is one Undo step.
-          Writer := nil;
+          Writer    := nil;
           ShowMessage( 'The uses-clause edit stopped part-way, so the unit may be only partly '
             + 'changed.  Use Undo ( Ctrl+Z ) to restore it.' );
           raise;
@@ -739,10 +739,10 @@ end;
 
 procedure TFormUsesClauseManager.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
     SL.Add( 'Unit'#9'Current'#9'Recommended'#9'Reason' );
 
@@ -750,11 +750,11 @@ begin
     begin
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 )
+              ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -765,8 +765,8 @@ end;
 
 procedure TFormUsesClauseManager.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
   if ListView.Items.Count = 0 then
   begin
@@ -776,18 +776,18 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
     try
       SL.Add( 'Unit,Current,Recommended,Reason' );
 
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s"', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 )
+              ] ) );
       end;
 
       try
@@ -804,3 +804,4 @@ begin
 end;
 
 end.
+

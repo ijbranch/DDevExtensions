@@ -25,16 +25,16 @@ uses
 
 var
   /// <summary>When True, the C++ compiler write path uses a buffered write stream (legacy option, kept for symmetry).</summary>
-  OptUseWriteCache: Boolean = True;
+  OptUseWriteCache  : Boolean = True;
   //LogFile: TextFile;
 
 type
   /// <summary>Pointer to a UTF-8 encoded null-terminated character buffer.</summary>
   PUtf8Char = PAnsiChar;
-  {$IFNDEF UNICODE}
+{$IFNDEF UNICODE}
   /// <summary>Pre-Unicode alias used so non-Unicode Delphi versions get a <c>RawByteString</c> type.</summary>
   RawByteString = AnsiString;
-  {$ENDIF UNICODE}
+{$ENDIF UNICODE}
 
 /// <summary>
 /// Resolves and patches the IDE's Pascal compiler callback table so subsequent file I/O
@@ -52,7 +52,7 @@ function StrUtf8ToAnsi(P: PUtf8Char): PAnsiChar;}
 /// </summary>
 /// <param name="US">Source null-terminated UTF-16 string.</param>
 /// <returns>The UTF-8 encoded bytes as a <c>RawByteString</c> (empty when the input is empty).</returns>
-function UTF8Encode(US: PWideChar): RawByteString; overload;
+function UTF8Encode( US: PWideChar ): RawByteString; overload;
 
 /// <summary>
 /// Reads <paramref name="Filename"/> through the IDE's original Pascal compiler open/read/close
@@ -60,7 +60,7 @@ function UTF8Encode(US: PWideChar): RawByteString; overload;
 /// </summary>
 /// <param name="Filename">Path of the file to read.</param>
 /// <returns>A new <see cref="TMemoryStream"/>, or <c>nil</c> if the file could not be opened.</returns>
-function ReadFileContent(const Filename: string): TMemoryStream;
+function ReadFileContent( const Filename: string ): TMemoryStream;
 
 implementation
 
@@ -68,26 +68,26 @@ uses
   InterceptImpl, InterceptIntf, InterceptDispatch, IdeDllNames, ToolsAPIIntf;
 
 type
-  TIDENotifier = class(TComponent, IOTANotifier, IOTAIDENotifier, IOTAIDENotifier50)
+  TIDENotifier = class( TComponent, IOTANotifier, IOTAIDENotifier, IOTAIDENotifier50 )
   public
     procedure AfterSave;
     procedure BeforeSave;
     procedure Destroyed;
     procedure Modified;
-    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
-    procedure AfterCompile(Succeeded: Boolean); overload;
-    procedure AfterCompile(Succeeded: Boolean; IsCodeInsight: Boolean); overload;
-    procedure BeforeCompile(const Project: IInterface; var Cancel: Boolean); overload;
-    procedure BeforeCompile(const Project: IInterface; IsCodeInsight: Boolean; var Cancel: Boolean); overload;
+    procedure FileNotification( NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean );
+    procedure AfterCompile( Succeeded: Boolean ); overload;
+    procedure AfterCompile( Succeeded: Boolean; IsCodeInsight: Boolean ); overload;
+    procedure BeforeCompile( const Project: IInterface; var Cancel: Boolean ); overload;
+    procedure BeforeCompile( const Project: IInterface; IsCodeInsight: Boolean; var Cancel: Boolean ); overload;
   end;
 
 var
-  NotifierId: Integer;
-  IDENotifier: TIDENotifier;
-  MyHandles: TBucketList;
+  NotifierId        : Integer;
+  IDENotifier       : TIDENotifier;
+  MyHandles         : TBucketList;
 
 type
-  TOpenFile = class(TObject)
+  TOpenFile = class( TObject )
   private
     FOwnsStream: Boolean;
     FFilename: UTF8String;
@@ -95,8 +95,8 @@ type
     FStream: TStream;
     FHandle: THandle;
   public
-    constructor Create(const AFilename: UTF8String; AHandle: THandle; AStream: TStream; AOwnsStream: Boolean = True); overload;
-    constructor Create(const AFilename: UTF8String; AHandle: THandle; AVirtualStream: IVirtualStream); overload;
+    constructor Create( const AFilename: UTF8String; AHandle: THandle; AStream: TStream; AOwnsStream: Boolean = True ); overload;
+    constructor Create( const AFilename: UTF8String; AHandle: THandle; AVirtualStream: IVirtualStream ); overload;
     //constructor Create(const AFilename: UTF8String; AHandle: THandle; AVirtualOutStream: IVirtualOutStream); overload;
     destructor Destroy; override;
 
@@ -106,19 +106,19 @@ type
     property VirtualStream: IVirtualStream read FVirtualStream;
   end;
 
-  TCachedOrgStream = class(TMemoryStream)
+  TCachedOrgStream = class( TMemoryStream )
   public
-    constructor Create(hFile: THandle; AOrgStreamData: POrgStreamData; ASize: Integer = -1);
+    constructor Create( hFile: THandle; AOrgStreamData: POrgStreamData; ASize: Integer = -1 );
   end;
 
-  TCompilerFileInfo = class(TObject) // actually a TCppProjFile but it is user data
+  TCompilerFileInfo = class( TObject ) // actually a TCppProjFile but it is user data
   end;
 
-  TMessageLine = class(TObject) // actually a TCppCompilerMessageLine
+  TMessageLine = class( TObject ) // actually a TCppCompilerMessageLine
   end;
 
   //TMsgKind = (mkHint, mkWarning, mkError, mkFatal, mkInfo);
-  TProgKind = (pkUnknown, pkCompiler, pkLinker);
+  TProgKind = ( pkUnknown, pkCompiler, pkLinker );
 
   {PComInOut = ^TComInOut;
   TComInOut = packed record
@@ -147,103 +147,104 @@ type
 
   PPascalComInOut = ^TPascalComInOut;
   TPascalComInOut = packed record
-    Open: function(const Filename: PAnsiChar): THandle; pascal;
-    Create: function(const Filename: PAnsiChar): THandle; pascal;
-    CreateV: function(const Filename: PAnsiChar): THandle; pascal;
-    Close: procedure(hFile: THandle); pascal;
-    Flush: procedure(hFile: THandle); pascal;
-    Seek: function(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
-    Read: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
-    Write: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
-    FileNameDate: function(const Filename: PAnsiChar): Integer; pascal;
-    FileStatus: function(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
+    Open: function( const Filename: PAnsiChar ): THandle; pascal;
+    Create: function( const Filename: PAnsiChar ): THandle; pascal;
+    CreateV: function( const Filename: PAnsiChar ): THandle; pascal;
+    Close: procedure( hFile: THandle ); pascal;
+    Flush: procedure( hFile: THandle ); pascal;
+    Seek: function( hFile: THandle; Offset, Origin: Integer ): Integer; pascal;
+    Read: function( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
+    Write: function( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
+    FileNameDate: function( const Filename: PAnsiChar ): Integer; pascal;
+    FileStatus: function( hFile: THandle; out FileDate: Integer; out FileSize: Integer ): Integer; pascal;
 
     GetCurTime: function: Integer; pascal;
-    BMessage: procedure(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar); pascal;
-    Progress: function(Kind: TProgKind; const Filename: PAnsiChar; CurLines, TotalLines: Integer): Integer; pascal;
+    BMessage: procedure( MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar ); pascal;
+    Progress: function( Kind: TProgKind; const Filename: PAnsiChar; CurLines, TotalLines: Integer ): Integer; pascal;
 
-    Empty1: function(p1, p2, p3: Integer): Integer; pascal;
-    Empty2: function(p1, p2, p3: Integer): Integer; pascal;
+    Empty1: function( p1, p2, p3: Integer ): Integer; pascal;
+    Empty2: function( p1, p2, p3: Integer ): Integer; pascal;
     Empty3: function: Integer; pascal;
     Empty4: function: Integer; pascal;
     Empty5: procedure; pascal;
-    Empty6: function(p1: Integer): Integer; pascal;
-    Empty7: function(p1: Integer): Integer; pascal;
-    Empty8: function(p1: Integer): Integer; pascal;
-    Empty9: function(p1: Integer): Integer; pascal;
-    Empty10: function(p1: Integer): Integer; pascal;
-    Empty11: function(p1: Integer): Integer; pascal;
-    Empty12: function(p1: Integer): Integer; pascal;
+    Empty6: function( p1: Integer ): Integer; pascal;
+    Empty7: function( p1: Integer ): Integer; pascal;
+    Empty8: function( p1: Integer ): Integer; pascal;
+    Empty9: function( p1: Integer ): Integer; pascal;
+    Empty10: function( p1: Integer ): Integer; pascal;
+    Empty11: function( p1: Integer ): Integer; pascal;
+    Empty12: function( p1: Integer ): Integer; pascal;
 
-    MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+    MultiLineMessage: function( MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar;
+      ParentMessageLine: TMessageLine ): TMessageLine; pascal;
   end;
 
-{
-  TPathTimestampCallback = procedure(UserData: Pointer; Path: PAnsiChar; Timestamp: Longint); pascal;
+  {
+    TPathTimestampCallback = procedure(UserData: Pointer; Path: PAnsiChar; Timestamp: Longint); pascal;
 
-  PPascalComInOut160 = ^TPascalComInOut160;
-  TPascalComInOut160 = packed record
-    Open: function(const Filename: PAnsiChar): THandle; pascal;
-    Create: function(const Filename: PAnsiChar): THandle; pascal;
-    CreateV: function(const Filename: PAnsiChar): THandle; pascal;
-    Close: procedure(hFile: THandle); pascal;
-    Flush: procedure(hFile: THandle); pascal;
-    Seek: function(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
-    Read: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
-    Write: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
-    FileNameDate: function(const Filename: PAnsiChar): Integer; pascal;
-    FileStatus: function(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
+    PPascalComInOut160 = ^TPascalComInOut160;
+    TPascalComInOut160 = packed record
+      Open: function(const Filename: PAnsiChar): THandle; pascal;
+      Create: function(const Filename: PAnsiChar): THandle; pascal;
+      CreateV: function(const Filename: PAnsiChar): THandle; pascal;
+      Close: procedure(hFile: THandle); pascal;
+      Flush: procedure(hFile: THandle); pascal;
+      Seek: function(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
+      Read: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+      Write: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+      FileNameDate: function(const Filename: PAnsiChar): Integer; pascal;
+      FileStatus: function(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
 
-    GetCurTime: function: Integer; pascal;
-    BMessage: procedure(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar); pascal;
-    Progress: function(Kind: TProgKind; const Filename: PAnsiChar; CurLines, TotalLines: Integer): Integer; pascal;
+      GetCurTime: function: Integer; pascal;
+      BMessage: procedure(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar); pascal;
+      Progress: function(Kind: TProgKind; const Filename: PAnsiChar; CurLines, TotalLines: Integer): Integer; pascal;
 
-    Empty1: function(p1, p2, p3: Integer): Integer; pascal;
-    Empty2: function(p1, p2, p3: Integer): Integer; pascal;
-    Empty3: function: Integer; pascal;
-    Empty4: function: Integer; pascal;
-    Empty5: procedure; pascal;
-    Empty6: function(p1: Integer): Integer; pascal;
-    Empty7: function(p1: Integer): Integer; pascal;
-    Empty8: function(p1: Integer): Integer; pascal;
-    Empty9: function(p1: Integer): Integer; pascal;
-    Empty10: function(p1: Integer): Integer; pascal;
-    Empty11: function(p1: Integer): Integer; pascal;
-    Empty12: function(p1: Integer): Integer; pascal;
+      Empty1: function(p1, p2, p3: Integer): Integer; pascal;
+      Empty2: function(p1, p2, p3: Integer): Integer; pascal;
+      Empty3: function: Integer; pascal;
+      Empty4: function: Integer; pascal;
+      Empty5: procedure; pascal;
+      Empty6: function(p1: Integer): Integer; pascal;
+      Empty7: function(p1: Integer): Integer; pascal;
+      Empty8: function(p1: Integer): Integer; pascal;
+      Empty9: function(p1: Integer): Integer; pascal;
+      Empty10: function(p1: Integer): Integer; pascal;
+      Empty11: function(p1: Integer): Integer; pascal;
+      Empty12: function(p1: Integer): Integer; pascal;
 
-    MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
-    EnumPathTimestamps: procedure(CallCount: Integer; UserData: Pointer; Path: PAnsiChar; Callback: TPathTimestampCallback); pascal;
-  end;
-}
+      MultiLineMessage: function(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar; Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+      EnumPathTimestamps: procedure(CallCount: Integer; UserData: Pointer; Path: PAnsiChar; Callback: TPathTimestampCallback); pascal;
+    end;
+  }
 
-{procedure CppInitialize(const ComInOut: TComInOut); stdcall;
-  external 'bccide.dll' name 'CppInitialize';}
+  {procedure CppInitialize(const ComInOut: TComInOut); stdcall;
+    external 'bccide.dll' name 'CppInitialize';}
 
 var
-//  ComInOut: TComInOut;
-//  OrgComInOut: PComInOut;
-//  OrgCppStreamData: TOrgStreamData;
-//  OrgRcComInOut: PComInOut;
-  PascalComInOut: PPascalComInOut;
-  OrgPascalComInOut: TPascalComInOut;
+  //  ComInOut: TComInOut;
+  //  OrgComInOut: PComInOut;
+  //  OrgCppStreamData: TOrgStreamData;
+  //  OrgRcComInOut: PComInOut;
+  PascalComInOut    : PPascalComInOut;
+  OrgPascalComInOut : TPascalComInOut;
   OrgPascalStreamData: TOrgStreamData;
   /// <summary>Set by <see cref="FiniCompileInterceptor"/>: the interceptor never initialises (or patches) again.</summary>
   InterceptorFinalized: Boolean = False;
 
-function StrFileExt(P: PAnsiChar): PAnsiChar;
+function StrFileExt( P: PAnsiChar ): PAnsiChar;
 begin
-  Result := nil;
+  Result            := nil;
   if P <> nil then
-    while (P^ <> #0) do
+    while ( P^ <> #0 ) do
     begin
-      if (P^ = '.') then
-        Result := P
-      else if (P^ = '\') or (P^ = '/') then
-        Result := nil;
-      Inc(P);
+      if ( P^ = '.' ) then
+        Result      := P
+      else if ( P^ = '\' ) or ( P^ = '/' ) then
+        Result      := nil;
+      Inc( P );
     end;
   if Result = nil then
-    Result := P; // points to #0
+    Result          := P; // points to #0
 end;
 {
 function StrIsAscii(P: PAnsiChar): Boolean;
@@ -293,46 +294,46 @@ begin
 end;
 }
 
-function UTF8Encode(US: PWideChar): RawByteString;
+function UTF8Encode( US: PWideChar ): RawByteString;
 var
-  L: Integer;
-  Temp: UTF8String;
+  L                 : Integer;
+  Temp              : UTF8String;
 begin
-  Result := '';
+  Result            := '';
   if US = '' then Exit;
-  L := lstrlenW(US);
-  SetLength(Temp, L * 3); // SetLength includes space for null terminator
+  L                 := lstrlenW( US );
+  SetLength( Temp, L * 3 ); // SetLength includes space for null terminator
 
-  L := UnicodeToUtf8(PAnsiChar(Temp), Length(Temp) + 1, US, L);
+  L                 := UnicodeToUtf8( PAnsiChar( Temp ), Length( Temp ) + 1, US, L );
   if L > 0 then
-    SetLength(Temp, L - 1)
+    SetLength( Temp, L - 1 )
   else
-    Temp := '';
-  Result := Temp;
+    Temp            := '';
+  Result            := Temp;
   if Result <> '' then
-    SetCodePage(Result, CP_UTF8, False);
+    SetCodePage( Result, CP_UTF8, False );
 end;
 
 { TOpenFile }
 
-constructor TOpenFile.Create(const AFilename: UTF8String; AHandle: THandle;
-  AStream: TStream; AOwnsStream: Boolean);
+constructor TOpenFile.Create( const AFilename: UTF8String; AHandle: THandle;
+  AStream: TStream; AOwnsStream: Boolean );
 begin
   inherited Create;
-  FFilename := AFilename;
-  FHandle := AHandle;
-  FOwnsStream := AOwnsStream;
-  FStream := AStream;
+  FFilename         := AFilename;
+  FHandle           := AHandle;
+  FOwnsStream       := AOwnsStream;
+  FStream           := AStream;
 end;
 
-constructor TOpenFile.Create(const AFilename: UTF8String; AHandle: THandle;
-  AVirtualStream: IVirtualStream);
+constructor TOpenFile.Create( const AFilename: UTF8String; AHandle: THandle;
+  AVirtualStream: IVirtualStream );
 begin
   inherited Create;
-  FFilename := AFilename;
-  FHandle := AHandle;
-  FOwnsStream := False;
-  FVirtualStream := AVirtualStream;
+  FFilename         := AFilename;
+  FHandle           := AHandle;
+  FOwnsStream       := False;
+  FVirtualStream    := AVirtualStream;
 end;
 
 destructor TOpenFile.Destroy;
@@ -344,112 +345,112 @@ end;
 
 { TCachedOrgStream }
 
-constructor TCachedOrgStream.Create(hFile: THandle; AOrgStreamData: POrgStreamData; ASize: Integer);
+constructor TCachedOrgStream.Create( hFile: THandle; AOrgStreamData: POrgStreamData; ASize: Integer );
 var
-  Buf: array[0..4096 - 1] of Byte; // Compiler reads with 4096 bytes and the org-callback returns corrupt data with other values
-  BufRead: Integer;
-  FileDate: Integer;
+  Buf               : array[ 0..4096 - 1 ] of Byte; // Compiler reads with 4096 bytes and the org-callback returns corrupt data with other values
+  BufRead           : Integer;
+  FileDate          : Integer;
 begin
   if ASize = -1 then
-    AOrgStreamData.FileStatus(hFile, FileDate, ASize);
+    AOrgStreamData.FileStatus( hFile, FileDate, ASize );
   if ASize > 0 then
-    Capacity := ASize;
+    Capacity        := ASize;
   repeat
-    BufRead := AOrgStreamData.Read(hFile, @Buf[0], SizeOf(Buf));
+    BufRead         := AOrgStreamData.Read( hFile, @Buf[ 0 ], SizeOf( Buf ) );
     if BufRead > 0 then
-      Write(Buf[0], BufRead);
+      Write( Buf[ 0 ], BufRead );
   until BufRead <= 0;
-  Position := 0;
+  Position          := 0;
 end;
 
-function ReadFileContent(const Filename: string): TMemoryStream;
+function ReadFileContent( const Filename: string ): TMemoryStream;
 var
-  h: THandle;
-  S: UTF8String;
+  h                 : THandle;
+  S                 : UTF8String;
 begin
-  S := UTF8Encode(Filename);
+  S                 := UTF8Encode( Filename );
 
-  h := OrgPascalComInOut.Open(PAnsiChar(S));
+  h                 := OrgPascalComInOut.Open( PAnsiChar( S ) );
   if h <> INVALID_HANDLE_VALUE then
   begin
     try
-      Result := TCachedOrgStream.Create(h, @OrgPascalStreamData, 0);
+      Result        := TCachedOrgStream.Create( h, @OrgPascalStreamData, 0 );
     finally
-      OrgPascalComInOut.Close(h);
+      OrgPascalComInOut.Close( h );
     end;
   end
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-function OpenCompilerFile(const Filename: PAnsiChar; OrgStreamData: POrgStreamData): TOpenFile;
+function OpenCompilerFile( const Filename: PAnsiChar; OrgStreamData: POrgStreamData ): TOpenFile;
 var
-  Stream: TStream;
-  hFile: THandle;
-  VirtualStream: IVirtualStream;
-  Services: TCompileInterceptorServices;
+  Stream            : TStream;
+  hFile             : THandle;
+  VirtualStream     : IVirtualStream;
+  Services          : TCompileInterceptorServices;
 begin
-  hFile := INVALID_HANDLE_VALUE;
-  Result := TOpenFile(INVALID_HANDLE_VALUE);
-  Stream := nil;
+  hFile             := INVALID_HANDLE_VALUE;
+  Result            := TOpenFile( INVALID_HANDLE_VALUE );
+  Stream            := nil;
   // Read the services once: FiniCompileInterceptor may clear the global while the compiler is in this call
-  Services := CompileInterceptorServices;
+  Services          := CompileInterceptorServices;
   try
     if ( Services <> nil ) and Services.HasInspectFilename then
-      Services.InspectFilename(Filename, ifmOpen);
+      Services.InspectFilename( Filename, ifmOpen );
     if ( Services <> nil ) and Services.HasVirtualFiles then
-      if Services.OpenVirtualFile(Filename, VirtualStream) then
+      if Services.OpenVirtualFile( Filename, VirtualStream ) then
         if VirtualStream = nil then
           Exit;
     if VirtualStream = nil then
     begin
-      hFile := OrgStreamData.Open(Filename);
+      hFile         := OrgStreamData.Open( Filename );
       if hFile <> INVALID_HANDLE_VALUE then
       begin
         if ( Services <> nil ) and Services.HasAlterFile then
         begin
-          Stream := TCachedOrgStream.Create(hFile, OrgStreamData, 0);
-          VirtualStream := Services.AlterFile(Filename, TCachedOrgStream(Stream).Memory, 0, Stream.Size);
+          Stream    := TCachedOrgStream.Create( hFile, OrgStreamData, 0 );
+          VirtualStream := Services.AlterFile( Filename, TCachedOrgStream( Stream ).Memory, 0, Stream.Size );
           if VirtualStream <> nil then
-            FreeAndNil(Stream);
+            FreeAndNil( Stream );
         end
         else
         begin
           {if StrIComp(StrFileExt(Filename), '.inc') = 0 then
             Stream := TCachedOrgStream.Create(hFile, OrgStreamData)
           else}
-            Stream := TOrgStream.Create(hFile, OrgStreamData);
+          Stream    := TOrgStream.Create( hFile, OrgStreamData );
         end;
       end
       else
       begin
-        Result := TOpenFile(INVALID_HANDLE_VALUE);
+        Result      := TOpenFile( INVALID_HANDLE_VALUE );
         Exit;
       end;
     end
     else
-      hFile := INVALID_HANDLE_VALUE;
+      hFile         := INVALID_HANDLE_VALUE;
 
     if VirtualStream <> nil then
-      Result := TOpenFile.Create(Filename, hFile, VirtualStream)
+      Result        := TOpenFile.Create( Filename, hFile, VirtualStream )
     else
-      Result := TOpenFile.Create(Filename, hFile, Stream, True);
+      Result        := TOpenFile.Create( Filename, hFile, Stream, True );
   except
     // Bare except: an object raised by another module's RTL misses "on E: Exception" and would otherwise
     // escape into the compiler
     begin
-      OrgPascalComInOut.BMessage(mkWarning, 0, Filename, 0, 0, 0,
-        PAnsiChar(UTF8Encode('CompilerInterceptor: ' + ExceptObjectText(ExceptObject))));
+      OrgPascalComInOut.BMessage( mkWarning, 0, Filename, 0, 0, 0,
+        PAnsiChar( UTF8Encode( 'CompilerInterceptor: ' + ExceptObjectText( ExceptObject ) ) ) );
 
-      if (Result <> nil) and (Result <> TOpenFile(INVALID_HANDLE_VALUE)) then
+      if ( Result <> nil ) and ( Result <> TOpenFile( INVALID_HANDLE_VALUE ) ) then
         Result.Free
       else
         Stream.Free;
 
       if hFile <> INVALID_HANDLE_VALUE then
-        Result := TOpenFile.Create(Filename, hFile, TOrgStream.Create(hFile, OrgStreamData), True)
+        Result      := TOpenFile.Create( Filename, hFile, TOrgStream.Create( hFile, OrgStreamData ), True )
       else
-        Result := TOpenFile(INVALID_HANDLE_VALUE);
+        Result      := TOpenFile( INVALID_HANDLE_VALUE );
     end;
   end;
 end;
@@ -574,230 +575,234 @@ end;
 { Pascal Compiler Callbacks                                                    }
 {------------------------------------------------------------------------------}
 
-function OpenPascalFile(const Filename: PAnsiChar): THandle; pascal;
+function OpenPascalFile( const Filename: PAnsiChar ): THandle; pascal;
 begin
-  Result := THandle(OpenCompilerFile(Filename, @OrgPascalStreamData));
+  Result            := THandle( OpenCompilerFile( Filename, @OrgPascalStreamData ) );
   if Result <> INVALID_HANDLE_VALUE then
-    MyHandles.Add(Pointer(Result), Pointer(1));
+    MyHandles.Add( Pointer( Result ), Pointer( 1 ) );
   //WriteLn(LogFile, 'OpenFile(', Filename, ') = ', IntToHex(Result, 8));
 end;
 
-function CreatePascalFile(const Filename: PAnsiChar): THandle; pascal;
+function CreatePascalFile( const Filename: PAnsiChar ): THandle; pascal;
 var
-  hFile: THandle;
-  VirtualStream: IVirtualOutStream;
-  Services: TCompileInterceptorServices;
+  hFile             : THandle;
+  VirtualStream     : IVirtualOutStream;
+  Services          : TCompileInterceptorServices;
 begin
-  Result := INVALID_HANDLE_VALUE;
-  Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  Result            := INVALID_HANDLE_VALUE;
+  Services          := CompileInterceptorServices; // read once, see OpenCompilerFile
   { WriteCache is not possible because Compiler calls SeekPascalFile() }
   if ( Services <> nil ) and Services.HasInspectFilename then
-    Services.InspectFilename(Filename, ifmCreate);
+    Services.InspectFilename( Filename, ifmCreate );
   if ( Services <> nil ) and Services.HasVirtualOutFiles then
-    if Services.CreateVirtualFile(Filename, {out} VirtualStream) then
+    if Services.CreateVirtualFile( Filename, {out} VirtualStream ) then
       if VirtualStream = nil then
         Exit;
   if VirtualStream <> nil then
   begin
-    Result := THandle(TOpenFile.Create(Filename, INVALID_HANDLE_VALUE, VirtualStream));
-    MyHandles.Add(Pointer(Result), Pointer(1));
+    Result          := THandle( TOpenFile.Create( Filename, INVALID_HANDLE_VALUE, VirtualStream ) );
+    MyHandles.Add( Pointer( Result ), Pointer( 1 ) );
   end
   else
   begin
-    hFile := OrgPascalComInOut.Create(Filename);
+    hFile           := OrgPascalComInOut.Create( Filename );
     if hFile <> INVALID_HANDLE_VALUE then
     begin
-      Result := THandle(TOpenFile.Create(Filename, hFile, TOrgStream.Create(hFile, @OrgPascalStreamData), True));
-      MyHandles.Add(Pointer(Result), Pointer(1));
+      Result        := THandle( TOpenFile.Create( Filename, hFile, TOrgStream.Create( hFile, @OrgPascalStreamData ), True ) );
+      MyHandles.Add( Pointer( Result ), Pointer( 1 ) );
     end;
   end;
   //WriteLn(LogFile, 'CreateFile(', Filename, ') = ', IntToHex(Result, 8));
 end;
 
-function CreateVPascalFile(const Filename: PAnsiChar): THandle; pascal;
+function CreateVPascalFile( const Filename: PAnsiChar ): THandle; pascal;
 var
-  hFile: THandle;
-  VirtualStream: IVirtualOutStream;
-  Services: TCompileInterceptorServices;
+  hFile             : THandle;
+  VirtualStream     : IVirtualOutStream;
+  Services          : TCompileInterceptorServices;
 begin
-  Result := INVALID_HANDLE_VALUE;
-  Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  Result            := INVALID_HANDLE_VALUE;
+  Services          := CompileInterceptorServices; // read once, see OpenCompilerFile
   { WriteCache is not possible because Compiler calls SeekPascalFile() }
   if ( Services <> nil ) and Services.HasInspectFilename then
-    Services.InspectFilename(Filename, ifmCreate);
+    Services.InspectFilename( Filename, ifmCreate );
   if ( Services <> nil ) and Services.HasVirtualOutFiles then
-    if Services.CreateVirtualFile(Filename, {out} VirtualStream) then
+    if Services.CreateVirtualFile( Filename, {out} VirtualStream ) then
       if VirtualStream = nil then
         Exit;
   if VirtualStream <> nil then
   begin
-    Result := THandle(TOpenFile.Create(Filename, INVALID_HANDLE_VALUE, VirtualStream));
-    MyHandles.Add(Pointer(Result), Pointer(1));
+    Result          := THandle( TOpenFile.Create( Filename, INVALID_HANDLE_VALUE, VirtualStream ) );
+    MyHandles.Add( Pointer( Result ), Pointer( 1 ) );
   end
   else
   begin
-    hFile := OrgPascalComInOut.CreateV(Filename);
+    hFile           := OrgPascalComInOut.CreateV( Filename );
     if hFile <> INVALID_HANDLE_VALUE then
     begin
-      Result := THandle(TOpenFile.Create(Filename, hFile, TOrgStream.Create(hFile, @OrgPascalStreamData), True));
-      MyHandles.Add(Pointer(Result), Pointer(1));
+      Result        := THandle( TOpenFile.Create( Filename, hFile, TOrgStream.Create( hFile, @OrgPascalStreamData ), True ) );
+      MyHandles.Add( Pointer( Result ), Pointer( 1 ) );
     end;
   end;
   //WriteLn(LogFile, 'CreateFileV(', Filename, ') = ', IntToHex(Result, 8));
 end;
 
-procedure ClosePascalFile(hFile: THandle); pascal;
+procedure ClosePascalFile( hFile: THandle ); pascal;
 var
-  h: THandle;
+  h                 : THandle;
 begin
-  if (hFile > 11) and (hFile <> INVALID_HANDLE_VALUE) then // do not close standard handles
+  if ( hFile > 11 ) and ( hFile <> INVALID_HANDLE_VALUE ) then // do not close standard handles
   begin
-    if MyHandles.Remove(Pointer(hFile)) <> nil then
+    if MyHandles.Remove( Pointer( hFile ) ) <> nil then
     begin
-      h := TOpenFile(hFile).Handle;
+      h             := TOpenFile( hFile ).Handle;
       //WriteLn(LogFile, 'CloseFile(', TOpenFile(hFile).Filename, ')');
-      TOpenFile(hFile).Free;
+      TOpenFile( hFile ).Free;
     end
     else
-      h := hFile;
+      h             := hFile;
     if h <> INVALID_HANDLE_VALUE then
-      OrgPascalComInOut.Close(h);
+      OrgPascalComInOut.Close( h );
   end;
 end;
 
-procedure FlushPascalFile(hFile: THandle); pascal;
+procedure FlushPascalFile( hFile: THandle ); pascal;
 begin
-  if (hFile > 11) and (hFile <> INVALID_HANDLE_VALUE) and MyHandles.Exists(Pointer(hFile)) then
+  if ( hFile > 11 ) and ( hFile <> INVALID_HANDLE_VALUE ) and MyHandles.Exists( Pointer( hFile ) ) then
   begin
-    if TOpenFile(hFile).Handle <> INVALID_HANDLE_VALUE then
-      OrgPascalComInOut.Flush(TOpenFile(hFile).Handle);
+    if TOpenFile( hFile ).Handle <> INVALID_HANDLE_VALUE then
+      OrgPascalComInOut.Flush( TOpenFile( hFile ).Handle );
   end
   else
-    OrgPascalComInOut.Flush(hFile);
+    OrgPascalComInOut.Flush( hFile );
 end;
 
-function SeekPascalFile(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
+function SeekPascalFile( hFile: THandle; Offset, Origin: Integer ): Integer; pascal;
 begin
   //WriteLn(LogFile, 'SeekFile(', TOpenFile(hFile).Filename, ', ', Offset, ', ', Origin, ')');
-  if (hFile <> INVALID_HANDLE_VALUE) and MyHandles.Exists(Pointer(hFile)) then
+  if ( hFile <> INVALID_HANDLE_VALUE ) and MyHandles.Exists( Pointer( hFile ) ) then
   begin
-    if TOpenFile(hFile).Stream <> nil then
-      Result := TOpenFile(hFile).Stream.Seek(Offset, Origin)
+    if TOpenFile( hFile ).Stream <> nil then
+      Result        := TOpenFile( hFile ).Stream.Seek( Offset, Origin )
     else
-      Result := TOpenFile(hFile).VirtualStream.Seek(Offset, Origin);
+      Result        := TOpenFile( hFile ).VirtualStream.Seek( Offset, Origin );
   end
   else
-    Result := OrgPascalComInOut.Seek(hFile, Offset, Origin);
+    Result          := OrgPascalComInOut.Seek( hFile, Offset, Origin );
 end;
 
-function ReadPascalFile(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+function ReadPascalFile( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
 begin
   //WriteLn(LogFile, 'ReadFile(', TOpenFile(hFile).Filename, ', ', Size, ')');
-  if (hFile <> INVALID_HANDLE_VALUE) and MyHandles.Exists(Pointer(hFile)) then
+  if ( hFile <> INVALID_HANDLE_VALUE ) and MyHandles.Exists( Pointer( hFile ) ) then
   begin
-    if TOpenFile(hFile).Stream <> nil then
-      Result := TOpenFile(hFile).Stream.Read(Buffer^, Size)
+    if TOpenFile( hFile ).Stream <> nil then
+      Result        := TOpenFile( hFile ).Stream.Read( Buffer^, Size )
     else
-      Result := TOpenFile(hFile).VirtualStream.Read(Buffer^, Size);
+      Result        := TOpenFile( hFile ).VirtualStream.Read( Buffer^, Size );
   end
   else
-    Result := OrgPascalComInOut.Read(hFile, Buffer, Size);
+    Result          := OrgPascalComInOut.Read( hFile, Buffer, Size );
 end;
 
-function WritePascalFile(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+function WritePascalFile( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
 begin
   //WriteLn(LogFile, 'WriteFile(', TOpenFile(hFile).Filename, ', ', Size, ')');
-  if (hFile <> INVALID_HANDLE_VALUE) and MyHandles.Exists(Pointer(hFile)) then
+  if ( hFile <> INVALID_HANDLE_VALUE ) and MyHandles.Exists( Pointer( hFile ) ) then
   begin
-    if TOpenFile(hFile).Stream <> nil then
-      Result := TOpenFile(hFile).Stream.Write(Buffer^, Size)
+    if TOpenFile( hFile ).Stream <> nil then
+      Result        := TOpenFile( hFile ).Stream.Write( Buffer^, Size )
     else
-      Result := IVirtualOutStream(TOpenFile(hFile).VirtualStream).Write(Buffer^, Size);
+      Result        := IVirtualOutStream( TOpenFile( hFile ).VirtualStream ).Write( Buffer^, Size );
   end
   else
-    Result := OrgPascalComInOut.Write(hFile, Buffer, Size);
+    Result          := OrgPascalComInOut.Write( hFile, Buffer, Size );
 end;
 
-function FileStatusPascalFile(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
+function FileStatusPascalFile( hFile: THandle; out FileDate: Integer; out FileSize: Integer ): Integer; pascal;
 begin
-  if (hFile <> INVALID_HANDLE_VALUE) and MyHandles.Exists(Pointer(hFile)) then
+  if ( hFile <> INVALID_HANDLE_VALUE ) and MyHandles.Exists( Pointer( hFile ) ) then
   begin
-    if TOpenFile(hFile).Stream <> nil then
-      Result := OrgPascalComInOut.FileStatus(TOpenFile(hFile).Handle, FileDate, FileSize)
+    if TOpenFile( hFile ).Stream <> nil then
+      Result        := OrgPascalComInOut.FileStatus( TOpenFile( hFile ).Handle, FileDate, FileSize )
     else
     begin
-      TOpenFile(hFile).VirtualStream.FileStatus(FileDate, FileSize);
+      TOpenFile( hFile ).VirtualStream.FileStatus( FileDate, FileSize );
       if FileDate = 0 then
-        OrgPascalComInOut.FileStatus(TOpenFile(hFile).Handle, FileDate, Result);
-      if FileSize > 1 then Result := 0 else Result := -1;
+        OrgPascalComInOut.FileStatus( TOpenFile( hFile ).Handle, FileDate, Result );
+      if FileSize > 1 then
+        Result      := 0
+      else
+        Result      := -1;
     end;
   end
   else
-    Result := OrgPascalComInOut.FileStatus(hFile, FileDate, FileSize);
+    Result          := OrgPascalComInOut.FileStatus( hFile, FileDate, FileSize );
   //WriteLn(LogFile, 'FileStatus(', TOpenFile(hFile).Filename, ', ', FileDate, ', ', FileSize, ')');
 end;
 
-function FileNameDate(const Filename: PAnsiChar): Integer; pascal;
+function FileNameDate( const Filename: PAnsiChar ): Integer; pascal;
 begin
-  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  var Services      := CompileInterceptorServices; // read once, see OpenCompilerFile
   if ( Services <> nil ) and Services.HasFileNameDate then
-    if Services.FileNameDate(FileName, {out} Result) then
+    if Services.FileNameDate( FileName, {out} Result ) then
       Exit;
-  Result := OrgPascalComInOut.FileNameDate(FileName);
+  Result            := OrgPascalComInOut.FileNameDate( FileName );
 end;
 
-procedure BMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
-  Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar); pascal;
+procedure BMessagePascal( MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
+  Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar ); pascal;
 
-  procedure AlterMessage(Services: TCompileInterceptorServices);
+  procedure AlterMessage( Services: TCompileInterceptorServices );
   var
-    FilenameS, MsgS: UTF8String;
+    FilenameS, MsgS : UTF8String;
   begin
-    FilenameS := Filename;
-    MsgS := Msg;
-    if Services.AlterMessage(False, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
+    FilenameS       := Filename;
+    MsgS            := Msg;
+    if Services.AlterMessage( False, MsgKind, Code, FilenameS, Line, StartColumn, MsgS ) then
     begin
       if MsgS <> '' then
-        OrgPascalComInOut.BMessage(MsgKind, Code, PAnsiChar(FilenameS), Line, StartColumn, EndColumn, PAnsiChar(MsgS));
+        OrgPascalComInOut.BMessage( MsgKind, Code, PAnsiChar( FilenameS ), Line, StartColumn, EndColumn, PAnsiChar( MsgS ) );
     end
     else
-      OrgPascalComInOut.BMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg);
+      OrgPascalComInOut.BMessage( MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg );
   end;
 
 begin
-  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  var Services      := CompileInterceptorServices; // read once, see OpenCompilerFile
   if ( Services <> nil ) and Services.HasAlterMessage then
-    AlterMessage(Services)
+    AlterMessage( Services )
   else
-    OrgPascalComInOut.BMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg);
+    OrgPascalComInOut.BMessage( MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg );
 end;
 
-function MultiLineMessagePascal(MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
-  Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine): TMessageLine; pascal;
+function MultiLineMessagePascal( MsgKind: TMsgKind; Code: Integer; const Filename: PAnsiChar;
+  Line, StartColumn, EndColumn: Integer; const Msg: PAnsiChar; ParentMessageLine: TMessageLine ): TMessageLine; pascal;
 
-  procedure AlterMessage(Services: TCompileInterceptorServices);
+  procedure AlterMessage( Services: TCompileInterceptorServices );
   var
-    FilenameS, MsgS: UTF8String;
+    FilenameS, MsgS : UTF8String;
   begin
-    FilenameS := Filename;
-    MsgS := Msg;
-    if Services.AlterMessage(True, MsgKind, Code, FilenameS, Line, StartColumn, MsgS) then
+    FilenameS       := Filename;
+    MsgS            := Msg;
+    if Services.AlterMessage( True, MsgKind, Code, FilenameS, Line, StartColumn, MsgS ) then
     begin
       if MsgS <> '' then
-        Result := OrgPascalComInOut.MultiLineMessage(MsgKind, Code, PAnsiChar(FilenameS), Line, StartColumn, EndColumn, PAnsiChar(MsgS), ParentMessageLine)
+        Result              := OrgPascalComInOut.MultiLineMessage( MsgKind, Code, PAnsiChar( FilenameS ), Line, StartColumn, EndColumn, PAnsiChar( MsgS ),
+          ParentMessageLine )
       else
-        Result := nil;
+        Result      := nil;
     end
     else
-      Result := OrgPascalComInOut.MultiLineMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine);
+      Result        := OrgPascalComInOut.MultiLineMessage( MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine );
   end;
 
 begin
-  var Services := CompileInterceptorServices; // read once, see OpenCompilerFile
+  var Services      := CompileInterceptorServices; // read once, see OpenCompilerFile
   if ( Services <> nil ) and Services.HasAlterMessage then
-    AlterMessage(Services)
+    AlterMessage( Services )
   else
-    Result := OrgPascalComInOut.MultiLineMessage(MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine);
+    Result          := OrgPascalComInOut.MultiLineMessage( MsgKind, Code, Filename, Line, StartColumn, EndColumn, Msg, ParentMessageLine );
 end;
 
 {------------------------------------------------------------------------------}
@@ -821,11 +826,11 @@ end;
 
 procedure UpdateOrgStreamFunctions;
 begin
-//  OrgCppStreamData.Open := OrgComInOut.Open;
-//  OrgCppStreamData.Seek := OrgComInOut.Seek;
-//  OrgCppStreamData.Read := OrgComInOut.Read;
-//  OrgCppStreamData.Write := OrgComInOut.Write;
-//  OrgCppStreamData.FileStatus := OrgCppStreamData.FileStatus;
+  //  OrgCppStreamData.Open := OrgComInOut.Open;
+  //  OrgCppStreamData.Seek := OrgComInOut.Seek;
+  //  OrgCppStreamData.Read := OrgComInOut.Read;
+  //  OrgCppStreamData.Write := OrgComInOut.Write;
+  //  OrgCppStreamData.FileStatus := OrgCppStreamData.FileStatus;
 
   OrgPascalStreamData.Open := OrgPascalComInOut.Open;
   OrgPascalStreamData.Seek := OrgPascalComInOut.Seek;
@@ -847,7 +852,7 @@ const
 
   // >= 15
 //  sGetCppCallbacks = '@Pascppcominout@GetCppCallbacks$qqrv';
-  sGetDccCallbacks = '@Pascppcominout@GetDccCallbacks$qqrv';
+  sGetDccCallbacks  = '@Pascppcominout@GetDccCallbacks$qqrv';
 
   // in [5, 6, 7]
 //  CPPCompilerInitSymbol5 = '@Cominout@CPPCompilerInit$qqrpqqsr22Cominout@TCppCallbacks$v';
@@ -855,23 +860,22 @@ const
 
 var
   PascalWin32CompilerInitSymbol: PAnsiChar;
-//  CPPCompilerInitSymbol: PAnsiChar;
-//  AnsiCompilerInitSymbol: PAnsiChar;
+  //  CPPCompilerInitSymbol: PAnsiChar;
+  //  AnsiCompilerInitSymbol: PAnsiChar;
 
-//  GetCppCallbacks: function: PComInOut;
-  GetDccCallbacks: function: PPascalComInOut;
+  //  GetCppCallbacks: function: PComInOut;
+  GetDccCallbacks   : function: PPascalComInOut;
 
-
-//  Proc: ^PComInOut;
-  PascalProc: ^PPascalComInOut;
-  Services: IOTAServices50;
+  //  Proc: ^PComInOut;
+  PascalProc        : ^PPascalComInOut;
+  Services          : IOTAServices50;
 begin
-  if Assigned(CompileInterceptorServices) or InterceptorFinalized then
+  if Assigned( CompileInterceptorServices ) or InterceptorFinalized then
     Exit;
 
-  CompileInterceptorServices := TCompileInterceptorServices.Create(nil);
+  CompileInterceptorServices := TCompileInterceptorServices.Create( nil );
 
-  {$IFDEF WIN64}
+{$IFDEF WIN64}
   // Win64: SetPascalComInOut rewrites the Pascal compiler's I/O callback table by
   // pointer arithmetic into delphicoreide_bpl's TPascalComInOut record. The record
   // layout (8-byte function pointers, no 'pascal' calling convention) differs on x64,
@@ -882,76 +886,74 @@ begin
   // here too, and an IDE notifier registered from a DLL is the shape behind the
   // v3.17.6 Win64 teardown crash.
   Exit;
-  {$ENDIF}
+{$ENDIF}
 
   if DelphiVer < 15 then
   begin
     if DelphiVer = 9 then
     begin
-  //    CPPCompilerInitSymbol := CPPCompilerInitSymbol9;
+      //    CPPCompilerInitSymbol := CPPCompilerInitSymbol9;
       PascalWin32CompilerInitSymbol := PascalWin32CompilerInitSymbol9;
-  //    AnsiCompilerInitSymbol := CPPCompilerInitSymbol9;
+      //    AnsiCompilerInitSymbol := CPPCompilerInitSymbol9;
     end
-    else
-    if DelphiVer >= 10 then
+    else if DelphiVer >= 10 then
     begin
-  //    CPPCompilerInitSymbol := CPPCompilerInitSymbol10;
+      //    CPPCompilerInitSymbol := CPPCompilerInitSymbol10;
       PascalWin32CompilerInitSymbol := PascalWin32CompilerInitSymbol10;
-  //    AnsiCompilerInitSymbol := AnsiCompilerInitSymbol10;
+      //    AnsiCompilerInitSymbol := AnsiCompilerInitSymbol10;
     end
     else
     begin
-  //    CPPCompilerInitSymbol := CPPCompilerInitSymbol5;
+      //    CPPCompilerInitSymbol := CPPCompilerInitSymbol5;
       PascalWin32CompilerInitSymbol := PascalWin32CompilerInitSymbol5;
-  //    AnsiCompilerInitSymbol := CPPCompilerInitSymbol5;
+      //    AnsiCompilerInitSymbol := CPPCompilerInitSymbol5;
     end;
 
-  //  Proc := GetProcAddress(GetModuleHandle(delphicoreide_bpl), CPPCompilerInitSymbol);
-  //  if Proc <> nil then
-  //  begin
-  //    Proc := Pointer(Cardinal(Proc) + 1);
-  //    OrgComInOut := Proc^;
-  //    ComInOut := OrgComInOut^;
-  //
-  //{    ComInOut.Open := Compiler_Open;
-  //    ComInOut.Create := Compiler_Create;
-  //    ComInOut.Close := Compiler_Close;
-  //    ComInOut.Seek := Compiler_Seek;
-  //    ComInOut.Read := Compiler_Read;
-  //    ComInOut.Write := Compiler_Write;
-  //    ComInOut.FileNameDate := Compiler_FileNameDate;
-  //    ComInOut.FileStatus := Compiler_FileStatus;
-  //
-  //    ComInOut.PostDependentFilename := Compiler_PostDependentFilename;
-  //    ComInOut.BMessage := Compiler_BMessage;
-  //    ComInOut.CompilerMessage := Compiler_MultiLineMessage;
-  //    if DelphiVer >= 15 then
-  //      ComInOut.FileFlush := Compiler_FileFlush;
-  //}
-  //
-  //    //CppInitialize(ComInOut);
-  //  end;
+    //  Proc := GetProcAddress(GetModuleHandle(delphicoreide_bpl), CPPCompilerInitSymbol);
+    //  if Proc <> nil then
+    //  begin
+    //    Proc := Pointer(Cardinal(Proc) + 1);
+    //    OrgComInOut := Proc^;
+    //    ComInOut := OrgComInOut^;
+    //
+    //{    ComInOut.Open := Compiler_Open;
+    //    ComInOut.Create := Compiler_Create;
+    //    ComInOut.Close := Compiler_Close;
+    //    ComInOut.Seek := Compiler_Seek;
+    //    ComInOut.Read := Compiler_Read;
+    //    ComInOut.Write := Compiler_Write;
+    //    ComInOut.FileNameDate := Compiler_FileNameDate;
+    //    ComInOut.FileStatus := Compiler_FileStatus;
+    //
+    //    ComInOut.PostDependentFilename := Compiler_PostDependentFilename;
+    //    ComInOut.BMessage := Compiler_BMessage;
+    //    ComInOut.CompilerMessage := Compiler_MultiLineMessage;
+    //    if DelphiVer >= 15 then
+    //      ComInOut.FileFlush := Compiler_FileFlush;
+    //}
+    //
+    //    //CppInitialize(ComInOut);
+    //  end;
 
+    //  if DelphiVer >= 10 then
+    //  begin
+    //    Proc := GetProcAddress(GetModuleHandle(delphicoreide_bpl), AnsiCompilerInitSymbol);
+    //    if Proc <> nil then
+    //    begin
+    //      Proc := Pointer(Cardinal(Proc) + 1);
+    //      OrgRcComInOut := Proc^;
+    //    end;
+    //  end
+    //  else
+    //    OrgRcComInOut := OrgComInOut;
 
-  //  if DelphiVer >= 10 then
-  //  begin
-  //    Proc := GetProcAddress(GetModuleHandle(delphicoreide_bpl), AnsiCompilerInitSymbol);
-  //    if Proc <> nil then
-  //    begin
-  //      Proc := Pointer(Cardinal(Proc) + 1);
-  //      OrgRcComInOut := Proc^;
-  //    end;
-  //  end
-  //  else
-  //    OrgRcComInOut := OrgComInOut;
-
-    PascalProc := GetProcAddress(GetModuleHandle(delphicoreide_bpl), PascalWin32CompilerInitSymbol);
+    PascalProc      := GetProcAddress( GetModuleHandle( delphicoreide_bpl ), PascalWin32CompilerInitSymbol );
     if PascalProc <> nil then
     begin
       if DelphiVer >= 10 then
-        PascalProc := Pointer(Cardinal(PascalProc) + 10)
+        PascalProc  := Pointer( Cardinal( PascalProc ) + 10 )
       else
-        PascalProc := Pointer(Cardinal(PascalProc) + 1);
+        PascalProc  := Pointer( Cardinal( PascalProc ) + 1 );
       PascalComInOut := PascalProc^;
       OrgPascalComInOut := PascalComInOut^;
 
@@ -962,10 +964,10 @@ begin
   else
   begin
     // Delphi XE+
-    GetDccCallbacks := GetProcAddress(GetModuleHandle(delphicoreide_bpl), sGetDccCallbacks);
-    if Assigned(GetDccCallbacks) then
+    GetDccCallbacks := GetProcAddress( GetModuleHandle( delphicoreide_bpl ), sGetDccCallbacks );
+    if Assigned( GetDccCallbacks ) then
     begin
-      PascalComInOut := GetDccCallbacks();
+      PascalComInOut := GetDccCallbacks( );
       OrgPascalComInOut := PascalComInOut^;
 
       SetPascalComInOut;
@@ -976,9 +978,9 @@ begin
   //AssignFile(LogFile, 'C:\Debug.txt');
   //Rewrite(LogFile);
 
-  IDENotifier := TIDENotifier.Create(nil);
-  if SupportsIDEServices(Services) then
-    NotifierId := Services.AddNotifier(IDENotifier);
+  IDENotifier       := TIDENotifier.Create( nil );
+  if SupportsIDEServices( Services ) then
+    NotifierId      := Services.AddNotifier( IDENotifier );
 end;
 
 /// <summary>
@@ -1015,9 +1017,9 @@ end;
 
 procedure FiniCompileInterceptor;
 var
-  Services: IOTAServices50;
+  Services          : IOTAServices50;
 begin
-  if not Assigned(CompileInterceptorServices) then
+  if not Assigned( CompileInterceptorServices ) then
     Exit;
   // From here on GetCompileInterceptorServices returns nil instead of re-initialising and re-patching
   InterceptorFinalized := True;
@@ -1026,16 +1028,16 @@ begin
   if PascalComInOut <> nil then
   begin
     RestoreHookedSlots;
-    PascalComInOut := nil;
+    PascalComInOut  := nil;
   end;
 
-  if (NotifierId <> 0) and SupportsIDEServices(Services) then
-    Services.RemoveNotifier(NotifierId);
-  NotifierId := 0;
-  FreeAndNil(IDENotifier);
+  if ( NotifierId <> 0 ) and SupportsIDEServices( Services ) then
+    Services.RemoveNotifier( NotifierId );
+  NotifierId        := 0;
+  FreeAndNil( IDENotifier );
 
   // Clear the global before freeing, so a hook already running on the compiler thread sees nil
-  var OldServices := CompileInterceptorServices;
+  var OldServices   := CompileInterceptorServices;
   CompileInterceptorServices := nil;
   OldServices.Free;
 end;
@@ -1058,49 +1060,49 @@ procedure TIDENotifier.Destroyed;
 begin
 end;
 
-procedure TIDENotifier.FileNotification(NotifyCode: TOTAFileNotification; const FileName: string;
-  var Cancel: Boolean);
+procedure TIDENotifier.FileNotification( NotifyCode: TOTAFileNotification; const FileName: string;
+  var Cancel: Boolean );
 begin
 end;
 
-procedure TIDENotifier.AfterCompile(Succeeded: Boolean);
+procedure TIDENotifier.AfterCompile( Succeeded: Boolean );
 begin
 end;
 
-procedure TIDENotifier.AfterCompile(Succeeded, IsCodeInsight: Boolean);
+procedure TIDENotifier.AfterCompile( Succeeded, IsCodeInsight: Boolean );
 begin
 end;
 
-procedure TIDENotifier.BeforeCompile(const Project: IInterface; var Cancel: Boolean);
+procedure TIDENotifier.BeforeCompile( const Project: IInterface; var Cancel: Boolean );
 begin
 end;
 
-function ReplaceMacros(const S: string; IgnoreList: TStrings = nil): string;
+function ReplaceMacros( const S: string; IgnoreList: TStrings = nil ): string;
 var
-  I, K: Integer;
-  Len: Integer;
+  I, K              : Integer;
+  Len               : Integer;
   MacroName, MacroValue: string;
-  MyIgnoreList: Boolean;
+  MyIgnoreList      : Boolean;
 begin
-  Result := S;
-  Len := Length(S);
-  I := Pos('$(', S);
+  Result            := S;
+  Len               := Length( S );
+  I                 := Pos( '$(', S );
   if I = 0 then
     Exit; // nothing to do
 
-  MyIgnoreList := False;
+  MyIgnoreList      := False;
   try
     while I <= Len do
     begin
-      if (I < Len) and (Result[I] = '$') and (Result[I + 1] = '(') then
+      if ( I < Len ) and ( Result[ I ] = '$' ) and ( Result[ I + 1 ] = '(' ) then
       begin
-        K := I + 2;
-        while (K <= Len) and (Result[K] <> ')') do
-          Inc(K);
-        MacroName := Copy(Result, I + 2, K - I - 2);
-        if (IgnoreList = nil) or (IgnoreList.IndexOf(MacroName) = -1) then
+        K           := I + 2;
+        while ( K <= Len ) and ( Result[ K ] <> ')' ) do
+          Inc( K );
+        MacroName   := Copy( Result, I + 2, K - I - 2 );
+        if ( IgnoreList = nil ) or ( IgnoreList.IndexOf( MacroName ) = -1 ) then
         begin
-          Delete(Result, I, K - I + 1);
+          Delete( Result, I, K - I + 1 );
           if MacroName <> '' then
           begin
             if IgnoreList = nil then
@@ -1108,21 +1110,21 @@ begin
               IgnoreList := TStringList.Create;
               MyIgnoreList := True;
             end;
-            K := IgnoreList.Add(MacroName);
+            K       := IgnoreList.Add( MacroName );
             try
               { The IDE puts all macros to the Environment Variables list }
-              MacroValue := ReplaceMacros(GetEnvironmentVariable(MacroName), IgnoreList);
+              MacroValue := ReplaceMacros( GetEnvironmentVariable( MacroName ), IgnoreList );
             finally
-              IgnoreList.Delete(K);
+              IgnoreList.Delete( K );
             end;
-            Insert(MacroValue, Result, I);
-            Inc(I, Length(MacroValue));
+            Insert( MacroValue, Result, I );
+            Inc( I, Length( MacroValue ) );
           end;
-          Len := Length(Result);
-          Dec(I);
+          Len       := Length( Result );
+          Dec( I );
         end;
       end;
-      Inc(I);
+      Inc( I );
     end;
   finally
     if MyIgnoreList then
@@ -1132,30 +1134,30 @@ end;
 
 function GetGlobalLibraryPath: string;
 var
-  Services: IOTAServices50;
+  Services          : IOTAServices50;
 begin
-  if SupportsIDEServices(Services) then
+  if SupportsIDEServices( Services ) then
     { VarToStr makes the string unique in our memory manager }
-    Result := VarToStr(Services.GetEnvironmentOptions.Values['LibraryPath'])
+    Result          := VarToStr( Services.GetEnvironmentOptions.Values[ 'LibraryPath' ] )
   else
-    Result := '';
+    Result          := '';
 end;
 
-procedure TIDENotifier.BeforeCompile(const Project: IInterface; IsCodeInsight: Boolean;
-  var Cancel: Boolean);
+procedure TIDENotifier.BeforeCompile( const Project: IInterface; IsCodeInsight: Boolean;
+  var Cancel: Boolean );
 var
-{  Names: TOTAOptionNameArray;
-  I: Integer;
-  f: TextFile;}
-  Options: IOTAOptions;
-  ProjectFilename: string;
+  {  Names: TOTAOptionNameArray;
+    I: Integer;
+    f: TextFile;}
+  Options           : IOTAOptions;
+  ProjectFilename   : string;
   SourcePaths, UnitPaths, DcuOutputDir: string;
-  Prj: IOTAProject;
-  Services: TCompileInterceptorServices;
+  Prj               : IOTAProject;
+  Services          : TCompileInterceptorServices;
 begin
   // Every compile ( Code Insight ones too ) arrives here: do the option and path work only when an
   // interceptor asked for CompileProject
-  Services := CompileInterceptorServices;
+  Services          := CompileInterceptorServices;
   if ( Services = nil ) or not Services.HasCompileProjects then
     Exit;
   try
@@ -1163,28 +1165,28 @@ begin
     if Project <> nil then
     begin
       { Project Options }
-      Options := nil;
+      Options       := nil;
       case DelphiVer of
-        1..4: raise Exception.Create('Delphi version is not supported');
-        5: Options := IOTAProject_50(Project).ProjectOptions;
-        6: Options := IOTAProject_60(Project).ProjectOptions;
-        7: Options := IOTAProject_70(Project).ProjectOptions;
+        1..4: raise Exception.Create( 'Delphi version is not supported' );
+        5: Options  := IOTAProject_50( Project ).ProjectOptions;
+        6: Options  := IOTAProject_60( Project ).ProjectOptions;
+        7: Options  := IOTAProject_70( Project ).ProjectOptions;
         9..14:
           begin
-            if Supports(Project, IOTAProject90_140, Prj) then
+            if Supports( Project, IOTAProject90_140, Prj ) then
             begin
-              if (IOTAProject90_140(Prj).Personality = sDelphiPersonality) or
-                 (IOTAProject90_140(Prj).Personality = sDelphiDotNetPersonality) then
-                Options := IOTAProject90_140(Prj).ProjectOptions
+              if ( IOTAProject90_140( Prj ).Personality = sDelphiPersonality ) or
+                ( IOTAProject90_140( Prj ).Personality = sDelphiDotNetPersonality ) then
+                Options := IOTAProject90_140( Prj ).ProjectOptions
               else
                 Exit; // nothing to do
             end;
           end;
       else
-        if Supports(Project, IOTAProject, Prj) then
+        if Supports( Project, IOTAProject, Prj ) then
         begin
-          if (Prj.Personality = sDelphiPersonality) or
-             (Prj.Personality = sDelphiDotNetPersonality) then
+          if ( Prj.Personality = sDelphiPersonality ) or
+            ( Prj.Personality = sDelphiDotNetPersonality ) then
             Options := Prj.ProjectOptions
           else
             Exit; // nothing to do
@@ -1193,41 +1195,41 @@ begin
       if Options <> nil then
       begin
         { VarToStr makes the string unique in our memory manager }
-        DcuOutputDir := ReplaceMacros(VarToStr(Options.Values['UnitOutputDir']));
-        UnitPaths := VarToStr(Options.Values['UnitDir']);
-        Options := nil;
+        DcuOutputDir := ReplaceMacros( VarToStr( Options.Values[ 'UnitOutputDir' ] ) );
+        UnitPaths   := VarToStr( Options.Values[ 'UnitDir' ] );
+        Options     := nil;
       end;
-      ProjectFilename := IOTAModule40(Project).FileName;
+      ProjectFilename := IOTAModule40( Project ).FileName;
     end;
 
     { Environment Options }
 
-    UnitPaths := ReplaceMacros(CombineSearchPaths(UnitPaths, GetGlobalLibraryPath()));
+    UnitPaths       := ReplaceMacros( CombineSearchPaths( UnitPaths, GetGlobalLibraryPath( ) ) );
 
-    SourcePaths := UnitPaths;
-    Services.CompileProject(ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir,
-      IsCodeInsight, Cancel);
+    SourcePaths     := UnitPaths;
+    Services.CompileProject( ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir,
+      IsCodeInsight, Cancel );
 
-
-  {  Names := Options.GetOptionNames;
-    AssignFile(f, 'C:\EnvNames.txt');
-    Rewrite(f);
-    for I := 0 to High(Names) do
-      WriteLn(f, Names[I].Name, ' = ', VarToStr(Options.Values[Names[I].Name]));
-    CloseFile(f);}
+    {  Names := Options.GetOptionNames;
+      AssignFile(f, 'C:\EnvNames.txt');
+      Rewrite(f);
+      for I := 0 to High(Names) do
+        WriteLn(f, Names[I].Name, ' = ', VarToStr(Options.Values[Names[I].Name]));
+      CloseFile(f);}
   except
     // Bare except: an object raised by another module's RTL misses "on E: Exception"
-    if Assigned(OrgPascalComInOut.BMessage) then
-      OrgPascalComInOut.BMessage(mkWarning, 0, '', 0, 0, 0,
-        PAnsiChar(UTF8Encode('CompilerInterceptor: ' + ExceptObjectText(ExceptObject))));
+    if Assigned( OrgPascalComInOut.BMessage ) then
+      OrgPascalComInOut.BMessage( mkWarning, 0, '', 0, 0, 0,
+        PAnsiChar( UTF8Encode( 'CompilerInterceptor: ' + ExceptObjectText( ExceptObject ) ) ) );
   end;
 end;
 
 initialization
-  MyHandles := TBucketList.Create(bl64);
+  MyHandles         := TBucketList.Create( bl64 );
 
 finalization
   FiniCompileInterceptor;
-  FreeAndNil(MyHandles);
+  FreeAndNil( MyHandles );
 
 end.
+

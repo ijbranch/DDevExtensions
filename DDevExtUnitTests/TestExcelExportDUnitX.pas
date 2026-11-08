@@ -14,7 +14,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the Excel export's cell-text escaping.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestExcelExport = class
   public
     /// <summary>
@@ -23,33 +23,33 @@ type
     /// instead of being evaluated (or rejected) as a formula.
     /// </summary>
     /// <param name="AText">Cell text starting with a formula character.</param>
-    [Test]
-    [NamedTestCase( 'Equals', '=SUM(A1)' )]
-    [NamedTestCase( 'Plus', '+A1' )]
-    [NamedTestCase( 'Minus', '-x' )]
-    [NamedTestCase( 'MinusExpression', '-1+2' )]
-    [NamedTestCase( 'At', '@Unit' )]
+    [ Test ]
+    [ NamedTestCase( 'Equals', '=SUM(A1)' ) ]
+    [ NamedTestCase( 'Plus', '+A1' ) ]
+    [ NamedTestCase( 'Minus', '-x' ) ]
+    [ NamedTestCase( 'MinusExpression', '-1+2' ) ]
+    [ NamedTestCase( 'At', '@Unit' ) ]
     procedure TestFormulaStartIsPrefixed( const AText: string );
     /// <summary>
     /// Proves ordinary text, text containing a formula character later on, and the empty
     /// string pass through unchanged, so the escaping never alters normal names and paths.
     /// </summary>
     /// <param name="AText">Cell text that Excel would not evaluate.</param>
-    [Test]
-    [NamedTestCase( 'Name', 'UnitMain' )]
-    [NamedTestCase( 'Path', 'C:\Src\a=b.pas' )]
-    [NamedTestCase( 'Number', '123' )]
-    [NamedTestCase( 'Empty', '' )]
+    [ Test ]
+    [ NamedTestCase( 'Name', 'UnitMain' ) ]
+    [ NamedTestCase( 'Path', 'C:\Src\a=b.pas' ) ]
+    [ NamedTestCase( 'Number', '123' ) ]
+    [ NamedTestCase( 'Empty', '' ) ]
     procedure TestOrdinaryTextIsUnchanged( const AText: string );
     /// <summary>
     /// Proves a signed number ( "-5", "-0.3", "+1" ) is not given the text prefix although it
     /// starts with '-' or '+', so numeric columns such as a negative value stay numeric in Excel.
     /// </summary>
     /// <param name="AText">Signed number as shown in the list view.</param>
-    [Test]
-    [NamedTestCase( 'NegativeInteger', '-5' )]
-    [NamedTestCase( 'NegativeFraction', '-0.3' )]
-    [NamedTestCase( 'PositiveInteger', '+1' )]
+    [ Test ]
+    [ NamedTestCase( 'NegativeInteger', '-5' ) ]
+    [ NamedTestCase( 'NegativeFraction', '-0.3' ) ]
+    [ NamedTestCase( 'PositiveInteger', '+1' ) ]
     procedure TestSignedNumberStaysNumeric( const AText: string );
   end;
 
@@ -77,3 +77,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestExcelExport );
 
 end.
+

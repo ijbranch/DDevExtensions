@@ -69,7 +69,7 @@ end;
 procedure TFrameOptionPageUnusedUnitDetector.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TUnusedUnitDetectorPlugin;
+  FPlugin           := UserData as TUnusedUnitDetectorPlugin;
 
 end;
 
@@ -78,17 +78,17 @@ begin
 
   chkEnabled.Checked := FPlugin.Enabled;
   memoIgnoreList.Lines.Assign( FPlugin.IgnoreList );
-  memoIgnoreList.Hint     := UnusedUnitInlineNote;
+  memoIgnoreList.Hint := UnusedUnitInlineNote;
   memoIgnoreList.ShowHint := True;
 
 end;
 
 procedure TFrameOptionPageUnusedUnitDetector.SaveData;
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   FPlugin.IgnoreList.Clear;
 
   for I := 0 to memoIgnoreList.Lines.Count - 1 do
@@ -110,3 +110,4 @@ begin
 end;
 
 end.
+

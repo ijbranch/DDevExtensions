@@ -32,22 +32,22 @@ type
   /// Specialised <see cref="Vcl.ComCtrls.TListView"/> that fixes Clear() in OwnerData mode: when every item is deleted
   /// it does not fetch each item (OnData) first, which makes bulk clears much faster.
   /// </summary>
-  TListView = class(Vcl.ComCtrls.TListView)
+  TListView = class( Vcl.ComCtrls.TListView )
   protected
     /// <summary>Intercepts CN_NOTIFY/LVN_DELETEALLITEMS to short-circuit OwnerData clears.</summary>
     /// <param name="Message">The forwarded notification.</param>
-    procedure CNNotify(var Message: TWMNotifyLV); message CN_NOTIFY;
+    procedure CNNotify( var Message: TWMNotifyLV ); message CN_NOTIFY;
   end;
 
   /// <summary>Predicate used to decide whether a given filter string matches.</summary>
-  TFilterListViewDataEvent = function(Sender: TObject; const S: string): Boolean of object;
+  TFilterListViewDataEvent = function( Sender: TObject; const S: string ): Boolean of object;
 
   /// <summary>
   /// Per-row metadata captured from the project for one project file: image index, open
   /// state, display and disk names, the matching form name/caption (when any) and the
   /// relative path used by the IDE.
   /// </summary>
-  TInfo = class(TObject)
+  TInfo = class( TObject )
   public
     /// <summary>Resource icon index used in the list view.</summary>
     ImageIndex: Integer;
@@ -68,15 +68,15 @@ type
   end;
 
   /// <summary>Strongly typed list of <see cref="TInfo"/> entries owning its items.</summary>
-  TInfoList = class(TObjectList)
+  TInfoList = class( TObjectList )
   private
     /// <summary>Returns the <see cref="TInfo"/> at <paramref name="Index"/>.</summary>
     /// <param name="Index">Zero-based index of the entry.</param>
     /// <returns>The entry at Index.</returns>
-    function GetItem(Index: NativeInt): TInfo;
+    function GetItem( Index: NativeInt ): TInfo;
   public
     /// <summary>Default indexed access to the contained items.</summary>
-    property Items[Index: NativeInt]: TInfo read GetItem; default;
+    property Items[ Index: NativeInt ]: TInfo read GetItem; default;
   end;
 
   TFormFileSelector = class;
@@ -85,7 +85,7 @@ type
   /// Background worker that resolves per-row resource type and form metadata so the
   /// list view can display correct icons without blocking the UI thread.
   /// </summary>
-  TResourceTypeThread = class(TThread)
+  TResourceTypeThread = class( TThread )
   private
     /// <summary>The owning selector form whose data is being enriched.</summary>
     FForm: TFormFileSelector;
@@ -100,7 +100,7 @@ type
   public
     /// <summary>Creates the worker bound to the supplied selector form.</summary>
     /// <param name="AForm">The owning <see cref="TFormFileSelector"/>.</param>
-    constructor Create(AForm: TFormFileSelector);
+    constructor Create( AForm: TFormFileSelector );
   end;
 
   /// <summary>
@@ -108,7 +108,7 @@ type
   /// unit name, file name, form name or form caption, supports an "insert units" queue
   /// for Use clauses manipulation, and offers an Excel export of the visible rows.
   /// </summary>
-  TFormFileSelector = class(TFormBase)
+  TFormFileSelector = class( TFormBase )
     /// <summary>List view showing the filtered project files.</summary>
     ListView: TListView;
     /// <summary>Container for the form's actions.</summary>
@@ -184,137 +184,137 @@ type
     /// <param name="Index">Index of the item being drawn.</param>
     /// <param name="Rect">Area to draw the item in.</param>
     /// <param name="State">The item's owner-draw state.</param>
-    procedure cbxFilterFieldDrawItem(Control: TWinControl; Index: Integer;
-      Rect: TRect; State: TOwnerDrawState);
+    procedure cbxFilterFieldDrawItem( Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState );
     /// <summary>Updates the active filter column when the combo selection changes.</summary>
     /// <param name="Sender">The filter-field combo box.</param>
-    procedure cbxFilterFieldChange(Sender: TObject);
+    procedure cbxFilterFieldChange( Sender: TObject );
     /// <summary>Handles Enter in the filter edit to commit the search immediately.</summary>
     /// <param name="Sender">The filter edit.</param>
     /// <param name="Key">The character typed; set to #0 when it is Enter.</param>
-    procedure edtFilterKeyPress(Sender: TObject; var Key: Char);
+    procedure edtFilterKeyPress( Sender: TObject; var Key: Char );
     /// <summary>Sends key-downs from the filter edit to the list view (for navigation), except Alt+F4, Delete, Left, Right,
     /// Home/End without Ctrl and Shift/Ctrl+Insert, which stay in the edit and are also offered to ListViewKeyDown.</summary>
     /// <param name="Sender">The filter edit.</param>
     /// <param name="Key">The key pressed; set to 0 when it is sent to the list view.</param>
     /// <param name="Shift">The modifier keys held.</param>
-    procedure edtFilterKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure edtFilterKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
     /// <summary>Restarts the debounce timer when the filter text changes.</summary>
     /// <param name="Sender">The filter edit.</param>
-    procedure edtFilterChange(Sender: TObject);
+    procedure edtFilterChange( Sender: TObject );
     /// <summary>Performs the debounced filter rebuild after typing pauses.</summary>
     /// <param name="Sender">The filter debounce timer.</param>
-    procedure TimerFilterUpdateTimer(Sender: TObject);
+    procedure TimerFilterUpdateTimer( Sender: TObject );
     /// <summary>Exports the currently filtered list to an Excel workbook.</summary>
     /// <param name="Sender">The Export to Excel action.</param>
-    procedure ActionExportToExcelExecute(Sender: TObject);
+    procedure ActionExportToExcelExecute( Sender: TObject );
     /// <summary>Double-click on a row: clicks Use Unit when it is visible and enabled, otherwise Open when enabled.</summary>
     /// <param name="Sender">The file list view.</param>
-    procedure ListViewDblClick(Sender: TObject);
+    procedure ListViewDblClick( Sender: TObject );
     /// <summary>On a right-click, selects the row under the mouse so the context menu acts on it.</summary>
     /// <param name="Sender">The list view clicked.</param>
     /// <param name="Button">The mouse button pressed.</param>
     /// <param name="Shift">The modifier keys held.</param>
     /// <param name="X">Horizontal client position of the click.</param>
     /// <param name="Y">Vertical client position of the click.</param>
-    procedure ListViewMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    procedure ListViewMouseDown( Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer );
     /// <summary>Sorts by the clicked column: a new column sorts descending first, the same column again reverses the order.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Column">The column whose header was clicked.</param>
-    procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
+    procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Initialises the form: filter combo, list view columns, settings, etc.</summary>
     /// <param name="Sender">The form.</param>
-    procedure FormCreate(Sender: TObject);
+    procedure FormCreate( Sender: TObject );
     /// <summary>Repaints the filter edit when it gains focus.</summary>
     /// <param name="Sender">The filter edit.</param>
-    procedure edtFilterEnter(Sender: TObject);
+    procedure edtFilterEnter( Sender: TObject );
     /// <summary>Repaints the filter edit when it loses focus.</summary>
     /// <param name="Sender">The filter edit.</param>
-    procedure edtFilterExit(Sender: TObject);
+    procedure edtFilterExit( Sender: TObject );
     /// <summary>Clears the global FormFileSelector reference and frees the row lists.</summary>
     /// <param name="Sender">The form.</param>
-    procedure FormDestroy(Sender: TObject);
+    procedure FormDestroy( Sender: TObject );
     /// <summary>Owner-draws an item in the directory filter combo.</summary>
     /// <param name="Control">The directory filter combo box.</param>
     /// <param name="Index">Index of the item being drawn; an empty item is shown as '.'.</param>
     /// <param name="Rect">Area to draw the item in.</param>
     /// <param name="State">The item's owner-draw state.</param>
-    procedure cbxFilterDirectoryDrawItem(Control: TWinControl; Index: Integer;
-      Rect: TRect; State: TOwnerDrawState);
+    procedure cbxFilterDirectoryDrawItem( Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState );
     /// <summary>Updates the directory filter when the combo selection changes.</summary>
     /// <param name="Sender">The directory filter combo box.</param>
-    procedure cbxFilterDirectoryChange(Sender: TObject);
+    procedure cbxFilterDirectoryChange( Sender: TObject );
     /// <summary>List view shortcuts: Ctrl+A selects all, Ctrl+Enter opens, Shift+Enter uses the units in the interface section,
     /// and pressing Shift unchecks "use in implementation".</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Key">The key pressed; set to 0 when a shortcut handles it.</param>
     /// <param name="Shift">The modifier keys held.</param>
-    procedure ListViewKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure ListViewKeyDown( Sender: TObject; var Key: Word;
+      Shift: TShiftState );
     /// <summary>Draws opened files in blue, units already in the interface uses in bold (implementation uses: bold and underlined)
     /// and shades every other row.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Item">The row being drawn.</param>
     /// <param name="State">The row's draw state.</param>
     /// <param name="DefaultDraw">Set True so the list view still draws the row.</param>
-    procedure ListViewCustomDrawItem(Sender: TCustomListView; Item: TListItem;
-      State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure ListViewCustomDrawItem( Sender: TCustomListView; Item: TListItem;
+      State: TCustomDrawState; var DefaultDraw: Boolean );
     /// <summary>Builds the tooltip for the hovered row: file name and size, plus the form name and file when the unit has a .dfm.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Item">The hovered row.</param>
     /// <param name="InfoTip">Receives the tooltip text.</param>
-    procedure ListViewInfoTip(Sender: TObject; Item: TListItem; var InfoTip: string);
+    procedure ListViewInfoTip( Sender: TObject; Item: TListItem; var InfoTip: string );
     /// <summary>OwnerData callback that supplies a list item from the filtered cache.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Item">The item to fill from the filtered row at its index.</param>
-    procedure ListViewData(Sender: TObject; Item: TListItem);
+    procedure ListViewData( Sender: TObject; Item: TListItem );
     /// <summary>Updates the action and button states when the list selection changes.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Item">The item whose selection changed.</param>
     /// <param name="Selected">True if Item became selected.</param>
-    procedure ListViewSelectItem(Sender: TObject; Item: TListItem;
-      Selected: Boolean);
+    procedure ListViewSelectItem( Sender: TObject; Item: TListItem;
+      Selected: Boolean );
     /// <summary>Stretches the directory filter combo to the toolbar's right edge when the form is resized.</summary>
     /// <param name="Sender">The form.</param>
-    procedure FormResize(Sender: TObject);
+    procedure FormResize( Sender: TObject );
     /// <summary>Context-menu handler that opens the highlighted file.</summary>
     /// <param name="Sender">The Open File menu item.</param>
-    procedure mniOpenFileClick(Sender: TObject);
+    procedure mniOpenFileClick( Sender: TObject );
     /// <summary>Re-checks "use in implementation" when Shift is released.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Key">The key released.</param>
     /// <param name="Shift">The modifier keys still held.</param>
-    procedure ListViewKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure ListViewKeyUp( Sender: TObject; var Key: Word; Shift: TShiftState );
     /// <summary>Sends key-ups from the filter edit to the list view, with the same exceptions as edtFilterKeyDown, which go to ListViewKeyUp.</summary>
     /// <param name="Sender">The filter edit.</param>
     /// <param name="Key">The key released; set to 0 when it is sent to the list view.</param>
     /// <param name="Shift">The modifier keys still held.</param>
-    procedure edtFilterKeyUp(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure edtFilterKeyUp( Sender: TObject; var Key: Word;
+      Shift: TShiftState );
     /// <summary>Delete removes the selected units from the queued insertion list.</summary>
     /// <param name="Sender">The queued insertion list view.</param>
     /// <param name="Key">The key pressed; set to 0 when it is Delete.</param>
     /// <param name="Shift">The modifier keys held.</param>
-    procedure ListViewInsertUnitsKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure ListViewInsertUnitsKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
     /// <summary>Enables the remove action only when items are selected.</summary>
     /// <param name="Sender">The Remove from Insert List action.</param>
-    procedure ActionRemoveFromInsertListUpdate(Sender: TObject);
+    procedure ActionRemoveFromInsertListUpdate( Sender: TObject );
     /// <summary>Removes the selected items from the queued insertion list.</summary>
     /// <param name="Sender">The Remove from Insert List action.</param>
-    procedure ActionRemoveFromInsertListExecute(Sender: TObject);
+    procedure ActionRemoveFromInsertListExecute( Sender: TObject );
     /// <summary>Enables the add action when several rows are selected, or one row that is not already queued.</summary>
     /// <param name="Sender">The Add to Insert List action.</param>
-    procedure ActionAddToInsertListUpdate(Sender: TObject);
+    procedure ActionAddToInsertListUpdate( Sender: TObject );
     /// <summary>Adds the selected main-list rows to the queued insertion list.</summary>
     /// <param name="Sender">The Add to Insert List action.</param>
-    procedure ActionAddToInsertListExecute(Sender: TObject);
+    procedure ActionAddToInsertListExecute( Sender: TObject );
     /// <summary>Enables the clear action only when the queue is non-empty.</summary>
     /// <param name="Sender">The Clear Insert List action.</param>
-    procedure ActionClearInsertListUpdate(Sender: TObject);
+    procedure ActionClearInsertListUpdate( Sender: TObject );
     /// <summary>Empties the queued insertion list.</summary>
     /// <param name="Sender">The Clear Insert List action.</param>
-    procedure ActionClearInsertListExecute(Sender: TObject);
+    procedure ActionClearInsertListExecute( Sender: TObject );
     /// <summary>Accepts drags from the queued insertion list back into the main list.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Source">The drag source; accepted only when it is the queued insertion list.</param>
@@ -322,14 +322,14 @@ type
     /// <param name="Y">Vertical client position of the drag.</param>
     /// <param name="State">The drag state.</param>
     /// <param name="Accept">Receives True when the drop is accepted.</param>
-    procedure ListViewDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
-      var Accept: Boolean);
+    procedure ListViewDragOver( Sender, Source: TObject; X, Y: Integer; State: TDragState;
+      var Accept: Boolean );
     /// <summary>A drop from the queued insertion list removes the selected units from that list.</summary>
     /// <param name="Sender">The file list view.</param>
     /// <param name="Source">The drag source.</param>
     /// <param name="X">Horizontal client position of the drop.</param>
     /// <param name="Y">Vertical client position of the drop.</param>
-    procedure ListViewDragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure ListViewDragDrop( Sender, Source: TObject; X, Y: Integer );
     /// <summary>Accepts drags from the main list into the queued insertion list.</summary>
     /// <param name="Sender">The queued insertion list view.</param>
     /// <param name="Source">The drag source; accepted only when it is the file list view.</param>
@@ -337,17 +337,17 @@ type
     /// <param name="Y">Vertical client position of the drag.</param>
     /// <param name="State">The drag state.</param>
     /// <param name="Accept">Receives True when the drop is accepted.</param>
-    procedure ListViewInsertUnitsDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState;
-      var Accept: Boolean);
+    procedure ListViewInsertUnitsDragOver( Sender, Source: TObject; X, Y: Integer; State: TDragState;
+      var Accept: Boolean );
     /// <summary>A drop from the file list adds its selected rows to the queued insertion list.</summary>
     /// <param name="Sender">The queued insertion list view.</param>
     /// <param name="Source">The drag source.</param>
     /// <param name="X">Horizontal client position of the drop.</param>
     /// <param name="Y">Vertical client position of the drop.</param>
-    procedure ListViewInsertUnitsDragDrop(Sender, Source: TObject; X, Y: Integer);
+    procedure ListViewInsertUnitsDragDrop( Sender, Source: TObject; X, Y: Integer );
     /// <summary>Pops up the options menu beneath the Options button.</summary>
     /// <param name="Sender">The Options button.</param>
-    procedure btnOptionsClick(Sender: TObject);
+    procedure btnOptionsClick( Sender: TObject );
   private
     /// <summary>Index of the column the free-text filter currently targets.</summary>
     FFilterField: Integer;
@@ -378,25 +378,25 @@ type
 
     /// <summary>Subclassed window proc used to forward keys from the filter edit.</summary>
     /// <param name="Msg">The forwarded window message.</param>
-    procedure FilerEditWndProc(var Msg: TMessage);
+    procedure FilerEditWndProc( var Msg: TMessage );
     /// <summary>Removes the requested unit identifiers from a uses clause via the supplied writer.</summary>
     /// <param name="Writer">Editor writer positioned at the source.</param>
     /// <param name="StopIndex">Position at which to stop searching.</param>
     /// <param name="DeleteUsesList">Items to delete (parsed entries).</param>
     /// <param name="UsesList">The full parsed uses list providing positions.</param>
-    procedure RemoveUsesUnits(Writer: IOTAEditWriter; StopIndex: Integer; DeleteUsesList: TList;
-      UsesList: TUsesList);
+    procedure RemoveUsesUnits( Writer: IOTAEditWriter; StopIndex: Integer; DeleteUsesList: TList;
+      UsesList: TUsesList );
   protected
     /// <summary>Tests whether <paramref name="Info"/> matches the active filters.</summary>
     /// <param name="Info">The candidate row.</param>
     /// <param name="NewSelLen">Receives the length of the matched prefix when applicable.</param>
     /// <returns>True when the row should be visible.</returns>
-    function FilterInfo(Info: TInfo; var NewSelLen: Integer): Boolean;
+    function FilterInfo( Info: TInfo; var NewSelLen: Integer ): Boolean;
     /// <summary>Tests S (lower-cased, with '.' appended) against the filter tokens: a token with a wildcard is matched with
     /// MatchStr, any other must occur in S.  One matching token is enough.</summary>
     /// <param name="S">The text to test, such as a unit or form name.</param>
     /// <returns>True when there is no filter or any token matches; False for an empty S under an active filter.</returns>
-    function FilterListViewData(S: string): Boolean;
+    function FilterListViewData( S: string ): Boolean;
 
     /// <summary>Enumerates project files and populates <see cref="FAllData"/>.</summary>
     procedure GetFilenames;
@@ -414,47 +414,47 @@ type
     /// <summary>Inserts the supplied <see cref="TInfo"/> files into the active editor's uses clause.</summary>
     /// <param name="Files">List of <see cref="TInfo"/> entries to insert.</param>
     /// <exception cref="Exception">Raised when the uses clause's insertion point cannot be located (sParseErrorUsesLocationNotFound).</exception>
-    procedure UseSelectedUnits(Files: TList);
+    procedure UseSelectedUnits( Files: TList );
     /// <summary>Finds the .pas source editor of the IDE's current module.</summary>
     /// <returns>The .pas source editor, or nil when the current module is not a .pas unit.</returns>
     function GetCurrentSourceEditor: IOTASourceEditor;
     /// <summary>Tells whether a project file is a compiled unit (.dcu or .dcuil) that cannot be opened as source.</summary>
     /// <param name="Filename">File to inspect.</param>
     /// <returns>True for a .dcu or .dcuil file.</returns>
-    function IsBinaryFile(const Filename: string): Boolean;
+    function IsBinaryFile( const Filename: string ): Boolean;
 
     /// <summary>Refreshes the enabled state of all command buttons.</summary>
     procedure RefreshButtons;
     /// <summary>Internal entry point for both Open and Use Unit modes.</summary>
     /// <param name="OpenMode">True to open files, false to insert them as uses.</param>
     /// <returns>True when the user accepted the dialog.</returns>
-    function InternExecute(OpenMode: Boolean): Boolean;
+    function InternExecute( OpenMode: Boolean ): Boolean;
   public
     /// <summary>Creates the form, allocating helper objects and initial state.</summary>
     /// <param name="AOwner">Owner component.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Releases helper objects and the worker thread before destruction.</summary>
     destructor Destroy; override;
 
     /// <summary>Convenience entry point that creates and modally executes the dialog.</summary>
     /// <param name="OpenMode">True to open the selected files, false to insert them.</param>
     /// <returns>True when the user confirmed the operation.</returns>
-    class function Execute(OpenMode: Boolean): Boolean;
+    class function Execute( OpenMode: Boolean ): Boolean;
   end;
 
 /// <summary>Returns true when the supplied string contains a wildcard character (* or ?).</summary>
 /// <param name="S">The filter token to inspect.</param>
 /// <returns>True if S contains * or ?.</returns>
-function ContainsAsterisk(const S: string): Boolean;
+function ContainsAsterisk( const S: string ): Boolean;
 /// <summary>Pattern-matches <paramref name="S"/> against <paramref name="MatchString"/> using ? and * wildcards.</summary>
 /// <param name="S">The text to match.</param>
 /// <param name="MatchString">The pattern, where ? matches one character and * any run of characters.</param>
 /// <returns>True if S matches the pattern (case-sensitive).</returns>
-function MatchStr(const S: string; const MatchString: string): Boolean;
+function MatchStr( const S: string; const MatchString: string ): Boolean;
 /// <summary>Splits <paramref name="Text"/> on spaces and adds each token to <paramref name="List"/>.</summary>
 /// <param name="Text">The filter text to split.</param>
 /// <param name="List">The list that receives the tokens.</param>
-procedure SplitFilterText(const Text: string; List: TStrings);
+procedure SplitFilterText( const Text: string; List: TStrings );
 
 implementation
 
@@ -464,18 +464,18 @@ uses
 {$R *.dfm}
 
 var
-  FormFileSelector: TFormFileSelector; // needed for the Sort() callback
-  CachedCurDir: string;
-  CachedDirs: string;
-  CachedFiles: TStrings;
-  CachedSources: TStrings;
+  FormFileSelector  : TFormFileSelector; // needed for the Sort() callback
+  CachedCurDir      : string;
+  CachedDirs        : string;
+  CachedFiles       : TStrings;
+  CachedSources     : TStrings;
 
 type
-  TOpenEdit = class(TEdit);
+  TOpenEdit = class( TEdit );
 
-{ TListView }
+  { TListView }
 
-procedure TListView.CNNotify(var Message: TWMNotifyLV);
+procedure TListView.CNNotify( var Message: TWMNotifyLV );
 begin
   case Message.NMHdr.code of
     LVN_DELETEALLITEMS:
@@ -492,37 +492,37 @@ end;
 
 { TInfoList }
 
-function TInfoList.GetItem(Index: NativeInt): TInfo;
+function TInfoList.GetItem( Index: NativeInt ): TInfo;
 begin
-  Result := TInfo(inherited Items[Index]);
+  Result            := TInfo( inherited Items[ Index ] );
 end;
 
-procedure SplitFilterText(const Text: string; List: TStrings);
+procedure SplitFilterText( const Text: string; List: TStrings );
 var
-  F, P: PChar;
-  S: string;
+  F, P              : PChar;
+  S                 : string;
 begin
-  P := PChar(Text);
-  while P[0] <> #0 do
+  P                 := PChar( Text );
+  while P[ 0 ] <> #0 do
   begin
-    while (P[0] <> #0) and (P[0] = ' ') do
-      Inc(P);
-    F := P;
-    while (P[0] <> #0) and (P[0] <> ' ') do
-      Inc(P);
-    SetString(S, F, P - F);
-    List.Add(S);
+    while ( P[ 0 ] <> #0 ) and ( P[ 0 ] = ' ' ) do
+      Inc( P );
+    F               := P;
+    while ( P[ 0 ] <> #0 ) and ( P[ 0 ] <> ' ' ) do
+      Inc( P );
+    SetString( S, F, P - F );
+    List.Add( S );
   end;
 end;
 
-function ContainsAsterisk(const S: string): Boolean;
+function ContainsAsterisk( const S: string ): Boolean;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  for I := 1 to Length(S) do
-    if (S[I] = '*') or (S[I] = '?') then
-      Exit(True);
-  Result := False;
+  for I := 1 to Length( S ) do
+    if ( S[ I ] = '*' ) or ( S[ I ] = '?' ) then
+      Exit( True );
+  Result            := False;
 end;
 
 { MatchStr - Pattern-Search
@@ -531,18 +531,18 @@ end;
   a??b
   a*b
 }
-function MatchStr(const S: string; const MatchString: string): Boolean;
+function MatchStr( const S: string; const MatchString: string ): Boolean;
 var
   SIndex, SLen, MatchIndex, MatchLen: Integer;
-  C: Char;
+  C                 : Char;
   LastMatchIndex, LastSIndex: Integer;
 begin
-  Result := False;
+  Result            := False;
 
-  SLen := Length(S);
-  MatchLen := Length(MatchString);
+  SLen              := Length( S );
+  MatchLen          := Length( MatchString );
 
-  if (MatchLen = 0) and (SLen <> 0) then
+  if ( MatchLen = 0 ) and ( SLen <> 0 ) then
     Exit;
 
   if SLen = 0 then
@@ -550,54 +550,53 @@ begin
     if MatchLen > 0 then
     begin
       for MatchIndex := 1 to MatchLen do
-        if MatchString[MatchIndex] <> '*' then
+        if MatchString[ MatchIndex ] <> '*' then
           Exit;
     end
     else
     begin
-      Result := True;
+      Result        := True;
       Exit;
     end;
   end;
-  SIndex := 1;
-  MatchIndex := 1;
-  LastMatchIndex := 0;
-  LastSIndex := 0;
+  SIndex            := 1;
+  MatchIndex        := 1;
+  LastMatchIndex    := 0;
+  LastSIndex        := 0;
 
-  Result := True;
-  while (SIndex <= SLen) do
+  Result            := True;
+  while ( SIndex <= SLen ) do
   begin
-    if (MatchIndex > MatchLen) then
+    if ( MatchIndex > MatchLen ) then
     begin
-      Result := False;
+      Result        := False;
       Break;
     end;
-    C := MatchString[MatchIndex];
+    C               := MatchString[ MatchIndex ];
     case C of
       '?':
-        Inc(MatchIndex);
+        Inc( MatchIndex );
       '*':
         begin
           LastMatchIndex := MatchIndex;
-          Inc(MatchIndex);
+          Inc( MatchIndex );
           if MatchIndex > MatchLen then
             Break;
-          C := MatchString[MatchIndex];
-          Inc(MatchIndex);
-          while (SIndex <= SLen) and (S[SIndex] <> C) do
-            Inc(SIndex);
+          C         := MatchString[ MatchIndex ];
+          Inc( MatchIndex );
+          while ( SIndex <= SLen ) and ( S[ SIndex ] <> C ) do
+            Inc( SIndex );
           if SIndex > SLen then
           begin
-            Result := False;
+            Result  := False;
             Break;
           end
-          else
-          if SIndex = SLen then
+          else if SIndex = SLen then
           begin
             if MatchIndex < MatchLen then
             begin
-              while (MatchIndex <= MatchLen) and (MatchString[MatchIndex] = '*') do
-                Inc(MatchIndex);
+              while ( MatchIndex <= MatchLen ) and ( MatchString[ MatchIndex ] = '*' ) do
+                Inc( MatchIndex );
               if MatchIndex <= MatchLen then
                 Result := False;
               Break;
@@ -606,71 +605,71 @@ begin
           LastSIndex := SIndex;
         end; // '*'
     else
-      if S[SIndex] <> C then
+      if S[ SIndex ] <> C then
       begin
-        if (LastMatchIndex > 0) then
+        if ( LastMatchIndex > 0 ) then
         begin
           MatchIndex := LastMatchIndex;
-          SIndex := LastSIndex + 1;
+          SIndex    := LastSIndex + 1;
           Continue;
         end;
-        Result := False;
+        Result      := False;
         Break;
       end
       else
-        Inc(MatchIndex);
+        Inc( MatchIndex );
     end; // case
-    Inc(SIndex);
+    Inc( SIndex );
   end; // while
 
-  if (SIndex > SLen) then
+  if ( SIndex > SLen ) then
   begin
-    while (MatchIndex <= MatchLen) do
+    while ( MatchIndex <= MatchLen ) do
     begin
-      if MatchString[MatchIndex] <> '*' then
+      if MatchString[ MatchIndex ] <> '*' then
       begin
-        Result := False;
+        Result      := False;
         Break;
       end;
-      Inc(MatchIndex);
+      Inc( MatchIndex );
     end;
   end;
 end;
 
 { TResourceTypeThread }
 
-constructor TResourceTypeThread.Create(AForm: TFormFileSelector);
+constructor TResourceTypeThread.Create( AForm: TFormFileSelector );
 begin
-  FForm := AForm;
-  SetLength(FItems, AForm.FAllData.Count);
+  FForm             := AForm;
+  SetLength( FItems, AForm.FAllData.Count );
   for var I := 0 to AForm.FAllData.Count - 1 do
-    FItems[I] := AForm.FAllData[I];
-  inherited Create(False);
+    FItems[ I ]     := AForm.FAllData[ I ];
+  inherited Create( False );
 end;
 
 procedure TResourceTypeThread.Execute;
 var
-  Index: Integer;
-  Info: TInfo;
+  Index             : Integer;
+  Info              : TInfo;
 begin
-  Index := 0;
-  while not Terminated and (Index < Length(FItems)) do
+  Index             := 0;
+  while not Terminated and ( Index < Length( FItems ) ) do
   begin
-    Info := FItems[Index];
-    if not Info.FormTypeDetected and (Info.ImageIndex = imgModuleForm) then
+    Info            := FItems[ Index ];
+    if not Info.FormTypeDetected and ( Info.ImageIndex = imgModuleForm ) then
     begin
       Info.FormTypeDetected := True;
-      case GetFormResourceType(Info.FileName, Info.FormName, Info.FormCaption) of
+      case GetFormResourceType( Info.FileName, Info.FormName, Info.FormCaption ) of
         ftFrame:
           Info.ImageIndex := imgModuleFrame;
         ftDataModule:
           Info.ImageIndex := imgModuleDataModule;
       end;
     end;
-    Inc(Index);
+    Inc( Index );
   end;
   if not Terminated then
-    Synchronize(UpdateImageIndex);
+    Synchronize( UpdateImageIndex );
   Terminate;
 end;
 
@@ -681,52 +680,52 @@ end;
 
 { TFormFileSelector }
 
-constructor TFormFileSelector.Create(AOwner: TComponent);
+constructor TFormFileSelector.Create( AOwner: TComponent );
 const
   // The first combo entry is RsFilterAllFields; default the filter to it rather
   // than coupling the index to an unrelated image-list constant.
-  cFilterAllFields = 0;
+  cFilterAllFields  = 0;
 var
-  i: Integer;
+  i                 : Integer;
 begin
-  inherited Create(AOwner);
-  FFilterTexts := TStringList.Create;
-  ToolBar.AutoSize := True;
+  inherited Create( AOwner );
+  FFilterTexts      := TStringList.Create;
+  ToolBar.AutoSize  := True;
   edtFilter.WindowProc := FilerEditWndProc;
 
   cbxFilterField.Items.Clear;
-  cbxFilterField.Items.Add(RsFilterAllFields);
+  cbxFilterField.Items.Add( RsFilterAllFields );
   for i := 0 to ListView.Columns.Count - 1 do
-    if ListView.Columns[i].Tag = 0 then
-      cbxFilterField.Items.Add(ListView.Columns[i].Caption);
+    if ListView.Columns[ i ].Tag = 0 then
+      cbxFilterField.Items.Add( ListView.Columns[ i ].Caption );
   cbxFilterField.ItemIndex := cFilterAllFields;
 end;
 
 destructor TFormFileSelector.Destroy;
 begin
   FFilterTexts.Free;
-  FParser.Free;   // created in InternExecute against the active editor; freed once here
+  FParser.Free; // created in InternExecute against the active editor; freed once here
   inherited Destroy;
 end;
 
-function TFormFileSelector.InternExecute(OpenMode: Boolean): Boolean;
+function TFormFileSelector.InternExecute( OpenMode: Boolean ): Boolean;
 var
-  I: Integer;
-  ActionServices: IOTAActionServices;
-  Module: IOTAModule;
-  Files: TList;
-  FileName: string;
+  I                 : Integer;
+  ActionServices    : IOTAActionServices;
+  Module            : IOTAModule;
+  Files             : TList;
+  FileName          : string;
 begin
-  Caption := sMenuItemDDevExtensionsFileSelector;
+  Caption           := sMenuItemDDevExtensionsFileSelector;
 
   if GetActiveProject <> nil then
-    StatusBar.Panels[1].Text := ' ' + ExtractFileName(GetActiveProject.FileName);
+    StatusBar.Panels[ 1 ].Text := ' ' + ExtractFileName( GetActiveProject.FileName );
 
   { Parse current module source code }
-  FEditor := GetCurrentSourceEditor;
+  FEditor           := GetCurrentSourceEditor;
   if FEditor <> nil then
   begin
-    FParser := TDesignerParser.Create(FEditor.FileName, GetEditorSource(FEditor));
+    FParser         := TDesignerParser.Create( FEditor.FileName, GetEditorSource( FEditor ) );
     try
       FParser.ParseUsesOnly;
       // A truncated parse (a compiler-directive error, or an include file that could not be read) may
@@ -734,7 +733,7 @@ begin
       // Said in the caption, not a modal box, so a harmless directive error does not interrupt every open.
       if FParser.ParseError then
       begin
-        Caption := Caption + ' - Use Unit unavailable: the unit could not be parsed completely';
+        Caption     := Caption + ' - Use Unit unavailable: the unit could not be parsed completely';
         Abort;
       end;
       if FParser.ModuleType <> mtUnit then
@@ -742,20 +741,20 @@ begin
     except
       on E: Exception do
       begin
-        if not (E is EAbort) then
-          Application.HandleException(Self);
-        FreeAndNil(FParser);
-        FEditor := nil;
+        if not ( E is EAbort ) then
+          Application.HandleException( Self );
+        FreeAndNil( FParser );
+        FEditor     := nil;
       end;
     end;
   end;
 
-  btnUseUnit.Visible := (FEditor <> nil) and not OpenMode;
+  btnUseUnit.Visible := ( FEditor <> nil ) and not OpenMode;
   chkUseUnitsImplementation.Visible := btnUseUnit.Visible;
   btnOptions.Visible := btnUseUnit.Visible;
   if not btnUseUnit.Visible then
   begin
-    btnOpen.Left := btnUseUnit.Left + btnUseUnit.Width - btnOpen.Width;
+    btnOpen.Left    := btnUseUnit.Left + btnUseUnit.Width - btnOpen.Width;
     btnOpen.Default := True;
   end;
 
@@ -764,54 +763,53 @@ begin
   //Sort;
   UpdateData;
 
-  FResourceTypeThread := TResourceTypeThread.Create(Self);
+  FResourceTypeThread := TResourceTypeThread.Create( Self );
   try
-    Result := (ShowModal in [mrOk, mrYes]) and
-              ((ListView.Selected <> nil) or (ListViewInsertUnits.Items.Count > 0));
+    Result          := ( ShowModal in [ mrOk, mrYes ] ) and
+      ( ( ListView.Selected <> nil ) or ( ListViewInsertUnits.Items.Count > 0 ) );
   finally
-    if Assigned(FResourceTypeThread) then
+    if Assigned( FResourceTypeThread ) then
     begin
       FResourceTypeThread.Terminate;
       FResourceTypeThread.WaitFor;
-      FreeAndNil(FResourceTypeThread);
+      FreeAndNil( FResourceTypeThread );
     end;
   end;
 
   if Result then
   begin
-    Files := TList.Create;
+    Files           := TList.Create;
     try
       if ListViewInsertUnits.Items.Count <> 0 then
       begin
         for I := 0 to ListViewInsertUnits.Items.Count - 1 do
-          Files.Add(ListViewInsertUnits.Items[I].Data);
+          Files.Add( ListViewInsertUnits.Items[ I ].Data );
       end
       else
       begin
         for I := 0 to ListView.Items.Count - 1 do
-          if ListView.Items[I].Selected then
-            Files.Add(ListView.Items[I].Data);
+          if ListView.Items[ I ].Selected then
+            Files.Add( ListView.Items[ I ].Data );
       end;
 
-      if (FEditor <> nil) and (ModalResult = mrYes) then
-        UseSelectedUnits(Files)
+      if ( FEditor <> nil ) and ( ModalResult = mrYes ) then
+        UseSelectedUnits( Files )
       else
-      { Open all selected files }
-      if Supports(BorlandIDEServices, IOTAActionServices, ActionServices) then
-      begin
-        for I := 0 to Files.Count - 1 do
+        { Open all selected files }if Supports( BorlandIDEServices, IOTAActionServices, ActionServices ) then
         begin
-          FileName := TInfo(Files[I]).FileName;
-          if (FileName <> '') and not IsBinaryFile(FileName) then
+          for I := 0 to Files.Count - 1 do
           begin
-            Module := (BorlandIDEServices as IOTAModuleServices).FindModule(FileName);
-            if Module <> nil then
-              Module.Show
-            else
-              ActionServices.OpenFile(FileName);
+            FileName := TInfo( Files[ I ] ).FileName;
+            if ( FileName <> '' ) and not IsBinaryFile( FileName ) then
+            begin
+              Module := ( BorlandIDEServices as IOTAModuleServices ).FindModule( FileName );
+              if Module <> nil then
+                Module.Show
+              else
+                ActionServices.OpenFile( FileName );
+            end;
           end;
         end;
-      end;
     finally
       Files.Free;
     end;
@@ -819,26 +817,26 @@ begin
   SaveSettings;
 end;
 
-function TFormFileSelector.IsBinaryFile(const Filename: string): Boolean;
+function TFormFileSelector.IsBinaryFile( const Filename: string ): Boolean;
 begin
-  Result := InArray(ExtractFileExt(FileName), ['.dcu', '.dcuil']);
+  Result            := InArray( ExtractFileExt( FileName ), [ '.dcu', '.dcuil' ] );
 end;
 
-procedure TFormFileSelector.ActionAddToInsertListExecute(Sender: TObject);
+procedure TFormFileSelector.ActionAddToInsertListExecute( Sender: TObject );
 var
-  I: Integer;
-  ListItem: TListItem;
+  I                 : Integer;
+  ListItem          : TListItem;
 begin
   ListViewInsertUnits.Items.BeginUpdate;
   try
     for I := 0 to ListView.Items.Count - 1 do
     begin
-      if ListView.Items[I].Selected then
+      if ListView.Items[ I ].Selected then
       begin
-        if ListViewInsertUnits.FindData(0, ListView.Items[I].Data, True, False) = nil then
+        if ListViewInsertUnits.FindData( 0, ListView.Items[ I ].Data, True, False ) = nil then
         begin
-          ListItem := ListViewInsertUnits.Items.Add;
-          ListItem.Assign(ListView.Items[I]);
+          ListItem  := ListViewInsertUnits.Items.Add;
+          ListItem.Assign( ListView.Items[ I ] );
         end;
       end;
     end;
@@ -848,288 +846,288 @@ begin
   RefreshButtons;
 end;
 
-procedure TFormFileSelector.ActionAddToInsertListUpdate(Sender: TObject);
+procedure TFormFileSelector.ActionAddToInsertListUpdate( Sender: TObject );
 begin
-  ActionAddToInsertList.Enabled := (ListView.SelCount > 1) or
-    (ListView.Selected <> nil) and (ListViewInsertUnits.FindData(0, ListView.Selected.Data, True, False) = nil);
+  ActionAddToInsertList.Enabled := ( ListView.SelCount > 1 ) or
+    ( ListView.Selected <> nil ) and ( ListViewInsertUnits.FindData( 0, ListView.Selected.Data, True, False ) = nil );
 end;
 
-procedure TFormFileSelector.ActionClearInsertListExecute(Sender: TObject);
+procedure TFormFileSelector.ActionClearInsertListExecute( Sender: TObject );
 begin
   ListViewInsertUnits.Items.Clear;
   RefreshButtons;
 end;
 
-procedure TFormFileSelector.ActionClearInsertListUpdate(Sender: TObject);
+procedure TFormFileSelector.ActionClearInsertListUpdate( Sender: TObject );
 begin
   ActionClearInsertList.Enabled := ListViewInsertUnits.Items.Count > 0;
 end;
 
-procedure TFormFileSelector.ActionExportToExcelExecute(Sender: TObject);
+procedure TFormFileSelector.ActionExportToExcelExecute( Sender: TObject );
 begin
   if ListView.Items.Count = 0 then
   begin
-    ShowMessage('There are no units to export.');
+    ShowMessage( 'There are no units to export.' );
     Exit;
   end;
 
   try
-    TFormExcelExport.ExportListView('Units', ListView);
+    TFormExcelExport.ExportListView( 'Units', ListView );
   except
     on E: Exception do
-      ShowMessage('Export to Excel failed:'#13#10 + E.Message);
+      ShowMessage( 'Export to Excel failed:'#13#10 + E.Message );
   end;
 end;
 
-procedure TFormFileSelector.ActionRemoveFromInsertListExecute(Sender: TObject);
+procedure TFormFileSelector.ActionRemoveFromInsertListExecute( Sender: TObject );
 begin
   inherited;
   ListViewInsertUnits.DeleteSelected;
   RefreshButtons;
 end;
 
-procedure TFormFileSelector.ActionRemoveFromInsertListUpdate(Sender: TObject);
+procedure TFormFileSelector.ActionRemoveFromInsertListUpdate( Sender: TObject );
 begin
   ActionRemoveFromInsertList.Enabled := ListViewInsertUnits.Selected <> nil;
 end;
 
-procedure TFormFileSelector.cbxFilterDirectoryChange(Sender: TObject);
+procedure TFormFileSelector.cbxFilterDirectoryChange( Sender: TObject );
 begin
   UpdateData;
 end;
 
-procedure TFormFileSelector.cbxFilterDirectoryDrawItem(Control: TWinControl;
-  Index: Integer; Rect: TRect; State: TOwnerDrawState);
+procedure TFormFileSelector.cbxFilterDirectoryDrawItem( Control: TWinControl;
+  Index: Integer; Rect: TRect; State: TOwnerDrawState );
 var
-  S: string;
+  S                 : string;
 begin
-  with TComboBox(Control).Canvas do
+  with TComboBox( Control ).Canvas do
   begin
-    FillRect(Rect);
-    DataModuleImages.imlFilter.Draw(TComboBox(Control).Canvas,
-      Rect.Left + 2, Rect.Top, 1);
-    Inc(Rect.Left, DataModuleImages.imlFilter.Width + 2);
-    S := TComboBox(Control).Items[Index];
+    FillRect( Rect );
+    DataModuleImages.imlFilter.Draw( TComboBox( Control ).Canvas,
+      Rect.Left + 2, Rect.Top, 1 );
+    Inc( Rect.Left, DataModuleImages.imlFilter.Width + 2 );
+    S               := TComboBox( Control ).Items[ Index ];
     if S = '' then
-      S := '.';
-    TextRect(Rect, Rect.Left + 4, Rect.Top + 1, S);
+      S             := '.';
+    TextRect( Rect, Rect.Left + 4, Rect.Top + 1, S );
   end;
 end;
 
-procedure TFormFileSelector.cbxFilterFieldChange(Sender: TObject);
+procedure TFormFileSelector.cbxFilterFieldChange( Sender: TObject );
 begin
   if edtFilter.Text <> '' then
     UpdateData;
 end;
 
-procedure TFormFileSelector.cbxFilterFieldDrawItem(Control: TWinControl;
-  Index: Integer; Rect: TRect; State: TOwnerDrawState);
+procedure TFormFileSelector.cbxFilterFieldDrawItem( Control: TWinControl;
+  Index: Integer; Rect: TRect; State: TOwnerDrawState );
 begin
-  with TComboBox(Control).Canvas do
+  with TComboBox( Control ).Canvas do
   begin
-    FillRect(Rect);
-    DataModuleImages.imlFilter.Draw(TComboBox(Control).Canvas,
-      Rect.Left + 2, Rect.Top, 0);
-    Inc(Rect.Left, DataModuleImages.imlFilter.Width + 2);
-    TextRect(Rect, Rect.Left + 4, Rect.Top + 1, TComboBox(Control).Items[Index]);
+    FillRect( Rect );
+    DataModuleImages.imlFilter.Draw( TComboBox( Control ).Canvas,
+      Rect.Left + 2, Rect.Top, 0 );
+    Inc( Rect.Left, DataModuleImages.imlFilter.Width + 2 );
+    TextRect( Rect, Rect.Left + 4, Rect.Top + 1, TComboBox( Control ).Items[ Index ] );
   end;
 end;
 
-procedure TFormFileSelector.edtFilterChange(Sender: TObject);
+procedure TFormFileSelector.edtFilterChange( Sender: TObject );
 begin
   TimerFilterUpdate.Enabled := False;
   TimerFilterUpdate.Enabled := True;
 end;
 
-procedure TFormFileSelector.edtFilterEnter(Sender: TObject);
+procedure TFormFileSelector.edtFilterEnter( Sender: TObject );
 begin
   edtFilter.Invalidate;
 end;
 
-procedure TFormFileSelector.edtFilterExit(Sender: TObject);
+procedure TFormFileSelector.edtFilterExit( Sender: TObject );
 begin
   edtFilter.Invalidate;
 end;
 
-procedure TFormFileSelector.edtFilterKeyDown(Sender: TObject;
-  var Key: Word; Shift: TShiftState);
+procedure TFormFileSelector.edtFilterKeyDown( Sender: TObject;
+  var Key: Word; Shift: TShiftState );
 begin
-  if not (((Key = VK_F4) and (ssAlt in Shift)) or
-    (Key in [VK_DELETE, VK_LEFT, VK_RIGHT]) or
-    ((Key in [VK_HOME, VK_END]) and not (ssCtrl in Shift)) or
-    ((Key in [VK_INSERT]) and ((ssShift in Shift) or (ssCtrl in Shift)))) then
+  if not ( ( ( Key = VK_F4 ) and ( ssAlt in Shift ) ) or
+    ( Key in [ VK_DELETE, VK_LEFT, VK_RIGHT ] ) or
+    ( ( Key in [ VK_HOME, VK_END ] ) and not ( ssCtrl in Shift ) ) or
+    ( ( Key in [ VK_INSERT ] ) and ( ( ssShift in Shift ) or ( ssCtrl in Shift ) ) ) ) then
   begin
-    SendMessage(ListView.Handle, WM_KEYDOWN, Key, 0);
-    Key := 0;
+    SendMessage( ListView.Handle, WM_KEYDOWN, Key, 0 );
+    Key             := 0;
   end
   else
-    ListViewKeyDown(ListView, Key, Shift);
+    ListViewKeyDown( ListView, Key, Shift );
 end;
 
-procedure TFormFileSelector.edtFilterKeyPress(Sender: TObject;
-  var Key: Char);
+procedure TFormFileSelector.edtFilterKeyPress( Sender: TObject;
+  var Key: Char );
 begin
   if Key = #13 then
   begin
-    Key := #0;
-    TimerFilterUpdateTimer(TimerFilterUpdate);
+    Key             := #0;
+    TimerFilterUpdateTimer( TimerFilterUpdate );
   end;
 end;
 
-procedure TFormFileSelector.edtFilterKeyUp(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TFormFileSelector.edtFilterKeyUp( Sender: TObject; var Key: Word;
+  Shift: TShiftState );
 begin
-  if not (((Key = VK_F4) and (ssAlt in Shift)) or
-    (Key in [VK_DELETE, VK_LEFT, VK_RIGHT]) or
-    ((Key in [VK_HOME, VK_END]) and not (ssCtrl in Shift)) or
-    ((Key in [VK_INSERT]) and ((ssShift in Shift) or (ssCtrl in Shift)))) then
+  if not ( ( ( Key = VK_F4 ) and ( ssAlt in Shift ) ) or
+    ( Key in [ VK_DELETE, VK_LEFT, VK_RIGHT ] ) or
+    ( ( Key in [ VK_HOME, VK_END ] ) and not ( ssCtrl in Shift ) ) or
+    ( ( Key in [ VK_INSERT ] ) and ( ( ssShift in Shift ) or ( ssCtrl in Shift ) ) ) ) then
   begin
-    SendMessage(ListView.Handle, WM_KEYUP, Key, 0);
-    Key := 0;
+    SendMessage( ListView.Handle, WM_KEYUP, Key, 0 );
+    Key             := 0;
   end
   else
-    ListViewKeyUp(ListView, Key, Shift);
+    ListViewKeyUp( ListView, Key, Shift );
 end;
 
-class function TFormFileSelector.Execute(OpenMode: Boolean): Boolean;
+class function TFormFileSelector.Execute( OpenMode: Boolean ): Boolean;
 begin
-  with TFormFileSelector.Create(nil) do
-  try
-    Result := InternExecute(OpenMode);
-  finally
-    Free;
-  end;
+  with TFormFileSelector.Create( nil ) do
+    try
+      Result        := InternExecute( OpenMode );
+    finally
+      Free;
+    end;
 end;
 
-procedure TFormFileSelector.FilerEditWndProc(var Msg: TMessage);
+procedure TFormFileSelector.FilerEditWndProc( var Msg: TMessage );
 var
-  p: procedure(Instance: TObject; var Msg: TMessage);
-  ps: TPaintStruct;
-  SaveIndex: Integer;
-  Bmp: TBitmap;
+  p                 : procedure( Instance: TObject; var Msg: TMessage );
+  ps                : TPaintStruct;
+  SaveIndex         : Integer;
+  Bmp               : TBitmap;
 begin
-  p := @TOpenEdit.WndProc;
+  p                 := @TOpenEdit.WndProc;
   if Msg.Msg = WM_ERASEBKGND then
   begin
-    if not edtFilter.Focused and (edtFilter.Text = '') then
+    if not edtFilter.Focused and ( edtFilter.Text = '' ) then
     begin
-      Msg.Result := 1;
+      Msg.Result    := 1;
       Exit;
     end;
   end;
   if Msg.Msg = WM_PAINT then
   begin
-    if not edtFilter.Focused and (edtFilter.Text = '') then
+    if not edtFilter.Focused and ( edtFilter.Text = '' ) then
     begin
-      Msg.WParam := BeginPaint(edtFilter.Handle, ps);
-      SaveIndex := SaveDC(HDC(Msg.WParam));
+      Msg.WParam    := BeginPaint( edtFilter.Handle, ps );
+      SaveIndex     := SaveDC( HDC( Msg.WParam ) );
       try
-        ExcludeClipRect(HDC(Msg.WParam), 1, 1, 1 + DataModuleImages.imlFilter.Width, 1 + DataModuleImages.imlFilter.Height);
-        p(edtFilter, Msg);
+        ExcludeClipRect( HDC( Msg.WParam ), 1, 1, 1 + DataModuleImages.imlFilter.Width, 1 + DataModuleImages.imlFilter.Height );
+        p( edtFilter, Msg );
       finally
-        RestoreDC(HDC(Msg.WParam), SaveIndex);
+        RestoreDC( HDC( Msg.WParam ), SaveIndex );
       end;
-      Bmp := TBitmap.Create;
+      Bmp           := TBitmap.Create;
       try
         Bmp.Canvas.Brush.Color := clWindow;
-        Bmp.Width := DataModuleImages.imlFilter.Width;
-        Bmp.Height := DataModuleImages.imlFilter.Height;
-        ImageList_Draw(DataModuleImages.imlFilter.Handle, 0, Bmp.Canvas.Handle, 0, 0, ILD_NORMAL or ILD_TRANSPARENT);
-        BitBlt(HDC(Msg.WParam), 1, 1, Bmp.Width, Bmp.Height, Bmp.Canvas.Handle, 0, 0, SRCCOPY);
+        Bmp.Width   := DataModuleImages.imlFilter.Width;
+        Bmp.Height  := DataModuleImages.imlFilter.Height;
+        ImageList_Draw( DataModuleImages.imlFilter.Handle, 0, Bmp.Canvas.Handle, 0, 0, ILD_NORMAL or ILD_TRANSPARENT );
+        BitBlt( HDC( Msg.WParam ), 1, 1, Bmp.Width, Bmp.Height, Bmp.Canvas.Handle, 0, 0, SRCCOPY );
       finally
         Bmp.Free;
       end;
-      EndPaint(edtFilter.Handle, ps);
+      EndPaint( edtFilter.Handle, ps );
       Exit;
     end;
   end;
-  p(edtFilter, Msg);
+  p( edtFilter, Msg );
 end;
 
-function TFormFileSelector.FilterListViewData(S: string): Boolean;
+function TFormFileSelector.FilterListViewData( S: string ): Boolean;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := FFilterTexts.Count = 0;
-  if not Result and (S <> '') then
+  Result            := FFilterTexts.Count = 0;
+  if not Result and ( S <> '' ) then
   begin
-    S := AnsiLowerCase(S) + '.';
+    S               := AnsiLowerCase( S ) + '.';
     for I := 0 to FFilterTexts.Count - 1 do
     begin
-      if ContainsAsterisk(FFilterTexts[I]) then
-        Result := MatchStr(S, FFilterTexts[I])
+      if ContainsAsterisk( FFilterTexts[ I ] ) then
+        Result      := MatchStr( S, FFilterTexts[ I ] )
       else
-        Result := Pos(FFilterTexts[I], S) > 0;
+        Result      := Pos( FFilterTexts[ I ], S ) > 0;
       if Result then
         Exit;
     end;
   end;
 end;
 
-procedure TFormFileSelector.FormCreate(Sender: TObject);
+procedure TFormFileSelector.FormCreate( Sender: TObject );
 begin
-  FormFileSelector := Self;
+  FormFileSelector  := Self;
   ToolBar.DrawingStyle := Vcl.ComCtrls.dsGradient;
   ListView.DoubleBuffered := True;
-  ToolBar.Flat := True; // BDS 2006's default is True => Flat is not stored in the DFM
+  ToolBar.Flat      := True; // BDS 2006's default is True => Flat is not stored in the DFM
 
   { Delphi 7's designer always loses this information if the dtmImages is not
     open. }
   ListView.SmallImages := DataModuleImages.imlModules;
   ListViewInsertUnits.SmallImages := DataModuleImages.imlModules;
-  ToolBar.Images := DataModuleImages.imlApplications;
+  ToolBar.Images    := DataModuleImages.imlApplications;
 
-  FAllData := TInfoList.Create;
-  FCurrentData := TInfoList.Create(False);
+  FAllData          := TInfoList.Create;
+  FCurrentData      := TInfoList.Create( False );
 end;
 
-procedure TFormFileSelector.FormDestroy(Sender: TObject);
+procedure TFormFileSelector.FormDestroy( Sender: TObject );
 begin
-  FormFileSelector := nil;
+  FormFileSelector  := nil;
   FCurrentData.Free;
   FAllData.Free;
 end;
 
-procedure TFormFileSelector.FormResize(Sender: TObject);
+procedure TFormFileSelector.FormResize( Sender: TObject );
 begin
   inherited;
   cbxFilterDirectory.Width := ToolBar.ClientWidth - cbxFilterDirectory.Left;
 end;
 
-function DoSortInfos(Item1, Item2: Pointer): Integer;
+function DoSortInfos( Item1, Item2: Pointer ): Integer;
 begin
   case FormFileSelector.FSortColumn of
-    0: Result := AnsiCompareText(TInfo(Item1).Name, TInfo(Item2).Name);
-    1: Result := AnsiCompareText(TInfo(Item1).FormName, TInfo(Item2).FormName);
-    2: Result := AnsiCompareText(TInfo(Item1).FileName, TInfo(Item2).FileName);
+    0: Result       := AnsiCompareText( TInfo( Item1 ).Name, TInfo( Item2 ).Name );
+    1: Result       := AnsiCompareText( TInfo( Item1 ).FormName, TInfo( Item2 ).FormName );
+    2: Result       := AnsiCompareText( TInfo( Item1 ).FileName, TInfo( Item2 ).FileName );
   else
-    Result := 0;
+    Result          := 0;
   end;
   if not FormFileSelector.FSortAsc then
-    Result := -1 * Result;
+    Result          := -1 * Result;
 end;
 
-procedure TFormFileSelector.ListViewColumnClick(Sender: TObject; Column: TListColumn);
+procedure TFormFileSelector.ListViewColumnClick( Sender: TObject; Column: TListColumn );
 begin
   if Column.Index <> FSortColumn then
   begin
-    FSortColumn := Column.Index;
-    FSortAsc := False;
+    FSortColumn     := Column.Index;
+    FSortAsc        := False;
   end
   else
-    FSortAsc := not FSortAsc;
+    FSortAsc        := not FSortAsc;
   Sort;
   UpdateData;
 end;
 
-procedure TFormFileSelector.ListViewCustomDrawItem(Sender: TCustomListView;
-  Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
+procedure TFormFileSelector.ListViewCustomDrawItem( Sender: TCustomListView;
+  Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean );
 var
-  Info: TInfo;
+  Info              : TInfo;
 begin
-  DefaultDraw := True;
+  DefaultDraw       := True;
 
-  Info := Item.Data;
+  Info              := Item.Data;
   if Info = nil then
     Exit;
   if Info.Opened then
@@ -1137,174 +1135,173 @@ begin
 
   if FParser <> nil then
   begin
-    if (FParser.InterfaceUses.FindUses(Info.Name) <> nil) then
-      Sender.Canvas.Font.Style := [fsBold]
-    else if (FParser.ImplUses.FindUses(Info.Name) <> nil) then
-      Sender.Canvas.Font.Style := [fsBold, fsUnderline];
+    if ( FParser.InterfaceUses.FindUses( Info.Name ) <> nil ) then
+      Sender.Canvas.Font.Style := [ fsBold ]
+    else if ( FParser.ImplUses.FindUses( Info.Name ) <> nil ) then
+      Sender.Canvas.Font.Style := [ fsBold, fsUnderline ];
   end;
 
   if Item.Index mod 2 = 0 then
     Sender.Canvas.Brush.Color := $FAFAFA;
 end;
 
-procedure TFormFileSelector.ListViewData(Sender: TObject; Item: TListItem);
+procedure TFormFileSelector.ListViewData( Sender: TObject; Item: TListItem );
 var
-  Info: TInfo;
+  Info              : TInfo;
 begin
-  if (Item.Index >= 0) and (Item.Index < FCurrentData.Count) then
+  if ( Item.Index >= 0 ) and ( Item.Index < FCurrentData.Count ) then
   begin
-    Info := FCurrentData[Item.Index];
-    Item.Data := Info;
-    Item.Caption := Info.Name;
+    Info            := FCurrentData[ Item.Index ];
+    Item.Data       := Info;
+    Item.Caption    := Info.Name;
     Item.ImageIndex := Info.ImageIndex;
-    Item.SubItems.Add(Info.FormName);
-    Item.SubItems.Add(Info.RelFileName);
+    Item.SubItems.Add( Info.FormName );
+    Item.SubItems.Add( Info.RelFileName );
   end;
 end;
 
-procedure TFormFileSelector.ListViewDblClick(Sender: TObject);
+procedure TFormFileSelector.ListViewDblClick( Sender: TObject );
 begin
   if btnUseUnit.Visible and btnUseUnit.Enabled then
     btnUseUnit.Click
-  else
-  if btnOpen.Enabled then
+  else if btnOpen.Enabled then
     btnOpen.Click;
 end;
 
-procedure TFormFileSelector.ListViewDragDrop(Sender, Source: TObject; X, Y: Integer);
+procedure TFormFileSelector.ListViewDragDrop( Sender, Source: TObject; X, Y: Integer );
 begin
   if Source = ListViewInsertUnits then
     ActionRemoveFromInsertList.Execute;
 end;
 
-procedure TFormFileSelector.ListViewDragOver(Sender, Source: TObject; X, Y: Integer;
-  State: TDragState; var Accept: Boolean);
+procedure TFormFileSelector.ListViewDragOver( Sender, Source: TObject; X, Y: Integer;
+  State: TDragState; var Accept: Boolean );
 begin
-  Accept := Source = ListViewInsertUnits;
+  Accept            := Source = ListViewInsertUnits;
 end;
 
-procedure TFormFileSelector.ListViewInfoTip(Sender: TObject; Item: TListItem;
-  var InfoTip: string);
+procedure TFormFileSelector.ListViewInfoTip( Sender: TObject; Item: TListItem;
+  var InfoTip: string );
 var
-  Info: TInfo;
-  FormFileName: string;
+  Info              : TInfo;
+  FormFileName      : string;
 begin
-  Info := Item.Data;
+  Info              := Item.Data;
   if Info = nil then
     Exit;
-  InfoTip := Format('<b>Filename:</b> %s' + sLineBreak +
-                    '<b>Filesize:</b> %d Bytes',
-                    [Info.FileName, GetFileSize(Info.FileName)]);
+  InfoTip           := Format( '<b>Filename:</b> %s' + sLineBreak +
+    '<b>Filesize:</b> %d Bytes',
+    [ Info.FileName, GetFileSize( Info.FileName ) ] );
   if Info.FormName <> '' then
   begin
-    FormFileName := ChangeFileExt(Info.FileName, '.dfm');
-    if not FastFileExists(FormFileName) then
+    FormFileName    := ChangeFileExt( Info.FileName, '.dfm' );
+    if not FastFileExists( FormFileName ) then
     begin
-//      FormFileName := ChangeFileExt(Info.FileName, '.nfm');
-//      if not FastFileExists(FormFileName) then
-//      begin
-//        FormFileName := ChangeFileExt(Info.FileName, '.xfm');
-//        if not FastFileExists(FormFileName) then
-          FormFileName := '';
-//      end;
+      //      FormFileName := ChangeFileExt(Info.FileName, '.nfm');
+      //      if not FastFileExists(FormFileName) then
+      //      begin
+      //        FormFileName := ChangeFileExt(Info.FileName, '.xfm');
+      //        if not FastFileExists(FormFileName) then
+      FormFileName  := '';
+      //      end;
     end;
 
     if FormFileName <> '' then
     begin
-      InfoTip := InfoTip + sLineBreak + sLineBreak +
-                 Format('<b>Formname:</b> %s' + sLineBreak +
-                        '<b>Formsize:</b> %d Bytes',
-                        [Info.FormName, GetFileSize(FormFileName)]);
+      InfoTip       := InfoTip + sLineBreak + sLineBreak +
+        Format( '<b>Formname:</b> %s' + sLineBreak +
+        '<b>Formsize:</b> %d Bytes',
+        [ Info.FormName, GetFileSize( FormFileName ) ] );
     end;
   end;
 end;
 
-procedure TFormFileSelector.ListViewInsertUnitsDragDrop(Sender, Source: TObject; X, Y: Integer);
+procedure TFormFileSelector.ListViewInsertUnitsDragDrop( Sender, Source: TObject; X, Y: Integer );
 begin
   if Source = ListView then
     ActionAddToInsertList.Execute;
 end;
 
-procedure TFormFileSelector.ListViewInsertUnitsDragOver(Sender, Source: TObject; X, Y: Integer;
-  State: TDragState; var Accept: Boolean);
+procedure TFormFileSelector.ListViewInsertUnitsDragOver( Sender, Source: TObject; X, Y: Integer;
+  State: TDragState; var Accept: Boolean );
 begin
-  Accept := Source = ListView;
+  Accept            := Source = ListView;
 end;
 
-procedure TFormFileSelector.ListViewInsertUnitsKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TFormFileSelector.ListViewInsertUnitsKeyDown( Sender: TObject; var Key: Word;
+  Shift: TShiftState );
 begin
   inherited;
-  if (Shift = []) and (Key = VK_DELETE) then
+  if ( Shift = [ ] ) and ( Key = VK_DELETE ) then
   begin
     ActionRemoveFromInsertList.Execute;
-    Key := 0;
+    Key             := 0;
   end;
 end;
 
-procedure TFormFileSelector.ListViewKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
+procedure TFormFileSelector.ListViewKeyDown( Sender: TObject; var Key: Word;
+  Shift: TShiftState );
 begin
-  if (Shift = [ssCtrl]) and (Key = Ord('A')) then
+  if ( Shift = [ ssCtrl ] ) and ( Key = Ord( 'A' ) ) then
   begin
     ListView.SelectAll;
-    Key := 0;
+    Key             := 0;
   end
-  else if (Shift = [ssCtrl]) and (Key = VK_RETURN) then
+  else if ( Shift = [ ssCtrl ] ) and ( Key = VK_RETURN ) then
   begin
     if btnOpen.Enabled then
       btnOpen.Click;
-    Key := 0;
+    Key             := 0;
   end
-  else if (Shift = [ssShift]) and (Key = VK_RETURN) then
+  else if ( Shift = [ ssShift ] ) and ( Key = VK_RETURN ) then
   begin
     if btnUseUnit.Visible and btnUseUnit.Enabled then
     begin
       chkUseUnitsImplementation.Checked := False;
       btnUseUnit.Click;
     end;
-    Key := 0;
+    Key             := 0;
   end
-  else if (Shift = [ssShift]) and (Key = VK_SHIFT) then
+  else if ( Shift = [ ssShift ] ) and ( Key = VK_SHIFT ) then
   begin
     chkUseUnitsImplementation.Checked := False;
   end;
 end;
 
-procedure TFormFileSelector.ListViewKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFormFileSelector.ListViewKeyUp( Sender: TObject; var Key: Word; Shift: TShiftState );
 begin
   inherited;
-  if (Shift = []) and (Key = VK_SHIFT) then
+  if ( Shift = [ ] ) and ( Key = VK_SHIFT ) then
   begin
     chkUseUnitsImplementation.Checked := True;
   end;
 end;
 
-procedure TFormFileSelector.ListViewMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TFormFileSelector.ListViewMouseDown( Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer );
 begin
   if Button = mbRight then
-    (Sender as TListView).Selected := (Sender as TListView).GetItemAt(X, Y);
+    ( Sender as TListView ).Selected := ( Sender as TListView ).GetItemAt( X, Y );
 end;
 
-procedure TFormFileSelector.ListViewSelectItem(Sender: TObject; Item: TListItem;
-  Selected: Boolean);
+procedure TFormFileSelector.ListViewSelectItem( Sender: TObject; Item: TListItem;
+  Selected: Boolean );
 begin
-  btnOpen.Enabled := True;
+  btnOpen.Enabled   := True;
   btnUseUnit.Enabled := True;
-  if Selected and (ListView.Selected <> nil) then
+  if Selected and ( ListView.Selected <> nil ) then
   begin
     ListView.Selected.Focused := True;
-    if (ListView.SelCount = 1) and (ListViewInsertUnits.Items.Count = 0) then
+    if ( ListView.SelCount = 1 ) and ( ListViewInsertUnits.Items.Count = 0 ) then
     begin
-      if IsBinaryFile(TInfo(ListView.Selected.Data).FileName) then
+      if IsBinaryFile( TInfo( ListView.Selected.Data ).FileName ) then
         btnOpen.Enabled := False;
 
       if FProjectFilename <> '' then
-        if SameText(TInfo(ListView.Selected.Data).Name, ChangeFileExt(ExtractFileName(FProjectFilename), '')) then
+        if SameText( TInfo( ListView.Selected.Data ).Name, ChangeFileExt( ExtractFileName( FProjectFilename ), '' ) ) then
           btnUseUnit.Enabled := False;
       if FEditor <> nil then
-        if SameText(TInfo(ListView.Selected.Data).Name, ChangeFileExt(ExtractFileName(FEditor.FileName), '')) then
+        if SameText( TInfo( ListView.Selected.Data ).Name, ChangeFileExt( ExtractFileName( FEditor.FileName ), '' ) ) then
           btnUseUnit.Enabled := False;
     end;
   end;
@@ -1313,167 +1310,166 @@ end;
 
 procedure TFormFileSelector.GetFilenames;
 
-  procedure CollectFiles({$IFNDEF COMPILER12_UP}const Project: IOTAProject;{$ENDIF}
+  procedure CollectFiles( {$IFNDEF COMPILER12_UP}const Project: IOTAProject; {$ENDIF}
     PrjFiles, Files: TStrings; FilesHash: TStringIntegerHash; const Dir: string;
-    SourceOnly: Boolean);
+    SourceOnly: Boolean );
   const
-    FindExInfoStandard = _FINDEX_INFO_LEVELS(0);
-    FindExInfoBasic = _FINDEX_INFO_LEVELS(1);
-    FindExInfoMaxInfoLevel = _FINDEX_INFO_LEVELS(2);
+    FindExInfoStandard = _FINDEX_INFO_LEVELS( 0 );
+    FindExInfoBasic = _FINDEX_INFO_LEVELS( 1 );
+    FindExInfoMaxInfoLevel = _FINDEX_INFO_LEVELS( 2 );
 
     FIND_FIRST_EX_CASE_SENSITIVE = 1;
     FIND_FIRST_EX_LARGE_FETCH = 2;
   var
-    SearchHandle: THandle;
-    FindData: TWin32FindData;
-    FileName: string;
-    Ext, UpName: string;
-    Index: Integer;
-    IsSource: Boolean;
-    {$IFNDEF COMPILER12_UP}
-    PersStr: string;
-    {$ENDIF ~COMPILER12_UP}
+    SearchHandle    : THandle;
+    FindData        : TWin32FindData;
+    FileName        : string;
+    Ext, UpName     : string;
+    Index           : Integer;
+    IsSource        : Boolean;
+  {$IFNDEF COMPILER12_UP}
+    PersStr         : string;
+  {$ENDIF ~COMPILER12_UP}
   begin
     // "PrjFiles" is nil if "Files" points to the "SourceFiles".
 
-    if CheckWin32Version(6, 1) then // we don't need the "AlternativeName", but want speed
-      SearchHandle := FindFirstFileEx(PChar(Dir + PathDelim + '*.*'), FindExInfoBasic, @FindData, FindExSearchNameMatch, nil, FIND_FIRST_EX_LARGE_FETCH)
+    if CheckWin32Version( 6, 1 ) then // we don't need the "AlternativeName", but want speed
+      SearchHandle  := FindFirstFileEx( PChar( Dir + PathDelim + '*.*' ), FindExInfoBasic, @FindData, FindExSearchNameMatch, nil, FIND_FIRST_EX_LARGE_FETCH )
     else
-      SearchHandle := FindFirstFile(PChar(Dir + PathDelim + '*.*'), FindData);
+      SearchHandle  := FindFirstFile( PChar( Dir + PathDelim + '*.*' ), FindData );
 
     if SearchHandle <> INVALID_HANDLE_VALUE then
-    try
-      repeat
-        if (FindData.dwFileAttributes and (FILE_ATTRIBUTE_DIRECTORY or FILE_ATTRIBUTE_DEVICE)) = 0 then
-        begin
-          FileName := FindData.cFileName;
-          Ext := ExtractFileExt(FileName);
-          IsSource := SameText(Ext, '.pas');
-          if IsSource or
-            (not SourceOnly and (SameText(Ext, '.dcu') {$IFNDEF COMPILER12_UP}or SameText(Ext, '.dcuil'){$ENDIF})) then
+      try
+        repeat
+          if ( FindData.dwFileAttributes and ( FILE_ATTRIBUTE_DIRECTORY or FILE_ATTRIBUTE_DEVICE ) ) = 0 then
           begin
-            {$IFNDEF COMPILER12_UP}
-            if not IsSource and (Project <> nil) then
+            FileName := FindData.cFileName;
+            Ext     := ExtractFileExt( FileName );
+            IsSource := SameText( Ext, '.pas' );
+            if IsSource or
+              ( not SourceOnly and ( SameText( Ext, '.dcu' ){$IFNDEF COMPILER12_UP} or SameText( Ext, '.dcuil' ){$ENDIF} ) ) then
             begin
-              PersStr := Project.Personality;
-              if (PersStr = sDelphiPersonality) and SameText(Ext, '.dcuil') then
-                Continue
-              else
-              if (PersStr = sDelphiDotNetPersonality) and SameText(Ext, '.dcu') then
-                Continue;
-            end;
-            {$ENDIF ~COMPILER12_UP}
-            UpName := AnsiUpperCase(ChangeFileExt(FileName, ''));
-            { Only add files that aren't already found in a more prioritised
-              directory. }
-            if not FilesHash.Find(UpName, Index) then
-            begin
-              Index := Files.AddObject(Dir + PathDelim + FileName, TObject(IsSource));
-              if PrjFiles <> nil then
-                Inc(Index, PrjFiles.Count);
-              FilesHash.Add(UpName, Index);
-            end
-            else
-            begin
-              { Prefer source files }
-              if IsSource then
+{$IFNDEF COMPILER12_UP}
+              if not IsSource and ( Project <> nil ) then
               begin
-                if (PrjFiles <> nil) and (Index < PrjFiles.Count) then
+                PersStr := Project.Personality;
+                if ( PersStr = sDelphiPersonality ) and SameText( Ext, '.dcuil' ) then
+                  Continue
+                else if ( PersStr = sDelphiDotNetPersonality ) and SameText( Ext, '.dcu' ) then
+                  Continue;
+              end;
+{$ENDIF ~COMPILER12_UP}
+              UpName := AnsiUpperCase( ChangeFileExt( FileName, '' ) );
+              { Only add files that aren't already found in a more prioritised
+                directory. }
+              if not FilesHash.Find( UpName, Index ) then
+              begin
+                Index := Files.AddObject( Dir + PathDelim + FileName, TObject( IsSource ) );
+                if PrjFiles <> nil then
+                  Inc( Index, PrjFiles.Count );
+                FilesHash.Add( UpName, Index );
+              end
+              else
+              begin
+                { Prefer source files }
+                if IsSource then
                 begin
-                  if not Boolean(PrjFiles.Objects[Index]) then // only replace if the previous was no source file
+                  if ( PrjFiles <> nil ) and ( Index < PrjFiles.Count ) then
                   begin
-                    PrjFiles[Index] := Dir + PathDelim + FileName;
-                    PrjFiles.Objects[Index] := TObject(IsSource);
-                  end;
-                end
-                else
-                begin
-                  if PrjFiles <> nil then
-                    Dec(Index, PrjFiles.Count);
-                  if not Boolean(Files.Objects[Index]) then // only replace if the previous was no source file
+                    if not Boolean( PrjFiles.Objects[ Index ] ) then // only replace if the previous was no source file
+                    begin
+                      PrjFiles[ Index ] := Dir + PathDelim + FileName;
+                      PrjFiles.Objects[ Index ] := TObject( IsSource );
+                    end;
+                  end
+                  else
                   begin
-                    Files[Index] := Dir + PathDelim + FileName;
-                    Files.Objects[Index] := TObject(IsSource);
+                    if PrjFiles <> nil then
+                      Dec( Index, PrjFiles.Count );
+                    if not Boolean( Files.Objects[ Index ] ) then // only replace if the previous was no source file
+                    begin
+                      Files[ Index ] := Dir + PathDelim + FileName;
+                      Files.Objects[ Index ] := TObject( IsSource );
+                    end;
                   end;
                 end;
               end;
             end;
           end;
-        end;
-      until not FindNextFile(SearchHandle, FindData);
-    finally
-      Winapi.Windows.FindClose(SearchHandle);
-    end;
+        until not FindNextFile( SearchHandle, FindData );
+      finally
+        Winapi.Windows.FindClose( SearchHandle );
+      end;
   end;
 
 var
-  Modules: TStrings;
-  HashTable: TStringIntegerHash;
+  Modules           : TStrings;
+  HashTable         : TStringIntegerHash;
 
-  procedure AddProjectModules(const Project: IOTAProject; Files: TStrings; FilesHash: TStringIntegerHash);
+  procedure AddProjectModules( const Project: IOTAProject; Files: TStrings; FilesHash: TStringIntegerHash );
   var
-    I, Index: Integer;
-    ModuleInfo: IOTAModuleInfo;
-    FileName: string;
+    I, Index        : Integer;
+    ModuleInfo      : IOTAModuleInfo;
+    FileName        : string;
   begin
     { Add all modules of the project }
     for I := 0 to Project.GetModuleCount - 1 do
     begin
-      ModuleInfo := Project.GetModule(I);
-      Filename := ModuleInfo.FileName;
-      if not SameText(ExtractFileExt(Filename), '.dcp') then
+      ModuleInfo    := Project.GetModule( I );
+      Filename      := ModuleInfo.FileName;
+      if not SameText( ExtractFileExt( Filename ), '.dcp' ) then
       begin
-        Index := Modules.Add(Filename);
-        Modules.Add(ModuleInfo.FormName);
-        HashTable.Add(AnsiUpperCase(Filename), Index);
+        Index       := Modules.Add( Filename );
+        Modules.Add( ModuleInfo.FormName );
+        HashTable.Add( AnsiUpperCase( Filename ), Index );
 
         if Filename <> '' then
         begin
           { Project files are prioritised }
           // A project file is a source file: without the flag the "source for a DCU" lookup below
           // replaced it with a same-named unit from the Browsing Path.
-          Index := Files.AddObject(Filename, TObject(True));
-          FilesHash.Add(AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), '')), Index);
+          Index     := Files.AddObject( Filename, TObject( True ) );
+          FilesHash.Add( AnsiUpperCase( ChangeFileExt( ExtractFileName( Filename ), '' ) ), Index );
         end;
       end;
     end;
   end;
 
-  procedure AddProjectSource(const Project: IOTAProject; PrjFiles, Files: TStrings; FilesHash: TStringIntegerHash);
+  procedure AddProjectSource( const Project: IOTAProject; PrjFiles, Files: TStrings; FilesHash: TStringIntegerHash );
   var
-    I, Index: Integer;
-    ModuleInfo: IOTAModuleInfo;
+    I, Index        : Integer;
+    ModuleInfo      : IOTAModuleInfo;
     FileName, UpName: string;
   begin
     { Add all source files of the project }
     for I := 0 to Project.GetModuleCount - 1 do
     begin
-      ModuleInfo := Project.GetModule(I);
-      Filename := ModuleInfo.FileName;
-      if not SameText(ExtractFileExt(Filename), '.dcp') then
+      ModuleInfo    := Project.GetModule( I );
+      Filename      := ModuleInfo.FileName;
+      if not SameText( ExtractFileExt( Filename ), '.dcp' ) then
       begin
-        UpName := AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), ''));
-        if not FilesHash.Find(UpName, Index) then
+        UpName      := AnsiUpperCase( ChangeFileExt( ExtractFileName( Filename ), '' ) );
+        if not FilesHash.Find( UpName, Index ) then
         begin
-          Index := Files.AddObject(Filename, TObject(True));
+          Index     := Files.AddObject( Filename, TObject( True ) );
           if PrjFiles <> nil then
-            Inc(Index, PrjFiles.Count);
-          FilesHash.Add(UpName, Index);
+            Inc( Index, PrjFiles.Count );
+          FilesHash.Add( UpName, Index );
         end
         else
         begin
           { Prefer source files }
-          if (PrjFiles <> nil) and (Index < PrjFiles.Count) then
+          if ( PrjFiles <> nil ) and ( Index < PrjFiles.Count ) then
           begin
-            PrjFiles[Index] := Filename;
-            PrjFiles.Objects[Index] := TObject(True);
+            PrjFiles[ Index ] := Filename;
+            PrjFiles.Objects[ Index ] := TObject( True );
           end
           else
           begin
             if PrjFiles <> nil then
-              Dec(Index, PrjFiles.Count);
-            Files[Index] := Filename;
-            Files.Objects[Index] := TObject(True);
+              Dec( Index, PrjFiles.Count );
+            Files[ Index ] := Filename;
+            Files.Objects[ Index ] := TObject( True );
           end;
         end;
       end;
@@ -1481,73 +1477,73 @@ var
   end;
 
 var
-  I, k: Integer;
-  Module: IOTAModule;
-  PrjEditor: IOTAEditor;
-  ModuleServices: IOTAModuleServices;
-  Filename, RelDir: string;
-  Info: TInfo;
-  Files: TStringList;
+  I, k              : Integer;
+  Module            : IOTAModule;
+  PrjEditor         : IOTAEditor;
+  ModuleServices    : IOTAModuleServices;
+  Filename, RelDir  : string;
+  Info              : TInfo;
+  Files             : TStringList;
   {HashTable, }FilesHash, SourcesHash: TStringIntegerHash;
 
-  Project: IOTAProject;
-  Group: IOTAProjectGroup;
-  Options: IOTAProjectOptions;
-  Dirs: string;
-  DirList, Sources: TStringList;
-  Index{, StartIndex}: Integer;
-  CurDir: string;
+  Project           : IOTAProject;
+  Group             : IOTAProjectGroup;
+  Options           : IOTAProjectOptions;
+  Dirs              : string;
+  DirList, Sources  : TStringList;
+  Index {, StartIndex}: Integer;
+  CurDir            : string;
 
-  OpenModules: TStringList;
+  OpenModules       : TStringList;
 begin
   FCurrentData.Clear;
   FAllData.Clear;
 
-  ModuleServices := BorlandIDEServices as IOTAModuleServices;
+  ModuleServices    := BorlandIDEServices as IOTAModuleServices;
 
-  Modules := TStringList.Create;
-  DirList := TStringList.Create;
-  Files := TStringList.Create;
-  Sources := TStringList.Create;
-  FilesHash := TStringIntegerHash.Create;
-  HashTable := TStringIntegerHash.Create;
-  SourcesHash := TStringIntegerHash.Create;
-  OpenModules := TStringList.Create;
+  Modules           := TStringList.Create;
+  DirList           := TStringList.Create;
+  Files             := TStringList.Create;
+  Sources           := TStringList.Create;
+  FilesHash         := TStringIntegerHash.Create;
+  HashTable         := TStringIntegerHash.Create;
+  SourcesHash       := TStringIntegerHash.Create;
+  OpenModules       := TStringList.Create;
   try
-    Options := nil;
+    Options         := nil;
     FProjectFilename := '';
-    Dirs := '';
-    Project := GetActiveProject;
+    Dirs            := '';
+    Project         := GetActiveProject;
 
     { Get as much information from the project as possible }
     if Project <> nil then
     begin
       { Add project source file }
-      if Supports(Project, IOTAModule, Module) then
+      if Supports( Project, IOTAModule, Module ) then
       begin
         for I := 0 to Module.GetModuleFileCount - 1 do
         begin
-          PrjEditor := Module.GetModuleFileEditor(I);
-          if Supports(PrjEditor, IOTASourceEditor) then
+          PrjEditor := Module.GetModuleFileEditor( I );
+          if Supports( PrjEditor, IOTASourceEditor ) then
           begin
             Filename := PrjEditor.FileName;
-            Index := Modules.Add(Filename);
-            Modules.Add('');
-            HashTable.Add(AnsiUpperCase(Filename), Index);
+            Index   := Modules.Add( Filename );
+            Modules.Add( '' );
+            HashTable.Add( AnsiUpperCase( Filename ), Index );
             if Filename <> '' then
             begin
               { Project files are prioritised }
               // A project file is a source file: without the flag the "source for a DCU" lookup below
               // replaced it with a same-named unit from the Browsing Path.
-              Index := Files.AddObject(Filename, TObject(True));
-              FilesHash.Add(AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), '')), Index);
+              Index := Files.AddObject( Filename, TObject( True ) );
+              FilesHash.Add( AnsiUpperCase( ChangeFileExt( ExtractFileName( Filename ), '' ) ), Index );
             end;
             Break;
           end;
         end;
       end;
 
-      AddProjectModules(Project, Files, FilesHash);
+      AddProjectModules( Project, Files, FilesHash );
     end;
 
     { --- Add all files in the search path --- }
@@ -1556,12 +1552,12 @@ begin
     if Project <> nil then
     begin
       FProjectFilename := Project.FileName;
-      Dirs := Dirs + ';' + ExtractFilePath(FProjectFilename);
-      Dirs := Dirs + ';' + VarToStrDef(Project.ProjectOptions.Values['UnitDir'], '');
+      Dirs          := Dirs + ';' + ExtractFilePath( FProjectFilename );
+      Dirs          := Dirs + ';' + VarToStrDef( Project.ProjectOptions.Values[ 'UnitDir' ], '' );
     end;
 
-    Dirs := Dirs + ';' + GetProjectEnvOptionPaths(Project, 'LibraryPath');
-    Dirs := ExpandDirMacros(Dirs, Project);
+    Dirs            := Dirs + ';' + GetProjectEnvOptionPaths( Project, 'LibraryPath' );
+    Dirs            := ExpandDirMacros( Dirs, Project );
 
     { Find files in relative search and browsing paths }
    { if (CachedCurDir = ExtractFileDir(FProjectFilename)) and (CachedDirs = Dirs) then
@@ -1576,92 +1572,96 @@ begin
     end
     else}
     begin
-      CurDir := GetCurrentDir;
+      CurDir        := GetCurrentDir;
       try
         if FProjectFilename <> '' then
         begin
-          CachedCurDir := ExtractFileDir(FProjectFilename);
-          SetCurrentDir(CachedCurDir);
+          CachedCurDir := ExtractFileDir( FProjectFilename );
+          SetCurrentDir( CachedCurDir );
         end
         else
           CachedCurDir := CurDir;
 
-        CachedDirs := Dirs;
-        if CachedFiles <> nil then CachedFiles.Clear else
+        CachedDirs  := Dirs;
+        if CachedFiles <> nil then
+          CachedFiles.Clear
+        else
           CachedFiles := TStringList.Create;
-        if CachedSources <> nil then CachedSources.Clear else
+        if CachedSources <> nil then
+          CachedSources.Clear
+        else
           CachedSources := TStringList.Create;
 
         { Collect source and DCU files }
         DirList.Clear;
-        SplitPaths(DirList, Dirs, True);
+        SplitPaths( DirList, Dirs, True );
         for I := 0 to DirList.Count - 1 do
-          CollectFiles({$IFNDEF COMPILER12_UP}Project,{$ENDIF} Files, CachedFiles, FilesHash,
-            ExpandFileName(ExcludeTrailingPathDelimiter(DirList[I])), False);
-        Files.AddStrings(CachedFiles);
+          CollectFiles( {$IFNDEF COMPILER12_UP}Project, {$ENDIF}Files, CachedFiles, FilesHash,
+            ExpandFileName( ExcludeTrailingPathDelimiter( DirList[ I ] ) ), False );
+        Files.AddStrings( CachedFiles );
 
         { Collect source files for DCUs without source in the library path }
-        Dirs := GetProjectEnvOptionPaths(Project, 'BrowsingPath');
-        Dirs := ExpandDirMacros(Dirs, Project);
+        Dirs        := GetProjectEnvOptionPaths( Project, 'BrowsingPath' );
+        Dirs        := ExpandDirMacros( Dirs, Project );
         DirList.Clear;
-        SplitPaths(DirList, Dirs, True);
+        SplitPaths( DirList, Dirs, True );
         for I := 0 to DirList.Count - 1 do
-          CollectFiles({$IFNDEF COMPILER12_UP}Project,{$ENDIF} nil, Sources, SourcesHash,
-            ExpandFileName(ExcludeTrailingPathDelimiter(DirList[I])), True);
+          CollectFiles( {$IFNDEF COMPILER12_UP}Project, {$ENDIF}nil, Sources, SourcesHash,
+            ExpandFileName( ExcludeTrailingPathDelimiter( DirList[ I ] ) ), True );
 
         // Add the source files from other projects in the group, that the active projects can
         // access through DCU files.
-        Group := GetActiveProjectGroup();
+        Group       := GetActiveProjectGroup( );
         if Group <> nil then
           for I := 0 to Group.ProjectCount - 1 do
-            if Group.Projects[I] <> Project then
-              if Group.Projects[I].ProjectType = sPackage then
-                AddProjectSource(Group.Projects[I], nil, Sources, SourcesHash);
+            if Group.Projects[ I ] <> Project then
+              if Group.Projects[ I ].ProjectType = sPackage then
+                AddProjectSource( Group.Projects[ I ], nil, Sources, SourcesHash );
 
-        CachedSources.Assign(Sources);
+        CachedSources.Assign( Sources );
       finally
-        SetCurrentDir(CurDir);
+        SetCurrentDir( CurDir );
       end;
     end;
 
     { Fill the OpenModules hash table }
     for I := 0 to ModuleServices.ModuleCount - 1 do
     begin
-      Module := ModuleServices.Modules[I];
+      Module        := ModuleServices.Modules[ I ];
       if Module.ModuleFileCount = 0 then
-        OpenModules.Add(Module.FileName)
+        OpenModules.Add( Module.FileName )
       else
         for k := 0 to Module.ModuleFileCount - 1 do
-          OpenModules.Add(Module.ModuleFileEditors[k].FileName);
+          OpenModules.Add( Module.ModuleFileEditors[ k ].FileName );
     end;
     OpenModules.Sorted := True;
 
     { Fill FAllData }
     DirList.Clear; // now used for the Directory-ComboBox
-    DirList.Sorted := True;
+    DirList.Sorted  := True;
     for I := 0 to Files.Count - 1 do
     begin
-      Info := TInfo.Create;
-      FAllData.Add(Info);
-      Filename := Files[I];
-      if not Boolean(Files.Objects[I]) then
+      Info          := TInfo.Create;
+      FAllData.Add( Info );
+      Filename      := Files[ I ];
+      if not Boolean( Files.Objects[ I ] ) then
       begin
         // Lookup for the source file
-        if SourcesHash.Find(AnsiUpperCase(ChangeFileExt(ExtractFileName(Filename), '')), Index) then
-          Filename := Sources[Index];
+        if SourcesHash.Find( AnsiUpperCase( ChangeFileExt( ExtractFileName( Filename ), '' ) ), Index ) then
+          Filename  := Sources[ Index ];
       end;
 
       { Lookup the file in the project's module list }
-      k := -1;
+      k             := -1;
       if Filename <> '' then
       begin
-        if not HashTable.Find(AnsiUpperCase(Filename), k) then
-          k := -1;
+        if not HashTable.Find( AnsiUpperCase( Filename ), k ) then
+          k         := -1;
       end;
       if k >= 0 then
       begin
-        Info.FileName := Modules[k];
-        Info.FormName := Modules[k + 1];
+        Info.FileName := Modules[ k ];
+        Info.FormName := Modules[ k + 1 ];
         if Info.FormName <> '' then
           Info.ImageIndex := imgModuleForm
         else
@@ -1671,32 +1671,32 @@ begin
       begin
         Info.Filename := Filename;
         Info.FormName := '';
-        if IsBinaryFile(Filename) then
+        if IsBinaryFile( Filename ) then
           Info.ImageIndex := imgModuleBinary
         else
           Info.ImageIndex := imgModuleUnit;
       end;
 
-      Info.Name := ChangeFileExt(ExtractFileName(Filename), '');
+      Info.Name     := ChangeFileExt( ExtractFileName( Filename ), '' );
       if Info.Name = Info.FormName then
-        Info.Name := ChangeFileExt(ExtractFileName(Info.Filename), '');
+        Info.Name   := ChangeFileExt( ExtractFileName( Info.Filename ), '' );
       {if Project <> nil then
         Info.RelFileName := ExtractRelativePath(ExtractFilePath(FProjectFilename), Info.Filename)
       else}
-        Info.RelFileName := Info.Filename;
-      Info.Opened := OpenModules.IndexOf(Info.FileName) <> -1;
+      Info.RelFileName := Info.Filename;
+      Info.Opened   := OpenModules.IndexOf( Info.FileName ) <> -1;
 
       { fill directory list }
-      RelDir := ExtractFileDir(Info.RelFileName);
-      if (RelDir <> '') and (DirList.IndexOf(RelDir) = -1) then
-        DirList.Add(RelDir);
+      RelDir        := ExtractFileDir( Info.RelFileName );
+      if ( RelDir <> '' ) and ( DirList.IndexOf( RelDir ) = -1 ) then
+        DirList.Add( RelDir );
     end;
 
     //DirList.Sort;
-    DirList.Sorted := False;
-    DirList.Insert(0, RsFilterAllDirectories);
+    DirList.Sorted  := False;
+    DirList.Insert( 0, RsFilterAllDirectories );
 
-    cbxFilterDirectory.Items.Assign(DirList);
+    cbxFilterDirectory.Items.Assign( DirList );
     cbxFilterDirectory.ItemIndex := 0;
     cbxFilterDirectory.Enabled := DirList.Count > 2;
   finally
@@ -1713,79 +1713,79 @@ end;
 
 procedure TFormFileSelector.SaveSettings;
 var
-  Node: IXmlNode;
-  I: Integer;
+  Node              : IXmlNode;
+  I                 : Integer;
 begin
-  Node := Configuration.GetNode('FileSelector');
-  Node.Attributes['AllowMoveFromInterfaceToImpl'] := mniAllowMoveFromInterfaceToImpl.Checked;
-  Node.Attributes['EveryUnitOnSingleLine'] := mniEveryUnitOnSingleLine.Checked;
+  Node              := Configuration.GetNode( 'FileSelector' );
+  Node.Attributes[ 'AllowMoveFromInterfaceToImpl' ] := mniAllowMoveFromInterfaceToImpl.Checked;
+  Node.Attributes[ 'EveryUnitOnSingleLine' ] := mniEveryUnitOnSingleLine.Checked;
 
   if cbxFilterDirectory.ItemIndex > 0 then
-    Node.Attributes['LastFilterDir'] := cbxFilterDirectory.Text
+    Node.Attributes[ 'LastFilterDir' ] := cbxFilterDirectory.Text
   else
-    Node.Attributes['LastFilterDir'] := Null;
-  Node := Configuration.GetNode(Node, 'Layout');
-  with Configuration.GetNode(Node, 'Size') do
+    Node.Attributes[ 'LastFilterDir' ] := Null;
+  Node              := Configuration.GetNode( Node, 'Layout' );
+  with Configuration.GetNode( Node, 'Size' ) do
   begin
-    Attributes['ClientWidth'] := ClientWidth;
-    Attributes['ClientHeight'] := ClientHeight;
+    Attributes[ 'ClientWidth' ] := ClientWidth;
+    Attributes[ 'ClientHeight' ] := ClientHeight;
   end;
-  with Configuration.GetNode(Node, 'Columns') do
+  with Configuration.GetNode( Node, 'Columns' ) do
   begin
-    Attributes['SortColumn'] := FSortColumn;
-    Attributes['SortAsc'] := FSortAsc;
-    Attributes['ColumnFilter'] := cbxFilterField.ItemIndex;
+    Attributes[ 'SortColumn' ] := FSortColumn;
+    Attributes[ 'SortAsc' ] := FSortAsc;
+    Attributes[ 'ColumnFilter' ] := cbxFilterField.ItemIndex;
     ChildNodes.Clear;
     for I := 0 to ListView.Columns.Count - 1 do
-      AddChild('Column').Attributes['Width'] := ListView.Columns[I].Width;
+      AddChild( 'Column' ).Attributes[ 'Width' ] := ListView.Columns[ I ].Width;
   end;
   Configuration.Modified;
 end;
 
 procedure TFormFileSelector.LoadSettings;
 var
-  Xml, Node: IXmlNode;
-  I, ColIndex: Integer;
-  Dir: string;
+  Xml, Node         : IXmlNode;
+  I, ColIndex       : Integer;
+  Dir               : string;
 begin
-  Node := Configuration.FindNode('FileSelector');
+  Node              := Configuration.FindNode( 'FileSelector' );
   if Node <> nil then
   begin
 
-    mniAllowMoveFromInterfaceToImpl.Checked := VarToBoolDef(Node.Attributes['AllowMoveFromInterfaceToImpl'], False);
-    mniEveryUnitOnSingleLine.Checked := VarToBoolDef(Node.Attributes['EveryUnitOnSingleLine'], False);
+    mniAllowMoveFromInterfaceToImpl.Checked := VarToBoolDef( Node.Attributes[ 'AllowMoveFromInterfaceToImpl' ], False );
+    mniEveryUnitOnSingleLine.Checked := VarToBoolDef( Node.Attributes[ 'EveryUnitOnSingleLine' ], False );
 
-    Dir := VarToStrDef(Node.Attributes['LastFilterDir'], '');
+    Dir             := VarToStrDef( Node.Attributes[ 'LastFilterDir' ], '' );
     if Dir <> '' then
     begin
-      I := cbxFilterDirectory.Items.IndexOf(Dir);
+      I             := cbxFilterDirectory.Items.IndexOf( Dir );
       if I <> -1 then
         cbxFilterDirectory.ItemIndex := I;
     end;
 
-    Node := Node.ChildNodes.FindNode('Layout');
+    Node            := Node.ChildNodes.FindNode( 'Layout' );
     if Node <> nil then
     begin
-      Xml := Node.ChildNodes.FindNode('Size');
+      Xml           := Node.ChildNodes.FindNode( 'Size' );
       if Xml <> nil then
       begin
-        ClientWidth := VarToIntDef(Xml.Attributes['ClientWidth'], ClientWidth);
-        ClientHeight := VarToIntDef(Xml.Attributes['ClientHeight'], ClientHeight);
+        ClientWidth := VarToIntDef( Xml.Attributes[ 'ClientWidth' ], ClientWidth );
+        ClientHeight := VarToIntDef( Xml.Attributes[ 'ClientHeight' ], ClientHeight );
       end;
 
-      Xml := Node.ChildNodes.FindNode('Columns');
+      Xml           := Node.ChildNodes.FindNode( 'Columns' );
       if Xml <> nil then
       begin
-        FSortColumn := VarToIntDef(Xml.Attributes['SortColumn'], FSortColumn);
-        FSortAsc := VarToBoolDef(Xml.Attributes['SortAsc'], FSortAsc);
-        cbxFilterField.ItemIndex := VarToIntDef(Xml.Attributes['ColumnFilter'], cbxFilterField.ItemIndex);
-        ColIndex := 0;
+        FSortColumn := VarToIntDef( Xml.Attributes[ 'SortColumn' ], FSortColumn );
+        FSortAsc    := VarToBoolDef( Xml.Attributes[ 'SortAsc' ], FSortAsc );
+        cbxFilterField.ItemIndex := VarToIntDef( Xml.Attributes[ 'ColumnFilter' ], cbxFilterField.ItemIndex );
+        ColIndex    := 0;
         for I := 0 to Xml.ChildNodes.Count - 1 do
         begin
-          if Xml.ChildNodes[I].NodeName = 'Column' then
+          if Xml.ChildNodes[ I ].NodeName = 'Column' then
           begin
-            ListView.Columns[ColIndex].Width := VarToIntDef(Xml.ChildNodes[I].Attributes['Width'], ListView.Columns[ColIndex].Width);
-            Inc(ColIndex);
+            ListView.Columns[ ColIndex ].Width := VarToIntDef( Xml.ChildNodes[ I ].Attributes[ 'Width' ], ListView.Columns[ ColIndex ].Width );
+            Inc( ColIndex );
             if ColIndex >= ListView.Columns.Count then
               Break;
           end;
@@ -1795,7 +1795,7 @@ begin
   end;
 end;
 
-procedure TFormFileSelector.mniOpenFileClick(Sender: TObject);
+procedure TFormFileSelector.mniOpenFileClick( Sender: TObject );
 begin
   inherited;
   // The popup can be raised with no (or a stale) selection; mirror the Enabled
@@ -1806,10 +1806,10 @@ end;
 
 procedure TFormFileSelector.RefreshButtons;
 begin
-  ListViewSelectItem(ListView, ListView.Selected, ListView.Selected <> nil); // refresh Open/UseUnit buttons
+  ListViewSelectItem( ListView, ListView.Selected, ListView.Selected <> nil ); // refresh Open/UseUnit buttons
 end;
 
-procedure TFormFileSelector.TimerFilterUpdateTimer(Sender: TObject);
+procedure TFormFileSelector.TimerFilterUpdateTimer( Sender: TObject );
 begin
   TimerFilterUpdate.Enabled := False;
   UpdateData;
@@ -1817,7 +1817,7 @@ end;
 
 procedure TFormFileSelector.UpdateData;
 begin
-  FFilterField := cbxFilterField.ItemIndex;
+  FFilterField      := cbxFilterField.ItemIndex;
 
   ListView.Items.BeginUpdate;
   try
@@ -1827,96 +1827,94 @@ begin
     ListView.Items.EndUpdate;
   end;
 
-  StatusBar.Panels[0].Text := Format(RsNumberOfModules, [FCurrentData.Count]);
+  StatusBar.Panels[ 0 ].Text := Format( RsNumberOfModules, [ FCurrentData.Count ] );
 end;
 
-function TFormFileSelector.FilterInfo(Info: TInfo; var NewSelLen: Integer): Boolean;
+function TFormFileSelector.FilterInfo( Info: TInfo; var NewSelLen: Integer ): Boolean;
 begin
-  Result := False;
+  Result            := False;
 
   { Filter by directory }
   if FDirectoryFiltered then
   begin
     if FDirectoryFilter <> '' then
     begin
-      if not StartsText(FDirectoryFilter, Info.RelFileName) then
+      if not StartsText( FDirectoryFilter, Info.RelFileName ) then
         Exit;
     end
-    else
-    if StartsText('..' + PathDelim, Info.RelFileName) or (Pos(':', Info.RelFileName) > 0) then
+    else if StartsText( '..' + PathDelim, Info.RelFileName ) or ( Pos( ':', Info.RelFileName ) > 0 ) then
       Exit;
   end;
 
   case FFilterField of
     0:
       begin
-        Result := FilterListViewData(Info.Name);
+        Result      := FilterListViewData( Info.Name );
         if Result then
-          NewSelLen := Length(Info.Name)
+          NewSelLen := Length( Info.Name )
         else
         begin
-          NewSelLen := Length(Info.FormName);
-          Result := FilterListViewData(Info.FormName);
+          NewSelLen := Length( Info.FormName );
+          Result    := FilterListViewData( Info.FormName );
         end;
       end;
     1:
       begin
-        NewSelLen := Length(Info.Name);
-        Result := FilterListViewData(Info.Name);
+        NewSelLen   := Length( Info.Name );
+        Result      := FilterListViewData( Info.Name );
       end;
     2:
       begin
-        NewSelLen := Length(Info.FormName);
-        Result := FilterListViewData(Info.FormName);
+        NewSelLen   := Length( Info.FormName );
+        Result      := FilterListViewData( Info.FormName );
       end;
   end;
 end;
 
 procedure TFormFileSelector.UpdateListViewData;
 var
-  I, SelIndex: Integer;
-  Info: TInfo;
-  SelLen, NewSelLen: Integer;
+  I, SelIndex       : Integer;
+  Info              : TInfo;
+  SelLen, NewSelLen : Integer;
 begin
   FCurrentData.Clear;
   FFilterTexts.Clear;
-  SplitFilterText(AnsiLowerCase(edtFilter.Text), FFilterTexts);
+  SplitFilterText( AnsiLowerCase( edtFilter.Text ), FFilterTexts );
   for I := 0 to FFilterTexts.Count - 1 do
   begin
-    if ContainsAsterisk(FFilterTexts[I]) then
+    if ContainsAsterisk( FFilterTexts[ I ] ) then
     begin
-      if not CharInSet(FFilterTexts[I][1], ['*', '?']) then
-        FFilterTexts[I] := '*' + FFilterTexts[I];
-      if not CharInSet(FFilterTexts[I][Length(FFilterTexts[I])], ['*', '?']) then
-        FFilterTexts[I] := FFilterTexts[I] + '*';
+      if not CharInSet( FFilterTexts[ I ][ 1 ], [ '*', '?' ] ) then
+        FFilterTexts[ I ] := '*' + FFilterTexts[ I ];
+      if not CharInSet( FFilterTexts[ I ][ Length( FFilterTexts[ I ] ) ], [ '*', '?' ] ) then
+        FFilterTexts[ I ] := FFilterTexts[ I ] + '*';
     end;
   end;
 
-
-  FDirectoryFilter := '';
+  FDirectoryFilter  := '';
   FDirectoryFiltered := False;
   if cbxFilterDirectory.ItemIndex > 0 then
   begin
     FDirectoryFiltered := True;
-    FDirectoryFilter := cbxFilterDirectory.Items[cbxFilterDirectory.ItemIndex];
+    FDirectoryFilter := cbxFilterDirectory.Items[ cbxFilterDirectory.ItemIndex ];
     if FDirectoryFilter <> '' then
       FDirectoryFilter := FDirectoryFilter + PathDelim;
   end;
 
-  SelLen := MaxInt;
-  SelIndex := -1;
+  SelLen            := MaxInt;
+  SelIndex          := -1;
   { collect filtered info items }
   for I := 0 to FAllData.Count - 1 do
   begin
-    Info := FAllData[I];
-    if FilterInfo(Info, NewSelLen) then
+    Info            := FAllData[ I ];
+    if FilterInfo( Info, NewSelLen ) then
     begin
-      if (FFilterTexts.Count <> 0) and (NewSelLen > 0) and (NewSelLen < SelLen) then
+      if ( FFilterTexts.Count <> 0 ) and ( NewSelLen > 0 ) and ( NewSelLen < SelLen ) then
       begin
-        SelIndex := FCurrentData.Count;
-        SelLen := NewSelLen;
+        SelIndex    := FCurrentData.Count;
+        SelLen      := NewSelLen;
       end;
-      FCurrentData.Add(Info);
+      FCurrentData.Add( Info );
     end;
   end;
 
@@ -1926,30 +1924,30 @@ begin
   if FCurrentData.Count > 0 then
   begin
     if SelIndex = -1 then
-      SelIndex := 0;
-    ListView.Items[SelIndex].Selected := True;
-    ListView.Items[SelIndex].MakeVisible(False);
+      SelIndex      := 0;
+    ListView.Items[ SelIndex ].Selected := True;
+    ListView.Items[ SelIndex ].MakeVisible( False );
   end;
 end;
 
 procedure TFormFileSelector.Sort;
 begin
-  FAllData.Sort(DoSortInfos);
+  FAllData.Sort( DoSortInfos );
   UpdateData;
 end;
 
-procedure TFormFileSelector.RemoveUsesUnits(Writer: IOTAEditWriter; StopIndex: Integer;
-  DeleteUsesList: TList; UsesList: TUsesList);
+procedure TFormFileSelector.RemoveUsesUnits( Writer: IOTAEditWriter; StopIndex: Integer;
+  DeleteUsesList: TList; UsesList: TUsesList );
 
-  function FindCommaLocation(out CommaBegin, CommaEnd: Integer;
-    UsesList: TUsesList; Item: TUsesItem): Boolean;
+  function FindCommaLocation( out CommaBegin, CommaEnd: Integer;
+    UsesList: TUsesList; Item: TUsesItem ): Boolean;
   var
-    Idx: Integer;
+    Idx             : Integer;
   begin
-    CommaBegin := -1;
-    CommaEnd := -1;
-    Idx := UsesList.IndexOf(Item);
-    Result := Idx <> -1;
+    CommaBegin      := -1;
+    CommaEnd        := -1;
+    Idx             := UsesList.IndexOf( Item );
+    Result          := Idx <> -1;
     if Result then
     begin
       if Idx = UsesList.Count - 1 then
@@ -1961,26 +1959,26 @@ procedure TFormFileSelector.RemoveUsesUnits(Writer: IOTAEditWriter; StopIndex: I
           // whole-"uses"-clause delete path (UsesList.Count = DeleteUsesList.Count)
           // removes the entire clause instead.
           CommaBegin := -1;
-          CommaEnd := -1;
-          Result := False;
+          CommaEnd  := -1;
+          Result    := False;
           Exit;
         end;
-        CommaBegin := UsesList[Idx - 1].EndLocation.Index; // includes the "," / ";"
-        CommaEnd := Item.StartLocation.Index + 1;
+        CommaBegin  := UsesList[ Idx - 1 ].EndLocation.Index; // includes the "," / ";"
+        CommaEnd    := Item.StartLocation.Index + 1;
         // last unit terminated by ";"
       end
       else
       begin
         // unit after "uses" and before last unit terminated by ","
-        CommaBegin := Item.EndLocation.Index; // includes the "," / ";"
-        CommaEnd := UsesList[Idx + 1].StartLocation.Index - 1;
+        CommaBegin  := Item.EndLocation.Index; // includes the "," / ";"
+        CommaEnd    := UsesList[ Idx + 1 ].StartLocation.Index - 1;
       end;
     end;
   end;
 
 var
-  I: Integer;
-  Item: TUsesItem;
+  I                 : Integer;
+  Item              : TUsesItem;
   EndIndex, Len, CommaBegin, CommaEnd, CommaFindEnd: Integer;
 begin
   // The items in DeleteUsesList[] are either interface-uses or implementation-uses items but
@@ -1988,163 +1986,163 @@ begin
   // That makes things a lot easier because we can delete everything without thinking about how
   // to delete with a possible add at the some location.
 
-  if (UsesList.Count = 0) or (DeleteUsesList.Count = 0) then
+  if ( UsesList.Count = 0 ) or ( DeleteUsesList.Count = 0 ) then
     Exit;
 
-  Len := Length(FParser.Text);
+  Len               := Length( FParser.Text );
   if UsesList.Count = DeleteUsesList.Count then
   begin
     // We delete all uses items => we have to delete the whole "uses" clause.
-    EndIndex := UsesList.EndLocation.Index;
+    EndIndex        := UsesList.EndLocation.Index;
     // include the line breaks
-    Inc(EndIndex);
-    while (EndIndex < Len) and (FParser.Text[EndIndex] in [#10, #13]) do
-      Inc(EndIndex);
-    Writer.CopyTo(UsesList.Location.Index - 1);
-    Writer.DeleteTo(EndIndex - 1);
+    Inc( EndIndex );
+    while ( EndIndex < Len ) and ( FParser.Text[ EndIndex ] in [ #10, #13 ] ) do
+      Inc( EndIndex );
+    Writer.CopyTo( UsesList.Location.Index - 1 );
+    Writer.DeleteTo( EndIndex - 1 );
   end
   else
   begin
-    I := 0;
-    while (I < DeleteUsesList.Count) do
+    I               := 0;
+    while ( I < DeleteUsesList.Count ) do
     begin
-      Item := DeleteUsesList[I];
-      if (StopIndex <> -1) and (Item.StartLocation.Index >= StopIndex) then
+      Item          := DeleteUsesList[ I ];
+      if ( StopIndex <> -1 ) and ( Item.StartLocation.Index >= StopIndex ) then
         Break;
 
       // Find the "," that we also have to remove
-      FindCommaLocation({out} CommaBegin, {out} CommaEnd, UsesList, Item);
+      FindCommaLocation( {out} CommaBegin, {out} CommaEnd, UsesList, Item );
       if CommaBegin <> -1 then
       begin
-        while (CommaBegin <= CommaEnd) and (CommaBegin < Len) and (FParser.Text[CommaBegin] <> ',') do
-          Inc(CommaBegin);
+        while ( CommaBegin <= CommaEnd ) and ( CommaBegin < Len ) and ( FParser.Text[ CommaBegin ] <> ',' ) do
+          Inc( CommaBegin );
         if CommaBegin <= CommaEnd then
         begin
           // We found the "," but we also have to remove the space after it (", ") if it exists
           CommaFindEnd := CommaBegin;
-          while (CommaFindEnd + 1 <= CommaEnd) and (FParser.Text[CommaFindEnd + 1] in [#9, ' ', #10, #13]) do
-            Inc(CommaFindEnd, 1);
-          CommaEnd := CommaFindEnd;
+          while ( CommaFindEnd + 1 <= CommaEnd ) and ( FParser.Text[ CommaFindEnd + 1 ] in [ #9, ' ', #10, #13 ] ) do
+            Inc( CommaFindEnd, 1 );
+          CommaEnd  := CommaFindEnd;
         end;
       end;
 
       // remove ","
-      if (CommaBegin <> -1) and (CommaBegin < Item.StartLocation.Index) then
+      if ( CommaBegin <> -1 ) and ( CommaBegin < Item.StartLocation.Index ) then
       begin
-        Writer.CopyTo(CommaBegin - 1);
-        Writer.DeleteTo(CommaEnd);
+        Writer.CopyTo( CommaBegin - 1 );
+        Writer.DeleteTo( CommaEnd );
       end;
       // remove unit name
-      Writer.CopyTo(Item.StartLocation.Index - 1);
-      Writer.DeleteTo(Item.EndLocation.Index - 1);
+      Writer.CopyTo( Item.StartLocation.Index - 1 );
+      Writer.DeleteTo( Item.EndLocation.Index - 1 );
       // remove ","
-      if (CommaBegin <> -1) and (CommaBegin >= Item.EndLocation.Index) then
+      if ( CommaBegin <> -1 ) and ( CommaBegin >= Item.EndLocation.Index ) then
       begin
-        Writer.CopyTo(CommaBegin - 1);
-        Writer.DeleteTo(CommaEnd);
+        Writer.CopyTo( CommaBegin - 1 );
+        Writer.DeleteTo( CommaEnd );
       end;
 
-      Inc(I);
+      Inc( I );
     end;
   end;
 end;
 
-function SortUsesItemByLocationIndex(Item1, Item2: Pointer): Integer;
+function SortUsesItemByLocationIndex( Item1, Item2: Pointer ): Integer;
 begin
-  Result := TUsesItem(Item1).StartLocation.Index - TUsesItem(Item2).StartLocation.Index;
+  Result            := TUsesItem( Item1 ).StartLocation.Index - TUsesItem( Item2 ).StartLocation.Index;
 end;
 
-procedure TFormFileSelector.UseSelectedUnits(Files: TList);
+procedure TFormFileSelector.UseSelectedUnits( Files: TList );
 var
-  I: Integer;
+  I                 : Integer;
   UnitNames, FileNames: TStrings;
-  S: string;
-  UsesList: TUsesList;
-  AddIndex: Integer;
-  Writer: IOTAEditWriter;
-  Column: Integer;
-  RightMargin: Integer;
-  EditOptions: IOTAEditOptions;
-  PrjName: string;
+  S                 : string;
+  UsesList          : TUsesList;
+  AddIndex          : Integer;
+  Writer            : IOTAEditWriter;
+  Column            : Integer;
+  RightMargin       : Integer;
+  EditOptions       : IOTAEditOptions;
+  PrjName           : string;
   ModuleName, FileName: string;
   FoundInImpl, FoundInIntf: TUsesItem;
   UseUnitsImplementation, AllowMoveFromInterfaceToImpl, EveryUnitOnSingleLine: Boolean;
-  DeleteUsesList: TList;
-  Utf8: UTF8String;
+  DeleteUsesList    : TList;
+  Utf8              : UTF8String;
 begin
-  if (FEditor = nil) or (FParser = nil) then
+  if ( FEditor = nil ) or ( FParser = nil ) then
     Exit;
 
   UseUnitsImplementation := chkUseUnitsImplementation.Checked;
   AllowMoveFromInterfaceToImpl := mniAllowMoveFromInterfaceToImpl.Checked;
   EveryUnitOnSingleLine := mniEveryUnitOnSingleLine.Checked;
 
-  RightMargin := 80;
-  EditOptions := (BorlandIDEServices as IOTAEditorServices).EditOptions;
+  RightMargin       := 80;
+  EditOptions       := ( BorlandIDEServices as IOTAEditorServices ).EditOptions;
   if EditOptions <> nil then
-    RightMargin := EditOptions.BufferOptions.RightMargin;
+    RightMargin     := EditOptions.BufferOptions.RightMargin;
 
   if FProjectFilename <> '' then
-    PrjName := ChangeFileExt(ExtractFileName(FProjectFilename), '');
+    PrjName         := ChangeFileExt( ExtractFileName( FProjectFilename ), '' );
   if FEditor <> nil then
-    ModuleName := ChangeFileExt(ExtractFileName(FEditor.FileName), '');
+    ModuleName      := ChangeFileExt( ExtractFileName( FEditor.FileName ), '' );
 
-  UnitNames := TStringList.Create;
-  FileNames := TStringList.Create;
-  DeleteUsesList := TList.Create;
+  UnitNames         := TStringList.Create;
+  FileNames         := TStringList.Create;
+  DeleteUsesList    := TList.Create;
   try
     for I := 0 to Files.Count - 1 do
     begin
-      FileName := TInfo(Files[I]).FileName;
-      S := ChangeFileExt(ExtractFileName(FileName), '');
-      if (PrjName <> '') and SameText(S, PrjName) then
+      FileName      := TInfo( Files[ I ] ).FileName;
+      S             := ChangeFileExt( ExtractFileName( FileName ), '' );
+      if ( PrjName <> '' ) and SameText( S, PrjName ) then
         Continue;
-      if (ModuleName <> '') and SameText(S, ModuleName) then
+      if ( ModuleName <> '' ) and SameText( S, ModuleName ) then
         Continue;
 
-      UnitNames.Add(S);
-      FileNames.Add(FileName);
+      UnitNames.Add( S );
+      FileNames.Add( FileName );
     end;
 
     if UseUnitsImplementation then
     begin
-      UsesList := FParser.ImplUses;
-      AddIndex := FParser.ImplLocation.Index;
+      UsesList      := FParser.ImplUses;
+      AddIndex      := FParser.ImplLocation.Index;
       if AddIndex > 0 then
-        Inc(AddIndex, Length('implementation') - 1);
+        Inc( AddIndex, Length( 'implementation' ) - 1 );
     end
     else
     begin
-      UsesList := FParser.InterfaceUses;
-      AddIndex := FParser.InterfaceLocation.Index;
+      UsesList      := FParser.InterfaceUses;
+      AddIndex      := FParser.InterfaceLocation.Index;
       if AddIndex > 0 then
-        Inc(AddIndex, Length('interface') - 1);
+        Inc( AddIndex, Length( 'interface' ) - 1 );
     end;
 
     { Remove already used units from the "add list" }
     for I := UnitNames.Count - 1 downto 0 do
     begin
-      FoundInImpl := FParser.ImplUses.FindUses(UnitNames[I]);
-      FoundInIntf := FParser.InterfaceUses.FindUses(UnitNames[I]);
-      if ((FoundInImpl <> nil) and UseUnitsImplementation) or
-         ((FoundInIntf <> nil) and (not UseUnitsImplementation or not AllowMoveFromInterfaceToImpl)) then
+      FoundInImpl   := FParser.ImplUses.FindUses( UnitNames[ I ] );
+      FoundInIntf   := FParser.InterfaceUses.FindUses( UnitNames[ I ] );
+      if ( ( FoundInImpl <> nil ) and UseUnitsImplementation ) or
+        ( ( FoundInIntf <> nil ) and ( not UseUnitsImplementation or not AllowMoveFromInterfaceToImpl ) ) then
       begin
-        UnitNames.Delete(I);
-        FileNames.Delete(I);
+        UnitNames.Delete( I );
+        FileNames.Delete( I );
       end
       else
       begin
         { Add the already added UsesItem to the delete list if the user wants the unit
           to be moved to the other location (implementation vs. interface) }
-        if (FoundInImpl <> nil) and not UseUnitsImplementation then
-          DeleteUsesList.Add(FoundInImpl);
-        if (FoundInIntf <> nil) and UseUnitsImplementation then
-          DeleteUsesList.Add(FoundInIntf);
+        if ( FoundInImpl <> nil ) and not UseUnitsImplementation then
+          DeleteUsesList.Add( FoundInImpl );
+        if ( FoundInIntf <> nil ) and UseUnitsImplementation then
+          DeleteUsesList.Add( FoundInIntf );
 
         { If the file doesn't exist yet (created in memory) we use the already available
           unit name, instead of looking into the file's unit-header. }
-        if FileExists(FileNames[I]) then
-          UnitNames[I] := GetUnitNameFromFile(FileNames[I])
+        if FileExists( FileNames[ I ] ) then
+          UnitNames[ I ] := GetUnitNameFromFile( FileNames[ I ] )
       end;
     end;
 
@@ -2152,72 +2150,72 @@ begin
     begin
       // Validate the insert location BEFORE creating the writer or issuing any
       // deletes, so a not-found location cannot leave a half-rewritten clause.
-      if (UsesList.Count = 0) and (AddIndex <= 0) then
+      if ( UsesList.Count = 0 ) and ( AddIndex <= 0 ) then
       begin
-        ShowMessage('Could not locate the uses-clause insertion point; no changes were made.');
+        ShowMessage( 'Could not locate the uses-clause insertion point; no changes were made.' );
         Exit;
       end;
 
-      Writer := FEditor.CreateUndoableWriter;
+      Writer        := FEditor.CreateUndoableWriter;
 
       // Sort the delete list by source code index to allow us to delete them in order
-      DeleteUsesList.Sort(SortUsesItemByLocationIndex);
+      DeleteUsesList.Sort( SortUsesItemByLocationIndex );
 
       // Remove interface-uses items if we add to the implementation-uses.
       if UseUnitsImplementation and AllowMoveFromInterfaceToImpl then
-        RemoveUsesUnits(Writer, AddIndex, DeleteUsesList, FParser.InterfaceUses);
+        RemoveUsesUnits( Writer, AddIndex, DeleteUsesList, FParser.InterfaceUses );
 
       { Concat the unit names and insert the LineBreaks where necessary }
-      S := '';
-      Column := 3;
+      S             := '';
+      Column        := 3;
       if UsesList.Count > 0 then
       begin
-        Column := UsesList.EndLocation.Column;
-        if EveryUnitOnSingleLine or (Column + 2 + Length(UnitNames[0]) >= RightMargin) then
+        Column      := UsesList.EndLocation.Column;
+        if EveryUnitOnSingleLine or ( Column + 2 + Length( UnitNames[ 0 ] ) >= RightMargin ) then
         begin
-          S := sLineBreak + '  ';
-          Column := 3;
+          S         := sLineBreak + '  ';
+          Column    := 3;
         end;
       end;
 
-      S := S + UnitNames[0] + ',';
-      Inc(Column, 2 + Length(UnitNames[0]));
+      S             := S + UnitNames[ 0 ] + ',';
+      Inc( Column, 2 + Length( UnitNames[ 0 ] ) );
       for I := 1 to UnitNames.Count - 1 do
       begin
-        if EveryUnitOnSingleLine or (Column >= RightMargin) then
+        if EveryUnitOnSingleLine or ( Column >= RightMargin ) then
         begin
-          S := S + sLineBreak + ' ';
-          Column := 3;
+          S         := S + sLineBreak + ' ';
+          Column    := 3;
         end;
-        S := S + ' ' + UnitNames[I] + ',';
-        Inc(Column, 2 + Length(UnitNames[I]));
+        S           := S + ' ' + UnitNames[ I ] + ',';
+        Inc( Column, 2 + Length( UnitNames[ I ] ) );
       end;
 
       // cut trailing ','
-      SetLength(S, Length(S) - 1);
+      SetLength( S, Length( S ) - 1 );
 
       { Add the added units }
       if UsesList.Count > 0 then
       begin
-        AddIndex := UsesList.EndLocation.Index - 1;
-        S := ', ' + S;
+        AddIndex    := UsesList.EndLocation.Index - 1;
+        S           := ', ' + S;
       end
       else
-        S := sLineBreak + sLineBreak + 'uses' + sLineBreak + '  ' + S + ';';
+        S           := sLineBreak + sLineBreak + 'uses' + sLineBreak + '  ' + S + ';';
 
       if AddIndex <= 0 then
-        raise Exception.Create(sParseErrorUsesLocationNotFound);
+        raise Exception.Create( sParseErrorUsesLocationNotFound );
 
-      Writer.CopyTo(AddIndex);
+      Writer.CopyTo( AddIndex );
       // Hold the encoded text in a named local so its buffer outlives the Insert
       // call; a bare PAnsiChar(Utf8Encode(...)) points at a temporary.
-      Utf8 := Utf8Encode(S);
-      Writer.Insert(PAnsiChar(Utf8));
+      Utf8          := Utf8Encode( S );
+      Writer.Insert( PAnsiChar( Utf8 ) );
       // Remove implementation-uses items if we add to the interface-uses.
       if not UseUnitsImplementation then
-        RemoveUsesUnits(Writer, -1, DeleteUsesList, FParser.ImplUses);
-      Writer.CopyTo(MaxInt);
-      Writer := nil;
+        RemoveUsesUnits( Writer, -1, DeleteUsesList, FParser.ImplUses );
+      Writer.CopyTo( MaxInt );
+      Writer        := nil;
     end;
   finally
     DeleteUsesList.Free;
@@ -2228,22 +2226,22 @@ end;
 
 function TFormFileSelector.GetCurrentSourceEditor: IOTASourceEditor;
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  I: Integer;
-  Editor: IOTAEditor;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  I                 : Integer;
+  Editor            : IOTAEditor;
 begin
-  Result := nil;
-  if Supports(BorlandIDEServices, IOTAModuleServices, ModuleServices) and
-     (ModuleServices.CurrentModule <> nil) and
-     SameText(ExtractFileExt(ModuleServices.CurrentModule.FileName), '.pas') then
+  Result            := nil;
+  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) and
+    ( ModuleServices.CurrentModule <> nil ) and
+    SameText( ExtractFileExt( ModuleServices.CurrentModule.FileName ), '.pas' ) then
   begin
-    Module := ModuleServices.CurrentModule;
+    Module          := ModuleServices.CurrentModule;
     for I := 0 to Module.GetModuleFileCount - 1 do
     begin
-      Editor := Module.GetModuleFileEditor(I);
-      if SameText(ExtractFileExt(Editor.FileName), '.pas') and
-         Supports(Editor, IOTASourceEditor, Result) then
+      Editor        := Module.GetModuleFileEditor( I );
+      if SameText( ExtractFileExt( Editor.FileName ), '.pas' ) and
+        Supports( Editor, IOTASourceEditor, Result ) then
       begin
         Break;
       end;
@@ -2251,18 +2249,18 @@ begin
   end;
 end;
 
-procedure TFormFileSelector.btnOptionsClick(Sender: TObject);
+procedure TFormFileSelector.btnOptionsClick( Sender: TObject );
 var
-  R: TRect;
+  R                 : TRect;
 begin
-  GetWindowRect(btnOptions.Handle, R);
-  popOptions.Popup(R.Left, R.Bottom);
+  GetWindowRect( btnOptions.Handle, R );
+  popOptions.Popup( R.Left, R.Bottom );
 end;
 
 initialization
 
 finalization
-  FreeAndNil(CachedFiles);
-  FreeAndNil(CachedSources);
+  FreeAndNil( CachedFiles );
+  FreeAndNil( CachedSources );
 end.
 

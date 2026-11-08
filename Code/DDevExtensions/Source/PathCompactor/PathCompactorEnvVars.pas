@@ -183,14 +183,14 @@ uses
 
 function BdsRootDir: string;
 begin
-  Result := ExtractFileDir( AppDir );
+  Result            := ExtractFileDir( AppDir );
 end;
 
 procedure BuildMacroTable( AList: TStrings; const ABaseRegistryKey, APlatformName: string );
 var
-  Overrides: TStringList;
-  EnvBlock, Entry: PChar;
-  I: Integer;
+  Overrides         : TStringList;
+  EnvBlock, Entry   : PChar;
+  I                 : Integer;
   Root, Common, UserDir, VersionDir: string;
 begin
   AList.Clear;
@@ -198,12 +198,12 @@ begin
 
   // 1. This IDE's user overrides. Which key that is depends on the IDE's
   //    bitness — see PathCompactorEnvVars.EnvironmentVariablesKey.
-  Overrides := TStringList.Create;
+  Overrides         := TStringList.Create;
   try
     ReadIdeVariables( EnvironmentVariablesKey( ABaseRegistryKey ), Overrides );
     for I := 0 to Overrides.Count - 1 do
-      if Overrides.Names[I] <> '' then
-        AList.Add( Overrides[I] );
+      if Overrides.Names[ I ] <> '' then
+        AList.Add( Overrides[ I ] );
   finally
     Overrides.Free;
   end;
@@ -213,14 +213,14 @@ begin
   //    The version folder is taken from the tail of the base registry key
   //    (".. \BDS\37.0" -> "37.0") rather than from IDEHooks.DelphiVersion,
   //    which carries the product number ("14"), not the registry version.
-  Root := BdsRootDir;
-  VersionDir := ABaseRegistryKey;
+  Root              := BdsRootDir;
+  VersionDir        := ABaseRegistryKey;
   if LastDelimiter( '\', VersionDir ) > 0 then
-    VersionDir := Copy( VersionDir, LastDelimiter( '\', VersionDir ) + 1, MaxInt );
+    VersionDir      := Copy( VersionDir, LastDelimiter( '\', VersionDir ) + 1, MaxInt );
 
-  Common := GetEnvironmentVariable( 'PUBLIC' ) +
+  Common            := GetEnvironmentVariable( 'PUBLIC' ) +
     '\Documents\Embarcadero\Studio\' + VersionDir;
-  UserDir := GetEnvironmentVariable( 'USERPROFILE' ) +
+  UserDir           := GetEnvironmentVariable( 'USERPROFILE' ) +
     '\Documents\Embarcadero\Studio\' + VersionDir;
 
   AList.Add( 'BDS=' + Root );
@@ -235,20 +235,20 @@ begin
   AList.Add( 'BDSPROJECTSDIR=' + GetBDSProjectsDir );
 
   // 3. The process environment.
-  EnvBlock := GetEnvironmentStrings;
+  EnvBlock          := GetEnvironmentStrings;
   if EnvBlock <> nil then
-  try
-    Entry := EnvBlock;
-    while Entry^ <> #0 do
-    begin
-      // Skip the "=C:=..." drive-current-directory pseudo-variables.
-      if Entry^ <> '=' then
-        AList.Add( string( Entry ) );
-      Inc( Entry, StrLen( Entry ) + 1 );
+    try
+      Entry         := EnvBlock;
+      while Entry^ <> #0 do
+      begin
+        // Skip the "=C:=..." drive-current-directory pseudo-variables.
+        if Entry^ <> '=' then
+          AList.Add( string( Entry ) );
+        Inc( Entry, StrLen( Entry ) + 1 );
+      end;
+    finally
+      FreeEnvironmentStrings( EnvBlock );
     end;
-  finally
-    FreeEnvironmentStrings( EnvBlock );
-  end;
 
   // 4. PLATFORM is the platform of the key being read, never the active
   //    project's. Added last so an explicit override still wins.
@@ -258,10 +258,10 @@ end;
 
 const
   /// <summary>The IDE's built-in macros.</summary>
-  BuiltInNames: array[0..9] of string = ( 'BDS', 'BCB', 'DELPHI', 'BDSINCLUDE', 'BDSLIB', 'BDSCOMMONDIR',
+  BuiltInNames      : array[ 0..9 ] of string = ( 'BDS', 'BCB', 'DELPHI', 'BDSINCLUDE', 'BDSLIB', 'BDSCOMMONDIR',
     'BDSUSERDIR', 'BDSCATALOGREPOSITORY', 'BDSCATALOGREPOSITORYALLUSERS', 'BDSPROJECTSDIR' );
   /// <summary>System variables Windows sets for every process, with the same value whatever the bitness.</summary>
-  StableSystemNames: array[0..13] of string = ( 'USERPROFILE', 'PUBLIC', 'APPDATA', 'LOCALAPPDATA', 'ProgramData',
+  StableSystemNames : array[ 0..13 ] of string = ( 'USERPROFILE', 'PUBLIC', 'APPDATA', 'LOCALAPPDATA', 'ProgramData',
     'ALLUSERSPROFILE', 'SystemRoot', 'SystemDrive', 'windir', 'ProgramFiles(x86)', 'ProgramW6432',
     'CommonProgramFiles(x86)', 'CommonProgramW6432', 'HOMEDRIVE' );
   /// <summary>The machine-wide environment key under HKEY_LOCAL_MACHINE.</summary>
@@ -273,12 +273,12 @@ const
 /// <param name="AList">Receives the names.</param>
 procedure AddValueNames( ARoot: HKEY; const AKey: string; AList: TStrings );
 begin
-  var Reg := TRegistry.Create( KEY_READ );
+  var Reg           := TRegistry.Create( KEY_READ );
   try
-    Reg.RootKey := ARoot;
+    Reg.RootKey     := ARoot;
     if Reg.OpenKeyReadOnly( AKey ) then
     begin
-      var Names := TStringList.Create;
+      var Names     := TStringList.Create;
       try
         Reg.GetValueNames( Names );
         AList.AddStrings( Names );
@@ -302,22 +302,22 @@ end;
 /// <param name="AList">Receives the names.</param>
 procedure AddBitnessNeutralNames( ARoot: HKEY; const AKey: string; AList: TStrings );
 begin
-  var Reg := TRegistry.Create( KEY_READ );
+  var Reg           := TRegistry.Create( KEY_READ );
   try
-    Reg.RootKey := ARoot;
+    Reg.RootKey     := ARoot;
     if not Reg.OpenKeyReadOnly( AKey ) then
       Exit;
-    var Names := TStringList.Create;
+    var Names       := TStringList.Create;
     try
       Reg.GetValueNames( Names );
       for var Name in Names do
       begin
         // ReadString returns REG_EXPAND_SZ data unexpanded, which is what is tested here.
         var Raw := '';
-        if ( Reg.GetDataType( Name ) in [rdString, rdExpandString] ) then
-          Raw := Reg.ReadString( Name );
+        if ( Reg.GetDataType( Name ) in [ rdString, rdExpandString ] ) then
+          Raw       := Reg.ReadString( Name );
         if not TRegEx.IsMatch( Raw, '%(ProgramFiles(\(x86\))?|CommonProgramFiles[^%]*|ProgramW6432|PROCESSOR_[^%]*)%',
-          [roIgnoreCase] ) then
+          [ roIgnoreCase ] ) then
           AList.Add( Name );
       end;
     finally
@@ -331,16 +331,16 @@ end;
 procedure BuildReusableNames( AList: TStrings; const ABaseRegistryKey: string );
 begin
   AList.Clear;
-  var List32 := TStringList.Create;
-  var List64 := TStringList.Create;
-  var Persisted := TStringList.Create;
-  var Names := TStringList.Create;
+  var List32        := TStringList.Create;
+  var List64        := TStringList.Create;
+  var Persisted     := TStringList.Create;
+  var Names         := TStringList.Create;
   try
     List32.CaseSensitive := False;
     List64.CaseSensitive := False;
     Persisted.CaseSensitive := False;
     Names.CaseSensitive := False;
-    Names.Sorted := True;
+    Names.Sorted    := True;
     Names.Duplicates := dupIgnore;
 
     ReadIdeVariables( EnvironmentVariablesKey32( ABaseRegistryKey ), List32 );
@@ -353,23 +353,23 @@ begin
     for var Name in StableSystemNames do
       Names.Add( Name );
     for var I := 0 to List32.Count - 1 do
-      Names.Add( List32.Names[I] );
+      Names.Add( List32.Names[ I ] );
     for var I := 0 to List64.Count - 1 do
-      Names.Add( List64.Names[I] );
+      Names.Add( List64.Names[ I ] );
     Names.AddStrings( Persisted );
 
     for var I := 0 to Names.Count - 1 do
     begin
-      var Name := Names[I];
+      var Name      := Names[ I ];
       if ( Name = '' ) then
         Continue;
-      var Index32 := List32.IndexOfName( Name );
-      var Index64 := List64.IndexOfName( Name );
+      var Index32   := List32.IndexOfName( Name );
+      var Index64   := List64.IndexOfName( Name );
       if ( Index32 >= 0 ) or ( Index64 >= 0 ) then
       begin
         // An IDE override decides the value: it must be the same in both IDEs.
         if ( Index32 >= 0 ) and ( Index64 >= 0 ) and
-           SameText( List32.ValueFromIndex[Index32], List64.ValueFromIndex[Index64] ) then
+          SameText( List32.ValueFromIndex[ Index32 ], List64.ValueFromIndex[ Index64 ] ) then
           AList.Add( Name );
       end
       else
@@ -385,9 +385,9 @@ end;
 
 procedure BuildReservedNames( AList: TStrings );
 var
-  EnvBlock, Entry: PChar;
-  Name: string;
-  SepPos: Integer;
+  EnvBlock, Entry   : PChar;
+  Name              : string;
+  SepPos            : Integer;
 begin
   AList.Clear;
 
@@ -410,63 +410,63 @@ begin
   AList.Add( 'CONFIG' );
   AList.Add( 'LANGDIR' );
 
-  EnvBlock := GetEnvironmentStrings;
+  EnvBlock          := GetEnvironmentStrings;
   if EnvBlock <> nil then
-  try
-    Entry := EnvBlock;
-    while Entry^ <> #0 do
-    begin
-      if Entry^ <> '=' then
+    try
+      Entry         := EnvBlock;
+      while Entry^ <> #0 do
       begin
-        Name := string( Entry );
-        SepPos := Pos( '=', Name );
-        if SepPos > 1 then
-          AList.Add( Copy( Name, 1, SepPos - 1 ) );
+        if Entry^ <> '=' then
+        begin
+          Name      := string( Entry );
+          SepPos    := Pos( '=', Name );
+          if SepPos > 1 then
+            AList.Add( Copy( Name, 1, SepPos - 1 ) );
+        end;
+        Inc( Entry, StrLen( Entry ) + 1 );
       end;
-      Inc( Entry, StrLen( Entry ) + 1 );
+    finally
+      FreeEnvironmentStrings( EnvBlock );
     end;
-  finally
-    FreeEnvironmentStrings( EnvBlock );
-  end;
 end;
 
 function EnvironmentVariablesKey32( const ABaseRegistryKey: string ): string;
 begin
-  Result := ABaseRegistryKey + '\Environment Variables';
+  Result            := ABaseRegistryKey + '\Environment Variables';
 end;
 
 function EnvironmentVariablesKey64( const ABaseRegistryKey: string ): string;
 begin
-  Result := ABaseRegistryKey + '\Environment Variables x64';
+  Result            := ABaseRegistryKey + '\Environment Variables x64';
 end;
 
 function EnvironmentVariablesKey( const ABaseRegistryKey: string ): string;
 begin
-  {$IFDEF CPUX64}
-  Result := EnvironmentVariablesKey64( ABaseRegistryKey );
-  {$ELSE}
-  Result := EnvironmentVariablesKey32( ABaseRegistryKey );
-  {$ENDIF}
+{$IFDEF CPUX64}
+  Result            := EnvironmentVariablesKey64( ABaseRegistryKey );
+{$ELSE}
+  Result            := EnvironmentVariablesKey32( ABaseRegistryKey );
+{$ENDIF}
 end;
 
 procedure ReadIdeVariables( const AKey: string; AList: TStrings );
 var
-  Reg: TRegistry;
-  Names: TStringList;
-  I: Integer;
+  Reg               : TRegistry;
+  Names             : TStringList;
+  I                 : Integer;
 begin
   AList.Clear;
-  Reg := TRegistry.Create( KEY_READ );
+  Reg               := TRegistry.Create( KEY_READ );
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
     if not Reg.OpenKeyReadOnly( AKey ) then
       Exit;
 
-    Names := TStringList.Create;
+    Names           := TStringList.Create;
     try
       Reg.GetValueNames( Names );
       for I := 0 to Names.Count - 1 do
-        AList.Add( Names[I] + '=' + Reg.ReadString( Names[I] ) );
+        AList.Add( Names[ I ] + '=' + Reg.ReadString( Names[ I ] ) );
     finally
       Names.Free;
     end;
@@ -479,13 +479,13 @@ function FindDivergences( const ABaseRegistryKey: string ): TArray<TEnvVarDiverg
 var
   List32, List64, AllNames: TStringList;
   I, Index32, Index64: Integer;
-  Item: TEnvVarDivergence;
+  Item              : TEnvVarDivergence;
 begin
   SetLength( Result, 0 );
 
-  List32 := TStringList.Create;
-  List64 := TStringList.Create;
-  AllNames := TStringList.Create;
+  List32            := TStringList.Create;
+  List64            := TStringList.Create;
+  AllNames          := TStringList.Create;
   try
     List32.CaseSensitive := False;
     List64.CaseSensitive := False;
@@ -497,24 +497,24 @@ begin
     ReadIdeVariables( EnvironmentVariablesKey64( ABaseRegistryKey ), List64 );
 
     for I := 0 to List32.Count - 1 do
-      if List32.Names[I] <> '' then
-        AllNames.Add( List32.Names[I] );
+      if List32.Names[ I ] <> '' then
+        AllNames.Add( List32.Names[ I ] );
     for I := 0 to List64.Count - 1 do
-      if List64.Names[I] <> '' then
-        AllNames.Add( List64.Names[I] );
+      if List64.Names[ I ] <> '' then
+        AllNames.Add( List64.Names[ I ] );
 
     for I := 0 to AllNames.Count - 1 do
     begin
-      Index32 := List32.IndexOfName( AllNames[I] );
-      Index64 := List64.IndexOfName( AllNames[I] );
+      Index32       := List32.IndexOfName( AllNames[ I ] );
+      Index64       := List64.IndexOfName( AllNames[ I ] );
 
-      Item.Name := AllNames[I];
+      Item.Name     := AllNames[ I ];
       if Index32 >= 0 then
-        Item.Value32 := List32.ValueFromIndex[Index32]
+        Item.Value32 := List32.ValueFromIndex[ Index32 ]
       else
         Item.Value32 := '';
       if Index64 >= 0 then
-        Item.Value64 := List64.ValueFromIndex[Index64]
+        Item.Value64 := List64.ValueFromIndex[ Index64 ]
       else
         Item.Value64 := '';
 
@@ -522,7 +522,7 @@ begin
       if Item.MissingFromOne or not SameText( Item.Value32, Item.Value64 ) then
       begin
         SetLength( Result, Length( Result ) + 1 );
-        Result[High( Result )] := Item;
+        Result[ High( Result ) ] := Item;
       end;
     end;
   finally
@@ -540,11 +540,11 @@ function LocationKey( const ABaseRegistryKey: string; ALocation: TVariableLocati
 begin
   case ALocation of
     vlIde32:
-      Result := EnvironmentVariablesKey32( ABaseRegistryKey );
+      Result        := EnvironmentVariablesKey32( ABaseRegistryKey );
     vlIde64:
-      Result := EnvironmentVariablesKey64( ABaseRegistryKey );
+      Result        := EnvironmentVariablesKey64( ABaseRegistryKey );
   else
-    Result := 'Environment';
+    Result          := 'Environment';
   end;
 end;
 
@@ -556,27 +556,27 @@ end;
 /// <exception cref="EPathVariableError">The value exists with other data, the key cannot be opened, or the read-back differs.</exception>
 function WriteOne( const AKey, AName, AValue: string ): Boolean;
 begin
-  var Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
+  var Reg           := TRegistry.Create( KEY_READ or KEY_WRITE );
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
     if not Reg.OpenKey( AKey, True ) then
-      raise EPathVariableError.CreateFmt( 'The registry key "HKCU\%s" could not be opened for writing.', [AKey] );
+      raise EPathVariableError.CreateFmt( 'The registry key "HKCU\%s" could not be opened for writing.', [ AKey ] );
 
     if Reg.ValueExists( AName ) then
     begin
-      var Existing := '';
-      if ( Reg.GetDataType( AName ) in [rdString, rdExpandString] ) then
-        Existing := Reg.ReadString( AName );
+      var Existing  := '';
+      if ( Reg.GetDataType( AName ) in [ rdString, rdExpandString ] ) then
+        Existing    := Reg.ReadString( AName );
       if SameText( Existing, AValue ) then
         Exit( False );
       raise EPathVariableError.CreateFmt( '"%s" is already defined in HKCU\%s with a different value (%s); ' +
-        'it was not replaced.', [AName, AKey, Existing] );
+        'it was not replaced.', [ AName, AKey, Existing ] );
     end;
 
     Reg.WriteString( AName, AValue );
     if not Reg.ValueExists( AName ) or ( Reg.ReadString( AName ) <> AValue ) then
-      raise EPathVariableError.CreateFmt( '"%s" did not read back as written in HKCU\%s.', [AName, AKey] );
-    Result := True;
+      raise EPathVariableError.CreateFmt( '"%s" did not read back as written in HKCU\%s.', [ AName, AKey ] );
+    Result          := True;
   finally
     Reg.Free;
   end;
@@ -585,7 +585,7 @@ end;
 function WriteVariable( const ABaseRegistryKey, AName, AValue: string;
   AWriteUserEnvironment: Boolean ): TVariableLocations;
 begin
-  Result := [];
+  Result            := [ ];
   try
     // Both IDE lists, always — the path they resolve is shared between the two
     // IDEs, so defining the variable in only one guarantees a silent break.
@@ -608,7 +608,7 @@ begin
   begin
     var Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
     try
-      Reg.RootKey := HKEY_CURRENT_USER;
+      Reg.RootKey   := HKEY_CURRENT_USER;
       if Reg.OpenKey( LocationKey( ABaseRegistryKey, Location ), False ) and Reg.ValueExists( AName ) then
         Reg.DeleteValue( AName );
     finally
@@ -619,11 +619,12 @@ end;
 
 procedure BroadcastEnvironmentChange;
 var
-  Res: DWORD_PTR;
+  Res               : DWORD_PTR;
 begin
-  Res := 0;
+  Res               := 0;
   SendMessageTimeout( HWND_BROADCAST, WM_SETTINGCHANGE, 0,
     LPARAM( PChar( 'Environment' ) ), SMTO_ABORTIFHUNG, 5000, @Res );
 end;
 
 end.
+

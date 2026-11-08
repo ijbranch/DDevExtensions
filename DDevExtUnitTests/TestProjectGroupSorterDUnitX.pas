@@ -18,65 +18,65 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the project-group sorter core.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestProjectGroupSorter = class
   public
     /// <summary>An unsorted group is reordered to exactly the canonical sorted form.</summary>
-    [Test]
+    [ Test ]
     procedure TestUnsortedBecomesSorted;
     /// <summary>Sorting an already-sorted group returns byte-identical text (drives the no-op path).</summary>
-    [Test]
+    [ Test ]
     procedure TestAlreadySortedIsIdempotent;
     /// <summary>The per-project <c>Target</c> trio order matches the sorted membership.</summary>
-    [Test]
+    [ Test ]
     procedure TestTargetBlocksSorted;
     /// <summary>The <c>Build</c>/<c>Clean</c>/<c>Make</c> <c>CallTarget</c> lists are sorted with their suffixes.</summary>
-    [Test]
+    [ Test ]
     procedure TestCallTargetListsSorted;
     /// <summary>Sorting is case-insensitive and handles the tricky "Scrap/SCtoXX/Store" ordering.</summary>
-    [Test]
+    [ Test ]
     procedure TestCaseInsensitiveAndTrickyOrder;
     /// <summary>The header, <c>ProjectGuid</c>, <c>ProjectExtensions</c> and <c>Import</c> survive verbatim.</summary>
-    [Test]
+    [ Test ]
     procedure TestBoilerplatePreserved;
     /// <summary>Non-empty per-project <c>&lt;Dependencies&gt;</c> content is preserved on the moved block.</summary>
-    [Test]
+    [ Test ]
     procedure TestDependenciesPreserved;
     /// <summary>A group with no <c>&lt;Target&gt;</c> section still reorders the ItemGroup and adds no targets.</summary>
-    [Test]
+    [ Test ]
     procedure TestNoTargetsSectionReordersItemGroupOnly;
     /// <summary>Output uses CRLF line endings.</summary>
-    [Test]
+    [ Test ]
     procedure TestCrlfLineEndings;
     /// <summary>A single-project group is returned unchanged.</summary>
-    [Test]
+    [ Test ]
     procedure TestSingleProjectUnchanged;
     /// <summary><c>LeafName</c> strips the directory and the .dproj extension.</summary>
-    [Test]
+    [ Test ]
     procedure TestLeafName;
     /// <summary>
     /// The IDE's <c>DependsOnTargets</c> build dependencies survive the sort on all three
     /// per-project targets; the earlier rewrite regenerated bare targets and dropped them.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDependsOnTargetsPreserved;
     /// <summary>
     /// Target names the IDE sanitised (<c>Ann.dxe2.dproj</c> -> <c>Ann_dxe2</c>) are kept, and the
     /// CallTarget lists are reordered by them; the earlier rewrite renamed them to <c>Ann.dxe2</c>.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestSanitisedTargetNamesKept;
     /// <summary>A tab-indented group keeps its tabs: only lines move, none is re-indented.</summary>
-    [Test]
+    [ Test ]
     procedure TestTabIndentationPreserved;
     /// <summary>A custom, non-project target survives verbatim and keeps its position.</summary>
-    [Test]
+    [ Test ]
     procedure TestCustomTargetPreserved;
     /// <summary>An unterminated <c>&lt;Target&gt;</c> raises instead of producing a truncated file.</summary>
-    [Test]
+    [ Test ]
     procedure TestUnterminatedTargetRaises;
     /// <summary>LF line breaks and a missing final line break are kept as found.</summary>
-    [Test]
+    [ Test ]
     procedure TestLineBreakStylePreserved;
   end;
 
@@ -87,7 +87,7 @@ uses
   ProjectGroupSorterCore;
 
 const
-  GUID = '{2AFA66CF-218B-4744-8ECA-C0CA5303688D}';
+  GUID              = '{2AFA66CF-218B-4744-8ECA-C0CA5303688D}';
 
 /// <summary>
 /// Builds a canonical IDE-format <c>.groupproj</c> for the given project names
@@ -95,73 +95,73 @@ const
 /// <c>SortGroupProjectText</c> emits, so sorting <c>Build(unsorted)</c> yields
 /// <c>Build(sorted)</c> byte-for-byte.
 /// </summary>
-function BuildGroupProj(const ANames: array of string): string;
+function BuildGroupProj( const ANames: array of string ): string;
 var
-  SL: TStringList;
+  SL                : TStringList;
   N, BuildList, CleanList, MakeList: string;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
-    SL.LineBreak := #13#10;
-    SL.Add('<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">');
-    SL.Add('    <PropertyGroup>');
-    SL.Add('        <ProjectGuid>' + GUID + '</ProjectGuid>');
-    SL.Add('    </PropertyGroup>');
-    SL.Add('    <ItemGroup>');
+    SL.LineBreak    := #13#10;
+    SL.Add( '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">' );
+    SL.Add( '    <PropertyGroup>' );
+    SL.Add( '        <ProjectGuid>' + GUID + '</ProjectGuid>' );
+    SL.Add( '    </PropertyGroup>' );
+    SL.Add( '    <ItemGroup>' );
     for N in ANames do
     begin
-      SL.Add('        <Projects Include="' + N + '\' + N + '.dproj">');
-      SL.Add('            <Dependencies/>');
-      SL.Add('        </Projects>');
+      SL.Add( '        <Projects Include="' + N + '\' + N + '.dproj">' );
+      SL.Add( '            <Dependencies/>' );
+      SL.Add( '        </Projects>' );
     end;
-    SL.Add('    </ItemGroup>');
-    SL.Add('    <ProjectExtensions>');
-    SL.Add('        <Borland.Personality>Default.Personality.12</Borland.Personality>');
-    SL.Add('        <Borland.ProjectType/>');
-    SL.Add('        <BorlandProject>');
-    SL.Add('            <Default.Personality/>');
-    SL.Add('        </BorlandProject>');
-    SL.Add('    </ProjectExtensions>');
+    SL.Add( '    </ItemGroup>' );
+    SL.Add( '    <ProjectExtensions>' );
+    SL.Add( '        <Borland.Personality>Default.Personality.12</Borland.Personality>' );
+    SL.Add( '        <Borland.ProjectType/>' );
+    SL.Add( '        <BorlandProject>' );
+    SL.Add( '            <Default.Personality/>' );
+    SL.Add( '        </BorlandProject>' );
+    SL.Add( '    </ProjectExtensions>' );
     for N in ANames do
     begin
-      SL.Add('    <Target Name="' + N + '">');
-      SL.Add('        <MSBuild Projects="' + N + '\' + N + '.dproj"/>');
-      SL.Add('    </Target>');
-      SL.Add('    <Target Name="' + N + ':Clean">');
-      SL.Add('        <MSBuild Projects="' + N + '\' + N + '.dproj" Targets="Clean"/>');
-      SL.Add('    </Target>');
-      SL.Add('    <Target Name="' + N + ':Make">');
-      SL.Add('        <MSBuild Projects="' + N + '\' + N + '.dproj" Targets="Make"/>');
-      SL.Add('    </Target>');
+      SL.Add( '    <Target Name="' + N + '">' );
+      SL.Add( '        <MSBuild Projects="' + N + '\' + N + '.dproj"/>' );
+      SL.Add( '    </Target>' );
+      SL.Add( '    <Target Name="' + N + ':Clean">' );
+      SL.Add( '        <MSBuild Projects="' + N + '\' + N + '.dproj" Targets="Clean"/>' );
+      SL.Add( '    </Target>' );
+      SL.Add( '    <Target Name="' + N + ':Make">' );
+      SL.Add( '        <MSBuild Projects="' + N + '\' + N + '.dproj" Targets="Make"/>' );
+      SL.Add( '    </Target>' );
     end;
-    BuildList := '';
-    CleanList := '';
-    MakeList := '';
+    BuildList       := '';
+    CleanList       := '';
+    MakeList        := '';
     for N in ANames do
     begin
       if BuildList <> '' then
       begin
-        BuildList := BuildList + ';';
-        CleanList := CleanList + ';';
-        MakeList := MakeList + ';';
+        BuildList   := BuildList + ';';
+        CleanList   := CleanList + ';';
+        MakeList    := MakeList + ';';
       end;
-      BuildList := BuildList + N;
-      CleanList := CleanList + N + ':Clean';
-      MakeList := MakeList + N + ':Make';
+      BuildList     := BuildList + N;
+      CleanList     := CleanList + N + ':Clean';
+      MakeList      := MakeList + N + ':Make';
     end;
-    SL.Add('    <Target Name="Build">');
-    SL.Add('        <CallTarget Targets="' + BuildList + '"/>');
-    SL.Add('    </Target>');
-    SL.Add('    <Target Name="Clean">');
-    SL.Add('        <CallTarget Targets="' + CleanList + '"/>');
-    SL.Add('    </Target>');
-    SL.Add('    <Target Name="Make">');
-    SL.Add('        <CallTarget Targets="' + MakeList + '"/>');
-    SL.Add('    </Target>');
-    SL.Add('    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists(' +
-      QuotedStr('$(BDS)\Bin\CodeGear.Group.Targets') + ')"/>');
-    SL.Add('</Project>');
-    Result := SL.Text;
+    SL.Add( '    <Target Name="Build">' );
+    SL.Add( '        <CallTarget Targets="' + BuildList + '"/>' );
+    SL.Add( '    </Target>' );
+    SL.Add( '    <Target Name="Clean">' );
+    SL.Add( '        <CallTarget Targets="' + CleanList + '"/>' );
+    SL.Add( '    </Target>' );
+    SL.Add( '    <Target Name="Make">' );
+    SL.Add( '        <CallTarget Targets="' + MakeList + '"/>' );
+    SL.Add( '    </Target>' );
+    SL.Add( '    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists(' +
+      QuotedStr( '$(BDS)\Bin\CodeGear.Group.Targets' ) + ')"/>' );
+    SL.Add( '</Project>' );
+    Result          := SL.Text;
   finally
     SL.Free;
   end;
@@ -171,80 +171,80 @@ end;
 
 procedure TTestProjectGroupSorter.TestUnsortedBecomesSorted;
 var
-  Input, Expected: string;
+  Input, Expected   : string;
 begin
-  Input := BuildGroupProj(['Cherry', 'Apple', 'Banana']);
-  Expected := BuildGroupProj(['Apple', 'Banana', 'Cherry']);
-  Assert.AreEqual(Expected, SortGroupProjectText(Input));
+  Input             := BuildGroupProj( [ 'Cherry', 'Apple', 'Banana' ] );
+  Expected          := BuildGroupProj( [ 'Apple', 'Banana', 'Cherry' ] );
+  Assert.AreEqual( Expected, SortGroupProjectText( Input ) );
 end;
 
 procedure TTestProjectGroupSorter.TestAlreadySortedIsIdempotent;
 var
-  Sorted: string;
+  Sorted            : string;
 begin
-  Sorted := BuildGroupProj(['Apple', 'Banana', 'Cherry']);
-  Assert.AreEqual(Sorted, SortGroupProjectText(Sorted),
-    'Sorting an already-sorted group must return byte-identical text');
+  Sorted            := BuildGroupProj( [ 'Apple', 'Banana', 'Cherry' ] );
+  Assert.AreEqual( Sorted, SortGroupProjectText( Sorted ),
+    'Sorting an already-sorted group must return byte-identical text' );
 end;
 
 procedure TTestProjectGroupSorter.TestTargetBlocksSorted;
 var
-  Output: string;
+  Output            : string;
 begin
-  Output := SortGroupProjectText(BuildGroupProj(['Zebra', 'Alpha', 'Mike']));
+  Output            := SortGroupProjectText( BuildGroupProj( [ 'Zebra', 'Alpha', 'Mike' ] ) );
   Assert.IsTrue(
-    Pos('<Target Name="Alpha">', Output) <
-    Pos('<Target Name="Mike">', Output),
-    'Alpha target must precede Mike target');
+    Pos( '<Target Name="Alpha">', Output ) <
+    Pos( '<Target Name="Mike">', Output ),
+    'Alpha target must precede Mike target' );
   Assert.IsTrue(
-    Pos('<Target Name="Mike">', Output) <
-    Pos('<Target Name="Zebra">', Output),
-    'Mike target must precede Zebra target');
+    Pos( '<Target Name="Mike">', Output ) <
+    Pos( '<Target Name="Zebra">', Output ),
+    'Mike target must precede Zebra target' );
 end;
 
 procedure TTestProjectGroupSorter.TestCallTargetListsSorted;
 var
-  Output: string;
+  Output            : string;
 begin
-  Output := SortGroupProjectText(BuildGroupProj(['Zebra', 'Alpha', 'Mike']));
-  Assert.IsTrue(Pos('Targets="Alpha;Mike;Zebra"', Output) > 0,
-    'Build CallTarget list must be sorted');
-  Assert.IsTrue(Pos('Targets="Alpha:Clean;Mike:Clean;Zebra:Clean"', Output) > 0,
-    'Clean CallTarget list must be sorted with :Clean suffixes');
-  Assert.IsTrue(Pos('Targets="Alpha:Make;Mike:Make;Zebra:Make"', Output) > 0,
-    'Make CallTarget list must be sorted with :Make suffixes');
+  Output            := SortGroupProjectText( BuildGroupProj( [ 'Zebra', 'Alpha', 'Mike' ] ) );
+  Assert.IsTrue( Pos( 'Targets="Alpha;Mike;Zebra"', Output ) > 0,
+    'Build CallTarget list must be sorted' );
+  Assert.IsTrue( Pos( 'Targets="Alpha:Clean;Mike:Clean;Zebra:Clean"', Output ) > 0,
+    'Clean CallTarget list must be sorted with :Clean suffixes' );
+  Assert.IsTrue( Pos( 'Targets="Alpha:Make;Mike:Make;Zebra:Make"', Output ) > 0,
+    'Make CallTarget list must be sorted with :Make suffixes' );
 end;
 
 procedure TTestProjectGroupSorter.TestCaseInsensitiveAndTrickyOrder;
 var
-  Input, Expected: string;
+  Input, Expected   : string;
 begin
   // Mixed case + the real-world S-cluster ordering that bit the manual edit.
-  Input := BuildGroupProj(['DBiStore', 'DBiSCtoXX', 'DBiScrap',
-    'DBiScheduledReports', 'DBiScheduledEvents', 'apple', 'Banana']);
-  Expected := BuildGroupProj(['apple', 'Banana', 'DBiScheduledEvents',
-    'DBiScheduledReports', 'DBiScrap', 'DBiSCtoXX', 'DBiStore']);
-  Assert.AreEqual(Expected, SortGroupProjectText(Input));
+  Input             := BuildGroupProj( [ 'DBiStore', 'DBiSCtoXX', 'DBiScrap',
+      'DBiScheduledReports', 'DBiScheduledEvents', 'apple', 'Banana' ] );
+  Expected          := BuildGroupProj( [ 'apple', 'Banana', 'DBiScheduledEvents',
+      'DBiScheduledReports', 'DBiScrap', 'DBiSCtoXX', 'DBiStore' ] );
+  Assert.AreEqual( Expected, SortGroupProjectText( Input ) );
 end;
 
 procedure TTestProjectGroupSorter.TestBoilerplatePreserved;
 var
-  Output: string;
+  Output            : string;
 begin
-  Output := SortGroupProjectText(BuildGroupProj(['Beta', 'Alpha']));
-  Assert.IsTrue(Pos('<ProjectGuid>' + GUID + '</ProjectGuid>', Output) > 0, 'ProjectGuid lost');
-  Assert.IsTrue(Pos('<Borland.Personality>Default.Personality.12</Borland.Personality>', Output) > 0,
-    'ProjectExtensions lost');
-  Assert.IsTrue(Pos('CodeGear.Group.Targets', Output) > 0, 'Import element lost');
+  Output            := SortGroupProjectText( BuildGroupProj( [ 'Beta', 'Alpha' ] ) );
+  Assert.IsTrue( Pos( '<ProjectGuid>' + GUID + '</ProjectGuid>', Output ) > 0, 'ProjectGuid lost' );
+  Assert.IsTrue( Pos( '<Borland.Personality>Default.Personality.12</Borland.Personality>', Output ) > 0,
+    'ProjectExtensions lost' );
+  Assert.IsTrue( Pos( 'CodeGear.Group.Targets', Output ) > 0, 'Import element lost' );
 end;
 
 procedure TTestProjectGroupSorter.TestDependenciesPreserved;
 var
-  Input, Output: string;
+  Input, Output     : string;
   PosBeta, PosDep, PosAlpha: Integer;
 begin
   // Two projects; "Beta" (which sorts last) carries a non-empty Dependencies block.
-  Input :=
+  Input             :=
     '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'#13#10 +
     '    <PropertyGroup>'#13#10 +
     '        <ProjectGuid>' + GUID + '</ProjectGuid>'#13#10 +
@@ -260,23 +260,23 @@ begin
     '    <Import Project="x"/>'#13#10 +
     '</Project>'#13#10;
 
-  Output := SortGroupProjectText(Input);
+  Output            := SortGroupProjectText( Input );
 
   // The dependency content survives...
-  PosDep := Pos('<Dependencies>Alpha\Alpha.dproj</Dependencies>', Output);
-  Assert.IsTrue(PosDep > 0, 'Non-empty Dependencies content was lost');
+  PosDep            := Pos( '<Dependencies>Alpha\Alpha.dproj</Dependencies>', Output );
+  Assert.IsTrue( PosDep > 0, 'Non-empty Dependencies content was lost' );
 
   // ...and Alpha now precedes Beta in the ItemGroup.
-  PosAlpha := Pos('<Projects Include="Alpha\Alpha.dproj">', Output);
-  PosBeta := Pos('<Projects Include="Beta\Beta.dproj">', Output);
-  Assert.IsTrue((PosAlpha > 0) and (PosAlpha < PosBeta), 'Alpha must precede Beta after sort');
+  PosAlpha          := Pos( '<Projects Include="Alpha\Alpha.dproj">', Output );
+  PosBeta           := Pos( '<Projects Include="Beta\Beta.dproj">', Output );
+  Assert.IsTrue( ( PosAlpha > 0 ) and ( PosAlpha < PosBeta ), 'Alpha must precede Beta after sort' );
 end;
 
 procedure TTestProjectGroupSorter.TestNoTargetsSectionReordersItemGroupOnly;
 var
-  Input, Output: string;
+  Input, Output     : string;
 begin
-  Input :=
+  Input             :=
     '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'#13#10 +
     '    <PropertyGroup>'#13#10 +
     '        <ProjectGuid>' + GUID + '</ProjectGuid>'#13#10 +
@@ -292,47 +292,47 @@ begin
     '    <Import Project="x"/>'#13#10 +
     '</Project>'#13#10;
 
-  Output := SortGroupProjectText(Input);
+  Output            := SortGroupProjectText( Input );
 
   Assert.IsTrue(
-    Pos('<Projects Include="Alpha\Alpha.dproj">', Output) <
-    Pos('<Projects Include="Beta\Beta.dproj">', Output),
-    'ItemGroup must be reordered even without a Target section');
-  Assert.AreEqual(0, Pos('<Target', Output), 'No <Target> elements must be invented');
+    Pos( '<Projects Include="Alpha\Alpha.dproj">', Output ) <
+    Pos( '<Projects Include="Beta\Beta.dproj">', Output ),
+    'ItemGroup must be reordered even without a Target section' );
+  Assert.AreEqual( 0, Pos( '<Target', Output ), 'No <Target> elements must be invented' );
 end;
 
 procedure TTestProjectGroupSorter.TestCrlfLineEndings;
 var
-  Output: string;
+  Output            : string;
   K, LfCount, CrlfCount: Integer;
 begin
-  Output := SortGroupProjectText(BuildGroupProj(['Beta', 'Alpha']));
-  Assert.IsTrue(Pos(#13#10, Output) > 0, 'Output must contain CRLF');
+  Output            := SortGroupProjectText( BuildGroupProj( [ 'Beta', 'Alpha' ] ) );
+  Assert.IsTrue( Pos( #13#10, Output ) > 0, 'Output must contain CRLF' );
   // Every LF must be part of a CRLF pair — no bare LF line endings.
-  LfCount := 0;
-  CrlfCount := 0;
-  for K := 1 to Length(Output) do
-    if Output[K] = #10 then
+  LfCount           := 0;
+  CrlfCount         := 0;
+  for K := 1 to Length( Output ) do
+    if Output[ K ] = #10 then
     begin
-      Inc(LfCount);
-      if (K > 1) and (Output[K - 1] = #13) then
-        Inc(CrlfCount);
+      Inc( LfCount );
+      if ( K > 1 ) and ( Output[ K - 1 ] = #13 ) then
+        Inc( CrlfCount );
     end;
-  Assert.AreEqual(LfCount, CrlfCount, 'Every LF must be preceded by CR (CRLF only)');
+  Assert.AreEqual( LfCount, CrlfCount, 'Every LF must be preceded by CR (CRLF only)' );
 end;
 
 procedure TTestProjectGroupSorter.TestSingleProjectUnchanged;
 var
-  Single: string;
+  Single            : string;
 begin
-  Single := BuildGroupProj(['Solo']);
-  Assert.AreEqual(Single, SortGroupProjectText(Single));
+  Single            := BuildGroupProj( [ 'Solo' ] );
+  Assert.AreEqual( Single, SortGroupProjectText( Single ) );
 end;
 
 procedure TTestProjectGroupSorter.TestLeafName;
 begin
-  Assert.AreEqual('DBiAdmin', LeafName('DBiAdmin\DBiAdmin.dproj'));
-  Assert.AreEqual('Solo', LeafName('Solo.dproj'));
+  Assert.AreEqual( 'DBiAdmin', LeafName( 'DBiAdmin\DBiAdmin.dproj' ) );
+  Assert.AreEqual( 'Solo', LeafName( 'Solo.dproj' ) );
 end;
 
 /// <summary>Builds a two-project group in which "Beta" depends on "Alpha" and is listed first.</summary>
@@ -340,12 +340,12 @@ end;
 /// <returns>The <c>.groupproj</c> text, CRLF line breaks.</returns>
 function BuildDependentGroup( const AIndent: string ): string;
 var
-  I1, I2, I3: string;
+  I1, I2, I3        : string;
 begin
-  I1 := AIndent;
-  I2 := AIndent + AIndent;
-  I3 := I2 + AIndent;
-  Result :=
+  I1                := AIndent;
+  I2                := AIndent + AIndent;
+  I3                := I2 + AIndent;
+  Result            :=
     '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">'#13#10 +
     I1 + '<ItemGroup>'#13#10 +
     I2 + '<Projects Include="Beta\Beta.dproj">'#13#10 +
@@ -388,9 +388,9 @@ end;
 
 procedure TTestProjectGroupSorter.TestDependsOnTargetsPreserved;
 var
-  Output: string;
+  Output            : string;
 begin
-  Output := SortGroupProjectText( BuildDependentGroup( '    ' ) );
+  Output            := SortGroupProjectText( BuildDependentGroup( '    ' ) );
   Assert.IsTrue( Pos( '<Target Name="Beta" DependsOnTargets="Alpha">', Output ) > 0, 'Build dependency lost' );
   Assert.IsTrue( Pos( '<Target Name="Beta:Clean" DependsOnTargets="Alpha:Clean">', Output ) > 0,
     'Clean dependency lost' );
@@ -403,9 +403,9 @@ end;
 
 procedure TTestProjectGroupSorter.TestSanitisedTargetNamesKept;
 var
-  Input, Output: string;
+  Input, Output     : string;
 begin
-  Input :=
+  Input             :=
     '<Project>'#13#10 +
     '    <ItemGroup>'#13#10 +
     '        <Projects Include="Zed\Zed.dxe2.dproj">'#13#10 +
@@ -426,7 +426,7 @@ begin
     '    </Target>'#13#10 +
     '    <Import Project="x"/>'#13#10 +
     '</Project>'#13#10;
-  Output := SortGroupProjectText( Input );
+  Output            := SortGroupProjectText( Input );
   Assert.AreEqual( 0, Pos( 'Name="Ann.dxe2', Output ), 'Target was renamed' );
   Assert.IsTrue( Pos( 'Targets="Ann_dxe2;Zed_dxe2"', Output ) > 0, 'CallTarget list must use the file''s own names' );
   Assert.IsTrue( Pos( '<Target Name="Ann_dxe2">', Output ) < Pos( '<Target Name="Zed_dxe2">', Output ),
@@ -435,21 +435,21 @@ end;
 
 procedure TTestProjectGroupSorter.TestTabIndentationPreserved;
 var
-  Output: string;
+  Output            : string;
 begin
-  Output := SortGroupProjectText( BuildDependentGroup( #9 ) );
+  Output            := SortGroupProjectText( BuildDependentGroup( #9 ) );
   Assert.IsTrue( Pos( #9'<Target Name="Alpha">', Output ) > 0, 'Tab indentation was lost' );
   Assert.AreEqual( 0, Pos( #13#10'<Target', Output ), 'A target was moved to column 0' );
 end;
 
 procedure TTestProjectGroupSorter.TestCustomTargetPreserved;
 var
-  Input, Output: string;
+  Input, Output     : string;
 begin
-  Input := StringReplace( BuildDependentGroup( '    ' ), '    <Target Name="Build">',
+  Input             := StringReplace( BuildDependentGroup( '    ' ), '    <Target Name="Build">',
     '    <Target Name="Deploy">'#13#10'        <Exec Command="deploy.cmd"/>'#13#10'    </Target>'#13#10 +
-    '    <Target Name="Build">', [] );
-  Output := SortGroupProjectText( Input );
+    '    <Target Name="Build">', [ ] );
+  Output            := SortGroupProjectText( Input );
   Assert.IsTrue( Pos( '<Target Name="Deploy">'#13#10'        <Exec Command="deploy.cmd"/>', Output ) > 0,
     'Custom target lost or altered' );
   Assert.IsTrue( Pos( '<Target Name="Deploy">', Output ) < Pos( '<Target Name="Build">', Output ),
@@ -458,9 +458,9 @@ end;
 
 procedure TTestProjectGroupSorter.TestUnterminatedTargetRaises;
 var
-  Input: string;
+  Input             : string;
 begin
-  Input := StringReplace( BuildDependentGroup( '    ' ), '    </Target>'#13#10'    <Import', '    <Import', [] );
+  Input             := StringReplace( BuildDependentGroup( '    ' ), '    </Target>'#13#10'    <Import', '    <Import', [ ] );
   Assert.WillRaise(
     procedure
     begin
@@ -470,18 +470,19 @@ end;
 
 procedure TTestProjectGroupSorter.TestLineBreakStylePreserved;
 var
-  Input, Output: string;
+  Input, Output     : string;
 begin
-  Input := StringReplace( BuildGroupProj( ['Beta', 'Alpha'] ), #13#10, #10, [rfReplaceAll] );
+  Input             := StringReplace( BuildGroupProj( [ 'Beta', 'Alpha' ] ), #13#10, #10, [ rfReplaceAll ] );
   SetLength( Input, Length( Input ) - 1 ); // no final line break
-  Output := SortGroupProjectText( Input );
+  Output            := SortGroupProjectText( Input );
   Assert.AreEqual( 0, Pos( #13, Output ), 'LF file was converted to CRLF' );
-  Assert.AreNotEqual( string( #10 ), string( Output[Length( Output )] ), 'A final line break was added' );
+  Assert.AreNotEqual( string( #10 ), string( Output[ Length( Output ) ] ), 'A final line break was added' );
   Assert.IsTrue( Pos( '<Projects Include="Alpha', Output ) < Pos( '<Projects Include="Beta', Output ),
     'Not sorted' );
 end;
 
 initialization
-  TDUnitX.RegisterTestFixture(TTestProjectGroupSorter);
+  TDUnitX.RegisterTestFixture( TTestProjectGroupSorter );
 
 end.
+

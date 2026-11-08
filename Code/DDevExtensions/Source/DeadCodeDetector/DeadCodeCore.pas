@@ -178,13 +178,13 @@ uses
 constructor TDeadCodeAnalyzer.Create;
 begin
   inherited Create;
-  FSymbols         := TObjectList<TSymbolInfo>.Create( True );
-  FSymbolsByName   := TObjectDictionary<string, TList<TSymbolInfo>>.Create( [ doOwnsValues ] );
-  FIgnorePatterns  := TStringList.Create;
+  FSymbols          := TObjectList<TSymbolInfo>.Create( True );
+  FSymbolsByName    := TObjectDictionary<string, TList<TSymbolInfo>>.Create( [ doOwnsValues ] );
+  FIgnorePatterns   := TStringList.Create;
   FIgnorePatterns.CaseSensitive := False;
-  FCheckProcedures := True;
-  FCheckFields     := True;
-  FHeaderTokens    := TDictionary<string, Boolean>.Create;
+  FCheckProcedures  := True;
+  FCheckFields      := True;
+  FHeaderTokens     := TDictionary<string, Boolean>.Create;
 end;
 
 destructor TDeadCodeAnalyzer.Destroy;
@@ -216,7 +216,7 @@ end;
 
 function TDeadCodeAnalyzer.HeaderKey( const FileName: string; Index: Integer ): string;
 begin
-  Result := UpperCase( FileName ) + '|' + IntToStr( Index );
+  Result            := UpperCase( FileName ) + '|' + IntToStr( Index );
 end;
 
 /// <summary>The name an identifier stands for: an &amp;-escaped identifier (&amp;Type) names Type.</summary>
@@ -225,15 +225,15 @@ end;
 function NameKey( const Name: string ): string;
 begin
   if ( Name <> '' ) and ( Name[ 1 ] = '&' ) then
-    Result := Copy( Name, 2, MaxInt )
+    Result          := Copy( Name, 2, MaxInt )
   else
-    Result := Name;
+    Result          := Name;
 end;
 
 function ExtractIncludeFileNames( const Content: UTF8String ): TArray<string>;
 begin
-  Result := nil;
-  var oLexer := TDelphiLexer.Create( '', Content );
+  Result            := nil;
+  var oLexer        := TDelphiLexer.Create( '', Content );
   try
     var oToken: TToken;
     while oLexer.NextToken( oToken ) do
@@ -242,24 +242,24 @@ begin
         Continue;
 
       // the directive body without its "{$" / "(*$" and closing "}" / "*)"
-      var s := oToken.Value;
-      var iStart := Pos( '$', s ) + 1;
-      var iEnd := Length( s ) - 1;
+      var s         := oToken.Value;
+      var iStart    := Pos( '$', s ) + 1;
+      var iEnd      := Length( s ) - 1;
       if ( iEnd >= 1 ) and ( s[ iEnd ] = '*' ) then
         Dec( iEnd );
-      var sBody := Trim( Copy( s, iStart, iEnd - iStart + 1 ) );
+      var sBody     := Trim( Copy( s, iStart, iEnd - iStart + 1 ) );
 
-      var sArg := '';
+      var sArg      := '';
       if SameText( Copy( sBody, 1, 8 ), 'INCLUDE ' ) then
-        sArg := Trim( Copy( sBody, 9, MaxInt ) )
+        sArg        := Trim( Copy( sBody, 9, MaxInt ) )
       else if ( Length( sBody ) > 2 ) and CharInSet( sBody[ 1 ], [ 'I', 'i' ] ) and CharInSet( sBody[ 2 ], [ ' ', #9 ] ) then
-        sArg := Trim( Copy( sBody, 3, MaxInt ) );   // {$I file}; {$I+} / {$I-} have no blank after the I
+        sArg        := Trim( Copy( sBody, 3, MaxInt ) ); // {$I file}; {$I+} / {$I-} have no blank after the I
 
       if ( sArg = '' ) or CharInSet( sArg[ 1 ], [ '+', '-' ] ) then
         Continue;
       if sArg[ 1 ] = #39 then
-        sArg := AnsiDequotedStr( sArg, #39 );   // a quoted name
-      Result := Result + [ sArg ];
+        sArg        := AnsiDequotedStr( sArg, #39 ); // a quoted name
+      Result        := Result + [ sArg ];
     end;
   finally
     oLexer.Free;
@@ -273,7 +273,7 @@ begin
   var oList: TList<TSymbolInfo>;
   if not FSymbolsByName.TryGetValue( UpperCase( NameKey( Symbol.Name ) ), oList ) then
   begin
-    oList := TList<TSymbolInfo>.Create;
+    oList           := TList<TSymbolInfo>.Create;
     FSymbolsByName.Add( UpperCase( NameKey( Symbol.Name ) ), oList );
   end;
   oList.Add( Symbol );
@@ -281,8 +281,8 @@ end;
 
 function TDeadCodeAnalyzer.IsEventHandlerSignature( const Params: string ): Boolean;
 begin
-  Result := ( Pos( 'SENDER', UpperCase( Params ) ) > 0 ) and
-            ( Pos( 'TOBJECT', UpperCase( Params ) ) > 0 );
+  Result            := ( Pos( 'SENDER', UpperCase( Params ) ) > 0 ) and
+    ( Pos( 'TOBJECT', UpperCase( Params ) ) > 0 );
 end;
 
 function TDeadCodeAnalyzer.ShouldIgnore( const Symbol: TSymbolInfo ): Boolean;
@@ -313,7 +313,7 @@ begin
     if sPattern[ 1 ] = '*' then
     begin
       if SameText( Copy( Symbol.Name, Length( Symbol.Name ) - Length( sPattern ) + 2, MaxInt ),
-                   Copy( sPattern, 2, MaxInt ) ) then
+        Copy( sPattern, 2, MaxInt ) ) then
         Exit( True );
     end
     else if sPattern[ Length( sPattern ) ] = '*' then
@@ -325,7 +325,7 @@ begin
       Exit( True );
   end;
 
-  Result := False;
+  Result            := False;
 end;
 
 /// <summary>Reads the next token that is not a comment or a compiler directive.</summary>
@@ -335,7 +335,7 @@ end;
 function NextCodeToken( Lexer: TDelphiLexer; out Token: TToken ): Boolean;
 begin
   repeat
-    Result := Lexer.NextToken( Token );
+    Result          := Lexer.NextToken( Token );
   until not Result or not ( Token.Kind in [ tkComment, tkDirective ] );
 end;
 
@@ -344,47 +344,47 @@ end;
 /// <returns>True for virtual, override, overload, stdcall, inline, deprecated, external, ...</returns>
 function IsRoutineDirective( Token: TToken ): Boolean;
 const
-  DirectiveKinds = [ tkI_virtual, tkI_override, tkI_abstract, tkI_overload, tkI_reintroduce, tkI_dynamic, tkI_static,
-                     tkI_inline, tkI_assembler, tkI_register, tkI_stdcall, tkI_cdecl, tkI_safecall, tkI_pascal,
-                     tkI_external, tkI_forward, tkI_message, tkI_final, tkI_platform, tkI_deprecated, tkI_experimental,
-                     tkI_varargs, tkI_dispid, tkI_export, tkI_local, tkI_far, tkI_near, tkI_unsafe ];
+  DirectiveKinds    = [ tkI_virtual, tkI_override, tkI_abstract, tkI_overload, tkI_reintroduce, tkI_dynamic, tkI_static,
+    tkI_inline, tkI_assembler, tkI_register, tkI_stdcall, tkI_cdecl, tkI_safecall, tkI_pascal,
+    tkI_external, tkI_forward, tkI_message, tkI_final, tkI_platform, tkI_deprecated, tkI_experimental,
+    tkI_varargs, tkI_dispid, tkI_export, tkI_local, tkI_far, tkI_near, tkI_unsafe ];
 begin
-  Result := ( Token <> nil ) and
-            ( ( Token.Kind in DirectiveKinds ) or
-              ( ( Token.Kind = tkIdent ) and ( SameText( Token.Value, 'winapi' ) or SameText( Token.Value, 'delayed' ) ) ) );
+  Result            := ( Token <> nil ) and
+    ( ( Token.Kind in DirectiveKinds ) or
+    ( ( Token.Kind = tkIdent ) and ( SameText( Token.Value, 'winapi' ) or SameText( Token.Value, 'delayed' ) ) ) );
 end;
 
 procedure TDeadCodeAnalyzer.CollectSymbols( const FileName: string; const Content: UTF8String );
 var
-  Token: TToken;
-  PrevTokenKind: TTokenKind;
-  InImplementation: Boolean;
+  Token             : TToken;
+  PrevTokenKind     : TTokenKind;
+  InImplementation  : Boolean;
   InType, InClass, InRecord: Boolean;
   InPrivate, InProtected, InPublic, InPublished: Boolean;
-  CurrentClassName: string;
+  CurrentClassName  : string;
 begin
-  var sUnitName    := ChangeFileExt( ExtractFileName( FileName ), '' );
-  InImplementation := False;
-  InType           := False;
-  InClass          := False;
-  InRecord         := False;
-  InPrivate        := False;
-  InProtected      := False;
-  InPublic         := False;
-  InPublished      := False;
-  CurrentClassName := '';
+  var sUnitName     := ChangeFileExt( ExtractFileName( FileName ), '' );
+  InImplementation  := False;
+  InType            := False;
+  InClass           := False;
+  InRecord          := False;
+  InPrivate         := False;
+  InProtected       := False;
+  InPublic          := False;
+  InPublished       := False;
+  CurrentClassName  := '';
 
   // Routines declared in this unit's interface: their implementation headers are the bodies, not
   // further symbols (a second, unit-scoped copy could only be "used" from this file).
-  var bAttributed        := False;   // an attribute ([Weak], [JSONName(...)]) precedes the next declaration
+  var bAttributed   := False; // an attribute ([Weak], [JSONName(...)]) precedes the next declaration
   var oInterfaceRoutines := TStringList.Create;
-  var oLexer             := TDelphiLexer.Create( FileName, Content );
+  var oLexer        := TDelphiLexer.Create( FileName, Content );
   try
     oInterfaceRoutines.CaseSensitive := False;
-    oInterfaceRoutines.Sorted        := True;
-    oInterfaceRoutines.Duplicates    := dupIgnore;
+    oInterfaceRoutines.Sorted := True;
+    oInterfaceRoutines.Duplicates := dupIgnore;
 
-    PrevTokenKind := tkNone;
+    PrevTokenKind   := tkNone;
 
     while NextCodeToken( oLexer, Token ) do
     begin
@@ -392,22 +392,22 @@ begin
       if Token.Kind = tkI_implementation then
       begin
         InImplementation := True;
-        InType           := False;
-        InClass          := False;
-        InRecord         := False;
+        InType      := False;
+        InClass     := False;
+        InRecord    := False;
       end;
 
       // Track type section
       if Token.Kind = tkI_type then
       begin
-        InType   := True;
-        InClass  := False;
-        InRecord := False;
+        InType      := True;
+        InClass     := False;
+        InRecord    := False;
       end
       else if Token.Kind in [ tkI_var, tkI_const, tkI_begin ] then
       begin
         if not InClass and not InRecord then
-          InType := False;
+          InType    := False;
       end;
 
       // Track class/record
@@ -415,14 +415,14 @@ begin
       begin
         if InType and ( PrevTokenKind = tkEqual ) then
         begin
-          InClass     := True;
-          InRecord    := False;
+          InClass   := True;
+          InRecord  := False;
           // Don't assume private - the implicit section before any visibility
           // keyword is "published" for forms/components (used by DFM streaming).
           // Only collect fields after an explicit private/protected keyword.
-          InPrivate   := False;
+          InPrivate := False;
           InProtected := False;
-          InPublic    := False;
+          InPublic  := False;
           InPublished := False;
         end;
       end
@@ -430,19 +430,19 @@ begin
       begin
         if InType and ( PrevTokenKind = tkEqual ) then
         begin
-          InRecord := True;
-          InClass  := False;
+          InRecord  := True;
+          InClass   := False;
         end;
       end
       else if Token.Kind = tkI_end then
       begin
         if InClass or InRecord then
         begin
-          InClass     := False;
-          InRecord    := False;
-          InPrivate   := False;
+          InClass   := False;
+          InRecord  := False;
+          InPrivate := False;
           InProtected := False;
-          InPublic    := False;
+          InPublic  := False;
           InPublished := False;
         end;
       end;
@@ -476,7 +476,7 @@ begin
       // list may hold semicolons inside its brackets).
       if InClass and ( Token.Kind = tkI_property ) then
       begin
-        var iDepth := 0;
+        var iDepth  := 0;
         while NextCodeToken( oLexer, Token ) do
         begin
           if Token.Kind in [ tkLBracket, tkLParan ] then
@@ -493,8 +493,8 @@ begin
       // An attribute in a class body: it marks the declaration that follows as used through RTTI.
       // ("[" starts one only where a declaration may start - not "array[0..3]" in a field's type.)
       if InClass and ( Token.Kind = tkLBracket ) and
-         ( PrevTokenKind in [ tkSemicolon, tkRBracket, tkRParan, tkI_class, tkI_private, tkI_protected, tkI_public,
-                              tkI_published, tkI_strict ] ) then
+        ( PrevTokenKind in [ tkSemicolon, tkRBracket, tkRParan, tkI_class, tkI_private, tkI_protected, tkI_public,
+          tkI_published, tkI_strict ] ) then
       begin
         var iBrackets := 1;
         while ( iBrackets > 0 ) and NextCodeToken( oLexer, Token ) do
@@ -502,7 +502,7 @@ begin
             Inc( iBrackets )
           else if Token.Kind = tkRBracket then
             Dec( iBrackets );
-        bAttributed   := True;
+        bAttributed := True;
         PrevTokenKind := tkRBracket;
         Continue;
       end;
@@ -516,14 +516,14 @@ begin
 
         if NextCodeToken( oLexer, Token ) and ( Token.Kind = tkColon ) then
         begin
-          var oSymbol         := TSymbolInfo.Create;
-          oSymbol.Name        := oNameToken.Value;
-          oSymbol.FileName    := FileName;
-          oSymbol.UnitName    := sUnitName;
-          oSymbol.Line        := oNameToken.Line + 1;
-          oSymbol.DeclIndex   := oNameToken.Index;
+          var oSymbol := TSymbolInfo.Create;
+          oSymbol.Name := oNameToken.Value;
+          oSymbol.FileName := FileName;
+          oSymbol.UnitName := sUnitName;
+          oSymbol.Line := oNameToken.Line + 1;
+          oSymbol.DeclIndex := oNameToken.Index;
           oSymbol.ElementType := 'Field';
-          oSymbol.ClassName   := CurrentClassName;
+          oSymbol.ClassName := CurrentClassName;
           oSymbol.IsPublished := InPublished;
           oSymbol.IsAttributed := bFieldAttributed;
 
@@ -581,15 +581,15 @@ begin
             Break;
 
           bIsMethodBody := True;
-          NextCodeToken( oLexer, Token );   // the next name part
+          NextCodeToken( oLexer, Token ); // the next name part
           if ( Token <> nil ) and InImplementation then
             FHeaderTokens.AddOrSetValue( HeaderKey( FileName, Token.Index ), True );
-          NextCodeToken( oLexer, Token );   // and what follows it
+          NextCodeToken( oLexer, Token ); // and what follows it
         until False;
 
         // Skip the rest of the header: parameters and result type, to the semicolon at depth 0.
         var sParamText := '';
-        var iDepth     := 0;
+        var iDepth  := 0;
         while Token <> nil do
         begin
           if Token.Kind = tkLParan then
@@ -604,18 +604,18 @@ begin
         end;
 
         // Directives follow the header's semicolon: "procedure Foo; virtual; abstract;".
-        var bVirtual  := False;
+        var bVirtual := False;
         var bOverride := False;
         var bAbstract := False;
-        var bMessage  := False;
+        var bMessage := False;
         while IsRoutineDirective( oLexer.LookAheadNoComment ) do
         begin
           NextCodeToken( oLexer, Token );
           case Token.Kind of
-            tkI_virtual, tkI_dynamic: bVirtual  := True;
-            tkI_override:             bOverride := True;
-            tkI_abstract:             bAbstract := True;
-            tkI_message, tkI_dispid:  bMessage  := True;
+            tkI_virtual, tkI_dynamic: bVirtual := True;
+            tkI_override: bOverride := True;
+            tkI_abstract: bAbstract := True;
+            tkI_message, tkI_dispid: bMessage := True;
           end;
           // the directive's own arguments ("message WM_X", "external 'a.dll' name 'b'") up to its semicolon
           while ( Token <> nil ) and ( Token.Kind <> tkSemicolon ) do
@@ -632,21 +632,21 @@ begin
         if InImplementation and ( oInterfaceRoutines.IndexOf( oNameToken.Value ) >= 0 ) then
           Continue;
 
-        var oSymbol           := TSymbolInfo.Create;
-        oSymbol.Name          := oNameToken.Value;
-        oSymbol.FileName      := FileName;
-        oSymbol.UnitName      := sUnitName;
-        oSymbol.Line          := oNameToken.Line + 1;
-        oSymbol.DeclIndex     := oNameToken.Index;
-        oSymbol.IsPublished   := InPublished;
+        var oSymbol := TSymbolInfo.Create;
+        oSymbol.Name := oNameToken.Value;
+        oSymbol.FileName := FileName;
+        oSymbol.UnitName := sUnitName;
+        oSymbol.Line := oNameToken.Line + 1;
+        oSymbol.DeclIndex := oNameToken.Index;
+        oSymbol.IsPublished := InPublished;
         oSymbol.IsConstructor := eRoutineKind = tkI_constructor;
-        oSymbol.IsDestructor  := eRoutineKind = tkI_destructor;
-        oSymbol.IsVirtual     := bVirtual;
-        oSymbol.IsOverride    := bOverride;
-        oSymbol.IsAbstract    := bAbstract;
+        oSymbol.IsDestructor := eRoutineKind = tkI_destructor;
+        oSymbol.IsVirtual := bVirtual;
+        oSymbol.IsOverride := bOverride;
+        oSymbol.IsAbstract := bAbstract;
         oSymbol.IsEventHandler := IsEventHandlerSignature( sParamText );
         oSymbol.IsMessageHandler := bMessage;
-        oSymbol.IsAttributed   := bRoutineAttributed;
+        oSymbol.IsAttributed := bRoutineAttributed;
 
         if eRoutineKind = tkI_function then
           oSymbol.ElementType := 'Function'
@@ -697,18 +697,18 @@ end;
 procedure TDeadCodeAnalyzer.ScanForReferences( const FileName: string; const Content: UTF8String;
   const IncludedFrom: string );
 var
-  Token: TToken;
+  Token             : TToken;
 begin
   // An include file's references count as its unit's; it holds no declaration or header token of
   // that unit, so none of its tokens is skipped.
-  var bInclude   := IncludedFrom <> '';
-  var sScopeFile := FileName;
+  var bInclude      := IncludedFrom <> '';
+  var sScopeFile    := FileName;
   if bInclude then
-    sScopeFile := IncludedFrom;
+    sScopeFile      := IncludedFrom;
 
   // The whole unit is scanned: a field read only by a property in an interface-section class is
   // used, and so is a routine referenced only from an initialization section.
-  var oLexer := TDelphiLexer.Create( FileName, Content );
+  var oLexer        := TDelphiLexer.Create( FileName, Content );
   try
     while oLexer.NextToken( Token ) do
     begin
@@ -729,7 +729,7 @@ begin
         if oSymbol.IsReferenced then
           Continue;
 
-        bSameFile := SameText( oSymbol.FileName, sScopeFile );
+        bSameFile   := SameText( oSymbol.FileName, sScopeFile );
 
         // The declaring token itself is not a reference.
         if bSameFile and not bInclude and ( oSymbol.DeclIndex = Token.Index ) then
@@ -753,7 +753,7 @@ end;
 
 function TDeadCodeAnalyzer.GetDeadCode( LocalOnly: Boolean ): TArray<TDeadCodeItem>;
 begin
-  var oList := TList<TDeadCodeItem>.Create;
+  var oList         := TList<TDeadCodeItem>.Create;
   try
     for var oSymbol in FSymbols do
     begin
@@ -765,13 +765,13 @@ begin
         Continue;
 
       var rItem: TDeadCodeItem;
-      rItem.FileName    := oSymbol.FileName;
-      rItem.UnitName    := oSymbol.UnitName;
-      rItem.Line        := oSymbol.Line;
+      rItem.FileName := oSymbol.FileName;
+      rItem.UnitName := oSymbol.UnitName;
+      rItem.Line    := oSymbol.Line;
       rItem.ElementType := oSymbol.ElementType;
       rItem.ElementName := oSymbol.Name;
-      rItem.Scope       := oSymbol.Scope;
-      rItem.Reason      := 'Never referenced';
+      rItem.Scope   := oSymbol.Scope;
+      rItem.Reason  := 'Never referenced';
 
       if oSymbol.ClassName <> '' then
         rItem.ElementName := oSymbol.ClassName + '.' + oSymbol.Name;
@@ -779,10 +779,11 @@ begin
       oList.Add( rItem );
     end;
 
-    Result := oList.ToArray;
+    Result          := oList.ToArray;
   finally
     oList.Free;
   end;
 end;
 
 end.
+

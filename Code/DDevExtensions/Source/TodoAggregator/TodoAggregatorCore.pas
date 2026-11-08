@@ -91,9 +91,9 @@ constructor TTodoScanner.Create;
 begin
 
   inherited Create;
-  FPatterns                := TStringList.Create;
-  FPatterns.CaseSensitive  := False;
-  FPatterns.Duplicates     := dupIgnore;
+  FPatterns         := TStringList.Create;
+  FPatterns.CaseSensitive := False;
+  FPatterns.Duplicates := dupIgnore;
   // Default patterns
   FPatterns.Add( 'TODO' );
   FPatterns.Add( 'FIXME' );
@@ -114,17 +114,17 @@ end;
 
 procedure TTodoScanner.SetPatterns( const PatternList: string );
 var
-  I: Integer;
-  SL: TStringList;
+  I                 : Integer;
+  SL                : TStringList;
 begin
 
   FPatterns.Clear;
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
-    SL.Delimiter       := ',';
+    SL.Delimiter    := ',';
     SL.StrictDelimiter := True;
-    SL.DelimitedText   := PatternList;
+    SL.DelimitedText := PatternList;
 
     for I := 0 to SL.Count - 1 do
     begin
@@ -142,7 +142,7 @@ function TTodoScanner.ParseTodoComment( const CommentText: string;
 
   function IsWordChar( AChar: Char ): Boolean;
   begin
-    Result := CharInSet( AChar, [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] );
+    Result          := CharInSet( AChar, [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] );
   end;
 
   { True when nothing but layout comes before the tag: blanks, comment decoration ( "/// todo",
@@ -151,18 +151,18 @@ function TTodoScanner.ParseTodoComment( const CommentText: string;
   begin
     for var K := 1 to AUpTo - 1 do
       if ( not CharInSet( CommentText[ K ], [ ' ', #9, #13, #10, '/', '@', '-', '*', '#', '!', '~', '=', '>',
-        '<', '.', ':', ';', ',', '+', '0'..'9' ] ) ) then
+            '<', '.', ':', ';', ',', '+', '0'..'9' ] ) ) then
         Exit( False );
-    Result := True;
+    Result          := True;
   end;
 
   { A tag counts when it is a whole word AND it is written in capitals, opens the comment ( after
     any lead-in ), or is followed by a colon or a priority - so "a bug in the parser" is prose. }
   function IsTagAt( APos: Integer; const APattern: string ): Boolean;
   var
-    iAfter: Integer;
+    iAfter          : Integer;
   begin
-    iAfter := APos + Length( APattern );
+    iAfter          := APos + Length( APattern );
     if ( APos > 1 ) and IsWordChar( CommentText[ APos - 1 ] ) then
       Exit( False );
     if ( iAfter <= Length( CommentText ) ) and IsWordChar( CommentText[ iAfter ] ) then
@@ -174,56 +174,56 @@ function TTodoScanner.ParseTodoComment( const CommentText: string;
       Exit( True );
     while ( iAfter <= Length( CommentText ) ) and CharInSet( CommentText[ iAfter ], [ ' ', #9 ] ) do
       Inc( iAfter );
-    Result := ( iAfter <= Length( CommentText ) ) and CharInSet( CommentText[ iAfter ], [ ':', '(' ] );
+    Result          := ( iAfter <= Length( CommentText ) ) and CharInSet( CommentText[ iAfter ], [ ':', '(' ] );
   end;
 
 var
-  I, J: Integer;
-  sPattern: string;
-  sUpperComment: string;
+  I, J              : Integer;
+  sPattern          : string;
+  sUpperComment     : string;
   iPos, iBestPos, iBestIndex: Integer;
   iPriorityStart, iPriorityEnd: Integer;
-  sPriorityText: string;
+  sPriorityText     : string;
 begin
-  Result        := False;
-  Category      := '';
-  Priority      := 'Normal';
-  Text          := '';
-  sUpperComment := UpperCase( CommentText );
+  Result            := False;
+  Category          := '';
+  Priority          := 'Normal';
+  Text              := '';
+  sUpperComment     := UpperCase( CommentText );
 
   { The tag that comes first in the comment wins, whatever the order of the patterns, and every
     occurrence of a pattern is tried ( "BUGFIX ... BUG:" finds the second ). }
-  iBestPos   := 0;
-  iBestIndex := -1;
+  iBestPos          := 0;
+  iBestIndex        := -1;
   for I := 0 to FPatterns.Count - 1 do
   begin
-    sPattern := UpperCase( FPatterns[ I ] );
+    sPattern        := UpperCase( FPatterns[ I ] );
     if ( sPattern = '' ) then
       Continue;
-    iPos := Pos( sPattern, sUpperComment );
+    iPos            := Pos( sPattern, sUpperComment );
     while ( iPos > 0 ) and ( ( iBestIndex < 0 ) or ( iPos < iBestPos ) ) do
     begin
       if IsTagAt( iPos, sPattern ) then
       begin
-        iBestPos   := iPos;
-        iBestIndex := I;
+        iBestPos    := iPos;
+        iBestIndex  := I;
         Break;
       end;
-      iPos := Pos( sPattern, sUpperComment, iPos + 1 );
+      iPos          := Pos( sPattern, sUpperComment, iPos + 1 );
     end;
   end;
   if ( iBestIndex < 0 ) then
     Exit;
 
-  Category := FPatterns[ iBestIndex ];  // Use original case from patterns
+  Category          := FPatterns[ iBestIndex ]; // Use original case from patterns
 
   // Check for priority in parentheses: TODO(high): or FIXME(low):
-  J := iBestPos + Length( Category );
+  J                 := iBestPos + Length( Category );
 
   if ( J <= Length( CommentText ) ) and ( CommentText[ J ] = '(' ) then
   begin
-    iPriorityStart := J + 1;
-    iPriorityEnd   := iPriorityStart;
+    iPriorityStart  := J + 1;
+    iPriorityEnd    := iPriorityStart;
 
     while ( iPriorityEnd <= Length( CommentText ) ) and ( CommentText[ iPriorityEnd ] <> ')' ) do
       Inc( iPriorityEnd );
@@ -233,13 +233,13 @@ begin
       sPriorityText := Trim( Copy( CommentText, iPriorityStart, iPriorityEnd - iPriorityStart ) );
 
       if SameText( sPriorityText, 'high' ) or SameText( sPriorityText, '!' ) or SameText( sPriorityText, '1' ) then
-        Priority := 'High'
+        Priority    := 'High'
       else if SameText( sPriorityText, 'low' ) or SameText( sPriorityText, '3' ) then
-        Priority := 'Low'
+        Priority    := 'Low'
       else if SameText( sPriorityText, 'medium' ) or SameText( sPriorityText, 'normal' ) or SameText( sPriorityText, '2' ) then
-        Priority := 'Normal';
+        Priority    := 'Normal';
 
-      J := iPriorityEnd + 1;
+      J             := iPriorityEnd + 1;
     end;
   end;
 
@@ -247,42 +247,43 @@ begin
   while ( J <= Length( CommentText ) ) and ( CharInSet( CommentText[ J ], [ ':', ' ', #9 ] ) ) do
     Inc( J );
 
-  Text   := Trim( Copy( CommentText, J, MaxInt ) );
-  Result := True;
+  Text              := Trim( Copy( CommentText, J, MaxInt ) );
+  Result            := True;
 end;
 
 function TTodoScanner.ScanSource( const Content: UTF8String; const FileName: string ): TArray<TTodoItem>;
 var
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  TodoList: TList<TTodoItem>;
-  TodoItem: TTodoItem;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
+  TodoList          : TList<TTodoItem>;
+  TodoItem          : TTodoItem;
   Category, Priority, Text: string;
 begin
-  var sUnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
-  TodoList      := TList<TTodoItem>.Create;
+  var sUnitName     := ChangeFileExt( ExtractFileName( FileName ), '' );
+  TodoList          := TList<TTodoItem>.Create;
   try
-    Lexer := TDelphiLexer.Create( FileName, Content );
+    Lexer           := TDelphiLexer.Create( FileName, Content );
     try
       while Lexer.NextToken( Token ) do
         if ( Token.Kind = tkComment ) and ParseTodoComment( Token.GetCommentBody, Category, Priority, Text ) then
         begin
           TodoItem.FileName := FileName;
           TodoItem.UnitName := sUnitName;
-          TodoItem.Line     := Token.Line + 1;  // Token.Line is 0-based
-          TodoItem.Column   := Token.Column;
+          TodoItem.Line := Token.Line + 1; // Token.Line is 0-based
+          TodoItem.Column := Token.Column;
           TodoItem.Category := Category;
           TodoItem.Priority := Priority;
-          TodoItem.Text     := Text;
+          TodoItem.Text := Text;
           TodoList.Add( TodoItem );
         end;
     finally
       Lexer.Free;
     end;
-    Result := TodoList.ToArray;
+    Result          := TodoList.ToArray;
   finally
     TodoList.Free;
   end;
 end;
 
 end.
+

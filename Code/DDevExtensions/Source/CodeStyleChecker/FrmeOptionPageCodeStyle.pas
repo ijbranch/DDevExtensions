@@ -122,7 +122,7 @@ begin
 
   // 0 or a negative limit would flag every method, block or parameter list.
   if ( not TryStrToInt( Trim( AText ), Result ) ) or ( Result < 1 ) then
-    Result := ACurrent;
+    Result          := ACurrent;
 
 end;
 
@@ -138,33 +138,33 @@ end;
 procedure TFrameOptionPageCodeStyle.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TCodeStyleCheckerPlugin;
+  FPlugin           := UserData as TCodeStyleCheckerPlugin;
 
 end;
 
 procedure TFrameOptionPageCodeStyle.LoadData;
 begin
 
-  chkEnabled.Checked               := FPlugin.Enabled;
-  chkCheckTypes.Checked            := FPlugin.CheckTypes;
-  chkCheckInterfaces.Checked       := FPlugin.CheckInterfaces;
-  chkCheckFields.Checked           := FPlugin.CheckFields;
-  chkCheckExceptions.Checked       := FPlugin.CheckExceptions;
-  chkCheckPointers.Checked         := FPlugin.CheckPointers;
-  chkCheckParameters.Checked       := FPlugin.CheckParameters;
+  chkEnabled.Checked := FPlugin.Enabled;
+  chkCheckTypes.Checked := FPlugin.CheckTypes;
+  chkCheckInterfaces.Checked := FPlugin.CheckInterfaces;
+  chkCheckFields.Checked := FPlugin.CheckFields;
+  chkCheckExceptions.Checked := FPlugin.CheckExceptions;
+  chkCheckPointers.Checked := FPlugin.CheckPointers;
+  chkCheckParameters.Checked := FPlugin.CheckParameters;
   chkCheckVariablePrefixes.Checked := FPlugin.CheckVariablePrefixes;
-  chkCheckUnitScopeNames.Checked   := FPlugin.CheckUnitScopeNames;
+  chkCheckUnitScopeNames.Checked := FPlugin.CheckUnitScopeNames;
 
   // Anti-pattern options
-  chkCheckAntiPatterns.Checked     := FPlugin.CheckAntiPatterns;
-  chkCheckEmptyFinally.Checked     := FPlugin.CheckEmptyFinally;
-  chkCheckNestedWith.Checked       := FPlugin.CheckNestedWith;
-  chkCheckDeepNesting.Checked      := FPlugin.CheckDeepNesting;
-  chkCheckLongMethods.Checked      := FPlugin.CheckLongMethods;
-  chkCheckLongParamLists.Checked   := FPlugin.CheckLongParamLists;
-  edtMaxNesting.Text               := IntToStr( FPlugin.MaxNestingDepth );
-  edtMaxLines.Text                 := IntToStr( FPlugin.MaxMethodLines );
-  edtMaxParams.Text                := IntToStr( FPlugin.MaxParameters );
+  chkCheckAntiPatterns.Checked := FPlugin.CheckAntiPatterns;
+  chkCheckEmptyFinally.Checked := FPlugin.CheckEmptyFinally;
+  chkCheckNestedWith.Checked := FPlugin.CheckNestedWith;
+  chkCheckDeepNesting.Checked := FPlugin.CheckDeepNesting;
+  chkCheckLongMethods.Checked := FPlugin.CheckLongMethods;
+  chkCheckLongParamLists.Checked := FPlugin.CheckLongParamLists;
+  edtMaxNesting.Text := IntToStr( FPlugin.MaxNestingDepth );
+  edtMaxLines.Text  := IntToStr( FPlugin.MaxMethodLines );
+  edtMaxParams.Text := IntToStr( FPlugin.MaxParameters );
 
   UpdateRulesSummary;
 
@@ -173,26 +173,26 @@ end;
 procedure TFrameOptionPageCodeStyle.SaveData;
 begin
 
-  FPlugin.Enabled               := chkEnabled.Checked;
-  FPlugin.CheckTypes            := chkCheckTypes.Checked;
-  FPlugin.CheckInterfaces       := chkCheckInterfaces.Checked;
-  FPlugin.CheckFields           := chkCheckFields.Checked;
-  FPlugin.CheckExceptions       := chkCheckExceptions.Checked;
-  FPlugin.CheckPointers         := chkCheckPointers.Checked;
-  FPlugin.CheckParameters       := chkCheckParameters.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
+  FPlugin.CheckTypes := chkCheckTypes.Checked;
+  FPlugin.CheckInterfaces := chkCheckInterfaces.Checked;
+  FPlugin.CheckFields := chkCheckFields.Checked;
+  FPlugin.CheckExceptions := chkCheckExceptions.Checked;
+  FPlugin.CheckPointers := chkCheckPointers.Checked;
+  FPlugin.CheckParameters := chkCheckParameters.Checked;
   FPlugin.CheckVariablePrefixes := chkCheckVariablePrefixes.Checked;
-  FPlugin.CheckUnitScopeNames   := chkCheckUnitScopeNames.Checked;
+  FPlugin.CheckUnitScopeNames := chkCheckUnitScopeNames.Checked;
 
   // Anti-pattern options
-  FPlugin.CheckAntiPatterns     := chkCheckAntiPatterns.Checked;
-  FPlugin.CheckEmptyFinally     := chkCheckEmptyFinally.Checked;
-  FPlugin.CheckNestedWith       := chkCheckNestedWith.Checked;
-  FPlugin.CheckDeepNesting      := chkCheckDeepNesting.Checked;
-  FPlugin.CheckLongMethods      := chkCheckLongMethods.Checked;
-  FPlugin.CheckLongParamLists   := chkCheckLongParamLists.Checked;
-  FPlugin.MaxNestingDepth       := PositiveOr( edtMaxNesting.Text, FPlugin.MaxNestingDepth );
-  FPlugin.MaxMethodLines        := PositiveOr( edtMaxLines.Text, FPlugin.MaxMethodLines );
-  FPlugin.MaxParameters         := PositiveOr( edtMaxParams.Text, FPlugin.MaxParameters );
+  FPlugin.CheckAntiPatterns := chkCheckAntiPatterns.Checked;
+  FPlugin.CheckEmptyFinally := chkCheckEmptyFinally.Checked;
+  FPlugin.CheckNestedWith := chkCheckNestedWith.Checked;
+  FPlugin.CheckDeepNesting := chkCheckDeepNesting.Checked;
+  FPlugin.CheckLongMethods := chkCheckLongMethods.Checked;
+  FPlugin.CheckLongParamLists := chkCheckLongParamLists.Checked;
+  FPlugin.MaxNestingDepth := PositiveOr( edtMaxNesting.Text, FPlugin.MaxNestingDepth );
+  FPlugin.MaxMethodLines := PositiveOr( edtMaxLines.Text, FPlugin.MaxMethodLines );
+  FPlugin.MaxParameters := PositiveOr( edtMaxParams.Text, FPlugin.MaxParameters );
 
   FPlugin.Save;
 
@@ -200,32 +200,32 @@ end;
 
 procedure TFrameOptionPageCodeStyle.UpdateRulesSummary;
 var
-  Rules: TArray<TTypePrefixRule>;
-  Summary: string;
-  I: Integer;
+  Rules             : TArray<TTypePrefixRule>;
+  Summary           : string;
+  I                 : Integer;
 begin
 
-  Rules := FPlugin.TypePrefixRules;
+  Rules             := FPlugin.TypePrefixRules;
 
   if Length( Rules ) = 0 then
-    Summary := 'No rules configured'
+    Summary         := 'No rules configured'
   else
   begin
-    Summary := IntToStr( Length( Rules ) ) + ' rules configured (';
+    Summary         := IntToStr( Length( Rules ) ) + ' rules configured (';
 
     // Show first few rules as preview
     for I := 0 to Min( 2, High( Rules ) ) do
     begin
       if I > 0 then
-        Summary := Summary + ', ';
+        Summary     := Summary + ', ';
 
-      Summary := Summary + Rules[ I ].TypePattern + '=' + Rules[ I ].Prefix;
+      Summary       := Summary + Rules[ I ].TypePattern + '=' + Rules[ I ].Prefix;
     end;
 
     if Length( Rules ) > 3 then
-      Summary := Summary + ', ...';
+      Summary       := Summary + ', ...';
 
-    Summary := Summary + ')';
+    Summary         := Summary + ')';
   end;
 
   lblRulesSummary.Caption := Summary;
@@ -254,3 +254,4 @@ begin
 end;
 
 end.
+

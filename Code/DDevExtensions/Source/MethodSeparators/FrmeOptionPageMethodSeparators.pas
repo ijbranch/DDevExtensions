@@ -83,19 +83,19 @@ uses
 procedure TFrameOptionPageMethodSeparators.SetUserData( UserData: TObject );
 begin
 
-  FConfig := UserData;
+  FConfig           := UserData;
 
 end;
 
 procedure TFrameOptionPageMethodSeparators.LoadData;
 var
-  Config: TMethodSeparatorsConfig;
+  Config            : TMethodSeparatorsConfig;
 begin
 
   if not ( FConfig is TMethodSeparatorsConfig ) then
     Exit;
 
-  Config := FConfig as TMethodSeparatorsConfig;
+  Config            := FConfig as TMethodSeparatorsConfig;
   cbxActive.Checked := Config.Active;
   cbxShowTypes.Checked := Config.ShowTypes;
   cbxShowSections.Checked := Config.ShowSections;
@@ -109,18 +109,18 @@ end;
 
 procedure TFrameOptionPageMethodSeparators.SaveData;
 var
-  Config: TMethodSeparatorsConfig;
+  Config            : TMethodSeparatorsConfig;
 begin
 
   if not ( FConfig is TMethodSeparatorsConfig ) then
     Exit;
 
-  Config := FConfig as TMethodSeparatorsConfig;
-  Config.Active := cbxActive.Checked;
-  Config.ShowTypes := cbxShowTypes.Checked;
+  Config            := FConfig as TMethodSeparatorsConfig;
+  Config.Active     := cbxActive.Checked;
+  Config.ShowTypes  := cbxShowTypes.Checked;
   Config.ShowSections := cbxShowSections.Checked;
   Config.ShowInterface := cbxShowInterface.Checked;
-  if cboLineStyle.ItemIndex in [Ord( Low( TSeparatorLineStyle ) )..Ord( High( TSeparatorLineStyle ) )] then
+  if cboLineStyle.ItemIndex in [ Ord( Low( TSeparatorLineStyle ) )..Ord( High( TSeparatorLineStyle ) ) ] then
     Config.LineStyle := TSeparatorLineStyle( cboLineStyle.ItemIndex );
   Config.UseCustomColor := cbxUseCustomColor.Checked;
   Config.CustomColor := clbCustomColor.Selected;
@@ -152,3 +152,4 @@ begin
 end;
 
 end.
+

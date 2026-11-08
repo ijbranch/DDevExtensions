@@ -64,7 +64,7 @@ end;
 
 procedure TFrameOptionPageUsesClause.SetUserData( UserData: TObject );
 begin
-  FPlugin := UserData as TUsesClauseManagerPlugin;
+  FPlugin           := UserData as TUsesClauseManagerPlugin;
 end;
 
 procedure TFrameOptionPageUsesClause.LoadData;
@@ -74,7 +74,7 @@ end;
 
 procedure TFrameOptionPageUsesClause.SaveData;
 begin
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   FPlugin.Save;
 end;
 
@@ -87,3 +87,4 @@ begin
 end;
 
 end.
+

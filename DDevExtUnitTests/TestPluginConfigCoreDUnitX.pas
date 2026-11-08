@@ -12,7 +12,7 @@ uses
 
 type
   /// <summary>Fixture for the settings-file safety helpers.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestPluginConfigCore = class
   private
     /// <summary>A fresh folder for one test, under the temp folder.</summary>
@@ -20,61 +20,61 @@ type
     /// <summary>Writes <paramref name="Text"/> to <paramref name="FileName"/> as UTF-8.</summary>
     /// <param name="FileName">Target file.</param>
     /// <param name="Text">Content.</param>
-    procedure WriteText(const FileName, Text: string);
+    procedure WriteText( const FileName, Text: string );
     /// <summary>Reads a UTF-8 file written by <see cref="WriteText"/>.</summary>
     /// <param name="FileName">Source file.</param>
     /// <returns>Its content.</returns>
-    function ReadText(const FileName: string): string;
+    function ReadText( const FileName: string ): string;
   public
     /// <summary>Creates the per-test folder.</summary>
-    [Setup]
+    [ Setup ]
     procedure Setup;
     /// <summary>Deletes the per-test folder.</summary>
-    [TearDown]
+    [ TearDown ]
     procedure TearDown;
     /// <summary>
     /// A missing attribute (the XML wrapper returns '' for it), Null and Unassigned carry no value; real values
     /// do.  The old test <c>Value &lt;&gt; Null</c> took '' for a value, and SetOrdProp('') raised.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestXmlValuePresent;
     /// <summary>The quarantine name keeps the original name and appends the date and time.</summary>
-    [Test]
+    [ Test ]
     procedure TestQuarantineFileName;
     /// <summary>An unreadable settings file is moved aside with its bytes intact, so a later save cannot overwrite it.</summary>
-    [Test]
+    [ Test ]
     procedure TestQuarantineMovesFileIntact;
     /// <summary>A second quarantine in the same second does not overwrite the first one.</summary>
-    [Test]
+    [ Test ]
     procedure TestQuarantineNeverOverwritesEarlierQuarantine;
     /// <summary>The atomic replace swaps in the new content and leaves no temporary file behind.</summary>
-    [Test]
+    [ Test ]
     procedure TestReplaceFileAtomicallySwapsContent;
     /// <summary>A failed replace raises EInOutError, keeps the original content and removes the temporary file.</summary>
-    [Test]
+    [ Test ]
     procedure TestReplaceFileAtomicallyFailureKeepsOriginal;
     /// <summary>
     /// Every save gets its own temporary file beside the settings file: the 32-bit and 64-bit IDE share the settings
     /// file, and a fixed temporary name let one IDE's save replace the other's half-written one.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestTempFileNamesAreUniqueAndBesideTheFile;
     /// <summary>
     /// A file that cannot be opened ( held exclusively by another process ) is reported as locked, not damaged, and
     /// the parser is never run, so the file is left alone instead of being moved aside.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestLockedFileIsReportedLockedNotUnreadable;
     /// <summary>Content that never parses is reported unreadable after every attempt has been made.</summary>
     /// <exception cref="EParserError">Raised by the test's loader on purpose to simulate damaged content; the routine under test absorbs it.</exception>
-    [Test]
+    [ Test ]
     procedure TestBadContentIsUnreadableAfterAllAttempts;
     /// <summary>A file caught mid-write on the first attempt loads on a retry.</summary>
     /// <exception cref="EParserError">Raised by the test's loader on purpose to simulate a transient parse failure; the routine under test absorbs it.</exception>
-    [Test]
+    [ Test ]
     procedure TestRetryLoadsAfterTransientFailure;
     /// <summary>An empty file is unreadable, and the parser is not run on it.</summary>
-    [Test]
+    [ Test ]
     procedure TestEmptyFileIsUnreadable;
   end;
 
@@ -85,7 +85,7 @@ uses
 
 procedure TTestPluginConfigCore.Setup;
 begin
-  FFolder := TPath.Combine( TPath.GetTempPath, 'DDevExtTest-' + TGUID.NewGuid.ToString );
+  FFolder           := TPath.Combine( TPath.GetTempPath, 'DDevExtTest-' + TGUID.NewGuid.ToString );
   ForceDirectories( FFolder );
 end;
 
@@ -95,14 +95,14 @@ begin
     TDirectory.Delete( FFolder, True );
 end;
 
-procedure TTestPluginConfigCore.WriteText(const FileName, Text: string);
+procedure TTestPluginConfigCore.WriteText( const FileName, Text: string );
 begin
   TFile.WriteAllText( FileName, Text, TEncoding.UTF8 );
 end;
 
-function TTestPluginConfigCore.ReadText(const FileName: string): string;
+function TTestPluginConfigCore.ReadText( const FileName: string ): string;
 begin
-  Result := TFile.ReadAllText( FileName, TEncoding.UTF8 );
+  Result            := TFile.ReadAllText( FileName, TEncoding.UTF8 );
 end;
 
 procedure TTestPluginConfigCore.TestXmlValuePresent;
@@ -117,14 +117,14 @@ end;
 
 procedure TTestPluginConfigCore.TestQuarantineFileName;
 begin
-  var Stamp := EncodeDateTime( 2026, 11, 9, 7, 5, 3, 0 );
+  var Stamp         := EncodeDateTime( 2026, 11, 9, 7, 5, 3, 0 );
   Assert.AreEqual( 'C:\Cfg\DDevExtensionsD130.xml.corrupt-20261109-070503',
     QuarantineFileName( 'C:\Cfg\DDevExtensionsD130.xml', Stamp ) );
 end;
 
 procedure TTestPluginConfigCore.TestQuarantineMovesFileIntact;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, '<DDevExtensions><Trunc' );
   var NewName: string;
   Assert.IsTrue( QuarantineFile( FileName, Now, NewName ) );
@@ -135,8 +135,8 @@ end;
 
 procedure TTestPluginConfigCore.TestQuarantineNeverOverwritesEarlierQuarantine;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
-  var Stamp := EncodeDateTime( 2026, 11, 9, 7, 5, 3, 0 );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
+  var Stamp         := EncodeDateTime( 2026, 11, 9, 7, 5, 3, 0 );
   WriteText( FileName, 'first' );
   var First: string;
   Assert.IsTrue( QuarantineFile( FileName, Stamp, First ) );
@@ -150,9 +150,9 @@ end;
 
 procedure TTestPluginConfigCore.TestReplaceFileAtomicallySwapsContent;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, 'old settings' );
-  var TempName := TempFileNameFor( FileName );
+  var TempName      := TempFileNameFor( FileName );
   WriteText( TempName, 'new settings' );
   ReplaceFileAtomically( TempName, FileName );
   Assert.AreEqual( 'new settings', ReadText( FileName ) );
@@ -161,12 +161,12 @@ end;
 
 procedure TTestPluginConfigCore.TestReplaceFileAtomicallyFailureKeepsOriginal;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, 'old settings' );
-  var TempName := TempFileNameFor( FileName );
+  var TempName      := TempFileNameFor( FileName );
   WriteText( TempName, 'new settings' );
   // An open handle that denies delete makes the replace fail, as an antivirus scanner or backup tool can
-  var Lock := TFileStream.Create( FileName, fmOpenRead or fmShareDenyNone );
+  var Lock          := TFileStream.Create( FileName, fmOpenRead or fmShareDenyNone );
   try
     Assert.WillRaise(
       procedure
@@ -182,9 +182,9 @@ end;
 
 procedure TTestPluginConfigCore.TestTempFileNamesAreUniqueAndBesideTheFile;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
-  var First := TempFileNameFor( FileName );
-  var Second := TempFileNameFor( FileName );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
+  var First         := TempFileNameFor( FileName );
+  var Second        := TempFileNameFor( FileName );
   Assert.AreNotEqual( First, Second );
   Assert.AreEqual( FFolder, ExtractFileDir( First ), 'beside the settings file, so the replace stays on one volume' );
   Assert.IsTrue( First.EndsWith( '.tmp' ) );
@@ -192,14 +192,14 @@ end;
 
 procedure TTestPluginConfigCore.TestLockedFileIsReportedLockedNotUnreadable;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, '<DDevExtensions/>' );
-  var Parsed := 0;
-  var Lock := TFileStream.Create( FileName, fmOpenReadWrite or fmShareExclusive );
+  var Parsed        := 0;
+  var Lock          := TFileStream.Create( FileName, fmOpenReadWrite or fmShareExclusive );
   try
     var Reason: string;
-    var Outcome := LoadSettingsWithRetry( FileName,
-      procedure(Name: string)
+    var Outcome     := LoadSettingsWithRetry( FileName,
+      procedure( Name: string )
       begin
         Inc( Parsed );
       end, 3, 1, Reason );
@@ -213,12 +213,12 @@ end;
 
 procedure TTestPluginConfigCore.TestBadContentIsUnreadableAfterAllAttempts;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, '<DDevExtensions><Trunc' );
-  var Parsed := 0;
+  var Parsed        := 0;
   var Reason: string;
-  var Outcome := LoadSettingsWithRetry( FileName,
-    procedure(Name: string)
+  var Outcome       := LoadSettingsWithRetry( FileName,
+    procedure( Name: string )
     begin
       Inc( Parsed );
       raise EParserError.Create( 'unexpected end of file' );
@@ -230,12 +230,12 @@ end;
 
 procedure TTestPluginConfigCore.TestRetryLoadsAfterTransientFailure;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
   WriteText( FileName, '<DDevExtensions/>' );
-  var Parsed := 0;
+  var Parsed        := 0;
   var Reason: string;
-  var Outcome := LoadSettingsWithRetry( FileName,
-    procedure(Name: string)
+  var Outcome       := LoadSettingsWithRetry( FileName,
+    procedure( Name: string )
     begin
       Inc( Parsed );
       if Parsed = 1 then
@@ -248,12 +248,12 @@ end;
 
 procedure TTestPluginConfigCore.TestEmptyFileIsUnreadable;
 begin
-  var FileName := TPath.Combine( FFolder, 'Settings.xml' );
-  TFile.WriteAllBytes( FileName, [] );
-  var Parsed := 0;
+  var FileName      := TPath.Combine( FFolder, 'Settings.xml' );
+  TFile.WriteAllBytes( FileName, [ ] );
+  var Parsed        := 0;
   var Reason: string;
-  var Outcome := LoadSettingsWithRetry( FileName,
-    procedure(Name: string)
+  var Outcome       := LoadSettingsWithRetry( FileName,
+    procedure( Name: string )
     begin
       Inc( Parsed );
     end, 2, 1, Reason );
@@ -265,3 +265,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestPluginConfigCore );
 
 end.
+

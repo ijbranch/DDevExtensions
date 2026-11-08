@@ -153,7 +153,7 @@ type
 
 var
   /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
-  FormInstance: TFormDeadCodeDetector = nil;
+  FormInstance      : TFormDeadCodeDetector = nil;
 
 implementation
 
@@ -166,9 +166,9 @@ function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
 
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 
 end;
 
@@ -176,7 +176,7 @@ end;
 function CsvField( const Value: string ): string;
 begin
 
-  Result := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
+  Result            := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
 
 end;
 
@@ -190,7 +190,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormDeadCodeDetector.Create( Application );
+  FormInstance      := TFormDeadCodeDetector.Create( Application );
   FormInstance.Show;
 
 end;
@@ -200,8 +200,8 @@ begin
   if FormInstance = nil then
     Exit;
 
-  var oForm := FormInstance;
-  FormInstance := nil;
+  var oForm         := FormInstance;
+  FormInstance      := nil;
 
   if oForm.FScanning then
   begin
@@ -224,22 +224,22 @@ begin
   // while AnalyzeProject is still on the stack (use-after-free).
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormDeadCodeDetector.FormCreate( Sender: TObject );
 begin
 
-  FAnalyzer      := TDeadCodeAnalyzer.Create;
-  FSortColumn    := 0;
-  FSortAscending := True;
-  FScanCaption   := btnScan.Caption;
+  FAnalyzer         := TDeadCodeAnalyzer.Create;
+  FSortColumn       := 0;
+  FSortAscending    := True;
+  FScanCaption      := btnScan.Caption;
 
   // Set up type filter
   cboType.Items.Add( '(All)' );
@@ -262,7 +262,7 @@ procedure TFormDeadCodeDetector.FormDestroy( Sender: TObject );
 begin
 
   if FormInstance = Self then
-    FormInstance := nil;   // freed by its owner rather than through Close / CloseInstance
+    FormInstance    := nil; // freed by its owner rather than through Close / CloseInstance
   FAnalyzer.Free;
 
 end;
@@ -271,7 +271,7 @@ procedure TFormDeadCodeDetector.AnalyzerProgress( const Step: string; var Cancel
 begin
   lblProgress.Caption := Step;
   Application.ProcessMessages;
-  Cancel := FCancelRequested;
+  Cancel            := FCancelRequested;
 end;
 
 procedure TFormDeadCodeDetector.btnCloseClick( Sender: TObject );
@@ -291,7 +291,7 @@ begin
     Exit;
   end;
 
-  var oProject := GetActiveProject;
+  var oProject      := GetActiveProject;
 
   if oProject = nil then
   begin
@@ -308,16 +308,16 @@ begin
   FScanning         := True;
   FCancelRequested  := False;
   btnScan.Caption   := '&Cancel';
-  ListView.Selected := nil;   // drop any stale selection before re-scan
+  ListView.Selected := nil; // drop any stale selection before re-scan
 
   try
     lblProgress.Caption := 'Analysing project...';
     lblProgress.Visible := True;
-    lblSummary.Visible  := False;
+    lblSummary.Visible := False;
     Application.ProcessMessages;
 
     var iSkipped: Integer;
-    var bCompleted := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FDeadCode, iSkipped );
+    var bCompleted  := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FDeadCode, iSkipped );
     PopulateList;
 
     if not bCompleted then
@@ -332,9 +332,9 @@ begin
     // Clear the progress label here so a raised AnalyzeProject leaves no stale
     // 'Scanning: X.pas' caption behind.
     lblProgress.Visible := False;
-    FScanning           := False;
-    btnScan.Caption     := FScanCaption;
-    Screen.Cursor       := crDefault;
+    FScanning       := False;
+    btnScan.Caption := FScanCaption;
+    Screen.Cursor   := crDefault;
   end;
 
   // CloseInstance arrived during the scan: the form is no longer the singleton and must go.
@@ -348,54 +348,54 @@ var
   TypeFilter, ScopeFilter: string;
 begin
 
-  Result := True;
+  Result            := True;
 
   // Check type filter
   if cboType.ItemIndex > 0 then
   begin
-    TypeFilter := cboType.Items[ cboType.ItemIndex ];
+    TypeFilter      := cboType.Items[ cboType.ItemIndex ];
 
     if not SameText( Item.ElementType, TypeFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
   // Check scope filter
   if Result and ( cboScope.ItemIndex > 0 ) then
   begin
-    ScopeFilter := cboScope.Items[ cboScope.ItemIndex ];
+    ScopeFilter     := cboScope.Items[ cboScope.ItemIndex ];
 
     if not SameText( Item.Scope, ScopeFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
 end;
 
 procedure TFormDeadCodeDetector.PopulateList;
 var
-  DeadItem: TDeadCodeItem;
-  Item: TListItem;
-  Idx: Integer;
+  DeadItem          : TDeadCodeItem;
+  Item              : TListItem;
+  Idx               : Integer;
 begin
 
   ListView.Items.BeginUpdate;
 
   try
     ListView.Items.Clear;
-    Idx := 0;
+    Idx             := 0;
 
     for DeadItem in FDeadCode do
     begin
 
       if PassesFilter( DeadItem ) then
       begin
-        Item         := ListView.Items.Add;
+        Item        := ListView.Items.Add;
         Item.Caption := DeadItem.UnitName;
         Item.SubItems.Add( DeadItem.ElementType );
         Item.SubItems.Add( DeadItem.ElementName );
         Item.SubItems.Add( DeadItem.Scope );
         Item.SubItems.Add( IntToStr( DeadItem.Line ) );
         Item.SubItems.Add( DeadItem.Reason );
-        Item.Data := Pointer( NativeInt( Idx ) );
+        Item.Data   := Pointer( NativeInt( Idx ) );
       end;
 
       Inc( Idx );
@@ -425,11 +425,11 @@ procedure TFormDeadCodeDetector.ListViewColumnClick( Sender: TObject;
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
 
   ListView.AlphaSort;
@@ -439,38 +439,38 @@ end;
 procedure TFormDeadCodeDetector.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
 
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
+    SubIdx          := FSortColumn - 1;
 
     if SubIdx < Item1.SubItems.Count then
-      S1 := Item1.SubItems[ SubIdx ]
+      S1            := Item1.SubItems[ SubIdx ]
     else
-      S1 := '';
+      S1            := '';
 
     if SubIdx < Item2.SubItems.Count then
-      S2 := Item2.SubItems[ SubIdx ]
+      S2            := Item2.SubItems[ SubIdx ]
     else
-      S2 := '';
+      S2            := '';
   end;
 
   // Try numeric comparison for line number column
   if FSortColumn = 4 then
-    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+    Compare         := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else
-    Compare := CompareText( S1, S2 );
+    Compare         := CompareText( S1, S2 );
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
@@ -483,24 +483,24 @@ end;
 
 procedure TFormDeadCodeDetector.OpenSelectedFile;
 var
-  Idx: Integer;
-  DeadItem: TDeadCodeItem;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
+  Idx               : Integer;
+  DeadItem          : TDeadCodeItem;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  EditView          : IOTAEditView;
+  I                 : Integer;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FDeadCode ) ) then
     Exit;
 
-  DeadItem := FDeadCode[ Idx ];
+  DeadItem          := FDeadCode[ Idx ];
 
   if not FileExists( DeadItem.FileName ) then
   begin
@@ -511,7 +511,7 @@ begin
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
     try
-      Module := ModuleServices.OpenModule( DeadItem.FileName );
+      Module        := ModuleServices.OpenModule( DeadItem.FileName );
     except
       on E: Exception do
       begin
@@ -526,7 +526,7 @@ begin
       Exit;
     end;
 
-    SourceEditor := nil;
+    SourceEditor    := nil;
 
     for I := 0 to Module.ModuleFileCount - 1 do
     begin
@@ -537,7 +537,7 @@ begin
 
         if SourceEditor.EditViewCount > 0 then
         begin
-          EditView := SourceEditor.EditViews[ 0 ];
+          EditView  := SourceEditor.EditViews[ 0 ];
           EditView.SetTopLeft( DeadItem.Line, 1 );
           EditView.Center( DeadItem.Line, 1 );
         end;
@@ -561,26 +561,26 @@ end;
 
 procedure TFormDeadCodeDetector.mnuAddToIgnoreListClick( Sender: TObject );
 var
-  Idx: Integer;
-  DeadItem: TDeadCodeItem;
-  NameToIgnore: string;
+  Idx               : Integer;
+  DeadItem          : TDeadCodeItem;
+  NameToIgnore      : string;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FDeadCode ) ) then
     Exit;
 
-  DeadItem := FDeadCode[ Idx ];
+  DeadItem          := FDeadCode[ Idx ];
 
   // Extract just the method/field name (without class prefix)
-  NameToIgnore := DeadItem.ElementName;
+  NameToIgnore      := DeadItem.ElementName;
 
   if Pos( '.', NameToIgnore ) > 0 then
-    NameToIgnore := Copy( NameToIgnore, Pos( '.', NameToIgnore ) + 1, MaxInt );
+    NameToIgnore    := Copy( NameToIgnore, Pos( '.', NameToIgnore ) + 1, MaxInt );
 
   if DeadCodeDetectorPlugin <> nil then
   begin
@@ -593,11 +593,11 @@ end;
 
 procedure TFormDeadCodeDetector.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Unit'#9'Type'#9'Name'#9'Scope'#9'Line'#9'Reason' );
@@ -607,13 +607,13 @@ begin
 
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 ),
+              SafeGetSubItem( Item, 3 ),
+              SafeGetSubItem( Item, 4 )
+              ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -625,8 +625,8 @@ end;
 
 procedure TFormDeadCodeDetector.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
   if ListView.Items.Count = 0 then
@@ -637,7 +637,7 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( 'Unit,Type,Name,Scope,Line,Reason' );
@@ -645,13 +645,13 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s","%s","%s"', [
-          CsvField( Item.Caption ),
-          CsvField( SafeGetSubItem( Item, 0 ) ),
-          CsvField( SafeGetSubItem( Item, 1 ) ),
-          CsvField( SafeGetSubItem( Item, 2 ) ),
-          CsvField( SafeGetSubItem( Item, 3 ) ),
-          CsvField( SafeGetSubItem( Item, 4 ) )
-        ] ) );
+              CsvField( Item.Caption ),
+              CsvField( SafeGetSubItem( Item, 0 ) ),
+              CsvField( SafeGetSubItem( Item, 1 ) ),
+              CsvField( SafeGetSubItem( Item, 2 ) ),
+              CsvField( SafeGetSubItem( Item, 3 ) ),
+              CsvField( SafeGetSubItem( Item, 4 ) )
+              ] ) );
       end;
 
       try
@@ -669,3 +669,4 @@ begin
 end;
 
 end.
+

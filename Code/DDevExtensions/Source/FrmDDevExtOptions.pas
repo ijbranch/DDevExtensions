@@ -22,10 +22,10 @@ uses
 
 type
   /// <summary>Concrete options form used by DDevExtensions; descends from the generic <c>TFormOptions</c> tree-page host.</summary>
-  TFormDDevExtOptions = class(TFormOptions)
+  TFormDDevExtOptions = class( TFormOptions )
     /// <summary>Sets the version and copyright labels at form creation time.</summary>
     /// <param name="Sender">The form raising <c>OnCreate</c>.</param>
-    procedure FormCreate(Sender: TObject);
+    procedure FormCreate( Sender: TObject );
   private
   public
   end;
@@ -37,11 +37,12 @@ uses
 
 {$R *.dfm}
 
-procedure TFormDDevExtOptions.FormCreate(Sender: TObject);
+procedure TFormDDevExtOptions.FormCreate( Sender: TObject );
 begin
   inherited;
   lblVersion.Caption := 'Version ' + sPluginVersion;
-  lblURL.Caption := sPluginSmallCopyright;
+  lblURL.Caption    := sPluginSmallCopyright;
 end;
 
 end.
+

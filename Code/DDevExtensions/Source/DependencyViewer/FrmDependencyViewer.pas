@@ -259,7 +259,7 @@ type
 
 var
   /// <summary>Singleton viewer form instance (nil when the form is not open).</summary>
-  FormInstance: TFormDependencyViewer = nil;
+  FormInstance      : TFormDependencyViewer = nil;
 
 implementation
 
@@ -281,7 +281,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormDependencyViewer.Create( Application );
+  FormInstance      := TFormDependencyViewer.Create( Application );
   FormInstance.Show;
 
 end;
@@ -297,24 +297,24 @@ end;
 procedure TFormDependencyViewer.btnCancelScanClick( Sender: TObject );
 begin
 
-  FCancelRequested := True;
+  FCancelRequested  := True;
 
 end;
 
 procedure TFormDependencyViewer.SetBusy( ABusy: Boolean; const ACancelCaption: string );
 begin
 
-  FScanning                := ABusy;
-  btnCancelScan.Caption    := ACancelCaption;
-  btnCancelScan.Visible    := ABusy;
-  btnScanProject.Visible   := not ABusy;
-  btnExportGraph.Enabled   := not ABusy;
-  btnCheckLayers.Enabled   := not ABusy;
-  btnLayers.Enabled        := not ABusy;
+  FScanning         := ABusy;
+  btnCancelScan.Caption := ACancelCaption;
+  btnCancelScan.Visible := ABusy;
+  btnScanProject.Visible := not ABusy;
+  btnExportGraph.Enabled := not ABusy;
+  btnCheckLayers.Enabled := not ABusy;
+  btnLayers.Enabled := not ABusy;
   if ABusy then
-    Screen.Cursor := crHourGlass
+    Screen.Cursor   := crHourGlass
   else
-    Screen.Cursor := crDefault;
+    Screen.Cursor   := crDefault;
 
 end;
 
@@ -329,7 +329,7 @@ begin
   ListBoxCircular.Items.Clear;
   lblCircularRefs.Caption := 'Circular References:';
   ClearImpactSummary;
-  FLayerViolations := nil;
+  FLayerViolations  := nil;
   ListBoxViolations.Items.Clear;
   lblLayerViolations.Caption := 'Layer Violations: (run Check Layers)';
 
@@ -342,28 +342,28 @@ begin
   // otherwise FScanner is freed while ScanProject is still running.
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormDependencyViewer.FormCreate( Sender: TObject );
 begin
 
-  FScanner            := TDependencyScanner.Create;
-  FLayerConfig        := TLayerConfig.Create( AppDataDirectory + '\LayerConfig.txt' );
+  FScanner          := TDependencyScanner.Create;
+  FLayerConfig      := TLayerConfig.Create( AppDataDirectory + '\LayerConfig.txt' );
   FLayerConfig.LoadFromFile;
-  FViewMode           := vmUses;
-  FShowDepth          := True;
-  FHighlightedUnits   := TStringList.Create;
+  FViewMode         := vmUses;
+  FShowDepth        := True;
+  FHighlightedUnits := TStringList.Create;
   FHighlightedUnits.CaseSensitive := False;
   FHighlightedUnits.Sorted := True;
   FHighlightedUnits.Duplicates := dupIgnore;
-  FUnitsInAnyCycle    := TStringList.Create;
+  FUnitsInAnyCycle  := TStringList.Create;
   FUnitsInAnyCycle.CaseSensitive := False;
   FUnitsInAnyCycle.Sorted := True;
   FUnitsInAnyCycle.Duplicates := dupIgnore;
@@ -406,7 +406,7 @@ end;
 
 procedure TFormDependencyViewer.btnScanProjectClick( Sender: TObject );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
 
   // ScannerProgress pumps the message queue, so the user could click Scan again
@@ -415,7 +415,7 @@ begin
   if FScanning then
     Exit;
 
-  Project := GetActiveProject;
+  Project           := GetActiveProject;
 
   if Project = nil then
   begin
@@ -423,7 +423,7 @@ begin
     Exit;
   end;
 
-  FCancelRequested := False;
+  FCancelRequested  := False;
   SetBusy( True, '&Cancel Scan' );
 
   try
@@ -462,37 +462,37 @@ end;
 
 procedure TFormDependencyViewer.PopulateTree;
 var
-  Units: TArray<TUnitInfo>;
-  UnitInfo: TUnitInfo;
-  Node: TTreeNode;
-  Caption: string;
-  Depth: Integer;
-  HasChildren: Boolean;
-  RevDeps: TStringList;
+  Units             : TArray<TUnitInfo>;
+  UnitInfo          : TUnitInfo;
+  Node              : TTreeNode;
+  Caption           : string;
+  Depth             : Integer;
+  HasChildren       : Boolean;
+  RevDeps           : TStringList;
 begin
 
   TreeView.Items.BeginUpdate;
 
   try
     TreeView.Items.Clear;
-    Units := FScanner.GetAllUnits;
+    Units           := FScanner.GetAllUnits;
 
     // Sort units alphabetically
     TArray.Sort<TUnitInfo>( Units,
       TComparer<TUnitInfo>.Construct(
         function( const Left, Right: TUnitInfo ): Integer
         begin
-          Result := CompareText( Left.UnitName, Right.UnitName );
+          Result    := CompareText( Left.UnitName, Right.UnitName );
         end
-      ) );
+        ) );
 
     for UnitInfo in Units do
     begin
-      Depth   := FScanner.GetUnitDepth( UnitInfo.UnitName );
-      Caption := FormatNodeCaption( UnitInfo.UnitName, Depth );
+      Depth := FScanner.GetUnitDepth( UnitInfo.UnitName );
+      Caption       := FormatNodeCaption( UnitInfo.UnitName, Depth );
 
-      Node      := TreeView.Items.AddChild( nil, Caption );
-      Node.Data := UnitInfo;
+      Node          := TreeView.Items.AddChild( nil, Caption );
+      Node.Data     := UnitInfo;
 
       // Determine if node has children based on view mode
       if FViewMode = vmUses then
@@ -515,8 +515,8 @@ end;
 
 procedure TFormDependencyViewer.BuildUnitsInAnyCycleList;
 var
-  CircRef: TCircularReference;
-  I: Integer;
+  CircRef           : TCircularReference;
+  I                 : Integer;
 begin
 
   FUnitsInAnyCycle.Clear;
@@ -530,13 +530,13 @@ end;
 
 procedure TFormDependencyViewer.AutoSizeTreePanel;
 var
-  Node: TTreeNode;
+  Node              : TTreeNode;
   MaxWidth, TextWidth, NodeWidth: Integer;
-  Padding: Integer;
+  Padding           : Integer;
 begin
 
-  MaxWidth := 150; // Minimum width
-  Padding  := 40;  // Space for expand buttons, margins, scrollbar
+  MaxWidth          := 150; // Minimum width
+  Padding           := 40; // Space for expand buttons, margins, scrollbar
 
   TreeView.Canvas.Font := TreeView.Font;
 
@@ -544,28 +544,28 @@ begin
   begin
     if Node.Level = 0 then
     begin
-      TextWidth := TreeView.Canvas.TextWidth( Node.Text );
-      NodeWidth := TextWidth + Padding;
+      TextWidth     := TreeView.Canvas.TextWidth( Node.Text );
+      NodeWidth     := TextWidth + Padding;
 
       if NodeWidth > MaxWidth then
-        MaxWidth := NodeWidth;
+        MaxWidth    := NodeWidth;
     end;
   end;
 
   // Cap at reasonable maximum (half of form width)
   if MaxWidth > ClientWidth div 2 then
-    MaxWidth := ClientWidth div 2;
+    MaxWidth        := ClientWidth div 2;
 
   // Adjust the right panel width (which determines tree width since tree is alClient)
-  pnlRight.Width := ClientWidth - MaxWidth - Splitter.Width;
+  pnlRight.Width    := ClientWidth - MaxWidth - Splitter.Width;
 
 end;
 
 procedure TFormDependencyViewer.PopulateCircularRefs;
 var
-  CircRef: TCircularReference;
-  I: Integer;
-  S, UsesType: string;
+  CircRef           : TCircularReference;
+  I                 : Integer;
+  S, UsesType       : string;
 begin
 
   ListBoxCircular.Items.BeginUpdate;
@@ -588,22 +588,22 @@ begin
           else
             UsesType := 'impl';
 
-          S := S + ' -[' + UsesType + ']-> ';
+          S         := S + ' -[' + UsesType + ']-> ';
         end;
 
-        S := S + CircRef.Steps[ I ].UnitName;
+        S           := S + CircRef.Steps[ I ].UnitName;
       end;
 
       // The chain is the shortest cycle through the group; say when the group is larger.
       if ( Length( CircRef.Members ) > Max( 0, Length( CircRef.Steps ) - 1 ) ) then
-        S := S + Format( '   (group of %d units)', [ Length( CircRef.Members ) ] );
+        S           := S + Format( '   (group of %d units)', [ Length( CircRef.Members ) ] );
 
       ListBoxCircular.Items.Add( S );
     end;
 
     if ListBoxCircular.Items.Count = 0 then
     begin
-      lblCircularRefs.Caption    := 'Circular References: None found';
+      lblCircularRefs.Caption := 'Circular References: None found';
       lblCircularRefs.Font.Color := clGreen;
     end
     else
@@ -614,7 +614,7 @@ begin
       if ListBoxCircular.Items.Count >= 100 then
         lblCircularRefs.Font.Color := clRed
       else if ListBoxCircular.Items.Count >= 10 then
-        lblCircularRefs.Font.Color := $000080FF  // Orange
+        lblCircularRefs.Font.Color := $000080FF // Orange
       else
         lblCircularRefs.Font.Color := clWindowText;
     end;
@@ -626,29 +626,29 @@ end;
 
 procedure TFormDependencyViewer.AddDependencyNodes( ParentNode: TTreeNode; UnitInfo: TUnitInfo );
 var
-  Dep: TUnitDependency;
-  DepInfo: TUnitInfo;
-  Node: TTreeNode;
-  Caption: string;
-  Depth: Integer;
+  Dep               : TUnitDependency;
+  DepInfo           : TUnitInfo;
+  Node              : TTreeNode;
+  Caption           : string;
+  Depth             : Integer;
 begin
 
   for Dep in UnitInfo.Dependencies do
   begin
-    Depth   := FScanner.GetUnitDepth( Dep.UnitName );
-    Caption := FormatNodeCaption( Dep.UnitName, Depth );
+    Depth := FScanner.GetUnitDepth( Dep.UnitName );
+    Caption         := FormatNodeCaption( Dep.UnitName, Depth );
 
     if Dep.IsInterface then
-      Caption := Caption + ' [interface]'
+      Caption       := Caption + ' [interface]'
     else
-      Caption := Caption + ' [implementation]';
+      Caption       := Caption + ' [implementation]';
 
-    Node    := TreeView.Items.AddChild( ParentNode, Caption );
-    DepInfo := FScanner.GetUnitInfo( Dep.UnitName );
+    Node            := TreeView.Items.AddChild( ParentNode, Caption );
+    DepInfo         := FScanner.GetUnitInfo( Dep.UnitName );
 
     if DepInfo <> nil then
     begin
-      Node.Data := DepInfo;
+      Node.Data     := DepInfo;
 
       // Add dummy child if dependencies exist
       if DepInfo.Dependencies.Count > 0 then
@@ -661,7 +661,7 @@ end;
 procedure TFormDependencyViewer.TreeViewExpanding( Sender: TObject; Node: TTreeNode;
   var AllowExpansion: Boolean );
 var
-  UnitInfo: TUnitInfo;
+  UnitInfo          : TUnitInfo;
 begin
 
   // Check if we need to populate children
@@ -670,7 +670,7 @@ begin
     // Remove dummy child
     Node.Item[ 0 ].Delete;
 
-    UnitInfo := TUnitInfo( Node.Data );
+    UnitInfo        := TUnitInfo( Node.Data );
 
     if UnitInfo <> nil then
     begin
@@ -686,17 +686,17 @@ end;
 
 procedure TFormDependencyViewer.ListBoxCircularClick( Sender: TObject );
 var
-  Idx: Integer;
-  CircRef: TCircularReference;
-  Node: TTreeNode;
-  UnitInfo: TUnitInfo;
+  Idx               : Integer;
+  CircRef           : TCircularReference;
+  Node              : TTreeNode;
+  UnitInfo          : TUnitInfo;
 begin
 
-  Idx := ListBoxCircular.ItemIndex;
+  Idx               := ListBoxCircular.ItemIndex;
 
   if ( Idx >= 0 ) and ( Idx < FScanner.CircularReferences.Count ) then
   begin
-    CircRef := FScanner.CircularReferences[ Idx ];
+    CircRef         := FScanner.CircularReferences[ Idx ];
 
     // Highlight all units in the cycle
     HighlightCycleMembers( CircRef );
@@ -709,7 +709,7 @@ begin
 
         if Node.Level = 0 then
         begin
-          UnitInfo := TUnitInfo( Node.Data );
+          UnitInfo  := TUnitInfo( Node.Data );
 
           if ( UnitInfo <> nil ) and SameText( UnitInfo.UnitName, CircRef.Steps[ 0 ].UnitName ) then
           begin
@@ -728,15 +728,15 @@ end;
 
 procedure TFormDependencyViewer.ListBoxCircularDblClick( Sender: TObject );
 var
-  Idx: Integer;
-  CircRef: TCircularReference;
+  Idx               : Integer;
+  CircRef           : TCircularReference;
 begin
 
-  Idx := ListBoxCircular.ItemIndex;
+  Idx               := ListBoxCircular.ItemIndex;
 
   if ( Idx >= 0 ) and ( Idx < FScanner.CircularReferences.Count ) then
   begin
-    CircRef := FScanner.CircularReferences[ Idx ];
+    CircRef         := FScanner.CircularReferences[ Idx ];
 
     if Length( CircRef.Steps ) > 0 then
       OpenUnitFile( CircRef.Steps[ 0 ].UnitName );
@@ -747,36 +747,36 @@ end;
 procedure TFormDependencyViewer.AddReverseDependencyNodes( ParentNode: TTreeNode;
   const UnitName: string );
 var
-  RevDeps: TStringList;
-  I: Integer;
-  DepName: string;
-  DepInfo: TUnitInfo;
-  Node: TTreeNode;
-  Caption: string;
-  Depth: Integer;
-  ChildRevDeps: TStringList;
+  RevDeps           : TStringList;
+  I                 : Integer;
+  DepName           : string;
+  DepInfo           : TUnitInfo;
+  Node              : TTreeNode;
+  Caption           : string;
+  Depth             : Integer;
+  ChildRevDeps      : TStringList;
 begin
 
-  RevDeps := FScanner.GetReverseDependencies( UnitName );
+  RevDeps           := FScanner.GetReverseDependencies( UnitName );
 
   if RevDeps = nil then
     Exit;
 
   for I := 0 to RevDeps.Count - 1 do
   begin
-    DepName := RevDeps[ I ];
-    DepInfo := FScanner.GetUnitInfo( DepName );
-    Depth   := FScanner.GetUnitDepth( DepName );
-    Caption := FormatNodeCaption( DepName, Depth );
+    DepName         := RevDeps[ I ];
+    DepInfo         := FScanner.GetUnitInfo( DepName );
+    Depth           := FScanner.GetUnitDepth( DepName );
+    Caption         := FormatNodeCaption( DepName, Depth );
 
-    Node := TreeView.Items.AddChild( ParentNode, Caption );
+    Node            := TreeView.Items.AddChild( ParentNode, Caption );
 
     if DepInfo <> nil then
     begin
-      Node.Data := DepInfo;
+      Node.Data     := DepInfo;
 
       // Add dummy child if this unit is also used by others
-      ChildRevDeps := FScanner.GetReverseDependencies( DepName );
+      ChildRevDeps  := FScanner.GetReverseDependencies( DepName );
 
       if ( ChildRevDeps <> nil ) and ( ChildRevDeps.Count > 0 ) then
         TreeView.Items.AddChild( Node, '' );
@@ -788,19 +788,19 @@ end;
 function TFormDependencyViewer.FormatNodeCaption( const UnitName: string;
   Depth: Integer ): string;
 var
-  CycleMarker: string;
+  CycleMarker       : string;
 begin
 
   // Mark units that are part of any circular reference
   if FUnitsInAnyCycle.IndexOf( UnitName ) >= 0 then
-    CycleMarker := '(!) '
+    CycleMarker     := '(!) '
   else
-    CycleMarker := '';
+    CycleMarker     := '';
 
   if FShowDepth then
-    Result := Format( '%s[%d] %s', [ CycleMarker, Depth, UnitName ] )
+    Result          := Format( '%s[%d] %s', [ CycleMarker, Depth, UnitName ] )
   else
-    Result := CycleMarker + UnitName;
+    Result          := CycleMarker + UnitName;
 
 end;
 
@@ -808,11 +808,11 @@ procedure TFormDependencyViewer.ViewModeChanged( Sender: TObject );
 begin
 
   if rbUses.Checked then
-    FViewMode := vmUses
+    FViewMode       := vmUses
   else
-    FViewMode := vmUsedBy;
+    FViewMode       := vmUsedBy;
 
-  FShowDepth := chkShowDepth.Checked;
+  FShowDepth        := chkShowDepth.Checked;
 
   // The scan result does not depend on the view: redraw the tree, do not read the project again.
   if ( not FScanning ) and ( Length( FScanner.GetAllUnits ) > 0 ) then
@@ -826,7 +826,7 @@ end;
 
 procedure TFormDependencyViewer.HighlightCycleMembers( const CircRef: TCircularReference );
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
   // First, clear any previous highlights
@@ -847,8 +847,8 @@ end;
 
 procedure TFormDependencyViewer.ClearHighlights;
 var
-  Node: TTreeNode;
-  Text: string;
+  Node              : TTreeNode;
+  Text              : string;
 begin
 
   // Remove visual markers from node text
@@ -856,7 +856,7 @@ begin
   begin
     if Node.Level = 0 then
     begin
-      Text := Node.Text;
+      Text          := Node.Text;
 
       if Pos( '>>> ', Text ) = 1 then
       begin
@@ -866,7 +866,7 @@ begin
         if Copy( Text, Length( Text ) - 3, 4 ) = ' <<<' then
           Delete( Text, Length( Text ) - 3, 4 );
 
-        Node.Text := Text;
+        Node.Text   := Text;
       end;
     end;
   end;
@@ -880,12 +880,12 @@ procedure TFormDependencyViewer.TreeViewAdvancedCustomDrawItem( Sender: TCustomT
   Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
   var PaintImages, DefaultDraw: Boolean );
 var
-  UnitInfo: TUnitInfo;
-  NodeRect: TRect;
+  UnitInfo          : TUnitInfo;
+  NodeRect          : TRect;
 begin
 
-  DefaultDraw := True;
-  PaintImages := True;
+  DefaultDraw       := True;
+  PaintImages       := True;
 
   // Only handle pre-paint stage
   if Stage <> cdPrePaint then
@@ -894,7 +894,7 @@ begin
   if FHighlightedUnits.Count = 0 then
     Exit;
 
-  UnitInfo := TUnitInfo( Node.Data );
+  UnitInfo          := TUnitInfo( Node.Data );
 
   if UnitInfo = nil then
     Exit;
@@ -904,8 +904,8 @@ begin
     // Highlight cycle members - use both background and font for visibility
     if not ( cdsSelected in State ) then
     begin
-      NodeRect := Node.DisplayRect( True );
-      Sender.Canvas.Brush.Color := $CCCCFF;  // Light red/pink background
+      NodeRect      := Node.DisplayRect( True );
+      Sender.Canvas.Brush.Color := $CCCCFF; // Light red/pink background
       Sender.Canvas.FillRect( NodeRect );
     end;
 
@@ -917,10 +917,10 @@ end;
 
 procedure TFormDependencyViewer.OpenUnitFile( const UnitName: string );
 var
-  UnitInfo: TUnitInfo;
+  UnitInfo          : TUnitInfo;
 begin
 
-  UnitInfo := FScanner.GetUnitInfo( UnitName );
+  UnitInfo          := FScanner.GetUnitInfo( UnitName );
 
   if ( UnitInfo = nil ) or ( UnitInfo.FileName = '' ) then
     Exit;
@@ -931,7 +931,7 @@ end;
 
 procedure TFormDependencyViewer.TreeViewChange( Sender: TObject; Node: TTreeNode );
 var
-  UnitInfo: TUnitInfo;
+  UnitInfo          : TUnitInfo;
 begin
 
   if Node = nil then
@@ -940,7 +940,7 @@ begin
     Exit;
   end;
 
-  UnitInfo := TUnitInfo( Node.Data );
+  UnitInfo          := TUnitInfo( Node.Data );
 
   if UnitInfo <> nil then
     UpdateImpactSummary( UnitInfo.UnitName )
@@ -951,22 +951,22 @@ end;
 
 procedure TFormDependencyViewer.UpdateImpactSummary( const UnitName: string );
 var
-  Impact: TImpactAnalysis;
+  Impact            : TImpactAnalysis;
 begin
 
-  Impact := FScanner.AnalyzeImpact( UnitName );
+  Impact            := FScanner.AnalyzeImpact( UnitName );
 
-  lblImpactUnit.Caption       := 'Unit: ' + UnitName;
-  lblImpactDirect.Caption     := Format( 'Direct dependents: %d', [ Impact.DirectCount ] );
+  lblImpactUnit.Caption := 'Unit: ' + UnitName;
+  lblImpactDirect.Caption := Format( 'Direct dependents: %d', [ Impact.DirectCount ] );
   lblImpactTransitive.Caption := Format( 'Total affected: %d units', [ Impact.TransitiveCount ] );
-  lblImpactRisk.Caption       := 'Risk: ' + Impact.RiskLevelText;
+  lblImpactRisk.Caption := 'Risk: ' + Impact.RiskLevelText;
 
   // Set risk indicator colour
   case Impact.RiskLevel of
-    0: shpRiskIndicator.Brush.Color := clGreen;   // Safe
+    0: shpRiskIndicator.Brush.Color := clGreen; // Safe
     1: shpRiskIndicator.Brush.Color := $0080FF80; // Light green - Low
     2: shpRiskIndicator.Brush.Color := $0000A5FF; // Orange - Medium
-    3: shpRiskIndicator.Brush.Color := clRed;     // High
+    3: shpRiskIndicator.Brush.Color := clRed; // High
   else
     shpRiskIndicator.Brush.Color := clGray;
   end;
@@ -976,17 +976,17 @@ end;
 procedure TFormDependencyViewer.ClearImpactSummary;
 begin
 
-  lblImpactUnit.Caption       := 'Unit: (select a unit)';
-  lblImpactDirect.Caption     := 'Direct dependents: -';
+  lblImpactUnit.Caption := 'Unit: (select a unit)';
+  lblImpactDirect.Caption := 'Direct dependents: -';
   lblImpactTransitive.Caption := 'Total affected: -';
-  lblImpactRisk.Caption       := 'Risk: -';
+  lblImpactRisk.Caption := 'Risk: -';
   shpRiskIndicator.Brush.Color := clGray;
 
 end;
 
 procedure TFormDependencyViewer.btnExportCircularClick( Sender: TObject );
 var
-  Ext: string;
+  Ext               : string;
 begin
 
   if FScanner.CircularReferences.Count = 0 then
@@ -1000,7 +1000,7 @@ begin
   SaveDialogExport.Title := 'Export Circular References';
   if SaveDialogExport.Execute then
   begin
-    Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
+    Ext             := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
 
     try
       if Ext = '.csv' then
@@ -1009,7 +1009,7 @@ begin
         ExportCircularRefsToTXT( SaveDialogExport.FileName );
 
       ShowMessage( Format( 'Exported %d circular references to %s',
-        [ FScanner.CircularReferences.Count, SaveDialogExport.FileName ] ) );
+          [ FScanner.CircularReferences.Count, SaveDialogExport.FileName ] ) );
     except
       on E: Exception do
         ShowMessage( 'Could not write file:'#13#10 + E.Message );
@@ -1020,60 +1020,60 @@ end;
 
 procedure TFormDependencyViewer.ExportCircularRefsToCSV( const FileName: string );
 var
-  SL: TStringList;
-  CircRef: TCircularReference;
-  I: Integer;
-  Line, UsesType: string;
+  SL                : TStringList;
+  CircRef           : TCircularReference;
+  I                 : Integer;
+  Line, UsesType    : string;
   MaxSteps, StepCount: Integer;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     // Determine maximum steps for header
-    MaxSteps := 0;
+    MaxSteps        := 0;
 
     for CircRef in FScanner.CircularReferences do
     begin
 
       if Length( CircRef.Steps ) > MaxSteps then
-        MaxSteps := Length( CircRef.Steps );
+        MaxSteps    := Length( CircRef.Steps );
     end;
 
     // Build header row. UnitCount is the number of distinct units in the cycle
     // (Steps closes back on the first unit, so distinct units = Length - 1),
     // matching the count reported by the TXT export and avoiding two exports
     // disagreeing on the same data.
-    Line := 'Index,GroupUnitCount';
+    Line            := 'Index,GroupUnitCount';
 
     for I := 1 to MaxSteps do
-      Line := Line + Format( ',Unit%d,UsesType%d', [ I, I ] );
+      Line          := Line + Format( ',Unit%d,UsesType%d', [ I, I ] );
 
     SL.Add( Line );
 
     // Add data rows
-    StepCount := 0;
+    StepCount       := 0;
 
     for CircRef in FScanner.CircularReferences do
     begin
       Inc( StepCount );
-      Line := Format( '%d,%d', [ StepCount, Length( CircRef.Members ) ] );
+      Line          := Format( '%d,%d', [ StepCount, Length( CircRef.Members ) ] );
 
       for I := 0 to High( CircRef.Steps ) do
       begin
 
         if CircRef.Steps[ I ].IsInterface then
-          UsesType := 'interface'
+          UsesType  := 'interface'
         else
-          UsesType := 'implementation';
+          UsesType  := 'implementation';
 
         // Escape any commas in unit names (unlikely but safe)
-        Line := Line + ',"' + CircRef.Steps[ I ].UnitName + '","' + UsesType + '"';
+        Line        := Line + ',"' + CircRef.Steps[ I ].UnitName + '","' + UsesType + '"';
       end;
 
       // Pad remaining columns if needed
       for I := Length( CircRef.Steps ) to MaxSteps - 1 do
-        Line := Line + ',,';
+        Line        := Line + ',,';
 
       SL.Add( Line );
     end;
@@ -1087,13 +1087,13 @@ end;
 
 procedure TFormDependencyViewer.ExportCircularRefsToTXT( const FileName: string );
 var
-  SL: TStringList;
-  CircRef: TCircularReference;
-  I, RefNum: Integer;
-  Line, UsesType: string;
+  SL                : TStringList;
+  CircRef           : TCircularReference;
+  I, RefNum         : Integer;
+  Line, UsesType    : string;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Circular References Report' );
@@ -1102,7 +1102,7 @@ begin
     SL.Add( Format( 'Total circular references found: %d', [ FScanner.CircularReferences.Count ] ) );
     SL.Add( '' );
 
-    RefNum := 0;
+    RefNum          := 0;
 
     for CircRef in FScanner.CircularReferences do
     begin
@@ -1112,7 +1112,7 @@ begin
       SL.Add( '  Group: ' + string.Join( ', ', CircRef.Members ) );
 
       // Build the chain representation
-      Line := '';
+      Line          := '';
 
       for I := 0 to High( CircRef.Steps ) do
       begin
@@ -1125,10 +1125,10 @@ begin
           else
             UsesType := 'implementation';
 
-          Line := Line + ' -[' + UsesType + ']-> ';
+          Line      := Line + ' -[' + UsesType + ']-> ';
         end;
 
-        Line := Line + CircRef.Steps[ I ].UnitName;
+        Line        := Line + CircRef.Steps[ I ].UnitName;
       end;
 
       SL.Add( '  Chain: ' + Line );
@@ -1141,12 +1141,12 @@ begin
       begin
 
         if CircRef.Steps[ I + 1 ].IsInterface then
-          UsesType := 'interface'
+          UsesType  := 'interface'
         else
-          UsesType := 'implementation';
+          UsesType  := 'implementation';
 
         SL.Add( Format( '    %d. %s uses %s (%s uses clause)',
-          [ I + 1, CircRef.Steps[ I ].UnitName, CircRef.Steps[ I + 1 ].UnitName, UsesType ] ) );
+            [ I + 1, CircRef.Steps[ I ].UnitName, CircRef.Steps[ I + 1 ].UnitName, UsesType ] ) );
       end;
 
       SL.Add( '' );
@@ -1180,21 +1180,21 @@ begin
     Exit;
   end;
 
-  Screen.Cursor := crHourGlass;
+  Screen.Cursor     := crHourGlass;
 
   try
     FLayerViolations := FScanner.DetectLayerViolations( FLayerConfig );
     PopulateLayerViolations;
   finally
-    Screen.Cursor := crDefault;
+    Screen.Cursor   := crDefault;
   end;
 
 end;
 
 procedure TFormDependencyViewer.PopulateLayerViolations;
 var
-  Violation: TLayerViolation;
-  S, UsesType: string;
+  Violation         : TLayerViolation;
+  S, UsesType       : string;
 begin
 
   ListBoxViolations.Items.BeginUpdate;
@@ -1208,9 +1208,9 @@ begin
       if Violation.IsInterface then
         UsesType := 'interface'
       else
-        UsesType := 'implementation';
+        UsesType    := 'implementation';
 
-      S := Format( '%s (%s) -> %s (%s) [%s]',
+      S             := Format( '%s (%s) -> %s (%s) [%s]',
         [ Violation.SourceUnit, Violation.SourceLayer,
           Violation.TargetUnit, Violation.TargetLayer, UsesType ] );
 
@@ -1230,7 +1230,7 @@ begin
       if Length( FLayerViolations ) >= 50 then
         lblLayerViolations.Font.Color := clRed
       else if Length( FLayerViolations ) >= 10 then
-        lblLayerViolations.Font.Color := $000080FF  // Orange
+        lblLayerViolations.Font.Color := $000080FF // Orange
       else
         lblLayerViolations.Font.Color := clWindowText;
     end;
@@ -1242,10 +1242,10 @@ end;
 
 procedure TFormDependencyViewer.ListBoxViolationsDblClick( Sender: TObject );
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
 
-  Idx := ListBoxViolations.ItemIndex;
+  Idx               := ListBoxViolations.ItemIndex;
 
   if ( Idx >= 0 ) and ( Idx < Length( FLayerViolations ) ) then
     OpenUnitFile( FLayerViolations[ Idx ].SourceUnit );
@@ -1254,7 +1254,7 @@ end;
 
 procedure TFormDependencyViewer.btnExportViolationsClick( Sender: TObject );
 var
-  Ext: string;
+  Ext               : string;
 begin
 
   if Length( FLayerViolations ) = 0 then
@@ -1267,7 +1267,7 @@ begin
 
   if SaveDialogExport.Execute then
   begin
-    Ext := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
+    Ext             := LowerCase( ExtractFileExt( SaveDialogExport.FileName ) );
 
     try
       if Ext = '.csv' then
@@ -1276,7 +1276,7 @@ begin
         ExportViolationsToTXT( SaveDialogExport.FileName );
 
       ShowMessage( Format( 'Exported %d layer violations to %s',
-        [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
+          [ Length( FLayerViolations ), SaveDialogExport.FileName ] ) );
     except
       on E: Exception do
         ShowMessage( 'Could not write file:'#13#10 + E.Message );
@@ -1296,7 +1296,7 @@ begin
     Exit;
   end;
 
-  DotExe := FindGraphvizDot;
+  DotExe            := FindGraphvizDot;
 
   if ( DotExe = '' ) then
   begin
@@ -1308,9 +1308,9 @@ begin
     Exit;
 
   // The dialog asked about the .dot; the .png beside it is overwritten too, so ask about that.
-  PngFile := ChangeFileExt( SaveDialogGraph.FileName, '.png' );
+  PngFile           := ChangeFileExt( SaveDialogGraph.FileName, '.png' );
   if FileExists( PngFile ) and ( MessageDlg( Format( '%s already exists.'#13#10'Replace it?', [ PngFile ] ),
-    mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
+      mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
     Exit;
 
   try
@@ -1332,7 +1332,7 @@ begin
   begin
     ShellExecute( 0, 'open', PChar( PngFile ), nil, nil, SW_SHOWNORMAL );
     ShowMessage( Format( 'Exported dependency graph to:%s%s%s%s',
-      [ sLineBreak, SaveDialogGraph.FileName, sLineBreak, PngFile ] ) );
+        [ sLineBreak, SaveDialogGraph.FileName, sLineBreak, PngFile ] ) );
   end
   else
     ShowMessage( Format( 'DOT file saved to %s, but %s', [ SaveDialogGraph.FileName, sMessage ] ) );
@@ -1344,34 +1344,34 @@ const
   /// <summary>How long a render may run before it is stopped, in milliseconds.</summary>
   RENDER_TIMEOUT_MS = 120000;
 var
-  SI: TStartupInfo;
-  PI: TProcessInformation;
-  ExitCode: DWORD;
-  CmdLine: string;
+  SI                : TStartupInfo;
+  PI                : TProcessInformation;
+  ExitCode          : DWORD;
+  CmdLine           : string;
 begin
 
-  Result   := False;
-  AMessage := '';
-  CmdLine  := '"' + ADotExe + '" -Tpng "' + ADotFile + '" -o "' + APngFile + '"';
-  UniqueString( CmdLine );  // CreateProcessW may write to the command-line buffer
+  Result            := False;
+  AMessage          := '';
+  CmdLine           := '"' + ADotExe + '" -Tpng "' + ADotFile + '" -o "' + APngFile + '"';
+  UniqueString( CmdLine ); // CreateProcessW may write to the command-line buffer
 
   ZeroMemory( @SI, SizeOf( SI ) );
-  SI.cb          := SizeOf( SI );
-  SI.dwFlags     := STARTF_USESHOWWINDOW;
-  SI.wShowWindow := SW_HIDE;
+  SI.cb             := SizeOf( SI );
+  SI.dwFlags        := STARTF_USESHOWWINDOW;
+  SI.wShowWindow    := SW_HIDE;
   ZeroMemory( @PI, SizeOf( PI ) );
 
   if ( not CreateProcess( nil, PChar( CmdLine ), nil, nil, False, CREATE_NO_WINDOW, nil, nil, SI, PI ) ) then
   begin
-    AMessage := 'Graphviz could not be started: ' + SysErrorMessage( Winapi.Windows.GetLastError );
+    AMessage        := 'Graphviz could not be started: ' + SysErrorMessage( Winapi.Windows.GetLastError );
     Exit;
   end;
 
-  FCancelRequested := False;
+  FCancelRequested  := False;
   SetBusy( True, '&Cancel Render' );
   try
     lblProgress.Caption := 'Rendering the graph with Graphviz...';
-    var iStart := GetTickCount64;
+    var iStart      := GetTickCount64;
     // Wait without blocking the IDE: wake for the process or for any message, and pump.
     while ( MsgWaitForMultipleObjects( 1, PI.hProcess, False, 200, QS_ALLINPUT ) <> WAIT_OBJECT_0 ) do
     begin
@@ -1382,18 +1382,18 @@ begin
         TerminateProcess( PI.hProcess, 1 );
         WaitForSingleObject( PI.hProcess, 5000 );
         if FCancelRequested or Application.Terminated then
-          AMessage := 'rendering was cancelled.'
+          AMessage  := 'rendering was cancelled.'
         else
-          AMessage := Format( 'Graphviz did not finish within %d seconds and was stopped.', [ RENDER_TIMEOUT_MS div 1000 ] );
+          AMessage  := Format( 'Graphviz did not finish within %d seconds and was stopped.', [ RENDER_TIMEOUT_MS div 1000 ] );
         Exit;
       end;
     end;
 
     if ( not GetExitCodeProcess( PI.hProcess, ExitCode ) ) then
-      ExitCode := DWORD( -1 );
-    Result := ( ExitCode = 0 ) and FileExists( APngFile );
+      ExitCode      := DWORD( -1 );
+    Result          := ( ExitCode = 0 ) and FileExists( APngFile );
     if ( not Result ) then
-      AMessage := Format( 'Graphviz rendering failed (exit code %d).', [ ExitCode ] );
+      AMessage      := Format( 'Graphviz rendering failed (exit code %d).', [ ExitCode ] );
   finally
     CloseHandle( PI.hProcess );
     CloseHandle( PI.hThread );
@@ -1405,33 +1405,33 @@ end;
 
 function TFormDependencyViewer.FindGraphvizDot: string;
 var
-  PathEnv, Dir: string;
-  Dirs: TArray<string>;
-  Candidate: string;
+  PathEnv, Dir      : string;
+  Dirs              : TArray<string>;
+  Candidate         : string;
 begin
 
-  Result := '';
+  Result            := '';
 
   // Check common Graphviz installation paths first
-  Candidate := 'C:\Program Files\Graphviz\bin\dot.exe';
+  Candidate         := 'C:\Program Files\Graphviz\bin\dot.exe';
 
   if FileExists( Candidate ) then
   begin
-    Result := Candidate;
+    Result          := Candidate;
     Exit;
   end;
 
-  Candidate := 'C:\Program Files (x86)\Graphviz\bin\dot.exe';
+  Candidate         := 'C:\Program Files (x86)\Graphviz\bin\dot.exe';
 
   if FileExists( Candidate ) then
   begin
-    Result := Candidate;
+    Result          := Candidate;
     Exit;
   end;
 
   // Search PATH
-  PathEnv := GetEnvironmentVariable( 'PATH' );
-  Dirs    := PathEnv.Split( [ ';' ] );
+  PathEnv           := GetEnvironmentVariable( 'PATH' );
+  Dirs              := PathEnv.Split( [ ';' ] );
 
   for Dir in Dirs do
   begin
@@ -1443,11 +1443,11 @@ begin
     if CleanDir = '' then
       Continue;
 
-    Candidate := IncludeTrailingPathDelimiter( CleanDir ) + 'dot.exe';
+    Candidate       := IncludeTrailingPathDelimiter( CleanDir ) + 'dot.exe';
 
     if FileExists( Candidate ) then
     begin
-      Result := Candidate;
+      Result        := Candidate;
       Exit;
     end;
   end;
@@ -1460,28 +1460,28 @@ end;
 function DotId( const AName: string ): string;
 begin
 
-  Result := '"' + StringReplace( StringReplace( AName, '\', '\\', [ rfReplaceAll ] ), '"', '\"',
+  Result            := '"' + StringReplace( StringReplace( AName, '\', '\\', [ rfReplaceAll ] ), '"', '\"',
     [ rfReplaceAll ] ) + '"';
 
 end;
 
 procedure TFormDependencyViewer.ExportToDOT( const FileName: string );
 var
-  SL: TStringList;
-  Units: TArray<TUnitInfo>;
-  UnitInfo: TUnitInfo;
-  Dep: TUnitDependency;
+  SL                : TStringList;
+  Units             : TArray<TUnitInfo>;
+  UnitInfo          : TUnitInfo;
+  Dep               : TUnitDependency;
   NodeName, FillColour, EdgeStyle, EdgeColour: string;
-  CycleUnits: TStringList;
-  CircRef: TCircularReference;
-  I: Integer;
+  CycleUnits        : TStringList;
+  CircRef           : TCircularReference;
+  I                 : Integer;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     // Build set of units involved in circular references
-    CycleUnits := TStringList.Create;
+    CycleUnits      := TStringList.Create;
 
     try
       CycleUnits.CaseSensitive := False;
@@ -1498,7 +1498,7 @@ begin
       SL.Add( '  edge [fontname="Segoe UI", fontsize=8];' );
       SL.Add( '' );
 
-      Units := FScanner.GetAllUnits;
+      Units         := FScanner.GetAllUnits;
 
       // Emit nodes. IDs are quoted: unquoted, a unit named Graph, Node, Edge or Strict is a DOT
       // keyword, and replacing '.' would make A.B and A_B the same node.
@@ -1514,10 +1514,10 @@ begin
 
         if CycleUnits.IndexOf( UnitInfo.UnitName ) >= 0 then
           SL.Add( Format( '  %s [label=%s, fillcolor=%s, color=red, penwidth=2];',
-            [ NodeName, NodeName, FillColour ] ) )
+              [ NodeName, NodeName, FillColour ] ) )
         else
           SL.Add( Format( '  %s [label=%s, fillcolor=%s];',
-            [ NodeName, NodeName, FillColour ] ) );
+              [ NodeName, NodeName, FillColour ] ) );
       end;
 
       SL.Add( '' );
@@ -1536,19 +1536,19 @@ begin
 
             if Dep.IsInterface then
             begin
-              EdgeStyle  := 'solid';
+              EdgeStyle := 'solid';
               EdgeColour := 'blue';
             end
             else
             begin
-              EdgeStyle  := 'dashed';
+              EdgeStyle := 'dashed';
               EdgeColour := 'forestgreen';
             end;
 
             // The target's ID is its node's: the unit's own spelling, not the uses entry's.
             SL.Add( Format( '  %s -> %s [style=%s, color=%s];',
-              [ NodeName, DotId( FScanner.GetUnitInfo( Dep.UnitName ).UnitName ),
-                EdgeStyle, EdgeColour ] ) );
+                [ NodeName, DotId( FScanner.GetUnitInfo( Dep.UnitName ).UnitName ),
+                  EdgeStyle, EdgeColour ] ) );
           end;
         end;
       end;
@@ -1571,7 +1571,7 @@ begin
       SL.Add( '}' );
 
       // UTF-8 without a BOM: Graphviz reads UTF-8 by default and does not expect a BOM.
-      SL.WriteBOM := False;
+      SL.WriteBOM   := False;
       SL.SaveToFile( FileName, TEncoding.UTF8 );
     finally
       CycleUnits.Free;
@@ -1584,12 +1584,12 @@ end;
 
 procedure TFormDependencyViewer.ExportViolationsToCSV( const FileName: string );
 var
-  SL: TStringList;
-  Violation: TLayerViolation;
-  UsesType: string;
+  SL                : TStringList;
+  Violation         : TLayerViolation;
+  UsesType          : string;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'SourceUnit,SourceLayer,TargetUnit,TargetLayer,UsesClause' );
@@ -1600,11 +1600,11 @@ begin
       if Violation.IsInterface then
         UsesType := 'interface'
       else
-        UsesType := 'implementation';
+        UsesType    := 'implementation';
 
       SL.Add( Format( '"%s","%s","%s","%s","%s"',
-        [ Violation.SourceUnit, Violation.SourceLayer,
-          Violation.TargetUnit, Violation.TargetLayer, UsesType ] ) );
+          [ Violation.SourceUnit, Violation.SourceLayer,
+            Violation.TargetUnit, Violation.TargetLayer, UsesType ] ) );
     end;
 
     SL.SaveToFile( FileName, TEncoding.UTF8 );
@@ -1616,13 +1616,13 @@ end;
 
 procedure TFormDependencyViewer.ExportViolationsToTXT( const FileName: string );
 var
-  SL: TStringList;
-  Violation: TLayerViolation;
-  I: Integer;
-  UsesType: string;
+  SL                : TStringList;
+  Violation         : TLayerViolation;
+  I                 : Integer;
+  UsesType          : string;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Layer Violations Report' );
@@ -1631,23 +1631,23 @@ begin
     SL.Add( Format( 'Total violations found: %d', [ Length( FLayerViolations ) ] ) );
     SL.Add( '' );
 
-    I := 0;
+    I               := 0;
 
     for Violation in FLayerViolations do
     begin
       Inc( I );
 
       if Violation.IsInterface then
-        UsesType := 'interface'
+        UsesType    := 'interface'
       else
-        UsesType := 'implementation';
+        UsesType    := 'implementation';
 
       SL.Add( Format( '%d. %s (%s layer) uses %s (%s layer)',
-        [ I, Violation.SourceUnit, Violation.SourceLayer,
-          Violation.TargetUnit, Violation.TargetLayer ] ) );
+          [ I, Violation.SourceUnit, Violation.SourceLayer,
+            Violation.TargetUnit, Violation.TargetLayer ] ) );
       SL.Add( Format( '   Uses clause: %s', [ UsesType ] ) );
       SL.Add( Format( '   VIOLATION: %s layer should not depend on %s layer',
-        [ Violation.SourceLayer, Violation.TargetLayer ] ) );
+          [ Violation.SourceLayer, Violation.TargetLayer ] ) );
       SL.Add( '' );
     end;
 
@@ -1659,3 +1659,4 @@ begin
 end;
 
 end.
+

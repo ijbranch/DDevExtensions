@@ -19,7 +19,7 @@ type
   /// Bookkeeping object that loads/saves the .params and .params.local files for one IOTAProject and
   /// hooks IDE notifiers to react to module rename and module destruction.
   /// </summary>
-  TProjectParameters = class(TInterfacedObject, IOTANotifier, IOTAModuleNotifier)
+  TProjectParameters = class( TInterfacedObject, IOTANotifier, IOTAModuleNotifier )
   private
     /// <summary>Parsed parameters loaded from the project's .params file.</summary>
     FParameters: TStartParamList;
@@ -49,19 +49,19 @@ type
     function CheckOverwrite: Boolean;
     /// <summary>Renames the .params and .params.local files when the project is renamed.</summary>
     /// <param name="NewName">The project's new file name.</param>
-    procedure ModuleRenamed(const NewName: string);
+    procedure ModuleRenamed( const NewName: string );
   public
     /// <summary>Creates the bookkeeping object, registers the IDE notifier and creates an empty list.</summary>
     /// <param name="AOwner">The toolbar control that owns this tracker.</param>
     /// <param name="AProject">The project to track.</param>
-    constructor Create(AOwner: TStartParameterControl; const AProject: IOTAProject);
+    constructor Create( AOwner: TStartParameterControl; const AProject: IOTAProject );
     /// <summary>Unregisters the IDE notifier and frees the parameter list.</summary>
     destructor Destroy; override;
     /// <summary>Returns the .params (or .params.local) file path for the supplied project file.</summary>
     /// <param name="AFileName">The project file name.</param>
     /// <param name="ALocal">True for the .params.local file name.</param>
     /// <returns>AFileName with its extension replaced by .params, plus .local when ALocal is True.</returns>
-    class function GetParamFileName(const AFileName: string; ALocal: Boolean): string;
+    class function GetParamFileName( const AFileName: string; ALocal: Boolean ): string;
 
     /// <summary>Loads the project's parameters from disk (or clears them if the file is missing).</summary>
     procedure Load;
@@ -80,7 +80,7 @@ type
   /// Combo-box control hosted on a custom IDE toolbar that displays the start parameters available
   /// for the active project and feeds the selection into the IDE's Run command.
   /// </summary>
-  TStartParameterControl = class(TCustomComboBox, IOTANotifier, IOTAIDENotifier)
+  TStartParameterControl = class( TCustomComboBox, IOTANotifier, IOTAIDENotifier )
   private
     /// <summary>Cookie of the IOTAServices notifier registration.</summary>
     FNotifier: Integer;
@@ -91,10 +91,10 @@ type
     /// <summary>Returns the TProjectParameters tracking the supplied project, or nil.</summary>
     /// <param name="AProject">The project to look up.</param>
     /// <returns>The tracker for AProject, or nil when it is not tracked.</returns>
-    function FindProject(const AProject: IOTAProject): TProjectParameters;
+    function FindProject( const AProject: IOTAProject ): TProjectParameters;
     /// <summary>Popup-menu handler that opens (or creates and opens) the clicked .params file.</summary>
     /// <param name="Sender">The Edit File menu item.</param>
-    procedure DoEditFileClick(Sender: TObject);
+    procedure DoEditFileClick( Sender: TObject );
   protected
     /// <summary>Performs the initial parameter refresh once the window handle is available.</summary>
     procedure CreateWnd; override;
@@ -102,17 +102,17 @@ type
     procedure Change; override;
     /// <summary>Refreshes the parameter list when the control gains focus.</summary>
     /// <param name="Msg">The WM_SETFOCUS message.</param>
-    procedure WMSetFocus(var Msg: TWMSetFocus); message WM_SETFOCUS;
+    procedure WMSetFocus( var Msg: TWMSetFocus ); message WM_SETFOCUS;
     /// <summary>Provides the resolved parameter string as the control's tooltip.</summary>
     /// <param name="Msg">The CM_HINTSHOW message whose hint text is set.</param>
-    procedure CMHintShow(var Msg: TCMHintShow); message CM_HINTSHOW;
+    procedure CMHintShow( var Msg: TCMHintShow ); message CM_HINTSHOW;
     /// <summary>Copies the active resolved parameter string to the clipboard on Ctrl+C.</summary>
     /// <param name="Msg">The WM_COPY message.</param>
-    procedure WMCopy(var Msg: TWMCopy); message WM_COPY;
+    procedure WMCopy( var Msg: TWMCopy ); message WM_COPY;
 
     /// <summary>Builds the right-click popup menu listing the editable .params files.</summary>
     /// <param name="Sender">The popup menu about to show.</param>
-    procedure DoPopup(Sender: TObject);
+    procedure DoPopup( Sender: TObject );
 
     { IOTANotifier }
     /// <summary>IOTANotifier callback (after save); no-op.</summary>
@@ -129,35 +129,35 @@ type
     /// <param name="NotifyCode">The IDE file notification; only ofnActiveProjectChanged is handled.</param>
     /// <param name="FileName">The file the notification is about (not used).</param>
     /// <param name="Cancel">Left unchanged.</param>
-    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean);
+    procedure FileNotification( NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean );
     /// <summary>IOTAIDENotifier callback (before compile); no-op.</summary>
     /// <param name="Project">The project about to be compiled (not used).</param>
     /// <param name="Cancel">Left unchanged.</param>
-    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); overload;
+    procedure BeforeCompile( const Project: IOTAProject; var Cancel: Boolean ); overload;
     /// <summary>IOTAIDENotifier callback (after compile); no-op.</summary>
     /// <param name="Succeeded">Whether the compile succeeded (not used).</param>
-    procedure AfterCompile(Succeeded: Boolean); overload;
+    procedure AfterCompile( Succeeded: Boolean ); overload;
 
     /// <summary>Forces the design-time width on load.</summary>
     procedure Loaded; override;
     /// <summary>Reloads parameters and widens the dropdown to fit the longest item.</summary>
     procedure DropDown; override;
-    {$IF CompilerVersion >= 33.0} // 10.3 Rio+
+{$IF CompilerVersion >= 33.0} // 10.3 Rio+
     /// <summary>Owner-drawing implementation that mirrors the platforms combo's font/brush.</summary>
     /// <param name="Index">The index of the item to draw.</param>
     /// <param name="Rect">The item's rectangle.</param>
     /// <param name="State">The item's owner-draw state.</param>
-    procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
-    {$IFEND}
+    procedure DrawItem( Index: Integer; Rect: TRect; State: TOwnerDrawState ); override;
+{$IFEND}
   public
     /// <summary>Creates the control and registers the IOTAServices notifier.</summary>
     /// <param name="AOwner">The owning component (the IDE toolbar).</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Unregisters the IOTAServices notifier and frees the project tracker list.</summary>
     destructor Destroy; override;
     /// <summary>Refreshes the items from the active project's parameter list.</summary>
     /// <param name="ADestroyingProject">If non-nil, treated as already destroyed and skipped.</param>
-    procedure UpdateStartParameters(const ADestroyingProject: IOTAProject);
+    procedure UpdateStartParameters( const ADestroyingProject: IOTAProject );
     /// <summary>Reloads the active project's parameters from disk.</summary>
     procedure Reload;
 
@@ -165,7 +165,7 @@ type
     /// <param name="Params">Receives the resolved parameter string.</param>
     /// <param name="AllowReload">If True, the parameter list may be refreshed before reading.</param>
     /// <returns>True when a non-default parameter is selected.</returns>
-    class function GetActiveParams(var Params: string; AllowReload: Boolean): Boolean; static;
+    class function GetActiveParams( var Params: string; AllowReload: Boolean ): Boolean; static;
     /// <summary>Returns True when no specific start parameter is selected.</summary>
     /// <returns>True when the default (project) parameters are in use.</returns>
     class function IsDefaultParams: Boolean; static;
@@ -198,38 +198,38 @@ var
   GlobalStartParameterControl: TStartParameterControl;
 
 type
-  TFileMenuItem = class(TMenuItem)
+  TFileMenuItem = class( TMenuItem )
   private
     FFileName: string;
   public
     property FileName: string read FFileName write FFileName;
   end;
 
-{ TProjectParameters }
+  { TProjectParameters }
 
-constructor TProjectParameters.Create(AOwner: TStartParameterControl; const AProject: IOTAProject);
+constructor TProjectParameters.Create( AOwner: TStartParameterControl; const AProject: IOTAProject );
 begin
   inherited Create;
-  FOwner := AOwner;
-  FOwner.FProjectParams.Add(Self);
-  FProject := AProject;
-  FNotifier := FProject.AddNotifier(Self);
-  FParameters := TStartParamList.Create(nil);
+  FOwner            := AOwner;
+  FOwner.FProjectParams.Add( Self );
+  FProject          := AProject;
+  FNotifier         := FProject.AddNotifier( Self );
+  FParameters       := TStartParamList.Create( nil );
 end;
 
 destructor TProjectParameters.Destroy;
 begin
   if FOwner.FProjectParams <> nil then
-    FOwner.FProjectParams.Extract(Self);
+    FOwner.FProjectParams.Extract( Self );
   if FNotifier <> -1 then
-    FProject.RemoveNotifier(FNotifier);
+    FProject.RemoveNotifier( FNotifier );
 
   if Self = FOwner.FActiveParams then
   begin
     FOwner.FActiveParams := nil;
-    FOwner.UpdateStartParameters(FProject);
+    FOwner.UpdateStartParameters( FProject );
   end;
-  FProject := nil;
+  FProject          := nil;
   inherited Destroy;
 end;
 
@@ -243,7 +243,7 @@ end;
 
 function TProjectParameters.CheckOverwrite: Boolean;
 begin
-  Result := True;
+  Result            := True;
 end;
 
 procedure TProjectParameters.Destroyed;
@@ -251,66 +251,66 @@ begin
   if Self = FOwner.FActiveParams then
   begin
     FOwner.FActiveParams := nil;
-    FOwner.UpdateStartParameters(FProject);
+    FOwner.UpdateStartParameters( FProject );
   end;
-  FProject := nil;
-  FNotifier := -1;
+  FProject          := nil;
+  FNotifier         := -1;
 end;
 
 procedure TProjectParameters.Modified;
 begin
 end;
 
-procedure TProjectParameters.ModuleRenamed(const NewName: string);
+procedure TProjectParameters.ModuleRenamed( const NewName: string );
 begin
-  if Parameters.FindIncludeParamList(sLocalIncludeParamFileName) <> nil then
+  if Parameters.FindIncludeParamList( sLocalIncludeParamFileName ) <> nil then
     if LocalParameters.FileName <> '' then
-      MoveFile(PChar(LocalParameters.FileName), PChar(GetParamFileName(NewName, True)));
+      MoveFile( PChar( LocalParameters.FileName ), PChar( GetParamFileName( NewName, True ) ) );
   if FParameters.FileName <> '' then
-    MoveFile(PChar(Parameters.FileName), PChar(GetParamFileName(NewName, False)));
+    MoveFile( PChar( Parameters.FileName ), PChar( GetParamFileName( NewName, False ) ) );
 end;
 
 procedure TProjectParameters.Save;
 var
-  LocalParamList: TStartParamList;
+  LocalParamList    : TStartParamList;
 begin
-  LocalParamList := LocalParameters;
+  LocalParamList    := LocalParameters;
   if LocalParamList.Modified then
   begin
-    if (LocalParamList.Count > 0) or (LocalParamList.ActiveParamName <> '') then
-      LocalParameters.SaveToFile(GetParamFileName(Project.FileName, True))
+    if ( LocalParamList.Count > 0 ) or ( LocalParamList.ActiveParamName <> '' ) then
+      LocalParameters.SaveToFile( GetParamFileName( Project.FileName, True ) )
     else // delete the local file if it contains nothing
-      DeleteFile(GetParamFileName(Project.FileName, True));
+      DeleteFile( GetParamFileName( Project.FileName, True ) );
   end;
   // Save project parameters after the local because the local Include-tag may have been missing
   // and was added by GetLocalParameters
   if Parameters.Modified then
-    FParameters.SaveToFile(GetParamFileName(Project.FileName, False));
+    FParameters.SaveToFile( GetParamFileName( Project.FileName, False ) );
 end;
 
 function TProjectParameters.GetLocalParameters: TStartParamList;
 begin
-  Result := Parameters.FindIncludeParamList(sLocalIncludeParamFileName);
+  Result            := Parameters.FindIncludeParamList( sLocalIncludeParamFileName );
   if Result = nil then
-    Result := Parameters.AddInclude(sLocalIncludeParamFileName, False).StartParamList;
+    Result          := Parameters.AddInclude( sLocalIncludeParamFileName, False ).StartParamList;
 end;
 
-class function TProjectParameters.GetParamFileName(const AFileName: string; ALocal: Boolean): string;
+class function TProjectParameters.GetParamFileName( const AFileName: string; ALocal: Boolean ): string;
 begin
-  Result := ChangeFileExt(AFileName, '.params');
+  Result            := ChangeFileExt( AFileName, '.params' );
   if ALocal then
-    Result := Result + '.local';
+    Result          := Result + '.local';
 end;
 
 procedure TProjectParameters.Load;
 var
-  ParamFileName: string;
+  ParamFileName     : string;
 begin
   if Project <> nil then
   begin
-    ParamFileName := GetParamFileName(Project.FileName, False);
-    if FileExists(ParamFileName) then
-      Parameters.LoadFromFile(ParamFileName)
+    ParamFileName   := GetParamFileName( Project.FileName, False );
+    if FileExists( ParamFileName ) then
+      Parameters.LoadFromFile( ParamFileName )
     else
       Parameters.Clear;
   end
@@ -320,21 +320,21 @@ end;
 
 { TStartParameterControl }
 
-constructor TStartParameterControl.Create(AOwner: TComponent);
+constructor TStartParameterControl.Create( AOwner: TComponent );
 begin
-  inherited Create(AOwner);
+  inherited Create( AOwner );
   GlobalStartParameterControl := Self;
-  Style := csOwnerDrawFixed;
-  ItemHeight := 16;
-  DropDownCount := 32;
-  ShowHint := True;
-  Width := 180;
-  Height := 21;
+  Style             := csOwnerDrawFixed;
+  ItemHeight        := 16;
+  DropDownCount     := 32;
+  ShowHint          := True;
+  Width             := 180;
+  Height            := 21;
 
-  FProjectParams := TObjectList.Create;
-  FNotifier := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
+  FProjectParams    := TObjectList.Create;
+  FNotifier         := ( BorlandIDEServices as IOTAServices ).AddNotifier( Self );
 
-  PopupMenu := TPopupMenu.Create(Self);
+  PopupMenu         := TPopupMenu.Create( Self );
   PopupMenu.OnPopup := DoPopup;
 end;
 
@@ -344,64 +344,64 @@ begin
     GlobalStartParameterControl := nil;
 
   if FNotifier <> -1 then
-    (BorlandIDEServices as IOTAServices).RemoveNotifier(FNotifier);
-  FreeAndNil(FProjectParams);
+    ( BorlandIDEServices as IOTAServices ).RemoveNotifier( FNotifier );
+  FreeAndNil( FProjectParams );
   inherited Destroy;
 end;
 
 procedure TStartParameterControl.Loaded;
 begin
   inherited Loaded;
-  Width := 180;
+  Width             := 180;
 end;
 
-class function TStartParameterControl.GetActiveParams(var Params: string; AllowReload: Boolean): Boolean;
+class function TStartParameterControl.GetActiveParams( var Params: string; AllowReload: Boolean ): Boolean;
 begin
-  Params := '';
-  Result := not IsDefaultParams;
+  Params            := '';
+  Result            := not IsDefaultParams;
   if Result then
   begin
     if AllowReload then
-      GlobalStartParameterControl.UpdateStartParameters(nil);
+      GlobalStartParameterControl.UpdateStartParameters( nil );
     // UpdateStartParameters can rebuild the list and reset ItemIndex, so
     // re-validate before casting the selected object.
-    if (GlobalStartParameterControl <> nil) and (GlobalStartParameterControl.ItemIndex > 0) then
+    if ( GlobalStartParameterControl <> nil ) and ( GlobalStartParameterControl.ItemIndex > 0 ) then
     begin
-      var Obj := GlobalStartParameterControl.Items.Objects[GlobalStartParameterControl.ItemIndex];
+      var Obj       := GlobalStartParameterControl.Items.Objects[ GlobalStartParameterControl.ItemIndex ];
       if Obj is TStartParam then
-        Params := TStartParam(Obj).ResolvedValue
+        Params      := TStartParam( Obj ).ResolvedValue
       else
-        Result := False;
+        Result      := False;
     end
     else
-      Result := False;
+      Result        := False;
   end;
 end;
 
 class function TStartParameterControl.IsDefaultParams: Boolean;
 begin
-  Result := (GlobalStartParameterControl = nil) or not GlobalStartParameterControl.HandleAllocated or
-            (GlobalStartParameterControl.ItemIndex <= 0);
+  Result            := ( GlobalStartParameterControl = nil ) or not GlobalStartParameterControl.HandleAllocated or
+    ( GlobalStartParameterControl.ItemIndex <= 0 );
 end;
 
 procedure TStartParameterControl.CreateWnd;
 begin
   inherited CreateWnd;
-  UpdateStartParameters(nil);
+  UpdateStartParameters( nil );
 end;
 
 procedure TStartParameterControl.Change;
 var
-  Param: TStartParam;
-  ActiveParamName: string;
+  Param             : TStartParam;
+  ActiveParamName   : string;
 begin
   inherited Change;
-  if (FActiveParams <> nil) and HandleAllocated then
+  if ( FActiveParams <> nil ) and HandleAllocated then
   begin
     ActiveParamName := '';
     if ItemIndex > 0 then
     begin
-      Param := Items.Objects[ItemIndex] as TStartParam;
+      Param         := Items.Objects[ ItemIndex ] as TStartParam;
       if Param <> nil then
         ActiveParamName := Param.Name;
     end;
@@ -418,112 +418,112 @@ begin
       except
         on E: Exception do
           MessageDlg( 'The start-parameter selection could not be saved:' + #13#10#13#10 + E.Message, mtWarning,
-            [mbOK], 0 );
+            [ mbOK ], 0 );
       end;
-      UpdateStartParameters(nil); // Reload broke Items.Objects[]
+      UpdateStartParameters( nil ); // Reload broke Items.Objects[]
     end;
   end;
 end;
 
 procedure TStartParameterControl.Destroyed;
 begin
-  FNotifier := -1;
+  FNotifier         := -1;
 end;
 
-procedure TStartParameterControl.DoEditFileClick(Sender: TObject);
+procedure TStartParameterControl.DoEditFileClick( Sender: TObject );
 var
-  FileName: string;
-  Lines: TStrings;
-  LocalFile: Boolean;
+  FileName          : string;
+  Lines             : TStrings;
+  LocalFile         : Boolean;
 begin
-  FileName := (Sender as TFileMenuItem).FileName;
-  if not FileExists(FileName) then
+  FileName          := ( Sender as TFileMenuItem ).FileName;
+  if not FileExists( FileName ) then
   begin
-    LocalFile := SameText('.local', ExtractFileExt(FileName));
-    Lines := TStringList.Create;
+    LocalFile       := SameText( '.local', ExtractFileExt( FileName ) );
+    Lines           := TStringList.Create;
     try
-      Lines.Add('<?xml version="1.0" encoding="utf-8"?>');
-      Lines.Add('<StartParameters>');
+      Lines.Add( '<?xml version="1.0" encoding="utf-8"?>' );
+      Lines.Add( '<StartParameters>' );
 
       if not LocalFile then
       begin
-        Lines.Add('<!--');
-        Lines.Add('');
-        Lines.Add('Predefined Macros:');
-        Lines.Add('  $(ParamFileName)      Full Filename of the *.params file');
-        Lines.Add('  $(ParamFilePath)      Directory of the *.params file');
-        Lines.Add('  $(Year)               Current year');
-        Lines.Add('  $(Month)              Current month');
-        Lines.Add('  $(Day)                Current day');
-        Lines.Add('  $(MonthShortName)     Short name (3 characters) of the current month (local settings)');
-        Lines.Add('  $(MonthName)          Full name of the current month (local settings)');
-        Lines.Add('  $(LastMonthShortName) Short name (3 characters) of the last month (local settings)');
-        Lines.Add('  $(LastMonthName)      Full name of the last month (local settings)');
-        Lines.Add('  $(LastYear)           Last year');
-        Lines.Add('');
-        Lines.Add('  $(ParamFileName)      => projectpath\project.param');
-        Lines.Add('  $(ParamFilePath)      => projectpath\');
-        Lines.Add('  $(Year)               => 2011');
-        Lines.Add('  $(Month)              => 12');
-        Lines.Add('  $(Day)                => 19');
-        Lines.Add('  $(MonthShortName)     => Dec');
-        Lines.Add('  $(MonthName)          => December');
-        Lines.Add('  $(LastMonthShortName) => Nov');
-        Lines.Add('  $(LastMonthName)      => November');
-        Lines.Add('  $(LastYear)           => 2010');
-        Lines.Add('');
-        Lines.Add('');
-        Lines.Add('Include, Macro and Param can have a "Condition" attribute:');
-        Lines.Add('  <Macro Name="DB" Condition=" exists(''$(ParamFileName).local'') and true ">value</Macro>');
-        Lines.Add('  <Macro Name="DB" Condition=" ''$(DB)'' == '''' ">value</Macro>');
-        Lines.Add('Available condition functions:');
-        Lines.Add('  Exists(''filename'')   returns true if the file exists');
-        Lines.Add('');
-        Lines.Add('Include-Tag attributes:');
-        Lines.Add('  File:        File that should be included');
-        Lines.Add('  [Force]:     true : Shows an error message if the file doesn''t exist.');
-        Lines.Add('               false: Ignore missing files');
-        Lines.Add('  [Condition]: Include the file only if the condition evaluates to true');
-        Lines.Add('');
-        Lines.Add('  <Include File="$(ParamFileName).local" />');
-        Lines.Add('');
-        Lines.Add('Macro-Tag attributes (value):');
-        Lines.Add('  Name:        Name of the macro that is used in $(name)');
-        Lines.Add('  [Condition]: Set macro only if the condition evaluates to true');
-        Lines.Add('');
-        Lines.Add('  <Macro Name="MacroName" Condition=" ''$(MacroName)'' == '''' ">Default</Macro>');
-        Lines.Add('');
-        Lines.Add('Macro-Tag attributes (load from file):');
-        Lines.Add('  Name:        Name of the macro that is used in $(name)');
-        Lines.Add('  FromFile:    File that contains the macro value');
-        Lines.Add('  [Line]:      Line number of the line that should be the macro value (1..LineCount).');
-        Lines.Add('               A line number less than 1 means the whole file is the value');
-        Lines.Add('  [RegEx]:     Regular expression that is applied to the content of the file or line.');
-        Lines.Add('  [Condition]: Set macro only if the condition evaluates to true');
-        Lines.Add('');
-        Lines.Add('  <Macro Name="PASSWORD" FromFile="$(ParamFilePath)\Passwords.txt" Line="4" RegEx="&quot;[A-Z]*;quot;"/>');
-        Lines.Add('');
-        Lines.Add('-->');
-        Lines.Add('');
-        Lines.Add('');
+        Lines.Add( '<!--' );
+        Lines.Add( '' );
+        Lines.Add( 'Predefined Macros:' );
+        Lines.Add( '  $(ParamFileName)      Full Filename of the *.params file' );
+        Lines.Add( '  $(ParamFilePath)      Directory of the *.params file' );
+        Lines.Add( '  $(Year)               Current year' );
+        Lines.Add( '  $(Month)              Current month' );
+        Lines.Add( '  $(Day)                Current day' );
+        Lines.Add( '  $(MonthShortName)     Short name (3 characters) of the current month (local settings)' );
+        Lines.Add( '  $(MonthName)          Full name of the current month (local settings)' );
+        Lines.Add( '  $(LastMonthShortName) Short name (3 characters) of the last month (local settings)' );
+        Lines.Add( '  $(LastMonthName)      Full name of the last month (local settings)' );
+        Lines.Add( '  $(LastYear)           Last year' );
+        Lines.Add( '' );
+        Lines.Add( '  $(ParamFileName)      => projectpath\project.param' );
+        Lines.Add( '  $(ParamFilePath)      => projectpath\' );
+        Lines.Add( '  $(Year)               => 2011' );
+        Lines.Add( '  $(Month)              => 12' );
+        Lines.Add( '  $(Day)                => 19' );
+        Lines.Add( '  $(MonthShortName)     => Dec' );
+        Lines.Add( '  $(MonthName)          => December' );
+        Lines.Add( '  $(LastMonthShortName) => Nov' );
+        Lines.Add( '  $(LastMonthName)      => November' );
+        Lines.Add( '  $(LastYear)           => 2010' );
+        Lines.Add( '' );
+        Lines.Add( '' );
+        Lines.Add( 'Include, Macro and Param can have a "Condition" attribute:' );
+        Lines.Add( '  <Macro Name="DB" Condition=" exists(''$(ParamFileName).local'') and true ">value</Macro>' );
+        Lines.Add( '  <Macro Name="DB" Condition=" ''$(DB)'' == '''' ">value</Macro>' );
+        Lines.Add( 'Available condition functions:' );
+        Lines.Add( '  Exists(''filename'')   returns true if the file exists' );
+        Lines.Add( '' );
+        Lines.Add( 'Include-Tag attributes:' );
+        Lines.Add( '  File:        File that should be included' );
+        Lines.Add( '  [Force]:     true : Shows an error message if the file doesn''t exist.' );
+        Lines.Add( '               false: Ignore missing files' );
+        Lines.Add( '  [Condition]: Include the file only if the condition evaluates to true' );
+        Lines.Add( '' );
+        Lines.Add( '  <Include File="$(ParamFileName).local" />' );
+        Lines.Add( '' );
+        Lines.Add( 'Macro-Tag attributes (value):' );
+        Lines.Add( '  Name:        Name of the macro that is used in $(name)' );
+        Lines.Add( '  [Condition]: Set macro only if the condition evaluates to true' );
+        Lines.Add( '' );
+        Lines.Add( '  <Macro Name="MacroName" Condition=" ''$(MacroName)'' == '''' ">Default</Macro>' );
+        Lines.Add( '' );
+        Lines.Add( 'Macro-Tag attributes (load from file):' );
+        Lines.Add( '  Name:        Name of the macro that is used in $(name)' );
+        Lines.Add( '  FromFile:    File that contains the macro value' );
+        Lines.Add( '  [Line]:      Line number of the line that should be the macro value (1..LineCount).' );
+        Lines.Add( '               A line number less than 1 means the whole file is the value' );
+        Lines.Add( '  [RegEx]:     Regular expression that is applied to the content of the file or line.' );
+        Lines.Add( '  [Condition]: Set macro only if the condition evaluates to true' );
+        Lines.Add( '' );
+        Lines.Add( '  <Macro Name="PASSWORD" FromFile="$(ParamFilePath)\Passwords.txt" Line="4" RegEx="&quot;[A-Z]*;quot;"/>' );
+        Lines.Add( '' );
+        Lines.Add( '-->' );
+        Lines.Add( '' );
+        Lines.Add( '' );
       end;
-      Lines.Add('  <Macro Name="DB">MyDB</Macro>');
-      Lines.Add('  <Macro Name="PASSWORD" FromFile="C:\Somewhere\Password.txt" Line="4" RegEx="&quot;[A-Z]*;quot;"/>');
-      Lines.Add('');
-      Lines.Add('  <!--<Param Name="User@MyDB">-d $(DB) -u admin -p $(PASSWORD)</Param>-->');
+      Lines.Add( '  <Macro Name="DB">MyDB</Macro>' );
+      Lines.Add( '  <Macro Name="PASSWORD" FromFile="C:\Somewhere\Password.txt" Line="4" RegEx="&quot;[A-Z]*;quot;"/>' );
+      Lines.Add( '' );
+      Lines.Add( '  <!--<Param Name="User@MyDB">-d $(DB) -u admin -p $(PASSWORD)</Param>-->' );
       if not LocalFile then
       begin
-        Lines.Add('');
-        Lines.Add('  <Include File="$(ParamFileName).local" />');
+        Lines.Add( '' );
+        Lines.Add( '  <Include File="$(ParamFileName).local" />' );
       end;
-      Lines.Add('</StartParameters>');
+      Lines.Add( '</StartParameters>' );
 
       try
-        Lines.SaveToFile(FileName, TEncoding.UTF8);
+        Lines.SaveToFile( FileName, TEncoding.UTF8 );
       except
         on E: Exception do
         begin
-          ShowMessage('Could not create the parameters file:'#13#10 + FileName + #13#10 + E.Message);
+          ShowMessage( 'Could not create the parameters file:'#13#10 + FileName + #13#10 + E.Message );
           Exit;
         end;
       end;
@@ -533,75 +533,75 @@ begin
   end;
 
   var ActionSvc: IOTAActionServices;
-  if Supports(BorlandIDEServices, IOTAActionServices, ActionSvc) then
+  if Supports( BorlandIDEServices, IOTAActionServices, ActionSvc ) then
     try
-      ActionSvc.OpenFile(FileName);
+      ActionSvc.OpenFile( FileName );
     except
       on E: Exception do
-        ShowMessage('Could not open the parameters file:'#13#10 + FileName + #13#10 + E.Message);
+        ShowMessage( 'Could not open the parameters file:'#13#10 + FileName + #13#10 + E.Message );
     end;
 end;
 
-procedure TStartParameterControl.DoPopup(Sender: TObject);
+procedure TStartParameterControl.DoPopup( Sender: TObject );
 var
-  ProjectBaseDir: string;
+  ProjectBaseDir    : string;
 
-  procedure AddFiles(const FileName: string; List: TStartParamList);
+  procedure AddFiles( const FileName: string; List: TStartParamList );
   var
-    MenuItem: TFileMenuItem;
-    I: Integer;
+    MenuItem        : TFileMenuItem;
+    I               : Integer;
   begin
-    MenuItem := TFileMenuItem.Create(PopupMenu);
-    if FileExists(FileName) then
-      MenuItem.Caption := Format('Edit %s', [ExtractRelativePath(ProjectBaseDir, FileName)])
+    MenuItem        := TFileMenuItem.Create( PopupMenu );
+    if FileExists( FileName ) then
+      MenuItem.Caption := Format( 'Edit %s', [ ExtractRelativePath( ProjectBaseDir, FileName ) ] )
     else
-      MenuItem.Caption := Format('Create %s', [ExtractRelativePath(ProjectBaseDir, FileName)]);
+      MenuItem.Caption := Format( 'Create %s', [ ExtractRelativePath( ProjectBaseDir, FileName ) ] );
     MenuItem.FileName := FileName;
     MenuItem.OnClick := DoEditFileClick;
-    PopupMenu.Items.Add(MenuItem);
+    PopupMenu.Items.Add( MenuItem );
 
     for I := 0 to List.Count - 1 do
-      if List[I] is TStartParamInclude then
-        AddFiles(TStartParamInclude(List[I]).ResolvedFileName, TStartParamInclude(List[I]).StartParamList);
+      if List[ I ] is TStartParamInclude then
+        AddFiles( TStartParamInclude( List[ I ] ).ResolvedFileName, TStartParamInclude( List[ I ] ).StartParamList );
   end;
 
 var
-  FileName: string;
-  MenuItem: TMenuItem;
+  FileName          : string;
+  MenuItem          : TMenuItem;
 begin
   PopupMenu.Items.Clear;
   Reload;
-  if (FActiveParams <> nil) and (FActiveParams.Project <> nil) then
+  if ( FActiveParams <> nil ) and ( FActiveParams.Project <> nil ) then
   begin
-    ProjectBaseDir := FActiveParams.Project.FileName;
+    ProjectBaseDir  := FActiveParams.Project.FileName;
     // Use the already-validated FActiveParams.Project rather than a fresh
     // GetActiveProject call, which could return nil/a different project here.
-    FileName := TProjectParameters.GetParamFileName(FActiveParams.Project.FileName, False);
-    AddFiles(FileName, FActiveParams.Parameters);
+    FileName        := TProjectParameters.GetParamFileName( FActiveParams.Project.FileName, False );
+    AddFiles( FileName, FActiveParams.Parameters );
   end
   else
   begin
-    MenuItem := TMenuItem.Create(PopupMenu);
+    MenuItem        := TMenuItem.Create( PopupMenu );
     MenuItem.Caption := 'No active project';
     MenuItem.Enabled := False;
-    PopupMenu.Items.Add(MenuItem);
+    PopupMenu.Items.Add( MenuItem );
   end;
 end;
 
 procedure TStartParameterControl.DropDown;
 var
-  MinWidth, W: Integer;
-  I: Integer;
+  MinWidth, W       : Integer;
+  I                 : Integer;
 begin
   Reload;
-  MinWidth := Width;
+  MinWidth          := Width;
   for I := 0 to Items.Count - 1 do
   begin
-    W := Canvas.TextWidth(Items[I]) + 8;
+    W               := Canvas.TextWidth( Items[ I ] ) + 8;
     if MinWidth < W then
-      MinWidth := W;
+      MinWidth      := W;
   end;
-  SendMessage(Handle, CB_SETDROPPEDWIDTH, MinWidth, 0);
+  SendMessage( Handle, CB_SETDROPPEDWIDTH, MinWidth, 0 );
   inherited DropDown;
 end;
 
@@ -628,161 +628,163 @@ procedure TStartParameterControl.BeforeSave;
 begin
 end;
 
-procedure TStartParameterControl.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
+procedure TStartParameterControl.BeforeCompile( const Project: IOTAProject; var Cancel: Boolean );
 begin
 end;
 
-procedure TStartParameterControl.AfterCompile(Succeeded: Boolean);
+procedure TStartParameterControl.AfterCompile( Succeeded: Boolean );
 begin
 end;
 
-procedure TStartParameterControl.FileNotification(NotifyCode: TOTAFileNotification;
-  const FileName: string; var Cancel: Boolean);
+procedure TStartParameterControl.FileNotification( NotifyCode: TOTAFileNotification;
+  const FileName: string; var Cancel: Boolean );
 begin
   case NotifyCode of
     ofnActiveProjectChanged:
-      UpdateStartParameters(nil);
+      UpdateStartParameters( nil );
   end;
 end;
 
-function TStartParameterControl.FindProject(const AProject: IOTAProject): TProjectParameters;
+function TStartParameterControl.FindProject( const AProject: IOTAProject ): TProjectParameters;
 var
-  I: Integer;
+  I                 : Integer;
 begin
   for I := 0 to FProjectParams.Count - 1 do
   begin
-    Result := TProjectParameters(FProjectParams[I]);
+    Result          := TProjectParameters( FProjectParams[ I ] );
     if Result.Project = AProject then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
-procedure TStartParameterControl.UpdateStartParameters(const ADestroyingProject: IOTAProject);
+procedure TStartParameterControl.UpdateStartParameters( const ADestroyingProject: IOTAProject );
 var
-  Project: IOTAProject;
-  Index: Integer;
-  Param: TStartParam;
-  DropDownWidth, W: Integer;
-  {$IF CompilerVersion >= 33.0} // 10.3 Rio+
-  cbPlatforms: TCustomComboBox;
-  {$IFEND}
+  Project           : IOTAProject;
+  Index             : Integer;
+  Param             : TStartParam;
+  DropDownWidth, W  : Integer;
+{$IF CompilerVersion >= 33.0} // 10.3 Rio+
+  cbPlatforms       : TCustomComboBox;
+{$IFEND}
 begin
-  FActiveParams := nil;
+  FActiveParams     := nil;
   if not HandleAllocated then // *.dsk files cause this
     Exit;
 
-  {$IF CompilerVersion >= 33.0} // 10.3 Rio+
-  cbPlatforms := Owner.FindComponent('cbPlatforms') as TCustomComboBox;
+{$IF CompilerVersion >= 33.0} // 10.3 Rio+
+  cbPlatforms       := Owner.FindComponent( 'cbPlatforms' ) as TCustomComboBox;
   if cbPlatforms <> nil then
   begin
-    Font.Assign(TComboBox(cbPlatforms).Font);
-    Brush.Assign(cbPlatforms.Brush);
+    Font.Assign( TComboBox( cbPlatforms ).Font );
+    Brush.Assign( cbPlatforms.Brush );
   end;
-  {$IFEND}
+{$IFEND}
 
   Items.BeginUpdate;
   try
     Items.Clear;
-    Items.AddObject('<Default Start Parameters>', nil);
-    Index := 0;
+    Items.AddObject( '<Default Start Parameters>', nil );
+    Index           := 0;
     try
-      Project := GetActiveProject;
-      if (Project <> nil) and (Project <> ADestroyingProject) then
+      Project       := GetActiveProject;
+      if ( Project <> nil ) and ( Project <> ADestroyingProject ) then
       begin
-        FActiveParams := FindProject(Project);
+        FActiveParams := FindProject( Project );
         if FActiveParams <> nil then
           Reload
         else
         begin
-          FActiveParams := TProjectParameters.Create(Self, Project);
+          FActiveParams := TProjectParameters.Create( Self, Project );
           FActiveParams.Load;
         end;
 
         for Param in FActiveParams.Parameters.AvailableParams do
-          Items.AddObject(Param.Name, Param);
+          Items.AddObject( Param.Name, Param );
 
-        Index := Items.IndexOf(FActiveParams.LocalParameters.ActiveParamName);
+        Index       := Items.IndexOf( FActiveParams.LocalParameters.ActiveParamName );
         if Index = -1 then
-          Index := 0;
+          Index     := 0;
       end;
     except
-      Application.HandleException(Self);
+      Application.HandleException( Self );
     end;
   finally
     Items.EndUpdate;
   end;
-  ItemIndex := Index;
+  ItemIndex         := Index;
 
-  DropDownWidth := Width;
-  Canvas.Font.Assign(Font);
+  DropDownWidth     := Width;
+  Canvas.Font.Assign( Font );
   for Index := 0 to Items.Count - 1 do
   begin
-    W := Canvas.TextWidth(Items[Index]) + 6;
+    W               := Canvas.TextWidth( Items[ Index ] ) + 6;
     if W > DropDownWidth then
       DropDownWidth := W;
   end;
-  SendMessage(Handle, CB_SETDROPPEDWIDTH, DropDownWidth, 0);
+  SendMessage( Handle, CB_SETDROPPEDWIDTH, DropDownWidth, 0 );
 end;
 
 {$IF CompilerVersion >= 33.0} // 10.3 Rio+
-procedure TStartParameterControl.DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState);
+
+procedure TStartParameterControl.DrawItem( Index: Integer; Rect: TRect; State: TOwnerDrawState );
 var
-  cbPlatforms: TCustomComboBox;
+  cbPlatforms       : TCustomComboBox;
 begin
-  TControlCanvas(Canvas).UpdateTextFlags;
-  if Assigned(OnDrawItem) then
-    OnDrawItem(Self, Index, Rect, State)
+  TControlCanvas( Canvas ).UpdateTextFlags;
+  if Assigned( OnDrawItem ) then
+    OnDrawItem( Self, Index, Rect, State )
   else
   begin
-    cbPlatforms := Owner.FindComponent('cbPlatforms') as TCustomComboBox;
+    cbPlatforms     := Owner.FindComponent( 'cbPlatforms' ) as TCustomComboBox;
     if cbPlatforms <> nil then
     begin
-      Font.Assign(TComboBox(cbPlatforms).Font);
-      Brush.Assign(cbPlatforms.Brush);
+      Font.Assign( TComboBox( cbPlatforms ).Font );
+      Brush.Assign( cbPlatforms.Brush );
     end;
-    Canvas.FillRect(Rect);
+    Canvas.FillRect( Rect );
     if Index >= 0 then
       if odComboBoxEdit in State then
-        Canvas.TextOut(Rect.Left + 1, Rect.Top + 1, Items[Index]) //Visual state of the text in the edit control
+        Canvas.TextOut( Rect.Left + 1, Rect.Top + 1, Items[ Index ] ) //Visual state of the text in the edit control
       else
-        Canvas.TextOut(Rect.Left + 2, Rect.Top, Items[Index]); //Visual state of the text(items) in the deployed list
+        Canvas.TextOut( Rect.Left + 2, Rect.Top, Items[ Index ] ); //Visual state of the text(items) in the deployed list
   end;
 end;
 {$IFEND}
 
-procedure TStartParameterControl.WMCopy(var Msg: TWMCopy);
+procedure TStartParameterControl.WMCopy( var Msg: TWMCopy );
 var
-  S: string;
+  S                 : string;
 begin
-  if TStartParameterControl.GetActiveParams(S, False) then
+  if TStartParameterControl.GetActiveParams( S, False ) then
     Clipboard.AsText := S
   else
     inherited;
 end;
 
-procedure TStartParameterControl.WMSetFocus(var Msg: TWMSetFocus);
+procedure TStartParameterControl.WMSetFocus( var Msg: TWMSetFocus );
 begin
   inherited;
   // UpdateStartParameters already guards its core with Application.HandleException;
   // a bare except here would only mask genuine faults.
-  UpdateStartParameters(nil);
+  UpdateStartParameters( nil );
 end;
 
-procedure TStartParameterControl.CMHintShow(var Msg: TCMHintShow);
+procedure TStartParameterControl.CMHintShow( var Msg: TCMHintShow );
 var
-  S: string;
+  S                 : string;
 begin
-  if TStartParameterControl.GetActiveParams(S, False) then
+  if TStartParameterControl.GetActiveParams( S, False ) then
   begin
     Msg.HintInfo.HintStr := S;
-    Msg.Result := 0
+    Msg.Result      := 0
   end
   else
   begin
     Msg.HintInfo.HintStr := '';
-    Msg.Result := 1;
+    Msg.Result      := 1;
   end;
 end;
 
 end.
+

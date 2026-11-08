@@ -57,19 +57,19 @@ const
   /// <summary>Uses-section value for the interface section, re-exported from UsesClauseManagerCore.</summary>
   /// <remarks>An enumerated type alias does not bring its values into scope, so the values are
   /// re-exported as constants alongside it.</remarks>
-  usInterface = UsesClauseManagerCore.usInterface;
+  usInterface       = UsesClauseManagerCore.usInterface;
   /// <summary>Uses-section value for the implementation section, re-exported from UsesClauseManagerCore.</summary>
-  usImplementation = UsesClauseManagerCore.usImplementation;
+  usImplementation  = UsesClauseManagerCore.usImplementation;
   /// <summary>Export kind for a type declaration, re-exported from UsesClauseManagerCore.</summary>
-  ekType = UsesClauseManagerCore.ekType;
+  ekType            = UsesClauseManagerCore.ekType;
   /// <summary>Export kind for a procedure, re-exported from UsesClauseManagerCore.</summary>
-  ekProcedure = UsesClauseManagerCore.ekProcedure;
+  ekProcedure       = UsesClauseManagerCore.ekProcedure;
   /// <summary>Export kind for a function, re-exported from UsesClauseManagerCore.</summary>
-  ekFunction = UsesClauseManagerCore.ekFunction;
+  ekFunction        = UsesClauseManagerCore.ekFunction;
   /// <summary>Export kind for a constant, re-exported from UsesClauseManagerCore.</summary>
-  ekConst = UsesClauseManagerCore.ekConst;
+  ekConst           = UsesClauseManagerCore.ekConst;
   /// <summary>Export kind for a variable, re-exported from UsesClauseManagerCore.</summary>
-  ekVar = UsesClauseManagerCore.ekVar;
+  ekVar             = UsesClauseManagerCore.ekVar;
 
 type
 
@@ -141,8 +141,8 @@ uses
 procedure TUnitExportsDatabaseIDEHelper.BuildFromSearchPath( Project: IOTAProject;
   OnProgress: TNotifyEvent );
 var
-  Options: IOTAProjectOptions;
-  ProjectDir: string;
+  Options           : IOTAProjectOptions;
+  ProjectDir        : string;
   Paths, SearchPaths: TStringList;
 begin
   Clear;
@@ -150,9 +150,9 @@ begin
   if Project = nil then
     Exit;
 
-  ProjectDir := ExtractFileDir( Project.FileName );
-  Paths := TStringList.Create;
-  SearchPaths := TStringList.Create;
+  ProjectDir        := ExtractFileDir( Project.FileName );
+  Paths             := TStringList.Create;
+  SearchPaths       := TStringList.Create;
   try
     // The project's own folder first, as the compiler searches it first; it used to be dropped
     // whenever the project had options, which left the project's own units out of the database.
@@ -160,7 +160,7 @@ begin
 
     // Then the search path, with $(...) macros expanded; a relative entry is relative to the
     // project folder ( BuildFromDirectories resolves it against ProjectDir ).
-    Options := Project.ProjectOptions;
+    Options         := Project.ProjectOptions;
     if Options <> nil then
     begin
       SplitPaths( SearchPaths, ExpandDirMacros( VarToStr( Options.Values[ 'UnitDir' ] ), Project ), True );
@@ -178,14 +178,14 @@ end;
 
 constructor TUsesClauseManagerPlugin.Create;
 begin
-  FExportsDB := TUnitExportsDatabase.Create;
+  FExportsDB        := TUnitExportsDatabase.Create;
 
   inherited Create( AppDataDirectory + '\UsesClauseManager.xml', 'UsesClauseManager' );
 
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Uses Clause &Manager...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -201,12 +201,12 @@ end;
 
 procedure TUsesClauseManagerPlugin.Init;
 begin
-  FEnabled := True;
+  FEnabled          := True;
 end;
 
 function TUsesClauseManagerPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create( 'Uses Clause Manager', TFrameOptionPageUsesClause, Self );
+  Result            := TTreePage.Create( 'Uses Clause Manager', TFrameOptionPageUsesClause, Self );
 end;
 
 procedure TUsesClauseManagerPlugin.MenuItemClick( Sender: TObject );
@@ -234,3 +234,4 @@ begin
 end;
 
 end.
+

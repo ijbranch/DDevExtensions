@@ -25,16 +25,16 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Contnrs, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.ExtCtrls, ComponentPanel,
-  {$IFNDEF ALWAYS_DEFINED} // trick to get the IDE to not add those units again
+{$IFNDEF ALWAYS_DEFINED} // trick to get the IDE to not add those units again
   JvExExtCtrls, JvExtComponent, JvComponentPanel
-  {$ENDIF}
+{$ENDIF}
   FrmeOptionPageOldPalette, Vcl.Buttons, System.TypInfo, System.IniFiles, Vcl.CategoryButtons, PaletteAPI,
   Vcl.GraphUtil, Vcl.StdCtrls, Vcl.Menus, Vcl.ToolWin, Vcl.ComCtrls,
   ToolsAPI, ToolsAPIHelpers;
 
 const
   /// <summary>Custom message posted to defer a palette rebuild to the next message loop iteration.</summary>
-  WM_REBUILD = WM_USER + 1;
+  WM_REBUILD        = WM_USER + 1;
 
 type
   /// <summary>
@@ -42,7 +42,7 @@ type
   /// underlying IDE button category and the cached list of <see cref="TCompItem"/>
   /// components for that category.
   /// </summary>
-  TTabItem = class(TObject)
+  TTabItem = class( TObject )
   private
     /// <summary>List of components belonging to this tab.</summary>
     FComponents: TObjectList;
@@ -53,7 +53,7 @@ type
   public
     /// <summary>Creates the tab item bound to the supplied palette category.</summary>
     /// <param name="APalGroup">IDE palette category to mirror.</param>
-    constructor Create(APalGroup: TButtonCategory);
+    constructor Create( APalGroup: TButtonCategory );
     /// <summary>Releases the owned component list.</summary>
     destructor Destroy; override;
 
@@ -69,7 +69,7 @@ type
   /// Represents one component on the Old Palette: name, palette page, the underlying
   /// IDE palette item and category, plus the originating package metadata.
   /// </summary>
-  TCompItem = class(TObject)
+  TCompItem = class( TObject )
   private
     /// <summary>Pascal unit declaring the component.</summary>
     FUnitName: string;
@@ -113,7 +113,7 @@ type
   /// scrollable component panel showing the buttons for the selected page. Hooks
   /// into the IDE palette to mirror selection, ordering and updates.
   /// </summary>
-  TFrameOldPalette = class(TFrame)
+  TFrameOldPalette = class( TFrame )
     /// <summary>Scrollable button strip holding the components for the active tab.</summary>
     Palette: TJvComponentPanel;
     /// <summary>Spacer panel used for layout.</summary>
@@ -127,33 +127,33 @@ type
     /// <summary>Click handler for a component button on the strip.</summary>
     /// <param name="Sender">The component panel.</param>
     /// <param name="Button">Index of the clicked button.</param>
-    procedure PaletteClick(Sender: TObject; Button: Integer);
+    procedure PaletteClick( Sender: TObject; Button: Integer );
     /// <summary>Double-click handler that selects and instantiates a component.</summary>
     /// <param name="Sender">The component panel.</param>
     /// <param name="Button">Index of the double-clicked button.</param>
-    procedure PaletteDblClick(Sender: TObject; Button: Integer);
+    procedure PaletteDblClick( Sender: TObject; Button: Integer );
     /// <summary>Popup-menu item handler that switches to the corresponding palette page.</summary>
     /// <param name="Sender">The menu item that was clicked.</param>
-    procedure PaletteMenuItemClick(Sender: TObject);
+    procedure PaletteMenuItemClick( Sender: TObject );
     /// <summary>Mouse-down handler used to coax mouse-wheel focus on .NET personalities.</summary>
     /// <param name="Sender">The tab bar.</param>
     /// <param name="Button">The mouse button pressed.</param>
     /// <param name="Shift">The modifier keys held.</param>
     /// <param name="X">Horizontal client position.</param>
     /// <param name="Y">Vertical client position.</param>
-    procedure TabBarPaletteMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    procedure TabBarPaletteMouseDown( Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer );
     /// <summary>OnPaintContent handler that gradient-fills the strip when needed.</summary>
     /// <param name="Sender">The component panel.</param>
     /// <param name="Canvas">Canvas to paint on.</param>
     /// <param name="R">Content rectangle to paint.</param>
-    procedure PalettePaintContent(Sender: TObject; Canvas: TCanvas; R: TRect);
+    procedure PalettePaintContent( Sender: TObject; Canvas: TCanvas; R: TRect );
     /// <summary>OnChange handler that mirrors the active tab into the button strip.</summary>
     /// <param name="Sender">The tab control.</param>
-    procedure TabControlChange(Sender: TObject);
+    procedure TabControlChange( Sender: TObject );
     /// <summary>OnResize handler that constrains the tab control's height.</summary>
     /// <param name="Sender">The tab control.</param>
-    procedure TabControlResize(Sender: TObject);
+    procedure TabControlResize( Sender: TObject );
   private
     /// <summary>True when the IDE is currently showing a form designer.</summary>
     FIsFormDesigner: Boolean;
@@ -187,31 +187,31 @@ type
     /// <summary>Hooked IDE selected-item handler that mirrors the selection on the Old Palette.</summary>
     /// <param name="Sender">The IDE palette.</param>
     /// <param name="Button">The newly selected palette item.</param>
-    procedure PaletteSelectedItemChange(Sender: TObject; const Button: TButtonItem);
+    procedure PaletteSelectedItemChange( Sender: TObject; const Button: TButtonItem );
     /// <summary>Hooked IDE button-reorder handler that refreshes the cached tab buttons.</summary>
     /// <param name="Sender">The IDE palette.</param>
     /// <param name="Button">The palette item that was moved.</param>
     /// <param name="SourceCategory">Category the item came from.</param>
     /// <param name="TargetCategory">Category the item moved to.</param>
-    procedure PaletteReorderButton(Sender: TObject; const Button: TButtonItem;
-      const SourceCategory, TargetCategory: TButtonCategory);
+    procedure PaletteReorderButton( Sender: TObject; const Button: TButtonItem;
+      const SourceCategory, TargetCategory: TButtonCategory );
     /// <summary>Hooked IDE category-reorder handler that triggers a reorder-only rebuild.</summary>
     /// <param name="Sender">The IDE palette.</param>
     /// <param name="SourceCategory">Category that was moved.</param>
     /// <param name="TargetCategory">Category it was moved next to.</param>
-    procedure PaletteReorderCategory(Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory);
+    procedure PaletteReorderCategory( Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory );
     /// <summary>Returns the currently selected tab item, or nil.</summary>
     /// <returns>The selected tab item, or nil when no tab is selected.</returns>
     function GetSelectedTab: TTabItem;
     /// <summary>Determines whether <paramref name="Categories"/> represent a form-designer palette.</summary>
     /// <param name="Categories">The IDE palette categories to inspect.</param>
-    procedure UpdateIsFormDesigner(Categories: TButtonCategories);
+    procedure UpdateIsFormDesigner( Categories: TButtonCategories );
     /// <summary>Clears the cached component lists on every tab without removing the tabs.</summary>
     procedure ClearTabItemComponents;
     /// <summary>Returns the tab item at <paramref name="Index"/>.</summary>
     /// <param name="Index">Zero-based tab index; not range-checked.</param>
     /// <returns>The tab item stored against that tab.</returns>
-    function GetTabItem(Index: Integer): TTabItem; inline;
+    function GetTabItem( Index: Integer ): TTabItem; inline;
     /// <summary>Returns the number of tabs in the tab control.</summary>
     /// <returns>Number of tabs.</returns>
     function GetTabItemCount: Integer; inline;
@@ -222,23 +222,23 @@ type
     procedure ClearTabs;
     /// <summary>Programmatically changes the active tab and synchronises the strip.</summary>
     /// <param name="NewTabIndex">Index of the tab to activate.</param>
-    procedure ChangeTabIndex(NewTabIndex: Integer);
+    procedure ChangeTabIndex( NewTabIndex: Integer );
     /// <summary>Populates the button strip from <paramref name="ComponentList"/>.</summary>
     /// <param name="ComponentList">Components of the selected palette page.</param>
-    procedure TabSelected(ComponentList: TObjectList);
+    procedure TabSelected( ComponentList: TObjectList );
     /// <summary>Releases hooks if the IDE component palette is being freed.</summary>
     /// <param name="AComponent">The component being inserted or removed.</param>
     /// <param name="Operation">opInsert or opRemove.</param>
-    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    procedure Notification( AComponent: TComponent; Operation: TOperation ); override;
     /// <summary>Suppresses default background erasing to avoid flicker.</summary>
     /// <param name="Msg">The WM_ERASEBKGND message; marked handled without erasing.</param>
-    procedure WMEraseBkgnd(var Msg: TWMEraseBkgnd); message WM_ERASEBKGND;
+    procedure WMEraseBkgnd( var Msg: TWMEraseBkgnd ); message WM_ERASEBKGND;
     /// <summary>Handler for <see cref="WM_REBUILD"/> that performs the deferred rebuild.</summary>
     /// <param name="Msg">The WM_REBUILD message.</param>
-    procedure WMRebuild(var Msg: TMessage); message WM_REBUILD;
+    procedure WMRebuild( var Msg: TMessage ); message WM_REBUILD;
     /// <summary>Subclassed tab-control window procedure intercepting mouse wheel events.</summary>
     /// <param name="Msg">The message sent to the tab control.</param>
-    procedure TabControlWndProc(var Msg: TMessage);
+    procedure TabControlWndProc( var Msg: TMessage );
     /// <summary>Resets the deferred rebuild flag when the window handle is created.</summary>
     procedure CreateWnd; override;
   public
@@ -250,26 +250,26 @@ type
     /// <param name="ATop">New top position.</param>
     /// <param name="AWidth">New width.</param>
     /// <param name="AHeight">New height.</param>
-    procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
+    procedure SetBounds( ALeft, ATop, AWidth, AHeight: Integer ); override;
     /// <summary>Number of tabs currently in the tab control.</summary>
     property TabItemCount: Integer read GetTabItemCount;
     /// <summary>Indexed access to the tab items.</summary>
-    property TabItems[Index: Integer]: TTabItem read GetTabItem;
+    property TabItems[ Index: Integer ]: TTabItem read GetTabItem;
   public
     /// <summary>Creates the frame and installs IDE hooks on the component palette.</summary>
     /// <param name="AOwner">Owner component.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Releases IDE hooks and the singleton pointer before destruction.</summary>
     destructor Destroy; override;
     /// <summary>Initialises the frame with the supplied configuration and triggers a rebuild.</summary>
     /// <param name="AConfig">Configuration providing tab style and behavioural options.</param>
-    procedure Init(AConfig: TOldPaletteConfig);
+    procedure Init( AConfig: TOldPaletteConfig );
     /// <summary>Applies tab style, multi-line, ragged-right and font settings from the configuration.</summary>
     /// <param name="AConfig">Source configuration.</param>
-    procedure InitTabControl(AConfig: TOldPaletteConfig);
+    procedure InitTabControl( AConfig: TOldPaletteConfig );
     /// <summary>Rebuilds the tab list from the current IDE palette state.</summary>
     /// <param name="ReorderOnly">When true, only the order is updated; component caches are reused.</param>
-    procedure Rebuild(ReorderOnly: Boolean = False);
+    procedure Rebuild( ReorderOnly: Boolean = False );
     /// <summary>Posts a <see cref="WM_REBUILD"/> message to perform a rebuild on the next message loop iteration.</summary>
     procedure RebuildDelayed;
     /// <summary>Rebuilds the popup menu listing all palette pages.</summary>
@@ -277,14 +277,14 @@ type
     /// <summary>Switches to the tab and button matching the supplied palette item.</summary>
     /// <param name="PalGroup">Palette category, or nil to derive from <paramref name="PalItem"/>.</param>
     /// <param name="PalItem">Palette button to highlight, or nil for the pointer button.</param>
-    procedure SelectComponent(PalGroup: TButtonCategory; PalItem: TButtonItem);
+    procedure SelectComponent( PalGroup: TButtonCategory; PalItem: TButtonItem );
     /// <summary>Active configuration snapshot.</summary>
     property Config: TOldPaletteConfig read FConfig;
   end;
 
-/// <summary>Singleton instance of the Old Palette frame, owned by the IDE ControlBar when active.</summary>
+  /// <summary>Singleton instance of the Old Palette frame, owned by the IDE ControlBar when active.</summary>
 var
-  FrameOldPalette: TFrameOldPalette;
+  FrameOldPalette   : TFrameOldPalette;
 
 implementation
 
@@ -296,33 +296,33 @@ uses
 var
   HookTToolForm_LoadPalette: TRedirectCode;
 
-procedure TToolForm_LoadPalette(Instance: TForm);
-  external coreide_bpl name '@Toolfrm@TToolForm@LoadPalette$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
+procedure TToolForm_LoadPalette( Instance: TForm );
+  external coreide_bpl name '@Toolfrm@TToolForm@LoadPalette$qqrv'{$IFDEF WIN64} delayed{$ENDIF};
 
-procedure HookedTToolForm_LoadPalette(Instance: TForm);
+procedure HookedTToolForm_LoadPalette( Instance: TForm );
 begin
-  CodeRestore(HookTToolForm_LoadPalette);
+  CodeRestore( HookTToolForm_LoadPalette );
   if ( Assigned( FrameOldPalette ) ) then
     Inc( FrameOldPalette.FRebuilding );
   try
-    TToolForm_LoadPalette(Instance);
+    TToolForm_LoadPalette( Instance );
   finally
     if ( Assigned( FrameOldPalette ) ) then
       Dec( FrameOldPalette.FRebuilding );
-    RehookFunction(@HookedTToolForm_LoadPalette, HookTToolForm_LoadPalette);
+    RehookFunction( @HookedTToolForm_LoadPalette, HookTToolForm_LoadPalette );
   end;
-  if Assigned(FrameOldPalette) then
+  if Assigned( FrameOldPalette ) then
     FrameOldPalette.RebuildDelayed;
 end;
 
 { TTabItem }
 
-constructor TTabItem.Create(APalGroup: TButtonCategory);
+constructor TTabItem.Create( APalGroup: TButtonCategory );
 begin
   inherited Create;
-  FPalGroup := APalGroup;
-  FCaption := PalGroup.Caption;
-  FComponents := TObjectList.Create;
+  FPalGroup         := APalGroup;
+  FCaption          := PalGroup.Caption;
+  FComponents       := TObjectList.Create;
 end;
 
 destructor TTabItem.Destroy;
@@ -333,28 +333,28 @@ end;
 
 { TFrameOldPalette }
 
-constructor TFrameOldPalette.Create(AOwner: TComponent);
+constructor TFrameOldPalette.Create( AOwner: TComponent );
 var
-  CompPalette: TCategoryButtons;
+  CompPalette       : TCategoryButtons;
 begin
-  inherited Create(AOwner);
-  Visible := False;
+  inherited Create( AOwner );
+  Visible           := False;
   FOrgTabControlWndProc := TabControl.WindowProc;
   TabControl.WindowProc := TabControlWndProc;
 
   Palette.HintWindowClass := THtHintWindow;
-  ParentBackground := False;
-  ControlStyle := ControlStyle + [csOpaque] - [csParentBackground];
+  ParentBackground  := False;
+  ControlStyle      := ControlStyle + [ csOpaque ] - [ csParentBackground ];
 
-  FrameOldPalette := Self;
+  FrameOldPalette   := Self;
 
   Palette.ButtonLeft.NoBorder := False;
   Palette.ButtonRight.NoBorder := False;
 
-  CodeRedirect(@TToolForm_LoadPalette, @HookedTToolForm_LoadPalette, HookTToolForm_LoadPalette);
+  CodeRedirect( @TToolForm_LoadPalette, @HookedTToolForm_LoadPalette, HookTToolForm_LoadPalette );
 
-  CompPalette := GetComponentPalette;
-  if Assigned(CompPalette) then
+  CompPalette       := GetComponentPalette;
+  if Assigned( CompPalette ) then
   begin
     FOrgSelectedItemChange := CompPalette.OnSelectedItemChange;
     CompPalette.OnSelectedItemChange := PaletteSelectedItemChange;
@@ -365,97 +365,97 @@ begin
     FOrgReorderCategory := CompPalette.OnReorderCategory;
     CompPalette.OnReorderCategory := PaletteReorderCategory;
 
-    CompPalette.FreeNotification(Self);
+    CompPalette.FreeNotification( Self );
   end;
 end;
 
 procedure TFrameOldPalette.CreateWnd;
 begin
   inherited CreateWnd;
-  FRebuildDelay := False;
+  FRebuildDelay     := False;
 end;
 
 destructor TFrameOldPalette.Destroy;
 begin
   ReleaseToolForm;
-  FrameOldPalette := nil;
+  FrameOldPalette   := nil;
   if ( FBoundsModified ) and ( Assigned( Config ) ) then
     Config.Save;
   inherited Destroy;
 end;
 
-procedure TFrameOldPalette.ChangeTabIndex(NewTabIndex: Integer);
+procedure TFrameOldPalette.ChangeTabIndex( NewTabIndex: Integer );
 begin
-  if (TabControl.TabIndex <> NewTabIndex) and
-     (NewTabIndex >= 0) and (NewTabIndex < TabItemCount) then
+  if ( TabControl.TabIndex <> NewTabIndex ) and
+    ( NewTabIndex >= 0 ) and ( NewTabIndex < TabItemCount ) then
   begin
     TabControl.TabIndex := NewTabIndex;
-    TabControlChange(TabControl);
+    TabControlChange( TabControl );
   end;
 end;
 
 procedure TFrameOldPalette.ClearTabItemComponents;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to TabItemCount - 1 do
-    TabItems[i].Components.Clear;
-  TabSelected(nil);
+    TabItems[ i ].Components.Clear;
+  TabSelected( nil );
 end;
 
 procedure TFrameOldPalette.ClearTabs;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   // The palette buttons carry each TCompItem in their Tag.  Drop the buttons
   // before the tab items (which own the TCompItems) are freed, so no button can
   // hand a freed item to PaletteClick/PaletteDblClick.
   Palette.ButtonCount := 0;
   for i := 0 to TabItemCount - 1 do
-    TabItems[i].Free;
+    TabItems[ i ].Free;
   TabControl.Tabs.Clear;
 end;
 
-function TFrameOldPalette.GetTabItem(Index: Integer): TTabItem;
+function TFrameOldPalette.GetTabItem( Index: Integer ): TTabItem;
 begin
-  Result := TTabItem(TabControl.Tabs.Objects[Index]);
+  Result            := TTabItem( TabControl.Tabs.Objects[ Index ] );
 end;
 
 function TFrameOldPalette.GetTabItemCount: Integer;
 begin
-  Result := TabControl.Tabs.Count;
+  Result            := TabControl.Tabs.Count;
 end;
 
 procedure TFrameOldPalette.ReleaseToolForm;
 var
-  CompPalette: TCategoryButtons;
+  CompPalette       : TCategoryButtons;
 begin
-  CompPalette := GetComponentPalette;
-  if Assigned(CompPalette) then
+  CompPalette       := GetComponentPalette;
+  if Assigned( CompPalette ) then
   begin
-    CompPalette.RemoveFreeNotification(Self);
+    CompPalette.RemoveFreeNotification( Self );
 
     CompPalette.OnSelectedItemChange := FOrgSelectedItemChange;
     CompPalette.OnReorderButton := FOrgReorderButton;
     CompPalette.OnReorderCategory := FOrgReorderCategory;
   end;
-  if GetModuleHandle(coreide_bpl) <> 0 then
-    CodeRestore(HookTToolForm_LoadPalette);
+  if GetModuleHandle( coreide_bpl ) <> 0 then
+    CodeRestore( HookTToolForm_LoadPalette );
 
   ClearTabs;
   Palette.ButtonCount := 0;
 end;
 
-procedure TFrameOldPalette.Init(AConfig: TOldPaletteConfig);
+procedure TFrameOldPalette.Init( AConfig: TOldPaletteConfig );
 begin
-  FConfig := AConfig;
-  InitTabControl(FConfig);
+  FConfig           := AConfig;
+  InitTabControl( FConfig );
   Rebuild;
 end;
 
-procedure TFrameOldPalette.InitTabControl(AConfig: TOldPaletteConfig);
+procedure TFrameOldPalette.InitTabControl( AConfig: TOldPaletteConfig );
 begin
-  Inc(FRebuilding);
+  Inc( FRebuilding );
   try
     TabControl.Style := AConfig.Style;
     TabControl.RaggedRight := AConfig.RaggedRight;
@@ -471,153 +471,152 @@ begin
       TabControl.Font.Size := 8;
     end;
   finally
-    Dec(FRebuilding);
+    Dec( FRebuilding );
   end;
   if TabItemCount > 0 then
-    TabControlResize(TabControl);
+    TabControlResize( TabControl );
 end;
 
-procedure TFrameOldPalette.Notification(AComponent: TComponent;
-  Operation: TOperation);
+procedure TFrameOldPalette.Notification( AComponent: TComponent;
+  Operation: TOperation );
 begin
-  inherited Notification(AComponent, Operation);
-  if (Operation = opRemove) and (AComponent <> nil) then
+  inherited Notification( AComponent, Operation );
+  if ( Operation = opRemove ) and ( AComponent <> nil ) then
   begin
     if AComponent = GetComponentPalette then
       ReleaseToolForm;
   end;
 end;
 
-procedure TFrameOldPalette.PaletteMenuItemClick(Sender: TObject);
+procedure TFrameOldPalette.PaletteMenuItemClick( Sender: TObject );
 begin
-  ChangeTabIndex(TMenuItem(Sender).Tag);
+  ChangeTabIndex( TMenuItem( Sender ).Tag );
 end;
 
-procedure TFrameOldPalette.PalettePaintContent(Sender: TObject; Canvas: TCanvas; R: TRect);
+procedure TFrameOldPalette.PalettePaintContent( Sender: TObject; Canvas: TCanvas; R: TRect );
 {$IFDEF COMPILER10_UP}
 var
-  ControlBar: TControlBar;
+  ControlBar        : TControlBar;
 {$ENDIF COMPILER10_UP}
 begin
   if TabControl.Style <> tsTabs then
   begin
-    {$IFDEF COMPILER10_UP}
+{$IFDEF COMPILER10_UP}
     if Application.MainForm <> nil then
-      ControlBar := TControlBar(Application.MainForm.FindChildControl('ControlBar1'))
+      ControlBar    := TControlBar( Application.MainForm.FindChildControl( 'ControlBar1' ) )
     else
-      ControlBar := nil;
-    if (ControlBar <> nil) and (ControlBar.DrawingStyle = Vcl.ExtCtrls.dsGradient) then
+      ControlBar    := nil;
+    if ( ControlBar <> nil ) and ( ControlBar.DrawingStyle = Vcl.ExtCtrls.dsGradient ) then
     begin
-      R.Top := -PanelPalette.Top;
-      GradientFillCanvas(Canvas, ControlBar.GradientStartColor, ControlBar.GradientEndColor, R, ControlBar.GradientDirection);
+      R.Top         := -PanelPalette.Top;
+      GradientFillCanvas( Canvas, ControlBar.GradientStartColor, ControlBar.GradientEndColor, R, ControlBar.GradientDirection );
     end;
-    {$ELSE}
+{$ELSE}
     //GradientFillCanvas(Canvas, clWindow, $00B6D6DA, R, gdVertical);
-    {$ENDIF COMPILER10_UP}
+{$ENDIF COMPILER10_UP}
   end;
 end;
 
 function TFrameOldPalette.GetSelectedTab: TTabItem;
 begin
-  Result := nil;
+  Result            := nil;
   if TabControl.TabIndex <> -1 then
-    Result := TabItems[TabControl.TabIndex];
+    Result          := TabItems[ TabControl.TabIndex ];
 end;
 
-procedure TFrameOldPalette.PaletteClick(Sender: TObject; Button: Integer);
+procedure TFrameOldPalette.PaletteClick( Sender: TObject; Button: Integer );
 var
-  Item: TCompItem;
+  Item              : TCompItem;
 begin
   if Button >= 0 then
-    Item := TCompItem(Palette.Buttons[Button].Tag)
+    Item            := TCompItem( Palette.Buttons[ Button ].Tag )
   else
-    Item := nil;
+    Item            := nil;
 
   if FDblClicked = Item then
   begin
-    FDblClicked := nil;
-    SelectComponentPalette(nil, False);
+    FDblClicked     := nil;
+    SelectComponentPalette( nil, False );
     Palette.SetMainButton;
   end
+  else if Item <> nil then
+    SelectComponentPalette( Item.FPalItem, False )
   else
-  if Item <> nil then
-    SelectComponentPalette(Item.FPalItem, False)
-  else
-    SelectComponentPalette(nil, False);
+    SelectComponentPalette( nil, False );
 end;
 
-procedure TFrameOldPalette.PaletteDblClick(Sender: TObject; Button: Integer);
+procedure TFrameOldPalette.PaletteDblClick( Sender: TObject; Button: Integer );
 var
-  Item: TCompItem;
+  Item              : TCompItem;
 begin
   if Button >= 0 then
-    Item := TCompItem(Palette.Buttons[Button].Tag)
+    Item            := TCompItem( Palette.Buttons[ Button ].Tag )
   else
-    Item := nil;
-  FDblClicked := Item;
+    Item            := nil;
+  FDblClicked       := Item;
 
   if Item <> nil then
-    SelectComponentPalette(Item.PalItem, True)
+    SelectComponentPalette( Item.PalItem, True )
   else
-    SelectComponentPalette(nil, False);
+    SelectComponentPalette( nil, False );
 end;
 
-procedure TFrameOldPalette.PaletteSelectedItemChange(Sender: TObject; const Button: TButtonItem);
+procedure TFrameOldPalette.PaletteSelectedItemChange( Sender: TObject; const Button: TButtonItem );
 begin
-  if Assigned(FOrgSelectedItemChange) then
-    FOrgSelectedItemChange(Sender, Button);
+  if Assigned( FOrgSelectedItemChange ) then
+    FOrgSelectedItemChange( Sender, Button );
 
   if not Application.Terminated then
-    SelectComponent(nil, Button);
+    SelectComponent( nil, Button );
 end;
 
-procedure TFrameOldPalette.PaletteReorderButton(Sender: TObject; const Button: TButtonItem;
-  const SourceCategory, TargetCategory: TButtonCategory);
+procedure TFrameOldPalette.PaletteReorderButton( Sender: TObject; const Button: TButtonItem;
+  const SourceCategory, TargetCategory: TButtonCategory );
 begin
-  if Assigned(FOrgReorderButton) then
-    FOrgReorderButton(Sender, Button, SourceCategory, TargetCategory);
+  if Assigned( FOrgReorderButton ) then
+    FOrgReorderButton( Sender, Button, SourceCategory, TargetCategory );
   if GetSelectedTab <> nil then
-    TabSelected(GetSelectedTab.Components);
+    TabSelected( GetSelectedTab.Components );
 end;
 
-procedure TFrameOldPalette.PaletteReorderCategory(Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory);
+procedure TFrameOldPalette.PaletteReorderCategory( Sender: TObject; const SourceCategory, TargetCategory: TButtonCategory );
 begin
-  if Assigned(FOrgReorderCategory) then
-    FOrgReorderCategory(Sender, SourceCategory, TargetCategory);
-  Rebuild(True);
+  if Assigned( FOrgReorderCategory ) then
+    FOrgReorderCategory( Sender, SourceCategory, TargetCategory );
+  Rebuild( True );
 end;
 
-procedure TFrameOldPalette.UpdateIsFormDesigner(Categories: TButtonCategories);
+procedure TFrameOldPalette.UpdateIsFormDesigner( Categories: TButtonCategories );
 var
-  PalIndex: Integer;
-  NewTabCount: Integer;
-  I: Integer;
+  PalIndex          : Integer;
+  NewTabCount       : Integer;
+  I                 : Integer;
 
-  PalGroup: TButtonCategory;
-  PalGroupItems: TButtonCollection;
-  PalItem: TButtonItem;
-  S: string;
+  PalGroup          : TButtonCategory;
+  PalGroupItems     : TButtonCollection;
+  PalItem           : TButtonItem;
+  S                 : string;
 begin
   { Get the number of needed tabs }
-  NewTabCount := 0;
+  NewTabCount       := 0;
   for PalIndex := 0 to Categories.Count - 1 do
-    if Categories.Items[PalIndex].Items.Count > 0 then
-      Inc(NewTabCount);
+    if Categories.Items[ PalIndex ].Items.Count > 0 then
+      Inc( NewTabCount );
 
   if NewTabCount > 0 then // The ToolPalette might use the LoadPalette to find out if there are components that match the filter
   begin
     FIsFormDesigner := False;
     for PalIndex := 0 to Categories.Count - 1 do
     begin
-      PalGroup := Categories.Items[PalIndex];
+      PalGroup      := Categories.Items[ PalIndex ];
       PalGroupItems := PalGroup.Items;
       for I := 0 to PalGroupItems.Count - 1 do
       begin
-        PalItem := PalGroupItems.Items[I];
+        PalItem     := PalGroupItems.Items[ I ];
         if PalItem.InterfaceData <> nil then
         begin
-          S := DelphiInterfaceToObject(PalItem.InterfaceData).ClassName;
-          if (S = 'TComponentPalettePageItem') or (S = 'TFamePalettePageItem') then
+          S         := DelphiInterfaceToObject( PalItem.InterfaceData ).ClassName;
+          if ( S = 'TComponentPalettePageItem' ) or ( S = 'TFamePalettePageItem' ) then
           begin
             FIsFormDesigner := True;
             Exit;
@@ -629,55 +628,55 @@ begin
 end;
 
 type
-  TOpenControl = class(TControl);
+  TOpenControl = class( TControl );
 
-procedure TFrameOldPalette.Rebuild(ReorderOnly: Boolean);
+procedure TFrameOldPalette.Rebuild( ReorderOnly: Boolean );
 var
-  TabUpdated: Boolean;
+  TabUpdated        : Boolean;
 
-  procedure PreselectTab(const SelectedPaletteName: string);
+  procedure PreselectTab( const SelectedPaletteName: string );
   var
-    Index: Integer;
+    Index           : Integer;
   begin
-    Index := TabControl.Tabs.IndexOf(SelectedPaletteName);
+    Index           := TabControl.Tabs.IndexOf( SelectedPaletteName );
     if Index <> -1 then
     begin
       TabControl.TabIndex := Index;
-      TabUpdated := True;
+      TabUpdated    := True;
     end;
   end;
 
 var
-  i: Integer;
-  List: TObjectList;
-  Item: TCompItem;
-  TabItem: TTabItem;
-  PalIndex: Integer;
+  i                 : Integer;
+  List              : TObjectList;
+  Item              : TCompItem;
+  TabItem           : TTabItem;
+  PalIndex          : Integer;
 
-  FPalette: TCategoryButtons;
-  Categories: TButtonCategories;
-  PalGroup: TButtonCategory;
-  PalGroupItems: TButtonCollection;
-  PalItem: TButtonItem;
+  FPalette          : TCategoryButtons;
+  Categories        : TButtonCategories;
+  PalGroup          : TButtonCategory;
+  PalGroupItems     : TButtonCollection;
+  PalItem           : TButtonItem;
 
   PreviousRebuildingState: Integer;
 begin
-  if Application.Terminated or (FRebuilding > 0) then
+  if Application.Terminated or ( FRebuilding > 0 ) then
     Exit;
 
-  Categories := nil;
-  FPalette := GetComponentPalette;
+  Categories        := nil;
+  FPalette          := GetComponentPalette;
   if FPalette <> nil then
   begin
-    Categories := GetPaletteCategories(FPalette);
-    UpdateIsFormDesigner(Categories);
+    Categories      := GetPaletteCategories( FPalette );
+    UpdateIsFormDesigner( Categories );
   end;
 
   if FIsFormDesigner then
   begin
-    FModified := False;
+    FModified       := False;
     PreviousRebuildingState := FRebuilding;
-    Inc(FRebuilding);
+    Inc( FRebuilding );
     try
       TabControl.Tabs.BeginUpdate;
       try
@@ -685,41 +684,41 @@ begin
         begin
           ClearTabs;
           if Categories.Count = 0 then
-            TabControl.Tabs.AddObject('', nil);
+            TabControl.Tabs.AddObject( '', nil );
 
           for PalIndex := 0 to Categories.Count - 1 do
           begin
-            PalGroup := Categories.Items[PalIndex];
+            PalGroup := Categories.Items[ PalIndex ];
             PalGroupItems := PalGroup.Items;
             if PalGroupItems.Count = 0 then
               Continue;
 
-            TabItem := TTabItem.Create(PalGroup);
-            TabControl.Tabs.AddObject(TabItem.Caption, TabItem);
-            List := TabItem.Components;
+            TabItem := TTabItem.Create( PalGroup );
+            TabControl.Tabs.AddObject( TabItem.Caption, TabItem );
+            List    := TabItem.Components;
             for i := 0 to PalGroupItems.Count - 1 do
             begin
-              PalItem := PalGroupItems.Items[i];
-              Item := TCompItem.Create;
+              PalItem := PalGroupItems.Items[ i ];
+              Item  := TCompItem.Create;
               Item.Name := PalItem.Caption;
               Item.Palette := PalGroup.Caption;
               Item.PalItem := PalItem;
               Item.PalGroup := PalGroup;
-              List.Add(Item);
+              List.Add( Item );
             end;
           end;
         end;
         if not ReorderOnly then
           FRebuilding := PreviousRebuildingState;
 
-        TabUpdated := False;
+        TabUpdated  := False;
         { Designer palette names. This block only runs when FIsFormDesigner is
           True (outer guard), so always use the designer-context name; the
           editor-context branch here was unreachable dead code. }
-        PreselectTab(FDesignerSelectedPaletteName);
-        if not TabUpdated and (TabItemCount > 0) then
+        PreselectTab( FDesignerSelectedPaletteName );
+        if not TabUpdated and ( TabItemCount > 0 ) then
           TabControl.TabIndex := 0;
-        TabControlChange(TabControl);
+        TabControlChange( TabControl );
 
       finally
         TabControl.Tabs.EndUpdate;
@@ -729,11 +728,11 @@ begin
 
       RebuildPaletteMenu;
 
-      Visible := True;
-      if (Application.MainForm <> nil) and Application.MainForm.Visible then
-        TOpenControl(Application.MainForm).AdjustSize;
+      Visible       := True;
+      if ( Application.MainForm <> nil ) and Application.MainForm.Visible then
+        TOpenControl( Application.MainForm ).AdjustSize;
     finally
-      FRebuilding := PreviousRebuildingState;
+      FRebuilding   := PreviousRebuildingState;
     end;
 
     // A reorder-only rebuild keeps FRebuilding raised while the tabs are refilled,
@@ -749,42 +748,42 @@ procedure TFrameOldPalette.RebuildDelayed;
 begin
   if not FRebuildDelay and HandleAllocated then
   begin
-    FRebuildDelay := True;
-    PostMessage(Handle, WM_REBUILD, 0, 0);
+    FRebuildDelay   := True;
+    PostMessage( Handle, WM_REBUILD, 0, 0 );
   end;
 end;
 
 procedure TFrameOldPalette.RebuildPaletteMenu;
 
-  procedure CreateMenuItems(var Index: Integer);
+  procedure CreateMenuItems( var Index: Integer );
   type
     TItem = record
       PalName: string;
       Index: Integer;
     end;
   var
-    I: Integer;
-    MenuItem: TMenuItem;
-    List: TStringList;
+    I               : Integer;
+    MenuItem        : TMenuItem;
+    List            : TStringList;
   begin
-    List := TStringList.Create;
+    List            := TStringList.Create;
     try
       for I := 0 to TabItemCount - 1 do
-        List.AddObject(TabControl.Tabs[I], TObject(I));
+        List.AddObject( TabControl.Tabs[ I ], TObject( I ) );
 
       if Config.AlphaSortPopupMenu then
         List.Sort;
 
       for I := 0 to List.Count - 1 do
       begin
-        MenuItem := TMenuItem.Create(Self);
-        MenuItem.Caption := List[I];
+        MenuItem    := TMenuItem.Create( Self );
+        MenuItem.Caption := List[ I ];
         MenuItem.OnClick := PaletteMenuItemClick;
-        MenuItem.Tag := NativeInt(List.Objects[I]);
-        PopupMenuPalette.Items.Add(MenuItem);
-        if (Index > 0) and (Index mod 26 = 0) then
+        MenuItem.Tag := NativeInt( List.Objects[ I ] );
+        PopupMenuPalette.Items.Add( MenuItem );
+        if ( Index > 0 ) and ( Index mod 26 = 0 ) then
           MenuItem.Break := mbBarBreak;
-        Inc(Index);
+        Inc( Index );
       end;
     finally
       List.Free;
@@ -792,51 +791,50 @@ procedure TFrameOldPalette.RebuildPaletteMenu;
   end;
 
 var
-  Index: Integer;
+  Index             : Integer;
 begin
   PopupMenuPalette.AutoHotkeys := maManual;
   PopupMenuPalette.AutoLineReduction := maManual;
   PopupMenuPalette.Items.Clear;
 
-  Index := 0;
-  CreateMenuItems(Index);
+  Index             := 0;
+  CreateMenuItems( Index );
 
   PopupMenuPalette.AutoHotkeys := maAutomatic;
   PopupMenuPalette.AutoLineReduction := maAutomatic;
 end;
 
-procedure TFrameOldPalette.SelectComponent(PalGroup: TButtonCategory; PalItem: TButtonItem);
+procedure TFrameOldPalette.SelectComponent( PalGroup: TButtonCategory; PalItem: TButtonItem );
 
   function SelectComponentIn: Boolean;
   var
-    I: Integer;
-    k: Integer;
-    CompName: string;
-    TabItem: TTabItem;
+    I               : Integer;
+    k               : Integer;
+    CompName        : string;
+    TabItem         : TTabItem;
   begin
-    if (PalGroup = nil) and (PalItem <> nil) then
-      PalGroup := PalItem.Category
-    else
-    if PalGroup = nil then
+    if ( PalGroup = nil ) and ( PalItem <> nil ) then
+      PalGroup      := PalItem.Category
+    else if PalGroup = nil then
     begin
-      Result := False;
+      Result        := False;
       Exit;
     end;
 
-    Result := False;
+    Result          := False;
     for I := 0 to TabItemCount - 1 do
     begin
-      TabItem := TabItems[I];
-      if (TabItem <> nil) and (TabItem.PalGroup = PalGroup) then
+      TabItem       := TabItems[ I ];
+      if ( TabItem <> nil ) and ( TabItem.PalGroup = PalGroup ) then
       begin
-        ChangeTabIndex(I);
-        if (PalItem <> nil) and (TabItem.Components.Count > 0) then
+        ChangeTabIndex( I );
+        if ( PalItem <> nil ) and ( TabItem.Components.Count > 0 ) then
         begin
-          CompName := PalItem.Caption;
+          CompName  := PalItem.Caption;
           for k := 0 to Palette.ButtonCount - 1 do
           begin
             // do not use TabBar.Tabs[i].AutoDeleteData[0] as TList because ButtonCount might be out of sync here
-            if AnsiCompareText(Palette.Buttons[k].HelpKeyword, CompName) = 0 then
+            if AnsiCompareText( Palette.Buttons[ k ].HelpKeyword, CompName ) = 0 then
             begin
               Palette.SelectedButton := k;
               if Palette.FirstVisible + Palette.VisibleCount <= k then
@@ -851,29 +849,29 @@ procedure TFrameOldPalette.SelectComponent(PalGroup: TButtonCategory; PalItem: T
         // The correct category tab was found and shown; report success so the
         // caller does not reset the selection to the pointer button merely
         // because the specific button (HelpKeyword) was not located on the strip.
-        Result := True;
+        Result      := True;
         Break;
       end;
     end;
   end;
 
 begin
-  if not SelectComponentIn() then
+  if not SelectComponentIn( ) then
     Palette.SetMainButton;
 end;
 
-procedure TFrameOldPalette.TabSelected(ComponentList: TObjectList);
+procedure TFrameOldPalette.TabSelected( ComponentList: TObjectList );
 var
-  i: Integer;
-  Hint: string;
-  Item: TCompItem;
-  R: TRect;
+  i                 : Integer;
+  Hint              : string;
+  Item              : TCompItem;
+  R                 : TRect;
   SelectedPaletteName, LeftPaletteName: string;
-  CompPal: TCategoryButtons;
-  SelectedPalItem: TBaseItem;
-  TextOffset: Integer;
-  IsDefaultImage: Boolean;
-  CurPersonality: string;
+  CompPal           : TCategoryButtons;
+  SelectedPalItem   : TBaseItem;
+  TextOffset        : Integer;
+  IsDefaultImage    : Boolean;
+  CurPersonality    : string;
   IsWin32Personality: Boolean;
 begin
   if FRebuilding > 0 then
@@ -883,13 +881,13 @@ begin
     Palette.ButtonCount := 0;
     Exit;
   end;
-  CompPal := GetComponentPalette;
+  CompPal           := GetComponentPalette;
 
   { save/restore selected item and left item for the designer }
-  LeftPaletteName := '';
+  LeftPaletteName   := '';
   SelectedPaletteName := '';
   { Selected }
-  if (TabControl.TabIndex <> -1) and (GetSelectedTab <> nil) then
+  if ( TabControl.TabIndex <> -1 ) and ( GetSelectedTab <> nil ) then
     SelectedPaletteName := GetSelectedTab.Caption;
 
   if FIsFormDesigner then
@@ -897,54 +895,54 @@ begin
   else
     FEditorSelectedPaletteName := SelectedPaletteName;
 
-  SelectedPalItem := nil;
-  if Assigned(CompPal) and (CompPal.SelectedItem <> nil) then
+  SelectedPalItem   := nil;
+  if Assigned( CompPal ) and ( CompPal.SelectedItem <> nil ) then
   begin
-    if CompPal.SelectedItem.ClassNameIs('TButtonCategory') then
+    if CompPal.SelectedItem.ClassNameIs( 'TButtonCategory' ) then
       SelectedPalItem := CompPal.SelectedItem;
   end;
 
   { Initialise the component buttons }
-  CurPersonality := PersonalityServices.CurrentPersonality;
-  IsWin32Personality := (CurPersonality = sDelphiPersonality) or
-                        (CurPersonality = sCBuilderPersonality);
+  CurPersonality    := PersonalityServices.CurrentPersonality;
+  IsWin32Personality := ( CurPersonality = sDelphiPersonality ) or
+    ( CurPersonality = sCBuilderPersonality );
 
   { fill button list }
   Palette.FirstVisible := 0;
   Palette.ButtonCount := ComponentList.Count;
   for i := 0 to ComponentList.Count - 1 do
   begin
-    Item := TCompItem(ComponentList[i]);
+    Item            := TCompItem( ComponentList[ i ] );
 
-    Hint := Item.Name;
-    Palette.Buttons[i].Hint := Hint;
+    Hint            := Item.Name;
+    Palette.Buttons[ i ].Hint := Hint;
 
-    IsDefaultImage := False;
+    IsDefaultImage  := False;
     // Item.Name is a palette caption, not guaranteed to be a registered class
     // name; GetClass returns nil for unknown classes, so fall straight through
     // to the default-image path rather than hard-casting nil.
-    if IsWin32Personality and FIsFormDesigner and (GetClass(Item.Name) <> nil) then
-      Palette.Buttons[i].Glyph.Handle := LoadComponentBitmap(TComponentClass(GetClass(Item.Name)), @IsDefaultImage)
+    if IsWin32Personality and FIsFormDesigner and ( GetClass( Item.Name ) <> nil ) then
+      Palette.Buttons[ i ].Glyph.Handle := LoadComponentBitmap( TComponentClass( GetClass( Item.Name ) ), @IsDefaultImage )
     else
       IsDefaultImage := True;
     if IsDefaultImage then
     begin
       { we do not have a package for this item }
-      Palette.Buttons[i].Glyph.Width := 0;
-      if Assigned(CompPal) and Assigned(CompPal.OnDrawIcon) and (Item.PalItem <> nil) then
+      Palette.Buttons[ i ].Glyph.Width := 0;
+      if Assigned( CompPal ) and Assigned( CompPal.OnDrawIcon ) and ( Item.PalItem <> nil ) then
       begin
-        Palette.Buttons[i].Glyph.Canvas.Brush.Color := Palette.Brush.Color;
-        Palette.Buttons[i].Glyph.Width := 26;
-        Palette.Buttons[i].Glyph.Height := 26;
+        Palette.Buttons[ i ].Glyph.Canvas.Brush.Color := Palette.Brush.Color;
+        Palette.Buttons[ i ].Glyph.Width := 26;
+        Palette.Buttons[ i ].Glyph.Height := 26;
 
-        R := Bounds(0, 0, 26, 26);
-        TextOffset := 0;
-        CompPal.OnDrawIcon(CompPal, TButtonItem(Item.PalItem), Palette.Buttons[i].Glyph.Canvas, R, [], TextOffset);
+        R           := Bounds( 0, 0, 26, 26 );
+        TextOffset  := 0;
+        CompPal.OnDrawIcon( CompPal, TButtonItem( Item.PalItem ), Palette.Buttons[ i ].Glyph.Canvas, R, [ ], TextOffset );
       end;
     end;
-    Palette.Buttons[i].ShowHint := True;
-    Palette.Buttons[i].HelpKeyword := Item.Name;
-    Palette.Buttons[i].Tag := NativeInt(Item);
+    Palette.Buttons[ i ].ShowHint := True;
+    Palette.Buttons[ i ].HelpKeyword := Item.Name;
+    Palette.Buttons[ i ].Tag := NativeInt( Item );
 
     { Select button if the ToolForm has this component selected. }
     if Item.PalItem = SelectedPalItem then
@@ -952,89 +950,89 @@ begin
   end;
 end;
 
-procedure TFrameOldPalette.WMEraseBkgnd(var Msg: TWMEraseBkgnd);
+procedure TFrameOldPalette.WMEraseBkgnd( var Msg: TWMEraseBkgnd );
 begin
-  Msg.Result := 1;
+  Msg.Result        := 1;
 end;
 
-procedure TFrameOldPalette.WMRebuild(var Msg: TMessage);
+procedure TFrameOldPalette.WMRebuild( var Msg: TMessage );
 begin
-  FRebuildDelay := False;
+  FRebuildDelay     := False;
   Rebuild;
 end;
 
-procedure TFrameOldPalette.TabBarPaletteMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TFrameOldPalette.TabBarPaletteMouseDown( Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
   { For .NET personalities to get the mouse wheel at least working after the
     user clicked on a tab }
-  Project := GetActiveProject;
-  if (Project <> nil) and
-     ((Project.Personality = sDelphiDotNetPersonality) or
-      (Project.Personality = sCSharpPersonality) or
-      (Project.Personality = sVBPersonality)) then
+  Project           := GetActiveProject;
+  if ( Project <> nil ) and
+    ( ( Project.Personality = sDelphiDotNetPersonality ) or
+    ( Project.Personality = sCSharpPersonality ) or
+    ( Project.Personality = sVBPersonality ) ) then
     SetFocus;
 end;
 
-procedure TFrameOldPalette.TabControlChange(Sender: TObject);
+procedure TFrameOldPalette.TabControlChange( Sender: TObject );
 begin
   if not FLockTabSelected then
   begin
-    if (TabControl.TabIndex <> -1) and (GetSelectedTab <> nil) then
-      TabSelected(GetSelectedTab.Components)
+    if ( TabControl.TabIndex <> -1 ) and ( GetSelectedTab <> nil ) then
+      TabSelected( GetSelectedTab.Components )
     else
-      TabSelected(nil);
+      TabSelected( nil );
   end;
 end;
 
-procedure TFrameOldPalette.TabControlResize(Sender: TObject);
+procedure TFrameOldPalette.TabControlResize( Sender: TObject );
 var
-  AHeight: Integer;
+  AHeight           : Integer;
 begin
   if FRebuilding <= 0 then
   begin
-    Inc(FRebuilding);
+    Inc( FRebuilding );
     try
-      AHeight := TabControl.Height - (TabControl.DisplayRect.Bottom - TabControl.DisplayRect.Top) + 29;
+      AHeight       := TabControl.Height - ( TabControl.DisplayRect.Bottom - TabControl.DisplayRect.Top ) + 29;
       TabControl.Constraints.MinHeight := AHeight;
       TabControl.Parent.Constraints.MaxHeight := AHeight;
       TabControl.Parent.Height := TabControl.Height;
     finally
-      Dec(FRebuilding);
+      Dec( FRebuilding );
     end;
   end;
 end;
 
-procedure TFrameOldPalette.TabControlWndProc(var Msg: TMessage);
+procedure TFrameOldPalette.TabControlWndProc( var Msg: TMessage );
 var
-  Pt: TPoint;
+  Pt                : TPoint;
 begin
-  FOrgTabControlWndProc(Msg);
+  FOrgTabControlWndProc( Msg );
   case Msg.Msg of
     CM_MOUSEWHEEL:
       begin
-        with TWMMouseWheel(Msg) do
+        with TWMMouseWheel( Msg ) do
         begin
-          Pt := Palette.ClientToScreen(Point(0, 0));
+          Pt        := Palette.ClientToScreen( Point( 0, 0 ) );
           if YPos < Pt.Y then
           begin
-            ChangeTabIndex(TabControl.TabIndex - WheelDelta div WHEEL_DELTA);
-            Result := 1;
+            ChangeTabIndex( TabControl.TabIndex - WheelDelta div WHEEL_DELTA );
+            Result  := 1;
           end;
         end;
       end;
   end;
 end;
 
-procedure TFrameOldPalette.SetBounds(ALeft, ATop, AWidth, AHeight: Integer);
+procedure TFrameOldPalette.SetBounds( ALeft, ATop, AWidth, AHeight: Integer );
 begin
-  inherited SetBounds(ALeft, ATop, AWidth, AHeight);
-  if Assigned(Config) and ((Config.Left <> ALeft) or (Config.Top <> ATop)) then
+  inherited SetBounds( ALeft, ATop, AWidth, AHeight );
+  if Assigned( Config ) and ( ( Config.Left <> ALeft ) or ( Config.Top <> ATop ) ) then
   begin
-    Config.Left := ALeft;
-    Config.Top := ATop;
+    Config.Left     := ALeft;
+    Config.Top      := ATop;
     FBoundsModified := True;
   end;
 end;

@@ -28,7 +28,7 @@ type
   /// Options page frame that hosts the Component Selector configuration controls and
   /// applies them to the running <see cref="TComponentSelector"/> instance.
   /// </summary>
-  TFrameOptionPageComponentSelector = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageComponentSelector = class( TFrameBase, ITreePageComponent )
     /// <summary>Toggles prefix-only (simple) search.</summary>
     cbxSimpleSearch: TCheckBox;
     /// <summary>Toggles palette grouping in the result list.</summary>
@@ -41,14 +41,14 @@ type
     lblHotkey: TLabel;
     /// <summary>Enables or disables dependent controls when the active state changes.</summary>
     /// <param name="Sender">The active checkbox.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Selector instance the page edits.</summary>
     FComponentSelector: TComponentSelector;
   public
     /// <summary>Receives the <see cref="TComponentSelector"/> instance edited by this page.</summary>
     /// <param name="UserData">The selector cast to TObject.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Populates the controls from the controller's current configuration.</summary>
     procedure LoadData;
     /// <summary>Writes the control values back to the controller and persists them.</summary>
@@ -65,7 +65,7 @@ implementation
 
 { TFrameOptionPageComponentSelector }
 
-procedure TFrameOptionPageComponentSelector.SetUserData(UserData: TObject);
+procedure TFrameOptionPageComponentSelector.SetUserData( UserData: TObject );
 begin
   FComponentSelector := UserData as TComponentSelector;
 end;
@@ -75,9 +75,9 @@ begin
   cbxActive.Checked := FComponentSelector.ToolBar.Visible;
   cbxSimpleSearch.Checked := FComponentSelector.Edit.CheckBoxSimpleSearch.Checked;
   cbxSortByPalette.Checked := FComponentSelector.Edit.CheckBoxPaletteSort.Checked;
-  HotKey.HotKey := FComponentSelector.Hotkey;
+  HotKey.HotKey     := FComponentSelector.Hotkey;
 
-  cbxActiveClick(cbxActive);
+  cbxActiveClick( cbxActive );
 end;
 
 procedure TFrameOptionPageComponentSelector.SaveData;
@@ -97,12 +97,13 @@ procedure TFrameOptionPageComponentSelector.Unselected;
 begin
 end;
 
-procedure TFrameOptionPageComponentSelector.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageComponentSelector.cbxActiveClick( Sender: TObject );
 begin
   cbxSimpleSearch.Enabled := cbxActive.Checked;
   cbxSortByPalette.Enabled := cbxActive.Checked;
   lblHotkey.Enabled := cbxActive.Checked;
-  HotKey.Enabled := cbxActive.Checked;
+  HotKey.Enabled    := cbxActive.Checked;
 end;
 
 end.
+

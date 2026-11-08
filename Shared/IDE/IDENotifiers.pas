@@ -23,19 +23,19 @@ uses
 
 type
   /// <summary>Event raised before the IDE starts compiling Project. Set Cancel to True to abort.</summary>
-  TBeforeCompileEvent = procedure(const Project: IOTAProject; IsCodeInsight: Boolean;
-      var Cancel: Boolean) of object;
+  TBeforeCompileEvent = procedure( const Project: IOTAProject; IsCodeInsight: Boolean;
+    var Cancel: Boolean ) of object;
   /// <summary>Event raised after the IDE has finished compiling Project; Succeeded reports the outcome.</summary>
-  TAfterCompileEvent = procedure(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean) of object;
+  TAfterCompileEvent = procedure( const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean ) of object;
   /// <summary>Event raised when the IDE notifies of a file-level event (open/close/save/...). Set Cancel to True to suppress the operation.</summary>
-  TFileNotificationEvent = procedure(NotifyCode: TOTAFileNotification; const FileName: string;
-      var Cancel: Boolean) of object;
+  TFileNotificationEvent = procedure( NotifyCode: TOTAFileNotification; const FileName: string;
+    var Cancel: Boolean ) of object;
 
   /// <summary>
   /// Subscriber object that registers itself with the global IDE notifier list on construction and
   /// re-publishes ToolsAPI notifications via Delphi event properties.
   /// </summary>
-  TIDENotifier = class(TObject)
+  TIDENotifier = class( TObject )
   private
     /// <summary>Handler invoked before each compile.</summary>
     FOnBeforeCompile: TBeforeCompileEvent;
@@ -48,17 +48,17 @@ type
     /// <param name="Project">Project about to be compiled.</param>
     /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
     /// <param name="Cancel">Set to True to cancel the compile.</param>
-    procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean); virtual;
+    procedure BeforeCompile( const Project: IOTAProject; IsCodeInsight: Boolean; var Cancel: Boolean ); virtual;
     /// <summary>Calls FOnAfterCompile if assigned. Override to extend behaviour.</summary>
     /// <param name="Project">Project that was compiled.</param>
     /// <param name="Succeeded">True when the compile succeeded.</param>
     /// <param name="IsCodeInsight">True for a Code Insight background compile.</param>
-    procedure AfterCompile(Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean); virtual;
+    procedure AfterCompile( Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean ); virtual;
     /// <summary>Calls FOnFileNotification if assigned. Override to extend behaviour.</summary>
     /// <param name="NotifyCode">The kind of file event.</param>
     /// <param name="FileName">File the event concerns.</param>
     /// <param name="Cancel">Set to True to cancel the operation, where the IDE allows it.</param>
-    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean); virtual;
+    procedure FileNotification( NotifyCode: TOTAFileNotification; const FileName: string; var Cancel: Boolean ); virtual;
   public
     /// <summary>
     /// Registers this notifier with the IDE notifier list.
@@ -92,54 +92,54 @@ type
 /// <param name="AFirst">Holds the first exception; nil until one is kept.  The caller raises it after the loop.</param>
 /// <param name="AEvent">Name of the notification being broadcast, for the log.</param>
 /// <param name="E">The exception being handled.</param>
-procedure KeepFirstSubscriberError(var AFirst: Exception; const AEvent: string; E: Exception);
+procedure KeepFirstSubscriberError( var AFirst: Exception; const AEvent: string; E: Exception );
 
 implementation
 
 uses
   Winapi.Windows;
 
-procedure KeepFirstSubscriberError(var AFirst: Exception; const AEvent: string; E: Exception);
+procedure KeepFirstSubscriberError( var AFirst: Exception; const AEvent: string; E: Exception );
 begin
   if ( AFirst = nil ) then
-    AFirst := Exception( AcquireExceptionObject )
+    AFirst          := Exception( AcquireExceptionObject )
   else
-    OutputDebugString( PChar( Format( 'DDevExtensions: %s subscriber raised %s: %s', [AEvent, E.ClassName, E.Message] ) ) );
+    OutputDebugString( PChar( Format( 'DDevExtensions: %s subscriber raised %s: %s', [ AEvent, E.ClassName, E.Message ] ) ) );
 end;
 
 type
-  TIDENotifierList = class(TComponent, IOTANotifier, IOTAIDENotifier80, IOTAIDENotifier, IOTAIDENotifier50)
+  TIDENotifierList = class( TComponent, IOTANotifier, IOTAIDENotifier80, IOTAIDENotifier, IOTAIDENotifier50 )
   private
     FId: Integer;
     FNotifiers: TList;
-    function GetNotifier(Index: Integer): TIDENotifier;
+    function GetNotifier( Index: Integer ): TIDENotifier;
     function GetNotifierCount: Integer;
     function Snapshot: TArray<TIDENotifier>;
-    function IsLive(ANotifier: TIDENotifier): Boolean;
+    function IsLive( ANotifier: TIDENotifier ): Boolean;
   protected
     property NotifierCount: Integer read GetNotifierCount;
-    property Notifiers[Index: Integer]: TIDENotifier read GetNotifier;
+    property Notifiers[ Index: Integer ]: TIDENotifier read GetNotifier;
 
-    procedure AddNotifier(ANotifier: TIDENotifier);
-    procedure RemoveNotifier(ANotifier: TIDENotifier);
+    procedure AddNotifier( ANotifier: TIDENotifier );
+    procedure RemoveNotifier( ANotifier: TIDENotifier );
   protected
     { IOTAIDENotifier }
-    procedure AfterCompile(Succeeded: Boolean); overload;
+    procedure AfterCompile( Succeeded: Boolean ); overload;
     procedure AfterSave;
-    procedure BeforeCompile(const Project: IOTAProject; var Cancel: Boolean); overload;
+    procedure BeforeCompile( const Project: IOTAProject; var Cancel: Boolean ); overload;
     procedure BeforeSave;
     procedure Destroyed;
-    procedure FileNotification(NotifyCode: TOTAFileNotification; const FileName: string;
-      var Cancel: Boolean);
+    procedure FileNotification( NotifyCode: TOTAFileNotification; const FileName: string;
+      var Cancel: Boolean );
     procedure Modified;
 
     { IOTAIDENotifier50 }
-    procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean;
-      var Cancel: Boolean); overload;
-    procedure AfterCompile(Succeeded: Boolean; IsCodeInsight: Boolean); overload;
+    procedure BeforeCompile( const Project: IOTAProject; IsCodeInsight: Boolean;
+      var Cancel: Boolean ); overload;
+    procedure AfterCompile( Succeeded: Boolean; IsCodeInsight: Boolean ); overload;
 
     { IOTAIDENotifier80 }
-    procedure AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean); overload;
+    procedure AfterCompile( const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean ); overload;
   public
     constructor Create; reintroduce;
     destructor Destroy; override;
@@ -152,76 +152,76 @@ var
 
 function IDENotifierList: TIDENotifierList;
 begin
-  if not Assigned(GlobalIDENotifierList) then
+  if not Assigned( GlobalIDENotifierList ) then
     GlobalIDENotifierList := TIDENotifierList.Create;
-  Result := GlobalIDENotifierList;
+  Result            := GlobalIDENotifierList;
 end;
 
 { TIDENotifierList }
 
 constructor TIDENotifierList.Create;
 begin
-  inherited Create(nil);
-  FNotifiers := TList.Create;
-  FId := (BorlandIDEServices as IOTAServices).AddNotifier(Self);
+  inherited Create( nil );
+  FNotifiers        := TList.Create;
+  FId               := ( BorlandIDEServices as IOTAServices ).AddNotifier( Self );
 end;
 
 destructor TIDENotifierList.Destroy;
 begin
   if FId <> -1 then
-    (BorlandIDEServices as IOTAServices).RemoveNotifier(FId);
+    ( BorlandIDEServices as IOTAServices ).RemoveNotifier( FId );
   FNotifiers.Free;
   inherited Destroy;
 end;
 
-procedure TIDENotifierList.AddNotifier(ANotifier: TIDENotifier);
+procedure TIDENotifierList.AddNotifier( ANotifier: TIDENotifier );
 begin
-  FNotifiers.Add(ANotifier);
+  FNotifiers.Add( ANotifier );
 end;
 
-procedure TIDENotifierList.RemoveNotifier(ANotifier: TIDENotifier);
+procedure TIDENotifierList.RemoveNotifier( ANotifier: TIDENotifier );
 begin
-  FNotifiers.Extract(ANotifier);
+  FNotifiers.Extract( ANotifier );
 end;
 
-function TIDENotifierList.GetNotifier(Index: Integer): TIDENotifier;
+function TIDENotifierList.GetNotifier( Index: Integer ): TIDENotifier;
 begin
-  Result := TIDENotifier(FNotifiers[Index]);
+  Result            := TIDENotifier( FNotifiers[ Index ] );
 end;
 
 function TIDENotifierList.GetNotifierCount: Integer;
 begin
-  Result := FNotifiers.Count;
+  Result            := FNotifiers.Count;
 end;
 
 function TIDENotifierList.Snapshot: TArray<TIDENotifier>;
 begin
   // A subscriber may free itself, or another, from inside its handler and shrink FNotifiers;
   // broadcasting over a copy keeps the loop's indexes valid.
-  SetLength(Result, FNotifiers.Count);
+  SetLength( Result, FNotifiers.Count );
   for var iIndex: Integer := 0 to FNotifiers.Count - 1 do
-    Result[iIndex] := TIDENotifier(FNotifiers[iIndex]);
+    Result[ iIndex ] := TIDENotifier( FNotifiers[ iIndex ] );
 end;
 
-function TIDENotifierList.IsLive(ANotifier: TIDENotifier): Boolean;
+function TIDENotifierList.IsLive( ANotifier: TIDENotifier ): Boolean;
 begin
   // Skip a subscriber that an earlier handler of the same broadcast has freed.
-  Result := FNotifiers.IndexOf(ANotifier) >= 0;
+  Result            := FNotifiers.IndexOf( ANotifier ) >= 0;
 end;
 
-procedure TIDENotifierList.FileNotification(NotifyCode: TOTAFileNotification;
-  const FileName: string; var Cancel: Boolean);
+procedure TIDENotifierList.FileNotification( NotifyCode: TOTAFileNotification;
+  const FileName: string; var Cancel: Boolean );
 begin
   var oFirstError: Exception := nil;
   for var oNotifier in Snapshot do
   begin
-    if not IsLive(oNotifier) then
+    if not IsLive( oNotifier ) then
       Continue;
     try
-      oNotifier.FileNotification(NotifyCode, FileName, Cancel);
+      oNotifier.FileNotification( NotifyCode, FileName, Cancel );
     except
       on E: Exception do
-        KeepFirstSubscriberError(oFirstError, 'FileNotification', E);
+        KeepFirstSubscriberError( oFirstError, 'FileNotification', E );
     end;
     if Cancel then
       Break;
@@ -230,7 +230,7 @@ begin
     raise oFirstError;
 end;
 
-procedure TIDENotifierList.AfterCompile(Succeeded: Boolean);
+procedure TIDENotifierList.AfterCompile( Succeeded: Boolean );
 begin
 end;
 
@@ -238,7 +238,7 @@ procedure TIDENotifierList.AfterSave;
 begin
 end;
 
-procedure TIDENotifierList.BeforeCompile(const Project: IOTAProject; var Cancel: Boolean);
+procedure TIDENotifierList.BeforeCompile( const Project: IOTAProject; var Cancel: Boolean );
 begin
 end;
 
@@ -248,30 +248,30 @@ end;
 
 procedure TIDENotifierList.Destroyed;
 begin
-  FID := -1;
+  FID               := -1;
 end;
 
 procedure TIDENotifierList.Modified;
 begin
 end;
 
-procedure TIDENotifierList.AfterCompile(Succeeded, IsCodeInsight: Boolean);
+procedure TIDENotifierList.AfterCompile( Succeeded, IsCodeInsight: Boolean );
 begin
 end;
 
-procedure TIDENotifierList.BeforeCompile(const Project: IOTAProject;
-  IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TIDENotifierList.BeforeCompile( const Project: IOTAProject;
+  IsCodeInsight: Boolean; var Cancel: Boolean );
 begin
   var oFirstError: Exception := nil;
   for var oNotifier in Snapshot do
   begin
-    if not IsLive(oNotifier) then
+    if not IsLive( oNotifier ) then
       Continue;
     try
-      oNotifier.BeforeCompile(Project, IsCodeInsight, Cancel);
+      oNotifier.BeforeCompile( Project, IsCodeInsight, Cancel );
     except
       on E: Exception do
-        KeepFirstSubscriberError(oFirstError, 'BeforeCompile', E);
+        KeepFirstSubscriberError( oFirstError, 'BeforeCompile', E );
     end;
     if Cancel then
       Break;
@@ -280,18 +280,18 @@ begin
     raise oFirstError;
 end;
 
-procedure TIDENotifierList.AfterCompile(const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean);
+procedure TIDENotifierList.AfterCompile( const Project: IOTAProject; Succeeded: Boolean; IsCodeInsight: Boolean );
 begin
   var oFirstError: Exception := nil;
   for var oNotifier in Snapshot do
   begin
-    if not IsLive(oNotifier) then
+    if not IsLive( oNotifier ) then
       Continue;
     try
-      oNotifier.AfterCompile(Project, Succeeded, IsCodeInsight);
+      oNotifier.AfterCompile( Project, Succeeded, IsCodeInsight );
     except
       on E: Exception do
-        KeepFirstSubscriberError(oFirstError, 'AfterCompile', E);
+        KeepFirstSubscriberError( oFirstError, 'AfterCompile', E );
     end;
   end;
   if ( oFirstError <> nil ) then
@@ -303,7 +303,7 @@ end;
 constructor TIDENotifier.Create;
 begin
   inherited Create;
-  {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
   // Win64 (Delphi 13.1): registering this notifier with the IDE via
   // (BorlandIDEServices as IOTAServices).AddNotifier(Self) makes the IDE AV at
   // rtl370.bpl + 0x19AC54 reading $FFFFFFFFFFFFFFFF during the
@@ -314,42 +314,42 @@ begin
   // AfterCompile signatures). The TIDENotifier object is still constructed so
   // call-sites holding a typed field don't get nil derefs; it just never
   // receives compile / file callbacks on Win64.
-  IDENotifierList.AddNotifier(Self);
-  {$ENDIF}
+  IDENotifierList.AddNotifier( Self );
+{$ENDIF}
 end;
 
 destructor TIDENotifier.Destroy;
 begin
-  {$IFNDEF CPUX64}
-  IDENotifierList.RemoveNotifier(Self);
-  {$ENDIF}
+{$IFNDEF CPUX64}
+  IDENotifierList.RemoveNotifier( Self );
+{$ENDIF}
   inherited Destroy;
 end;
 
-procedure TIDENotifier.AfterCompile(Project: IOTAProject; Succeeded, IsCodeInsight: Boolean);
+procedure TIDENotifier.AfterCompile( Project: IOTAProject; Succeeded, IsCodeInsight: Boolean );
 begin
-  if Assigned(FOnAfterCompile) then
-    FOnAfterCompile(project, Succeeded, IsCodeInsight);
+  if Assigned( FOnAfterCompile ) then
+    FOnAfterCompile( project, Succeeded, IsCodeInsight );
 end;
 
-procedure TIDENotifier.BeforeCompile(const Project: IOTAProject;
-  IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TIDENotifier.BeforeCompile( const Project: IOTAProject;
+  IsCodeInsight: Boolean; var Cancel: Boolean );
 begin
-  if Assigned(FOnBeforeCompile) then
-    FOnBeforeCompile(Project, IsCodeInsight, Cancel);
+  if Assigned( FOnBeforeCompile ) then
+    FOnBeforeCompile( Project, IsCodeInsight, Cancel );
 end;
 
-procedure TIDENotifier.FileNotification(NotifyCode: TOTAFileNotification;
-  const FileName: string; var Cancel: Boolean);
+procedure TIDENotifier.FileNotification( NotifyCode: TOTAFileNotification;
+  const FileName: string; var Cancel: Boolean );
 begin
-  if Assigned(FOnFileNotification) then
-    FOnFileNotification(NotifyCode, FileName, Cancel);
+  if Assigned( FOnFileNotification ) then
+    FOnFileNotification( NotifyCode, FileName, Cancel );
 end;
 
 initialization
 
 finalization
-  FreeAndNil(GlobalIDENotifierList);
+  FreeAndNil( GlobalIDENotifierList );
 
 end.
 

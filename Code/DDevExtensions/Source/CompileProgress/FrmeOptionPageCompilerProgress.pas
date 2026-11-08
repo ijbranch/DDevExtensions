@@ -27,7 +27,7 @@ type
   /// Frame implementing ITreePageComponent for the "Compilation" page in the options tree.
   /// Loads and saves settings against the associated TCompileProgress instance.
   /// </summary>
-  TFrameOptionPageCompilerProgress = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageCompilerProgress = class( TFrameBase, ITreePageComponent )
     /// <summary>Disables the IDE "Rebuild required" dialog ( pre-XE only ).</summary>
     cbxDisableRebuildDlg: TCheckBox;
     /// <summary>Saves all modified files automatically after a successful compile.</summary>
@@ -50,20 +50,20 @@ type
     chkRunStyleCheckAfterCompile: TCheckBox;
     /// <summary>Enables or disables the version-info format edit based on the check-box state.</summary>
     /// <param name="Sender">The check box that was clicked.</param>
-    procedure chkLastCompileVersionInfoClick(Sender: TObject);
+    procedure chkLastCompileVersionInfoClick( Sender: TObject );
     /// <summary>Enables or disables the high-memory-only check box based on the parent option.</summary>
     /// <param name="Sender">The check box that was clicked.</param>
-    procedure chkReleaseCompilerUnitCacheClick(Sender: TObject);
+    procedure chkReleaseCompilerUnitCacheClick( Sender: TObject );
     /// <summary>Enables or disables build-statistics related options based on the parent option.</summary>
     /// <param name="Sender">The check box that was clicked.</param>
-    procedure chkEnableBuildStatisticsClick(Sender: TObject);
+    procedure chkEnableBuildStatisticsClick( Sender: TObject );
   private
     /// <summary>Plug-in configuration object whose properties are bound to this frame.</summary>
     FCompileProgress: TCompileProgress;
   public
     /// <summary>Creates the frame and adjusts the layout for compiler versions that hide certain options.</summary>
     /// <param name="AOwner">Owning component for the frame.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
 
     /// <summary>Loads the plug-in settings into the visual controls.</summary>
     procedure LoadData;
@@ -75,7 +75,7 @@ type
     procedure Unselected;
     /// <summary>Receives the TCompileProgress instance that this page edits.</summary>
     /// <param name="UserData">A TCompileProgress instance.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
   end;
 
 implementation
@@ -84,7 +84,7 @@ implementation
 
 { TFrameOptionPageCompilerProgress }
 
-procedure TFrameOptionPageCompilerProgress.SetUserData(UserData: TObject);
+procedure TFrameOptionPageCompilerProgress.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
   if ( UserData is TCompileProgress ) then
@@ -93,7 +93,7 @@ begin
     FCompileProgress := nil;
 end;
 
-procedure TFrameOptionPageCompilerProgress.chkLastCompileVersionInfoClick(Sender: TObject);
+procedure TFrameOptionPageCompilerProgress.chkLastCompileVersionInfoClick( Sender: TObject );
 begin
   inherited;
   edtLastCompileVersionInfoFormat.Enabled := chkLastCompileVersionInfo.Checked;
@@ -103,39 +103,39 @@ begin
     edtLastCompileVersionInfoFormat.Color := clBtnFace;
 end;
 
-procedure TFrameOptionPageCompilerProgress.chkReleaseCompilerUnitCacheClick(Sender: TObject);
+procedure TFrameOptionPageCompilerProgress.chkReleaseCompilerUnitCacheClick( Sender: TObject );
 begin
   inherited;
   chkReleaseCompilerUnitCacheHigh.Enabled := chkReleaseCompilerUnitCache.Checked;
 end;
 
-procedure TFrameOptionPageCompilerProgress.chkEnableBuildStatisticsClick(Sender: TObject);
+procedure TFrameOptionPageCompilerProgress.chkEnableBuildStatisticsClick( Sender: TObject );
 begin
   inherited;
   chkShowBuildStatisticsAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
   chkRunStyleCheckAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
 end;
 
-constructor TFrameOptionPageCompilerProgress.Create(AOwner: TComponent);
+constructor TFrameOptionPageCompilerProgress.Create( AOwner: TComponent );
 {$IF CompilerVersion >= 22.0} // XE has its own option
 var
-  Diff: Integer;
+  Diff              : Integer;
 {$IFEND}
 begin
-  inherited Create(AOwner);
-  {$IF CompilerVersion >= 22.0} // XE has its own option
-  Diff := chkAutoSaveAfterSuccessfulCompile.Top - cbxDisableRebuildDlg.Top;
+  inherited Create( AOwner );
+{$IF CompilerVersion >= 22.0} // XE has its own option
+  Diff              := chkAutoSaveAfterSuccessfulCompile.Top - cbxDisableRebuildDlg.Top;
   cbxDisableRebuildDlg.Free;
 
   chkAutoSaveAfterSuccessfulCompile.Top := chkAutoSaveAfterSuccessfulCompile.Top - Diff;
   chkAskBeforeCompilingFileFromDiffernetProject.Top := chkAskBeforeCompilingFileFromDiffernetProject.Top - Diff;
   chkLastCompileVersionInfo.Top := chkLastCompileVersionInfo.Top - Diff;
   edtLastCompileVersionInfoFormat.Top := edtLastCompileVersionInfoFormat.Top - Diff;
-  {$IFEND}
-  {$IF CompilerVersion >= 23.0} // XE2+ changed how version info is written
+{$IFEND}
+{$IF CompilerVersion >= 23.0} // XE2+ changed how version info is written
   chkLastCompileVersionInfo.Visible := False;
   edtLastCompileVersionInfoFormat.Visible := False;
-  {$IFEND}
+{$IFEND}
 end;
 
 procedure TFrameOptionPageCompilerProgress.LoadData;
@@ -147,14 +147,14 @@ begin
   chkReleaseCompilerUnitCacheHigh.Checked := FCompileProgress.ReleaseCompilerUnitCacheHigh;
   chkReleaseCompilerUnitCacheHigh.Enabled := chkReleaseCompilerUnitCache.Checked;
 
-  {$IF CompilerVersion < 22.0} // XE has its own option
+{$IF CompilerVersion < 22.0} // XE has its own option
   cbxDisableRebuildDlg.Checked := FCompileProgress.DisableRebuildDlg;
-  {$IFEND}
+{$IFEND}
   chkAutoSaveAfterSuccessfulCompile.Checked := FCompileProgress.AutoSaveAfterSuccessfulCompile;
-  {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
   chkLastCompileVersionInfo.Checked := FCompileProgress.LastCompileVersionInfo;
   edtLastCompileVersionInfoFormat.Text := FCompileProgress.LastCompileVersionInfoFormat;
-  {$IFEND}
+{$IFEND}
   chkAskBeforeCompilingFileFromDiffernetProject.Checked := FCompileProgress.AskCompileFromDiffProject;
 
   chkEnableBuildStatistics.Checked := FCompileProgress.EnableBuildStatistics;
@@ -163,8 +163,8 @@ begin
   chkRunStyleCheckAfterCompile.Checked := FCompileProgress.RunStyleCheckAfterCompile;
   chkRunStyleCheckAfterCompile.Enabled := chkEnableBuildStatistics.Checked;
 
-  chkLastCompileVersionInfoClick(chkLastCompileVersionInfo);
-  {$IFDEF CPUX64}
+  chkLastCompileVersionInfoClick( chkLastCompileVersionInfo );
+{$IFDEF CPUX64}
   // Every option on this page runs from the IDE compile notifier, the compile
   // interceptor or a code redirect, none of which is registered on the 64-bit IDE.
   // Make that explicit rather than letting the user rely on options that never run.
@@ -173,10 +173,10 @@ begin
     chkShowBuildStatisticsAfterCompile, chkRunStyleCheckAfterCompile ) do
   begin
     LControl.Enabled := False;
-    LControl.Hint := 'Not available on the 64-bit IDE';
+    LControl.Hint   := 'Not available on the 64-bit IDE';
     LControl.ShowHint := True;
   end;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure TFrameOptionPageCompilerProgress.SaveData;
@@ -186,14 +186,14 @@ begin
 
   FCompileProgress.ReleaseCompilerUnitCache := chkReleaseCompilerUnitCache.Checked;
   FCompileProgress.ReleaseCompilerUnitCacheHigh := chkReleaseCompilerUnitCacheHigh.Checked;
-  {$IF CompilerVersion < 22.0} // XE has its own option
+{$IF CompilerVersion < 22.0} // XE has its own option
   FCompileProgress.DisableRebuildDlg := cbxDisableRebuildDlg.Checked;
-  {$IFEND}
+{$IFEND}
   FCompileProgress.AutoSaveAfterSuccessfulCompile := chkAutoSaveAfterSuccessfulCompile.Checked;
-  {$IF CompilerVersion < 23.0} // XE2+ changed how version info works
+{$IF CompilerVersion < 23.0} // XE2+ changed how version info works
   FCompileProgress.LastCompileVersionInfo := chkLastCompileVersionInfo.Checked;
   FCompileProgress.LastCompileVersionInfoFormat := edtLastCompileVersionInfoFormat.Text;
-  {$IFEND}
+{$IFEND}
   FCompileProgress.AskCompileFromDiffProject := chkAskBeforeCompilingFileFromDiffernetProject.Checked;
   FCompileProgress.EnableBuildStatistics := chkEnableBuildStatistics.Checked;
   FCompileProgress.ShowBuildStatisticsAfterCompile := chkShowBuildStatisticsAfterCompile.Checked;
@@ -210,3 +210,4 @@ begin
 end;
 
 end.
+

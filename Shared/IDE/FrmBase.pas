@@ -25,7 +25,7 @@ uses
 
 type
   /// <summary>Base form class for plugin dialogs; see the unit summary for behavioural details.</summary>
-  TFormBase = class(TForm)
+  TFormBase = class( TForm )
   private
     /// <summary>
     /// TReader.OnError handler for this form's own resource: marks every error handled, so a
@@ -51,13 +51,13 @@ type
     procedure ReadState( Reader: TReader ); override;
     /// <summary>Persists dialog state when the form closes (placeholder).</summary>
     /// <param name="Action">Close action chosen so far; passed on to the inherited handler, which may change it.</param>
-    procedure DoClose(var Action: TCloseAction); override;
+    procedure DoClose( var Action: TCloseAction ); override;
     /// <summary>Restores state and rewrites every "Tahoma" font to the IDE default font.</summary>
     procedure DoShow; override;
   public
     /// <summary>Creates the form and applies the IDE's default font.</summary>
     /// <param name="AOwner">Owner component.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Installs THtHintWindow and a long hint timeout for the duration of the modal display.</summary>
     /// <returns>The modal result, as returned by TForm.ShowModal.</returns>
     function ShowModal: Integer; override;
@@ -65,7 +65,7 @@ type
 
 var
   /// <summary>Auto-created singleton declared by the .dfm; not used directly.</summary>
-  FormBase: TFormBase;
+  FormBase          : TFormBase;
 
 implementation
 
@@ -75,31 +75,31 @@ uses
 {$R *.dfm}
 
 type
-  TControlAccess = class(TControl);
+  TControlAccess = class( TControl );
 
-{ TFormBase }
+  { TFormBase }
 
 procedure TFormBase.ReaderError( Reader: TReader; const Message: string; var Handled: Boolean );
 begin
-  Handled := True;
+  Handled           := True;
 end;
 
 procedure TFormBase.ReadState( Reader: TReader );
 begin
-  Reader.OnError := ReaderError;
+  Reader.OnError    := ReaderError;
   inherited ReadState( Reader );
 end;
 
-constructor TFormBase.Create(AOwner: TComponent);
+constructor TFormBase.Create( AOwner: TComponent );
 begin
-  inherited Create(AOwner);
-  Font.Name := UTF8ToString(DefFontData.Name);
-  Font.Height := DefFontData.Height;
+  inherited Create( AOwner );
+  Font.Name         := UTF8ToString( DefFontData.Name );
+  Font.Height       := DefFontData.Height;
 end;
 
-procedure TFormBase.DoClose(var Action: TCloseAction);
+procedure TFormBase.DoClose( var Action: TCloseAction );
 begin
-  inherited DoClose(Action);
+  inherited DoClose( Action );
   if Action <> caNone then
   begin
     // Save state
@@ -108,19 +108,19 @@ end;
 
 procedure TFormBase.DoShow;
 
-  // Set the dialogs base font name to every control that uses "Tahoma" (all MS Sans Serif were eliminated)
-  procedure SetControlFonts(ParentControl: TWinControl);
+// Set the dialogs base font name to every control that uses "Tahoma" (all MS Sans Serif were eliminated)
+  procedure SetControlFonts( ParentControl: TWinControl );
   var
-    I: Integer;
-    Control: TControl;
+    I               : Integer;
+    Control         : TControl;
   begin
     for I := 0 to ParentControl.ControlCount - 1 do
     begin
-      Control := ParentControl.Controls[I];
-      if TControlAccess(Control).Font.Name = 'Tahoma' then
-        TControlAccess(Control).Font.Name := Self.Font.Name;
+      Control       := ParentControl.Controls[ I ];
+      if TControlAccess( Control ).Font.Name = 'Tahoma' then
+        TControlAccess( Control ).Font.Name := Self.Font.Name;
       if Control is TWinControl then
-        SetControlFonts(TWinControl(Control));
+        SetControlFonts( TWinControl( Control ) );
     end;
   end;
 
@@ -129,20 +129,20 @@ begin
   inherited DoShow;
 
   if Self.Font.Name <> 'Tahoma' then
-    SetControlFonts(Self);
+    SetControlFonts( Self );
 end;
 
 function TFormBase.ShowModal: Integer;
 var
-  HintClass: THintWindowClass;
-  HintHidePause: Integer;
+  HintClass         : THintWindowClass;
+  HintHidePause     : Integer;
 begin
-  HintHidePause := Application.HintHidePause;
-  HintClass := HintWindowClass;
+  HintHidePause     := Application.HintHidePause;
+  HintClass         := HintWindowClass;
   try
     HintWindowClass := THtHintWindow;
     Application.HintHidePause := 30000;
-    Result := inherited ShowModal;
+    Result          := inherited ShowModal;
   finally
     Application.HintHidePause := HintHidePause;
     HintWindowClass := HintClass;
@@ -150,4 +150,4 @@ begin
 end;
 
 end.
- 
+

@@ -22,7 +22,7 @@ interface
 /// load cursor, etc.).
 /// </summary>
 /// <param name="Unload">True to remove all hooks, False to install them.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 {$IF CompilerVersion <= 28.0} // XE7-, XE8 replaced DExplorer with *.chm files
 /// <summary>
@@ -43,10 +43,10 @@ uses
 {-----------------------------------------------------------------------------}
 var
   HookTCustomFormClose: TRedirectCode;
-  APIHookList: TJclPeMapImgHooks;
+  APIHookList       : TJclPeMapImgHooks;
 
 type
-  TOpenForm = class(TForm);
+  TOpenForm = class( TForm );
 
 const
   // English
@@ -63,136 +63,140 @@ begin
     LANG_GERMAN: Result := sConfirmCloseAllAndKillException_Ger;
     LANG_FRENCH: Result := sConfirmCloseAllAndKillException_Fre;
   else
-    Result := sConfirmCloseAllAndKillException_Eng;
+    Result          := sConfirmCloseAllAndKillException_Eng;
   end;
 end;
 
-procedure HookedTCustomFormClose(Self: TOpenForm);
+procedure HookedTCustomFormClose( Self: TOpenForm );
 
-  function CloseForm(Self: TOpenForm): TCloseAction;
+  function CloseForm( Self: TOpenForm ): TCloseAction;
   begin
-    Result := caNone;
+    Result          := caNone;
     with Self do
       if fsModal in FFormState then
         ModalResult := mrCancel
-      else
-        if CloseQuery then
-        begin
-          if FormStyle = fsMDIChild then
-            if biMinimize in BorderIcons then
-              Result := caMinimize else
-              Result := caNone
+      else if CloseQuery then
+      begin
+        if FormStyle = fsMDIChild then
+          if biMinimize in BorderIcons then
+            Result  := caMinimize
           else
-            Result := caHide;
-          DoClose(Result);
-          if Result <> caNone then
-          begin
-            // Kept in step with D13's TCustomForm.Close: a styled MDI form/child is hidden
-            // first so the custom border is not painted during the close.
-            if IsCustomStyleActive and ( seBorder in StyleElements ) and
-               ( TStyleManager.FormBorderStyle = fbsCurrentStyle ) and
-               ( ( ( FormStyle = fsMDIForm ) and not IsIconic( Handle ) ) or
-                 ( ( FormStyle = fsMDIChild ) and ( WindowState = wsNormal ) ) ) then
-              ShowWindow( Handle, SW_HIDE );
-            if Application.MainForm = Self then Application.Terminate
-            else if Result = caHide then Hide
-            else if Result = caMinimize then WindowState := wsMinimized
-            else Release;
-          end;
+            Result  := caNone
+        else
+          Result    := caHide;
+        DoClose( Result );
+        if Result <> caNone then
+        begin
+          // Kept in step with D13's TCustomForm.Close: a styled MDI form/child is hidden
+          // first so the custom border is not painted during the close.
+          if IsCustomStyleActive and ( seBorder in StyleElements ) and
+            ( TStyleManager.FormBorderStyle = fbsCurrentStyle ) and
+            ( ( ( FormStyle = fsMDIForm ) and not IsIconic( Handle ) ) or
+            ( ( FormStyle = fsMDIChild ) and ( WindowState = wsNormal ) ) ) then
+            ShowWindow( Handle, SW_HIDE );
+          if Application.MainForm = Self then
+            Application.Terminate
+          else if Result = caHide then
+            Hide
+          else if Result = caMinimize then
+            WindowState := wsMinimized
+          else
+            Release;
         end;
+      end;
   end;
 
 var
-  ForceClose: Boolean;
+  ForceClose        : Boolean;
 begin
   if Self = Application.MainForm then
   begin
-    ForceClose := ssCtrl in KeyboardStateToShiftState;
+    ForceClose      := ssCtrl in KeyboardStateToShiftState;
     try
-      if (CloseForm(Self) <> caNone) and ForceClose then
+      if ( CloseForm( Self ) <> caNone ) and ForceClose then
       begin
         Application.ProcessMessages;
-        TerminateProcess(GetCurrentProcess, 0);
+        TerminateProcess( GetCurrentProcess, 0 );
       end;
     except
       on E: EAbort do
         raise;
       on E: Exception do
       begin
-        Application.HandleException(E);
+        Application.HandleException( E );
         { The IDE cannot be terminated because OnCloseQuery/OnClose raises an exception.
           Let the user decide if he wants to kill the IDE. }
-        if MessageDlg(sConfirmCloseAllAndKillException, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
-          TerminateProcess(GetCurrentProcess, 0);
+        if MessageDlg( sConfirmCloseAllAndKillException, mtConfirmation, [ mbYes, mbNo ], 0 ) = mrYes then
+          TerminateProcess( GetCurrentProcess, 0 );
       end;
     end;
   end
   else
-    CloseForm(Self);
+    CloseForm( Self );
 end;
 
 {------------------------------------------------------------------------------------}
 { Property Editor for Methods show "(nil)" if explicitly set to nil in derived class }
 {------------------------------------------------------------------------------------}
 type
-  TMethodPropertyEx = class(TMethodProperty)
+  TMethodPropertyEx = class( TMethodProperty )
   public
     function GetValue: string; override;
   end;
 
-//  IUpdateManager = interface
-//    ['{7ED7BF35-E349-11D3-AB4A-00C04FB17A72}']
-//    function CanRevert(Instance: TPersistent; PropInfo: PPropInfo): Boolean;
-//    function GetComponent: TComponent;
-//    function GetAncestor: TComponent;
-//    function GetHasDescendents: Boolean;
-//    function GetIsDescendent: Boolean;
-//    procedure Modified;
-//    function NameExists(const Name: string): Boolean;
-//    procedure Notification(Component: TPersistent; Operation: TOperation);
-//    procedure RenameComponent(const CurrentName, NewName: string);
-//    procedure RenameDescendents(const CurrentName, NewName: string);
-//    procedure Revert(Instance: TPersistent; PropInfo: PPropInfo);
-//    procedure Update;
-//    property Component: TComponent read GetComponent;
-//    property Ancestor: TComponent read GetAncestor;
-//    property HasDescendents: Boolean read GetHasDescendents;
-//    property IsDescendent: Boolean read GetIsDescendent;
-//  end;
-//
-//  IInternalRoot = interface(IRoot)
-//    ['{7ED7BF2C-E349-11D3-AB4A-00C04FB17A72}']
-//    function CanRevert(Instance: TPersistent; PropInfo: PPropInfo): Boolean;
-//    procedure CancelModes;
-//    procedure CopySelectionToStream(S: TMemoryStream;
-//      UnitDependencies: TStrings);
-//    procedure DesignerHide;
-//    procedure DesignerShow;
-//    procedure Edit(const Component: TComponent);
-//    function GetCustomModuleClass: TCustomModuleClass;
-//    function GetRootBaseClass: string;
-//    function GetRootClass: TClass;
-//    function GetCustomModule: ICustomModule;
-//    function GetComponentDesigner: IInternalComponentDesigner;
-//    function GetUpdateManager: IUpdateManager;
-//    {...}
-//  end;
+  //  IUpdateManager = interface
+  //    ['{7ED7BF35-E349-11D3-AB4A-00C04FB17A72}']
+  //    function CanRevert(Instance: TPersistent; PropInfo: PPropInfo): Boolean;
+  //    function GetComponent: TComponent;
+  //    function GetAncestor: TComponent;
+  //    function GetHasDescendents: Boolean;
+  //    function GetIsDescendent: Boolean;
+  //    procedure Modified;
+  //    function NameExists(const Name: string): Boolean;
+  //    procedure Notification(Component: TPersistent; Operation: TOperation);
+  //    procedure RenameComponent(const CurrentName, NewName: string);
+  //    procedure RenameDescendents(const CurrentName, NewName: string);
+  //    procedure Revert(Instance: TPersistent; PropInfo: PPropInfo);
+  //    procedure Update;
+  //    property Component: TComponent read GetComponent;
+  //    property Ancestor: TComponent read GetAncestor;
+  //    property HasDescendents: Boolean read GetHasDescendents;
+  //    property IsDescendent: Boolean read GetIsDescendent;
+  //  end;
+  //
+  //  IInternalRoot = interface(IRoot)
+  //    ['{7ED7BF2C-E349-11D3-AB4A-00C04FB17A72}']
+  //    function CanRevert(Instance: TPersistent; PropInfo: PPropInfo): Boolean;
+  //    procedure CancelModes;
+  //    procedure CopySelectionToStream(S: TMemoryStream;
+  //      UnitDependencies: TStrings);
+  //    procedure DesignerHide;
+  //    procedure DesignerShow;
+  //    procedure Edit(const Component: TComponent);
+  //    function GetCustomModuleClass: TCustomModuleClass;
+  //    function GetRootBaseClass: string;
+  //    function GetRootClass: TClass;
+  //    function GetCustomModule: ICustomModule;
+  //    function GetComponentDesigner: IInternalComponentDesigner;
+  //    function GetUpdateManager: IUpdateManager;
+  //    {...}
+  //  end;
 
 function TMethodPropertyEx.GetValue: string;
 var
-  M: TMethod;
-  Ancestor: TComponent;
-  AncestorPropInfo: PPropInfo;
-  Comp: TPersistent;
+  M                 : TMethod;
+  Ancestor          : TComponent;
+  AncestorPropInfo  : PPropInfo;
+  Comp              : TPersistent;
 begin
-  M := GetMethodValue;
-  Result := Designer.GetMethodName(M);
-  Comp := GetComponent(0);
-  if (Result = '') {(M.Code = nil) and (M.Data = nil)} and (Comp is TComponent) and (TComponent(Comp).Name <> '') then
+  M                 := GetMethodValue;
+  Result            := Designer.GetMethodName( M );
+  Comp              := GetComponent( 0 );
+  if ( Result = '' ) {(M.Code = nil) and (M.Data = nil)} and ( Comp is TComponent ) and ( TComponent( Comp ).Name <> '' ) then
   begin
-    Ancestor := nil;
+    Ancestor        := nil;
     if Designer.AncestorDesigner <> nil then
-      Ancestor := Designer.AncestorDesigner.GetComponent(TComponent(Comp).Name);
+      Ancestor      := Designer.AncestorDesigner.GetComponent( TComponent( Comp ).Name );
     if Ancestor = nil then
     begin
       // In a Frame?
@@ -204,43 +208,43 @@ begin
 
     if Ancestor <> nil then
     begin
-      AncestorPropInfo := System.TypInfo.GetPropInfo(Ancestor, UTF8ToString(Self.GetPropInfo.Name), [tkMethod]);
+      AncestorPropInfo := System.TypInfo.GetPropInfo( Ancestor, UTF8ToString( Self.GetPropInfo.Name ), [ tkMethod ] );
       if AncestorPropInfo <> nil then
       begin
-        if System.TypInfo.GetMethodProp(Ancestor, AncestorPropInfo).Code <> nil then
-          Result := '(nil)';
+        if System.TypInfo.GetMethodProp( Ancestor, AncestorPropInfo ).Code <> nil then
+          Result    := '(nil)';
       end;
     end;
   end;
 end;
 
-function TMethodProperty_NewInstance(AClass: TClass): TObject;
+function TMethodProperty_NewInstance( AClass: TClass ): TObject;
 begin
-  Result := TMethodPropertyEx.NewInstance;
+  Result            := TMethodPropertyEx.NewInstance;
 end;
 
 {-----------------------------------------------------------------------------}
 { Package Loading changes mouse Cursor to crAppWait                           }
 {-----------------------------------------------------------------------------}
 
-function HookedLoadPackageEx(const Name: string; AValidatePackage: TValidatePackageProc): HMODULE;
+function HookedLoadPackageEx( const Name: string; AValidatePackage: TValidatePackageProc ): HMODULE;
 var
-  LastCursor: TCursor;
-  MainCaption: string;
-  CursorChanged: Boolean;
-  CaptionChanged: Boolean;
+  LastCursor        : TCursor;
+  MainCaption       : string;
+  CursorChanged     : Boolean;
+  CaptionChanged    : Boolean;
 begin
-  LastCursor := crDefault;
-  CursorChanged := False;
-  CaptionChanged := False;
-  if (Application <> nil) and (Application.MainForm <> nil) and
-     Application.MainForm.Visible then
+  LastCursor        := crDefault;
+  CursorChanged     := False;
+  CaptionChanged    := False;
+  if ( Application <> nil ) and ( Application.MainForm <> nil ) and
+    Application.MainForm.Visible then
   begin
-    MainCaption := Application.MainForm.Caption;
-    Application.MainForm.Caption  := Format('%s  [Loading %s]', [MainCaption, ExtractFileName(Name)]);
-    CaptionChanged := True;
+    MainCaption     := Application.MainForm.Caption;
+    Application.MainForm.Caption := Format( '%s  [Loading %s]', [ MainCaption, ExtractFileName( Name ) ] );
+    CaptionChanged  := True;
     { Change mouse cursor only when mainform is visible }
-    LastCursor := Screen.Cursor;
+    LastCursor      := Screen.Cursor;
     if LastCursor = crDefault then
     begin
       CursorChanged := True;
@@ -249,15 +253,15 @@ begin
   end;
 
   try
-    Result := LoadPackage(Name, AValidatePackage);
+    Result          := LoadPackage( Name, AValidatePackage );
   finally
     { Only restore the caption if we actually changed it. During early IDE
       startup (when many packages load) MainForm may be nil or hidden, so
       MainCaption was never captured and touching Application.MainForm.Caption
       here would blank the caption or AV in the finally. }
-    if CaptionChanged and (Application <> nil) and (Application.MainForm <> nil) then
+    if CaptionChanged and ( Application <> nil ) and ( Application.MainForm <> nil ) then
       Application.MainForm.Caption := MainCaption;
-    if CursorChanged and (Screen.Cursor = crAppStart) then
+    if CursorChanged and ( Screen.Cursor = crAppStart ) then
       Screen.Cursor := LastCursor;
   end;
 end;
@@ -274,19 +278,19 @@ const
   sPaletteItemDelegateSaveData = '@Comppalmgr@TComponentPalettePageItemDelegate@SaveData$qqr' + _xp_ + System_Inifiles_TCustomIniFile;
   sPaletteItemDelegateLoadData = '@Comppalmgr@TComponentPalettePageItemDelegate@LoadData$qqr' + _xp_ + System_Inifiles_TCustomIniFile;
 
-  RetCode: Byte = $C3;
+  RetCode           : Byte = $C3;
 var
-  LibDelphiCoreide: THandle;
+  LibDelphiCoreide  : THandle;
 begin
   { Disable Package and Palette cache }
-  if ReadGlobalRegOption('DDevExDisablePackageCache', False) then
+  if ReadGlobalRegOption( 'DDevExDisablePackageCache', False ) then
   begin
-    LibDelphiCoreide := GetModuleHandle(delphicoreide_bpl);
-    InjectCode(DbgStrictGetProcAddress(LibDelphiCoreide, sLoadPackageCache), @RetCode, 1);
-    InjectCode(DbgStrictGetProcAddress(LibDelphiCoreide, sSavePackageCache), @RetCode, 1);
+    LibDelphiCoreide := GetModuleHandle( delphicoreide_bpl );
+    InjectCode( DbgStrictGetProcAddress( LibDelphiCoreide, sLoadPackageCache ), @RetCode, 1 );
+    InjectCode( DbgStrictGetProcAddress( LibDelphiCoreide, sSavePackageCache ), @RetCode, 1 );
 
-    InjectCode(DbgStrictGetProcAddress(LibDelphiCoreide, sPaletteItemDelegateLoadData), @RetCode, 1);
-    InjectCode(DbgStrictGetProcAddress(LibDelphiCoreide, sPaletteItemDelegateSaveData), @RetCode, 1);
+    InjectCode( DbgStrictGetProcAddress( LibDelphiCoreide, sPaletteItemDelegateLoadData ), @RetCode, 1 );
+    InjectCode( DbgStrictGetProcAddress( LibDelphiCoreide, sPaletteItemDelegateSaveData ), @RetCode, 1 );
   end;
 end;
 
@@ -294,37 +298,36 @@ end;
 { InitPlugin                                                                  }
 {-----------------------------------------------------------------------------}
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 const
-  sLoadPackageEx = Unit_System_SysUtils + '@LoadPackage$qqrx20System@UnicodeStringpqqrui$o';
+  sLoadPackageEx    = Unit_System_SysUtils + '@LoadPackage$qqrx20System@UnicodeStringpqqrui$o';
 var
   LibCoreide, LibRtl: THandle;
 begin
   if not Unload then
   begin
-    CodeRedirect(@TCustomForm.Close, @HookedTCustomFormClose, HookTCustomFormClose);
+    CodeRedirect( @TCustomForm.Close, @HookedTCustomFormClose, HookTCustomFormClose );
 
-    LibCoreide := GetModuleHandle(coreide_bpl);
-    LibRtl := GetModuleHandle(rtl_bpl);
+    LibCoreide      := GetModuleHandle( coreide_bpl );
+    LibRtl          := GetModuleHandle( rtl_bpl );
 
-    APIHookList := TJclPeMapImgHooks.Create;
+    APIHookList     := TJclPeMapImgHooks.Create;
     // HookImport records the hook in APIHookList, so freeing the list on unload restores coreide's
     // import; the class function ReplaceImport used before patched the slot without recording it,
     // leaving coreide calling into this DLL after it was unloaded.
     if ( LibCoreide = 0 ) or ( LibRtl = 0 ) then
       OutputDebugString( PChar( Format( 'DDevExtensions: package-load hook skipped: %s or %s is not loaded',
-        [coreide_bpl, rtl_bpl] ) ) )
-    else
-    if not APIHookList.HookImport( Pointer( LibCoreide ), LibRtl, rtl_bpl, sLoadPackageEx, @HookedLoadPackageEx ) then
+            [ coreide_bpl, rtl_bpl ] ) ) )
+    else if not APIHookList.HookImport( Pointer( LibCoreide ), LibRtl, rtl_bpl, sLoadPackageEx, @HookedLoadPackageEx ) then
       OutputDebugString( PChar( Format( 'DDevExtensions: could not hook %s''s import of LoadPackage from %s (error %d)',
-        [coreide_bpl, rtl_bpl, GetLastError] ) ) );
+            [ coreide_bpl, rtl_bpl, GetLastError ] ) ) );
 
     //ReplaceVmtField(TMethodProperty, @TMethodProperty.NewInstance, @TMethodProperty_NewInstance);
   end
   else
   begin
     //ReplaceVmtField(TMethodProperty, @TMethodProperty_NewInstance, @TMethodProperty.NewInstance);
-    CodeRestore(HookTCustomFormClose);
+    CodeRestore( HookTCustomFormClose );
     FreeAndNil( APIHookList );
   end;
 end;
@@ -332,56 +335,57 @@ end;
 {--------------------------------------------------------------------------------------------------}
 
 {$IF CompilerVersion <= 28.0} // XE7-, XE8 replaced DExplorer with *.chm files
-function KillProcessFileName(const ProcessName: string; PID: DWORD): Boolean;
+
+function KillProcessFileName( const ProcessName: string; PID: DWORD ): Boolean;
 var
-  Handle: THandle;
-  S: string;
+  Handle            : THandle;
+  S                 : string;
 begin
-  Result := False;
-  Handle := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ or PROCESS_TERMINATE, False, PID);
+  Result            := False;
+  Handle            := OpenProcess( PROCESS_QUERY_INFORMATION or PROCESS_VM_READ or PROCESS_TERMINATE, False, PID );
   if Handle <> 0 then
   begin
     try
-      SetLength(S, MAX_PATH);
-      if GetModuleFileNameEx(Handle, 0, PChar(S), MAX_PATH) > 0 then
+      SetLength( S, MAX_PATH );
+      if GetModuleFileNameEx( Handle, 0, PChar( S ), MAX_PATH ) > 0 then
       begin
-        SetLength(S, StrLen(PChar(S)));
-        if AnsiSameText(ExtractFileName(S), ProcessName) then
+        SetLength( S, StrLen( PChar( S ) ) );
+        if AnsiSameText( ExtractFileName( S ), ProcessName ) then
         begin
-          TerminateProcess(Handle, 1);
-          Result := True;
+          TerminateProcess( Handle, 1 );
+          Result    := True;
         end;
       end
       else
-        Result := False;
+        Result      := False;
     finally
-      CloseHandle(Handle);
+      CloseHandle( Handle );
     end;
   end;
 end;
 
 procedure KillAllDexplore;
 const
-  ProcessName = 'dexplore.exe';
+  ProcessName       = 'dexplore.exe';
 var
-  PIDs: array of DWORD;
-  Needed: DWORD;
-  NeededCount: Integer;
-  I: Integer;
-  Success: Boolean;
+  PIDs              : array of DWORD;
+  Needed            : DWORD;
+  NeededCount       : Integer;
+  I                 : Integer;
+  Success           : Boolean;
 begin
-  SetLength(PIDs, 1024);
-  Success := EnumProcesses(@PIDs[0], SizeOf(DWORD) * Length(PIDs), Needed);
-  NeededCount := (Needed div SizeOf(DWORD));
-  if NeededCount >= Length(PIDs) then
+  SetLength( PIDs, 1024 );
+  Success           := EnumProcesses( @PIDs[ 0 ], SizeOf( DWORD ) * Length( PIDs ), Needed );
+  NeededCount       := ( Needed div SizeOf( DWORD ) );
+  if NeededCount >= Length( PIDs ) then
   begin
-    SetLength(PIDs, NeededCount);
-    Success := EnumProcesses(@PIDs[0], SizeOf(DWORD) * Length(PIDs), Needed);
+    SetLength( PIDs, NeededCount );
+    Success         := EnumProcesses( @PIDs[ 0 ], SizeOf( DWORD ) * Length( PIDs ), Needed );
   end;
 
   if Success then
     for I := 0 to NeededCount - 1 do
-      KillProcessFileName(ProcessName, PIDs[I]);
+      KillProcessFileName( ProcessName, PIDs[ I ] );
 end;
 {$IFEND}
 
@@ -389,3 +393,4 @@ initialization
   PreInit;
 
 end.
+

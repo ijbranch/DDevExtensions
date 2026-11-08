@@ -28,7 +28,7 @@ type
   /// Plugin host integrating the DFM/PAS consistency check into DDevExtensions.  The comparison
   /// itself is <c>DfmPasConsistencyCore.AnalyseFormUnit</c>.
   /// </summary>
-  TDfmPasConsistencyPlugin = class(TPluginConfig)
+  TDfmPasConsistencyPlugin = class( TPluginConfig )
   private
     /// <summary>Menu item added to the DDevExtensions submenu.</summary>
     FMenuItem: TMenuItem;
@@ -36,7 +36,7 @@ type
     FEnabled: Boolean;
     /// <summary>Menu OnClick handler that opens the result form.</summary>
     /// <param name="Sender">The menu item clicked.</param>
-    procedure MenuItemClick(Sender: TObject);
+    procedure MenuItemClick( Sender: TObject );
   protected
     /// <summary>Returns the option page used in the IDE options dialog.</summary>
     /// <returns>A new page for the options dialog, which owns it.</returns>
@@ -61,7 +61,7 @@ var
 /// Plugin lifecycle entry point — creates or releases <see cref="DfmPasConsistencyPlugin"/>.
 /// </summary>
 /// <param name="Unload"><c>True</c> to release the plugin, <c>False</c> to create it.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -69,7 +69,7 @@ uses
   Vcl.Forms, Vcl.Dialogs, Main, IDENotifiers, ToolsAPIHelpers,
   FrmDfmPasConsistency;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
     DfmPasConsistencyPlugin := TDfmPasConsistencyPlugin.Create
@@ -86,40 +86,40 @@ end;
 
 constructor TDfmPasConsistencyPlugin.Create;
 begin
-  inherited Create(AppDataDirectory + '\DfmPasConsistency.xml', 'DfmPasConsistency');
+  inherited Create( AppDataDirectory + '\DfmPasConsistency.xml', 'DfmPasConsistency' );
 
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create(DDevExtensionsMenu);
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'DFM/PAS &Consistency...';
     FMenuItem.OnClick := MenuItemClick;
-    DDevExtensionsMenu.Add(FMenuItem);
+    DDevExtensionsMenu.Add( FMenuItem );
   end;
 end;
 
 destructor TDfmPasConsistencyPlugin.Destroy;
 begin
-  FreeAndNil(FMenuItem);
+  FreeAndNil( FMenuItem );
   inherited Destroy;
 end;
 
 function TDfmPasConsistencyPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('DFM/PAS Consistency', TFrameOptionPageDfmPas, Self);
+  Result            := TTreePage.Create( 'DFM/PAS Consistency', TFrameOptionPageDfmPas, Self );
 end;
 
 procedure TDfmPasConsistencyPlugin.Init;
 begin
   inherited Init;
-  FEnabled := True;
+  FEnabled          := True;
 end;
 
-procedure TDfmPasConsistencyPlugin.MenuItemClick(Sender: TObject);
+procedure TDfmPasConsistencyPlugin.MenuItemClick( Sender: TObject );
 begin
   if not Enabled then
   begin
-    ShowMessage('DFM/PAS Consistency Checker is disabled. Enable it in DDevExtensions options.');
+    ShowMessage( 'DFM/PAS Consistency Checker is disabled. Enable it in DDevExtensions options.' );
     Exit;
   end;
 
@@ -127,3 +127,4 @@ begin
 end;
 
 end.
+

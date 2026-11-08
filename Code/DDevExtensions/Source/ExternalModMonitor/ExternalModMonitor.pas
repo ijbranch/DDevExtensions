@@ -250,9 +250,9 @@ constructor TWatchedProject.Create;
 begin
 
   inherited Create;
-  Dirs := TStringList.Create;
+  Dirs              := TStringList.Create;
   Dirs.CaseSensitive := False;
-  Rejected := TStringList.Create;
+  Rejected          := TStringList.Create;
   Rejected.CaseSensitive := False;
 
 end;
@@ -271,25 +271,25 @@ end;
 constructor TExternalModMonitorConfig.Create;
 begin
 
-  FPendingReloads := TStringList.Create;
+  FPendingReloads   := TStringList.Create;
   FPendingReloads.Sorted := True;
   FPendingReloads.Duplicates := dupIgnore;
   FPendingReloads.CaseSensitive := False;
 
-  FExtensionSet := TStringList.Create;
+  FExtensionSet     := TStringList.Create;
   FExtensionSet.Sorted := True;
   FExtensionSet.Duplicates := dupIgnore;
   FExtensionSet.CaseSensitive := False;
 
-  FWatchedProjects := TObjectDictionary<string, TWatchedProject>.Create( [ doOwnsValues ],
+  FWatchedProjects  := TObjectDictionary<string, TWatchedProject>.Create( [ doOwnsValues ],
     TIStringComparer.Ordinal );
-  FWatchedDirs := TDictionary<string, Integer>.Create( TIStringComparer.Ordinal );
-  FRecentSaves := TDictionary<string, UInt64>.Create( TIStringComparer.Ordinal );
+  FWatchedDirs      := TDictionary<string, Integer>.Create( TIStringComparer.Ordinal );
+  FRecentSaves      := TDictionary<string, UInt64>.Create( TIStringComparer.Ordinal );
 
-  FFileWatcher := TFileWatcher.Create;
+  FFileWatcher      := TFileWatcher.Create;
   FFileWatcher.OnFileChanged := HandleFileChanged;
 
-  FModuleNotifier := TModuleDataNotifier.Create;
+  FModuleNotifier   := TModuleDataNotifier.Create;
   FModuleNotifier.AfterSave := HandleModuleAfterSave;
 
   FProjectScanTimer := TTimer.Create( nil );
@@ -297,7 +297,7 @@ begin
   FProjectScanTimer.Interval := 5000;
   FProjectScanTimer.OnTimer := HandleProjectScanTimer;
 
-  FDebounceTimer := TTimer.Create( nil );
+  FDebounceTimer    := TTimer.Create( nil );
   FDebounceTimer.Enabled := False;
   FDebounceTimer.OnTimer := HandleDebounceTimer;
 
@@ -306,7 +306,7 @@ begin
   FNotifyCleanupTimer.Interval := 8000;
   FNotifyCleanupTimer.OnTimer := HandleNotifyCleanup;
 
-  FIDENotifier := TIDENotifier.Create;
+  FIDENotifier      := TIDENotifier.Create;
   FIDENotifier.OnFileNotification := HandleFileNotification;
   FIDENotifier.OnBeforeCompile := HandleBeforeCompile;
   FIDENotifier.OnAfterCompile := HandleAfterCompile;
@@ -349,8 +349,8 @@ procedure TExternalModMonitorConfig.Init;
 begin
 
   inherited Init;
-  FActive := True;
-  FDebounceMs := 200;
+  FActive           := True;
+  FDebounceMs       := 200;
   FMonitoredExtensions := '.pas;.inc;.dfm;.dpr;.dproj;.dpk';
   FShowNotifications := True;
   FProjectLoadGraceMs := 3000;
@@ -360,19 +360,19 @@ end;
 function TExternalModMonitorConfig.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'External Mod Monitor',
+  Result            := TTreePage.Create( 'External Mod Monitor',
     TFrameOptionPageExternalModMonitor, Self );
 
 end;
 
 procedure TExternalModMonitorConfig.RebuildExtensionSet;
 var
-  Parts: TArray<string>;
-  Part: string;
+  Parts             : TArray<string>;
+  Part              : string;
 begin
 
   FExtensionSet.Clear;
-  Parts := FMonitoredExtensions.Split( [';'] );
+  Parts             := FMonitoredExtensions.Split( [ ';' ] );
   for Part in Parts do
   begin
     if Trim( Part ) <> '' then
@@ -384,23 +384,23 @@ end;
 function TExternalModMonitorConfig.IsMonitoredExtension( const FileName: string ): Boolean;
 begin
 
-  Result := FExtensionSet.IndexOf( LowerCase( ExtractFileExt( FileName ) ) ) >= 0;
+  Result            := FExtensionSet.IndexOf( LowerCase( ExtractFileExt( FileName ) ) ) >= 0;
 
 end;
 
 function TExternalModMonitorConfig.ProjectKey( const ProjectFileName: string ): string;
 begin
 
-  Result := ExpandFileName( ProjectFileName );
+  Result            := ExpandFileName( ProjectFileName );
   // .dpr/.dpk and .dproj are two files of one project: one key.
   if SameText( ExtractFileExt( Result ), '.dpr' ) or SameText( ExtractFileExt( Result ), '.dpk' ) then
-    Result := ChangeFileExt( Result, '.dproj' );
+    Result          := ChangeFileExt( Result, '.dproj' );
 
 end;
 
 procedure TExternalModMonitorConfig.AcquireDir( const ADir: string );
 var
-  RefCount: Integer;
+  RefCount          : Integer;
 begin
 
   if ( FWatchedDirs.TryGetValue( ADir, RefCount ) ) then
@@ -415,7 +415,7 @@ end;
 
 procedure TExternalModMonitorConfig.ReleaseDir( const ADir: string );
 var
-  RefCount: Integer;
+  RefCount          : Integer;
 begin
 
   if ( FWatchedDirs.TryGetValue( ADir, RefCount ) ) then
@@ -433,7 +433,7 @@ end;
 
 procedure TExternalModMonitorConfig.ForgetProject( const AKey: string );
 var
-  Watched: TWatchedProject;
+  Watched           : TWatchedProject;
 begin
 
   if ( FWatchedProjects.TryGetValue( AKey, Watched ) ) then
@@ -447,8 +447,8 @@ end;
 
 procedure TExternalModMonitorConfig.StartWatchingProject( const ProjectFileName: string );
 var
-  Watched: TWatchedProject;
-  Project: IOTAProject;
+  Watched           : TWatchedProject;
+  Project           : IOTAProject;
 
   procedure AddDir( const ADir: string );
   begin
@@ -470,10 +470,10 @@ begin
   if ( ExtractFileDir( ProjectFileName ) = '' ) then
     Exit;
 
-  var Key := ProjectKey( ProjectFileName );
+  var Key           := ProjectKey( ProjectFileName );
   if ( not FWatchedProjects.TryGetValue( Key, Watched ) ) then
   begin
-    Watched := TWatchedProject.Create;
+    Watched         := TWatchedProject.Create;
     FWatchedProjects.Add( Key, Watched );
     FGraceUntilTick := GetTickCount64 + UInt64( FProjectLoadGraceMs );
   end;
@@ -517,11 +517,11 @@ end;
 
 procedure TExternalModMonitorConfig.ScanAndWatchOpenProjects;
 var
-  ProjectGroup: IOTAProjectGroup;
-  ModuleServices: IOTAModuleServices;
-  I: Integer;
-  OpenKeys: TStringList;
-  Module: IOTAModule;
+  ProjectGroup      : IOTAProjectGroup;
+  ModuleServices    : IOTAModuleServices;
+  I                 : Integer;
+  OpenKeys          : TStringList;
+  Module            : IOTAModule;
 
   procedure Watch( const AFileName: string );
   begin
@@ -536,7 +536,7 @@ begin
   if not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
     Exit;
 
-  OpenKeys := TStringList.Create;
+  OpenKeys          := TStringList.Create;
   try
     OpenKeys.Sorted := True;
     OpenKeys.Duplicates := dupIgnore;
@@ -544,7 +544,7 @@ begin
 
     for I := 0 to ModuleServices.ModuleCount - 1 do
     begin
-      Module := ModuleServices.Modules[I];
+      Module        := ModuleServices.Modules[ I ];
       if Supports( Module, IOTAProjectGroup, ProjectGroup ) then
       begin
         // Watch every project in the group explicitly. Relying on each project's
@@ -552,10 +552,9 @@ begin
         // projects already open at plugin load (and is unregistered on Win64).
         Watch( Module.FileName );
         for var K := 0 to ProjectGroup.ProjectCount - 1 do
-          Watch( ProjectGroup.Projects[K].FileName );
+          Watch( ProjectGroup.Projects[ K ].FileName );
       end
-      else
-      if Supports( Module, IOTAProject ) then
+      else if Supports( Module, IOTAProject ) then
         Watch( Module.FileName );
     end;
 
@@ -572,7 +571,7 @@ end;
 
 procedure TExternalModMonitorConfig.EnsureModuleData;
 var
-  ModuleServices: IOTAModuleServices;
+  ModuleServices    : IOTAModuleServices;
 begin
 
   // Same path TModuleDataList takes for the modules open at start-up: looking a module up
@@ -603,9 +602,9 @@ begin
 
   // The change notification for the IDE's own write arrives shortly after the save; give
   // it two seconds, then a change to the same file counts as external again.
-  var Deadline := GetTickCount64 + 2000;
+  var Deadline      := GetTickCount64 + 2000;
   for var I := 0 to Data.Module.ModuleFileCount - 1 do
-    FRecentSaves.AddOrSetValue( Data.Module.ModuleFileEditors[I].FileName, Deadline );
+    FRecentSaves.AddOrSetValue( Data.Module.ModuleFileEditors[ I ].FileName, Deadline );
 
 end;
 
@@ -618,21 +617,21 @@ begin
 
   case NotifyCode of
     ofnFileOpened,
-    ofnProjectDesktopLoad:
+      ofnProjectDesktopLoad:
       begin
         if SameText( ExtractFileExt( FileName ), '.dproj' ) or
-           SameText( ExtractFileExt( FileName ), '.dpk' ) or
-           SameText( ExtractFileExt( FileName ), '.dpr' ) or
-           SameText( ExtractFileExt( FileName ), '.groupproj' ) then
+          SameText( ExtractFileExt( FileName ), '.dpk' ) or
+          SameText( ExtractFileExt( FileName ), '.dpr' ) or
+          SameText( ExtractFileExt( FileName ), '.groupproj' ) then
           StartWatchingProject( FileName );
       end;
 
     ofnFileClosing:
       begin
         if SameText( ExtractFileExt( FileName ), '.dproj' ) or
-           SameText( ExtractFileExt( FileName ), '.dpk' ) or
-           SameText( ExtractFileExt( FileName ), '.dpr' ) or
-           SameText( ExtractFileExt( FileName ), '.groupproj' ) then
+          SameText( ExtractFileExt( FileName ), '.dpk' ) or
+          SameText( ExtractFileExt( FileName ), '.dpr' ) or
+          SameText( ExtractFileExt( FileName ), '.groupproj' ) then
           StopWatchingProject( FileName );
       end;
   end;
@@ -644,7 +643,7 @@ procedure TExternalModMonitorConfig.HandleBeforeCompile(
 begin
 
   if not IsCodeInsight then
-    FCompiling := True;
+    FCompiling      := True;
 
 end;
 
@@ -654,7 +653,7 @@ begin
 
   if not IsCodeInsight then
   begin
-    FCompiling := False;
+    FCompiling      := False;
     { Discard any changes detected during compilation }
     FPendingReloads.Clear;
   end;
@@ -697,11 +696,11 @@ end;
 
 procedure TExternalModMonitorConfig.HandleDebounceTimer( Sender: TObject );
 var
-  I: Integer;
-  FileName: string;
-  Module: IOTAModule;
-  FilesToProcess: TStringList;
-  RefreshedFiles: TStringList;
+  I                 : Integer;
+  FileName          : string;
+  Module            : IOTAModule;
+  FilesToProcess    : TStringList;
+  RefreshedFiles    : TStringList;
 begin
 
   FDebounceTimer.Enabled := False;
@@ -718,19 +717,19 @@ begin
     Exit;
   end;
 
-  FilesToProcess := TStringList.Create;
-  RefreshedFiles := TStringList.Create;
+  FilesToProcess    := TStringList.Create;
+  RefreshedFiles    := TStringList.Create;
   try
     FilesToProcess.Assign( FPendingReloads );
     FPendingReloads.Clear;
 
     for I := 0 to FilesToProcess.Count - 1 do
     begin
-      FileName := FilesToProcess[I];
-      Module := FindOpenModule( FileName );
+      FileName      := FilesToProcess[ I ];
+      Module        := FindOpenModule( FileName );
       // A form file belongs to the module of its unit.
       if ( Module = nil ) and SameText( ExtractFileExt( FileName ), '.dfm' ) then
-        Module := FindOpenModule( ChangeFileExt( FileName, '.pas' ) );
+        Module      := FindOpenModule( ChangeFileExt( FileName, '.pas' ) );
 
       if Module = nil then
         Continue;
@@ -760,22 +759,22 @@ end;
 
 function TExternalModMonitorConfig.FindOpenModule( const FileName: string ): IOTAModule;
 var
-  ModuleServices: IOTAModuleServices;
+  ModuleServices    : IOTAModuleServices;
 begin
 
-  Result := nil;
+  Result            := nil;
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
-    Result := ModuleServices.FindModule( FileName );
+    Result          := ModuleServices.FindModule( FileName );
 
 end;
 
 function TExternalModMonitorConfig.IsModuleModifiedInEditor( Module: IOTAModule ): Boolean;
 var
-  I: Integer;
-  Editor: IOTAEditor;
+  I                 : Integer;
+  Editor            : IOTAEditor;
 begin
 
-  Result := False;
+  Result            := False;
 
   for I := 0 to Module.ModuleFileCount - 1 do
   begin
@@ -783,10 +782,10 @@ begin
       // Every editor of the module counts, not only source editors: a form designer
       // (IOTAFormEditor) or a project editor with unsaved changes would otherwise be
       // silently discarded by Refresh when another file of the module changes on disk.
-      Editor := Module.ModuleFileEditors[I];
+      Editor        := Module.ModuleFileEditors[ I ];
       if ( Assigned( Editor ) ) and ( Editor.Modified ) then
       begin
-        Result := True;
+        Result      := True;
         Exit;
       end;
     except
@@ -794,7 +793,7 @@ begin
       // as modified so we never overwrite possibly-unsaved work.
       on E: Exception do
       begin
-        Result := True;
+        Result      := True;
         Exit;
       end;
     end;
@@ -804,32 +803,32 @@ end;
 
 procedure TExternalModMonitorConfig.ShowBalloonNotification( RefreshedFiles: TStringList );
 var
-  Msg: string;
-  Title: string;
-  I: Integer;
+  Msg               : string;
+  Title             : string;
+  I                 : Integer;
 begin
 
   if RefreshedFiles.Count = 0 then
     Exit;
 
   // Build message with filenames only (max 5, then summary)
-  Msg := '';
+  Msg               := '';
   for I := 0 to RefreshedFiles.Count - 1 do
   begin
     if I >= 5 then
     begin
-      Msg := Msg + #13#10 + Format( '... and %d more', [RefreshedFiles.Count - 5] );
+      Msg           := Msg + #13#10 + Format( '... and %d more', [ RefreshedFiles.Count - 5 ] );
       Break;
     end;
     if I > 0 then
-      Msg := Msg + #13#10;
-    Msg := Msg + ExtractFileName( RefreshedFiles[I] );
+      Msg           := Msg + #13#10;
+    Msg             := Msg + ExtractFileName( RefreshedFiles[ I ] );
   end;
 
   if RefreshedFiles.Count = 1 then
-    Title := 'File Refreshed'
+    Title           := 'File Refreshed'
   else
-    Title := Format( '%d Files Refreshed', [RefreshedFiles.Count] );
+    Title           := Format( '%d Files Refreshed', [ RefreshedFiles.Count ] );
 
   // Remove any previous icon
   Shell_NotifyIcon( NIM_DELETE, @FNotifyIconData );
@@ -861,3 +860,4 @@ begin
 end;
 
 end.
+

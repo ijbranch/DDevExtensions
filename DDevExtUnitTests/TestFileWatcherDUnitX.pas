@@ -13,7 +13,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising <c>TFileWatcher</c>.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestFileWatcher = class
   private
     /// <summary>Root scratch folder for the test, deleted in TearDown.</summary>
@@ -41,26 +41,26 @@ type
     function RepeatUntilReported( const AAction: TProc; const AExpected: string; ATimeoutMs: Cardinal ): Boolean;
   public
     /// <summary>Creates the scratch root folder.</summary>
-    [Setup]
+    [ Setup ]
     procedure Setup;
     /// <summary>Deletes the scratch root folder and everything below it.</summary>
-    [TearDown]
+    [ TearDown ]
     procedure TearDown;
     /// <summary>Proves a modification in a single watched folder is reported with its full path.</summary>
-    [Test]
+    [ Test ]
     procedure TestReportsModification;
     /// <summary>
     /// Proves more than 62 watched folders still work: a change in the last folder is reported
     /// and ClearWatches returns promptly.  The old WaitForMultipleObjects loop failed past 64
     /// handles and reported nothing from any folder.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestMoreThan62FoldersAndPromptStop;
     /// <summary>
     /// Proves a save made by renaming a temporary file over the original (delete, then rename) is
     /// reported under the original name.  Only in-place writes were reported before.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestReportsRenameIntoPlace;
   end;
 
@@ -71,9 +71,9 @@ uses
 
 procedure TTestFileWatcher.Setup;
 begin
-  FRoot := TPath.Combine( TPath.GetTempPath, 'DDevExtWatchTest' + IntToStr( GetCurrentProcessId ) );
+  FRoot             := TPath.Combine( TPath.GetTempPath, 'DDevExtWatchTest' + IntToStr( GetCurrentProcessId ) );
   TDirectory.CreateDirectory( FRoot );
-  FChanged := '';
+  FChanged          := '';
 end;
 
 procedure TTestFileWatcher.TearDown;
@@ -84,31 +84,31 @@ end;
 procedure TTestFileWatcher.HandleChange( const FileName: string );
 begin
   if ( FExpected = '' ) or SameText( FileName, FExpected ) then
-    FChanged := FileName;
+    FChanged        := FileName;
 end;
 
 function TTestFileWatcher.RepeatUntilReported( const AAction: TProc; const AExpected: string; ATimeoutMs: Cardinal ): Boolean;
 begin
-  FExpected := AExpected;
-  FChanged := '';
-  var iStart := GetTickCount64;
+  FExpected         := AExpected;
+  FChanged          := '';
+  var iStart        := GetTickCount64;
   repeat
-    AAction();
+    AAction( );
     if WaitForChange( 500 ) then
       Exit( True );
   until GetTickCount64 - iStart >= ATimeoutMs;
-  Result := False;
+  Result            := False;
 end;
 
 function TTestFileWatcher.WaitForChange( ATimeoutMs: Cardinal ): Boolean;
 begin
-  var iStart := GetTickCount64;
+  var iStart        := GetTickCount64;
   while ( FChanged = '' ) and ( GetTickCount64 - iStart < ATimeoutMs ) do
   begin
     CheckSynchronize( 20 );
     Sleep( 10 );
   end;
-  Result := FChanged <> '';
+  Result            := FChanged <> '';
 end;
 
 /// <summary>Creates AFile with a little initial content, so a later append is a modification.</summary>
@@ -120,20 +120,20 @@ end;
 
 procedure TTestFileWatcher.TestReportsModification;
 begin
-  var sDir := TPath.Combine( FRoot, 'single' );
+  var sDir          := TPath.Combine( FRoot, 'single' );
   TDirectory.CreateDirectory( sDir );
-  var sFile := TPath.Combine( sDir, 'Unit1.pas' );
+  var sFile         := TPath.Combine( sDir, 'Unit1.pas' );
   CreateFileQuietly( sFile );
 
-  var oWatcher := TFileWatcher.Create;
+  var oWatcher      := TFileWatcher.Create;
   try
     oWatcher.OnFileChanged := HandleChange;
     oWatcher.AddWatch( sDir );
     Assert.IsTrue( RepeatUntilReported(
-      procedure
-      begin
-        TFile.AppendAllText( sFile, 'two' );
-      end, sFile, 10000 ), 'No change reported' );
+        procedure
+        begin
+          TFile.AppendAllText( sFile, 'two' );
+        end, sFile, 10000 ), 'No change reported' );
     Assert.AreEqual( sFile, FChanged, True );
   finally
     oWatcher.Free;
@@ -142,35 +142,35 @@ end;
 
 procedure TTestFileWatcher.TestMoreThan62FoldersAndPromptStop;
 const
-  cFolders = 70;
+  cFolders          = 70;
 begin
-  var sLastFile := '';
-  var oWatcher := TFileWatcher.Create;
+  var sLastFile     := '';
+  var oWatcher      := TFileWatcher.Create;
   oWatcher.OnFileChanged := HandleChange;
   for var iIndex: Integer := 1 to cFolders do
   begin
-    var sDir := TPath.Combine( FRoot, 'D' + IntToStr( iIndex ) );
+    var sDir        := TPath.Combine( FRoot, 'D' + IntToStr( iIndex ) );
     TDirectory.CreateDirectory( sDir );
-    sLastFile := TPath.Combine( sDir, 'Unit1.pas' );
+    sLastFile       := TPath.Combine( sDir, 'Unit1.pas' );
     CreateFileQuietly( sLastFile );
     oWatcher.AddWatch( sDir );
   end;
 
-  var sTarget := sLastFile;
-  var bChanged := RepeatUntilReported(
+  var sTarget       := sLastFile;
+  var bChanged      := RepeatUntilReported(
     procedure
     begin
       TFile.AppendAllText( sTarget, 'two' );
     end, sTarget, 10000 );
 
-  var oStopper := TThread.CreateAnonymousThread(
+  var oStopper      := TThread.CreateAnonymousThread(
     procedure
     begin
       oWatcher.ClearWatches;
     end );
   oStopper.FreeOnTerminate := False;
   oStopper.Start;
-  var bStopped := WaitForSingleObject( oStopper.Handle, 5000 ) = WAIT_OBJECT_0;
+  var bStopped      := WaitForSingleObject( oStopper.Handle, 5000 ) = WAIT_OBJECT_0;
   if bStopped then
   begin
     oStopper.Free;
@@ -184,23 +184,23 @@ end;
 
 procedure TTestFileWatcher.TestReportsRenameIntoPlace;
 begin
-  var sDir := TPath.Combine( FRoot, 'rename' );
+  var sDir          := TPath.Combine( FRoot, 'rename' );
   TDirectory.CreateDirectory( sDir );
-  var sFile := TPath.Combine( sDir, 'Unit1.pas' );
-  var sTemp := TPath.Combine( sDir, 'Unit1.pas.tmp' );
+  var sFile         := TPath.Combine( sDir, 'Unit1.pas' );
+  var sTemp         := TPath.Combine( sDir, 'Unit1.pas.tmp' );
   CreateFileQuietly( sFile );
 
-  var oWatcher := TFileWatcher.Create;
+  var oWatcher      := TFileWatcher.Create;
   try
     oWatcher.OnFileChanged := HandleChange;
     oWatcher.AddWatch( sDir );
     Assert.IsTrue( RepeatUntilReported(
-      procedure
-      begin
-        CreateFileQuietly( sTemp );
-        TFile.Delete( sFile );
-        TFile.Move( sTemp, sFile );
-      end, sFile, 10000 ), 'No change reported' );
+        procedure
+        begin
+          CreateFileQuietly( sTemp );
+          TFile.Delete( sFile );
+          TFile.Move( sTemp, sFile );
+        end, sFile, 10000 ), 'No change reported' );
     Assert.AreEqual( sFile, FChanged, True );
   finally
     oWatcher.Free;
@@ -211,3 +211,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestFileWatcher );
 
 end.
+

@@ -67,7 +67,7 @@ end;
 procedure TFrameOptionPageUnreachableCode.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TUnreachableCodeDetectorPlugin;
+  FPlugin           := UserData as TUnreachableCodeDetectorPlugin;
 
 end;
 
@@ -81,7 +81,7 @@ end;
 procedure TFrameOptionPageUnreachableCode.SaveData;
 begin
 
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   FPlugin.Save;
 
 end;
@@ -95,3 +95,4 @@ begin
 end;
 
 end.
+

@@ -13,7 +13,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising <c>IDEHashLists</c>.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestIDEHashLists = class
   public
     /// <summary>
@@ -21,26 +21,26 @@ type
     /// character codes, masked to the bucket range) on every platform.  The x86 assembler
     /// version ignored the Win64 parameter register and hashed whatever EAX held.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestHashStringValue;
     /// <summary>Proves the hash of the empty string is 0 and every hash stays inside the bucket range.</summary>
-    [Test]
+    [ Test ]
     procedure TestHashStringRange;
     /// <summary>
     /// Proves <c>TStringIntegerHash</c> finds every key it was given after more keys than its
     /// preallocated cache holds, so both cache nodes and heap nodes are exercised, and that
     /// <c>Remove</c> and <c>Clear</c> release them without a heap error.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestStringIntegerHashBeyondCache;
     /// <summary>Proves <c>TStringStringHash</c> round-trips values, including after <c>Remove</c>.</summary>
-    [Test]
+    [ Test ]
     procedure TestStringStringHash;
     /// <summary>
     /// Proves <c>TCustomBucketList.Assign</c> copies the source list's entries.  It used to
     /// iterate the (just cleared) target instead, so the copy was always empty.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestBucketListAssign;
   end;
 
@@ -61,16 +61,16 @@ begin
   Assert.AreEqual( 0, HashString( '' ) );
   for var iIndex: Integer := 0 to 999 do
   begin
-    var iHash := HashString( StringOfChar( 'Z', iIndex ) + IntToStr( iIndex ) );
+    var iHash       := HashString( StringOfChar( 'Z', iIndex ) + IntToStr( iIndex ) );
     Assert.IsTrue( ( iHash >= 0 ) and ( iHash < MaxBucketItems ), 'Hash out of range at ' + IntToStr( iIndex ) );
   end;
 end;
 
 procedure TTestIDEHashLists.TestStringIntegerHashBeyondCache;
 const
-  cCount = MaxCacheItems * 2 + 17;
+  cCount            = MaxCacheItems * 2 + 17;
 begin
-  var oHash := TStringIntegerHash.Create;
+  var oHash         := TStringIntegerHash.Create;
   try
     for var iIndex: Integer := 0 to cCount - 1 do
       oHash.Add( 'KEY' + IntToStr( iIndex ), iIndex );
@@ -98,7 +98,7 @@ end;
 
 procedure TTestIDEHashLists.TestStringStringHash;
 begin
-  var oHash := TStringStringHash.Create;
+  var oHash         := TStringStringHash.Create;
   try
     oHash.Add( 'Alpha', 'One' );
     oHash.Add( 'Beta', 'Two' );
@@ -115,8 +115,8 @@ end;
 
 procedure TTestIDEHashLists.TestBucketListAssign;
 begin
-  var oSource := TBucketList.Create;
-  var oTarget := TBucketList.Create;
+  var oSource       := TBucketList.Create;
+  var oTarget       := TBucketList.Create;
   try
     oSource.Add( Pointer( 16 ), Pointer( 160 ) );
     oSource.Add( Pointer( 32 ), Pointer( 320 ) );
@@ -140,3 +140,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestIDEHashLists );
 
 end.
+

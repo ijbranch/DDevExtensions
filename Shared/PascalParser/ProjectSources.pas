@@ -65,11 +65,11 @@ uses
 
 function GetProjectSourceFiles( const Project: IOTAProject; const Extensions: array of string ): TArray<string>;
 begin
-  Result := nil;
+  Result            := nil;
   if Project = nil then
     Exit;
 
-  var oList := TStringList.Create;
+  var oList         := TStringList.Create;
   try
     for var i := 0 to Project.GetModuleCount - 1 do
     begin
@@ -89,7 +89,7 @@ begin
         end;
     end;
 
-    Result := oList.ToStringArray;
+    Result          := oList.ToStringArray;
   finally
     oList.Free;
   end;
@@ -97,34 +97,35 @@ end;
 
 function ReadModuleSource( const FileName: string ): UTF8String;
 begin
-  Result := '';
+  Result            := '';
 
   var oModuleServices: IOTAModuleServices;
   if Supports( BorlandIDEServices, IOTAModuleServices, oModuleServices ) then
   begin
-    var oModule := oModuleServices.FindModule( FileName );
+    var oModule     := oModuleServices.FindModule( FileName );
     if oModule <> nil then
       for var i := 0 to oModule.ModuleFileCount - 1 do
       begin
         var oEditor: IOTASourceEditor;
         if Supports( oModule.ModuleFileEditors[ i ], IOTASourceEditor, oEditor ) and
-           SameText( oEditor.FileName, FileName ) then
+          SameText( oEditor.FileName, FileName ) then
           Exit( GetEditorSource( oEditor ) );
       end;
   end;
 
   if FileExists( FileName ) then
-    Result := LoadTextFileToUtf8String( FileName );
+    Result          := LoadTextFileToUtf8String( FileName );
 end;
 
 function ScanShouldStop( OnProgress: TSourceScanProgressEvent; const Step: string ): Boolean;
 begin
-  Result := Application.Terminated;
+  Result            := Application.Terminated;
   if Result or not Assigned( OnProgress ) then
     Exit;
 
   OnProgress( Step, Result );
-  Result := Result or Application.Terminated;
+  Result            := Result or Application.Terminated;
 end;
 
 end.
+

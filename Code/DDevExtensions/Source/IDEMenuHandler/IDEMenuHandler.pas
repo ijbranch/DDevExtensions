@@ -22,9 +22,9 @@ unit IDEMenuHandler;
 interface
 
 uses
-  {$IFDEF COMPILER9_UP}
+{$IFDEF COMPILER9_UP}
   Vcl.ActnMan, Vcl.ActnPopup,
-  {$ENDIF COMPILER9_UP}
+{$ENDIF COMPILER9_UP}
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Menus, Vcl.ActnList, Vcl.Forms, Vcl.Controls,
   ToolsAPI;
 
@@ -34,19 +34,19 @@ type
   /// instantiated once per session by InitPlugin and tears the additions back down on
   /// shutdown so that re-opening the package leaves no stale entries.
   /// </summary>
-  TIDEMenuHandler = class(TObject)
+  TIDEMenuHandler = class( TObject )
   private
     /// <summary>List of TMenuItem instances created by the handler (frees them on destroy).</summary>
     FMenuItems: TObjectList;
     /// <summary>List of TAction instances created by the handler (frees them on destroy).</summary>
     FActionItems: TObjectList;
 
-    {$IFDEF COMPILER9_UP}
+{$IFDEF COMPILER9_UP}
     /// <summary>Original OnUpdate handler for ViewSwapSourceFormItem, restored at destroy.</summary>
     FOrgUpdateSwapSourceForm, FOrgExecuteSwapSourceForm: TNotifyEvent;
     /// <summary>Cached IDE menu item for View > Swap Source/Form.</summary>
     FViewSwapSourceFormItem: TMenuItem;
-    {$ENDIF COMPILER9_UP}
+{$ENDIF COMPILER9_UP}
 
     /// <summary>Action that opens the DDevExtensions File Selector dialog.</summary>
     FActionFileSelector: TAction;
@@ -67,25 +67,25 @@ type
     /// <returns>The newly created TAction.</returns>
     /// <exception cref="Exception">Neither <paramref name="BaseItemName"/> nor <paramref name="BaseMainItemName"/> names a
     /// menu item of the IDE main form.</exception>
-    function AddMenuAction(const BaseMainItemName, BaseItemName, ItemName, Caption: string;
-      Execute: TNotifyEvent; InsertAfter, InsertAsChild: Boolean; ShortCut: TShortCut = scNone): TAction;
+    function AddMenuAction( const BaseMainItemName, BaseItemName, ItemName, Caption: string;
+      Execute: TNotifyEvent; InsertAfter, InsertAsChild: Boolean; ShortCut: TShortCut = scNone ): TAction;
 
     /// <summary>Shared OnUpdate handler that adjusts visibility/enabled state of injected actions.</summary>
     /// <param name="Sender">The action being updated.</param>
-    procedure ActionUpdate(Sender: TObject);
+    procedure ActionUpdate( Sender: TObject );
 
-    {$IFDEF COMPILER9_UP}
+{$IFDEF COMPILER9_UP}
     /// <summary>Override for View > Swap Source/Form that synthesises the shortcut on the editor.</summary>
     /// <param name="Sender">The action being executed.</param>
-    procedure ExecuteSwapSourceForm(Sender: TObject);
+    procedure ExecuteSwapSourceForm( Sender: TObject );
     /// <summary>Override for View > Swap Source/Form's update handler so it stays enabled.</summary>
     /// <param name="Sender">The action being updated.</param>
-    procedure UpdateSwapSourceForm(Sender: TObject);
-    {$ENDIF COMPILER9_UP}
+    procedure UpdateSwapSourceForm( Sender: TObject );
+{$ENDIF COMPILER9_UP}
 
     /// <summary>OnExecute handler for the File Selector action; opens TFormFileSelector.</summary>
     /// <param name="Sender">The action being executed.</param>
-    procedure FileSelectorItemClick(Sender: TObject);
+    procedure FileSelectorItemClick( Sender: TObject );
   public
     /// <summary>Creates the handler and injects every menu item/action it manages.</summary>
     constructor Create;
@@ -97,7 +97,7 @@ type
     /// the handler exists (the value is cached for the next Create).
     /// </summary>
     /// <param name="Value">The new TShortCut to assign, or scNone to clear it.</param>
-    class procedure SetFindUseUnitHotKey(Value: TShortCut);
+    class procedure SetFindUseUnitHotKey( Value: TShortCut );
   end;
 
 /// <summary>
@@ -105,7 +105,7 @@ type
 /// unload.
 /// </summary>
 /// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -116,7 +116,7 @@ var
   GlobalIDEMenuHandler: TIDEMenuHandler;
   GlobalFindUseUnitHotKey: TShortCut = scNone;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
   begin
@@ -124,31 +124,31 @@ begin
   end
   else
   begin
-    FreeAndNil(GlobalIDEMenuHandler);
+    FreeAndNil( GlobalIDEMenuHandler );
   end;
 end;
 
-procedure SetActionShortCut(Action: TAction; Value: TShortCut);
+procedure SetActionShortCut( Action: TAction; Value: TShortCut );
 begin
   if Action <> nil then
   begin
     Action.ShortCut := Value;
-    {$IFDEF COMPILER6_UP}
-    {$IFNDEF COMPILER9_UP}
+{$IFDEF COMPILER6_UP}
+{$IFNDEF COMPILER9_UP}
     // Delphi 5-7 delete the shortcut without invoking the TBaseAction.Changed method
     Action.SecondaryShortCuts.Clear;
     if Value <> scNone then
-      Action.SecondaryShortCuts.Add(ShortCutToText(Value));
-    {$ENDIF ~COMPILER9_UP}
-    {$ENDIF COMPILER6_UP}
+      Action.SecondaryShortCuts.Add( ShortCutToText( Value ) );
+{$ENDIF ~COMPILER9_UP}
+{$ENDIF COMPILER6_UP}
   end;
 end;
 
-class procedure TIDEMenuHandler.SetFindUseUnitHotKey(Value: TShortCut);
+class procedure TIDEMenuHandler.SetFindUseUnitHotKey( Value: TShortCut );
 begin
   GlobalFindUseUnitHotKey := Value;
   if GlobalIDEMenuHandler <> nil then
-    SetActionShortCut(GlobalIDEMenuHandler.FActionFileSelector, GlobalFindUseUnitHotKey);
+    SetActionShortCut( GlobalIDEMenuHandler.FActionFileSelector, GlobalFindUseUnitHotKey );
 end;
 
 { TIDEMenuHandler }
@@ -156,100 +156,100 @@ end;
 constructor TIDEMenuHandler.Create;
 begin
   inherited Create;
-  FMenuItems := TObjectList.Create;
-  FActionItems := TObjectList.Create;
+  FMenuItems        := TObjectList.Create;
+  FActionItems      := TObjectList.Create;
 
-  {$IFDEF COMPILER9_UP}
-  {$IFNDEF DELPHI2007_UP}
-  FViewSwapSourceFormItem := FindMenuItem('ViewSwapSourceFormItem');
-  if (FViewSwapSourceFormItem <> nil) and (FViewSwapSourceFormItem.Action <> nil) then
+{$IFDEF COMPILER9_UP}
+{$IFNDEF DELPHI2007_UP}
+  FViewSwapSourceFormItem := FindMenuItem( 'ViewSwapSourceFormItem' );
+  if ( FViewSwapSourceFormItem <> nil ) and ( FViewSwapSourceFormItem.Action <> nil ) then
   begin
     FOrgUpdateSwapSourceForm := FViewSwapSourceFormItem.Action.OnUpdate;
     FOrgExecuteSwapSourceForm := FViewSwapSourceFormItem.Action.OnExecute;
     FViewSwapSourceFormItem.Action.OnUpdate := UpdateSwapSourceForm;
     FViewSwapSourceFormItem.Action.OnExecute := ExecuteSwapSourceForm;
   end;
-  {$ENDIF ~DELPHI2007_UP}
-  {$ENDIF COMPILER9_UP}
+{$ENDIF ~DELPHI2007_UP}
+{$ENDIF COMPILER9_UP}
 
-  {$IFDEF INCLUDE_FILESELECTOR}
-  if FindMenuItem('SearchGotoAddressItem') <> nil then
-    FActionFileSelector := AddMenuAction('SearchMenu', 'SearchGotoAddressItem',
+{$IFDEF INCLUDE_FILESELECTOR}
+  if FindMenuItem( 'SearchGotoAddressItem' ) <> nil then
+    FActionFileSelector := AddMenuAction( 'SearchMenu', 'SearchGotoAddressItem',
       'DDevExtFileSelectorItem', sMenuItemDDevExtensionsFileSelector,
-      FileSelectorItemClick, True, False, GlobalFindUseUnitHotKey)
+      FileSelectorItemClick, True, False, GlobalFindUseUnitHotKey )
   else
-    FActionFileSelector := AddMenuAction('SearchMenu', 'SearchGoToItem',
+    FActionFileSelector := AddMenuAction( 'SearchMenu', 'SearchGoToItem',
       'DDevExtFileSelectorItem', sMenuItemDDevExtensionsFileSelector,
-      FileSelectorItemClick, True, False, GlobalFindUseUnitHotKey);
-  {$ENDIF INCLUDE_FILESELECTOR}
+      FileSelectorItemClick, True, False, GlobalFindUseUnitHotKey );
+{$ENDIF INCLUDE_FILESELECTOR}
 
-  ActionUpdate(nil);
+  ActionUpdate( nil );
 end;
 
 destructor TIDEMenuHandler.Destroy;
 var
-  i: Integer;
+  i                 : Integer;
 begin
-  {$IFDEF COMPILER9_UP}
-  if Assigned(FViewSwapSourceFormItem) and Assigned(FViewSwapSourceFormItem.Action) then
+{$IFDEF COMPILER9_UP}
+  if Assigned( FViewSwapSourceFormItem ) and Assigned( FViewSwapSourceFormItem.Action ) then
   begin
     FViewSwapSourceFormItem.Action.OnUpdate := FOrgUpdateSwapSourceForm;
     FViewSwapSourceFormItem.Action.OnExecute := FOrgExecuteSwapSourceForm;
   end;
-  {$ENDIF COMPILER9_UP}
+{$ENDIF COMPILER9_UP}
 
   // Detach injected menu items from their IDE parent before freeing, so the IDE
   // menu does not hold a freed reference and double-free during its own teardown.
   // Each teardown step is guarded so one shutdown fault cannot abort the rest.
   try
-    if Assigned(FMenuItems) then
+    if Assigned( FMenuItems ) then
       for i := 0 to FMenuItems.Count - 1 do
-        if TMenuItem(FMenuItems[i]).Parent <> nil then
-          TMenuItem(FMenuItems[i]).Parent.Remove(TMenuItem(FMenuItems[i]));
+        if TMenuItem( FMenuItems[ i ] ).Parent <> nil then
+          TMenuItem( FMenuItems[ i ] ).Parent.Remove( TMenuItem( FMenuItems[ i ] ) );
   except
-    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy detach: ' + E.Message));
+    on E: Exception do OutputDebugString( PChar( 'DDevExtensions IDEMenuHandler.Destroy detach: ' + E.Message ) );
   end;
   try
     FMenuItems.Free;
   except
-    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy FMenuItems: ' + E.Message));
+    on E: Exception do OutputDebugString( PChar( 'DDevExtensions IDEMenuHandler.Destroy FMenuItems: ' + E.Message ) );
   end;
   try
     FActionItems.Free;
   except
-    on E: Exception do OutputDebugString(PChar('DDevExtensions IDEMenuHandler.Destroy FActionItems: ' + E.Message));
+    on E: Exception do OutputDebugString( PChar( 'DDevExtensions IDEMenuHandler.Destroy FActionItems: ' + E.Message ) );
   end;
   inherited Destroy;
 end;
 
-procedure TIDEMenuHandler.FileSelectorItemClick(Sender: TObject);
+procedure TIDEMenuHandler.FileSelectorItemClick( Sender: TObject );
 begin
-  {$IFDEF INCLUDE_FILESELECTOR}
-  TFormFileSelector.Execute(True);
-  {$ENDIF INCLUDE_FILESELECTOR}
+{$IFDEF INCLUDE_FILESELECTOR}
+  TFormFileSelector.Execute( True );
+{$ENDIF INCLUDE_FILESELECTOR}
 end;
 
-procedure TIDEMenuHandler.ActionUpdate(Sender: TObject);
+procedure TIDEMenuHandler.ActionUpdate( Sender: TObject );
 var
   IsDelphiPers, IsDelphiNetPers: Boolean;
 begin
-  {$IFDEF COMPILER6_UP}
-  {$IFNDEF COMPILER9_UP}
+{$IFDEF COMPILER6_UP}
+{$IFNDEF COMPILER9_UP}
   if Sender is TAction then
   begin
     // Delphi 5-7 delete the shortcut without invoking the TBaseAction.Changed method
-    if (TAction(Sender).ShortCut = 0) and (TAction(Sender).SecondaryShortCuts.Count > 0) then
+    if ( TAction( Sender ).ShortCut = 0 ) and ( TAction( Sender ).SecondaryShortCuts.Count > 0 ) then
     begin
-      TAction(Sender).ShortCut := TAction(Sender).SecondaryShortCuts.ShortCuts[0];
-      TAction(Sender).SecondaryShortCuts.Clear;
+      TAction( Sender ).ShortCut := TAction( Sender ).SecondaryShortCuts.ShortCuts[ 0 ];
+      TAction( Sender ).SecondaryShortCuts.Clear;
     end;
   end;
-  {$ENDIF ~COMPILER9_UP}
-  {$ENDIF COMPILER6_UP}
+{$ENDIF ~COMPILER9_UP}
+{$ENDIF COMPILER6_UP}
 
-  IsDelphiPers := IsDelphiPersonality(nil);
-  IsDelphiNetPers := IsDelphiNetPersonality(nil);
-  if Assigned(FActionFileSelector) then
+  IsDelphiPers      := IsDelphiPersonality( nil );
+  IsDelphiNetPers   := IsDelphiNetPersonality( nil );
+  if Assigned( FActionFileSelector ) then
   begin
     FActionFileSelector.Visible := IsDelphiPers or IsDelphiNetPers;
     FActionFileSelector.Enabled := FActionFileSelector.Visible;
@@ -260,64 +260,64 @@ begin
   // the IDE main form's components on every idle tick.  It is no longer created. )
 end;
 
-function TIDEMenuHandler.AddMenuAction(const BaseMainItemName, BaseItemName, ItemName, Caption: string;
-  Execute: TNotifyEvent; InsertAfter: Boolean; InsertAsChild: Boolean; ShortCut: TShortCut): TAction;
+function TIDEMenuHandler.AddMenuAction( const BaseMainItemName, BaseItemName, ItemName, Caption: string;
+  Execute: TNotifyEvent; InsertAfter: Boolean; InsertAsChild: Boolean; ShortCut: TShortCut ): TAction;
 var
-  MenuItem: TMenuItem;
-  {$IFNDEF COMPILER9_UP}
-  Item: TMenuItem;
-  i: Integer;
-  {$ELSE}
-  NServices: INTAServices;
-  {$ENDIF ~COMPILER9_UP}
+  MenuItem          : TMenuItem;
+{$IFNDEF COMPILER9_UP}
+  Item              : TMenuItem;
+  i                 : Integer;
+{$ELSE}
+  NServices         : INTAServices;
+{$ENDIF ~COMPILER9_UP}
 begin
-  Result := TAction.Create(nil);
-  Result.Name := 'Action' + ItemName;
-  Result.Caption := Caption;
-  SetActionShortCut(Result, ShortCut);
-  Result.OnExecute := Execute;
-  Result.OnUpdate := ActionUpdate;
+  Result            := TAction.Create( nil );
+  Result.Name       := 'Action' + ItemName;
+  Result.Caption    := Caption;
+  SetActionShortCut( Result, ShortCut );
+  Result.OnExecute  := Execute;
+  Result.OnUpdate   := ActionUpdate;
 
-  MenuItem := TMenuItem.Create(Result);
-  MenuItem.Name := ItemName;
-  MenuItem.Action := Result;
+  MenuItem          := TMenuItem.Create( Result );
+  MenuItem.Name     := ItemName;
+  MenuItem.Action   := Result;
   MenuItem.ShortCut := ShortCut;
-  Result.Tag := NativeInt(MenuItem);
+  Result.Tag        := NativeInt( MenuItem );
 
-  FActionItems.Add(Result);
-  FMenuItems.Add(MenuItem);
+  FActionItems.Add( Result );
+  FMenuItems.Add( MenuItem );
 
-  {$IFDEF COMPILER9_UP}
-  if Supports(BorlandIDEServices, INTAServices, NServices) then
+{$IFDEF COMPILER9_UP}
+  if Supports( BorlandIDEServices, INTAServices, NServices ) then
   begin
     try
-      NServices.AddActionMenu(BaseItemName, Result, MenuItem, InsertAfter, InsertAsChild);
+      NServices.AddActionMenu( BaseItemName, Result, MenuItem, InsertAfter, InsertAsChild );
     except
       on E: Exception do
         // A missing base menu item (personality-dependent) must be diagnosable,
         // not silently abort the whole plug-in by escaping the constructor.
-        OutputDebugString(PChar('DDevExtensions IDEMenuHandler.AddMenuAction (' + BaseItemName + '): ' + E.Message));
+        OutputDebugString( PChar( 'DDevExtensions IDEMenuHandler.AddMenuAction (' + BaseItemName + '): ' + E.Message ) );
     end;
   end;
-  {$ELSE}
-  Item := nil;
+{$ELSE}
+  Item              := nil;
   for i := 0 to FMenuItems.Count - 1 do
   begin
-    if CompareText(TMenuItem(FMenuItems[i]).Name, BaseItemName) = 0 then
+    if CompareText( TMenuItem( FMenuItems[ i ] ).Name, BaseItemName ) = 0 then
     begin
-      Item := TMenuItem(FMenuItems[i]);
+      Item          := TMenuItem( FMenuItems[ i ] );
       Break;
     end;
   end;
 
   if Item = nil then
   begin
-    Item := TMenuItem(Application.MainForm.FindComponent(BaseItemName));
-    if not (TObject(Item) is TMenuItem) then
+    Item            := TMenuItem( Application.MainForm.FindComponent( BaseItemName ) );
+    if not ( TObject( Item ) is TMenuItem ) then
     begin
-      Item := TMenuItem(Application.MainForm.FindComponent(BaseMainItemName));
-      if not (TObject(Item) is TMenuItem) then
-        Item := nil;
+      Item          := TMenuItem( Application.MainForm.FindComponent( BaseMainItemName ) );
+      if not ( TObject( Item ) is TMenuItem ) then
+        Item        := nil;
       InsertAsChild := True;
     end;
   end;
@@ -327,62 +327,60 @@ begin
     if InsertAsChild then
     begin
       if InsertAfter then
-        Item.Add(MenuItem)
+        Item.Add( MenuItem )
       else
-        Item.Insert(0, MenuItem);
+        Item.Insert( 0, MenuItem );
     end
     else
-      Item.Parent.Insert(Item.Parent.IndexOf(Item) + Ord(InsertAfter), MenuItem);
+      Item.Parent.Insert( Item.Parent.IndexOf( Item ) + Ord( InsertAfter ), MenuItem );
 
-    Result.ActionList := (BorlandIDEServices as INTAServices).ActionList;
+    Result.ActionList := ( BorlandIDEServices as INTAServices ).ActionList;
     Result.ShortCut := ShortCut;
   end
   else
-    raise Exception.CreateFmt('Menu item "%s" not found.', [BaseItemName]);
-  {$ENDIF COMPILER9_UP}
+    raise Exception.CreateFmt( 'Menu item "%s" not found.', [ BaseItemName ] );
+{$ENDIF COMPILER9_UP}
 end;
 
-
 {$IFDEF COMPILER9_UP}
-procedure TIDEMenuHandler.ExecuteSwapSourceForm(Sender: TObject);
+procedure TIDEMenuHandler.ExecuteSwapSourceForm( Sender: TObject );
 const
-  AltMask = $20000000;
+  AltMask           = $20000000;
 var
-  i: Integer;
-  EditorLocalMenu: TPopupActionBar;
-  Msg: TWMKey;
-  Shift: TShiftState;
+  i                 : Integer;
+  EditorLocalMenu   : TPopupActionBar;
+  Msg               : TWMKey;
+  Shift             : TShiftState;
 begin
   for i := 0 to Screen.FormCount - 1 do
   begin
-    if Screen.Forms[i].Visible and Screen.Forms[i].Enabled and
-       Screen.Forms[i].CanFocus and
-       Screen.Forms[i].ClassNameIs('TEditWindow') then
+    if Screen.Forms[ i ].Visible and Screen.Forms[ i ].Enabled and
+      Screen.Forms[ i ].CanFocus and
+      Screen.Forms[ i ].ClassNameIs( 'TEditWindow' ) then
     begin
-      EditorLocalMenu := TPopupActionBar(Screen.Forms[i].FindComponent('EditorLocalMenu'));
-      if (EditorLocalMenu <> nil) and (Sender is TAction) then
+      EditorLocalMenu := TPopupActionBar( Screen.Forms[ i ].FindComponent( 'EditorLocalMenu' ) );
+      if ( EditorLocalMenu <> nil ) and ( Sender is TAction ) then
       begin
-        Msg := Default(TWMKey);   // zero-initialise; IsShortCut reads the whole record
-        Msg.Msg := WM_KEYDOWN;
-        ShortCutToKey(TAction(Sender).ShortCut, Msg.CharCode, Shift);
+        Msg         := Default( TWMKey ); // zero-initialise; IsShortCut reads the whole record
+        Msg.Msg     := WM_KEYDOWN;
+        ShortCutToKey( TAction( Sender ).ShortCut, Msg.CharCode, Shift );
         if ssAlt in Shift then
           Msg.KeyData := AltMask;
         // Skip dispatch when the action has no shortcut (CharCode 0).
         if Msg.CharCode <> 0 then
-          EditorLocalMenu.IsShortCut(Msg);
+          EditorLocalMenu.IsShortCut( Msg );
       end;
       Break;
     end;
   end;
 end;
 
-procedure TIDEMenuHandler.UpdateSwapSourceForm(Sender: TObject);
+procedure TIDEMenuHandler.UpdateSwapSourceForm( Sender: TObject );
 begin
-  FOrgUpdateSwapSourceForm(Sender);
-  TAction(Sender).Enabled := True;
+  FOrgUpdateSwapSourceForm( Sender );
+  TAction( Sender ).Enabled := True;
 end;
 {$ENDIF COMPILER9_UP}
-
 
 end.
 

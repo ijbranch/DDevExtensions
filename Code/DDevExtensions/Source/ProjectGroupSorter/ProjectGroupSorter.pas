@@ -35,7 +35,7 @@ interface
 /// (its Tools-menu item).
 /// </summary>
 /// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -52,7 +52,7 @@ type
     /// <summary>Tools-menu item that performs the sort on click.</summary>
     FMenuItem: TMenuItem;
     /// <summary>OnClick handler for the menu item.</summary>
-    procedure MenuItemClick(Sender: TObject);
+    procedure MenuItemClick( Sender: TObject );
   public
     /// <summary>Creates the plugin and inserts the Tools-menu item.</summary>
     constructor Create;
@@ -81,16 +81,16 @@ var
 /// <exception cref="EEncodingError">The file is not valid UTF-8; decoding it would corrupt its paths.</exception>
 function ReadGroupFile( const AFileName: string ): TGroupFileText;
 begin
-  Result.Bytes := TFile.ReadAllBytes( AFileName );
-  Result.HasBom := ( Length( Result.Bytes ) >= 3 ) and ( Result.Bytes[0] = $EF ) and ( Result.Bytes[1] = $BB ) and
-    ( Result.Bytes[2] = $BF );
+  Result.Bytes      := TFile.ReadAllBytes( AFileName );
+  Result.HasBom     := ( Length( Result.Bytes ) >= 3 ) and ( Result.Bytes[ 0 ] = $EF ) and ( Result.Bytes[ 1 ] = $BB ) and
+    ( Result.Bytes[ 2 ] = $BF );
   // Strict decoding: an invalid byte must stop the sort, not turn into U+FFFD in a path.
-  var Strict := TUTF8Encoding.Create( CP_UTF8, MB_ERR_INVALID_CHARS, 0 );
+  var Strict        := TUTF8Encoding.Create( CP_UTF8, MB_ERR_INVALID_CHARS, 0 );
   try
     if Result.HasBom then
-      Result.Text := Strict.GetString( Result.Bytes, 3, Length( Result.Bytes ) - 3 )
+      Result.Text   := Strict.GetString( Result.Bytes, 3, Length( Result.Bytes ) - 3 )
     else
-      Result.Text := Strict.GetString( Result.Bytes );
+      Result.Text   := Strict.GetString( Result.Bytes );
   finally
     Strict.Free;
   end;
@@ -106,14 +106,14 @@ end;
 /// <exception cref="EOSError">The temporary file could not be written or moved into place; the original is untouched.</exception>
 procedure ReplaceGroupFile( const AFileName, AText: string; AWithBom: Boolean );
 begin
-  var Bytes := TEncoding.UTF8.GetBytes( AText );
+  var Bytes         := TEncoding.UTF8.GetBytes( AText );
   if AWithBom then
-    Bytes := TEncoding.UTF8.GetPreamble + Bytes;
-  var TempName := AFileName + '.sorting.tmp';
+    Bytes           := TEncoding.UTF8.GetPreamble + Bytes;
+  var TempName      := AFileName + '.sorting.tmp';
   TFile.WriteAllBytes( TempName, Bytes );
   if not MoveFileEx( PChar( TempName ), PChar( AFileName ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
   begin
-    var Error := GetLastError;
+    var Error       := GetLastError;
     System.SysUtils.DeleteFile( TempName );
     RaiseLastOSError( Error );
   end;
@@ -124,7 +124,7 @@ end;
 /// <param name="AActiveProjFile">The project that was active before, or empty.</param>
 procedure ReopenGroup( const AGroupFile, AActiveProjFile: string );
 var
-  ActionSvc: IOTAActionServices;
+  ActionSvc         : IOTAActionServices;
 begin
   if not Supports( BorlandIDEServices, IOTAActionServices, ActionSvc ) then
     Exit;
@@ -132,12 +132,12 @@ begin
 
   if ( AActiveProjFile = '' ) then
     Exit;
-  var NewGroup := GetActiveProjectGroup;
+  var NewGroup      := GetActiveProjectGroup;
   if ( NewGroup <> nil ) then
     for var I := 0 to NewGroup.ProjectCount - 1 do
-      if SameText( NewGroup.Projects[I].FileName, AActiveProjFile ) then
+      if SameText( NewGroup.Projects[ I ].FileName, AActiveProjFile ) then
       begin
-        NewGroup.SetActiveProject( NewGroup.Projects[I] );
+        NewGroup.SetActiveProject( NewGroup.Projects[ I ] );
         Break;
       end;
 end;
@@ -148,42 +148,42 @@ end;
 /// </summary>
 procedure SortActiveProjectGroup;
 var
-  Group: IOTAProjectGroup;
+  Group             : IOTAProjectGroup;
   GroupFile, ActiveProjFile, Sorted: string;
-  Original, Current: TGroupFileText;
-  ProjCount: Integer;
+  Original, Current : TGroupFileText;
+  ProjCount         : Integer;
 begin
-  Group := GetActiveProjectGroup;
+  Group             := GetActiveProjectGroup;
   if ( Group = nil ) then
   begin
-    MessageDlg( 'No project group is open.', mtInformation, [mbOK], 0 );
+    MessageDlg( 'No project group is open.', mtInformation, [ mbOK ], 0 );
     Exit;
   end;
 
-  GroupFile := Group.FileName;
+  GroupFile         := Group.FileName;
   if ( GroupFile = '' ) or not FileExists( GroupFile ) then
   begin
-    MessageDlg( 'Please save the project group to disk before sorting its projects.', mtInformation, [mbOK], 0 );
+    MessageDlg( 'Please save the project group to disk before sorting its projects.', mtInformation, [ mbOK ], 0 );
     Exit;
   end;
 
-  ProjCount := Group.ProjectCount;
+  ProjCount         := Group.ProjectCount;
   if ( ProjCount < 2 ) then
   begin
     MessageDlg( 'The project group has fewer than two projects, so there is nothing to sort.', mtInformation,
-      [mbOK], 0 );
+      [ mbOK ], 0 );
     Exit;
   end;
 
   if ( MessageDlg( Format(
-       'Sort the %d projects in "%s" alphabetically?'#13#10#13#10 +
-       'The project group will be saved, then closed and reopened so the IDE ' +
-       'reloads the new order. Any open files will be re-read.'#13#10#13#10 +
-       'Build All will then build in the new order. Declared project ' +
-       'dependencies still apply, but a group that relies on its current order ' +
-       'without declaring them may build in the wrong order.',
-       [ProjCount, ExtractFileName( GroupFile )] ),
-       mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes ) then
+        'Sort the %d projects in "%s" alphabetically?'#13#10#13#10 +
+        'The project group will be saved, then closed and reopened so the IDE ' +
+        'reloads the new order. Any open files will be re-read.'#13#10#13#10 +
+        'Build All will then build in the new order. Declared project ' +
+        'dependencies still apply, but a group that relies on its current order ' +
+        'without declaring them may build in the wrong order.',
+        [ ProjCount, ExtractFileName( GroupFile ) ] ),
+      mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes ) then
     Exit;
 
   // Flush the current membership to disk so the file we sort is authoritative.
@@ -191,47 +191,47 @@ begin
 
   // Everything that can fail happens while the group is still open.
   try
-    Original := ReadGroupFile( GroupFile );
-    Sorted := SortGroupProjectText( Original.Text );
+    Original        := ReadGroupFile( GroupFile );
+    Sorted          := SortGroupProjectText( Original.Text );
   except
     on E: Exception do
     begin
       MessageDlg( 'The project group could not be sorted, and nothing was changed:'#13#10#13#10 + E.Message,
-        mtError, [mbOK], 0 );
+        mtError, [ mbOK ], 0 );
       Exit;
     end;
   end;
 
   if ( Sorted = Original.Text ) then
   begin
-    MessageDlg( 'The projects are already in alphabetical order.', mtInformation, [mbOK], 0 );
+    MessageDlg( 'The projects are already in alphabetical order.', mtInformation, [ mbOK ], 0 );
     Exit;
   end;
 
   // The backup is the only way back, so its failure stops the sort. Each sort keeps its
   // own, time-stamped copy: an earlier backup is never overwritten.
-  var BackupFile := GroupFile + '.' + FormatDateTime( 'yyyymmdd-hhnnss', Now ) + '.bak';
+  var BackupFile    := GroupFile + '.' + FormatDateTime( 'yyyymmdd-hhnnss', Now ) + '.bak';
   if not CopyFile( PChar( GroupFile ), PChar( BackupFile ), True ) then
   begin
     MessageDlg( Format( 'The backup "%s" could not be written (%s), so the project group was not sorted.',
-      [BackupFile, SysErrorMessage( GetLastError )] ), mtError, [mbOK], 0 );
+        [ BackupFile, SysErrorMessage( GetLastError ) ] ), mtError, [ mbOK ], 0 );
     Exit;
   end;
 
   // Remember the active project so its selection can be restored after reload.
-  ActiveProjFile := '';
+  ActiveProjFile    := '';
   if ( Group.ActiveProject <> nil ) then
-    ActiveProjFile := Group.ActiveProject.FileName;
+    ActiveProjFile  := Group.ActiveProject.FileName;
 
   // Drop the in-memory group: the IDE only re-reads the member order on open.
   if not Group.Close then
     Exit; // the user cancelled a save prompt; leave everything as it was
-  Group := nil;
+  Group             := nil;
 
   try
     try
       // Closing must not have changed the file; if it did, what we sorted is stale.
-      Current := ReadGroupFile( GroupFile );
+      Current       := ReadGroupFile( GroupFile );
       if ( Length( Current.Bytes ) <> Length( Original.Bytes ) ) or
         not CompareMem( Pointer( Current.Bytes ), Pointer( Original.Bytes ), Length( Original.Bytes ) ) then
         raise EGroupProjSortError.Create( 'The project group file changed while it was being closed.' );
@@ -240,7 +240,7 @@ begin
     except
       on E: Exception do
         MessageDlg( Format( 'The project group could not be rewritten, and has been reopened unchanged:'#13#10#13#10 +
-          '%s'#13#10#13#10'A backup is at "%s".', [E.Message, BackupFile] ), mtError, [mbOK], 0 );
+            '%s'#13#10#13#10'A backup is at "%s".', [ E.Message, BackupFile ] ), mtError, [ mbOK ], 0 );
     end;
   finally
     // Always reopen, sorted or not: leaving the user with no group open is never right.
@@ -252,47 +252,47 @@ end;
 
 constructor TProjectGroupSorterPlugin.Create;
 var
-  ToolsMenu: TMenuItem;
-  I, InsertIndex: Integer;
+  ToolsMenu         : TMenuItem;
+  I, InsertIndex    : Integer;
 begin
   inherited Create;
 
-  ToolsMenu := FindMenuItem('ToolsMenu');
+  ToolsMenu         := FindMenuItem( 'ToolsMenu' );
   if ToolsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create(ToolsMenu);
+    FMenuItem       := TMenuItem.Create( ToolsMenu );
     FMenuItem.Caption := '&Sort Projects in Group...';
     FMenuItem.OnClick := MenuItemClick;
 
     // Place it just after the "IDE Path Sorter" item (or Build Statistics).
-    InsertIndex := -1;
+    InsertIndex     := -1;
     for I := 0 to ToolsMenu.Count - 1 do
-      if (Pos('Path Sorter', ToolsMenu.Items[I].Caption) > 0) or
-         (Pos('Build', ToolsMenu.Items[I].Caption) > 0) then
+      if ( Pos( 'Path Sorter', ToolsMenu.Items[ I ].Caption ) > 0 ) or
+        ( Pos( 'Build', ToolsMenu.Items[ I ].Caption ) > 0 ) then
       begin
         InsertIndex := I + 1;
         Break;
       end;
 
     if InsertIndex > 0 then
-      ToolsMenu.Insert(InsertIndex, FMenuItem)
+      ToolsMenu.Insert( InsertIndex, FMenuItem )
     else
-      ToolsMenu.Add(FMenuItem);
+      ToolsMenu.Add( FMenuItem );
   end;
 end;
 
 destructor TProjectGroupSorterPlugin.Destroy;
 begin
-  FreeAndNil(FMenuItem);
+  FreeAndNil( FMenuItem );
   inherited Destroy;
 end;
 
-procedure TProjectGroupSorterPlugin.MenuItemClick(Sender: TObject);
+procedure TProjectGroupSorterPlugin.MenuItemClick( Sender: TObject );
 begin
   SortActiveProjectGroup;
 end;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
     ProjectGroupSorterPlugin := TProjectGroupSorterPlugin.Create
@@ -304,3 +304,4 @@ begin
 end;
 
 end.
+

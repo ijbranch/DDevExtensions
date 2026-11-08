@@ -95,8 +95,8 @@ uses
 procedure ScanDependencyProject( AScanner: TDependencyScanner; const AProject: IOTAProject;
   AOnProgress: TProc<string> );
 var
-  Options: IOTAProjectOptions;
-  Content: UTF8String;
+  Options           : IOTAProjectOptions;
+  Content           : UTF8String;
 begin
 
   AScanner.Clear;
@@ -111,7 +111,7 @@ begin
     for var sSymbol in PredefinedSymbols( AProject.CurrentPlatform ) do
       AScanner.AddDefine( sSymbol );
 
-  Options := AProject.ProjectOptions;
+  Options           := AProject.ProjectOptions;
   if ( Options <> nil ) then
   begin
     if AScanner.RespectConditionals then
@@ -125,10 +125,10 @@ begin
 
   { The file list is taken once: the progress callback pumps messages, and the project can change
     or close meanwhile - after each pump the scan stops if it is no longer the active project. }
-  var Identity := ProjectIdentity( AProject );
+  var Identity      := ProjectIdentity( AProject );
   for var sFileName in ProjectPascalFiles( AProject ) do
   begin
-    var sUnitName := ChangeFileExt( ExtractFileName( sFileName ), '' );
+    var sUnitName   := ChangeFileExt( ExtractFileName( sFileName ), '' );
     if Assigned( AOnProgress ) then
     begin
       AOnProgress( sUnitName );
@@ -138,11 +138,11 @@ begin
     { An open unit is read from its editor buffer, any other from disk. }
     try
       if ( not ReadUnitSource( sFileName, Content ) ) then
-        Content := '';
+        Content     := '';
     except
       // Locked or vanished: the unit stays in the graph with no dependencies.
       on EFOpenError do
-        Content := '';
+        Content     := '';
     end;
     AScanner.ScanSource( sUnitName, sFileName, string( Content ) );
   end;
@@ -161,7 +161,7 @@ begin
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := '&Dependency Viewer...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -180,7 +180,7 @@ end;
 procedure TDependencyViewerPlugin.Init;
 begin
 
-  FEnabled             := True;
+  FEnabled          := True;
   FRespectConditionals := True;
 
 end;
@@ -188,7 +188,7 @@ end;
 function TDependencyViewerPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Dependency Viewer', TFrameOptionPageDependencyViewer, Self );
+  Result            := TTreePage.Create( 'Dependency Viewer', TFrameOptionPageDependencyViewer, Self );
 
 end;
 
@@ -222,3 +222,4 @@ begin
 end;
 
 end.
+

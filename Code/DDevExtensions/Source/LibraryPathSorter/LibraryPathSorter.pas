@@ -51,7 +51,6 @@ type
   /// <summary>Raised when a library-path value cannot be written, or reads back differently.</summary>
   ELibraryPathError = class( Exception );
 
-
   /// <summary>Reads, writes and sorts the path values stored under HKCU\<BaseRegistryKey>\Library.</summary>
   TLibraryPathHandler = class
   private
@@ -136,8 +135,6 @@ implementation
 uses
   Vcl.Forms, Vcl.Controls, FrmLibraryPathSorter;
 
-
-
 { TLibraryPathHandler }
 
 constructor TLibraryPathHandler.Create;
@@ -151,19 +148,19 @@ end;
 
 function TLibraryPathHandler.GetLibraryKey( const APlatform: string ): string;
 begin
-  Result := FBaseRegistryKey + '\Library';
+  Result            := FBaseRegistryKey + '\Library';
   if APlatform <> '' then
-    Result := Result + '\' + APlatform;
+    Result          := Result + '\' + APlatform;
 end;
 
 function TLibraryPathHandler.GetAvailablePlatforms: TStringList;
 var
-  Reg: TRegistry;
+  Reg               : TRegistry;
 begin
-  Result := TStringList.Create;
-  Reg := TRegistry.Create;
+  Result            := TStringList.Create;
+  Reg               := TRegistry.Create;
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
     if Reg.OpenKeyReadOnly( FBaseRegistryKey + '\Library' ) then
     begin
       Reg.GetKeyNames( Result );
@@ -184,19 +181,19 @@ end;
 function TLibraryPathHandler.ReadPaths( PathType: TLibraryPathType;
   const APlatform: string ): string;
 begin
-  Result := RegReadStringDef( HKEY_CURRENT_USER, GetLibraryKey( APlatform ),
+  Result            := RegReadStringDef( HKEY_CURRENT_USER, GetLibraryKey( APlatform ),
     PathType.ToRegistryValueName, '' );
 end;
 
 procedure TLibraryPathHandler.WritePaths( PathType: TLibraryPathType;
   const APlatform, APaths: string );
 begin
-  var Reg := TRegistry.Create( KEY_READ or KEY_WRITE );
+  var Reg           := TRegistry.Create( KEY_READ or KEY_WRITE );
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
     if not Reg.OpenKey( GetLibraryKey( APlatform ), True ) then
       raise ELibraryPathError.CreateFmt( 'The registry key "%s" could not be opened for writing.',
-        [GetLibraryKey( APlatform )] );
+        [ GetLibraryKey( APlatform ) ] );
     Reg.WriteString( PathType.ToRegistryValueName, APaths );
   finally
     Reg.Free;
@@ -205,47 +202,46 @@ begin
   // A write is only done when it reads back as written.
   if ( ReadPaths( PathType, APlatform ) <> APaths ) then
     raise ELibraryPathError.CreateFmt( 'The %s value for %s did not read back as written.',
-      [PathType.ToDisplayName, APlatform] );
+      [ PathType.ToDisplayName, APlatform ] );
 end;
-
 
 procedure QuickSortPaths( var Arr: TArray<string>; Left, Right: Integer;
   CaseInsensitive: Boolean );
 var
-  I, J: Integer;
-  Pivot, Temp: string;
+  I, J              : Integer;
+  Pivot, Temp       : string;
 begin
   if Left >= Right then
     Exit;
 
   // Choose middle element as pivot
-  Pivot := Arr[( Left + Right ) div 2];
-  I := Left;
-  J := Right;
+  Pivot             := Arr[ ( Left + Right ) div 2 ];
+  I                 := Left;
+  J                 := Right;
 
   while I <= J do
   begin
     if CaseInsensitive then
     begin
-      while CompareText( Arr[I], Pivot ) < 0 do
+      while CompareText( Arr[ I ], Pivot ) < 0 do
         Inc( I );
-      while CompareText( Arr[J], Pivot ) > 0 do
+      while CompareText( Arr[ J ], Pivot ) > 0 do
         Dec( J );
     end
     else
     begin
-      while CompareStr( Arr[I], Pivot ) < 0 do
+      while CompareStr( Arr[ I ], Pivot ) < 0 do
         Inc( I );
-      while CompareStr( Arr[J], Pivot ) > 0 do
+      while CompareStr( Arr[ J ], Pivot ) > 0 do
         Dec( J );
     end;
 
     if I <= J then
     begin
       // Swap
-      Temp := Arr[I];
-      Arr[I] := Arr[J];
-      Arr[J] := Temp;
+      Temp          := Arr[ I ];
+      Arr[ I ]      := Arr[ J ];
+      Arr[ J ]      := Temp;
       Inc( I );
       Dec( J );
     end;
@@ -261,21 +257,21 @@ end;
 function TLibraryPathHandler.SortPaths( const APaths: string;
   CaseInsensitive: Boolean ): string;
 var
-  PathList: TStringList;
-  SortedArray: TArray<string>;
+  PathList          : TStringList;
+  SortedArray       : TArray<string>;
   I, EmptyCount, OriginalCount: Integer;
 begin
-  PathList := TStringList.Create;
+  PathList          := TStringList.Create;
   try
     // Split paths - do NOT delete duplicates (pass False)
     SplitPaths( PathList, APaths, False );
-    OriginalCount := PathList.Count;
+    OriginalCount   := PathList.Count;
 
     // Count and remove empty entries
-    EmptyCount := 0;
+    EmptyCount      := 0;
     for I := PathList.Count - 1 downto 0 do
     begin
-      if Trim( PathList[I] ) = '' then
+      if Trim( PathList[ I ] ) = '' then
       begin
         PathList.Delete( I );
         Inc( EmptyCount );
@@ -285,7 +281,7 @@ begin
     // Copy to array for safe sorting (avoids TStringList quirks)
     SetLength( SortedArray, PathList.Count );
     for I := 0 to PathList.Count - 1 do
-      SortedArray[I] := PathList[I];
+      SortedArray[ I ] := PathList[ I ];
 
     // QuickSort - O(n log n) and safe with duplicates
     if Length( SortedArray ) > 1 then
@@ -294,7 +290,7 @@ begin
     // Rebuild the list from sorted array
     PathList.Clear;
     for I := 0 to Length( SortedArray ) - 1 do
-      PathList.Add( SortedArray[I] );
+      PathList.Add( SortedArray[ I ] );
 
     // Verify count is correct (original minus empties)
     if PathList.Count <> ( OriginalCount - EmptyCount ) then
@@ -302,17 +298,17 @@ begin
       // Critical error - paths were lost during sort!
       raise Exception.CreateFmt(
         'Path count mismatch after sort: Expected %d, got %d',
-        [OriginalCount - EmptyCount, PathList.Count] );
+        [ OriginalCount - EmptyCount, PathList.Count ] );
     end;
 
     // Concatenate paths - Delphi's native format does NOT use quotes
-    Result := '';
+    Result          := '';
     for I := 0 to PathList.Count - 1 do
     begin
       if I = 0 then
-        Result := PathList[I]
+        Result      := PathList[ I ]
       else
-        Result := Result + ';' + PathList[I];
+        Result      := Result + ';' + PathList[ I ];
     end;
   finally
     PathList.Free;
@@ -323,29 +319,29 @@ end;
 
 constructor TLibraryPathSorterPlugin.Create;
 var
-  ToolsMenu: TMenuItem;
-  I, InsertIndex: Integer;
+  ToolsMenu         : TMenuItem;
+  I, InsertIndex    : Integer;
 begin
-  FPathHandler := TLibraryPathHandler.Create;
-  FBackupManager := TLibraryPathBackupManager.Create(
+  FPathHandler      := TLibraryPathHandler.Create;
+  FBackupManager    := TLibraryPathBackupManager.Create(
     AppDataDirectory + '\LibraryPathBackups' + DelphiVersion + '.v2.xml',
     AppDataDirectory + '\LibraryPathBackups' + DelphiVersion + '.xml' );
 
   inherited Create( AppDataDirectory + '\LibraryPathSorter.xml', 'LibraryPathSorter' );
 
   // Add menu item to Tools menu, after Build Statistics
-  ToolsMenu := FindMenuItem( 'ToolsMenu' );
+  ToolsMenu         := FindMenuItem( 'ToolsMenu' );
   if ToolsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create( ToolsMenu );
+    FMenuItem       := TMenuItem.Create( ToolsMenu );
     FMenuItem.Caption := 'IDE Path &Sorter...';
     FMenuItem.OnClick := MenuItemClick;
 
     // Find Build Statistics menu item and insert after it
-    InsertIndex := -1;
+    InsertIndex     := -1;
     for I := 0 to ToolsMenu.Count - 1 do
     begin
-      if Pos( 'Build', ToolsMenu.Items[I].Caption ) > 0 then
+      if Pos( 'Build', ToolsMenu.Items[ I ].Caption ) > 0 then
       begin
         InsertIndex := I + 1;
         Break;
@@ -369,7 +365,7 @@ end;
 
 procedure TLibraryPathSorterPlugin.Init;
 begin
-  FEnabled := True;
+  FEnabled          := True;
 end;
 
 procedure TLibraryPathSorterPlugin.MenuItemClick( Sender: TObject );
@@ -398,3 +394,4 @@ begin
 end;
 
 end.
+

@@ -28,7 +28,7 @@ uses
 
 type
   /// <summary>Container for the four image lists shared across DDevExtensions UI.</summary>
-  TDataModuleImages = class(TDataModule)
+  TDataModuleImages = class( TDataModule )
     /// <summary>General-purpose icons used for menus and tool windows.</summary>
     imlIcons: TImageList;
     /// <summary>Glyphs for filter combo boxes (column/directory filters).</summary>
@@ -43,24 +43,25 @@ type
 
 var
   /// <summary>Singleton instance of <see cref="TDataModuleImages"/>; lifetime managed by <c>Main</c>.</summary>
-  DataModuleImages: TDataModuleImages;
+  DataModuleImages  : TDataModuleImages;
 
 const
   /// <summary>Index in <see cref="TDataModuleImages.imlModules"/> for a Pascal unit (.pas without form).</summary>
-  imgModuleUnit = 0;
+  imgModuleUnit     = 0;
   /// <summary>Index for a form module.</summary>
-  imgModuleForm = 1;
+  imgModuleForm     = 1;
   /// <summary>Index for a frame module.</summary>
-  imgModuleFrame = 2;
+  imgModuleFrame    = 2;
   /// <summary>Index for a data-module.</summary>
   imgModuleDataModule = 3;
   /// <summary>Index for a form that inherits from another form.</summary>
   imgModuleInheritForm = 4;
   /// <summary>Index for a binary resource module.</summary>
-  imgModuleBinary = 5;
+  imgModuleBinary   = 5;
 
 implementation
 
 {$R *.dfm}
 
 end.
+

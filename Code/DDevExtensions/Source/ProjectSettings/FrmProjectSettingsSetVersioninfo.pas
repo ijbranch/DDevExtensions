@@ -32,7 +32,7 @@ type
   /// Modal dialog used to view, set, increment and bulk-apply VersionInfo string and numeric fields
   /// (and the main icon) across one or more projects.
   /// </summary>
-  TFormProjectSettingsSetVersioninfo = class(TFormBase)
+  TFormProjectSettingsSetVersioninfo = class( TFormBase )
     /// <summary>Caption label for the Major file version field.</summary>
     lblFileVersionMajor: TLabel;
     /// <summary>Caption label for the Minor file version field.</summary>
@@ -209,91 +209,91 @@ type
     btnApplyAutoSetOriginalFilename: TBitBtn;
     /// <summary>Reflects the OnExit of an edit field into its corresponding TUpDown spinner.</summary>
     /// <param name="Sender">The version edit box being left.</param>
-    procedure edtFileVersionExit(Sender: TObject);
+    procedure edtFileVersionExit( Sender: TObject );
     /// <summary>Loads the version-info fields for the newly selected project.</summary>
     /// <param name="Sender">The projects list view.</param>
     /// <param name="Item">The item whose selection changed.</param>
     /// <param name="Selected">True when Item became selected, False when it lost the selection.</param>
-    procedure lvwProjectsSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
+    procedure lvwProjectsSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
     /// <summary>Greys out projects without a valid VersionInfo resource on non-icon tabs.</summary>
     /// <param name="Sender">The projects list view.</param>
     /// <param name="Item">The item about to be drawn.</param>
     /// <param name="State">The item's draw state (not used).</param>
     /// <param name="DefaultDraw">Always set True so the list view draws the item itself.</param>
-    procedure lvwProjectsCustomDrawItem(Sender: TCustomListView;
-      Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure lvwProjectsCustomDrawItem( Sender: TCustomListView;
+      Item: TListItem; State: TCustomDrawState; var DefaultDraw: Boolean );
     /// <summary>Generic Apply handler that writes the corresponding string field to the projects.</summary>
     /// <param name="Sender">The Apply button clicked; it selects which version string is written.</param>
     /// <exception cref="Exception">Sender is not one of the known string Apply buttons (a programming error).</exception>
-    procedure btnApplyStringClick(Sender: TObject);
+    procedure btnApplyStringClick( Sender: TObject );
     /// <summary>Applies the file version triplet (Major/Minor/Release) to the projects.</summary>
     /// <param name="Sender">The Apply File Version button.</param>
-    procedure btnApplyFileVersionClick(Sender: TObject);
+    procedure btnApplyFileVersionClick( Sender: TObject );
     /// <summary>Computes today minus the start day and writes the value to edtDaysBetween.</summary>
     /// <param name="Sender">The Days Between button.</param>
-    procedure btnDaysbetweenClick(Sender: TObject);
+    procedure btnDaysbetweenClick( Sender: TObject );
     /// <summary>Hides the "applied" notification when the timer elapses.</summary>
     /// <param name="Sender">The hide timer.</param>
-    procedure TimerAppliedHideTimer(Sender: TObject);
+    procedure TimerAppliedHideTimer( Sender: TObject );
     /// <summary>Applies the Build component of the file version to the projects.</summary>
     /// <param name="Sender">The Apply Build button.</param>
-    procedure btnApplyBuildClick(Sender: TObject);
+    procedure btnApplyBuildClick( Sender: TObject );
     /// <summary>Initialises FIcon, sets default tab and adjusts platform check visibility.</summary>
     /// <param name="Sender">The form being created.</param>
-    procedure FormCreate(Sender: TObject);
+    procedure FormCreate( Sender: TObject );
     /// <summary>Enables/disables Major-related sub-options based on cbxIncMajor.</summary>
     /// <param name="Sender">The Increment Major checkbox.</param>
-    procedure cbxIncMajorClick(Sender: TObject);
+    procedure cbxIncMajorClick( Sender: TObject );
     /// <summary>Enables/disables Minor-related sub-options based on cbxIncMinor.</summary>
     /// <param name="Sender">The Increment Minor checkbox.</param>
-    procedure cbxIncMinorClick(Sender: TObject);
+    procedure cbxIncMinorClick( Sender: TObject );
     /// <summary>Performs the configured version increment across the eligible projects.</summary>
     /// <param name="Sender">The Execute Increment button.</param>
-    procedure btnExecuteIncrementClick(Sender: TObject);
+    procedure btnExecuteIncrementClick( Sender: TObject );
     /// <summary>Toggles the apply-to-selected-only mode and updates UI accordingly.</summary>
     /// <param name="Sender">The Apply to Selected Only checkbox.</param>
-    procedure cbxApplyToSelectedOnlyClick(Sender: TObject);
+    procedure cbxApplyToSelectedOnlyClick( Sender: TObject );
     /// <summary>Enables/disables Release-related sub-options based on cbxIncRelease.</summary>
     /// <param name="Sender">The Increment Release checkbox.</param>
-    procedure cbxIncReleaseClick(Sender: TObject);
+    procedure cbxIncReleaseClick( Sender: TObject );
     /// <summary>Enables/disables Build-related sub-options based on cbxIncBuild.</summary>
     /// <param name="Sender">The Increment Build checkbox.</param>
-    procedure cbxIncBuildClick(Sender: TObject);
+    procedure cbxIncBuildClick( Sender: TObject );
     /// <summary>Loads a new icon from disk into FIcon.</summary>
     /// <param name="Sender">The Load Icon button.</param>
-    procedure btnLoadMainIconClick(Sender: TObject);
+    procedure btnLoadMainIconClick( Sender: TObject );
     /// <summary>Writes the loaded icon to the eligible projects' main icon resource.</summary>
     /// <param name="Sender">The Apply Icon button.</param>
-    procedure btnApplyMainIconClick(Sender: TObject);
+    procedure btnApplyMainIconClick( Sender: TObject );
     /// <summary>Refreshes the icon preview when a different icon image is selected.</summary>
     /// <param name="Sender">The icon-images list box.</param>
-    procedure lbxMainIconsClick(Sender: TObject);
+    procedure lbxMainIconsClick( Sender: TObject );
     /// <summary>Frees FIcon when the form is destroyed.</summary>
     /// <param name="Sender">The form being destroyed.</param>
-    procedure FormDestroy(Sender: TObject);
+    procedure FormDestroy( Sender: TObject );
     /// <summary>Renders the currently selected icon image inside pbxMainIcon.</summary>
     /// <param name="Sender">The icon preview paint box.</param>
-    procedure pbxMainIconPaint(Sender: TObject);
+    procedure pbxMainIconPaint( Sender: TObject );
     /// <summary>Clears the loaded icon and updates the preview.</summary>
     /// <param name="Sender">The Remove Icon button.</param>
-    procedure btnRemoveMainIconClick(Sender: TObject);
+    procedure btnRemoveMainIconClick( Sender: TObject );
     /// <summary>Triggers a redraw of lvwProjects when the active page changes.</summary>
     /// <param name="Sender">The page control.</param>
-    procedure pgcPagesChange(Sender: TObject);
+    procedure pgcPagesChange( Sender: TObject );
     /// <summary>Sets each project's Original Filename to ExtractFileName(TargetName).</summary>
     /// <param name="Sender">The Auto-set Original Filename button.</param>
-    procedure btnApplyAutoSetOriginalFilenameClick(Sender: TObject);
+    procedure btnApplyAutoSetOriginalFilenameClick( Sender: TObject );
   private
     /// <summary>Working icon resource used by the Main Icon tab.</summary>
     FIcon: TIconResource;
     /// <summary>Populates the projects list, runs the dialog and persists settings on close.</summary>
     /// <param name="Projects">The projects to list (IOTAProject references).</param>
     /// <returns>True if the user closed the dialog with OK.</returns>
-    function DoExecute(Projects: TInterfaceList): Boolean; virtual;
+    function DoExecute( Projects: TInterfaceList ): Boolean; virtual;
     /// <summary>Returns the file creation date/time of the project's main file.</summary>
     /// <param name="Project">The project whose main file is examined; may be nil.</param>
     /// <returns>The local creation date and time of the project file, or today's date when Project is nil or its file is not found.</returns>
-    function GetStartDateTimeOf(const Project: IOTAProject): TDateTime;
+    function GetStartDateTimeOf( const Project: IOTAProject ): TDateTime;
     /// <summary>Loads persisted dialog settings (apply-to-selected and platform flags).</summary>
     procedure LoadSettings;
     /// <summary>Saves persisted dialog settings (apply-to-selected and platform flags).</summary>
@@ -317,17 +317,17 @@ type
     procedure UpdateActions; override;
     /// <summary>Shows the transient "applied" notification with the supplied (or default) text.</summary>
     /// <param name="Text">The message to show; empty shows "Versioninfo updated.".</param>
-    procedure ApplyFinished(const Text: string = '');
+    procedure ApplyFinished( const Text: string = '' );
   public
     /// <summary>Creates the form, runs the dialog over the supplied projects and frees the form.</summary>
     /// <param name="Projects">Projects whose version info should be edited.</param>
     /// <returns>True if the user confirmed with OK.</returns>
-    class function Execute(Projects: TInterfaceList): Boolean;
+    class function Execute( Projects: TInterfaceList ): Boolean;
   end;
 
 /// <summary>Plugin entry point that creates or frees the global TVersionInfoHandler.</summary>
 /// <param name="Unload">False to create the plugin object at start-up; True to free it at shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -338,109 +338,108 @@ uses
 {$R *.dfm}
 
 type
-  TVersionInfoHandler = class(TComponent)
+  TVersionInfoHandler = class( TComponent )
   private
     FMenuItemSetVersionInfo: TMenuItem;
     FActionSetVersionInfo: TAction;
     FActionList: TActionList;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
 
-    procedure DoUpdateSetVersionInfo(Sender: TObject = nil);
-    procedure DoSetVersionInfo(Sender: TObject = nil);
+    procedure DoUpdateSetVersionInfo( Sender: TObject = nil );
+    procedure DoSetVersionInfo( Sender: TObject = nil );
   end;
 
 var
   VersionInfoHandler: TVersionInfoHandler;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
-    VersionInfoHandler := TVersionInfoHandler.Create(nil)
+    VersionInfoHandler := TVersionInfoHandler.Create( nil )
   else
-    FreeAndNil(VersionInfoHandler);
+    FreeAndNil( VersionInfoHandler );
 end;
 
 { TVersionInfoHandler }
 
-constructor TVersionInfoHandler.Create(AOwner: TComponent);
+constructor TVersionInfoHandler.Create( AOwner: TComponent );
 var
-  ProjectMenu: TMenuItem;
+  ProjectMenu       : TMenuItem;
 begin
-  inherited Create(AOwner);
-  FActionList := TActionList.Create(Self);
+  inherited Create( AOwner );
+  FActionList       := TActionList.Create( Self );
   FActionList.Images := DataModuleImages.imlIcons;
 
-  ProjectMenu := FindMenuItem('ProjectMenu');
+  ProjectMenu       := FindMenuItem( 'ProjectMenu' );
   if ProjectMenu <> nil then
   begin
     { "Set Versioninfo..." }
-    FActionSetVersionInfo := TAction.Create(Self);
+    FActionSetVersionInfo := TAction.Create( Self );
     FActionSetVersionInfo.ActionList := FActionList;
     FActionSetVersionInfo.Caption := sMenuItemSetVersionInfo;
     FActionSetVersionInfo.OnUpdate := DoUpdateSetVersionInfo;
     FActionSetVersionInfo.OnExecute := DoSetVersionInfo;
     FActionSetVersionInfo.ImageIndex := 7;
 
-    FMenuItemSetVersionInfo := TMenuItem.Create(Self);
+    FMenuItemSetVersionInfo := TMenuItem.Create( Self );
     FMenuItemSetVersionInfo.Name := 'ProjectSetVersionInfoItem';
     FMenuItemSetVersionInfo.Action := FActionSetVersionInfo;
 
     { add menu items }
-    ProjectMenu.Add(FMenuItemSetVersionInfo);
+    ProjectMenu.Add( FMenuItemSetVersionInfo );
   end;
 end;
 
-procedure TVersionInfoHandler.DoUpdateSetVersionInfo(Sender: TObject);
+procedure TVersionInfoHandler.DoUpdateSetVersionInfo( Sender: TObject );
 var
-  Group: IOTAProjectGroup;
+  Group             : IOTAProjectGroup;
 begin
-  Group := GetActiveProjectGroup;
-  FActionSetVersionInfo.Enabled := (Group <> nil) and (Group.ProjectCount > 0)
-    and (GetActiveProject <> nil)
-    and ((GetActiveProject.GetPersonality = sDelphiPersonality) or
-         (GetActiveProject.GetPersonality = sCBuilderPersonality));
+  Group             := GetActiveProjectGroup;
+  FActionSetVersionInfo.Enabled := ( Group <> nil ) and ( Group.ProjectCount > 0 )
+    and ( GetActiveProject <> nil )
+    and ( ( GetActiveProject.GetPersonality = sDelphiPersonality ) or
+    ( GetActiveProject.GetPersonality = sCBuilderPersonality ) );
 end;
 
-procedure TVersionInfoHandler.DoSetVersionInfo(Sender: TObject);
+procedure TVersionInfoHandler.DoSetVersionInfo( Sender: TObject );
 var
-  I: Integer;
-  List: TInterfaceList;
-  Group: IOTAProjectGroup;
+  I                 : Integer;
+  List              : TInterfaceList;
+  Group             : IOTAProjectGroup;
 begin
-  Group := GetActiveProjectGroup;
-  if Assigned(Group) then
+  Group             := GetActiveProjectGroup;
+  if Assigned( Group ) then
   begin
-    List := TInterfaceList.Create;
+    List            := TInterfaceList.Create;
     try
       for I := 0 to Group.ProjectCount - 1 do
-        List.Add(Group.Projects[I]);
-      TFormProjectSettingsSetVersioninfo.Execute(List);
+        List.Add( Group.Projects[ I ] );
+      TFormProjectSettingsSetVersioninfo.Execute( List );
     finally
       List.Free;
     end;
   end;
 end;
 
-
 { TFormProjectSettingsSetVersioninfo }
 
-class function TFormProjectSettingsSetVersioninfo.Execute(Projects: TInterfaceList): Boolean;
+class function TFormProjectSettingsSetVersioninfo.Execute( Projects: TInterfaceList ): Boolean;
 begin
-  with Self.Create(nil) do
-  try
-    Result := DoExecute(Projects);
-  finally
-    Free;
-  end;
+  with Self.Create( nil ) do
+    try
+      Result        := DoExecute( Projects );
+    finally
+      Free;
+    end;
 end;
 
-function TFormProjectSettingsSetVersioninfo.DoExecute(Projects: TInterfaceList): Boolean;
+function TFormProjectSettingsSetVersioninfo.DoExecute( Projects: TInterfaceList ): Boolean;
 var
-  I: Integer;
-  Version: TProjectVersion;
-  Item: TListItem;
-  Project: IOTAProject;
+  I                 : Integer;
+  Version           : TProjectVersion;
+  Item              : TListItem;
+  Project           : IOTAProject;
 begin
   LoadSettings;
 
@@ -449,162 +448,162 @@ begin
     lvwProjects.Items.Clear;
     for I := 0 to Projects.Count - 1 do
     begin
-      Project := IOTAProject(Projects[I]);
-      Item := lvwProjects.Items.Add;
-      Item.Caption := ExtractFileName(Project.FileName);
-      Item.Data := Pointer(Project);
-      Version := GetProjectVersion(Project);
+      Project       := IOTAProject( Projects[ I ] );
+      Item          := lvwProjects.Items.Add;
+      Item.Caption  := ExtractFileName( Project.FileName );
+      Item.Data     := Pointer( Project );
+      Version       := GetProjectVersion( Project );
       if Version.Valid then
       begin
-        Item.SubItems.Add('');
+        Item.SubItems.Add( '' );
         Item.ImageIndex := 4;
       end
       else
       begin
-        Item.SubItems.Add('no resource');
+        Item.SubItems.Add( 'no resource' );
         Item.ImageIndex := 8;
       end;
     end;
     if lvwProjects.Items.Count > 0 then
-      lvwProjects.Selected := lvwProjects.Items[0];
+      lvwProjects.Selected := lvwProjects.Items[ 0 ];
   finally
     lvwProjects.Items.EndUpdate;
   end;
-  Result := ShowModal = mrOk;
+  Result            := ShowModal = mrOk;
 
   SaveSettings;
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.SaveSettings;
 var
-  Node: IXmlNode;
+  Node              : IXmlNode;
 begin
-  Node := Configuration.GetNode('ProjectSetVersionInfo');
-  Node.Attributes['ApplyToSelected'] := cbxApplyToSelectedOnly.Checked;
-  Node.Attributes['ApplyToAllPlatforms'] := cbxApplyToAllPlatforms.Checked;
+  Node              := Configuration.GetNode( 'ProjectSetVersionInfo' );
+  Node.Attributes[ 'ApplyToSelected' ] := cbxApplyToSelectedOnly.Checked;
+  Node.Attributes[ 'ApplyToAllPlatforms' ] := cbxApplyToAllPlatforms.Checked;
   Configuration.Modified;
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.LoadSettings;
 var
-  Node: IXmlNode;
+  Node              : IXmlNode;
 begin
-  Node := Configuration.FindNode('ProjectSetVersionInfo');
+  Node              := Configuration.FindNode( 'ProjectSetVersionInfo' );
   if Node <> nil then
   begin
-    cbxApplyToSelectedOnly.Checked := VarToBoolDef(Node.Attributes['ApplyToSelected'], False);
-    cbxApplyToAllPlatforms.Checked := VarToBoolDef(Node.Attributes['ApplyToAllPlatforms'], False);
+    cbxApplyToSelectedOnly.Checked := VarToBoolDef( Node.Attributes[ 'ApplyToSelected' ], False );
+    cbxApplyToAllPlatforms.Checked := VarToBoolDef( Node.Attributes[ 'ApplyToAllPlatforms' ], False );
   end;
 
-  cbxApplyToSelectedOnlyClick(cbxApplyToSelectedOnly);
+  cbxApplyToSelectedOnlyClick( cbxApplyToSelectedOnly );
 end;
 
 function TFormProjectSettingsSetVersioninfo.GetSelectedApplyProject: IOTAProject;
 var
-  Item: TListItem;
+  Item              : TListItem;
 begin
-  Result := nil;
-  Item := lvwProjects.Selected;
-  if (Item <> nil) then
-    if (Item.SubItems.Count = 0) or (Item.SubItems[0] = '') then // Has valid version resource then
-      Result := IOTAProject(Item.Data);
+  Result            := nil;
+  Item              := lvwProjects.Selected;
+  if ( Item <> nil ) then
+    if ( Item.SubItems.Count = 0 ) or ( Item.SubItems[ 0 ] = '' ) then // Has valid version resource then
+      Result        := IOTAProject( Item.Data );
 end;
 
 function TFormProjectSettingsSetVersioninfo.GetValidApplyProjects: IOTAProjectArray;
 var
-  I, Count: Integer;
+  I, Count          : Integer;
   ApplyToSelectedOnly: Boolean;
-  Item: TListItem;
-  SelProject: IOTAProject;
+  Item              : TListItem;
+  SelProject        : IOTAProject;
 begin
   ApplyToSelectedOnly := cbxApplyToSelectedOnly.Checked;
-  SetLength(Result, lvwProjects.Items.Count); // worst case
+  SetLength( Result, lvwProjects.Items.Count ); // worst case
 
-  Count := 0;
+  Count             := 0;
   for I := 0 to lvwProjects.Items.Count - 1 do
   begin
-    Item := lvwProjects.Items[I];
-    if (Item.SubItems.Count = 0) or (Item.SubItems[0] = '') then // Has valid version resource
+    Item            := lvwProjects.Items[ I ];
+    if ( Item.SubItems.Count = 0 ) or ( Item.SubItems[ 0 ] = '' ) then // Has valid version resource
     begin
-      if not ApplyToSelectedOnly or lvwProjects.Items[I].Checked then
+      if not ApplyToSelectedOnly or lvwProjects.Items[ I ].Checked then
       begin
-        Result[Count] := IOTAProject(lvwProjects.Items[I].Data);
-        Inc(Count);
+        Result[ Count ] := IOTAProject( lvwProjects.Items[ I ].Data );
+        Inc( Count );
       end;
     end;
   end;
 
-  if (Count = 0) and ApplyToSelectedOnly then
+  if ( Count = 0 ) and ApplyToSelectedOnly then
   begin
-    SelProject := GetSelectedApplyProject;
+    SelProject      := GetSelectedApplyProject;
     if SelProject <> nil then
     begin
-      Result[0] := SelProject;
-      Count := 1;
+      Result[ 0 ]   := SelProject;
+      Count         := 1;
     end;
   end;
 
-  SetLength(Result, Count);
+  SetLength( Result, Count );
 end;
 
 function TFormProjectSettingsSetVersioninfo.HasValidProjects: Boolean;
 var
-  I: Integer;
+  I                 : Integer;
   ApplyToSelectedOnly: Boolean;
-  Item: TListItem;
+  Item              : TListItem;
 begin
   ApplyToSelectedOnly := cbxApplyToSelectedOnly.Checked;
-  Result := True;
+  Result            := True;
   for I := 0 to lvwProjects.Items.Count - 1 do
   begin
-    Item := lvwProjects.Items[I];
-    if (Item.SubItems.Count = 0) or (Item.SubItems[0] = '') then // Has valid version resource
-      if not ApplyToSelectedOnly or lvwProjects.Items[I].Checked then
+    Item            := lvwProjects.Items[ I ];
+    if ( Item.SubItems.Count = 0 ) or ( Item.SubItems[ 0 ] = '' ) then // Has valid version resource
+      if not ApplyToSelectedOnly or lvwProjects.Items[ I ].Checked then
         Exit;
   end;
 
-  if ApplyToSelectedOnly and (GetSelectedApplyProject <> nil) then
+  if ApplyToSelectedOnly and ( GetSelectedApplyProject <> nil ) then
     Exit;
 
-  Result := False;
+  Result            := False;
 end;
 
-function TFormProjectSettingsSetVersioninfo.GetStartDateTimeOf(const Project: IOTAProject): TDateTime;
+function TFormProjectSettingsSetVersioninfo.GetStartDateTimeOf( const Project: IOTAProject ): TDateTime;
 var
-  sh: THandle;
-  Data: TWin32FindData;
-  LocalFileTime: TFileTime;
-  SystemTime: TSystemTime;
+  sh                : THandle;
+  Data              : TWin32FindData;
+  LocalFileTime     : TFileTime;
+  SystemTime        : TSystemTime;
 begin
-  Result := Date;
+  Result            := Date;
   if Project <> nil then
   begin
     { Get file creation time }
-    sh := FindFirstFile(PChar(Project.FileName), Data);
+    sh              := FindFirstFile( PChar( Project.FileName ), Data );
     if sh <> INVALID_HANDLE_VALUE then
     begin
-      Winapi.Windows.FindClose(sh);
-      FileTimeToLocalFileTime(Data.ftCreationTime, LocalFileTime);
-      FileTimeToSystemTime(LocalFileTime, SystemTime);
+      Winapi.Windows.FindClose( sh );
+      FileTimeToLocalFileTime( Data.ftCreationTime, LocalFileTime );
+      FileTimeToSystemTime( LocalFileTime, SystemTime );
       with SystemTime do
-        Result := EncodeDate(wYear, wMonth, wDay) +
-                  EncodeTime(wHour, wMinute, wSecond, wMilliSeconds);
+        Result := EncodeDate( wYear, wMonth, wDay ) +
+          EncodeTime( wHour, wMinute, wSecond, wMilliSeconds );
     end
   end;
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.lvwProjectsSelectItem(
-  Sender: TObject; Item: TListItem; Selected: Boolean);
+  Sender: TObject; Item: TListItem; Selected: Boolean );
 var
-  Version: TProjectVersion;
+  Version           : TProjectVersion;
 begin
   if csDestroying in ComponentState then
     Exit;
 
-  Version.Valid := False;
+  Version.Valid     := False;
   if Selected then
   begin
-    Version := GetProjectVersion(IOTAProject(Item.Data));
+    Version         := GetProjectVersion( IOTAProject( Item.Data ) );
     {if not Version.Valid then
       lvwProjects.Selected := nil;}
   end;
@@ -624,7 +623,7 @@ begin
     edtOriginalFilename.Text := Version.OriginalFilename;
     edtComments.Text := Version.Comments;
 
-    dtpStartDay.Date := GetStartDateTimeOf(IOTAProject(Item.Data));
+    dtpStartDay.Date := GetStartDateTimeOf( IOTAProject( Item.Data ) );
   end
   else
   begin
@@ -642,162 +641,162 @@ begin
     edtOriginalFilename.Text := '';
     edtComments.Text := '';
   end;
-  FIcon.LoadFromProjectResource(IOTAProject(Item.Data));
+  FIcon.LoadFromProjectResource( IOTAProject( Item.Data ) );
   UpdateMainIconPreview;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.pbxMainIconPaint(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.pbxMainIconPaint( Sender: TObject );
 var
-  Ico: HICON;
-  Index: Integer;
-  Item: TIconResourceItem;
-  R: TRect;
+  Ico               : HICON;
+  Index             : Integer;
+  Item              : TIconResourceItem;
+  R                 : TRect;
 begin
-  Index := lbxMainIcons.ItemIndex;
+  Index             := lbxMainIcons.ItemIndex;
   if Index = -1 then
-    Index := 0;
+    Index           := 0;
   if Index >= FIcon.Count then
     Exit;
-  Ico := FIcon.GetPaintIcon(Index);
+  Ico               := FIcon.GetPaintIcon( Index );
   if Ico = 0 then
     Exit;
 
-  Item := FIcon.Images[Index];
+  Item              := FIcon.Images[ Index ];
 
-  R := Rect(0, 0, Max(48, Item.Width), Max(48, Item.Height));
-  InflateRect(R, 4, 4);
-  OffsetRect(R, -R.Left, -R.Top);
+  R                 := Rect( 0, 0, Max( 48, Item.Width ), Max( 48, Item.Height ) );
+  InflateRect( R, 4, 4 );
+  OffsetRect( R, -R.Left, -R.Top );
 
   if Ico <> 0 then
     DrawIconEx(
       pbxMainIcon.Canvas.Handle,
-      R.Left + (R.Right - R.Left - Item.Width) div 2,
-      R.Top + (R.Bottom - R.Top - Item.Height) div 2,
+      R.Left + ( R.Right - R.Left - Item.Width ) div 2,
+      R.Top + ( R.Bottom - R.Top - Item.Height ) div 2,
       Ico, Item.Width, Item.Height, 0, 0, DI_NORMAL
-    );
+      );
 
   { Border }
-  Inc(R.Right);
-  Inc(R.Bottom);
+  Inc( R.Right );
+  Inc( R.Bottom );
   pbxMainIcon.Canvas.Brush.Style := bsClear;
   pbxMainIcon.Canvas.Pen.Color := $FF9933;
   pbxMainIcon.Canvas.Pen.Width := 2;
-  pbxMainIcon.Canvas.RoundRect(R, 8, 8);
+  pbxMainIcon.Canvas.RoundRect( R, 8, 8 );
   pbxMainIcon.Canvas.Pen.Width := 1;
-  InflateRect(R, -1, -1);
-  pbxMainIcon.Canvas.RoundRect(R, 7, 7);
+  InflateRect( R, -1, -1 );
+  pbxMainIcon.Canvas.RoundRect( R, 7, 7 );
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.pgcPagesChange(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.pgcPagesChange( Sender: TObject );
 begin
   lvwProjects.Invalidate;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.lbxMainIconsClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.lbxMainIconsClick( Sender: TObject );
 begin
   pbxMainIcon.Invalidate;
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.lvwProjectsCustomDrawItem(
   Sender: TCustomListView; Item: TListItem; State: TCustomDrawState;
-  var DefaultDraw: Boolean);
+  var DefaultDraw: Boolean );
 begin
-  DefaultDraw := True;
-  if (Item.SubItems.Count > 0) and (Item.SubItems[0] <> '') and (pgcPages.ActivePage <> tsMainIcon) then
+  DefaultDraw       := True;
+  if ( Item.SubItems.Count > 0 ) and ( Item.SubItems[ 0 ] <> '' ) and ( pgcPages.ActivePage <> tsMainIcon ) then
     Sender.Canvas.Font.Color := clSilver;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnApplyStringClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnApplyStringClick( Sender: TObject );
 
-  function GetVersionPString(var {ref} Version: TProjectVersion): PString;
+  function GetVersionPString( var {ref} Version: TProjectVersion ): PString;
   begin
     if Sender = btnApplyProductName then
-      Result := @Version.ProductName
+      Result        := @Version.ProductName
 
     else if Sender = btnApplyProductVersion then
-      Result := @Version.ProductVersionStr
+      Result        := @Version.ProductVersionStr
 
     else if Sender = btnApplyCompanyName then
-      Result := @Version.CompanyName
+      Result        := @Version.CompanyName
 
     else if Sender = btnApplyLegalCopyright then
-      Result := @Version.LegalCopyright
+      Result        := @Version.LegalCopyright
 
     else if Sender = btnApplyLegalTrademarks then
-      Result := @Version.LegalTrademarks
+      Result        := @Version.LegalTrademarks
 
     else if Sender = btnApplyFileDescription then
-      Result := @Version.FileDescription
+      Result        := @Version.FileDescription
 
     else if Sender = btnApplyInternalName then
-      Result := @Version.InternalName
+      Result        := @Version.InternalName
 
     else if Sender = btnApplyComments then
-      Result := @Version.Comments
+      Result        := @Version.Comments
 
     else if Sender = btnApplyOriginalFilename then
-      Result := @Version.OriginalFilename
+      Result        := @Version.OriginalFilename
 
     else
-      raise Exception.CreateFmt('Unhandled Apply button: %s', [(Sender as TComponent).Name]);
+      raise Exception.CreateFmt( 'Unhandled Apply button: %s', [ ( Sender as TComponent ).Name ] );
   end;
 
 var
-  Version: TProjectVersion;
-  Value: string;
-  Edit: TEdit;
-  EditName: string;
-  P: PString;
-  Project: IOTAProject;
-  Projects: IOTAProjectArray;
+  Version           : TProjectVersion;
+  Value             : string;
+  Edit              : TEdit;
+  EditName          : string;
+  P                 : PString;
+  Project           : IOTAProject;
+  Projects          : IOTAProjectArray;
 begin
-  EditName := 'edt' + Copy((Sender as TComponent).Name, Length('btnApply') + 1, MaxInt);
-  Edit := FindComponent(EditName) as TEdit;
+  EditName          := 'edt' + Copy( ( Sender as TComponent ).Name, Length( 'btnApply' ) + 1, MaxInt );
+  Edit              := FindComponent( EditName ) as TEdit;
   // Assertions are off in release builds; without a runtime guard a naming
   // mismatch would AV on Edit.Text below.
   if Edit = nil then
     Exit;
 
-  Value := Trim(Edit.Text);
+  Value             := Trim( Edit.Text );
   if Sender = btnApplyOriginalFilename then // Apply to this
   begin
-    Project := GetSelectedApplyProject();
+    Project         := GetSelectedApplyProject( );
     if Project <> nil then
-      Projects := IOTAProjectArray.Create(Project)
+      Projects      := IOTAProjectArray.Create( Project )
     else
-      Projects := nil;
+      Projects      := nil;
   end
   else
-    Projects := GetValidApplyProjects();
+    Projects        := GetValidApplyProjects( );
 
   for Project in Projects do
   begin
-    Version := GetProjectVersion(Project);
+    Version := GetProjectVersion( Project );
     if Version.Valid then
     begin
-      P := GetVersionPString(Version);
+      P             := GetVersionPString( Version );
       if P^ <> Value then
       begin
-        P^ := Value;
-        SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
+        P^          := Value;
+        SetProjectVersion( Project, Version, cbxApplyToAllPlatforms.Checked );
       end;
     end;
   end;
   ApplyFinished;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnLoadMainIconClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnLoadMainIconClick( Sender: TObject );
 begin
   if dlgOpenMainIcon.Execute then
   begin
     // The file dialog filter does not guarantee a valid .ico; guard the load so a
     // corrupt file shows a friendly message and leaves FIcon unchanged.
     try
-      FIcon.LoadFromIconFile(dlgOpenMainIcon.FileName);
+      FIcon.LoadFromIconFile( dlgOpenMainIcon.FileName );
     except
       on E: Exception do
       begin
-        ShowMessage('Could not load icon:'#13#10 + E.Message);
+        ShowMessage( 'Could not load icon:'#13#10 + E.Message );
         Exit;
       end;
     end;
@@ -805,89 +804,89 @@ begin
   end;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnRemoveMainIconClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnRemoveMainIconClick( Sender: TObject );
 begin
   FIcon.Clear;
   UpdateMainIconPreview;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnApplyFileVersionClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnApplyFileVersionClick( Sender: TObject );
 var
-  Project: IOTAProject;
-  Version: TProjectVersion;
+  Project           : IOTAProject;
+  Version           : TProjectVersion;
 begin
-  for Project in GetValidApplyProjects() do
+  for Project in GetValidApplyProjects( ) do
   begin
-    Version := GetProjectVersion(Project);
+    Version         := GetProjectVersion( Project );
     if Version.Valid and
-      (( udMajor.Position <> Version.FileVersion.Major ) or
-       ( udMinor.Position <> Version.FileVersion.Minor ) or
-       ( udRelease.Position <> Version.FileVersion.Release )) then
+      ( ( udMajor.Position <> Version.FileVersion.Major ) or
+      ( udMinor.Position <> Version.FileVersion.Minor ) or
+      ( udRelease.Position <> Version.FileVersion.Release ) ) then
     begin
       Version.FileVersion.Major := udMajor.Position;
       Version.FileVersion.Minor := udMinor.Position;
       Version.FileVersion.Release := udRelease.Position;
       with Version.FileVersion do
-        Version.FileVersionStr := Format('%d.%d.%d.%d', [Major, Minor, Release, Build]);
-      SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
+        Version.FileVersionStr := Format( '%d.%d.%d.%d', [ Major, Minor, Release, Build ] );
+      SetProjectVersion( Project, Version, cbxApplyToAllPlatforms.Checked );
     end;
   end;
   ApplyFinished;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnApplyMainIconClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnApplyMainIconClick( Sender: TObject );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
-  for Project in GetValidApplyProjects() do
-    FIcon.SaveToProjectResource(Project);
-  ApplyFinished('Main Icons replaced.');
+  for Project in GetValidApplyProjects( ) do
+    FIcon.SaveToProjectResource( Project );
+  ApplyFinished( 'Main Icons replaced.' );
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnApplyAutoSetOriginalFilenameClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnApplyAutoSetOriginalFilenameClick( Sender: TObject );
 var
-  Project: IOTAProject;
-  Version: TProjectVersion;
-  Value: string;
+  Project           : IOTAProject;
+  Version           : TProjectVersion;
+  Value             : string;
 begin
-  for Project in GetValidApplyProjects() do
+  for Project in GetValidApplyProjects( ) do
   begin
-    Version := GetProjectVersion(Project);
+    Version         := GetProjectVersion( Project );
     if Version.Valid then
     begin
-      Value := ExtractFileName(Project.ProjectOptions.TargetName);
+      Value         := ExtractFileName( Project.ProjectOptions.TargetName );
       if Value <> Version.OriginalFilename then
       begin
         Version.OriginalFilename := Value;
-        SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
+        SetProjectVersion( Project, Version, cbxApplyToAllPlatforms.Checked );
       end;
     end;
   end;
   // Update selected version info
   if GetSelectedApplyProject <> nil then
   begin
-    Version := GetProjectVersion(GetSelectedApplyProject);
+    Version         := GetProjectVersion( GetSelectedApplyProject );
     edtOriginalFilename.Text := Version.OriginalFilename;
   end;
   ApplyFinished;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnApplyBuildClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnApplyBuildClick( Sender: TObject );
 var
-  Project: IOTAProject;
-  Version: TProjectVersion;
-  Value: Integer;
+  Project           : IOTAProject;
+  Version           : TProjectVersion;
+  Value             : Integer;
 begin
-  Value := udBuild.Position;
-  for Project in GetValidApplyProjects() do
+  Value             := udBuild.Position;
+  for Project in GetValidApplyProjects( ) do
   begin
-    Version := GetProjectVersion(Project);
+    Version         := GetProjectVersion( Project );
     if Version.Valid and ( Version.FileVersion.Build <> Value ) then
     begin
       Version.FileVersion.Build := Value;
       with Version.FileVersion do
-        Version.FileVersionStr := Format('%d.%d.%d.%d', [Major, Minor, Release, Build]);
-      SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
+        Version.FileVersionStr := Format( '%d.%d.%d.%d', [ Major, Minor, Release, Build ] );
+      SetProjectVersion( Project, Version, cbxApplyToAllPlatforms.Checked );
     end;
   end;
   ApplyFinished;
@@ -900,10 +899,10 @@ begin
   inherited UpdateActions;
 
   { Check if there is at least one project that has a VersionInfo resource }
-  ValidProjectsAvailable := HasValidProjects();
+  ValidProjectsAvailable := HasValidProjects( );
 
   { Enable the Apply buttons }
-  btnApplyProductVersion.Enabled := (Trim(edtProductVersion.Text) <> '') and ValidProjectsAvailable;
+  btnApplyProductVersion.Enabled := ( Trim( edtProductVersion.Text ) <> '' ) and ValidProjectsAvailable;
   btnApplyProductName.Enabled := {(Trim(edtProductName.Text) <> '') and} ValidProjectsAvailable;
   btnApplyCompanyName.Enabled := {(Trim(edtCompanyName.Text) <> '') and} ValidProjectsAvailable;
   btnApplyLegalCopyright.Enabled := {(Trim(edtLegalCopyright.Text) <> '') and} ValidProjectsAvailable;
@@ -914,45 +913,45 @@ begin
   btnApplyOriginalFilename.Enabled := GetSelectedApplyProject <> nil;
   btnApplyAutoSetOriginalFilename.Enabled := ValidProjectsAvailable;
 
-  btnApplyBuild.Enabled := (Trim(edtBuild.Text) <> '') and ValidProjectsAvailable;
-  btnApplyFileVersion.Enabled := (Trim(edtMajor.Text) <> '') and
-                                 (Trim(edtMinor.Text) <> '') and
-                                 (Trim(edtRelease.Text) <> '') and
-                                 ValidProjectsAvailable;
+  btnApplyBuild.Enabled := ( Trim( edtBuild.Text ) <> '' ) and ValidProjectsAvailable;
+  btnApplyFileVersion.Enabled := ( Trim( edtMajor.Text ) <> '' ) and
+    ( Trim( edtMinor.Text ) <> '' ) and
+    ( Trim( edtRelease.Text ) <> '' ) and
+    ValidProjectsAvailable;
 
   if pgcPages.ActivePage = tsIncrementVersionInfo then
   begin
     btnExecuteIncrement.Enabled := ValidProjectsAvailable and
-                                   (cbxIncMajor.Checked or cbxIncMinor.Checked or
-                                    cbxIncRelease.Checked or cbxIncBuild.Checked);
+      ( cbxIncMajor.Checked or cbxIncMinor.Checked or
+      cbxIncRelease.Checked or cbxIncBuild.Checked );
 
     cbxIncMinor.Enabled := not cbxIncMajor.Checked or not cbxZeroMinor.Checked;
     if not cbxIncMinor.Enabled then
       cbxIncMinor.Checked := False;
-    cbxIncRelease.Enabled := (not cbxIncMajor.Checked or not cbxZeroRelease.Checked) and
-                             (not cbxIncMinor.Checked or not cbxZeroRelease2.Checked);
+    cbxIncRelease.Enabled := ( not cbxIncMajor.Checked or not cbxZeroRelease.Checked ) and
+      ( not cbxIncMinor.Checked or not cbxZeroRelease2.Checked );
     if not cbxIncRelease.Enabled then
       cbxIncRelease.Checked := False;
 
-    cbxIncMajorClick(cbxIncMajor);
-    cbxIncMinorClick(cbxIncMinor);
-    cbxIncReleaseClick(cbxIncRelease);
-    cbxIncBuildClick(cbxIncBuild);
+    cbxIncMajorClick( cbxIncMajor );
+    cbxIncMinorClick( cbxIncMinor );
+    cbxIncReleaseClick( cbxIncRelease );
+    cbxIncBuildClick( cbxIncBuild );
   end;
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.UpdateMainIconPreview;
 var
-  I: Integer;
-  Item: TIconResourceItem;
+  I                 : Integer;
+  Item              : TIconResourceItem;
 begin
   lbxMainIcons.Items.BeginUpdate;
   try
     lbxMainIcons.Items.Clear;
     for I := 0 to FIcon.Count - 1 do
     begin
-      Item := FIcon.Images[I];
-      lbxMainIcons.AddItem(Format('%dx%d - %d', [Item.Width, Item.Height, Item.BitCount]), TObject(I));
+      Item          := FIcon.Images[ I ];
+      lbxMainIcons.AddItem( Format( '%dx%d - %d', [ Item.Width, Item.Height, Item.BitCount ] ), TObject( I ) );
     end;
   finally
     lbxMainIcons.Items.EndUpdate;
@@ -962,7 +961,7 @@ begin
   pbxMainIcon.Invalidate;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.ApplyFinished(const Text: string);
+procedure TFormProjectSettingsSetVersioninfo.ApplyFinished( const Text: string );
 begin
   if Text = '' then
     lblApplied.Caption := 'Versioninfo updated.'
@@ -974,44 +973,44 @@ begin
 end;
 
 procedure TFormProjectSettingsSetVersioninfo.btnDaysbetweenClick(
-  Sender: TObject);
+  Sender: TObject );
 begin
-  edtDaysBetween.Text := IntToStr(Trunc(Date) - Trunc(dtpStartDay.Date));
+  edtDaysBetween.Text := IntToStr( Trunc( Date ) - Trunc( dtpStartDay.Date ) );
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.TimerAppliedHideTimer(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.TimerAppliedHideTimer( Sender: TObject );
 begin
   TimerAppliedHide.Enabled := False;
   lblApplied.Visible := False;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.edtFileVersionExit(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.edtFileVersionExit( Sender: TObject );
 var
-  Value: Integer;
+  Value             : Integer;
 begin
-  if TryStrToInt((Sender as TEdit).Text, Value) then
-    (FindComponent('ud' + Copy(TComponent(Sender).Name, 4, MaxInt)) as TUpDown).Position := Value;
+  if TryStrToInt( ( Sender as TEdit ).Text, Value ) then
+    ( FindComponent( 'ud' + Copy( TComponent( Sender ).Name, 4, MaxInt ) ) as TUpDown ).Position := Value;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.FormCreate(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.FormCreate( Sender: TObject );
 begin
-  FIcon := TIconResource.Create;
-  dtpStartDay.Date := Date;
+  FIcon             := TIconResource.Create;
+  dtpStartDay.Date  := Date;
   pgcPages.ActivePageIndex := 0;
-  btnClose.Anchors := [akTop, akRight];
-  {$IF CompilerVersion >= 23.0} // Delphi XE2+
-  {$ELSE}
+  btnClose.Anchors  := [ akTop, akRight ];
+{$IF CompilerVersion >= 23.0} // Delphi XE2+
+{$ELSE}
   cbxApplyToAllPlatforms.Visible := False;
-  {$IFEND}
+{$IFEND}
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.FormDestroy(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.FormDestroy( Sender: TObject );
 begin
   inherited;
   FIcon.Free;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.cbxIncMajorClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.cbxIncMajorClick( Sender: TObject );
 begin
   cbxZeroMinor.Enabled := cbxIncMajor.Checked;
   cbxZeroRelease.Enabled := cbxIncMajor.Checked;
@@ -1019,22 +1018,22 @@ begin
   udIncMajor.Enabled := cbxIncMajor.Checked;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.cbxIncMinorClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.cbxIncMinorClick( Sender: TObject );
 begin
   cbxZeroRelease2.Enabled := cbxIncMinor.Checked;
   edtIncMinor.Enabled := cbxIncMinor.Checked;
   udIncMinor.Enabled := cbxIncMinor.Checked;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.btnExecuteIncrementClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.btnExecuteIncrementClick( Sender: TObject );
 var
-  Project: IOTAProject;
-  Version: TProjectVersion;
+  Project           : IOTAProject;
+  Version           : TProjectVersion;
 begin
-  var Skipped := '';
-  for Project in GetValidApplyProjects() do
+  var Skipped       := '';
+  for Project in GetValidApplyProjects( ) do
   begin
-    Version := GetProjectVersion(Project);
+    Version         := GetProjectVersion( Project );
     if Version.Valid then
     begin
       // Work out the final parts in Integer first, resets included: a version part is a
@@ -1057,15 +1056,15 @@ begin
       begin
         Inc( NewMajor, udIncMajor.Position );
         if cbxZeroMinor.Checked then
-          NewMinor := 0;
+          NewMinor  := 0;
         if cbxZeroRelease.Checked then
           NewRelease := 0;
       end;
 
       if ( NewMajor > High( Word ) ) or ( NewMinor > High( Word ) ) or ( NewRelease > High( Word ) ) or
-         ( NewBuild > High( Word ) ) then
+        ( NewBuild > High( Word ) ) then
       begin
-        Skipped := Skipped + #13#10 + '    ' + ExtractFileName( Project.FileName );
+        Skipped     := Skipped + #13#10 + '    ' + ExtractFileName( Project.FileName );
         Continue;
       end;
 
@@ -1074,25 +1073,24 @@ begin
       Version.FileVersion.Release := NewRelease;
       Version.FileVersion.Build := NewBuild;
       with Version.FileVersion do
-        Version.FileVersionStr := Format('%d.%d.%d.%d', [Major, Minor, Release, Build]);
-      SetProjectVersion(Project, Version, cbxApplyToAllPlatforms.Checked);
+        Version.FileVersionStr := Format( '%d.%d.%d.%d', [ Major, Minor, Release, Build ] );
+      SetProjectVersion( Project, Version, cbxApplyToAllPlatforms.Checked );
     end;
   end;
   ApplyFinished;
   if ( Skipped <> '' ) then
     MessageDlg( 'These projects were left unchanged, because the increment would take a version part past ' +
-      '65535:' + Skipped, mtWarning, [mbOK], 0 );
+      '65535:' + Skipped, mtWarning, [ mbOK ], 0 );
 end;
 
-
-procedure TFormProjectSettingsSetVersioninfo.cbxApplyToSelectedOnlyClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.cbxApplyToSelectedOnlyClick( Sender: TObject );
 var
-  ApplyStr: string;
+  ApplyStr          : string;
 begin
   if cbxApplyToSelectedOnly.Checked then
-    ApplyStr := 'Apply'
+    ApplyStr        := 'Apply'
   else
-    ApplyStr := 'Apply to all';
+    ApplyStr        := 'Apply to all';
   btnApplyProductVersion.Caption := ApplyStr;
   btnApplyFileVersion.Caption := ApplyStr;
   btnApplyProductName.Caption := ApplyStr;
@@ -1114,16 +1112,17 @@ begin
   lvwProjects.Checkboxes := cbxApplyToSelectedOnly.Checked;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.cbxIncReleaseClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.cbxIncReleaseClick( Sender: TObject );
 begin
   edtIncRelease.Enabled := cbxIncRelease.Checked;
   udIncRelease.Enabled := cbxIncRelease.Checked;
 end;
 
-procedure TFormProjectSettingsSetVersioninfo.cbxIncBuildClick(Sender: TObject);
+procedure TFormProjectSettingsSetVersioninfo.cbxIncBuildClick( Sender: TObject );
 begin
   edtIncBuild.Enabled := cbxIncBuild.Checked;
   udIncBuild.Enabled := cbxIncBuild.Checked;
 end;
 
 end.
+

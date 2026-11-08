@@ -29,7 +29,7 @@ type
   /// Persistent configuration for the Form Designer hooks. Wraps the boolean flags that
   /// determine which DFM-streaming patches are installed at any moment.
   /// </summary>
-  TFormDesigner = class(TPluginConfig)
+  TFormDesigner = class( TPluginConfig )
   private
     /// <summary>Master on/off switch for the entire Form Designer feature set.</summary>
     FActive: Boolean;
@@ -43,19 +43,19 @@ type
     FRemoveTextHeightProperty: Boolean;
     /// <summary>Updates FActive and refreshes the installed hooks.</summary>
     /// <param name="Value">True to enable the form designer helpers.</param>
-    procedure SetActive(const Value: Boolean);
+    procedure SetActive( const Value: Boolean );
     /// <summary>Updates FLabelMargin and refreshes hooks if the feature is active.</summary>
     /// <param name="Value">True to enable the label margin helper.</param>
-    procedure SetLabelMargin(const Value: Boolean);
+    procedure SetLabelMargin( const Value: Boolean );
     /// <summary>Updates FRemoveExplicitProperty and refreshes hooks if the feature is active.</summary>
     /// <param name="Value">True to remove Explicit* properties when forms are saved.</param>
-    procedure SetRemoveExplicitProperty(const Value: Boolean);
+    procedure SetRemoveExplicitProperty( const Value: Boolean );
     /// <summary>Updates FRemovePixelsPerInchProperty and refreshes hooks if the feature is active.</summary>
     /// <param name="Value">True to remove the PixelsPerInch property when forms are saved.</param>
-    procedure SetRemovePixelsPerInchProperty(const Value: Boolean);
+    procedure SetRemovePixelsPerInchProperty( const Value: Boolean );
     /// <summary>Updates FRemoveTextHeightProperty and refreshes hooks if the feature is active.</summary>
     /// <param name="Value">True to remove the TextHeight property when forms are saved.</param>
-    procedure SetRemoveTextHeightProperty(const Value: Boolean);
+    procedure SetRemoveTextHeightProperty( const Value: Boolean );
   protected
     /// <summary>Returns the option-page descriptor that the IDE should display for this plug-in.</summary>
     /// <returns>A new TTreePage owned by the caller.</returns>
@@ -86,7 +86,7 @@ type
   /// Designer frame providing the user interface for the Form Designer options page hosted in
   /// the IDE's Tools > Options dialog.
   /// </summary>
-  TFrameOptionPageFormDesigner = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageFormDesigner = class( TFrameBase, ITreePageComponent )
     /// <summary>Master on/off check box.</summary>
     cbxActive: TCheckBox;
     /// <summary>Toggle for the TLabel margin override.</summary>
@@ -99,17 +99,17 @@ type
     chkRemoveTextHeightProperty: TCheckBox;
     /// <summary>Re-evaluates the enabled state of dependent check boxes when Active changes.</summary>
     /// <param name="Sender">The "Active" check box.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Configuration object passed in via SetUserData.</summary>
     FFormDesigner: TFormDesigner;
   public
     /// <summary>Constructs the frame and disables version-restricted check boxes.</summary>
     /// <param name="AOwner">Owner component.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Receives the TFormDesigner configuration object that backs this page.</summary>
     /// <param name="UserData">Must be a TFormDesigner instance.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Copies current configuration values into the controls.</summary>
     procedure LoadData;
     /// <summary>Persists control values back into the configuration object and saves to disk.</summary>
@@ -126,7 +126,7 @@ type
 /// Plug-in entry point. Creates the global TFormDesigner instance on load and frees it on unload.
 /// </summary>
 /// <param name="Unload">False during initialisation, True during plug-in shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 {$ENDIF INCLUDE_FORMDESIGNER}
 
@@ -145,57 +145,57 @@ uses
 {$IFDEF INCLUDE_FORMDESIGNER}
 
 var
-  FormDesigner: TFormDesigner;
+  FormDesigner      : TFormDesigner;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
-    FormDesigner := TFormDesigner.Create
+    FormDesigner    := TFormDesigner.Create
   else
-    FreeAndNil(FormDesigner);
+    FreeAndNil( FormDesigner );
 end;
 
 {$ENDIF INCLUDE_FORMDESIGNER}
 
 { TFrameOptionPageFormDesigner }
 
-constructor TFrameOptionPageFormDesigner.Create(AOwner: TComponent);
+constructor TFrameOptionPageFormDesigner.Create( AOwner: TComponent );
 begin
-  inherited Create(AOwner);
-  {$IFNDEF DELPHI28_UP}
+  inherited Create( AOwner );
+{$IFNDEF DELPHI28_UP}
   chkRemoveTextHeightProperty.Enabled := False;
-  {$ENDIF}
+{$ENDIF}
   // The three DFM cleaners now install via InstallFullReplaceHook, which uses an
   // x64-safe 14-byte absolute-jump redirect (see Shared\Hooking.pas), so they
   // function on both the 32- and 64-bit IDE and the controls stay enabled.
 end;
 
-procedure TFrameOptionPageFormDesigner.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageFormDesigner.cbxActiveClick( Sender: TObject );
 begin
   cbxLabelMargin.Enabled := cbxActive.Checked;
   // Every dependent box's Enabled state follows Active (and its compiler-version
   // availability). The x64-safe redirect means this is identical on Win32 and Win64.
-  {$IFDEF COMPILER110_UP}
+{$IFDEF COMPILER110_UP}
   chkRemoveExplicitProperties.Enabled := cbxActive.Checked;
   chkRemovePixelsPerInchProperty.Enabled := cbxActive.Checked;
-  {$ELSE}
+{$ELSE}
   chkRemoveExplicitProperties.Enabled := False;
   chkRemovePixelsPerInchProperty.Enabled := False;
-  {$ENDIF COMPILER110_UP}
-  {$IFDEF DELPHI28_UP}
+{$ENDIF COMPILER110_UP}
+{$IFDEF DELPHI28_UP}
   chkRemoveTextHeightProperty.Enabled := cbxActive.Checked;
-  {$ELSE}
+{$ELSE}
   chkRemoveTextHeightProperty.Enabled := False;
-  {$ENDIF}
+{$ENDIF}
 end;
 
-procedure TFrameOptionPageFormDesigner.SetUserData(UserData: TObject);
+procedure TFrameOptionPageFormDesigner.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
   if ( UserData is TFormDesigner ) then
-    FFormDesigner := TFormDesigner( UserData )
+    FFormDesigner   := TFormDesigner( UserData )
   else
-    FFormDesigner := nil;
+    FFormDesigner   := nil;
 end;
 
 procedure TFrameOptionPageFormDesigner.LoadData;
@@ -209,7 +209,7 @@ begin
   chkRemovePixelsPerInchProperty.Checked := FFormDesigner.RemovePixelsPerInchProperty;
   chkRemoveTextHeightProperty.Checked := FFormDesigner.RemoveTextHeightProperty;
   // cbxActiveClick synchronises every dependent check box's Enabled state.
-  cbxActiveClick(cbxActive);
+  cbxActiveClick( cbxActive );
 end;
 
 procedure TFrameOptionPageFormDesigner.SaveData;
@@ -238,45 +238,45 @@ end;
 
 constructor TFormDesigner.Create;
 begin
-  inherited Create(AppDataDirectory + '\FormDesigner.xml', 'FormDesigner');
+  inherited Create( AppDataDirectory + '\FormDesigner.xml', 'FormDesigner' );
 end;
 
 destructor TFormDesigner.Destroy;
 begin
-  Active := False;
+  Active            := False;
   inherited Destroy;
 end;
 
 procedure TFormDesigner.Init;
 begin
   inherited Init;
-  LabelMargin := True;
+  LabelMargin       := True;
   RemoveExplicitProperty := False;
   RemovePixelsPerInchProperty := False;
   RemoveTextHeightProperty := False;
-  Active := True;
+  Active            := True;
 end;
 
-procedure TFormDesigner.SetActive(const Value: Boolean);
+procedure TFormDesigner.SetActive( const Value: Boolean );
 begin
   if Value <> FActive then
   begin
-    FActive := Value;
+    FActive         := Value;
     UpdateHooks;
   end;
 end;
 
-procedure TFormDesigner.SetLabelMargin(const Value: Boolean);
+procedure TFormDesigner.SetLabelMargin( const Value: Boolean );
 begin
   if Value <> FLabelMargin then
   begin
-    FLabelMargin := Value;
+    FLabelMargin    := Value;
     if Active then
       UpdateHooks;
   end;
 end;
 
-procedure TFormDesigner.SetRemoveExplicitProperty(const Value: Boolean);
+procedure TFormDesigner.SetRemoveExplicitProperty( const Value: Boolean );
 begin
   if Value <> FRemoveExplicitProperty then
   begin
@@ -286,7 +286,7 @@ begin
   end;
 end;
 
-procedure TFormDesigner.SetRemovePixelsPerInchProperty(const Value: Boolean);
+procedure TFormDesigner.SetRemovePixelsPerInchProperty( const Value: Boolean );
 begin
   if Value <> FRemovePixelsPerInchProperty then
   begin
@@ -296,7 +296,7 @@ begin
   end;
 end;
 
-procedure TFormDesigner.SetRemoveTextHeightProperty(const Value: Boolean);
+procedure TFormDesigner.SetRemoveTextHeightProperty( const Value: Boolean );
 begin
   if Value <> FRemoveTextHeightProperty then
   begin
@@ -308,23 +308,24 @@ end;
 
 procedure TFormDesigner.UpdateHooks;
 begin
-  {$IFDEF INCLUDE_FORMDESIGNER}
-  SetLabelMarginActive(Active and LabelMargin);
+{$IFDEF INCLUDE_FORMDESIGNER}
+  SetLabelMarginActive( Active and LabelMargin );
   // RemoveExplicit / PixelsPerInch / TextHeight install via InstallFullReplaceHook,
   // which redirects with an x64-safe absolute jump, so they apply on both Win32 and Win64.
-  SetRemoveExplicitPropertyActive(Active and RemoveExplicitProperty);
-  {$IFDEF COMPILER110_UP}
-  SetRemovePixelsPerInchPropertyActive(Active and RemovePixelsPerInchProperty);
-  {$ENDIF COMPILER110_UP}
-  {$IFDEF DELPHI28_UP}
-  SetRemoveTextHeightPropertyActive(Active and RemoveTextHeightProperty);
-  {$ENDIF}
-  {$ENDIF INCLUDE_FORMDESIGNER}
+  SetRemoveExplicitPropertyActive( Active and RemoveExplicitProperty );
+{$IFDEF COMPILER110_UP}
+  SetRemovePixelsPerInchPropertyActive( Active and RemovePixelsPerInchProperty );
+{$ENDIF COMPILER110_UP}
+{$IFDEF DELPHI28_UP}
+  SetRemoveTextHeightPropertyActive( Active and RemoveTextHeightProperty );
+{$ENDIF}
+{$ENDIF INCLUDE_FORMDESIGNER}
 end;
 
 function TFormDesigner.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Form Designer', TFrameOptionPageFormDesigner, Self);
+  Result            := TTreePage.Create( 'Form Designer', TFrameOptionPageFormDesigner, Self );
 end;
 
 end.
+

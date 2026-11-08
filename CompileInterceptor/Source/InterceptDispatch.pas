@@ -39,7 +39,7 @@ type
   end;
 
   /// <summary>Registry of compile interceptors and the dispatch of compiler events to them.</summary>
-  TInterceptorRegistry = class(TObject)
+  TInterceptorRegistry = class( TObject )
   private
     /// <summary>Guards <see cref="FEntries"/> and <see cref="FLastId"/>.</summary>
     FLock: TLightweightMREW;
@@ -62,45 +62,45 @@ type
     /// this module's <c>Exception</c>; it is logged by class name only.
     /// </param>
     /// <param name="EventName">Name of the event being dispatched, for the log line.</param>
-    procedure RemoveBroken(Id: Integer; ExceptObj: TObject; const EventName: string);
+    procedure RemoveBroken( Id: Integer; ExceptObj: TObject; const EventName: string );
   public
     /// <summary>Registers an interceptor.</summary>
     /// <param name="Interceptor">The interceptor; nil is refused.</param>
     /// <returns>The registration id (1 or more), or -1 when nothing was registered.</returns>
-    function Register(const Interceptor: ICompileInterceptor): Integer;
+    function Register( const Interceptor: ICompileInterceptor ): Integer;
     /// <summary>Removes the registration with the given id.</summary>
     /// <param name="Id">Registration id from <see cref="Register"/>.</param>
     /// <returns>True when a registration was removed; False for an unknown or already removed id.</returns>
-    function Unregister(Id: Integer): Boolean;
+    function Unregister( Id: Integer ): Boolean;
     /// <summary>Number of registered interceptors.</summary>
     /// <returns>The count.</returns>
     function Count: Integer;
     /// <summary>True when at least one registered interceptor reports any of the given options.</summary>
     /// <param name="Mask">One or more <c>CIO_*</c> flags.</param>
     /// <returns>True when any registered interceptor has one of the flags.</returns>
-    function HasOption(Mask: TCompileInterceptOptions): Boolean;
+    function HasOption( Mask: TCompileInterceptOptions ): Boolean;
 
     /// <summary>Asks the interceptors (newest first) to supply a virtual file for <paramref name="Filename"/>.</summary>
     /// <param name="Filename">The file the compiler is opening.</param>
     /// <param name="Stream">The virtual content, or nil.</param>
     /// <returns>True when an interceptor answered; with a nil <paramref name="Stream"/> the file is hidden.</returns>
-    function OpenVirtualFile(const Filename: string; out Stream: IVirtualStream): Boolean;
+    function OpenVirtualFile( const Filename: string; out Stream: IVirtualStream ): Boolean;
     /// <summary>Asks the interceptors (newest first) to supply a virtual output stream for <paramref name="Filename"/>.</summary>
     /// <param name="Filename">The file the compiler is creating.</param>
     /// <param name="Stream">The virtual output, or nil.</param>
     /// <returns>True when an interceptor answered.</returns>
-    function CreateVirtualFile(const Filename: string; out Stream: IVirtualOutStream): Boolean;
+    function CreateVirtualFile( const Filename: string; out Stream: IVirtualOutStream ): Boolean;
     /// <summary>Lets each interceptor (newest first) alter the content; each one sees the previous one's result.</summary>
     /// <param name="Filename">The file the compiler opened.</param>
     /// <param name="Content">The original content.</param>
     /// <param name="FileDate">The file's date stamp.</param>
     /// <param name="FileSize">Size of <paramref name="Content"/> in bytes.</param>
     /// <returns>The last altered content, or nil when no interceptor altered it.</returns>
-    function AlterFile(const Filename: string; Content: PByte; FileDate, FileSize: Integer): IVirtualStream;
+    function AlterFile( const Filename: string; Content: PByte; FileDate, FileSize: Integer ): IVirtualStream;
     /// <summary>Tells every interested interceptor that the compiler opened or created a file.</summary>
     /// <param name="Filename">The file.</param>
     /// <param name="FileMode">Whether it was opened or created.</param>
-    procedure InspectFilename(const Filename: string; FileMode: TInspectFileMode);
+    procedure InspectFilename( const Filename: string; FileMode: TInspectFileMode );
     /// <summary>Lets each interested interceptor alter a compiler or linker message.</summary>
     /// <param name="IsCompilerMessage">True for a multi-line compiler message.</param>
     /// <param name="MsgKind">Message kind; may be changed.</param>
@@ -110,8 +110,8 @@ type
     /// <param name="Column">Column; may be changed.</param>
     /// <param name="Msg">Message text, UTF-8; replaced when an interceptor altered the message.</param>
     /// <returns>True when any interceptor reported a change.</returns>
-    function AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind; var Code: Integer;
-      var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String): Boolean;
+    function AlterMessage( IsCompilerMessage: Boolean; var MsgKind: TMsgKind; var Code: Integer;
+      var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String ): Boolean;
     /// <summary>Tells every interested interceptor that a project compile is starting.</summary>
     /// <param name="ProjectFilename">The project file.</param>
     /// <param name="UnitPaths">Unit search path.</param>
@@ -119,13 +119,13 @@ type
     /// <param name="DcuOutputDir">DCU output folder.</param>
     /// <param name="IsCodeInsight">True for a Code Insight compile.</param>
     /// <param name="Cancel">Set by an interceptor to cancel the compile.</param>
-    procedure CompileProject(const ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: string;
-      IsCodeInsight: Boolean; var Cancel: Boolean);
+    procedure CompileProject( const ProjectFilename, UnitPaths, SourcePaths, DcuOutputDir: string;
+      IsCodeInsight: Boolean; var Cancel: Boolean );
     /// <summary>Asks the interceptors (newest first) for the date stamp of <paramref name="Filename"/>.</summary>
     /// <param name="Filename">The file.</param>
     /// <param name="FileDate">The date stamp (-1 is reported as 0).</param>
     /// <returns>True when an interceptor answered.</returns>
-    function FileNameDate(const Filename: string; out FileDate: Integer): Boolean;
+    function FileNameDate( const Filename: string; out FileDate: Integer ): Boolean;
   end;
 
 /// <summary>
@@ -135,7 +135,7 @@ type
 /// <param name="ProjectPaths">The project's unit search path (may be empty).</param>
 /// <param name="GlobalPaths">The IDE's library path (may be empty).</param>
 /// <returns>The combined list.</returns>
-function CombineSearchPaths(const ProjectPaths, GlobalPaths: string): string;
+function CombineSearchPaths( const ProjectPaths, GlobalPaths: string ): string;
 
 /// <summary>
 /// Describes a raised object for a log line.  Handlers in this DLL catch everything (a bare <c>except</c>) because
@@ -144,7 +144,7 @@ function CombineSearchPaths(const ProjectPaths, GlobalPaths: string): string;
 /// </summary>
 /// <param name="ExceptObj">The raised object (<c>ExceptObject</c>); may be nil.</param>
 /// <returns>"Class: message" for a native exception, the class and "non-native exception" otherwise.</returns>
-function ExceptObjectText(ExceptObj: TObject): string;
+function ExceptObjectText( ExceptObj: TObject ): string;
 
 implementation
 
@@ -155,26 +155,26 @@ const
   /// <summary><c>IVirtualStream.Seek</c> origin: from the start of the stream.</summary>
   SeekFromBeginning = 0;
 
-function ExceptObjectText(ExceptObj: TObject): string;
+function ExceptObjectText( ExceptObj: TObject ): string;
 begin
   if ExceptObj is Exception then
-    Result := ExceptObj.ClassName + ': ' + Exception( ExceptObj ).Message
+    Result          := ExceptObj.ClassName + ': ' + Exception( ExceptObj ).Message
   else if ExceptObj <> nil then
-    Result := ExceptObj.ClassName + ' (non-native exception: raised by another module''s RTL)'
+    Result          := ExceptObj.ClassName + ' (non-native exception: raised by another module''s RTL)'
   else
-    Result := 'unknown exception';
+    Result          := 'unknown exception';
 end;
 
-function CombineSearchPaths(const ProjectPaths, GlobalPaths: string): string;
+function CombineSearchPaths( const ProjectPaths, GlobalPaths: string ): string;
 begin
-  var Project := ProjectPaths.Trim( [ ';' ] );
-  var Global := GlobalPaths.Trim( [ ';' ] );
+  var Project       := ProjectPaths.Trim( [ ';' ] );
+  var Global        := GlobalPaths.Trim( [ ';' ] );
   if Project = '' then
-    Result := Global
+    Result          := Global
   else if Global = '' then
-    Result := Project
+    Result          := Project
   else
-    Result := Project + ';' + Global;
+    Result          := Project + ';' + Global;
 end;
 
 { TInterceptorRegistry }
@@ -184,57 +184,57 @@ begin
   var Union: TCompileInterceptOptions := 0;
   for var Entry in FEntries do
     Union := Union or Entry.Options;
-  FOptionsUnion := Union;
+  FOptionsUnion     := Union;
 end;
 
 function TInterceptorRegistry.Snapshot: TArray<TInterceptorEntry>;
 begin
   FLock.BeginRead;
   try
-    Result := Copy( FEntries );
+    Result          := Copy( FEntries );
   finally
     FLock.EndRead;
   end;
 end;
 
-procedure TInterceptorRegistry.RemoveBroken(Id: Integer; ExceptObj: TObject; const EventName: string);
+procedure TInterceptorRegistry.RemoveBroken( Id: Integer; ExceptObj: TObject; const EventName: string );
 begin
   Unregister( Id );
   OutputDebugString( PChar( Format( 'CompileInterceptor: interceptor %d raised %s in %s and was removed',
-    [ Id, ExceptObjectText( ExceptObj ), EventName ] ) ) );
+        [ Id, ExceptObjectText( ExceptObj ), EventName ] ) ) );
 end;
 
-function TInterceptorRegistry.Register(const Interceptor: ICompileInterceptor): Integer;
+function TInterceptorRegistry.Register( const Interceptor: ICompileInterceptor ): Integer;
 begin
-  Result := -1;
+  Result            := -1;
   if Interceptor = nil then
     Exit;
   var Entry: TInterceptorEntry;
   Entry.Interceptor := Interceptor;
   try
-    Entry.Options := Interceptor.GetOptions;
+    Entry.Options   := Interceptor.GetOptions;
   except
     // Catch everything: an interceptor from another module raises that module's Exception class, which an
     // "on E: Exception" handler here does not match
     OutputDebugString( PChar( 'CompileInterceptor: GetOptions raised ' + ExceptObject.ClassName +
-      '; the interceptor was not registered' ) );
+        '; the interceptor was not registered' ) );
     Exit;
   end;
   FLock.BeginWrite;
   try
     Inc( FLastId );
-    Entry.Id := FLastId;
-    FEntries := FEntries + [ Entry ];
+    Entry.Id        := FLastId;
+    FEntries        := FEntries + [ Entry ];
     RecomputeOptions;
-    Result := Entry.Id;
+    Result          := Entry.Id;
   finally
     FLock.EndWrite;
   end;
 end;
 
-function TInterceptorRegistry.Unregister(Id: Integer): Boolean;
+function TInterceptorRegistry.Unregister( Id: Integer ): Boolean;
 begin
-  Result := False;
+  Result            := False;
   FLock.BeginWrite;
   try
     for var I := High( FEntries ) downto 0 do
@@ -242,7 +242,7 @@ begin
       begin
         Delete( FEntries, I, 1 );
         RecomputeOptions;
-        Result := True;
+        Result      := True;
         Break;
       end;
   finally
@@ -254,22 +254,22 @@ function TInterceptorRegistry.Count: Integer;
 begin
   FLock.BeginRead;
   try
-    Result := Length( FEntries );
+    Result          := Length( FEntries );
   finally
     FLock.EndRead;
   end;
 end;
 
-function TInterceptorRegistry.HasOption(Mask: TCompileInterceptOptions): Boolean;
+function TInterceptorRegistry.HasOption( Mask: TCompileInterceptOptions ): Boolean;
 begin
-  Result := ( FOptionsUnion and Mask ) <> 0;
+  Result            := ( FOptionsUnion and Mask ) <> 0;
 end;
 
-function TInterceptorRegistry.OpenVirtualFile(const Filename: string; out Stream: IVirtualStream): Boolean;
+function TInterceptorRegistry.OpenVirtualFile( const Filename: string; out Stream: IVirtualStream ): Boolean;
 begin
-  Stream := nil;
-  Result := False;
-  var Entries := Snapshot;
+  Stream            := nil;
+  Result            := False;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do // the newest registration is asked first
   begin
     if Entries[ I ].Options and CIO_VIRTUALFILES = 0 then
@@ -277,16 +277,16 @@ begin
     try
       var Intf20: ICompileInterceptor20;
       if Supports( Entries[ I ].Interceptor, ICompileInterceptor20, Intf20 ) then
-        Result := Intf20.OpenVirtualFile( PWideChar( Filename ), Stream )
+        Result      := Intf20.OpenVirtualFile( PWideChar( Filename ), Stream )
       else
       begin
-        Stream := Entries[ I ].Interceptor.GetVirtualFile( PWideChar( Filename ) );
-        Result := Stream <> nil;
+        Stream      := Entries[ I ].Interceptor.GetVirtualFile( PWideChar( Filename ) );
+        Result      := Stream <> nil;
       end;
     except
       // Bare except on purpose: a foreign module's exception class misses "on E: Exception"
-      Stream := nil;
-      Result := False;
+      Stream        := nil;
+      Result        := False;
       RemoveBroken( Entries[ I ].Id, ExceptObject, 'OpenVirtualFile' );
     end;
     if Result then
@@ -294,23 +294,23 @@ begin
   end;
 end;
 
-function TInterceptorRegistry.CreateVirtualFile(const Filename: string; out Stream: IVirtualOutStream): Boolean;
+function TInterceptorRegistry.CreateVirtualFile( const Filename: string; out Stream: IVirtualOutStream ): Boolean;
 begin
-  Stream := nil;
-  Result := False;
-  var Entries := Snapshot;
+  Stream            := nil;
+  Result            := False;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do
   begin
     var Intf20: ICompileInterceptor20;
     if ( Entries[ I ].Options and CIO_VIRTUALOUTFILES = 0 ) or
-       not Supports( Entries[ I ].Interceptor, ICompileInterceptor20, Intf20 ) then
+      not Supports( Entries[ I ].Interceptor, ICompileInterceptor20, Intf20 ) then
       Continue;
     try
-      Result := Intf20.CreateVirtualFile( PWideChar( Filename ), Stream );
+      Result        := Intf20.CreateVirtualFile( PWideChar( Filename ), Stream );
     except
       // Bare except on purpose: a foreign module's exception class misses "on E: Exception"
-      Stream := nil;
-      Result := False;
+      Stream        := nil;
+      Result        := False;
       RemoveBroken( Entries[ I ].Id, ExceptObject, 'CreateVirtualFile' );
     end;
     if Result then
@@ -318,12 +318,12 @@ begin
   end;
 end;
 
-function TInterceptorRegistry.AlterFile(const Filename: string; Content: PByte; FileDate,
-  FileSize: Integer): IVirtualStream;
+function TInterceptorRegistry.AlterFile( const Filename: string; Content: PByte; FileDate,
+  FileSize: Integer ): IVirtualStream;
 begin
-  Result := nil;
-  var Buf: TBytes := nil;
-  var Entries := Snapshot;
+  Result            := nil;
+  var Buf: TBytes   := nil;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do
   begin
     if Entries[ I ].Options and CIO_ALTERFILES = 0 then
@@ -335,21 +335,21 @@ begin
       var StreamDate, StreamSize: Integer;
       Result.FileStatus( StreamDate, StreamSize );
       Result.Seek( 0, SeekFromBeginning );
-      Content := nil;
-      FileSize := 0;
+      Content       := nil;
+      FileSize      := 0;
       if StreamSize > 0 then
       begin
         SetLength( Buf, StreamSize );
-        FileSize := Result.Read( Buf[ 0 ], StreamSize );
+        FileSize    := Result.Read( Buf[ 0 ], StreamSize );
         Result.Seek( 0, SeekFromBeginning );
         if FileSize > 0 then
-          Content := @Buf[ 0 ];
+          Content   := @Buf[ 0 ];
       end;
     end;
     try
-      var Altered := Entries[ I ].Interceptor.AlterFile( PWideChar( Filename ), Content, FileDate, FileSize );
+      var Altered   := Entries[ I ].Interceptor.AlterFile( PWideChar( Filename ), Content, FileDate, FileSize );
       if Altered <> nil then
-        Result := Altered;
+        Result      := Altered;
     except
       // Bare except on purpose: a foreign module's exception class misses "on E: Exception"
       RemoveBroken( Entries[ I ].Id, ExceptObject, 'AlterFile' );
@@ -357,9 +357,9 @@ begin
   end;
 end;
 
-procedure TInterceptorRegistry.InspectFilename(const Filename: string; FileMode: TInspectFileMode);
+procedure TInterceptorRegistry.InspectFilename( const Filename: string; FileMode: TInspectFileMode );
 begin
-  var Entries := Snapshot;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do
   begin
     if Entries[ I ].Options and CIO_INSPECTFILENAMES = 0 then
@@ -373,11 +373,11 @@ begin
   end;
 end;
 
-function TInterceptorRegistry.AlterMessage(IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
-  var Code: Integer; var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String): Boolean;
+function TInterceptorRegistry.AlterMessage( IsCompilerMessage: Boolean; var MsgKind: TMsgKind;
+  var Code: Integer; var Filename: UTF8String; var Line, Column: Integer; var Msg: UTF8String ): Boolean;
 begin
-  Result := False;
-  var Entries := Snapshot;
+  Result            := False;
+  var Entries       := Snapshot;
   if Entries = nil then
     Exit;
   var FilenameStr: IUnicodeString := TUnicodeStringAdapter.Create( UTF8ToString( Filename ) );
@@ -389,7 +389,7 @@ begin
     try
       if Entries[ I ].Interceptor.AlterMessage( IsCompilerMessage, MsgKind, Code, FilenameStr, Line, Column,
         MsgStr ) then
-        Result := True;
+        Result      := True;
     except
       // Bare except on purpose: a foreign module's exception class misses "on E: Exception"
       RemoveBroken( Entries[ I ].Id, ExceptObject, 'AlterMessage' );
@@ -397,15 +397,15 @@ begin
   end;
   if Result then
   begin
-    Filename := UTF8String( string( FilenameStr.Value ) );
-    Msg := UTF8String( string( MsgStr.Value ) );
+    Filename        := UTF8String( string( FilenameStr.Value ) );
+    Msg             := UTF8String( string( MsgStr.Value ) );
   end;
 end;
 
-procedure TInterceptorRegistry.CompileProject(const ProjectFilename, UnitPaths, SourcePaths,
-  DcuOutputDir: string; IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TInterceptorRegistry.CompileProject( const ProjectFilename, UnitPaths, SourcePaths,
+  DcuOutputDir: string; IsCodeInsight: Boolean; var Cancel: Boolean );
 begin
-  var Entries := Snapshot;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do
   begin
     if Entries[ I ].Options and CIO_COMPILEPROJECTS = 0 then
@@ -420,31 +420,32 @@ begin
   end;
 end;
 
-function TInterceptorRegistry.FileNameDate(const Filename: string; out FileDate: Integer): Boolean;
+function TInterceptorRegistry.FileNameDate( const Filename: string; out FileDate: Integer ): Boolean;
 begin
-  FileDate := 0;
-  Result := False;
-  var Entries := Snapshot;
+  FileDate          := 0;
+  Result            := False;
+  var Entries       := Snapshot;
   for var I := High( Entries ) downto 0 do
   begin
     var Intf20: ICompileInterceptor20;
     if ( Entries[ I ].Options and CIO_FILENAMEDATES = 0 ) or
-       not Supports( Entries[ I ].Interceptor, ICompileInterceptor20, Intf20 ) then
+      not Supports( Entries[ I ].Interceptor, ICompileInterceptor20, Intf20 ) then
       Continue;
     try
-      Result := Intf20.FileNameDate( PWideChar( Filename ), FileDate );
+      Result        := Intf20.FileNameDate( PWideChar( Filename ), FileDate );
     except
       // Bare except on purpose: a foreign module's exception class misses "on E: Exception"
-      Result := False;
+      Result        := False;
       RemoveBroken( Entries[ I ].Id, ExceptObject, 'FileNameDate' );
     end;
     if Result then
     begin
       if FileDate = -1 then
-        FileDate := 0;
+        FileDate    := 0;
       Exit;
     end;
   end;
 end;
 
 end.
+

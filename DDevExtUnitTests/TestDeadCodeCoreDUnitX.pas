@@ -14,7 +14,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture for the Dead Code Detector's analysis core.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDeadCodeCore = class
   public
     /// <summary>
@@ -22,54 +22,54 @@ type
     /// reported.  The implementation header used to be collected as a second, unit-scoped symbol
     /// that only a call in the same file could mark as used.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceRoutineUsedFromOtherUnitIsNotReported;
     /// <summary>
     /// Proves a protected field used only by a descendant class in another unit is not reported:
     /// protected members are visible to descendants anywhere, not only in their own unit.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestProtectedMemberUsedByDescendantInOtherUnitIsNotReported;
     /// <summary>
     /// Proves a private field read and written only by a property of a class declared in the
     /// interface section is not reported; references in the interface used to be ignored.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestFieldUsedOnlyByInterfacePropertyIsNotReported;
     /// <summary>
     /// Proves the analyser still finds real dead code - an implementation-only routine nobody
     /// calls - and reports it on its 1-based line (it used to report the 0-based token line, so
     /// the list and navigation were one line off).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestUnusedImplementationRoutineIsReportedOnOneBasedLine;
     /// <summary>
     /// Proves that with "Check procedures" off, a private method's parameter is not collected as a
     /// field, and that a private property is never collected as a field.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestParametersAndPropertiesAreNotFields;
     /// <summary>
     /// Proves a private method nobody calls is reported while one that is called is not: the name
     /// in the method's own implementation header (<c>procedure TThing.Unused;</c>) used to count as
     /// a reference, so no method with a body was ever reported.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestUnusedPrivateMethodIsReported;
     /// <summary>Proves a message handler (<c>message WM_SIZE</c>), which the VCL calls by message number, is never reported.</summary>
-    [Test]
+    [ Test ]
     procedure TestMessageHandlerIsNotReported;
     /// <summary>Proves a field carrying an attribute (used through RTTI) is never reported.</summary>
-    [Test]
+    [ Test ]
     procedure TestAttributedFieldIsNotReported;
     /// <summary>Proves a reference inside an include file, scanned on behalf of its unit, marks a unit-local routine as used.</summary>
-    [Test]
+    [ Test ]
     procedure TestReferenceInIncludeFileCounts;
     /// <summary>Proves that, when some units could not be read, only private and unit-local symbols are reported.</summary>
-    [Test]
+    [ Test ]
     procedure TestLocalOnlyReportWhenUnitsSkipped;
     /// <summary>Proves a routine declared with an &amp; escape (<c>&amp;Sample</c>) is matched by its unescaped call.</summary>
-    [Test]
+    [ Test ]
     procedure TestEscapedNameMatchesPlainCall;
   end;
 
@@ -85,35 +85,35 @@ uses
 /// <returns>The reported element names in report order, joined with ", ".</returns>
 function RunAnalysis( const AUnits: array of string; ACheckProcedures: Boolean; out AItems: TArray<TDeadCodeItem> ): string;
 begin
-  var oAnalyzer := TDeadCodeAnalyzer.Create;
+  var oAnalyzer     := TDeadCodeAnalyzer.Create;
   try
     oAnalyzer.CheckProcedures := ACheckProcedures;
 
-    var i := 0;
+    var i           := 0;
     while i < High( AUnits ) do
     begin
       oAnalyzer.CollectSymbols( AUnits[ i ], UTF8String( AUnits[ i + 1 ] ) );
       Inc( i, 2 );
     end;
 
-    i := 0;
+    i               := 0;
     while i < High( AUnits ) do
     begin
       oAnalyzer.ScanForReferences( AUnits[ i ], UTF8String( AUnits[ i + 1 ] ) );
       Inc( i, 2 );
     end;
 
-    AItems := oAnalyzer.GetDeadCode;
+    AItems          := oAnalyzer.GetDeadCode;
   finally
     oAnalyzer.Free;
   end;
 
-  Result := '';
+  Result            := '';
   for var rItem in AItems do
   begin
     if Result <> '' then
-      Result := Result + ', ';
-    Result := Result + rItem.ElementName;
+      Result        := Result + ', ';
+    Result          := Result + rItem.ElementName;
   end;
 end;
 
@@ -123,17 +123,17 @@ end;
 function DeadNames( const AUnits: array of string ): string;
 begin
   var aItems: TArray<TDeadCodeItem>;
-  Result := RunAnalysis( AUnits, True, aItems );
+  Result            := RunAnalysis( AUnits, True, aItems );
 end;
 
 const
-  CRLF = #13#10;
+  CRLF              = #13#10;
 
-{ TTestDeadCodeCore }
+  { TTestDeadCodeCore }
 
 procedure TTestDeadCodeCore.TestInterfaceRoutineUsedFromOtherUnitIsNotReported;
 begin
-  var sUnitA :=
+  var sUnitA        :=
     'unit UnitA;' + CRLF +
     'interface' + CRLF +
     'procedure SharedHelper;' + CRLF +
@@ -144,7 +144,7 @@ begin
     'begin' + CRLF +
     'end;' + CRLF +
     'end.';
-  var sUnitB :=
+  var sUnitB        :=
     'unit UnitB;' + CRLF +
     'interface' + CRLF +
     'implementation' + CRLF +
@@ -163,7 +163,7 @@ end;
 
 procedure TTestDeadCodeCore.TestProtectedMemberUsedByDescendantInOtherUnitIsNotReported;
 begin
-  var sBase :=
+  var sBase         :=
     'unit BaseUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -173,7 +173,7 @@ begin
     '  end;' + CRLF +
     'implementation' + CRLF +
     'end.';
-  var sChild :=
+  var sChild        :=
     'unit ChildUnit;' + CRLF +
     'interface' + CRLF +
     'uses BaseUnit;' + CRLF +
@@ -189,13 +189,13 @@ begin
     'end;' + CRLF +
     'end.';
 
-  var sDead := DeadNames( [ 'C:\p\BaseUnit.pas', sBase, 'C:\p\ChildUnit.pas', sChild ] );
+  var sDead         := DeadNames( [ 'C:\p\BaseUnit.pas', sBase, 'C:\p\ChildUnit.pas', sChild ] );
   Assert.IsFalse( sDead.Contains( 'FWorkCount' ), 'protected FWorkCount is used by TChild in another unit; reported: ' + sDead );
 end;
 
 procedure TTestDeadCodeCore.TestFieldUsedOnlyByInterfacePropertyIsNotReported;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit PropUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -208,17 +208,17 @@ begin
     'implementation' + CRLF +
     'end.';
 
-  var sDead := DeadNames( [ 'C:\p\PropUnit.pas', sUnit ] );
+  var sDead         := DeadNames( [ 'C:\p\PropUnit.pas', sUnit ] );
   Assert.IsFalse( sDead.Contains( 'FCaption' ), 'FCaption is read and written by the Caption property; reported: ' + sDead );
 end;
 
 procedure TTestDeadCodeCore.TestUnusedImplementationRoutineIsReportedOnOneBasedLine;
 begin
-  var sUnit :=
-    'unit DeadUnit;' + CRLF +                 // line 1
-    'interface' + CRLF +                      // line 2
-    'implementation' + CRLF +                 // line 3
-    'procedure NobodyCallsMe;' + CRLF +       // line 4
+  var sUnit         :=
+    'unit DeadUnit;' + CRLF + // line 1
+    'interface' + CRLF + // line 2
+    'implementation' + CRLF + // line 3
+    'procedure NobodyCallsMe;' + CRLF + // line 4
     'begin' + CRLF +
     'end;' + CRLF +
     'end.';
@@ -231,7 +231,7 @@ end;
 
 procedure TTestDeadCodeCore.TestParametersAndPropertiesAreNotFields;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit FieldUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -245,14 +245,14 @@ begin
     'end.';
 
   var aItems: TArray<TDeadCodeItem>;
-  var sDead := RunAnalysis( [ 'C:\p\FieldUnit.pas', sUnit ], False, aItems );
+  var sDead         := RunAnalysis( [ 'C:\p\FieldUnit.pas', sUnit ], False, aItems );
   Assert.IsFalse( sDead.Contains( 'AValue' ), 'a method parameter is not a field; reported: ' + sDead );
   Assert.IsFalse( sDead.Contains( 'TThing.Value' ), 'a property is not a field; reported: ' + sDead );
 end;
 
 procedure TTestDeadCodeCore.TestUnusedPrivateMethodIsReported;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit MethodUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -278,7 +278,7 @@ begin
     '  TThing.Create.Run;' + CRLF +
     'end.';
 
-  var sDead := DeadNames( [ 'C:\p\MethodUnit.pas', sUnit ] );
+  var sDead         := DeadNames( [ 'C:\p\MethodUnit.pas', sUnit ] );
   Assert.IsTrue( sDead.Contains( 'TThing.Unused' ), 'Unused is never called; reported: ' + sDead );
   Assert.IsFalse( sDead.Contains( 'TThing.Used' ), 'Used is called by Run; reported: ' + sDead );
   Assert.IsFalse( sDead.Contains( 'TThing.Run' ), 'Run is called at start-up; reported: ' + sDead );
@@ -286,7 +286,7 @@ end;
 
 procedure TTestDeadCodeCore.TestMessageHandlerIsNotReported;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit MsgUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -300,13 +300,13 @@ begin
     'end;' + CRLF +
     'end.';
 
-  var sDead := DeadNames( [ 'C:\p\MsgUnit.pas', sUnit ] );
+  var sDead         := DeadNames( [ 'C:\p\MsgUnit.pas', sUnit ] );
   Assert.IsFalse( sDead.Contains( 'WMSize' ), 'a message handler is called by message number; reported: ' + sDead );
 end;
 
 procedure TTestDeadCodeCore.TestAttributedFieldIsNotReported;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit AttrUnit;' + CRLF +
     'interface' + CRLF +
     'type' + CRLF +
@@ -320,7 +320,7 @@ begin
     'implementation' + CRLF +
     'end.';
 
-  var sDead := DeadNames( [ 'C:\p\AttrUnit.pas', sUnit ] );
+  var sDead         := DeadNames( [ 'C:\p\AttrUnit.pas', sUnit ] );
   Assert.IsFalse( sDead.Contains( 'FOwner' ), 'an attributed field is used through RTTI; reported: ' + sDead );
   Assert.IsFalse( sDead.Contains( 'FId' ), 'an attribute on the line before counts too; reported: ' + sDead );
   Assert.IsTrue( sDead.Contains( 'FPlain' ), 'a plain unused field is still reported; reported: ' + sDead );
@@ -328,7 +328,7 @@ end;
 
 procedure TTestDeadCodeCore.TestReferenceInIncludeFileCounts;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit IncUnit;' + CRLF +
     'interface' + CRLF +
     'implementation' + CRLF +
@@ -337,12 +337,12 @@ begin
     'end;' + CRLF +
     '{$I IncUnit.inc}' + CRLF +
     'end.';
-  var sInclude := 'initialization' + CRLF + '  CalledFromInclude;' + CRLF;
+  var sInclude      := 'initialization' + CRLF + '  CalledFromInclude;' + CRLF;
 
   Assert.AreEqual( 'IncUnit.inc', string.Join( ',', ExtractIncludeFileNames( UTF8String( sUnit ) ) ),
     'the include file name is found' );
 
-  var oAnalyzer := TDeadCodeAnalyzer.Create;
+  var oAnalyzer     := TDeadCodeAnalyzer.Create;
   try
     oAnalyzer.CollectSymbols( 'C:\p\IncUnit.pas', UTF8String( sUnit ) );
     oAnalyzer.ScanForReferences( 'C:\p\IncUnit.pas', UTF8String( sUnit ) );
@@ -355,7 +355,7 @@ end;
 
 procedure TTestDeadCodeCore.TestLocalOnlyReportWhenUnitsSkipped;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit MixUnit;' + CRLF +
     'interface' + CRLF +
     'procedure PublicHelper;' + CRLF +
@@ -368,19 +368,19 @@ begin
     'end;' + CRLF +
     'end.';
 
-  var oAnalyzer := TDeadCodeAnalyzer.Create;
+  var oAnalyzer     := TDeadCodeAnalyzer.Create;
   try
     oAnalyzer.CollectSymbols( 'C:\p\MixUnit.pas', UTF8String( sUnit ) );
     oAnalyzer.ScanForReferences( 'C:\p\MixUnit.pas', UTF8String( sUnit ) );
 
-    var sAll := '';
+    var sAll        := '';
     for var rItem in oAnalyzer.GetDeadCode( False ) do
-      sAll := sAll + rItem.ElementName + ' ';
+      sAll          := sAll + rItem.ElementName + ' ';
     Assert.AreEqual( 'PublicHelper LocalHelper', Trim( sAll ), 'with every unit read both are reported' );
 
-    var sLocal := '';
+    var sLocal      := '';
     for var rItem in oAnalyzer.GetDeadCode( True ) do
-      sLocal := sLocal + rItem.ElementName + ' ';
+      sLocal        := sLocal + rItem.ElementName + ' ';
     Assert.AreEqual( 'LocalHelper', Trim( sLocal ), 'an unread unit might call PublicHelper, so only LocalHelper' );
   finally
     oAnalyzer.Free;
@@ -389,7 +389,7 @@ end;
 
 procedure TTestDeadCodeCore.TestEscapedNameMatchesPlainCall;
 begin
-  var sUnit :=
+  var sUnit         :=
     'unit EscUnit;' + CRLF +
     'interface' + CRLF +
     'implementation' + CRLF +
@@ -410,3 +410,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDeadCodeCore );
 
 end.
+

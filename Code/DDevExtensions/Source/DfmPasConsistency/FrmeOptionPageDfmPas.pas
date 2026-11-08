@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -24,7 +24,7 @@ uses
 
 type
   /// <summary>Options frame for the DFM/PAS Consistency plugin.</summary>
-  TFrameOptionPageDfmPas = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageDfmPas = class( TFrameBase, ITreePageComponent )
     /// <summary>Enable toggle for the plugin.</summary>
     chkEnabled: TCheckBox;
     /// <summary>Informational label describing the consistency check.</summary>
@@ -35,7 +35,7 @@ type
   public
     /// <summary>Captures the plugin instance passed in by the options dialog.</summary>
     /// <param name="UserData">The owning <c>TDfmPasConsistencyPlugin</c>.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Loads control state from the plugin.</summary>
     procedure LoadData;
     /// <summary>Writes control state back to the plugin and persists it.</summary>
@@ -55,23 +55,23 @@ uses
 
 { TFrameOptionPageDfmPas }
 
-procedure TFrameOptionPageDfmPas.SetUserData(UserData: TObject);
+procedure TFrameOptionPageDfmPas.SetUserData( UserData: TObject );
 begin
-  FPlugin := UserData;
+  FPlugin           := UserData;
 end;
 
 procedure TFrameOptionPageDfmPas.LoadData;
 begin
   if FPlugin is TDfmPasConsistencyPlugin then
-    chkEnabled.Checked := TDfmPasConsistencyPlugin(FPlugin).Enabled;
+    chkEnabled.Checked := TDfmPasConsistencyPlugin( FPlugin ).Enabled;
 end;
 
 procedure TFrameOptionPageDfmPas.SaveData;
 begin
   if FPlugin is TDfmPasConsistencyPlugin then
   begin
-    TDfmPasConsistencyPlugin(FPlugin).Enabled := chkEnabled.Checked;
-    TDfmPasConsistencyPlugin(FPlugin).Save;
+    TDfmPasConsistencyPlugin( FPlugin ).Enabled := chkEnabled.Checked;
+    TDfmPasConsistencyPlugin( FPlugin ).Save;
   end;
 end;
 
@@ -84,3 +84,4 @@ begin
 end;
 
 end.
+

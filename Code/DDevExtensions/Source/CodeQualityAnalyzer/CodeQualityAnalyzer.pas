@@ -41,7 +41,7 @@ type
     icMissingTryFinally,
     /// <summary>Suspected memory leak (reserved for future use).</summary>
     icMemoryLeak
-  );
+    );
 
   /// <summary>Severity classification for a <see cref="TCodeQualityIssue"/>.</summary>
   TIssueSeverity = (
@@ -51,7 +51,7 @@ type
     isWarning,
     /// <summary>Error-level finding.</summary>
     isError
-  );
+    );
 
   /// <summary>Detected issue with full source location and supporting metadata.</summary>
   TCodeQualityIssue = record
@@ -220,26 +220,26 @@ uses
 function IssueCategoryToString( Category: TIssueCategory ): string;
 begin
   case Category of
-    icMagicNumber:       Result := 'Magic Number';
-    icHardcodedString:   Result := 'Hardcoded String';
-    icCommentedCode:     Result := 'Commented Code';
-    icEmptyExcept:       Result := 'Empty Except';
+    icMagicNumber: Result := 'Magic Number';
+    icHardcodedString: Result := 'Hardcoded String';
+    icCommentedCode: Result := 'Commented Code';
+    icEmptyExcept: Result := 'Empty Except';
     icCatchAllException: Result := 'Catch-All Exception';
     icMissingTryFinally: Result := 'Missing Try/Finally';
-    icMemoryLeak:        Result := 'Memory Leak';
+    icMemoryLeak: Result := 'Memory Leak';
   else
-    Result := 'Unknown';
+    Result          := 'Unknown';
   end;
 end;
 
 function IssueSeverityToString( Severity: TIssueSeverity ): string;
 begin
   case Severity of
-    isInfo:    Result := 'Info';
+    isInfo: Result  := 'Info';
     isWarning: Result := 'Warning';
-    isError:   Result := 'Error';
+    isError: Result := 'Error';
   else
-    Result := 'Unknown';
+    Result          := 'Unknown';
   end;
 end;
 
@@ -265,7 +265,7 @@ begin
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Code &Quality Analyser...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -280,14 +280,14 @@ end;
 
 function TCodeQualityAnalyzerPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create( 'Code Quality Analyser', TFrameOptionPageCodeQuality, Self );
+  Result            := TTreePage.Create( 'Code Quality Analyser', TFrameOptionPageCodeQuality, Self );
 end;
 
 procedure TCodeQualityAnalyzerPlugin.Init;
 begin
   inherited Init;
 
-  FEnabled := True;
+  FEnabled          := True;
 
   // Magic Numbers - defaults
   FCheckMagicNumbers := True;
@@ -296,7 +296,7 @@ begin
 
   // Hardcoded Strings - defaults
   FCheckHardcodedStrings := True;
-  FMinStringLength := 3;
+  FMinStringLength  := 3;
   FExcludeFormatStrings := True;
   FExcludeSQLKeywords := True;
 
@@ -329,18 +329,18 @@ end;
 
 function TCodeQualityAnalyzerPlugin.GetMagicNumberWhitelistArray: TArray<string>;
 var
-  SL: TStringList;
-  I: Integer;
+  SL                : TStringList;
+  I                 : Integer;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
-    SL.Delimiter := ',';
+    SL.Delimiter    := ',';
     SL.StrictDelimiter := True;
     SL.DelimitedText := FMagicNumberWhitelist;
 
     SetLength( Result, SL.Count );
     for I := 0 to SL.Count - 1 do
-      Result[ I ] := Trim( SL[ I ] );
+      Result[ I ]   := Trim( SL[ I ] );
   finally
     SL.Free;
   end;
@@ -348,18 +348,18 @@ end;
 
 function TCodeQualityAnalyzerPlugin.GetMemoryLeakIgnorePatternsArray: TArray<string>;
 var
-  SL: TStringList;
-  I: Integer;
+  SL                : TStringList;
+  I                 : Integer;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
-    SL.Delimiter := ',';
+    SL.Delimiter    := ',';
     SL.StrictDelimiter := True;
     SL.DelimitedText := FMemoryLeakIgnorePatterns;
 
     SetLength( Result, SL.Count );
     for I := 0 to SL.Count - 1 do
-      Result[ I ] := Trim( SL[ I ] );
+      Result[ I ]   := Trim( SL[ I ] );
   finally
     SL.Free;
   end;
@@ -372,8 +372,8 @@ type
   // so each 'end' can be matched to the construct it actually closes.
   TQABlock = record
     Kind: TQABlockKind;
-    HadExcept: Boolean;            // this try block has an 'except' section
-    InExcept: Boolean;             // currently inside the except (not finally) section
+    HadExcept: Boolean; // this try block has an 'except' section
+    InExcept: Boolean; // currently inside the except (not finally) section
     ExceptStartLine: Integer;
     ExceptHasStatements: Boolean;
     ExceptHasOnClause: Boolean;
@@ -382,42 +382,42 @@ type
 class function TCodeQualityAnalyzerPlugin.AnalyzeUnit( const Source: UTF8String;
   const FileName: string; Plugin: TCodeQualityAnalyzerPlugin ): TArray<TCodeQualityIssue>;
 var
-  Lexer: TDelphiLexer;
-  Token, PrevToken: TToken;
-  Results: TList<TCodeQualityIssue>;
-  Issue: TCodeQualityIssue;
-  InImplementation: Boolean;
-  InConstSection: Boolean;
-  InResourceString: Boolean;
-  Blocks: TArray<TQABlock>;       // structural block stack for matching 'end's
-  BlockCount: Integer;            // number of open blocks on the stack
-  OpenTryCount: Integer;          // how many of those open blocks are try blocks
-  LastClosedBlock: TQABlock;      // the block most recently popped by an 'end'
-  ClassObjPending: Boolean;       // a class/object opener awaiting body confirmation
-  ParenDepth: Integer;            // parenthesis nesting (to ignore 'const' parameter modifiers)
-  BracketDepth: Integer;          // [] nesting (literals inside an index are treated as array indices)
-  UnitName: string;
-  Whitelist: TArray<string>;
-  I: Integer;
-  CommentBody: string;
-  CodeScore: Integer;
-  StringValue: string;
+  Lexer             : TDelphiLexer;
+  Token, PrevToken  : TToken;
+  Results           : TList<TCodeQualityIssue>;
+  Issue             : TCodeQualityIssue;
+  InImplementation  : Boolean;
+  InConstSection    : Boolean;
+  InResourceString  : Boolean;
+  Blocks            : TArray<TQABlock>; // structural block stack for matching 'end's
+  BlockCount        : Integer; // number of open blocks on the stack
+  OpenTryCount      : Integer; // how many of those open blocks are try blocks
+  LastClosedBlock   : TQABlock; // the block most recently popped by an 'end'
+  ClassObjPending   : Boolean; // a class/object opener awaiting body confirmation
+  ParenDepth        : Integer; // parenthesis nesting (to ignore 'const' parameter modifiers)
+  BracketDepth      : Integer; // [] nesting (literals inside an index are treated as array indices)
+  UnitName          : string;
+  Whitelist         : TArray<string>;
+  I                 : Integer;
+  CommentBody       : string;
+  CodeScore         : Integer;
+  StringValue       : string;
 
   // Pending Create calls waiting for try/finally
-  PendingCreates: TList<TPair<string, Integer>>;  // VarName, Line
-  LastAssignedVar: string;
-  LastAssignedLine: Integer;
+  PendingCreates    : TList<TPair<string, Integer>>; // VarName, Line
+  LastAssignedVar   : string;
+  LastAssignedLine  : Integer;
 
   function IsInWhitelist( const Value: string ): Boolean;
   var
-    S: string;
+    S               : string;
   begin
-    Result := False;
+    Result          := False;
     for S in Whitelist do
     begin
       if SameText( Trim( Value ), Trim( S ) ) then
       begin
-        Result := True;
+        Result      := True;
         Exit;
       end;
     end;
@@ -425,43 +425,43 @@ var
 
   function IsFormatString( const S: string ): Boolean;
   begin
-    Result := ( Pos( '%s', S ) > 0 ) or ( Pos( '%d', S ) > 0 ) or
-              ( Pos( '%f', S ) > 0 ) or ( Pos( '%g', S ) > 0 ) or
-              ( Pos( '%n', S ) > 0 ) or ( Pos( '%x', S ) > 0 ) or
-              ( Pos( '%e', S ) > 0 ) or ( Pos( '%.', S ) > 0 ) or
-              ( Pos( '%0', S ) > 0 ) or ( Pos( '%1', S ) > 0 ) or
-              ( Pos( '%2', S ) > 0 ) or ( Pos( '%3', S ) > 0 );
+    Result          := ( Pos( '%s', S ) > 0 ) or ( Pos( '%d', S ) > 0 ) or
+      ( Pos( '%f', S ) > 0 ) or ( Pos( '%g', S ) > 0 ) or
+      ( Pos( '%n', S ) > 0 ) or ( Pos( '%x', S ) > 0 ) or
+      ( Pos( '%e', S ) > 0 ) or ( Pos( '%.', S ) > 0 ) or
+      ( Pos( '%0', S ) > 0 ) or ( Pos( '%1', S ) > 0 ) or
+      ( Pos( '%2', S ) > 0 ) or ( Pos( '%3', S ) > 0 );
   end;
 
   function IsSQLKeyword( const S: string ): Boolean;
   var
-    UpperS: string;
+    UpperS          : string;
   begin
-    UpperS := UpperCase( Trim( S ) );
-    Result := ( Pos( 'SELECT ', UpperS ) > 0 ) or ( Pos( 'INSERT ', UpperS ) > 0 ) or
-              ( Pos( 'UPDATE ', UpperS ) > 0 ) or ( Pos( 'DELETE ', UpperS ) > 0 ) or
-              ( Pos( 'FROM ', UpperS ) > 0 ) or ( Pos( 'WHERE ', UpperS ) > 0 ) or
-              ( Pos( 'CREATE ', UpperS ) > 0 ) or ( Pos( 'DROP ', UpperS ) > 0 ) or
-              ( Pos( 'ALTER ', UpperS ) > 0 ) or ( Pos( 'ORDER BY', UpperS ) > 0 ) or
-              ( Pos( 'GROUP BY', UpperS ) > 0 ) or ( Pos( 'INNER JOIN', UpperS ) > 0 ) or
-              ( Pos( 'LEFT JOIN', UpperS ) > 0 ) or ( Pos( 'RIGHT JOIN', UpperS ) > 0 );
+    UpperS          := UpperCase( Trim( S ) );
+    Result          := ( Pos( 'SELECT ', UpperS ) > 0 ) or ( Pos( 'INSERT ', UpperS ) > 0 ) or
+      ( Pos( 'UPDATE ', UpperS ) > 0 ) or ( Pos( 'DELETE ', UpperS ) > 0 ) or
+      ( Pos( 'FROM ', UpperS ) > 0 ) or ( Pos( 'WHERE ', UpperS ) > 0 ) or
+      ( Pos( 'CREATE ', UpperS ) > 0 ) or ( Pos( 'DROP ', UpperS ) > 0 ) or
+      ( Pos( 'ALTER ', UpperS ) > 0 ) or ( Pos( 'ORDER BY', UpperS ) > 0 ) or
+      ( Pos( 'GROUP BY', UpperS ) > 0 ) or ( Pos( 'INNER JOIN', UpperS ) > 0 ) or
+      ( Pos( 'LEFT JOIN', UpperS ) > 0 ) or ( Pos( 'RIGHT JOIN', UpperS ) > 0 );
   end;
 
   function IsFilePath( const S: string ): Boolean;
   begin
-    Result := ( Pos( ':\', S ) > 0 ) or ( Pos( '/', S ) = 1 ) or
-              ( Pos( '.\', S ) = 1 ) or ( Pos( './', S ) = 1 ) or
-              ( Pos( '\', S ) = 1 ) or ( Pos( '..', S ) > 0 );
+    Result          := ( Pos( ':\', S ) > 0 ) or ( Pos( '/', S ) = 1 ) or
+      ( Pos( '.\', S ) = 1 ) or ( Pos( './', S ) = 1 ) or
+      ( Pos( '\', S ) = 1 ) or ( Pos( '..', S ) > 0 );
   end;
 
   function CalculateCodeScore( const Comment: string ): Integer;
   var
-    Lines: TStringList;
-    Line: string;
-    SemicolonLines: Integer;
+    Lines           : TStringList;
+    Line            : string;
+    SemicolonLines  : Integer;
   begin
-    Result := 0;
-    SemicolonLines := 0;
+    Result          := 0;
+    SemicolonLines  := 0;
 
     // Assignment operator
     if Pos( ':=', Comment ) > 0 then
@@ -469,27 +469,27 @@ var
 
     // Begin/end keywords
     if ( Pos( 'begin', LowerCase( Comment ) ) > 0 ) or
-       ( Pos( 'end;', LowerCase( Comment ) ) > 0 ) then
+      ( Pos( 'end;', LowerCase( Comment ) ) > 0 ) then
       Inc( Result, 3 );
 
     // Control flow
     if ( Pos( 'if ', LowerCase( Comment ) ) > 0 ) and
-       ( Pos( ' then', LowerCase( Comment ) ) > 0 ) then
+      ( Pos( ' then', LowerCase( Comment ) ) > 0 ) then
       Inc( Result, 2 );
 
     // Procedure/function declarations
     if ( Pos( 'procedure ', LowerCase( Comment ) ) > 0 ) or
-       ( Pos( 'function ', LowerCase( Comment ) ) > 0 ) then
+      ( Pos( 'function ', LowerCase( Comment ) ) > 0 ) then
       Inc( Result, 3 );
 
     // Count lines ending with semicolons
-    Lines := TStringList.Create;
+    Lines           := TStringList.Create;
     try
-      Lines.Text := Comment;
+      Lines.Text    := Comment;
       for Line in Lines do
       begin
         if ( Length( Trim( Line ) ) > 0 ) and
-           ( Trim( Line )[ Length( Trim( Line ) ) ] = ';' ) then
+          ( Trim( Line )[ Length( Trim( Line ) ) ] = ';' ) then
           Inc( SemicolonLines );
       end;
       Inc( Result, SemicolonLines );
@@ -508,7 +508,7 @@ var
     // A nested construct opening inside an except section is itself content,
     // so the enclosing handler is not considered empty.
     if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
-       Blocks[ BlockCount - 1 ].InExcept then
+      Blocks[ BlockCount - 1 ].InExcept then
       Blocks[ BlockCount - 1 ].ExceptHasStatements := True;
 
     if BlockCount >= Length( Blocks ) then
@@ -541,26 +541,26 @@ begin
   if Plugin = nil then
     Exit( nil );
 
-  Results := TList<TCodeQualityIssue>.Create;
-  PendingCreates := TList<TPair<string, Integer>>.Create;
+  Results           := TList<TCodeQualityIssue>.Create;
+  PendingCreates    := TList<TPair<string, Integer>>.Create;
   try
-    UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
-    Whitelist := Plugin.GetMagicNumberWhitelistArray;
+    UnitName        := ChangeFileExt( ExtractFileName( FileName ), '' );
+    Whitelist       := Plugin.GetMagicNumberWhitelistArray;
 
-    Lexer := TDelphiLexer.Create( '', Source );
+    Lexer           := TDelphiLexer.Create( '', Source );
     try
       InImplementation := False;
       InConstSection := False;
       InResourceString := False;
-      BlockCount := 0;
-      OpenTryCount := 0;
+      BlockCount    := 0;
+      OpenTryCount  := 0;
       ClassObjPending := False;
-      ParenDepth := 0;
-      BracketDepth := 0;
+      ParenDepth    := 0;
+      BracketDepth  := 0;
       LastAssignedVar := '';
       LastAssignedLine := 0;
 
-      PrevToken := nil;
+      PrevToken     := nil;
 
       while Lexer.NextToken( Token ) do
       begin
@@ -610,7 +610,7 @@ begin
           InConstSection := False;
         end
         else if Token.Kind in [ tkI_var, tkI_type, tkI_procedure, tkI_function,
-                                tkI_begin, tkI_implementation ] then
+          tkI_begin, tkI_implementation ] then
         begin
           InConstSection := False;
           InResourceString := False;
@@ -620,8 +620,8 @@ begin
         // Magic Number Detection
         // =====================================================================
         if Plugin.CheckMagicNumbers and InImplementation and
-           ( Token.Kind in [ tkInt, tkFloat ] ) and
-           not InConstSection then
+          ( Token.Kind in [ tkInt, tkFloat ] ) and
+          not InConstSection then
         begin
           // Check if it's in the whitelist
           if not IsInWhitelist( string( Token.Value ) ) then
@@ -651,8 +651,8 @@ begin
         // Hardcoded String Detection
         // =====================================================================
         if Plugin.CheckHardcodedStrings and InImplementation and
-           ( Token.Kind = tkString ) and
-           not InConstSection and not InResourceString then
+          ( Token.Kind = tkString ) and
+          not InConstSection and not InResourceString then
         begin
           StringValue := string( Token.Value );
 
@@ -660,8 +660,8 @@ begin
           // codes (#13#10, 'a'#9'b') are not plain text - blank them so the
           // length check below skips them; un-double embedded '' for the rest.
           if ( Length( StringValue ) >= 2 ) and
-             ( StringValue[ 1 ] = '''' ) and
-             ( StringValue[ Length( StringValue ) ] = '''' ) then
+            ( StringValue[ 1 ] = '''' ) and
+            ( StringValue[ Length( StringValue ) ] = '''' ) then
             StringValue := StringReplace( Copy( StringValue, 2, Length( StringValue ) - 2 ),
               '''''', '''', [ rfReplaceAll ] )
           else
@@ -671,8 +671,8 @@ begin
           begin
             // Apply exclusions
             if not ( Plugin.ExcludeFormatStrings and IsFormatString( StringValue ) ) and
-               not ( Plugin.ExcludeSQLKeywords and IsSQLKeyword( StringValue ) ) and
-               not IsFilePath( StringValue ) then
+              not ( Plugin.ExcludeSQLKeywords and IsSQLKeyword( StringValue ) ) and
+              not IsFilePath( StringValue ) then
             begin
               Issue := Default( TCodeQualityIssue );
               Issue.FileName := FileName;
@@ -710,7 +710,7 @@ begin
 
           if CodeScore >= Plugin.CommentCodeThreshold then
           begin
-            Issue := Default( TCodeQualityIssue );
+            Issue   := Default( TCodeQualityIssue );
             Issue.FileName := FileName;
             Issue.UnitName := UnitName;
             Issue.Line := Token.Line + 1;
@@ -744,8 +744,8 @@ begin
         else if Token.Kind in [ tkI_begin, tkI_case, tkI_asm ] then
           PushBlock( qabOther )
         else if ( Token.Kind in [ tkI_record, tkI_class, tkI_object,
-                                  tkI_interface, tkI_dispinterface ] ) and
-                ( PrevToken <> nil ) and ( PrevToken.Kind in [ tkEqual, tkI_packed ] ) then
+            tkI_interface, tkI_dispinterface ] ) and
+          ( PrevToken <> nil ) and ( PrevToken.Kind in [ tkEqual, tkI_packed ] ) then
         begin
           // A type body: TFoo = class/record/object/interface ... end.
           PushBlock( qabOther );
@@ -770,7 +770,7 @@ begin
         else if Token.Kind = tkI_on then
         begin
           if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
-             Blocks[ BlockCount - 1 ].InExcept then
+            Blocks[ BlockCount - 1 ].InExcept then
             Blocks[ BlockCount - 1 ].ExceptHasOnClause := True;
         end
         else if Token.Kind = tkI_end then
@@ -784,11 +784,11 @@ begin
             // construct it closes, so try/finally no longer leaks the depth and
             // a record/class/case 'end' no longer corrupts the try state.
             if ( LastClosedBlock.Kind = qabTry ) and
-               LastClosedBlock.HadExcept and LastClosedBlock.InExcept then
+              LastClosedBlock.HadExcept and LastClosedBlock.InExcept then
             begin
               if Plugin.CheckEmptyExcept and
-                 not LastClosedBlock.ExceptHasStatements and
-                 not LastClosedBlock.ExceptHasOnClause then
+                not LastClosedBlock.ExceptHasStatements and
+                not LastClosedBlock.ExceptHasOnClause then
               begin
                 Issue := Default( TCodeQualityIssue );
                 Issue.FileName := FileName;
@@ -802,8 +802,8 @@ begin
                 Results.Add( Issue );
               end
               else if Plugin.CheckCatchAllException and
-                      LastClosedBlock.ExceptHasStatements and
-                      not LastClosedBlock.ExceptHasOnClause then
+                LastClosedBlock.ExceptHasStatements and
+                not LastClosedBlock.ExceptHasOnClause then
               begin
                 Issue := Default( TCodeQualityIssue );
                 Issue.FileName := FileName;
@@ -820,9 +820,9 @@ begin
           end;
         end
         else if ( BlockCount > 0 ) and ( Blocks[ BlockCount - 1 ].Kind = qabTry ) and
-                Blocks[ BlockCount - 1 ].InExcept and
-                ( Token.Kind >= tkIdent ) and
-                not ( Token.Kind in [ tkI_end, tkI_on, tkI_else ] ) then
+          Blocks[ BlockCount - 1 ].InExcept and
+          ( Token.Kind >= tkIdent ) and
+          not ( Token.Kind in [ tkI_end, tkI_on, tkI_else ] ) then
         begin
           // Any identifier or statement in the except section counts as content.
           Blocks[ BlockCount - 1 ].ExceptHasStatements := True;
@@ -839,11 +839,11 @@ begin
             LastAssignedVar := string( PrevToken.Value );
             LastAssignedLine := Token.Line + 1;
           end
-          // Detect .Create call
+            // Detect .Create call
           else if ( Token.Kind >= tkIdent ) and
-                  SameText( string( Token.Value ), 'Create' ) and
-                  ( PrevToken <> nil ) and ( PrevToken.Kind = tkQualifier ) and
-                  ( LastAssignedVar <> '' ) then
+            SameText( string( Token.Value ), 'Create' ) and
+            ( PrevToken <> nil ) and ( PrevToken.Kind = tkQualifier ) and
+            ( LastAssignedVar <> '' ) then
           begin
             // Check if we're already in a try block
             if OpenTryCount = 0 then
@@ -852,16 +852,16 @@ begin
             end;
             LastAssignedVar := '';
           end
-          // Check for try keyword - clears pending creates (they're protected)
+            // Check for try keyword - clears pending creates (they're protected)
           else if Token.Kind = tkI_try then
           begin
             PendingCreates.Clear;
           end
-          // Check for method end - report unprotected creates. The block stack
-          // is already updated for this 'end' above, so BlockCount = 0 means we
-          // have returned to top level (end of the routine body).
+            // Check for method end - report unprotected creates. The block stack
+            // is already updated for this 'end' above, so BlockCount = 0 means we
+            // have returned to top level (end of the routine body).
           else if ( Token.Kind = tkI_end ) and ( BlockCount = 0 ) and
-                  ( PendingCreates.Count > 0 ) then
+            ( PendingCreates.Count > 0 ) then
           begin
             for I := 0 to PendingCreates.Count - 1 do
             begin
@@ -880,14 +880,14 @@ begin
           end;
         end;
 
-        PrevToken := Token;
+        PrevToken   := Token;
       end;
 
     finally
       Lexer.Free;
     end;
 
-    Result := Results.ToArray;
+    Result          := Results.ToArray;
   finally
     Results.Free;
     PendingCreates.Free;
@@ -895,3 +895,4 @@ begin
 end;
 
 end.
+

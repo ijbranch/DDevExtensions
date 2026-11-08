@@ -18,39 +18,39 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the DFM/PAS comparison.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDfmPasConsistencyCore = class
   public
     /// <summary>Proves an `inherited` component of a descendant form, declared by the ancestor class,
     /// is not reported as missing from the descendant's unit.</summary>
-    [Test]
+    [ Test ]
     procedure TestInheritedComponentIsNotMissing;
     /// <summary>Proves the components inside an `inline` frame belong to the frame, not to the form,
     /// and are not reported as missing from the form's unit.</summary>
-    [Test]
+    [ Test ]
     procedure TestFrameChildrenAreNotMissing;
     /// <summary>Proves a class method inside a private section does not turn the private fields after
     /// it into published components.</summary>
-    [Test]
+    [ Test ]
     procedure TestClassMethodKeepsVisibility;
     /// <summary>Proves a binary ( TPF0 ) form resource is read: a consistent form reports nothing.</summary>
-    [Test]
+    [ Test ]
     procedure TestBinaryDfmIsRead;
     /// <summary>Proves a form resource in resource-stream format ( as the designer hands it out ) is read.</summary>
-    [Test]
+    [ Test ]
     procedure TestResourceStreamDfmIsRead;
     /// <summary>Proves a real difference is still reported: a published field with no component.</summary>
-    [Test]
+    [ Test ]
     procedure TestGenuineMissingComponentIsReported;
     /// <summary>Proves a UTF-16 text DFM ( FF FE BOM ) is read as text, not as a resource stream.</summary>
-    [Test]
+    [ Test ]
     procedure TestUtf16TextDfmIsRead;
     /// <summary>Proves only the class the DFM's root names is compared: a forward declaration, a
     /// class reference and another class's fields are not the form's.</summary>
-    [Test]
+    [ Test ]
     procedure TestOnlyTheFormClassIsCompared;
     /// <summary>Proves every name of "Button1, Edit1: ..." is a field, not only the last.</summary>
-    [Test]
+    [ Test ]
     procedure TestCommaListDeclaresEveryName;
   end;
 
@@ -61,7 +61,7 @@ uses
 
 const
   /// <summary>A form unit declaring Button1 and Edit1.</summary>
-  PAS_FORM1 =
+  PAS_FORM1         =
     'unit Unit1;'#13#10 +
     'interface'#13#10 +
     'uses Vcl.Forms, Vcl.StdCtrls;'#13#10 +
@@ -74,7 +74,7 @@ const
     'end.';
 
   /// <summary>The text form resource matching <see cref="PAS_FORM1"/>.</summary>
-  DFM_FORM1 =
+  DFM_FORM1         =
     'object Form1: TForm1'#13#10 +
     '  Left = 0'#13#10 +
     '  Top = 0'#13#10 +
@@ -91,7 +91,7 @@ const
 /// <returns>Its UTF-8 bytes.</returns>
 function Utf8Bytes( const AText: string ): TBytes;
 begin
-  Result := TEncoding.UTF8.GetBytes( AText );
+  Result            := TEncoding.UTF8.GetBytes( AText );
 end;
 
 /// <summary>A text form resource converted to binary ( TPF0 ) or resource-stream form.</summary>
@@ -100,14 +100,14 @@ end;
 /// <returns>The converted bytes.</returns>
 function ConvertedDfm( const AText: string; AResource: Boolean ): TBytes;
 var
-  Input, Output: TMemoryStream;
+  Input, Output     : TMemoryStream;
 begin
-  Input  := TMemoryStream.Create;
-  Output := TMemoryStream.Create;
+  Input             := TMemoryStream.Create;
+  Output            := TMemoryStream.Create;
   try
-    var Bytes := Utf8Bytes( AText );
+    var Bytes       := Utf8Bytes( AText );
     Input.WriteBuffer( Bytes[ 0 ], Length( Bytes ) );
-    Input.Position := 0;
+    Input.Position  := 0;
     if AResource then
       ObjectTextToResource( Input, Output )
     else
@@ -122,7 +122,7 @@ end;
 
 procedure TTestDfmPasConsistencyCore.TestInheritedComponentIsNotMissing;
 const
-  PAS =
+  PAS               =
     'unit Unit2;'#13#10 +
     'interface'#13#10 +
     'type'#13#10 +
@@ -131,7 +131,7 @@ const
     '  end;'#13#10 +
     'implementation'#13#10 +
     'end.';
-  DFM =
+  DFM               =
     'inherited Form2: TForm2'#13#10 +
     '  Caption = ''Two'''#13#10 +
     '  inherited Button1: TButton'#13#10 +
@@ -141,13 +141,13 @@ const
     '  end'#13#10 +
     'end'#13#10;
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM ), 'C:\x\Unit2.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM ), 'C:\x\Unit2.pas' );
   Assert.AreEqual( 0, Length( Results ), 'Button1 is declared by TForm1, not TForm2' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestFrameChildrenAreNotMissing;
 const
-  PAS =
+  PAS               =
     'unit Unit3;'#13#10 +
     'interface'#13#10 +
     'type'#13#10 +
@@ -156,7 +156,7 @@ const
     '  end;'#13#10 +
     'implementation'#13#10 +
     'end.';
-  DFM =
+  DFM               =
     'object Form3: TForm3'#13#10 +
     '  inline Frame11: TFrame1'#13#10 +
     '    Left = 8'#13#10 +
@@ -169,13 +169,13 @@ const
     '  end'#13#10 +
     'end'#13#10;
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM ), 'C:\x\Unit3.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM ), 'C:\x\Unit3.pas' );
   Assert.AreEqual( 0, Length( Results ), 'Label1, Panel1 and Button9 belong to the frame' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestClassMethodKeepsVisibility;
 const
-  PAS =
+  PAS               =
     'unit Unit1;'#13#10 +
     'interface'#13#10 +
     'type'#13#10 +
@@ -189,31 +189,31 @@ const
     'implementation'#13#10 +
     'end.';
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
   Assert.AreEqual( 0, Length( Results ), 'FTimer is a private field, not a component' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestBinaryDfmIsRead;
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS_FORM1 ), ConvertedDfm( DFM_FORM1, False ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS_FORM1 ), ConvertedDfm( DFM_FORM1, False ), 'C:\x\Unit1.pas' );
   Assert.AreEqual( 0, Length( Results ), 'a consistent binary form reports nothing' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestResourceStreamDfmIsRead;
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS_FORM1 ), ConvertedDfm( DFM_FORM1, True ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS_FORM1 ), ConvertedDfm( DFM_FORM1, True ), 'C:\x\Unit1.pas' );
   Assert.AreEqual( 0, Length( Results ), 'a consistent resource-stream form reports nothing' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestGenuineMissingComponentIsReported;
 const
-  DFM =
+  DFM               =
     'object Form1: TForm1'#13#10 +
     '  object Button1: TButton'#13#10 +
     '  end'#13#10 +
     'end'#13#10;
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS_FORM1 ), Utf8Bytes( DFM ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS_FORM1 ), Utf8Bytes( DFM ), 'C:\x\Unit1.pas' );
   Assert.AreEqual( 1, Length( Results ) );
   Assert.AreEqual( 'Edit1', Results[ 0 ].ComponentName );
   Assert.IsTrue( Results[ 0 ].InconsistencyType = itMissingInDfm, 'Edit1 has no component' );
@@ -221,14 +221,14 @@ end;
 
 procedure TTestDfmPasConsistencyCore.TestUtf16TextDfmIsRead;
 begin
-  var Bytes := TEncoding.Unicode.GetPreamble + TEncoding.Unicode.GetBytes( DFM_FORM1 );
-  var Results := AnalyseFormUnit( UTF8String( PAS_FORM1 ), Bytes, 'C:\x\Unit1.pas' );
+  var Bytes         := TEncoding.Unicode.GetPreamble + TEncoding.Unicode.GetBytes( DFM_FORM1 );
+  var Results       := AnalyseFormUnit( UTF8String( PAS_FORM1 ), Bytes, 'C:\x\Unit1.pas' );
   Assert.AreEqual( 0, Length( Results ), 'a consistent UTF-16 form reports nothing' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestOnlyTheFormClassIsCompared;
 const
-  PAS =
+  PAS               =
     'unit Unit1;'#13#10 +
     'interface'#13#10 +
     'type'#13#10 +
@@ -247,13 +247,13 @@ const
     'implementation'#13#10 +
     'end.';
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
   Assert.AreEqual( 0, Length( Results ), 'Timer and Memo9 belong to other classes' );
 end;
 
 procedure TTestDfmPasConsistencyCore.TestCommaListDeclaresEveryName;
 const
-  PAS =
+  PAS               =
     'unit Unit1;'#13#10 +
     'interface'#13#10 +
     'type'#13#10 +
@@ -263,7 +263,7 @@ const
     'implementation'#13#10 +
     'end.';
 begin
-  var Results := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
+  var Results       := AnalyseFormUnit( UTF8String( PAS ), Utf8Bytes( DFM_FORM1 ), 'C:\x\Unit1.pas' );
   // Button1 matches; Edit1 is declared, but as TButton - a type mismatch, not "missing".
   Assert.AreEqual( 1, Length( Results ) );
   Assert.AreEqual( 'Edit1', Results[ 0 ].ComponentName );
@@ -274,3 +274,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDfmPasConsistencyCore );
 
 end.
+

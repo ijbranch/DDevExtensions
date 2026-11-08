@@ -214,7 +214,7 @@ type
 
 var
   /// <summary>Singleton instance reference; nil when the form is not currently shown.</summary>
-  FormInstance: TFormBuildStatistics = nil;
+  FormInstance      : TFormBuildStatistics = nil;
 
 implementation
 
@@ -224,15 +224,15 @@ class procedure TFormBuildStatistics.CloseInstance;
 begin
   // FormClose (caFree) is not involved: free directly and clear the singleton first so
   // nothing can reach the form while it is being destroyed.
-  var LForm := FormInstance;
-  FormInstance := nil;
+  var LForm         := FormInstance;
+  FormInstance      := nil;
   LForm.Free;
 end;
 
 destructor TFormBuildStatistics.Destroy;
 begin
   if ( FormInstance = Self ) then
-    FormInstance := nil;
+    FormInstance    := nil;
   inherited Destroy;
 end;
 
@@ -254,7 +254,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormBuildStatistics.Create( Application );
+  FormInstance      := TFormBuildStatistics.Create( Application );
   FormInstance.FBuildStatistics := ABuildStatistics;
   FormInstance.FStyleViolations := ABuildStatistics.GetStyleViolations;
   FormInstance.PopulateList;
@@ -266,13 +266,13 @@ end;
 procedure TFormBuildStatistics.FormCreate( Sender: TObject );
 begin
 
-  FSortColumn      := 1;     // Default sort by duration
-  FSortAscending   := False; // Descending (slowest first)
-  FFileFilter      := ffProject;
-  cmbFilter.ItemIndex := 1;  // Project
+  FSortColumn       := 1; // Default sort by duration
+  FSortAscending    := False; // Descending (slowest first)
+  FFileFilter       := ffProject;
+  cmbFilter.ItemIndex := 1; // Project
 
   // Style issues sort defaults
-  FStyleSortColumn   := 0;   // Sort by unit name
+  FStyleSortColumn  := 0; // Sort by unit name
   FStyleSortAscending := True;
 
 end;
@@ -280,47 +280,47 @@ end;
 procedure TFormBuildStatistics.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 function TFormBuildStatistics.FormatDuration( Ms: Int64 ): string;
 var
-  Seconds: Double;
+  Seconds           : Double;
 begin
 
   if Ms < 1000 then
-    Result := Format( '%d ms', [ Ms ] )
+    Result          := Format( '%d ms', [ Ms ] )
   else
   begin
-    Seconds := Ms / 1000;
+    Seconds         := Ms / 1000;
 
     if Seconds < 60 then
-      Result := Format( '%.2f s', [ Seconds ] )
+      Result        := Format( '%.2f s', [ Seconds ] )
     else
-      Result := Format( '%.1f min', [ Seconds / 60 ] );
+      Result        := Format( '%.1f min', [ Seconds / 60 ] );
   end;
 
 end;
 
 procedure TFormBuildStatistics.PopulateList;
 var
-  Units: TArray<TBuildUnitInfo>;
-  I: Integer;
-  Item: TListItem;
-  TotalMs: Int64;
-  TotalLOC: Integer;
-  TotalComplexity: Integer;
-  Metrics: TUnitMetrics;
-  DisplayCount: Integer;
-  IsProject: Boolean;
-  FullPath: string;
-  ProjectPath: string;
+  Units             : TArray<TBuildUnitInfo>;
+  I                 : Integer;
+  Item              : TListItem;
+  TotalMs           : Int64;
+  TotalLOC          : Integer;
+  TotalComplexity   : Integer;
+  Metrics           : TUnitMetrics;
+  DisplayCount      : Integer;
+  IsProject         : Boolean;
+  FullPath          : string;
+  ProjectPath       : string;
 begin
 
   ListView.Items.BeginUpdate;
-  ProjectPath := FBuildStatistics.ProjectPath;
+  ProjectPath       := FBuildStatistics.ProjectPath;
 
   try
     ListView.Items.Clear;
@@ -333,7 +333,7 @@ begin
     for I := 0 to Length( Units ) - 1 do
     begin
       // Apply filter
-      IsProject := IsProjectFile( Units[ I ].FileName );
+      IsProject     := IsProjectFile( Units[ I ].FileName );
 
       case FFileFilter of
         ffProject:
@@ -344,22 +344,22 @@ begin
             Continue;
       end;
 
-      Item         := ListView.Items.Add;
-      Item.Caption := Units[ I ].UnitName;
+      Item          := ListView.Items.Add;
+      Item.Caption  := Units[ I ].UnitName;
       Item.SubItems.Add( FormatDuration( Units[ I ].DurationMs ) );
 
       // Resolve relative paths using project path
-      FullPath := Units[ I ].FileName;
+      FullPath      := Units[ I ].FileName;
       if ( ProjectPath <> '' ) and not FileExists( FullPath ) then
-        FullPath := ExpandFileName( ProjectPath + Units[ I ].FileName );
+        FullPath    := ExpandFileName( ProjectPath + Units[ I ].FileName );
 
       // Calculate metrics for this unit
       if FileExists( FullPath ) then
       begin
-        Metrics := CalculateUnitMetrics( FullPath );
+        Metrics     := CalculateUnitMetrics( FullPath );
         Item.SubItems.Add( IntToStr( Metrics.LinesOfCode ) );
         Item.SubItems.Add( IntToStr( Metrics.CyclomaticComplexity ) );
-        TotalLOC        := TotalLOC + Metrics.LinesOfCode;
+        TotalLOC    := TotalLOC + Metrics.LinesOfCode;
         TotalComplexity := TotalComplexity + Metrics.CyclomaticComplexity;
       end
       else
@@ -369,8 +369,8 @@ begin
       end;
 
       Item.SubItems.Add( Units[ I ].FileName );
-      Item.Data := Pointer( Units[ I ].DurationMs );
-      TotalMs   := TotalMs + Units[ I ].DurationMs;
+      Item.Data     := Pointer( Units[ I ].DurationMs );
+      TotalMs       := TotalMs + Units[ I ].DurationMs;
       Inc( DisplayCount );
     end;
 
@@ -396,24 +396,24 @@ end;
 
 procedure TFormBuildStatistics.btnCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  I: Integer;
-  Item: TListItem;
+  SL                : TStringList;
+  I                 : Integer;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Unit Name'#9'Duration'#9'LOC'#9'Complexity'#9'File Path' );
 
     for I := 0 to ListView.Items.Count - 1 do
     begin
-      Item := ListView.Items[ I ];
+      Item          := ListView.Items[ I ];
 
       if Item.SubItems.Count >= 4 then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s',
-          [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
-            Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
+            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
+              Item.SubItems[ 2 ], Item.SubItems[ 3 ] ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -425,29 +425,29 @@ end;
 
 procedure TFormBuildStatistics.btnExportCSVClick( Sender: TObject );
 var
-  SL: TStringList;
-  I: Integer;
-  Item: TListItem;
+  SL                : TStringList;
+  I                 : Integer;
+  Item              : TListItem;
 begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( '"Unit Name","Duration (ms)","Lines of Code","Cyclomatic Complexity","File Path"' );
 
       for I := 0 to ListView.Items.Count - 1 do
       begin
-        Item := ListView.Items[ I ];
+        Item        := ListView.Items[ I ];
 
         if Item.SubItems.Count >= 4 then
           // Export the Duration value shown in the grid (SubItems[0]) rather than
           // the raw Int64 in Item.Data, so the CSV matches what the user sees.
           // AnsiQuotedStr doubles any embedded quote, so names and paths cannot break a field.
           SL.Add( Format( '%s,%s,%s,%s,%s',
-            [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ), Item.SubItems[ 1 ],
-              Item.SubItems[ 2 ], AnsiQuotedStr( Item.SubItems[ 3 ], '"' ) ] ) );
+              [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ), Item.SubItems[ 1 ],
+                Item.SubItems[ 2 ], AnsiQuotedStr( Item.SubItems[ 3 ], '"' ) ] ) );
       end;
 
       try
@@ -468,11 +468,11 @@ procedure TFormBuildStatistics.ListViewColumnClick( Sender: TObject; Column: TLi
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := ( FSortColumn = 0 ); // Ascending for name, descending for duration
+    FSortColumn     := Column.Index;
+    FSortAscending  := ( FSortColumn = 0 ); // Ascending for name, descending for duration
   end;
 
   ListView.CustomSort( nil, 0 );
@@ -482,65 +482,65 @@ end;
 procedure TFormBuildStatistics.ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
   Data: Integer; var Compare: Integer );
 var
-  Ms1, Ms2: Int64;
-  Val1, Val2: Integer;
+  Ms1, Ms2          : Int64;
+  Val1, Val2        : Integer;
 begin
 
   case FSortColumn of
     0: // Unit Name
-      Compare := CompareText( Item1.Caption, Item2.Caption );
+      Compare       := CompareText( Item1.Caption, Item2.Caption );
     1: // Duration
       begin
-        Ms1 := Int64( Item1.Data );
-        Ms2 := Int64( Item2.Data );
+        Ms1         := Int64( Item1.Data );
+        Ms2         := Int64( Item2.Data );
 
         if Ms1 < Ms2 then
-          Compare := -1
+          Compare   := -1
         else if Ms1 > Ms2 then
-          Compare := 1
+          Compare   := 1
         else
-          Compare := 0;
+          Compare   := 0;
       end;
     2: // LOC
       begin
-        Val1 := StrToIntDef( Item1.SubItems[ 1 ], 0 );
-        Val2 := StrToIntDef( Item2.SubItems[ 1 ], 0 );
+        Val1        := StrToIntDef( Item1.SubItems[ 1 ], 0 );
+        Val2        := StrToIntDef( Item2.SubItems[ 1 ], 0 );
 
         if Val1 < Val2 then
-          Compare := -1
+          Compare   := -1
         else if Val1 > Val2 then
-          Compare := 1
+          Compare   := 1
         else
-          Compare := 0;
+          Compare   := 0;
       end;
     3: // Complexity
       begin
-        Val1 := StrToIntDef( Item1.SubItems[ 2 ], 0 );
-        Val2 := StrToIntDef( Item2.SubItems[ 2 ], 0 );
+        Val1        := StrToIntDef( Item1.SubItems[ 2 ], 0 );
+        Val2        := StrToIntDef( Item2.SubItems[ 2 ], 0 );
 
         if Val1 < Val2 then
-          Compare := -1
+          Compare   := -1
         else if Val1 > Val2 then
-          Compare := 1
+          Compare   := 1
         else
-          Compare := 0;
+          Compare   := 0;
       end;
     4: // File Path
-      Compare := CompareText( Item1.SubItems[ 3 ], Item2.SubItems[ 3 ] );
+      Compare       := CompareText( Item1.SubItems[ 3 ], Item2.SubItems[ 3 ] );
   else
-    Compare := 0;
+    Compare         := 0;
   end;
 
   if ( not FSortAscending ) then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
 procedure TFormBuildStatistics.mnuSortByNameClick( Sender: TObject );
 begin
 
-  FSortColumn    := 0;
-  FSortAscending := True;
+  FSortColumn       := 0;
+  FSortAscending    := True;
   ListView.CustomSort( nil, 0 );
 
 end;
@@ -548,8 +548,8 @@ end;
 procedure TFormBuildStatistics.mnuSortByTimeClick( Sender: TObject );
 begin
 
-  FSortColumn    := 1;
-  FSortAscending := False;
+  FSortColumn       := 1;
+  FSortAscending    := False;
   ListView.CustomSort( nil, 0 );
 
 end;
@@ -557,8 +557,8 @@ end;
 procedure TFormBuildStatistics.mnuSortByLOCClick( Sender: TObject );
 begin
 
-  FSortColumn    := 2;
-  FSortAscending := False;
+  FSortColumn       := 2;
+  FSortAscending    := False;
   ListView.CustomSort( nil, 0 );
 
 end;
@@ -566,8 +566,8 @@ end;
 procedure TFormBuildStatistics.mnuSortByComplexityClick( Sender: TObject );
 begin
 
-  FSortColumn    := 3;
-  FSortAscending := False;
+  FSortColumn       := 3;
+  FSortAscending    := False;
   ListView.CustomSort( nil, 0 );
 
 end;
@@ -576,11 +576,11 @@ procedure TFormBuildStatistics.cmbFilterChange( Sender: TObject );
 begin
 
   case cmbFilter.ItemIndex of
-    0: FFileFilter := ffAll;
-    1: FFileFilter := ffProject;
-    2: FFileFilter := ffExternal;
+    0: FFileFilter  := ffAll;
+    1: FFileFilter  := ffProject;
+    2: FFileFilter  := ffExternal;
   else
-    FFileFilter := ffAll;
+    FFileFilter     := ffAll;
   end;
 
   PopulateList;
@@ -589,14 +589,14 @@ end;
 
 procedure TFormBuildStatistics.ListViewDblClick( Sender: TObject );
 var
-  Item: TListItem;
-  FileName: string;
-  FullPath: string;
-  ProjectPath: string;
-  ActionServices: IOTAActionServices;
+  Item              : TListItem;
+  FileName          : string;
+  FullPath          : string;
+  ProjectPath       : string;
+  ActionServices    : IOTAActionServices;
 begin
 
-  Item := ListView.Selected;
+  Item              := ListView.Selected;
 
   if Item = nil then
     Exit;
@@ -604,18 +604,18 @@ begin
   if Item.SubItems.Count < 4 then
     Exit;
 
-  FileName := Item.SubItems[ 3 ]; // File Path column
+  FileName          := Item.SubItems[ 3 ]; // File Path column
 
   // Only allow opening files where source was found (has metrics)
   if Item.SubItems[ 1 ] = '-' then
     Exit;
 
-  ProjectPath := FBuildStatistics.ProjectPath;
+  ProjectPath       := FBuildStatistics.ProjectPath;
 
   // Resolve relative paths
-  FullPath := FileName;
+  FullPath          := FileName;
   if ( ProjectPath <> '' ) and not FileExists( FullPath ) then
-    FullPath := ExpandFileName( ProjectPath + FileName );
+    FullPath        := ExpandFileName( ProjectPath + FileName );
 
   if FileExists( FullPath ) and Supports( BorlandIDEServices, IOTAActionServices, ActionServices ) then
   begin
@@ -628,39 +628,39 @@ end;
 function TFormBuildStatistics.IsProjectFile( const FileName: string ): Boolean;
 begin
 
-  Result := FBuildStatistics.IsProjectFile( FileName );
+  Result            := FBuildStatistics.IsProjectFile( FileName );
 
 end;
 
 procedure TFormBuildStatistics.PopulateStyleList;
 var
-  Violation: TStyleViolation;
-  Item: TListItem;
-  Category: string;
-  Idx: Integer;
+  Violation         : TStyleViolation;
+  Item              : TListItem;
+  Category          : string;
+  Idx               : Integer;
 begin
 
   lvStyleIssues.Items.BeginUpdate;
 
   try
     lvStyleIssues.Items.Clear;
-    Idx := 0;
+    Idx             := 0;
 
     for Violation in FStyleViolations do
     begin
       Item := lvStyleIssues.Items.Add;
-      Item.Caption := Violation.UnitName;
+      Item.Caption  := Violation.UnitName;
       // Use default category if not set
-      Category := Violation.Category;
+      Category      := Violation.Category;
       if Category = '' then
-        Category := 'NamingConvention';
+        Category    := 'NamingConvention';
       Item.SubItems.Add( Category );
       Item.SubItems.Add( Violation.Rule );
       Item.SubItems.Add( IntToStr( Violation.Line ) );
       Item.SubItems.Add( Violation.Expected );
       Item.SubItems.Add( Violation.Actual );
       Item.SubItems.Add( Violation.Severity );
-      Item.Data := Pointer( NativeInt( Idx ) );
+      Item.Data     := Pointer( NativeInt( Idx ) );
       Inc( Idx );
     end;
 
@@ -713,50 +713,50 @@ end;
 procedure TFormBuildStatistics.lvStyleIssuesCompare( Sender: TObject; Item1, Item2: TListItem;
   Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
 
   if FStyleSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FStyleSortColumn - 1;
+    SubIdx          := FStyleSortColumn - 1;
 
     if SubIdx < Item1.SubItems.Count then
-      S1 := Item1.SubItems[ SubIdx ]
+      S1            := Item1.SubItems[ SubIdx ]
     else
-      S1 := '';
+      S1            := '';
 
     if SubIdx < Item2.SubItems.Count then
-      S2 := Item2.SubItems[ SubIdx ]
+      S2            := Item2.SubItems[ SubIdx ]
     else
-      S2 := '';
+      S2            := '';
   end;
 
   // Try numeric comparison for line number column (column 3)
   if FStyleSortColumn = 3 then
-    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+    Compare         := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else
-    Compare := CompareText( S1, S2 );
+    Compare         := CompareText( S1, S2 );
 
   if not FStyleSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
 procedure TFormBuildStatistics.lvStyleIssuesDblClick( Sender: TObject );
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
 
   if lvStyleIssues.Selected = nil then
     Exit;
 
-  Idx := NativeInt( lvStyleIssues.Selected.Data );
+  Idx               := NativeInt( lvStyleIssues.Selected.Data );
 
   if ( Idx >= 0 ) and ( Idx < Length( FStyleViolations ) ) then
     OpenStyleFile( FStyleViolations[ Idx ] );
@@ -765,11 +765,11 @@ end;
 
 procedure TFormBuildStatistics.OpenStyleFile( const Violation: TStyleViolation );
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  EditView          : IOTAEditView;
+  I                 : Integer;
 begin
 
   if not FileExists( Violation.FileName ) then
@@ -781,7 +781,7 @@ begin
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
     try
-      Module := ModuleServices.OpenModule( Violation.FileName );
+      Module        := ModuleServices.OpenModule( Violation.FileName );
     except
       on E: Exception do
       begin
@@ -796,7 +796,7 @@ begin
       Exit;
     end;
 
-    SourceEditor := nil;
+    SourceEditor    := nil;
 
     for I := 0 to Module.ModuleFileCount - 1 do
     begin
@@ -807,7 +807,7 @@ begin
 
         if ( SourceEditor.EditViewCount > 0 ) and ( Violation.Line > 0 ) then
         begin
-          EditView := SourceEditor.EditViews[ 0 ];
+          EditView  := SourceEditor.EditViews[ 0 ];
           EditView.SetTopLeft( Violation.Line, 1 );
           EditView.Center( Violation.Line, Violation.Column );
         end;
@@ -824,25 +824,25 @@ end;
 
 procedure TFormBuildStatistics.mnuStyleCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  I: Integer;
-  Item: TListItem;
+  SL                : TStringList;
+  I                 : Integer;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Unit'#9'Category'#9'Rule'#9'Line'#9'Expected'#9'Actual'#9'Severity' );
 
     for I := 0 to lvStyleIssues.Items.Count - 1 do
     begin
-      Item := lvStyleIssues.Items[ I ];
+      Item          := lvStyleIssues.Items[ I ];
 
       if Item.SubItems.Count >= 6 then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s',
-          [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
-            Item.SubItems[ 2 ], Item.SubItems[ 3 ], Item.SubItems[ 4 ],
-            Item.SubItems[ 5 ] ] ) );
+            [ Item.Caption, Item.SubItems[ 0 ], Item.SubItems[ 1 ],
+              Item.SubItems[ 2 ], Item.SubItems[ 3 ], Item.SubItems[ 4 ],
+              Item.SubItems[ 5 ] ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -854,9 +854,9 @@ end;
 
 procedure TFormBuildStatistics.mnuStyleExportCSVClick( Sender: TObject );
 var
-  SL: TStringList;
-  I: Integer;
-  Item: TListItem;
+  SL                : TStringList;
+  I                 : Integer;
+  Item              : TListItem;
 begin
 
   if lvStyleIssues.Items.Count = 0 then
@@ -865,26 +865,26 @@ begin
     Exit;
   end;
 
-  SaveDialog.Title := 'Export Style Issues';
+  SaveDialog.Title  := 'Export Style Issues';
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( '"Unit","Category","Rule","Line","Expected","Actual","Severity"' );
 
       for I := 0 to lvStyleIssues.Items.Count - 1 do
       begin
-        Item := lvStyleIssues.Items[ I ];
+        Item        := lvStyleIssues.Items[ I ];
 
         if Item.SubItems.Count >= 6 then
           // AnsiQuotedStr doubles any embedded quote (rule text often contains them).
           SL.Add( Format( '%s,%s,%s,%s,%s,%s,%s',
-            [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ),
-              AnsiQuotedStr( Item.SubItems[ 1 ], '"' ), AnsiQuotedStr( Item.SubItems[ 2 ], '"' ),
-              AnsiQuotedStr( Item.SubItems[ 3 ], '"' ), AnsiQuotedStr( Item.SubItems[ 4 ], '"' ),
-              AnsiQuotedStr( Item.SubItems[ 5 ], '"' ) ] ) );
+              [ AnsiQuotedStr( Item.Caption, '"' ), AnsiQuotedStr( Item.SubItems[ 0 ], '"' ),
+                AnsiQuotedStr( Item.SubItems[ 1 ], '"' ), AnsiQuotedStr( Item.SubItems[ 2 ], '"' ),
+                AnsiQuotedStr( Item.SubItems[ 3 ], '"' ), AnsiQuotedStr( Item.SubItems[ 4 ], '"' ),
+                AnsiQuotedStr( Item.SubItems[ 5 ], '"' ) ] ) );
       end;
 
       try
@@ -916,3 +916,4 @@ finalization
   TFormBuildStatistics.CloseInstance;
 
 end.
+

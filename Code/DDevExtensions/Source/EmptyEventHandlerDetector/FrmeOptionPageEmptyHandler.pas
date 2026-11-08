@@ -24,7 +24,7 @@ uses
 
 type
   /// <summary>Options frame for the Empty Event Handler Detector plugin.</summary>
-  TFrameOptionPageEmptyHandler = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageEmptyHandler = class( TFrameBase, ITreePageComponent )
     /// <summary>Enable toggle for the plugin.</summary>
     chkEnabled: TCheckBox;
     /// <summary>Informational label describing the detector.</summary>
@@ -35,7 +35,7 @@ type
   public
     /// <summary>Captures the plugin instance passed in by the options dialog.</summary>
     /// <param name="UserData">The owning <c>TEmptyEventHandlerDetectorPlugin</c>.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Loads control state from the plugin.</summary>
     procedure LoadData;
     /// <summary>Writes control state back to the plugin and persists it.</summary>
@@ -55,23 +55,23 @@ uses
 
 { TFrameOptionPageEmptyHandler }
 
-procedure TFrameOptionPageEmptyHandler.SetUserData(UserData: TObject);
+procedure TFrameOptionPageEmptyHandler.SetUserData( UserData: TObject );
 begin
-  FPlugin := UserData;
+  FPlugin           := UserData;
 end;
 
 procedure TFrameOptionPageEmptyHandler.LoadData;
 begin
   if FPlugin is TEmptyEventHandlerDetectorPlugin then
-    chkEnabled.Checked := TEmptyEventHandlerDetectorPlugin(FPlugin).Enabled;
+    chkEnabled.Checked := TEmptyEventHandlerDetectorPlugin( FPlugin ).Enabled;
 end;
 
 procedure TFrameOptionPageEmptyHandler.SaveData;
 begin
   if FPlugin is TEmptyEventHandlerDetectorPlugin then
   begin
-    TEmptyEventHandlerDetectorPlugin(FPlugin).Enabled := chkEnabled.Checked;
-    TEmptyEventHandlerDetectorPlugin(FPlugin).Save;
+    TEmptyEventHandlerDetectorPlugin( FPlugin ).Enabled := chkEnabled.Checked;
+    TEmptyEventHandlerDetectorPlugin( FPlugin ).Save;
   end;
 end;
 
@@ -84,3 +84,4 @@ begin
 end;
 
 end.
+

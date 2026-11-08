@@ -31,7 +31,7 @@ type
     itMissingInDfm,
     /// <summary>Component exists in both files but the declared types differ.</summary>
     itTypeMismatch
-  );
+    );
 
   /// <summary>Detailed description of one inconsistency between a DFM and its PAS unit.</summary>
   TInconsistencyInfo = record
@@ -63,8 +63,8 @@ type
 /// <param name="DfmBytes">The form resource as stored: text, binary ( TPF0 ) or a resource stream.</param>
 /// <param name="FileName">Absolute path of the PAS file ( used for report metadata ).</param>
 /// <returns>The differences found.</returns>
-function AnalyseFormUnit(const PasSource: UTF8String; const DfmBytes: TBytes;
-  const FileName: string): TArray<TInconsistencyInfo>;
+function AnalyseFormUnit( const PasSource: UTF8String; const DfmBytes: TBytes;
+  const FileName: string ): TArray<TInconsistencyInfo>;
 
 /// <summary>A form resource as text, whatever form it is stored in.</summary>
 /// <param name="DfmBytes">Text ( UTF-8 or ANSI ), binary ( TPF0 ) or a resource stream ( $FF header ).</param>
@@ -93,157 +93,157 @@ type
 /// <param name="DfmSource">Text form of the form resource.</param>
 /// <param name="FileName">Absolute path of the PAS file.</param>
 /// <returns>The differences found.</returns>
-function AnalyseFormUnitText(const PasSource: UTF8String; const DfmSource: string;
-  const FileName: string): TArray<TInconsistencyInfo>;
+function AnalyseFormUnitText( const PasSource: UTF8String; const DfmSource: string;
+  const FileName: string ): TArray<TInconsistencyInfo>;
 var
-  DfmComponents: TDictionary<string, TComponentInfo>;
-  PasComponents: TDictionary<string, TComponentInfo>;
-  Results: TList<TInconsistencyInfo>;
-  Info: TInconsistencyInfo;
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  InType: Boolean;
-  InFormClass: Boolean;
-  CurrentFieldType: string;
+  DfmComponents     : TDictionary<string, TComponentInfo>;
+  PasComponents     : TDictionary<string, TComponentInfo>;
+  Results           : TList<TInconsistencyInfo>;
+  Info              : TInconsistencyInfo;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
+  InType            : Boolean;
+  InFormClass       : Boolean;
+  CurrentFieldType  : string;
   { The class the DFM's root object names ( "object Form1: TForm1" ): the only class compared. }
-  RootType: string;
-  Key: string;
-  DfmInfo, PasInfo: TComponentInfo;
+  RootType          : string;
+  Key               : string;
+  DfmInfo, PasInfo  : TComponentInfo;
 
-  function IsDatasetFieldType(const TypeName: string): Boolean;
+  function IsDatasetFieldType( const TypeName: string ): Boolean;
   var
-    UpperType: string;
+    UpperType       : string;
   begin
     // Dataset field types (TField descendants) don't need explicit PAS declarations
     // They are auto-generated persistent fields accessed via FieldByName or dataset
-    UpperType := UpperCase(TypeName);
-    Result := (Length(UpperType) > 5) and
-              (UpperType[1] = 'T') and
-              (Copy(UpperType, Length(UpperType) - 4, 5) = 'FIELD');
+    UpperType       := UpperCase( TypeName );
+    Result          := ( Length( UpperType ) > 5 ) and
+      ( UpperType[ 1 ] = 'T' ) and
+      ( Copy( UpperType, Length( UpperType ) - 4, 5 ) = 'FIELD' );
   end;
 
-  function IsNonComponentType(const TypeName: string): Boolean;
+  function IsNonComponentType( const TypeName: string ): Boolean;
   var
-    UpperType: string;
+    UpperType       : string;
   begin
     if TypeName = '' then
-      Exit(False);
+      Exit( False );
 
     // Filter out common non-component types that are often declared as form fields
     // but are not visual/non-visual components placed on forms
-    UpperType := UpperCase(TypeName);
-    Result :=
+    UpperType       := UpperCase( TypeName );
+    Result          :=
       // Collection types
-      (Pos('TLIST', UpperType) > 0) or
-      (Pos('DICTIONARY', UpperType) > 0) or
-      (Pos('TSTACK', UpperType) > 0) or
-      (Pos('TQUEUE', UpperType) > 0) or
-      (Pos('THASH', UpperType) > 0) or
-      (UpperType = 'TSTRINGLIST') or
-      (UpperType = 'TSTRINGS') or
+      ( Pos( 'TLIST', UpperType ) > 0 ) or
+      ( Pos( 'DICTIONARY', UpperType ) > 0 ) or
+      ( Pos( 'TSTACK', UpperType ) > 0 ) or
+      ( Pos( 'TQUEUE', UpperType ) > 0 ) or
+      ( Pos( 'THASH', UpperType ) > 0 ) or
+      ( UpperType = 'TSTRINGLIST' ) or
+      ( UpperType = 'TSTRINGS' ) or
       // Thread types
-      (Pos('TTHREAD', UpperType) > 0) or
+      ( Pos( 'TTHREAD', UpperType ) > 0 ) or
       // Stream types
-      (Pos('TSTREAM', UpperType) > 0) or
+      ( Pos( 'TSTREAM', UpperType ) > 0 ) or
       // Graphics objects (not components, usually owned by other components)
-      (UpperType = 'TBITMAP') or
-      (UpperType = 'TICON') or
-      (UpperType = 'TPICTURE') or
-      (UpperType = 'TBRUSH') or
-      (UpperType = 'TPEN') or
-      (UpperType = 'TFONT') or
-      (UpperType = 'TCANVAS') or
+      ( UpperType = 'TBITMAP' ) or
+      ( UpperType = 'TICON' ) or
+      ( UpperType = 'TPICTURE' ) or
+      ( UpperType = 'TBRUSH' ) or
+      ( UpperType = 'TPEN' ) or
+      ( UpperType = 'TFONT' ) or
+      ( UpperType = 'TCANVAS' ) or
       // Other common non-component types
-      (UpperType = 'TINIFILE') or
-      (UpperType = 'TREGISTRY') or
-      (UpperType = 'TXMLNODE') or
-      (UpperType = 'TXMLDOCUMENT') or
-      (UpperType = 'TJSONVALUE') or
-      (UpperType = 'TJSONOBJECT') or
-      (UpperType = 'TJSONARRAY') or
+      ( UpperType = 'TINIFILE' ) or
+      ( UpperType = 'TREGISTRY' ) or
+      ( UpperType = 'TXMLNODE' ) or
+      ( UpperType = 'TXMLDOCUMENT' ) or
+      ( UpperType = 'TJSONVALUE' ) or
+      ( UpperType = 'TJSONOBJECT' ) or
+      ( UpperType = 'TJSONARRAY' ) or
       // Value types and records
-      (UpperType = 'TPOINT') or
-      (UpperType = 'TRECT') or
-      (UpperType = 'TSIZE') or
-      (UpperType = 'TSHIFTSTATE') or
-      (UpperType = 'TGUID') or
+      ( UpperType = 'TPOINT' ) or
+      ( UpperType = 'TRECT' ) or
+      ( UpperType = 'TSIZE' ) or
+      ( UpperType = 'TSHIFTSTATE' ) or
+      ( UpperType = 'TGUID' ) or
       // Action/event types (often from method parameters)
-      (UpperType = 'TCLOSEACTION') or
-      (UpperType = 'TDATAACTION') or
-      (UpperType = 'TCUSTOMFORM') or
+      ( UpperType = 'TCLOSEACTION' ) or
+      ( UpperType = 'TDATAACTION' ) or
+      ( UpperType = 'TCUSTOMFORM' ) or
       // State types (used in event handlers)
-      (Pos('STATE', UpperType) > 0) or  // TGridDrawState, TOwnerDrawState, etc.
-      (Pos('ACTIVITY', UpperType) > 0) or  // TMouseActivity, etc.
+      ( Pos( 'STATE', UpperType ) > 0 ) or // TGridDrawState, TOwnerDrawState, etc.
+      ( Pos( 'ACTIVITY', UpperType ) > 0 ) or // TMouseActivity, etc.
       // Abstract base classes often used as variable types, not placed components
-      (UpperType = 'TDATASET') or
-      (UpperType = 'TFIELD') or
-      (UpperType = 'TCOMPONENT') or
-      (UpperType = 'TCONTROL') or
-      (UpperType = 'TWINCONTROL') or
+      ( UpperType = 'TDATASET' ) or
+      ( UpperType = 'TFIELD' ) or
+      ( UpperType = 'TCOMPONENT' ) or
+      ( UpperType = 'TCONTROL' ) or
+      ( UpperType = 'TWINCONTROL' ) or
       // Interface types (start with I, not T, but check anyway)
-      (TypeName[1] = 'I');
+      ( TypeName[ 1 ] = 'I' );
   end;
 
   procedure ParseDfmComponents;
   var
-    Lines: TStringList;
-    I: Integer;
+    Lines           : TStringList;
+    I               : Integer;
     TrimmedLine, LowerLine, Keyword: string;
-    CompInfo: TComponentInfo;
-    ColonPos: Integer;
-    CollectionDepth: Integer;  // Track < > collection blocks
+    CompInfo        : TComponentInfo;
+    ColonPos        : Integer;
+    CollectionDepth : Integer; // Track < > collection blocks
     { One entry per open object: True when it lies inside an "inline" frame. }
-    InFrame: TStack<Boolean>;
+    InFrame         : TStack<Boolean>;
   begin
-    Lines   := TStringList.Create;
-    InFrame := TStack<Boolean>.Create;
+    Lines           := TStringList.Create;
+    InFrame         := TStack<Boolean>.Create;
     try
-      Lines.Text := DfmSource;
+      Lines.Text    := DfmSource;
       CollectionDepth := 0;
 
       for I := 0 to Lines.Count - 1 do
       begin
-        TrimmedLine := Trim(Lines[I]);
+        TrimmedLine := Trim( Lines[ I ] );
 
         // Track collection blocks (< >) - these contain item/end pairs we must ignore
         // Collection properties look like: Items = < ... > (potentially multi-line)
-        if Pos('= <', TrimmedLine) > 0 then
+        if Pos( '= <', TrimmedLine ) > 0 then
         begin
           // Check if it's a single-line empty collection: = <>
-          if Pos('>', TrimmedLine) = 0 then
-            Inc(CollectionDepth);  // Multi-line collection starts
+          if Pos( '>', TrimmedLine ) = 0 then
+            Inc( CollectionDepth ); // Multi-line collection starts
           // else: Single-line collection like = <>, no depth change needed
         end
-        else if (CollectionDepth > 0) and
-                ((TrimmedLine = '>') or
-                 (Copy(TrimmedLine, Length(TrimmedLine), 1) = '>')) then
-          Dec(CollectionDepth);
+        else if ( CollectionDepth > 0 ) and
+          ( ( TrimmedLine = '>' ) or
+          ( Copy( TrimmedLine, Length( TrimmedLine ), 1 ) = '>' ) ) then
+          Dec( CollectionDepth );
 
         // Skip processing if we're inside a collection block
         if CollectionDepth > 0 then
           Continue;
 
-        LowerLine := LowerCase(TrimmedLine);
-        if LowerLine.StartsWith('object ') then
-          Keyword := 'object'
-        else if LowerLine.StartsWith('inherited ') then
-          Keyword := 'inherited'
-        else if LowerLine.StartsWith('inline ') then
-          Keyword := 'inline'
+        LowerLine   := LowerCase( TrimmedLine );
+        if LowerLine.StartsWith( 'object ' ) then
+          Keyword   := 'object'
+        else if LowerLine.StartsWith( 'inherited ' ) then
+          Keyword   := 'inherited'
+        else if LowerLine.StartsWith( 'inline ' ) then
+          Keyword   := 'inline'
         else
-          Keyword := '';
+          Keyword   := '';
 
         if ( Keyword <> '' ) then
         begin
           var bParentInFrame := ( InFrame.Count > 0 ) and InFrame.Peek;
-          var bIsRoot        := ( InFrame.Count = 0 );
+          var bIsRoot := ( InFrame.Count = 0 );
           InFrame.Push( bParentInFrame or ( Keyword = 'inline' ) );
 
-          if bIsRoot and ( RootType = '' ) and ( Pos(':', TrimmedLine) > 0 ) then
+          if bIsRoot and ( RootType = '' ) and ( Pos( ':', TrimmedLine ) > 0 ) then
           begin
-            RootType := Trim(Copy(TrimmedLine, Pos(':', TrimmedLine) + 1, MaxInt));
-            if ( Pos(' ', RootType) > 0 ) then
-              RootType := Copy(RootType, 1, Pos(' ', RootType) - 1);
+            RootType := Trim( Copy( TrimmedLine, Pos( ':', TrimmedLine ) + 1, MaxInt ) );
+            if ( Pos( ' ', RootType ) > 0 ) then
+              RootType := Copy( RootType, 1, Pos( ' ', RootType ) - 1 );
           end;
 
           { The form itself is not a field.  Neither is anything inside an inline frame ( the frame
@@ -251,23 +251,23 @@ var
           if bIsRoot or bParentInFrame or ( Keyword = 'inherited' ) then
             Continue;
 
-          TrimmedLine := Trim(Copy(TrimmedLine, Length(Keyword) + 2, MaxInt));
-          ColonPos := Pos(':', TrimmedLine);
+          TrimmedLine := Trim( Copy( TrimmedLine, Length( Keyword ) + 2, MaxInt ) );
+          ColonPos  := Pos( ':', TrimmedLine );
           if ColonPos > 0 then
           begin
-            CompInfo.Name := Trim(Copy(TrimmedLine, 1, ColonPos - 1));
-            CompInfo.TypeName := Trim(Copy(TrimmedLine, ColonPos + 1, MaxInt));
+            CompInfo.Name := Trim( Copy( TrimmedLine, 1, ColonPos - 1 ) );
+            CompInfo.TypeName := Trim( Copy( TrimmedLine, ColonPos + 1, MaxInt ) );
             // An "[n]" child-order suffix ( "object X: TButton [0]" ) is not part of the type.
-            if ( Pos(' ', CompInfo.TypeName) > 0 ) then
-              CompInfo.TypeName := Copy(CompInfo.TypeName, 1, Pos(' ', CompInfo.TypeName) - 1);
+            if ( Pos( ' ', CompInfo.TypeName ) > 0 ) then
+              CompInfo.TypeName := Copy( CompInfo.TypeName, 1, Pos( ' ', CompInfo.TypeName ) - 1 );
             CompInfo.LineNumber := I + 1;
 
             // Skip dataset field types - they don't need PAS declarations
-            if not IsDatasetFieldType(CompInfo.TypeName) then
-              DfmComponents.AddOrSetValue(UpperCase(CompInfo.Name), CompInfo);
+            if not IsDatasetFieldType( CompInfo.TypeName ) then
+              DfmComponents.AddOrSetValue( UpperCase( CompInfo.Name ), CompInfo );
           end;
         end
-        else if SameText(TrimmedLine, 'end') then
+        else if SameText( TrimmedLine, 'end' ) then
         begin
           if ( InFrame.Count > 0 ) then
             InFrame.Pop;
@@ -282,18 +282,18 @@ var
   procedure ParsePasComponents;
   var
     InPrivate, InPublic, InPublished, InProtected: Boolean;
-    ExpectingType: Boolean;
-    Done: Boolean;
-    ParenDepth: Integer;
-    PrevKind: TTokenKind;
+    ExpectingType   : Boolean;
+    Done            : Boolean;
+    ParenDepth      : Integer;
+    PrevKind        : TTokenKind;
     { Name before the last "=", and the class it opened, waiting to see whether it is a real class
       body or only "TForm1 = class;" / "TFormClass = class of TForm1;". }
-    LastIdent: string;
-    bPending: Boolean;
+    LastIdent       : string;
+    bPending        : Boolean;
     { Nesting inside the form class: 1 in its body, more inside a nested record or class. }
-    ClassDepth: Integer;
+    ClassDepth      : Integer;
     { The names of the field declaration being read ( "Button1, Button2: TButton;" ). }
-    FieldNames: TList<TPair<string, Integer>>;
+    FieldNames      : TList<TPair<string, Integer>>;
 
     procedure OpenFormClass;
     begin
@@ -312,37 +312,37 @@ var
       // Skip to end of declaration - must handle parentheses for parameters
       // e.g., procedure Foo(Sender: TObject; var Action: TCloseAction);
       // The semicolon inside () separates parameters, not the end of declaration
-      ParenDepth := 0;
-      while Lexer.NextToken(Token) do
+      ParenDepth    := 0;
+      while Lexer.NextToken( Token ) do
       begin
         if Token.Kind = tkLParan then
-          Inc(ParenDepth)
+          Inc( ParenDepth )
         else if Token.Kind = tkRParan then
-          Dec(ParenDepth)
-        else if (Token.Kind = tkSemicolon) and (ParenDepth = 0) then
+          Dec( ParenDepth )
+        else if ( Token.Kind = tkSemicolon ) and ( ParenDepth = 0 ) then
           Break;
       end;
     end;
 
   begin
-    FieldNames := TList<TPair<string, Integer>>.Create;
-    Lexer := TDelphiLexer.Create('', PasSource);
+    FieldNames      := TList<TPair<string, Integer>>.Create;
+    Lexer           := TDelphiLexer.Create( '', PasSource );
     try
-      InType := False;
-      InFormClass := False;
-      InPrivate := False;
-      InPublic := False;
-      InPublished := False;
-      InProtected := False;
+      InType        := False;
+      InFormClass   := False;
+      InPrivate     := False;
+      InPublic      := False;
+      InPublished   := False;
+      InProtected   := False;
       ExpectingType := False;
-      Done := False;
-      PrevKind := tkComment;
-      LastIdent := '';
+      Done          := False;
+      PrevKind      := tkComment;
+      LastIdent     := '';
 
-      bPending := False;
-      ClassDepth := 0;
+      bPending      := False;
+      ClassDepth    := 0;
 
-      while (not Done) and Lexer.NextToken(Token) do
+      while ( not Done ) and Lexer.NextToken( Token ) do
       begin
         if ( Token.Kind = tkComment ) then
           Continue;
@@ -350,7 +350,7 @@ var
         // The token after "= class" decides: ";" is a forward declaration, "of" a class reference.
         if bPending then
         begin
-          bPending := False;
+          bPending  := False;
           if ( not ( Token.Kind in [ tkSemicolon, tkI_of ] ) ) then
           begin
             OpenFormClass;
@@ -358,11 +358,11 @@ var
             begin
               // The heritage list "( TForm, IFoo )" holds no fields.
               ParenDepth := 1;
-              while ( ParenDepth > 0 ) and Lexer.NextToken(Token) do
+              while ( ParenDepth > 0 ) and Lexer.NextToken( Token ) do
                 if Token.Kind = tkLParan then
-                  Inc(ParenDepth)
+                  Inc( ParenDepth )
                 else if Token.Kind = tkRParan then
-                  Dec(ParenDepth);
+                  Dec( ParenDepth );
               PrevKind := tkRParan;
               Continue;
             end;
@@ -371,23 +371,23 @@ var
 
         case Token.Kind of
           tkI_type:
-            InType := True;
+            InType  := True;
 
           tkI_implementation:
-            Done := True; // Stop at implementation - Break only exits case, not while
+            Done    := True; // Stop at implementation - Break only exits case, not while
 
           tkI_class, tkI_record:
             if InFormClass then
             begin
               // A nested type has its own "end"; "class function" / "class var" is a modifier.
               if ( PrevKind = tkEqual ) or ( Token.Kind = tkI_record ) then
-                Inc(ClassDepth);
+                Inc( ClassDepth );
             end
-            // Only "TName = class" can open the form's class, and only the class the DFM's root
-            // object names: other classes in the unit are not the form ( no root known: any class ).
-            else if InType and ( PrevKind = tkEqual ) and ( ( RootType = '' ) or SameText(LastIdent, RootType) ) then
+              // Only "TName = class" can open the form's class, and only the class the DFM's root
+              // object names: other classes in the unit are not the form ( no root known: any class ).
+            else if InType and ( PrevKind = tkEqual ) and ( ( RootType = '' ) or SameText( LastIdent, RootType ) ) then
             begin
-              bPending     := True;
+              bPending := True;
             end;
 
           tkI_private:
@@ -432,7 +432,7 @@ var
           tkI_end:
             if InFormClass then
             begin
-              Dec(ClassDepth);
+              Dec( ClassDepth );
               if ( ClassDepth <= 0 ) then
               begin
                 InFormClass := False;
@@ -445,19 +445,19 @@ var
           if Token.Kind >= tkIdent then
           begin
             if ( not InFormClass ) then
-              LastIdent := string(Token.Value)
-            else if ( ClassDepth = 1 ) and ( InPublished or (not InPrivate and not InPublic and not InProtected) ) then
+              LastIdent := string( Token.Value )
+            else if ( ClassDepth = 1 ) and ( InPublished or ( not InPrivate and not InPublic and not InProtected ) ) then
             begin
               if ExpectingType then
               begin
                 // This is the type: every name of the list gets it.
-                CurrentFieldType := string(Token.Value);
+                CurrentFieldType := string( Token.Value );
                 for var Field in FieldNames do
                 begin
                   PasInfo.Name := Field.Key;
                   PasInfo.TypeName := CurrentFieldType;
-                  PasInfo.LineNumber := Field.Value;  // Use line from field name, not type
-                  PasComponents.AddOrSetValue(UpperCase(Field.Key), PasInfo);
+                  PasInfo.LineNumber := Field.Value; // Use line from field name, not type
+                  PasComponents.AddOrSetValue( UpperCase( Field.Key ), PasInfo );
                 end;
                 FieldNames.Clear;
                 ExpectingType := False;
@@ -468,13 +468,13 @@ var
                 // Token.Line is 0-based, convert to 1-based for display
                 if ( PrevKind <> tkComma ) then
                   FieldNames.Clear;
-                FieldNames.Add(TPair<string, Integer>.Create(string(Token.Value), Token.Line + 1));
+                FieldNames.Add( TPair<string, Integer>.Create( string( Token.Value ), Token.Line + 1 ) );
               end;
             end;
           end
           else if Token.Kind = tkColon then
           begin
-            if InFormClass and (FieldNames.Count > 0) then
+            if InFormClass and ( FieldNames.Count > 0 ) then
               ExpectingType := True;
           end
           else if Token.Kind = tkSemicolon then
@@ -483,7 +483,7 @@ var
             FieldNames.Clear;
           end;
         end;
-        PrevKind := Token.Kind;
+        PrevKind    := Token.Kind;
       end;
     finally
       Lexer.Free;
@@ -492,10 +492,10 @@ var
   end;
 
 begin
-  RootType := '';
-  DfmComponents := TDictionary<string, TComponentInfo>.Create;
-  PasComponents := TDictionary<string, TComponentInfo>.Create;
-  Results := TList<TInconsistencyInfo>.Create;
+  RootType          := '';
+  DfmComponents     := TDictionary<string, TComponentInfo>.Create;
+  PasComponents     := TDictionary<string, TComponentInfo>.Create;
+  Results           := TList<TInconsistencyInfo>.Create;
   try
     // Parse DFM for component definitions
     ParseDfmComponents;
@@ -506,35 +506,35 @@ begin
     // Compare: Find components in DFM but not in PAS
     for Key in DfmComponents.Keys do
     begin
-      DfmInfo := DfmComponents[Key];
-      if not PasComponents.TryGetValue(Key, PasInfo) then
+      DfmInfo := DfmComponents[ Key ];
+      if not PasComponents.TryGetValue( Key, PasInfo ) then
       begin
-        Info.UnitName := ChangeFileExt(ExtractFileName(FileName), '');
+        Info.UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
         Info.ComponentName := DfmInfo.Name;
         Info.DfmType := DfmInfo.TypeName;
         Info.PasType := '';
         Info.InconsistencyType := itMissingInPas;
-        Info.DfmFileName := ChangeFileExt(FileName, '.dfm');
+        Info.DfmFileName := ChangeFileExt( FileName, '.dfm' );
         Info.PasFileName := FileName;
         Info.DfmLineNumber := DfmInfo.LineNumber;
         Info.PasLineNumber := 0; // Not in PAS
-        Results.Add(Info);
+        Results.Add( Info );
       end
       else
       begin
         // Check type mismatch
-        if not SameText(DfmInfo.TypeName, PasInfo.TypeName) then
+        if not SameText( DfmInfo.TypeName, PasInfo.TypeName ) then
         begin
-          Info.UnitName := ChangeFileExt(ExtractFileName(FileName), '');
+          Info.UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
           Info.ComponentName := DfmInfo.Name;
           Info.DfmType := DfmInfo.TypeName;
           Info.PasType := PasInfo.TypeName;
           Info.InconsistencyType := itTypeMismatch;
-          Info.DfmFileName := ChangeFileExt(FileName, '.dfm');
+          Info.DfmFileName := ChangeFileExt( FileName, '.dfm' );
           Info.PasFileName := FileName;
           Info.DfmLineNumber := DfmInfo.LineNumber;
           Info.PasLineNumber := PasInfo.LineNumber;
-          Results.Add(Info);
+          Results.Add( Info );
         end;
       end;
     end;
@@ -542,28 +542,28 @@ begin
     // Compare: Find fields in PAS but not in DFM (only likely component types)
     for Key in PasComponents.Keys do
     begin
-      PasInfo := PasComponents[Key];
+      PasInfo := PasComponents[ Key ];
       // Only check if it looks like a component type (starts with T)
       // and is not a common non-component type or dataset field type
-      if (Length(PasInfo.TypeName) > 1) and (PasInfo.TypeName[1] = 'T') and
-         not DfmComponents.ContainsKey(Key) and
-         not IsNonComponentType(PasInfo.TypeName) and
-         not IsDatasetFieldType(PasInfo.TypeName) then
+      if ( Length( PasInfo.TypeName ) > 1 ) and ( PasInfo.TypeName[ 1 ] = 'T' ) and
+        not DfmComponents.ContainsKey( Key ) and
+        not IsNonComponentType( PasInfo.TypeName ) and
+        not IsDatasetFieldType( PasInfo.TypeName ) then
       begin
-        Info.UnitName := ChangeFileExt(ExtractFileName(FileName), '');
+        Info.UnitName := ChangeFileExt( ExtractFileName( FileName ), '' );
         Info.ComponentName := PasInfo.Name;
         Info.DfmType := '';
         Info.PasType := PasInfo.TypeName;
         Info.InconsistencyType := itMissingInDfm;
-        Info.DfmFileName := ChangeFileExt(FileName, '.dfm');
+        Info.DfmFileName := ChangeFileExt( FileName, '.dfm' );
         Info.PasFileName := FileName;
         Info.DfmLineNumber := 0; // Not in DFM
         Info.PasLineNumber := PasInfo.LineNumber;
-        Results.Add(Info);
+        Results.Add( Info );
       end;
     end;
 
-    Result := Results.ToArray;
+    Result          := Results.ToArray;
   finally
     DfmComponents.Free;
     PasComponents.Free;
@@ -573,27 +573,27 @@ end;
 
 function DfmBytesToText( const DfmBytes: TBytes ): string;
 var
-  Input, Output: TMemoryStream;
+  Input, Output     : TMemoryStream;
 begin
   if ( Length( DfmBytes ) = 0 ) then
     Exit( '' );
 
   { Binary ( TPF0 ) and resource-stream ( $FF header, as the designer hands a form out ) resources
     are converted by the RTL; anything else is already text. }
-  var bBinary   := ( Length( DfmBytes ) >= 4 ) and ( DfmBytes[ 0 ] = Ord( 'T' ) ) and ( DfmBytes[ 1 ] = Ord( 'P' ) ) and
-                   ( DfmBytes[ 2 ] = Ord( 'F' ) ) and ( DfmBytes[ 3 ] = Ord( '0' ) );
+  var bBinary       := ( Length( DfmBytes ) >= 4 ) and ( DfmBytes[ 0 ] = Ord( 'T' ) ) and ( DfmBytes[ 1 ] = Ord( 'P' ) ) and
+    ( DfmBytes[ 2 ] = Ord( 'F' ) ) and ( DfmBytes[ 3 ] = Ord( '0' ) );
   { FF FE / FE FF is a UTF-16 text DFM, not a resource stream: DecodeSourceBytes reads it. }
-  var bUtf16    := ( Length( DfmBytes ) >= 2 ) and ( ( ( DfmBytes[ 0 ] = $FF ) and ( DfmBytes[ 1 ] = $FE ) ) or
-                   ( ( DfmBytes[ 0 ] = $FE ) and ( DfmBytes[ 1 ] = $FF ) ) );
-  var bResource := ( not bUtf16 ) and ( DfmBytes[ 0 ] = $FF );
+  var bUtf16        := ( Length( DfmBytes ) >= 2 ) and ( ( ( DfmBytes[ 0 ] = $FF ) and ( DfmBytes[ 1 ] = $FE ) ) or
+    ( ( DfmBytes[ 0 ] = $FE ) and ( DfmBytes[ 1 ] = $FF ) ) );
+  var bResource     := ( not bUtf16 ) and ( DfmBytes[ 0 ] = $FF );
   if ( not ( bBinary or bResource ) ) then
     Exit( string( DecodeSourceBytes( DfmBytes ) ) );
 
-  Input  := TMemoryStream.Create;
-  Output := TMemoryStream.Create;
+  Input             := TMemoryStream.Create;
+  Output            := TMemoryStream.Create;
   try
     Input.WriteBuffer( DfmBytes[ 0 ], Length( DfmBytes ) );
-    Input.Position := 0;
+    Input.Position  := 0;
     if bBinary then
       ObjectBinaryToText( Input, Output )
     else
@@ -602,17 +602,18 @@ begin
     SetLength( Text, Output.Size );
     if ( Output.Size > 0 ) then
       Move( Output.Memory^, Text[ 0 ], Output.Size );
-    Result := string( DecodeSourceBytes( Text ) );
+    Result          := string( DecodeSourceBytes( Text ) );
   finally
     Output.Free;
     Input.Free;
   end;
 end;
 
-function AnalyseFormUnit(const PasSource: UTF8String; const DfmBytes: TBytes;
-  const FileName: string): TArray<TInconsistencyInfo>;
+function AnalyseFormUnit( const PasSource: UTF8String; const DfmBytes: TBytes;
+  const FileName: string ): TArray<TInconsistencyInfo>;
 begin
-  Result := AnalyseFormUnitText(PasSource, DfmBytesToText(DfmBytes), FileName);
+  Result            := AnalyseFormUnitText( PasSource, DfmBytesToText( DfmBytes ), FileName );
 end;
 
 end.
+

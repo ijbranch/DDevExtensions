@@ -109,16 +109,16 @@ uses
 function AddProjectUnits( const AProject: IOTAProject; AAnalyser: TDecirculariser;
   AFiles: TDictionary<string, string>; AOnProgress: TProc<string> ): Integer;
 var
-  sUnit: string;
-  Source: UTF8String;
+  sUnit             : string;
+  Source            : UTF8String;
 begin
-  Result := 0;
+  Result            := 0;
   if ( AProject = nil ) then
     Exit;
 
   { The file list is taken once: the progress callback pumps messages, and the project can change
     or close meanwhile - after each pump the scan stops if it is no longer the active project. }
-  var Identity := ProjectIdentity( AProject );
+  var Identity      := ProjectIdentity( AProject );
   for var sFile in ProjectPascalFiles( AProject ) do
   begin
     if Assigned( AOnProgress ) then
@@ -139,7 +139,7 @@ begin
         Continue;
     end;
 
-    sUnit := ChangeFileExt( ExtractFileName( sFile ), '' );
+    sUnit           := ChangeFileExt( ExtractFileName( sFile ), '' );
     AAnalyser.AddUnit( sUnit, Source );
     { Two project units of one name ( in different folders ) cannot both be the edge's file: an
       empty entry marks the name ambiguous, so nothing navigates to or edits the wrong one. }
@@ -155,20 +155,20 @@ end;
 function RemoveDeadEntries( const AFileName: string; const AUnitNames: TArray<string>;
   AFailures: TStrings ): Integer;
 var
-  Editor: IOTASourceEditor;
-  Buffer: IOTAEditBuffer;
-  Source, NewSource: UTF8String;
-  sReason: string;
-  sUnit: string;
-  Writer: IOTAEditWriter;
+  Editor            : IOTASourceEditor;
+  Buffer            : IOTAEditBuffer;
+  Source, NewSource : UTF8String;
+  sReason           : string;
+  sUnit             : string;
+  Writer            : IOTAEditWriter;
 begin
-  Result := 0;
-  Editor := FindSourceEditor( AFileName, True );
+  Result            := 0;
+  Editor            := FindSourceEditor( AFileName, True );
   if ( Editor = nil ) then
   begin
     for sUnit in AUnitNames do
       AFailures.Add( Format( '%s in %s: the file could not be opened in the editor',
-        [ sUnit, ExtractFileName( AFileName ) ] ) );
+          [ sUnit, ExtractFileName( AFileName ) ] ) );
     Exit;
   end;
 
@@ -178,15 +178,15 @@ begin
   begin
     for sUnit in AUnitNames do
       AFailures.Add( Format( '%s in %s: the file is read-only in the editor',
-        [ sUnit, ExtractFileName( AFileName ) ] ) );
+          [ sUnit, ExtractFileName( AFileName ) ] ) );
     Exit;
   end;
 
-  Source := GetEditorSource( Editor );
+  Source            := GetEditorSource( Editor );
   for sUnit in AUnitNames do
     if RemoveUsesEntry( Source, sUnit, usImplementation, NewSource, sReason ) then
     begin
-      Source := NewSource;
+      Source        := NewSource;
       Inc( Result );
     end
     else
@@ -196,12 +196,12 @@ begin
     Exit;
 
   { One undoable write of the whole buffer, as the Uses Clause Manager does: Ctrl+Z restores it. }
-  Writer := Editor.CreateUndoableWriter;
+  Writer            := Editor.CreateUndoableWriter;
   try
     Writer.DeleteTo( MaxInt );
     Writer.Insert( PAnsiChar( Source ) );
   finally
-    Writer := nil;
+    Writer          := nil;
   end;
 end;
 
@@ -213,7 +213,7 @@ begin
 
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'De&circulariser...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -228,13 +228,13 @@ end;
 
 procedure TDecirculariserPlugin.Init;
 begin
-  FEnabled         := True;
-  FFewSymbolsLimit := 3;
+  FEnabled          := True;
+  FFewSymbolsLimit  := 3;
 end;
 
 function TDecirculariserPlugin.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create( 'Decirculariser', TFrameOptionPageDecirculariser, Self );
+  Result            := TTreePage.Create( 'Decirculariser', TFrameOptionPageDecirculariser, Self );
 end;
 
 procedure TDecirculariserPlugin.MenuItemClick( Sender: TObject );
@@ -260,3 +260,4 @@ begin
 end;
 
 end.
+

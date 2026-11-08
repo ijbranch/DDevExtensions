@@ -149,7 +149,7 @@ type
 
 var
   /// <summary>Singleton form instance (nil when the form is not open).</summary>
-  FormInstance: TFormDecirculariser = nil;
+  FormInstance      : TFormDecirculariser = nil;
 
 implementation
 
@@ -167,7 +167,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormDecirculariser.Create( Application );
+  FormInstance      := TFormDecirculariser.Create( Application );
   FormInstance.Show;
 end;
 
@@ -183,18 +183,18 @@ begin
     would free FAnalyser under the running scan. }
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 end;
 
 procedure TFormDecirculariser.FormCreate( Sender: TObject );
 begin
-  FFiles      := TDictionary<string, string>.Create;
-  FGroupIndex := -1;
+  FFiles            := TDictionary<string, string>.Create;
+  FGroupIndex       := -1;
   UpdateButtons;
 end;
 
@@ -206,38 +206,38 @@ end;
 
 function TFormDecirculariser.RunScan: Boolean;
 var
-  Project: IOTAProject;
-  iUnits: Integer;
-  iFragile: Integer;
-  Group: TDcGroup;
+  Project           : IOTAProject;
+  iUnits            : Integer;
+  iFragile          : Integer;
+  Group             : TDcGroup;
 begin
-  Project := GetActiveProject;
-  Result  := Project <> nil;
+  Project           := GetActiveProject;
+  Result            := Project <> nil;
   if ( not Result ) then
     Exit;
 
-  Screen.Cursor         := crHourGlass;
-  btnScan.Enabled       := False;
-  btnRemove.Enabled     := False;
-  btnCopyReport.Enabled := False;  // the analyser is rebuilt under the scan: no report until it ends
-  btnScan.Visible       := False;
+  Screen.Cursor     := crHourGlass;
+  btnScan.Enabled   := False;
+  btnRemove.Enabled := False;
+  btnCopyReport.Enabled := False; // the analyser is rebuilt under the scan: no report until it ends
+  btnScan.Visible   := False;
   btnCancelScan.Visible := True;
-  FCancelRequested      := False;
-  FScanning             := True;
+  FCancelRequested  := False;
+  FScanning         := True;
   try
     { The rows index into the analyser about to be freed: drop them first. }
-    FGroupIndex := -1;
+    FGroupIndex     := -1;
     lvCandidates.Items.Clear;
     lvGroups.Items.Clear;
     memoDetails.Lines.Clear;
     FreeAndNil( FAnalyser );
     FFiles.Clear;
-    FAnalyser := TDecirculariser.Create;
+    FAnalyser       := TDecirculariser.Create;
     if ( DecirculariserPlugin <> nil ) then
       FAnalyser.FewSymbolsLimit := DecirculariserPlugin.FewSymbolsLimit;
 
     try
-      iUnits := AddProjectUnits( Project, FAnalyser, FFiles,
+      iUnits        := AddProjectUnits( Project, FAnalyser, FFiles,
         procedure( AFileName: string )
         begin
           lblSummary.Caption := 'Reading: ' + ExtractFileName( AFileName );
@@ -268,18 +268,18 @@ begin
     FAnalyser.Analyse;
     PopulateGroups;
 
-    iFragile := 0;
+    iFragile        := 0;
     for Group in FAnalyser.Groups do
       if ( Group.Kind = dcgFragile ) then
         Inc( iFragile );
     lblSummary.Caption := Format( '%d units, %d entangled group(s), %d FRAGILE',
       [ iUnits, Length( FAnalyser.Groups ), iFragile ] );
   finally
-    FScanning             := False;
+    FScanning       := False;
     btnCancelScan.Visible := False;
-    btnScan.Visible       := True;
-    btnScan.Enabled       := True;
-    Screen.Cursor         := crDefault;
+    btnScan.Visible := True;
+    btnScan.Enabled := True;
+    Screen.Cursor   := crDefault;
     UpdateButtons;
   end;
 end;
@@ -294,29 +294,29 @@ end;
 
 procedure TFormDecirculariser.btnCancelScanClick( Sender: TObject );
 begin
-  FCancelRequested := True;
+  FCancelRequested  := True;
 end;
 
 procedure TFormDecirculariser.PopulateGroups;
 var
-  I: Integer;
-  Group: TDcGroup;
-  Item: TListItem;
+  I                 : Integer;
+  Group             : TDcGroup;
+  Item              : TListItem;
 begin
-  FGroupIndex := -1;
+  FGroupIndex       := -1;
   lvGroups.Items.BeginUpdate;
   try
     lvGroups.Items.Clear;
     for I := 0 to High( FAnalyser.Groups ) do
     begin
-      Group        := FAnalyser.Groups[ I ];
-      Item         := lvGroups.Items.Add;
-      Item.Caption := DcGroupKindToStr( Group.Kind );
+      Group         := FAnalyser.Groups[ I ];
+      Item          := lvGroups.Items.Add;
+      Item.Caption  := DcGroupKindToStr( Group.Kind );
       Item.SubItems.Add( IntToStr( Length( Group.Units ) ) );
       Item.SubItems.Add( IntToStr( Group.InterfaceEdgeCount ) );
       Item.SubItems.Add( IntToStr( Group.ImplementationEdgeCount ) );
       Item.SubItems.Add( string.Join( ', ', Group.Units ) );
-      Item.Data := Pointer( NativeInt( I ) );
+      Item.Data     := Pointer( NativeInt( I ) );
     end;
   finally
     lvGroups.Items.EndUpdate;
@@ -332,17 +332,17 @@ procedure TFormDecirculariser.lvGroupsSelectItem( Sender: TObject; Item: TListIt
 begin
   if Selected and ( Item <> nil ) then
   begin
-    FGroupIndex := NativeInt( Item.Data );
+    FGroupIndex     := NativeInt( Item.Data );
     PopulateCandidates;
   end;
 end;
 
 procedure TFormDecirculariser.PopulateCandidates;
 var
-  I: Integer;
-  Candidate: TDcBreakCandidate;
-  Item: TListItem;
-  sFix: string;
+  I                 : Integer;
+  Candidate         : TDcBreakCandidate;
+  Item              : TListItem;
+  sFix              : string;
 begin
   lvCandidates.Items.BeginUpdate;
   try
@@ -350,21 +350,21 @@ begin
     if ( FAnalyser <> nil ) and ( FGroupIndex >= 0 ) and ( FGroupIndex <= High( FAnalyser.Groups ) ) then
       for I := 0 to High( FAnalyser.Groups[ FGroupIndex ].Candidates ) do
       begin
-        Candidate    := FAnalyser.Groups[ FGroupIndex ].Candidates[ I ];
-        Item         := lvCandidates.Items.Add;
+        Candidate   := FAnalyser.Groups[ FGroupIndex ].Candidates[ I ];
+        Item        := lvCandidates.Items.Add;
         Item.Caption := Candidate.Edge.FromUnit;
         Item.SubItems.Add( Candidate.Edge.ToUnit );
         Item.SubItems.Add( IntToStr( Candidate.Edge.LineNumber ) );
         Item.SubItems.Add( DcVerdictToStr( Candidate.Verdict ) );
         Item.SubItems.Add( IntToStr( Length( Candidate.CrossingSymbols ) ) );
         if Candidate.CanAutoRemove then
-          sFix := 'auto'
+          sFix      := 'auto'
         else if Candidate.Verdict = dcvUnusedEdge then
-          sFix := 'by hand (start-up code)'
+          sFix      := 'by hand (start-up code)'
         else
-          sFix := 'by hand';
+          sFix      := 'by hand';
         Item.SubItems.Add( sFix );
-        Item.Data := Pointer( NativeInt( I ) );
+        Item.Data   := Pointer( NativeInt( I ) );
       end;
   finally
     lvCandidates.Items.EndUpdate;
@@ -375,17 +375,17 @@ end;
 
 function TFormDecirculariser.TryCandidateOf( AItem: TListItem; out ACandidate: TDcBreakCandidate ): Boolean;
 var
-  iIndex: NativeInt;
+  iIndex            : NativeInt;
 begin
-  ACandidate := Default( TDcBreakCandidate );
-  Result     := ( AItem <> nil ) and ( FAnalyser <> nil ) and ( FGroupIndex >= 0 ) and
+  ACandidate        := Default( TDcBreakCandidate );
+  Result            := ( AItem <> nil ) and ( FAnalyser <> nil ) and ( FGroupIndex >= 0 ) and
     ( FGroupIndex <= High( FAnalyser.Groups ) );
   if not Result then
     Exit;
-  iIndex := NativeInt( AItem.Data );
-  Result := ( iIndex >= 0 ) and ( iIndex <= High( FAnalyser.Groups[ FGroupIndex ].Candidates ) );
+  iIndex            := NativeInt( AItem.Data );
+  Result            := ( iIndex >= 0 ) and ( iIndex <= High( FAnalyser.Groups[ FGroupIndex ].Candidates ) );
   if Result then
-    ACandidate := FAnalyser.Groups[ FGroupIndex ].Candidates[ iIndex ];
+    ACandidate      := FAnalyser.Groups[ FGroupIndex ].Candidates[ iIndex ];
 end;
 
 procedure TFormDecirculariser.lvCandidatesSelectItem( Sender: TObject; Item: TListItem; Selected: Boolean );
@@ -396,7 +396,7 @@ end;
 
 procedure TFormDecirculariser.ShowDetails;
 var
-  Candidate: TDcBreakCandidate;
+  Candidate         : TDcBreakCandidate;
 begin
   memoDetails.Lines.BeginUpdate;
   try
@@ -405,13 +405,13 @@ begin
       Exit;
 
     memoDetails.Lines.Add( Format( '%s -> %s, implementation uses clause, line %d',
-      [ Candidate.Edge.FromUnit, Candidate.Edge.ToUnit, Candidate.Edge.LineNumber ] ) );
+        [ Candidate.Edge.FromUnit, Candidate.Edge.ToUnit, Candidate.Edge.LineNumber ] ) );
     memoDetails.Lines.Add( Candidate.Advice );
     if Length( Candidate.CrossingSymbols ) > 0 then
       memoDetails.Lines.Add( 'Crossing: ' + string.Join( ', ', Candidate.CrossingSymbols ) );
     if Candidate.AmbiguousSymbolCount > 0 then
       memoDetails.Lines.Add( Format( 'Also used: %d identifier(s) that several units declare, ' +
-        'so no evidence for this edge.', [ Candidate.AmbiguousSymbolCount ] ) );
+          'so no evidence for this edge.', [ Candidate.AmbiguousSymbolCount ] ) );
   finally
     memoDetails.Lines.EndUpdate;
   end;
@@ -419,18 +419,18 @@ end;
 
 procedure TFormDecirculariser.UpdateButtons;
 var
-  Item: TListItem;
-  Candidate: TDcBreakCandidate;
-  bAny: Boolean;
+  Item              : TListItem;
+  Candidate         : TDcBreakCandidate;
+  bAny              : Boolean;
 begin
-  bAny := False;
+  bAny              := False;
   for Item in lvCandidates.Items do
     if Item.Selected and TryCandidateOf( Item, Candidate ) and Candidate.CanAutoRemove then
     begin
-      bAny := True;
+      bAny          := True;
       Break;
     end;
-  btnRemove.Enabled     := bAny;
+  btnRemove.Enabled := bAny;
   btnCopyReport.Enabled := ( FAnalyser <> nil ) and ( not FScanning );
 end;
 
@@ -441,38 +441,38 @@ type
     FromUnit, ToUnit: string;
   end;
 var
-  Wanted: TList<TEdgeRef>;
-  Ref: TEdgeRef;
-  ByFile: TObjectDictionary<string, TStringList>;
-  Names: TStringList;
-  Failures: TStringList;
-  Item: TListItem;
-  Group: TDcGroup;
-  Candidate: TDcBreakCandidate;
+  Wanted            : TList<TEdgeRef>;
+  Ref               : TEdgeRef;
+  ByFile            : TObjectDictionary<string, TStringList>;
+  Names             : TStringList;
+  Failures          : TStringList;
+  Item              : TListItem;
+  Group             : TDcGroup;
+  Candidate         : TDcBreakCandidate;
   sList, sFile, sMsg: string;
-  bStillDead: Boolean;
-  iRemoved: Integer;
-  FilePair: TPair<string, TStringList>;
+  bStillDead        : Boolean;
+  iRemoved          : Integer;
+  FilePair          : TPair<string, TStringList>;
 begin
-  Wanted   := TList<TEdgeRef>.Create;
-  ByFile   := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
-  Failures := TStringList.Create;
+  Wanted            := TList<TEdgeRef>.Create;
+  ByFile            := TObjectDictionary<string, TStringList>.Create( [ doOwnsValues ] );
+  Failures          := TStringList.Create;
   try
-    sList := '';
+    sList           := '';
     for Item in lvCandidates.Items do
       if Item.Selected and TryCandidateOf( Item, Candidate ) and Candidate.CanAutoRemove then
       begin
         Ref.FromUnit := Candidate.Edge.FromUnit;
-        Ref.ToUnit   := Candidate.Edge.ToUnit;
+        Ref.ToUnit  := Candidate.Edge.ToUnit;
         Wanted.Add( Ref );
-        sList := sList + Format( '  %s: remove %s'#13#10, [ Ref.FromUnit, Ref.ToUnit ] );
+        sList       := sList + Format( '  %s: remove %s'#13#10, [ Ref.FromUnit, Ref.ToUnit ] );
       end;
     if Wanted.Count = 0 then
       Exit;
 
     if MessageDlg( Format( 'Remove %d dead uses entry(ies)?'#13#10#13#10'%s'#13#10 +
-      'The units are changed in the editor and not saved: compile, then save or undo (Ctrl+Z).',
-      [ Wanted.Count, sList ] ), mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
+        'The units are changed in the editor and not saved: compile, then save or undo (Ctrl+Z).',
+        [ Wanted.Count, sList ] ), mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
       Exit;
 
     { The list may be stale: re-analyse what is in the editors now and delete only what is still dead. }
@@ -489,7 +489,7 @@ begin
       for Group in FAnalyser.Groups do
         for Candidate in Group.Candidates do
           if SameText( Candidate.Edge.FromUnit, Ref.FromUnit ) and
-             SameText( Candidate.Edge.ToUnit, Ref.ToUnit ) and Candidate.CanAutoRemove then
+            SameText( Candidate.Edge.ToUnit, Ref.ToUnit ) and Candidate.CanAutoRemove then
             bStillDead := True;
 
       if not bStillDead or not FFiles.TryGetValue( LowerCase( Ref.FromUnit ), sFile ) then
@@ -501,28 +501,28 @@ begin
       begin
         { Two project units share this name, so which file the edge lives in is not known. }
         Failures.Add( Format( '%s in %s: the project has more than one unit named %s - remove it by hand',
-          [ Ref.ToUnit, Ref.FromUnit, Ref.FromUnit ] ) );
+            [ Ref.ToUnit, Ref.FromUnit, Ref.FromUnit ] ) );
         Continue;
       end;
 
       if not ByFile.TryGetValue( sFile, Names ) then
       begin
-        Names := TStringList.Create;
+        Names       := TStringList.Create;
         ByFile.Add( sFile, Names );
       end;
       Names.Add( Ref.ToUnit );
     end;
 
-    iRemoved := 0;
+    iRemoved        := 0;
     for FilePair in ByFile do
       Inc( iRemoved, RemoveDeadEntries( FilePair.Key, FilePair.Value.ToStringArray, Failures ) );
 
     RunScan;
 
-    sMsg := Format( '%d entry(ies) removed. The changed units are modified in the editor, not saved: ' +
+    sMsg            := Format( '%d entry(ies) removed. The changed units are modified in the editor, not saved: ' +
       'compile to confirm, then save them, or undo with Ctrl+Z.', [ iRemoved ] );
     if Failures.Count > 0 then
-      sMsg := sMsg + #13#10#13#10'Not removed:'#13#10 + Failures.Text;
+      sMsg          := sMsg + #13#10#13#10'Not removed:'#13#10 + Failures.Text;
     ShowMessage( sMsg );
   finally
     Failures.Free;
@@ -544,8 +544,8 @@ end;
 
 procedure TFormDecirculariser.OpenSelectedFile;
 var
-  Candidate: TDcBreakCandidate;
-  sFile: string;
+  Candidate         : TDcBreakCandidate;
+  sFile             : string;
 begin
   if ( not TryCandidateOf( lvCandidates.Selected, Candidate ) ) then
     Exit;
@@ -571,20 +571,20 @@ end;
 
 procedure TFormDecirculariser.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
-  I: Integer;
-  sLine: string;
+  SL                : TStringList;
+  Item              : TListItem;
+  I                 : Integer;
+  sLine             : string;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
     SL.Add( 'From'#9'To'#9'Line'#9'Verdict'#9'Crossing'#9'Fix' );
     for Item in lvCandidates.Items do
       if Item.Selected or ( lvCandidates.SelCount = 0 ) then
       begin
-        sLine := Item.Caption;
+        sLine       := Item.Caption;
         for I := 0 to Item.SubItems.Count - 1 do
-          sLine := sLine + #9 + Item.SubItems[ I ];
+          sLine     := sLine + #9 + Item.SubItems[ I ];
         SL.Add( sLine );
       end;
     CopyTextToClipboard( SL.Text );
@@ -594,3 +594,4 @@ begin
 end;
 
 end.
+

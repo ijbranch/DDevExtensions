@@ -16,7 +16,7 @@ uses
 
 type
   /// <summary>Probe class: one property per accessor kind (static method, virtual method, field).</summary>
-  TAccessorProbe = class(TPersistent)
+  TAccessorProbe = class( TPersistent )
   private
     /// <summary>Backing field of <see cref="StaticValue"/>.</summary>
     FStaticValue: Integer;
@@ -41,7 +41,7 @@ type
   end;
 
   /// <summary>Descendant that overrides the virtual setter, so a correct decode must find the override.</summary>
-  TAccessorProbeChild = class(TAccessorProbe)
+  TAccessorProbeChild = class( TAccessorProbe )
   protected
     /// <summary>Override of the virtual setter.</summary>
     /// <param name="Value">New value.</param>
@@ -49,31 +49,31 @@ type
   end;
 
   /// <summary>Fixture for <c>ResolvePropAccessorCode</c>.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestVirtTreeHandler = class
   public
     /// <summary>A static setter decodes to that method's own code address.</summary>
-    [Test]
+    [ Test ]
     procedure TestStaticSetterDecodesToMethod;
     /// <summary>
     /// A virtual setter decodes through the instance's VMT to the descendant's override.  Proves the
     /// pointer-width slot mask: with the Win32 mask the Win64 slot marker was read as a code address.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestVirtualSetterDecodesToOverride;
     /// <summary>A field accessor has no code to call, so it decodes to nil instead of a field offset posing as code.</summary>
-    [Test]
+    [ Test ]
     procedure TestFieldAccessorDecodesToNil;
-    {$IFDEF CPUX64}
+{$IFDEF CPUX64}
     /// <summary>
     /// Win64: a static code address whose bits 24..31 happen to be $FE is still static.  The Win32 mask
     /// mistook it for a virtual slot and read a garbage address out of the VMT.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestWin64StaticAddressWithFEByteStaysStatic;
-    {$ENDIF CPUX64}
+{$ENDIF CPUX64}
     /// <summary>A nil instance or nil accessor decodes to nil.</summary>
-    [Test]
+    [ Test ]
     procedure TestNilInputsDecodeToNil;
   end;
 
@@ -86,12 +86,12 @@ uses
 
 procedure TAccessorProbe.SetStaticValue( Value: Integer );
 begin
-  FStaticValue := Value;
+  FStaticValue      := Value;
 end;
 
 procedure TAccessorProbe.SetVirtualValue( Value: Integer );
 begin
-  FVirtualValue := Value;
+  FVirtualValue     := Value;
 end;
 
 { TAccessorProbeChild }
@@ -105,9 +105,9 @@ end;
 
 procedure TTestVirtTreeHandler.TestStaticSetterDecodesToMethod;
 begin
-  var Probe := TAccessorProbeChild.Create;
+  var Probe         := TAccessorProbeChild.Create;
   try
-    var Info := GetPropInfo( Probe, 'StaticValue' );
+    var Info        := GetPropInfo( Probe, 'StaticValue' );
     Assert.AreEqual( Pointer( @TAccessorProbe.SetStaticValue ), ResolvePropAccessorCode( Probe, Info.SetProc ) );
   finally
     Probe.Free;
@@ -116,9 +116,9 @@ end;
 
 procedure TTestVirtTreeHandler.TestVirtualSetterDecodesToOverride;
 begin
-  var Probe := TAccessorProbeChild.Create;
+  var Probe         := TAccessorProbeChild.Create;
   try
-    var Info := GetPropInfo( Probe, 'VirtualValue' );
+    var Info        := GetPropInfo( Probe, 'VirtualValue' );
     Assert.AreEqual( Pointer( @TAccessorProbeChild.SetVirtualValue ), ResolvePropAccessorCode( Probe, Info.SetProc ) );
   finally
     Probe.Free;
@@ -127,9 +127,9 @@ end;
 
 procedure TTestVirtTreeHandler.TestFieldAccessorDecodesToNil;
 begin
-  var Probe := TAccessorProbeChild.Create;
+  var Probe         := TAccessorProbeChild.Create;
   try
-    var Info := GetPropInfo( Probe, 'FieldValue' );
+    var Info        := GetPropInfo( Probe, 'FieldValue' );
     Assert.IsNull( ResolvePropAccessorCode( Probe, Info.SetProc ) );
   finally
     Probe.Free;
@@ -139,10 +139,10 @@ end;
 {$IFDEF CPUX64}
 procedure TTestVirtTreeHandler.TestWin64StaticAddressWithFEByteStaysStatic;
 const
-  SyntheticCode = $00007FFF12FE3456; // bits 24..31 = $12; bits 16..23 = $FE
-  SyntheticCodeFE = $00007FFFFE123456; // bits 24..31 = $FE
+  SyntheticCode     = $00007FFF12FE3456; // bits 24..31 = $12; bits 16..23 = $FE
+  SyntheticCodeFE   = $00007FFFFE123456; // bits 24..31 = $FE
 begin
-  var Probe := TAccessorProbeChild.Create;
+  var Probe         := TAccessorProbeChild.Create;
   try
     Assert.AreEqual( Pointer( SyntheticCode ), ResolvePropAccessorCode( Probe, Pointer( SyntheticCode ) ) );
     Assert.AreEqual( Pointer( SyntheticCodeFE ), ResolvePropAccessorCode( Probe, Pointer( SyntheticCodeFE ) ) );
@@ -154,9 +154,9 @@ end;
 
 procedure TTestVirtTreeHandler.TestNilInputsDecodeToNil;
 begin
-  var Probe := TAccessorProbeChild.Create;
+  var Probe         := TAccessorProbeChild.Create;
   try
-    var Info := GetPropInfo( Probe, 'StaticValue' );
+    var Info        := GetPropInfo( Probe, 'StaticValue' );
     Assert.IsNull( ResolvePropAccessorCode( nil, Info.SetProc ) );
     Assert.IsNull( ResolvePropAccessorCode( Probe, nil ) );
   finally
@@ -168,3 +168,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestVirtTreeHandler );
 
 end.
+

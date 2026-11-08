@@ -26,7 +26,7 @@ uses
 
 type
   /// <summary>Singleton results form for the Empty Event Handler Detector.</summary>
-  TFormEmptyEventHandlerDetector = class(TFormBase)
+  TFormEmptyEventHandlerDetector = class( TFormBase )
     /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
     /// <summary>Bottom action-button panel.</summary>
@@ -55,44 +55,44 @@ type
     lblSummary: TLabel;
     /// <summary>Closes the form.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure btnCloseClick(Sender: TObject);
+    procedure btnCloseClick( Sender: TObject );
     /// <summary>Scans the active project for empty event handlers; while a scan runs, the button reads Cancel and stops it.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure btnScanClick(Sender: TObject);
+    procedure btnScanClick( Sender: TObject );
     /// <summary>Sets the initial sort state and remembers the Scan caption.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure FormCreate(Sender: TObject);
+    procedure FormCreate( Sender: TObject );
     /// <summary>Frees the form and releases the singleton on close; vetoes the close while a scan is running.</summary>
     /// <param name="Sender">The object that raised the event.</param>
     /// <param name="Action">Set to caNone to veto the close while a scan runs; otherwise caFree, so the form is freed.</param>
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormClose( Sender: TObject; var Action: TCloseAction );
     /// <summary>Clears the singleton reference when the form is destroyed.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure FormDestroy(Sender: TObject);
+    procedure FormDestroy( Sender: TObject );
     /// <summary>Opens the file referenced by the double-clicked row.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure ListViewDblClick(Sender: TObject);
+    procedure ListViewDblClick( Sender: TObject );
     /// <summary>Context-menu handler that copies result data to the clipboard.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure mnuCopyToClipboardClick(Sender: TObject);
+    procedure mnuCopyToClipboardClick( Sender: TObject );
     /// <summary>Context-menu handler that opens the source file at the handler's line.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure mnuOpenFileClick(Sender: TObject);
+    procedure mnuOpenFileClick( Sender: TObject );
     /// <summary>Exports the visible results to a CSV file.</summary>
     /// <param name="Sender">The object that raised the event.</param>
-    procedure btnExportClick(Sender: TObject);
+    procedure btnExportClick( Sender: TObject );
     /// <summary>Cycles sort direction when a column header is clicked.</summary>
     /// <param name="Sender">The object that raised the event.</param>
     /// <param name="Column">The column whose header was clicked.</param>
-    procedure ListViewColumnClick(Sender: TObject; Column: TListColumn);
+    procedure ListViewColumnClick( Sender: TObject; Column: TListColumn );
     /// <summary>Custom comparator supporting numeric sort on the line-number column.</summary>
     /// <param name="Sender">The object that raised the event.</param>
     /// <param name="Item1">The first list item being compared.</param>
     /// <param name="Item2">The second list item being compared.</param>
     /// <param name="Data">Sort data passed by AlphaSort (unused).</param>
     /// <param name="Compare">Receives a negative, zero or positive value as Item1 sorts before, level with or after Item2.</param>
-    procedure ListViewCompare(Sender: TObject; Item1, Item2: TListItem;
-      Data: Integer; var Compare: Integer);
+    procedure ListViewCompare( Sender: TObject; Item1, Item2: TListItem;
+      Data: Integer; var Compare: Integer );
   private
     /// <summary>True while a project scan is running; used to veto closing the form mid-scan to prevent a use-after-free.</summary>
     FScanning: Boolean;
@@ -134,18 +134,18 @@ implementation
 uses
   ToolsAPIHelpers, ProjectSources;
 
-function SafeGetSubItem(Item: TListItem; Index: Integer): string;
+function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
-  if (Item <> nil) and (Index < Item.SubItems.Count) then
-    Result := Item.SubItems[Index]
+  if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 end;
 
 /// <summary>Escapes a value for an RFC 4180 quoted CSV field by doubling any embedded double-quotes.</summary>
-function CsvField(const Value: string): string;
+function CsvField( const Value: string ): string;
 begin
-  Result := System.SysUtils.StringReplace(Value, '"', '""', [rfReplaceAll]);
+  Result            := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
 end;
 
 var
@@ -155,11 +155,11 @@ class function TFormEmptyEventHandlerDetector.Execute: Boolean;
 begin
   // Use singleton pattern - create once, reuse on subsequent calls
   if FormEmptyEventHandlerDetectorInstance = nil then
-    FormEmptyEventHandlerDetectorInstance := TFormEmptyEventHandlerDetector.Create(Application);
+    FormEmptyEventHandlerDetectorInstance := TFormEmptyEventHandlerDetector.Create( Application );
 
   FormEmptyEventHandlerDetectorInstance.Show;
   FormEmptyEventHandlerDetectorInstance.BringToFront;
-  Result := True;
+  Result            := True;
 end;
 
 class procedure TFormEmptyEventHandlerDetector.CloseInstance;
@@ -167,7 +167,7 @@ begin
   if FormEmptyEventHandlerDetectorInstance = nil then
     Exit;
 
-  var oForm := FormEmptyEventHandlerDetectorInstance;
+  var oForm         := FormEmptyEventHandlerDetectorInstance;
   FormEmptyEventHandlerDetectorInstance := nil;
 
   if oForm.FScanning then
@@ -183,20 +183,20 @@ begin
     oForm.Free;
 end;
 
-procedure TFormEmptyEventHandlerDetector.FormCreate(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.FormCreate( Sender: TObject );
 begin
-  FSortColumn := 0;
-  FSortAscending := True;
-  FScanCaption := btnScan.Caption;
+  FSortColumn       := 0;
+  FSortAscending    := True;
+  FScanCaption      := btnScan.Caption;
 end;
 
-procedure TFormEmptyEventHandlerDetector.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFormEmptyEventHandlerDetector.FormClose( Sender: TObject; var Action: TCloseAction );
 begin
   // ScanProgress pumps the message queue, so a close can arrive mid-scan: veto it, the scan is
   // still on the stack.
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
@@ -204,17 +204,17 @@ begin
   // still alive - owned by the IDE's Application - when the plugin unloaded).
   if FormEmptyEventHandlerDetectorInstance = Self then
     FormEmptyEventHandlerDetectorInstance := nil;
-  Action := caFree;
+  Action            := caFree;
 end;
 
-procedure TFormEmptyEventHandlerDetector.FormDestroy(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.FormDestroy( Sender: TObject );
 begin
   // Clear singleton reference when form is destroyed
   if FormEmptyEventHandlerDetectorInstance = Self then
     FormEmptyEventHandlerDetectorInstance := nil;
 end;
 
-procedure TFormEmptyEventHandlerDetector.btnCloseClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.btnCloseClick( Sender: TObject );
 begin
   Close;
 end;
@@ -223,10 +223,10 @@ procedure TFormEmptyEventHandlerDetector.ScanProgress( const Step: string; var C
 begin
   lblProgress.Caption := Step;
   Application.ProcessMessages;
-  Cancel := FCancelRequested;
+  Cancel            := FCancelRequested;
 end;
 
-procedure TFormEmptyEventHandlerDetector.btnScanClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.btnScanClick( Sender: TObject );
 begin
   // During a scan the button reads "Cancel".
   if FScanning then
@@ -235,22 +235,22 @@ begin
     Exit;
   end;
 
-  var oProject := GetActiveProject;
+  var oProject      := GetActiveProject;
   if oProject = nil then
   begin
-    ShowMessage('No active project.');
+    ShowMessage( 'No active project.' );
     Exit;
   end;
 
-  var sProjectName := ExtractFileName( oProject.FileName );
+  var sProjectName  := ExtractFileName( oProject.FileName );
 
   // Snapshot the file list now: the scan pumps messages, so the project may change under it.
-  var aFiles := GetProjectSourceFiles( oProject, [ '.pas', '.pp' ] );
+  var aFiles        := GetProjectSourceFiles( oProject, [ '.pas', '.pp' ] );
 
-  var oAllResults := TList<TEmptyHandlerInfo>.Create;
+  var oAllResults   := TList<TEmptyHandlerInfo>.Create;
   try
-    Screen.Cursor := crHourGlass;
-    FScanning := True;
+    Screen.Cursor   := crHourGlass;
+    FScanning       := True;
     FCancelRequested := False;
     btnScan.Caption := '&Cancel';
     try
@@ -260,7 +260,7 @@ begin
       Application.ProcessMessages;
 
       var bCancelled := False;
-      var iSkipped := 0;
+      var iSkipped  := 0;
       for var sFileName in aFiles do
       begin
         if ScanShouldStop( ScanProgress, 'Scanning: ' + ExtractFileName( sFileName ) ) then
@@ -277,13 +277,13 @@ begin
             oAllResults.AddRange( TEmptyEventHandlerDetectorPlugin.AnalyzeUnit( sSource, sFileName ) );
         except
           on E: EStreamError do
-            Inc( iSkipped );   // locked / unreadable unit: skip it, the rest of the scan still runs
+            Inc( iSkipped ); // locked / unreadable unit: skip it, the rest of the scan still runs
           on E: EOSError do
             Inc( iSkipped );
         end;
       end;
 
-      FResults := oAllResults.ToArray;
+      FResults      := oAllResults.ToArray;
       PopulateList;
 
       lblProgress.Visible := False;
@@ -296,7 +296,7 @@ begin
         lblSummary.Caption := Format( 'Found %d empty event handler(s) in %s', [ Length( FResults ), sProjectName ] );
       lblSummary.Visible := True;
     finally
-      FScanning := False;
+      FScanning     := False;
       btnScan.Caption := FScanCaption;
       Screen.Cursor := crDefault;
     end;
@@ -311,9 +311,9 @@ end;
 
 procedure TFormEmptyEventHandlerDetector.PopulateList;
 var
-  Info: TEmptyHandlerInfo;
-  Item: TListItem;
-  FullMethodName: string;
+  Info              : TEmptyHandlerInfo;
+  Item              : TListItem;
+  FullMethodName    : string;
 begin
   ListView.Items.BeginUpdate;
   try
@@ -322,113 +322,113 @@ begin
     for Info in FResults do
     begin
       Item := ListView.Items.Add;
-      Item.Caption := Info.UnitName;
+      Item.Caption  := Info.UnitName;
 
       if Info.ClassName <> '' then
         FullMethodName := Info.ClassName + '.' + Info.MethodName
       else
         FullMethodName := Info.MethodName;
 
-      Item.SubItems.Add(FullMethodName);
-      Item.SubItems.Add(IntToStr(Info.LineNumber));
-      Item.SubItems.Add(Info.FileName);
+      Item.SubItems.Add( FullMethodName );
+      Item.SubItems.Add( IntToStr( Info.LineNumber ) );
+      Item.SubItems.Add( Info.FileName );
     end;
   finally
     ListView.Items.EndUpdate;
   end;
 end;
 
-procedure TFormEmptyEventHandlerDetector.ListViewColumnClick(Sender: TObject;
-  Column: TListColumn);
+procedure TFormEmptyEventHandlerDetector.ListViewColumnClick( Sender: TObject;
+  Column: TListColumn );
 begin
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
   ListView.AlphaSort;
 end;
 
-procedure TFormEmptyEventHandlerDetector.ListViewCompare(Sender: TObject; Item1,
-  Item2: TListItem; Data: Integer; var Compare: Integer);
+procedure TFormEmptyEventHandlerDetector.ListViewCompare( Sender: TObject; Item1,
+  Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
-  N1, N2: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
+  N1, N2            : Integer;
 begin
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
-    Compare := CompareText(S1, S2);
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
+    Compare         := CompareText( S1, S2 );
   end
   else if FSortColumn = 2 then // Line number - numeric sort
   begin
-    N1 := StrToIntDef(SafeGetSubItem(Item1, 1), 0);
-    N2 := StrToIntDef(SafeGetSubItem(Item2, 1), 0);
-    Compare := N1 - N2;
+    N1              := StrToIntDef( SafeGetSubItem( Item1, 1 ), 0 );
+    N2              := StrToIntDef( SafeGetSubItem( Item2, 1 ), 0 );
+    Compare         := N1 - N2;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
-    S1 := SafeGetSubItem(Item1, SubIdx);
-    S2 := SafeGetSubItem(Item2, SubIdx);
-    Compare := CompareText(S1, S2);
+    SubIdx          := FSortColumn - 1;
+    S1              := SafeGetSubItem( Item1, SubIdx );
+    S2              := SafeGetSubItem( Item2, SubIdx );
+    Compare         := CompareText( S1, S2 );
   end;
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 end;
 
-procedure TFormEmptyEventHandlerDetector.ListViewDblClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.ListViewDblClick( Sender: TObject );
 begin
   OpenSelectedFile;
 end;
 
 procedure TFormEmptyEventHandlerDetector.OpenSelectedFile;
 var
-  Item: TListItem;
-  FileName: string;
-  LineNum: Integer;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
+  Item              : TListItem;
+  FileName          : string;
+  LineNum           : Integer;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  EditView          : IOTAEditView;
+  I                 : Integer;
 begin
-  Item := ListView.Selected;
+  Item              := ListView.Selected;
   if Item = nil then
     Exit;
 
-  FileName := SafeGetSubItem(Item, 2); // File path is in SubItems[2]
-  LineNum := StrToIntDef(SafeGetSubItem(Item, 1), 1);
+  FileName          := SafeGetSubItem( Item, 2 ); // File path is in SubItems[2]
+  LineNum           := StrToIntDef( SafeGetSubItem( Item, 1 ), 1 );
 
-  if not FileExists(FileName) then
+  if not FileExists( FileName ) then
   begin
-    ShowMessage('File not found: ' + FileName);
+    ShowMessage( 'File not found: ' + FileName );
     Exit;
   end;
 
-  if Supports(BorlandIDEServices, IOTAModuleServices, ModuleServices) then
+  if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule(FileName);
+    Module          := ModuleServices.OpenModule( FileName );
     if Module <> nil then
     begin
       for I := 0 to Module.ModuleFileCount - 1 do
       begin
-        if Supports(Module.ModuleFileEditors[I], IOTASourceEditor, SourceEditor) then
+        if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) then
         begin
           SourceEditor.Show;
           // A freshly opened editor can momentarily report zero edit views;
           // guard the index rather than risk an out-of-range access.
           if SourceEditor.EditViewCount > 0 then
           begin
-            EditView := SourceEditor.EditViews[0];
+            EditView := SourceEditor.EditViews[ 0 ];
             if EditView <> nil then
             begin
-              EditView.Position.Move(LineNum, 1);
+              EditView.Position.Move( LineNum, 1 );
               EditView.MoveViewToCursor;
               EditView.Paint;
             end;
@@ -440,29 +440,29 @@ begin
   end;
 end;
 
-procedure TFormEmptyEventHandlerDetector.mnuOpenFileClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.mnuOpenFileClick( Sender: TObject );
 begin
   OpenSelectedFile;
 end;
 
-procedure TFormEmptyEventHandlerDetector.mnuCopyToClipboardClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
-    SL.Add('Unit'#9'Method'#9'Line'#9'File');
+    SL.Add( 'Unit'#9'Method'#9'Line'#9'File' );
 
     for Item in ListView.Items do
     begin
-      if Item.Selected or (ListView.SelCount = 0) then
-        SL.Add(Format('%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem(Item, 0),
-          SafeGetSubItem(Item, 1),
-          SafeGetSubItem(Item, 2)
-        ]));
+      if Item.Selected or ( ListView.SelCount = 0 ) then
+        SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s', [
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 )
+              ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -471,39 +471,39 @@ begin
   end;
 end;
 
-procedure TFormEmptyEventHandlerDetector.btnExportClick(Sender: TObject);
+procedure TFormEmptyEventHandlerDetector.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
   if ListView.Items.Count = 0 then
   begin
-    ShowMessage('No data to export.');
+    ShowMessage( 'No data to export.' );
     Exit;
   end;
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
     try
-      SL.Add('Unit,Method,Line,File');
+      SL.Add( 'Unit,Method,Line,File' );
 
       for Item in ListView.Items do
       begin
-        SL.Add(Format('"%s","%s","%s","%s"', [
-          CsvField(Item.Caption),
-          CsvField(SafeGetSubItem(Item, 0)),
-          CsvField(SafeGetSubItem(Item, 1)),
-          CsvField(SafeGetSubItem(Item, 2))
-        ]));
+        SL.Add( Format( '"%s","%s","%s","%s"', [
+              CsvField( Item.Caption ),
+              CsvField( SafeGetSubItem( Item, 0 ) ),
+              CsvField( SafeGetSubItem( Item, 1 ) ),
+              CsvField( SafeGetSubItem( Item, 2 ) )
+              ] ) );
       end;
 
       try
-        SL.SaveToFile(SaveDialog.FileName);
-        ShowMessage(Format('Exported %d items to %s', [ListView.Items.Count, SaveDialog.FileName]));
+        SL.SaveToFile( SaveDialog.FileName );
+        ShowMessage( Format( 'Exported %d items to %s', [ ListView.Items.Count, SaveDialog.FileName ] ) );
       except
         on E: Exception do
-          ShowMessage('Error saving file: ' + E.Message);
+          ShowMessage( 'Error saving file: ' + E.Message );
       end;
     finally
       SL.Free;
@@ -512,3 +512,4 @@ begin
 end;
 
 end.
+

@@ -16,32 +16,32 @@ unit SimpleXmlDoc;
 interface
 
 uses
-  {$IFDEF JEDI_XML}
+{$IFDEF JEDI_XML}
   JclSimpleXml, JclStreams,
-  {$ELSE}
+{$ELSE}
   Xml.XMLIntf, Xml.XMLDoc, Xml.xmldom,
-  {$ENDIF JEDI_XML}
+{$ENDIF JEDI_XML}
   SimpleXmlIntf,
   System.Classes;
 
 type
-  {$IFDEF COMPILER5}
+{$IFDEF COMPILER5}
   /// <summary>Pre-Delphi-6 alias; later compilers ship IInterface directly.</summary>
   IInterface = IUnknown;
-  {$ENDIF COMPILER5}
+{$ENDIF COMPILER5}
 
   /// <summary>Concrete IXmlDocument implementation; reference-counted via the supplied _AddRef/_Release.</summary>
-  TXmlDocument = class(TComponent, IInterface, IXmlDocument)
+  TXmlDocument = class( TComponent, IInterface, IXmlDocument )
   private
-    {$IFDEF JEDI_XML}
+{$IFDEF JEDI_XML}
     /// <summary>Underlying JEDI SimpleXML document.</summary>
     FXml: TJclSimpleXML;
     /// <summary>Whether the JEDI document is considered active.</summary>
     FActive: Boolean;
-    {$ELSE}
+{$ELSE}
     /// <summary>Underlying MSXML document accessed via XMLIntf.</summary>
     FXml: Xml.XMLIntf.IXMLDocument;
-    {$ENDIF JEDI_XML}
+{$ENDIF JEDI_XML}
     /// <summary>Manual reference count maintained by _AddRef / _Release.</summary>
     FRefCount: Integer;
   protected
@@ -54,7 +54,7 @@ type
   public
     /// <summary>Creates the wrapper and the underlying backend document.</summary>
     /// <param name="AOwner">Owner component; when set, reference counting never frees the document.</param>
-    constructor Create(AOwner: TComponent); override;
+    constructor Create( AOwner: TComponent ); override;
     /// <summary>Releases the underlying backend document.</summary>
     destructor Destroy; override;
 
@@ -63,19 +63,19 @@ type
     function GetActive: Boolean;
     /// <summary>IXmlDocument: activates or deactivates the backend document.</summary>
     /// <param name="Value">True to activate, False to deactivate.</param>
-    procedure SetActive(Value: Boolean);
+    procedure SetActive( Value: Boolean );
     /// <summary>IXmlDocument: returns the XML version string.</summary>
     /// <returns>The XML version string.</returns>
     function GetVersion: string;
     /// <summary>IXmlDocument: sets the XML version string.</summary>
     /// <param name="Value">New XML version string.</param>
-    procedure SetVersion(const Value: string);
+    procedure SetVersion( const Value: string );
     /// <summary>IXmlDocument: returns the document element.</summary>
     /// <returns>A wrapper for the root element.</returns>
     function GetDocumentElement: IXmlNode;
     /// <summary>IXmlDocument: replaces the document element.</summary>
     /// <param name="Value">New root element; nil removes it.</param>
-    procedure SetDocumentElement(Value: IXmlNode);
+    procedure SetDocumentElement( Value: IXmlNode );
     /// <summary>IXmlDocument: returns the synthetic root node.</summary>
     /// <returns>A wrapper for the document element.</returns>
     function GetRoot: IXmlNode;
@@ -84,7 +84,7 @@ type
     function GetOptions: TXmlDocOptions;
     /// <summary>IXmlDocument: sets the active document options.</summary>
     /// <param name="Value">New document options.</param>
-    procedure SetOptions(const Value: TXmlDocOptions);
+    procedure SetOptions( const Value: TXmlDocOptions );
     /// <summary>IXmlDocument: returns the document's child-node collection.</summary>
     /// <returns>The child nodes of the root element.</returns>
     function GetChildNodes: IXmlChildNodes;
@@ -93,14 +93,14 @@ type
     /// <param name="Tag">Element name.</param>
     /// <param name="NamespaceURI">Namespace URI; may be empty.</param>
     /// <returns>The new, unattached element.</returns>
-    function CreateElement(const Tag, NamespaceURI: string): IXmlNode;
+    function CreateElement( const Tag, NamespaceURI: string ): IXmlNode;
     /// <summary>IXmlDocument: not implemented; ignores its arguments and returns the root node.</summary>
     /// <param name="Name">Ignored.</param>
     /// <param name="NodeType">Ignored.</param>
     /// <param name="AddlData">Ignored.</param>
     /// <returns>The root node.</returns>
-    function CreateNode(const Name: string; NodeType: TNodeType = ntElement;
-      const AddlData: string = ''): IXmlNode;
+    function CreateNode( const Name: string; NodeType: TNodeType = ntElement;
+      const AddlData: string = '' ): IXmlNode;
 
     /// <summary>
     /// Loads the document from Filename via the backend.  A JclSimpleXml-style declaration
@@ -108,14 +108,14 @@ type
     /// </summary>
     /// <param name="Filename">XML file to load.</param>
     /// <exception cref="EDOMParseError">Raised when the file is not well-formed XML (MSXML backend).</exception>
-    procedure LoadFromFile(const Filename: string);
+    procedure LoadFromFile( const Filename: string );
     /// <summary>
     /// Saves the document to Filename via the backend, writing a uniquely named sibling <c>.saving</c> file first
     /// and then replacing Filename with it, so the target is never left half-written.
     /// </summary>
     /// <param name="Filename">Destination file.</param>
     /// <exception cref="EInOutError">Raised when the finished file cannot replace Filename (for example, it is read-only).</exception>
-    procedure SaveToFile(const Filename: string);
+    procedure SaveToFile( const Filename: string );
 
     /// <summary>Whether the document is parsed and ready for use.</summary>
     property Active: Boolean read GetActive write SetActive;
@@ -134,68 +134,68 @@ type
 /// <summary>Loads an XML file from disk and returns it as an IXmlDocument.</summary>
 /// <param name="Filename">XML file to load.</param>
 /// <returns>The loaded, active document.</returns>
-function LoadXmlDocument(const Filename: string): IXmlDocument;
+function LoadXmlDocument( const Filename: string ): IXmlDocument;
 /// <summary>Creates an empty IXmlDocument with the supplied (optional) XML version string.</summary>
 /// <param name="Version">XML version string; empty keeps the default.</param>
 /// <returns>The new, active document.</returns>
-function NewXmlDocument(const Version: string = ''): IXmlDocument;
+function NewXmlDocument( const Version: string = '' ): IXmlDocument;
 
 implementation
 
 uses
-  {$IFDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
   Winapi.Windows,
-  {$ENDIF MSWINDOWS}
-  {$IFDEF LINUX}
+{$ENDIF MSWINDOWS}
+{$IFDEF LINUX}
   Libc,
-  {$ENDIF LINUX}
+{$ENDIF LINUX}
   System.SysUtils, System.Contnrs, System.IOUtils;
 
 {$IFDEF COMPILER5}
-function InterlockedIncrement(var Addend: Integer): Integer; stdcall;
+function InterlockedIncrement( var Addend: Integer ): Integer; stdcall;
   external 'kernel32.dll' name 'InterlockedIncrement';
 
-function InterlockedDecrement(var Addend: Integer): Integer; stdcall;
+function InterlockedDecrement( var Addend: Integer ): Integer; stdcall;
   external 'kernel32.dll' name 'InterlockedDecrement';
 {$ENDIF COMPILER5}
 
 {$IFDEF JEDI_XML}
 type
   IInternalXmlNode = interface
-    ['{0757223F-94C9-4FE6-AB72-E8E88494195E}']
+    [ '{0757223F-94C9-4FE6-AB72-E8E88494195E}' ]
     function GetNode: TJclSimpleXMLElem;
   end;
 
-  TXmlAttributes = class(TInterfacedObject, IXmlAttributes)
+  TXmlAttributes = class( TInterfacedObject, IXmlAttributes )
   private
     FNode: TJclSimpleXMLElem;
   public
-    constructor Create(ANode: TJclSimpleXMLElem);
+    constructor Create( ANode: TJclSimpleXMLElem );
 
-    procedure SetAttribute(const Index: string; const Value: Variant);
-    function GetAttribute(const Index: string): Variant;
-    property Attributes[const Index: string]: Variant read GetAttribute write SetAttribute; default;
+    procedure SetAttribute( const Index: string; const Value: Variant );
+    function GetAttribute( const Index: string ): Variant;
+    property Attributes[ const Index: string ]: Variant read GetAttribute write SetAttribute; default;
   end;
 
-  TXmlChildNodes = class(TInterfacedObject, IXmlChildNodes)
+  TXmlChildNodes = class( TInterfacedObject, IXmlChildNodes )
   private
     FNodes: TJclSimpleXMLElems;
   public
-    constructor Create(ANodes: TJclSimpleXMLElems);
+    constructor Create( ANodes: TJclSimpleXMLElems );
 
     function GetCount: Integer;
-    function GetNode(Index: Integer): IXmlNode;
-    function FindNode(const NodeName: string): IXmlNode;
+    function GetNode( Index: Integer ): IXmlNode;
+    function FindNode( const NodeName: string ): IXmlNode;
 
-    procedure Add(Node: IXmlNode);
+    procedure Add( Node: IXmlNode );
     procedure Clear;
-    procedure DeleteNodes(const NodeName: string);
+    procedure DeleteNodes( const NodeName: string );
 
     property Count: Integer read GetCount;
-    property Nodes[Index: Integer]: IXmlNode read GetNode; default;
+    property Nodes[ Index: Integer ]: IXmlNode read GetNode; default;
   end;
 
-  TXmlNode = class(TInterfacedObject, IXmlNode, IInternalXmlNode)
+  TXmlNode = class( TInterfacedObject, IXmlNode, IInternalXmlNode )
   private
     FChilds: IXmlChildNodes;
     FAttributes: IXmlAttributes;
@@ -203,7 +203,7 @@ type
   protected
     function GetNode: TJclSimpleXMLElem;
   public
-    constructor Create(ANode: TJclSimpleXMLElem);
+    constructor Create( ANode: TJclSimpleXMLElem );
     destructor Destroy; override;
 
     function GetNodeName: string;
@@ -211,11 +211,11 @@ type
     function GetChildNodes: IXmlChildNodes;
     function GetAttributes: IXmlAttributes;
     function GetText: string;
-    procedure SetText(const Value: string);
+    procedure SetText( const Value: string );
     //procedure SetNodeName(const Value: string);
-    procedure SetNodeValue(const Value: Variant);
+    procedure SetNodeValue( const Value: Variant );
 
-    function AddChild(const NodeName: string): IXmlNode;
+    function AddChild( const NodeName: string ): IXmlNode;
 
     property NodeName: string read GetNodeName {write SetNodeName};
     property NodeValue: Variant read GetNodeValue write SetNodeValue;
@@ -224,44 +224,44 @@ type
     property Text: string read GetText write SetText;
   end;
 
-function LoadXmlDocument(const Filename: string): IXmlDocument;
+function LoadXmlDocument( const Filename: string ): IXmlDocument;
 begin
-  Result := TXmlDocument.Create(nil);
-  Result.LoadFromFile(Filename);
-  Result.Active := True;
+  Result            := TXmlDocument.Create( nil );
+  Result.LoadFromFile( Filename );
+  Result.Active     := True;
 end;
 
-function NewXmlDocument(const Version: string): IXmlDocument;
+function NewXmlDocument( const Version: string ): IXmlDocument;
 begin
-  Result := TXmlDocument.Create(nil);
-  Result.Active := True;
+  Result            := TXmlDocument.Create( nil );
+  Result.Active     := True;
   if Version <> '' then
-    Result.Version := Version;
+    Result.Version  := Version;
 end;
 
 { TXmlDocument }
 
-constructor TXmlDocument.Create(AOwner: TComponent);
+constructor TXmlDocument.Create( AOwner: TComponent );
 begin
-  inherited Create(AOwner);
-  FXml := TJclSimpleXML.Create;
+  inherited Create( AOwner );
+  FXml              := TJclSimpleXML.Create;
   FXml.Prolog.Encoding := 'UTF-8';
 end;
 
-function TXmlDocument.CreateElement(const Tag, NamespaceURI: string): IXmlNode;
+function TXmlDocument.CreateElement( const Tag, NamespaceURI: string ): IXmlNode;
 var
-  JvNode: TJclSimpleXMLElemClassic;
+  JvNode            : TJclSimpleXMLElemClassic;
 begin
-  JvNode := TJclSimpleXMLElemClassic.Create(FXml.Root);
-  JvNode.NameSpace := NamespaceURI;
-  JvNode.Name := Tag;
-  Result := TXmlNode.Create(JvNode);
+  JvNode            := TJclSimpleXMLElemClassic.Create( FXml.Root );
+  JvNode.NameSpace  := NamespaceURI;
+  JvNode.Name       := Tag;
+  Result            := TXmlNode.Create( JvNode );
 end;
 
-function TXmlDocument.CreateNode(const Name: string; NodeType: TNodeType;
-  const AddlData: string): IXmlNode;
+function TXmlDocument.CreateNode( const Name: string; NodeType: TNodeType;
+  const AddlData: string ): IXmlNode;
 begin
-  Result := Root; // trick to ignore it
+  Result            := Root; // trick to ignore it
 end;
 
 destructor TXmlDocument.Destroy;
@@ -272,157 +272,157 @@ end;
 
 function TXmlDocument.GetActive: Boolean;
 begin
-  Result := FActive;
+  Result            := FActive;
 end;
 
 function TXmlDocument.GetChildNodes: IXmlChildNodes;
 begin
-  Result := Root.ChildNodes;
+  Result            := Root.ChildNodes;
 end;
 
 function TXmlDocument.GetDocumentElement: IXMLNode;
 begin
-  Result := Root;
+  Result            := Root;
 end;
 
 function TXmlDocument.GetOptions: TXmlDocOptions;
 begin
-  Result := [];
+  Result            := [ ];
 end;
 
 function TXmlDocument.GetRoot: IXmlNode;
 begin
-  Result := TXmlNode.Create(FXml.Root);
+  Result            := TXmlNode.Create( FXml.Root );
 end;
 
 function TXmlDocument.GetVersion: string;
 begin
-  Result := FXml.Prolog.Version;
+  Result            := FXml.Prolog.Version;
 end;
 
-procedure TXmlDocument.LoadFromFile(const Filename: string);
+procedure TXmlDocument.LoadFromFile( const Filename: string );
 begin
-  FXml.LoadFromFile(Filename);
+  FXml.LoadFromFile( Filename );
 end;
 
-procedure TXmlDocument.SaveToFile(const Filename: string);
+procedure TXmlDocument.SaveToFile( const Filename: string );
 begin
-  FXml.SaveToFile(Filename, seUTF8);
+  FXml.SaveToFile( Filename, seUTF8 );
 end;
 
-procedure TXmlDocument.SetActive(Value: Boolean);
+procedure TXmlDocument.SetActive( Value: Boolean );
 begin
-  FActive := Value;
+  FActive           := Value;
 end;
 
-procedure TXmlDocument.SetDocumentElement(Value: IXMLNode);
+procedure TXmlDocument.SetDocumentElement( Value: IXMLNode );
 begin
   if Value <> nil then
-    FXml.Root := (Value as IInternalXmlNode).GetNode as TJclSimpleXMLElemClassic
+    FXml.Root       := ( Value as IInternalXmlNode ).GetNode as TJclSimpleXMLElemClassic
   else
-    FXml.Root := nil;
+    FXml.Root       := nil;
 end;
 
-procedure TXmlDocument.SetOptions(const Value: TXmlDocOptions);
+procedure TXmlDocument.SetOptions( const Value: TXmlDocOptions );
 begin
 end;
 
-procedure TXmlDocument.SetVersion(const Value: string);
+procedure TXmlDocument.SetVersion( const Value: string );
 begin
   FXml.Prolog.Version := Value;
 end;
 
 function TXmlDocument._AddRef: Integer;
 begin
-  Result := InterlockedIncrement(FRefCount)
+  Result            := InterlockedIncrement( FRefCount )
 end;
 
 function TXmlDocument._Release: Integer;
 begin
-  Result := InterlockedDecrement(FRefCount);
-  if (Result = 0) and (Owner = nil) then
+  Result            := InterlockedDecrement( FRefCount );
+  if ( Result = 0 ) and ( Owner = nil ) then
     Destroy;
 end;
 
 { TXmlAttributes }
 
-constructor TXmlAttributes.Create(ANode: TJclSimpleXMLElem);
+constructor TXmlAttributes.Create( ANode: TJclSimpleXMLElem );
 begin
   inherited Create;
-  FNode := ANode;
+  FNode             := ANode;
 end;
 
-function TXmlAttributes.GetAttribute(const Index: string): Variant;
+function TXmlAttributes.GetAttribute( const Index: string ): Variant;
 var
-  Prop: TJclSimpleXMLProp;
+  Prop              : TJclSimpleXMLProp;
 begin
-  Prop := FNode.Properties.ItemNamed[Index];
+  Prop              := FNode.Properties.ItemNamed[ Index ];
   if Prop <> nil then
-    Result := Prop.Value
+    Result          := Prop.Value
   else
-    Result := '';
+    Result          := '';
 end;
 
-procedure TXmlAttributes.SetAttribute(const Index: string; const Value: Variant);
+procedure TXmlAttributes.SetAttribute( const Index: string; const Value: Variant );
 var
-  Prop: TJclSimpleXMLProp;
+  Prop              : TJclSimpleXMLProp;
 begin
-  Prop := FNode.Properties.ItemNamed[Index];
+  Prop              := FNode.Properties.ItemNamed[ Index ];
   if Prop = nil then
-    Prop := FNode.Properties.Add(Index, '');
-  Prop.Value := Value
+    Prop            := FNode.Properties.Add( Index, '' );
+  Prop.Value        := Value
 end;
 
 { TXmlNode }
 
-constructor TXmlNode.Create(ANode: TJclSimpleXMLElem);
+constructor TXmlNode.Create( ANode: TJclSimpleXMLElem );
 begin
   inherited Create;
-  FNode := ANode;
-  FChilds := TXmlChildNodes.Create(ANode.Items);
-  FAttributes := TXmlAttributes.Create(ANode);
+  FNode             := ANode;
+  FChilds           := TXmlChildNodes.Create( ANode.Items );
+  FAttributes       := TXmlAttributes.Create( ANode );
 end;
 
 destructor TXmlNode.Destroy;
 begin
-  FAttributes := nil;
-  FChilds := nil;
+  FAttributes       := nil;
+  FChilds           := nil;
   inherited Destroy;
 end;
 
-function TXmlNode.AddChild(const NodeName: string): IXmlNode;
+function TXmlNode.AddChild( const NodeName: string ): IXmlNode;
 begin
-  Result := TXmlNode.Create(FNode.Items.Add(NodeName));
+  Result            := TXmlNode.Create( FNode.Items.Add( NodeName ) );
 end;
 
 function TXmlNode.GetAttributes: IXmlAttributes;
 begin
-  Result := FAttributes;
+  Result            := FAttributes;
 end;
 
 function TXmlNode.GetChildNodes: IXmlChildNodes;
 begin
-  Result := FChilds;
+  Result            := FChilds;
 end;
 
 function TXmlNode.GetNode: TJclSimpleXMLElem;
 begin
-  Result := FNode;
+  Result            := FNode;
 end;
 
 function TXmlNode.GetNodeName: string;
 begin
-  Result := FNode.Name;
+  Result            := FNode.Name;
 end;
 
 function TXmlNode.GetNodeValue: Variant;
 begin
-  Result := FNode.Value;
+  Result            := FNode.Value;
 end;
 
 function TXmlNode.GetText: string;
 begin
-  Result := FNode.Value
+  Result            := FNode.Value
 end;
 
 {procedure TXmlNode.SetNodeName(const Value: string);
@@ -430,60 +430,60 @@ begin
   FNode.Name := Value;
 end;}
 
-procedure TXmlNode.SetNodeValue(const Value: Variant);
+procedure TXmlNode.SetNodeValue( const Value: Variant );
 begin
-  FNode.Value := Value;
+  FNode.Value       := Value;
 end;
 
-procedure TXmlNode.SetText(const Value: string);
+procedure TXmlNode.SetText( const Value: string );
 begin
-  FNode.Value := Value;
+  FNode.Value       := Value;
 end;
 
 { TXmlChildNodes }
 
-procedure TXmlChildNodes.Add(Node: IXmlNode);
+procedure TXmlChildNodes.Add( Node: IXmlNode );
 begin
   if Node <> nil then
-    FNodes.Add((Node as IInternalXmlNode).GetNode);
+    FNodes.Add( ( Node as IInternalXmlNode ).GetNode );
 end;
 
-constructor TXmlChildNodes.Create(ANodes: TJclSimpleXMLElems);
+constructor TXmlChildNodes.Create( ANodes: TJclSimpleXMLElems );
 begin
   inherited Create;
-  FNodes := ANodes;
+  FNodes            := ANodes;
 end;
 
-procedure TXmlChildNodes.DeleteNodes(const NodeName: string);
+procedure TXmlChildNodes.DeleteNodes( const NodeName: string );
 var
-  I: Integer;
+  I                 : Integer;
 begin
   for I := FNodes.Count - 1 downto 0 do
-    if AnsiSameText(FNodes[I].Name, NodeName) then
-      FNodes.Delete(I);
+    if AnsiSameText( FNodes[ I ].Name, NodeName ) then
+      FNodes.Delete( I );
 end;
 
 function TXmlChildNodes.GetCount: Integer;
 begin
-  Result := FNodes.Count;
+  Result            := FNodes.Count;
 end;
 
-function TXmlChildNodes.GetNode(Index: Integer): IXmlNode;
+function TXmlChildNodes.GetNode( Index: Integer ): IXmlNode;
 begin
-  Result := TXmlNode.Create(FNodes[Index]);
+  Result            := TXmlNode.Create( FNodes[ Index ] );
 end;
 
-function TXmlChildNodes.FindNode(const NodeName: string): IXmlNode;
+function TXmlChildNodes.FindNode( const NodeName: string ): IXmlNode;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FNodes.Count - 1 do
-    if CompareText(NodeName, FNodes[i].Name) = 0 then
+    if CompareText( NodeName, FNodes[ i ].Name ) = 0 then
     begin
-      Result := Nodes[i];
+      Result        := Nodes[ i ];
       Exit;
     end;
-  Result := nil;
+  Result            := nil;
 end;
 
 procedure TXmlChildNodes.Clear;
@@ -495,40 +495,40 @@ end;
 
 type
   IInternalXmlNode = interface
-    ['{0757223F-94C9-4FE6-AB72-E8E88494195E}']
+    [ '{0757223F-94C9-4FE6-AB72-E8E88494195E}' ]
     function GetNode: Xml.XMLIntf.IXMLNode;
   end;
 
-  TXmlAttributes = class(TInterfacedObject, IXmlAttributes)
+  TXmlAttributes = class( TInterfacedObject, IXmlAttributes )
   private
     FNode: Xml.XMLIntf.IXMLNode;
   public
-    constructor Create(ANode: Xml.XMLIntf.IXMLNode);
+    constructor Create( ANode: Xml.XMLIntf.IXMLNode );
 
-    procedure SetAttribute(const Index: string; const Value: Variant);
-    function GetAttribute(const Index: string): Variant;
-    property Attributes[const Index: string]: Variant read GetAttribute write SetAttribute; default;
+    procedure SetAttribute( const Index: string; const Value: Variant );
+    function GetAttribute( const Index: string ): Variant;
+    property Attributes[ const Index: string ]: Variant read GetAttribute write SetAttribute; default;
   end;
 
-  TXmlChildNodes = class(TInterfacedObject, IXmlChildNodes)
+  TXmlChildNodes = class( TInterfacedObject, IXmlChildNodes )
   private
     FNodes: Xml.XMLIntf.IXMLNodeList;
   public
-    constructor Create(ANodes: Xml.XMLIntf.IXMLNodeList);
+    constructor Create( ANodes: Xml.XMLIntf.IXMLNodeList );
 
     function GetCount: Integer;
-    function GetNode(Index: Integer): IXmlNode;
-    function FindNode(const NodeName: string): IXmlNode;
+    function GetNode( Index: Integer ): IXmlNode;
+    function FindNode( const NodeName: string ): IXmlNode;
 
-    procedure Add(Node: IXmlNode);
+    procedure Add( Node: IXmlNode );
     procedure Clear;
-    procedure DeleteNodes(const NodeName: string);
+    procedure DeleteNodes( const NodeName: string );
 
     property Count: Integer read GetCount;
-    property Nodes[Index: Integer]: IXmlNode read GetNode; default;
+    property Nodes[ Index: Integer ]: IXmlNode read GetNode; default;
   end;
 
-  TXmlNode = class(TInterfacedObject, IXmlNode, IInternalXmlNode)
+  TXmlNode = class( TInterfacedObject, IXmlNode, IInternalXmlNode )
   private
     FChilds: IXmlChildNodes;
     FAttributes: IXmlAttributes;
@@ -536,7 +536,7 @@ type
   protected
     function GetNode: Xml.XMLIntf.IXMLNode;
   public
-    constructor Create(ANode: Xml.XMLIntf.IXMLNode);
+    constructor Create( ANode: Xml.XMLIntf.IXMLNode );
     destructor Destroy; override;
 
     function GetNodeName: string;
@@ -544,11 +544,11 @@ type
     function GetChildNodes: IXmlChildNodes;
     function GetAttributes: IXmlAttributes;
     function GetText: string;
-    procedure SetText(const Value: string);
+    procedure SetText( const Value: string );
     //procedure SetNodeName(const Value: string);
-    procedure SetNodeValue(const Value: Variant);
+    procedure SetNodeValue( const Value: Variant );
 
-    function AddChild(const NodeName: string): IXmlNode;
+    function AddChild( const NodeName: string ): IXmlNode;
 
     property NodeName: string read GetNodeName {write SetNodeName};
     property NodeValue: Variant read GetNodeValue write SetNodeValue;
@@ -557,75 +557,75 @@ type
     property Text: string read GetText write SetText;
   end;
 
-function LoadXmlDocument(const Filename: string): IXmlDocument;
+function LoadXmlDocument( const Filename: string ): IXmlDocument;
 begin
-  Result := TXmlDocument.Create(nil);
-  Result.LoadFromFile(Filename);
-  Result.Active := True;
+  Result            := TXmlDocument.Create( nil );
+  Result.LoadFromFile( Filename );
+  Result.Active     := True;
 end;
 
-function NewXmlDocument(const Version: string): IXmlDocument;
+function NewXmlDocument( const Version: string ): IXmlDocument;
 begin
-  Result := TXmlDocument.Create(nil);
-  Result.Active := True;
+  Result            := TXmlDocument.Create( nil );
+  Result.Active     := True;
   if Version <> '' then
-    Result.Version := Version;
+    Result.Version  := Version;
 end;
 
 { TXmlDocument }
 
-constructor TXmlDocument.Create(AOwner: TComponent);
+constructor TXmlDocument.Create( AOwner: TComponent );
 begin
-  inherited Create(AOwner);
-  FXml := Xml.XMLDoc.NewXMLDocument();
-  FXml.Encoding := 'UTF-8';
+  inherited Create( AOwner );
+  FXml              := Xml.XMLDoc.NewXMLDocument( );
+  FXml.Encoding     := 'UTF-8';
 end;
 
-function TXmlDocument.CreateElement(const Tag, NamespaceURI: string): IXmlNode;
+function TXmlDocument.CreateElement( const Tag, NamespaceURI: string ): IXmlNode;
 begin
-  Result := TXmlNode.Create(FXml.CreateElement(Tag, NamespaceURI));
+  Result            := TXmlNode.Create( FXml.CreateElement( Tag, NamespaceURI ) );
 end;
 
-function TXmlDocument.CreateNode(const Name: string; NodeType: TNodeType;
-  const AddlData: string): IXmlNode;
+function TXmlDocument.CreateNode( const Name: string; NodeType: TNodeType;
+  const AddlData: string ): IXmlNode;
 begin
-  Result := Root; // trick to ignore it
+  Result            := Root; // trick to ignore it
 end;
 
 destructor TXmlDocument.Destroy;
 begin
-  FXml := nil;
+  FXml              := nil;
   inherited Destroy;
 end;
 
 function TXmlDocument.GetActive: Boolean;
 begin
-  Result := FXml.Active;
+  Result            := FXml.Active;
 end;
 
 function TXmlDocument.GetChildNodes: IXmlChildNodes;
 begin
-  Result := Root.ChildNodes;
+  Result            := Root.ChildNodes;
 end;
 
 function TXmlDocument.GetDocumentElement: IXMLNode;
 begin
-  Result := Root;
+  Result            := Root;
 end;
 
 function TXmlDocument.GetOptions: TXmlDocOptions;
 begin
-  Result := [];
+  Result            := [ ];
 end;
 
 function TXmlDocument.GetRoot: IXmlNode;
 begin
-  Result := TXmlNode.Create(FXml.DocumentElement);
+  Result            := TXmlNode.Create( FXml.DocumentElement );
 end;
 
 function TXmlDocument.GetVersion: string;
 begin
-  Result := FXml.Version;
+  Result            := FXml.Version;
 end;
 
 /// <summary>
@@ -638,25 +638,25 @@ end;
 /// <c>version</c>, so AFixed differs from AText.</returns>
 function RepairXmlDeclaration( const AText: string; out AFixed: string ): Boolean;
 begin
-  Result := False;
-  AFixed := AText;
-  var sTrimmed := AText.TrimLeft;
+  Result            := False;
+  AFixed            := AText;
+  var sTrimmed      := AText.TrimLeft;
   if not sTrimmed.StartsWith( '<?xml', True ) then
     Exit;
-  var iEnd := sTrimmed.IndexOf( '?>' );
+  var iEnd          := sTrimmed.IndexOf( '?>' );
   if ( iEnd < 0 ) then
     Exit;
-  var sDeclaration := sTrimmed.Substring( 0, iEnd + 2 );
+  var sDeclaration  := sTrimmed.Substring( 0, iEnd + 2 );
   if sDeclaration.Substring( 5 ).TrimLeft.StartsWith( 'version', True ) then
     Exit; // a well-formed declaration: the parse error lies elsewhere
-  AFixed := '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + sTrimmed.Substring( iEnd + 2 );
-  Result := True;
+  AFixed            := '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + sTrimmed.Substring( iEnd + 2 );
+  Result            := True;
 end;
 
-procedure TXmlDocument.LoadFromFile(const Filename: string);
+procedure TXmlDocument.LoadFromFile( const Filename: string );
 begin
   try
-    FXml.LoadFromFile(Filename);
+    FXml.LoadFromFile( Filename );
   except
     on EDOMParseError do
     begin
@@ -671,12 +671,12 @@ begin
   end;
 end;
 
-procedure TXmlDocument.SaveToFile(const Filename: string);
+procedure TXmlDocument.SaveToFile( const Filename: string );
 begin
   // Write a sibling file and swap it in, so a crash or a full disk mid-write cannot leave the
   // settings file truncated.
   // Unique per process and call: both IDEs ( 32- and 64-bit ) can save the same settings file.
-  var sTempName := Format( '%s.%d.%x.saving', [Filename, GetCurrentProcessId, GetTickCount64] );
+  var sTempName     := Format( '%s.%d.%x.saving', [ Filename, GetCurrentProcessId, GetTickCount64 ] );
   try
     FXml.SaveToFile( sTempName );
   except
@@ -685,118 +685,118 @@ begin
   end;
   if not MoveFileEx( PChar( sTempName ), PChar( Filename ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
   begin
-    var iError := GetLastError;
+    var iError      := GetLastError;
     System.SysUtils.DeleteFile( sTempName );
-    raise EInOutError.CreateFmt( 'Cannot replace "%s": %s', [Filename, SysErrorMessage( iError )] );
+    raise EInOutError.CreateFmt( 'Cannot replace "%s": %s', [ Filename, SysErrorMessage( iError ) ] );
   end;
 end;
 
-procedure TXmlDocument.SetActive(Value: Boolean);
+procedure TXmlDocument.SetActive( Value: Boolean );
 begin
-  FXml.Active := Value;
+  FXml.Active       := Value;
 end;
 
-procedure TXmlDocument.SetDocumentElement(Value: IXMLNode);
+procedure TXmlDocument.SetDocumentElement( Value: IXMLNode );
 begin
   if Value <> nil then
-    FXml.DocumentElement := (Value as IInternalXmlNode).GetNode
+    FXml.DocumentElement := ( Value as IInternalXmlNode ).GetNode
   else
     FXml.DocumentElement := nil;
 end;
 
-procedure TXmlDocument.SetOptions(const Value: TXmlDocOptions);
+procedure TXmlDocument.SetOptions( const Value: TXmlDocOptions );
 begin
-  FXml.Options := Xml.XMLIntf.TXMLDocOptions(Value);
+  FXml.Options      := Xml.XMLIntf.TXMLDocOptions( Value );
 end;
 
-procedure TXmlDocument.SetVersion(const Value: string);
+procedure TXmlDocument.SetVersion( const Value: string );
 begin
-  FXml.Version := Value;
+  FXml.Version      := Value;
 end;
 
 function TXmlDocument._AddRef: Integer;
 begin
-  Result := InterlockedIncrement(FRefCount)
+  Result            := InterlockedIncrement( FRefCount )
 end;
 
 function TXmlDocument._Release: Integer;
 begin
-  Result := InterlockedDecrement(FRefCount);
-  if (Result = 0) and (Owner = nil) then
+  Result            := InterlockedDecrement( FRefCount );
+  if ( Result = 0 ) and ( Owner = nil ) then
     Destroy;
 end;
 
 { TXmlAttributes }
 
-constructor TXmlAttributes.Create(ANode: Xml.XMLIntf.IXmlNode);
+constructor TXmlAttributes.Create( ANode: Xml.XMLIntf.IXmlNode );
 begin
   inherited Create;
-  FNode := ANode;
+  FNode             := ANode;
 end;
 
-function TXmlAttributes.GetAttribute(const Index: string): Variant;
+function TXmlAttributes.GetAttribute( const Index: string ): Variant;
 begin
-  if FNode.HasAttribute(Index) then
-    Result := FNode.Attributes[Index]
+  if FNode.HasAttribute( Index ) then
+    Result          := FNode.Attributes[ Index ]
   else
-    Result := '';
+    Result          := '';
 end;
 
-procedure TXmlAttributes.SetAttribute(const Index: string; const Value: Variant);
+procedure TXmlAttributes.SetAttribute( const Index: string; const Value: Variant );
 begin
-  FNode.Attributes[Index] := Value;
+  FNode.Attributes[ Index ] := Value;
 end;
 
 { TXmlNode }
 
-constructor TXmlNode.Create(ANode: Xml.XMLIntf.IXmlNode);
+constructor TXmlNode.Create( ANode: Xml.XMLIntf.IXmlNode );
 begin
   inherited Create;
-  FNode := ANode;
-  FChilds := TXmlChildNodes.Create(ANode.ChildNodes);
-  FAttributes := TXmlAttributes.Create(ANode);
+  FNode             := ANode;
+  FChilds           := TXmlChildNodes.Create( ANode.ChildNodes );
+  FAttributes       := TXmlAttributes.Create( ANode );
 end;
 
 destructor TXmlNode.Destroy;
 begin
-  FAttributes := nil;
-  FChilds := nil;
+  FAttributes       := nil;
+  FChilds           := nil;
   inherited Destroy;
 end;
 
-function TXmlNode.AddChild(const NodeName: string): IXmlNode;
+function TXmlNode.AddChild( const NodeName: string ): IXmlNode;
 begin
-  Result := TXmlNode.Create(FNode.AddChild(NodeName));
+  Result            := TXmlNode.Create( FNode.AddChild( NodeName ) );
 end;
 
 function TXmlNode.GetAttributes: IXmlAttributes;
 begin
-  Result := FAttributes;
+  Result            := FAttributes;
 end;
 
 function TXmlNode.GetChildNodes: IXmlChildNodes;
 begin
-  Result := FChilds;
+  Result            := FChilds;
 end;
 
 function TXmlNode.GetNode: Xml.XMLIntf.IXmlNode;
 begin
-  Result := FNode;
+  Result            := FNode;
 end;
 
 function TXmlNode.GetNodeName: string;
 begin
-  Result := FNode.NodeName;
+  Result            := FNode.NodeName;
 end;
 
 function TXmlNode.GetNodeValue: Variant;
 begin
-  Result := FNode.NodeValue;
+  Result            := FNode.NodeValue;
 end;
 
 function TXmlNode.GetText: string;
 begin
-  Result := FNode.Text
+  Result            := FNode.Text
 end;
 
 {procedure TXmlNode.SetNodeName(const Value: string);
@@ -804,60 +804,60 @@ begin
   FNode.NodeName := Value;
 end;}
 
-procedure TXmlNode.SetNodeValue(const Value: Variant);
+procedure TXmlNode.SetNodeValue( const Value: Variant );
 begin
-  FNode.NodeValue := Value;
+  FNode.NodeValue   := Value;
 end;
 
-procedure TXmlNode.SetText(const Value: string);
+procedure TXmlNode.SetText( const Value: string );
 begin
-  FNode.Text := Value;
+  FNode.Text        := Value;
 end;
 
 { TXmlChildNodes }
 
-procedure TXmlChildNodes.Add(Node: IXmlNode);
+procedure TXmlChildNodes.Add( Node: IXmlNode );
 begin
   if Node <> nil then
-    FNodes.Add((Node as IInternalXmlNode).GetNode);
+    FNodes.Add( ( Node as IInternalXmlNode ).GetNode );
 end;
 
-constructor TXmlChildNodes.Create(ANodes: Xml.XMLIntf.IXMLNodeList);
+constructor TXmlChildNodes.Create( ANodes: Xml.XMLIntf.IXMLNodeList );
 begin
   inherited Create;
-  FNodes := ANodes;
+  FNodes            := ANodes;
 end;
 
-procedure TXmlChildNodes.DeleteNodes(const NodeName: string);
+procedure TXmlChildNodes.DeleteNodes( const NodeName: string );
 var
-  I: Integer;
+  I                 : Integer;
 begin
   for I := FNodes.Count - 1 downto 0 do
-    if AnsiSameText(FNodes[I].NodeName, NodeName) then
-      FNodes.Delete(I);
+    if AnsiSameText( FNodes[ I ].NodeName, NodeName ) then
+      FNodes.Delete( I );
 end;
 
 function TXmlChildNodes.GetCount: Integer;
 begin
-  Result := FNodes.Count;
+  Result            := FNodes.Count;
 end;
 
-function TXmlChildNodes.GetNode(Index: Integer): IXmlNode;
+function TXmlChildNodes.GetNode( Index: Integer ): IXmlNode;
 begin
-  Result := TXmlNode.Create(FNodes[Index]);
+  Result            := TXmlNode.Create( FNodes[ Index ] );
 end;
 
-function TXmlChildNodes.FindNode(const NodeName: string): IXmlNode;
+function TXmlChildNodes.FindNode( const NodeName: string ): IXmlNode;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FNodes.Count - 1 do
-    if CompareText(NodeName, FNodes[i].NodeName) = 0 then
+    if CompareText( NodeName, FNodes[ i ].NodeName ) = 0 then
     begin
-      Result := Nodes[i];
+      Result        := Nodes[ i ];
       Exit;
     end;
-  Result := nil;
+  Result            := nil;
 end;
 
 procedure TXmlChildNodes.Clear;
@@ -868,3 +868,4 @@ end;
 {$ENDIF JEDI_XML}
 
 end.
+

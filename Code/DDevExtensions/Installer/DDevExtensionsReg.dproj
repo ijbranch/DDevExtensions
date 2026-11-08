@@ -118,11 +118,11 @@
         <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.24.16.605;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.24.16.605;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Build>610</VerInfo_Build>
+        <VerInfo_Build>611</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>24</VerInfo_MinorVer>
         <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensionsReg;FileVersion=3.24.16.610;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensionsReg;ProductName=DDevExtensionsReg;ProductVersion=3.24.16.610;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensionsReg;FileVersion=3.24.16.611;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensionsReg;ProductName=DDevExtensionsReg;ProductVersion=3.24.16.611;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <VerInfo_MinorVer>24</VerInfo_MinorVer>

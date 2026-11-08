@@ -57,7 +57,7 @@ implementation
 
 procedure TFrameOptionPageDecirculariser.SetUserData( UserData: TObject );
 begin
-  FPlugin := UserData as TDecirculariserPlugin;
+  FPlugin           := UserData as TDecirculariserPlugin;
 end;
 
 procedure TFrameOptionPageDecirculariser.LoadData;
@@ -68,9 +68,9 @@ end;
 
 procedure TFrameOptionPageDecirculariser.SaveData;
 var
-  iLimit: Integer;
+  iLimit            : Integer;
 begin
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   { A threshold below 1 would call every edge carrying anything collaboration; keep the old value. }
   if TryStrToInt( Trim( edtFewSymbols.Text ), iLimit ) and ( iLimit >= 1 ) then
     FPlugin.FewSymbolsLimit := iLimit;
@@ -86,3 +86,4 @@ begin
 end;
 
 end.
+

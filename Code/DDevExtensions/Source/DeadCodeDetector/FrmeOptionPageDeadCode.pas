@@ -73,28 +73,28 @@ end;
 procedure TFrameOptionPageDeadCode.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TDeadCodeDetectorPlugin;
+  FPlugin           := UserData as TDeadCodeDetectorPlugin;
 
 end;
 
 procedure TFrameOptionPageDeadCode.LoadData;
 begin
 
-  chkEnabled.Checked         := FPlugin.Enabled;
+  chkEnabled.Checked := FPlugin.Enabled;
   chkCheckProcedures.Checked := FPlugin.CheckProcedures;
-  chkCheckFields.Checked     := FPlugin.CheckFields;
+  chkCheckFields.Checked := FPlugin.CheckFields;
   memoIgnoreList.Lines.Assign( FPlugin.IgnoreList );
 
 end;
 
 procedure TFrameOptionPageDeadCode.SaveData;
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
-  FPlugin.Enabled         := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   FPlugin.CheckProcedures := chkCheckProcedures.Checked;
-  FPlugin.CheckFields     := chkCheckFields.Checked;
+  FPlugin.CheckFields := chkCheckFields.Checked;
 
   FPlugin.IgnoreList.Clear;
 
@@ -117,3 +117,4 @@ begin
 end;
 
 end.
+

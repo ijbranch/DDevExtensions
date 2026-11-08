@@ -21,110 +21,110 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the path compactor core.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestPathCompactor = class
   public
     /// <summary>An unknown macro is left intact and terminates the pass.</summary>
-    [Test]
+    [ Test ]
     procedure TestUnknownMacroLeftIntact;
     /// <summary>A self-referential macro hits the depth cap instead of hanging.</summary>
-    [Test]
+    [ Test ]
     procedure TestSelfReferentialMacroTerminates;
     /// <summary>A prefix only matches at a directory-separator boundary.</summary>
-    [Test]
+    [ Test ]
     procedure TestSegmentBoundaryMatching;
     /// <summary>Nested prefixes: the rewrite applies the longest accepted prefix.</summary>
-    [Test]
+    [ Test ]
     procedure TestNestedPrefixesUseLongestAccepted;
     /// <summary>An entry containing $(Config) survives byte-for-byte and is never deduplicated.</summary>
-    [Test]
+    [ Test ]
     procedure TestOpaqueEntrySurvivesUnchanged;
     /// <summary>Duplicate detection is case-insensitive and ignores a trailing separator.</summary>
-    [Test]
+    [ Test ]
     procedure TestDuplicateDetectionNormalises;
     /// <summary>A name colliding with an existing variable of a different value gains a suffix.</summary>
-    [Test]
+    [ Test ]
     procedure TestNameCollisionWithExistingVariable;
     /// <summary>An existing variable equal to the candidate prefix is reused, not redefined.</summary>
-    [Test]
+    [ Test ]
     procedure TestExistingVariableReused;
     /// <summary>A derived name colliding with a reserved built-in is renamed.</summary>
-    [Test]
+    [ Test ]
     procedure TestReservedNameIsNeverEmitted;
     /// <summary>Output entry count equals input count minus intentional drops.</summary>
-    [Test]
+    [ Test ]
     procedure TestEntryCountPreserved;
     /// <summary>A platform or config token never becomes a variable name on its own.</summary>
-    [Test]
+    [ Test ]
     procedure TestPlatformTokenNaming;
     /// <summary>An entry already stored as a macro is not re-expressed under a new one.</summary>
-    [Test]
+    [ Test ]
     procedure TestAlreadyMacroisedEntryNotLengthened;
     /// <summary>A candidate equal to a built-in's value is emitted as that built-in.</summary>
-    [Test]
+    [ Test ]
     procedure TestBuiltInMacroPreferredOverNewVariable;
     /// <summary>Namespace Prefixes is refused by the core, not merely hidden by the dialog.</summary>
-    [Test]
+    [ Test ]
     procedure TestNamespacePrefixesRefused;
     /// <summary>The supplied macro table is never modified.</summary>
-    [Test]
+    [ Test ]
     procedure TestMacroTableNotModified;
     /// <summary>Stored length never increases, on a fixture designed to tempt it.</summary>
-    [Test]
+    [ Test ]
     procedure TestStoredLengthNeverIncreases;
     /// <summary>Duplicate removal is off by default: reported, but nothing dropped.</summary>
-    [Test]
+    [ Test ]
     procedure TestDuplicateRemovalIsOptIn;
     /// <summary>A dead macro reference is removable; a divergent one never is.</summary>
-    [Test]
+    [ Test ]
     procedure TestDeadMacroRemovableButDivergentIsNot;
     /// <summary>Revalidation rescues an entry whose macro resolves by the time Apply runs.</summary>
-    [Test]
+    [ Test ]
     procedure TestRevalidateRescuesResolvedMacro;
     /// <summary>A bare version folder never becomes a variable name on its own.</summary>
-    [Test]
+    [ Test ]
     procedure TestVersionSegmentNaming;
     /// <summary>Widening skips structural folder names that identify no library.</summary>
-    [Test]
+    [ Test ]
     procedure TestWideningSkipsNoiseSegments;
     /// <summary>Common words are flagged as poor machine-wide variable names.</summary>
-    [Test]
+    [ Test ]
     procedure TestGenericNameDetection;
     /// <summary>Two paths with identical tails get distinguishing names, not X and X_2.</summary>
-    [Test]
+    [ Test ]
     procedure TestCollisionWidensRatherThanSuffixes;
     /// <summary>An entry that will be removed does not vote for a macro variable.</summary>
-    [Test]
+    [ Test ]
     procedure TestDroppedEntriesDoNotVoteForVariables;
     /// <summary>Analyse then rewrite then expand yields the original expanded set.</summary>
-    [Test]
+    [ Test ]
     procedure TestRoundTripInvariant;
     /// <summary>
     /// Unticking an accepted variable removes it from every rewritten entry, so the value
     /// written never names a variable that is not being defined (audit E1).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDisabledVariableIsNotUsed;
     /// <summary>
     /// A new variable never takes a name that only the other IDE's list defines; writing it to
     /// both lists would replace that IDE's value (audit E7).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDivergentNameNeverTaken;
     /// <summary>
     /// With reuse restricted, a macro outside the reusable set is not reused for its prefix
     /// (a variable only this IDE defines, or a process-only one, audit E2/E15); a listed one is.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestReuseRestrictedToReusableNames;
     /// <summary>
     /// A relative entry is left exactly as stored: never dropped as missing, never rewritten,
     /// never counted as a duplicate (audit E16).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestRelativeEntryLeftAlone;
     /// <summary>With RemoveMissing on, an absent directory is dropped and an existing one kept.</summary>
-    [Test]
+    [ Test ]
     procedure TestRemoveMissingDropsOnlyAbsentDirectories;
   end;
 
@@ -135,24 +135,24 @@ uses
   PathCompactorCore;
 
 const
-  BdsDir = 'C:\Program Files (x86)\Embarcadero\Studio\37.0';
+  BdsDir            = 'C:\Program Files (x86)\Embarcadero\Studio\37.0';
 
 /// <summary>Builds a macro table holding just the entries the fixtures need.</summary>
 function MakeMacros( const APairs: array of string ): TStringList;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := TStringList.Create;
+  Result            := TStringList.Create;
   Result.CaseSensitive := False;
   Result.NameValueSeparator := '=';
   for I := Low( APairs ) to High( APairs ) do
-    Result.Add( APairs[I] );
+    Result.Add( APairs[ I ] );
 end;
 
 /// <summary>Creates an analysis wired to AMacros with existence probing off.</summary>
 function MakeAnalysis( AMacros: TStrings ): TPathCompactorAnalysis;
 begin
-  Result := TPathCompactorAnalysis.Create;
+  Result            := TPathCompactorAnalysis.Create;
   Result.SetMacros( AMacros );
   Result.CheckExistence := False;
 end;
@@ -164,54 +164,54 @@ end;
 /// </summary>
 function OriginalExpandedOf( APathSet: TPathSet ): string;
 var
-  Entries: TArray<TPathEntry>;
-  I: Integer;
-  Text: string;
+  Entries           : TArray<TPathEntry>;
+  I                 : Integer;
+  Text              : string;
 begin
-  Text := '';
-  Entries := APathSet.Entries;
+  Text              := '';
+  Entries           := APathSet.Entries;
   for I := Low( Entries ) to High( Entries ) do
   begin
-    if Entries[I].Drop then
+    if Entries[ I ].Drop then
       Continue;
     if Text <> '' then
-      Text := Text + sLineBreak;
-    if Entries[I].Expanded <> '' then
-      Text := Text + Entries[I].Expanded
+      Text          := Text + sLineBreak;
+    if Entries[ I ].Expanded <> '' then
+      Text          := Text + Entries[ I ].Expanded
     else
-      Text := Text + Entries[I].Raw;
+      Text          := Text + Entries[ I ].Raw;
   end;
-  Result := Text;
+  Result            := Text;
 end;
 
 /// <summary>Expands the entries as they would be WRITTEN, one surviving entry per line.</summary>
 function RewrittenExpandedOf( APathSet: TPathSet; AMacros: TStrings ): string;
 var
-  Entries: TArray<TPathEntry>;
-  I: Integer;
+  Entries           : TArray<TPathEntry>;
+  I                 : Integer;
   Text, Effective, Expanded: string;
 begin
-  Text := '';
-  Entries := APathSet.Entries;
+  Text              := '';
+  Entries           := APathSet.Entries;
   for I := Low( Entries ) to High( Entries ) do
   begin
-    if Entries[I].Drop then
+    if Entries[ I ].Drop then
       Continue;
     if Text <> '' then
-      Text := Text + sLineBreak;
+      Text          := Text + sLineBreak;
 
-    if Entries[I].NewRaw <> '' then
-      Effective := Entries[I].NewRaw
+    if Entries[ I ].NewRaw <> '' then
+      Effective     := Entries[ I ].NewRaw
     else
-      Effective := Entries[I].Raw;
+      Effective     := Entries[ I ].Raw;
 
-    Expanded := NormalisePath( ExpandLibraryMacros( Effective, AMacros ) );
+    Expanded        := NormalisePath( ExpandLibraryMacros( Effective, AMacros ) );
     if Expanded <> '' then
-      Text := Text + Expanded
+      Text          := Text + Expanded
     else
-      Text := Text + Effective;
+      Text          := Text + Effective;
   end;
-  Result := Text;
+  Result            := Text;
 end;
 
 /// <summary>
@@ -222,39 +222,39 @@ end;
 /// </summary>
 function MacrosWithAccepted( AAnalysis: TPathCompactorAnalysis; AMacros: TStrings ): TStringList;
 var
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
 begin
-  Result := TStringList.Create;
+  Result            := TStringList.Create;
   Result.CaseSensitive := False;
   Result.NameValueSeparator := '=';
   Result.Assign( AMacros );
 
-  Vars := AAnalysis.AcceptedVariables;
+  Vars              := AAnalysis.AcceptedVariables;
   for I := Low( Vars ) to High( Vars ) do
-    if Result.IndexOfName( Vars[I].Name ) < 0 then
-      Result.Add( Vars[I].Name + '=' + Vars[I].Prefix );
+    if Result.IndexOfName( Vars[ I ].Name ) < 0 then
+      Result.Add( Vars[ I ].Name + '=' + Vars[ I ].Prefix );
 end;
 
 /// <summary>Asserts the two invariants every fixture must satisfy.</summary>
 procedure AssertInvariants( AAnalysis: TPathCompactorAnalysis; AMacros: TStrings;
   const AOriginalExpanded: array of string );
 var
-  I: Integer;
-  Effective: TStringList;
+  I                 : Integer;
+  Effective         : TStringList;
 begin
   // Stored length must never grow. A rewrite that lengthens the registry string
   // is a failure however sound its round-trip.
   Assert.IsTrue( AAnalysis.TotalStoredAfter <= AAnalysis.TotalStoredBefore,
     Format( 'stored length grew: %d -> %d',
-      [AAnalysis.TotalStoredBefore, AAnalysis.TotalStoredAfter] ) );
+      [ AAnalysis.TotalStoredBefore, AAnalysis.TotalStoredAfter ] ) );
 
   // The expanded path set must be unchanged, minus intentional drops.
-  Effective := MacrosWithAccepted( AAnalysis, AMacros );
+  Effective         := MacrosWithAccepted( AAnalysis, AMacros );
   try
     for I := 0 to AAnalysis.Sets.Count - 1 do
-      Assert.AreEqual( AOriginalExpanded[I],
-        RewrittenExpandedOf( AAnalysis.Sets[I], Effective ),
+      Assert.AreEqual( AOriginalExpanded[ I ],
+        RewrittenExpandedOf( AAnalysis.Sets[ I ], Effective ),
         'round-trip changed the expanded path set' );
   finally
     Effective.Free;
@@ -265,9 +265,9 @@ end;
 
 procedure TTestPathCompactor.TestUnknownMacroLeftIntact;
 var
-  Macros: TStringList;
+  Macros            : TStringList;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir] );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir ] );
   try
     // Deliberately unlike IDEUtils.ExpandDirMacros, which DELETES the macro and
     // silently produces a bare "\x".
@@ -279,13 +279,13 @@ end;
 
 procedure TTestPathCompactor.TestSelfReferentialMacroTerminates;
 var
-  Macros: TStringList;
-  Value: string;
+  Macros            : TStringList;
+  Value             : string;
 begin
-  Macros := MakeMacros( ['A=$(A)\x'] );
+  Macros            := MakeMacros( [ 'A=$(A)\x' ] );
   try
     // The point of this test is that it returns at all.
-    Value := ExpandLibraryMacros( '$(A)', Macros, 8 );
+    Value           := ExpandLibraryMacros( '$(A)', Macros, 8 );
     Assert.IsTrue( Pos( '$(', Value ) > 0,
       'the depth cap should leave the cycle unresolved rather than hang' );
   finally
@@ -303,14 +303,14 @@ end;
 
 procedure TTestPathCompactor.TestNestedPrefixesUseLongestAccepted;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Entries: TArray<TPathEntry>;
-  I: Integer;
-  Found: Boolean;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Entries           : TArray<TPathEntry>;
+  I                 : Integer;
+  Found             : Boolean;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     // A low threshold so both nesting levels are taken: the outer prefix first
     // (it covers every entry), then the inner one on its incremental gain.
@@ -326,13 +326,13 @@ begin
     // An entry must be rewritten under the LONGEST accepted prefix that matches
     // it, never a shorter ancestor — so a Core entry becomes $(CORE)\Alpha and
     // not $(FRAMEWORK)\Core\Alpha.
-    Entries := Analysis.Sets[0].Entries;
-    Found := False;
+    Entries         := Analysis.Sets[ 0 ].Entries;
+    Found           := False;
     for I := Low( Entries ) to High( Entries ) do
-      if SameText( Entries[I].Raw, 'D:\Vendor\Framework\Core\Alpha' ) then
+      if SameText( Entries[ I ].Raw, 'D:\Vendor\Framework\Core\Alpha' ) then
       begin
-        Found := True;
-        Assert.AreEqual( '$(CORE)\Alpha', Entries[I].NewRaw,
+        Found       := True;
+        Assert.AreEqual( '$(CORE)\Alpha', Entries[ I ].NewRaw,
           'the longest accepted prefix should have absorbed the Core segment' );
       end;
 
@@ -345,12 +345,12 @@ end;
 
 procedure TTestPathCompactor.TestOpaqueEntrySurvivesUnchanged;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Entries: TArray<TPathEntry>;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Entries           : TArray<TPathEntry>;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.RemoveDuplicates := True;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
@@ -358,12 +358,12 @@ begin
       'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta' );
     Analysis.Analyse;
 
-    Entries := Analysis.Sets[0].Entries;
-    Assert.IsTrue( Entries[0].Opaque, '$(Config) entry must be opaque' );
-    Assert.AreEqual( '', Entries[0].NewRaw, 'an opaque entry must not be rewritten' );
-    Assert.IsFalse( Entries[1].Duplicate,
+    Entries         := Analysis.Sets[ 0 ].Entries;
+    Assert.IsTrue( Entries[ 0 ].Opaque, '$(Config) entry must be opaque' );
+    Assert.AreEqual( '', Entries[ 0 ].NewRaw, 'an opaque entry must not be rewritten' );
+    Assert.IsFalse( Entries[ 1 ].Duplicate,
       'opaque entries must never be deduplicated — they can differ at build time' );
-    Assert.IsFalse( Entries[1].Drop );
+    Assert.IsFalse( Entries[ 1 ].Drop );
   finally
     Analysis.Free;
     Macros.Free;
@@ -372,11 +372,11 @@ end;
 
 procedure TTestPathCompactor.TestDuplicateDetectionNormalises;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.AddPathSet( 'Win64', lptSearchPath, 'D:\Shared\Units;d:\shared\units\;D:\Other' );
     Analysis.Analyse;
@@ -391,14 +391,14 @@ end;
 
 procedure TTestPathCompactor.TestNameCollisionWithExistingVariable;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
 begin
   // An existing variable named LIB holding a DIFFERENT value.
-  Macros := MakeMacros( ['LIB=D:\Somewhere\Unrelated'] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'LIB=D:\Somewhere\Unrelated' ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
@@ -407,10 +407,10 @@ begin
       'D:\Vendor\ComponentSuite\Delphi13\Lib\Gamma' );
     Analysis.Analyse;
 
-    Vars := Analysis.AcceptedVariables;
+    Vars            := Analysis.AcceptedVariables;
     Assert.IsTrue( Length( Vars ) > 0, 'expected a variable to be proposed' );
     for I := Low( Vars ) to High( Vars ) do
-      Assert.AreNotEqual( 'LIB', Vars[I].Name,
+      Assert.AreNotEqual( 'LIB', Vars[ I ].Name,
         'must not reuse the name of an existing variable holding a different value' );
   finally
     Analysis.Free;
@@ -420,14 +420,14 @@ end;
 
 procedure TTestPathCompactor.TestExistingVariableReused;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
-  Reused: Boolean;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
+  Reused            : Boolean;
 begin
-  Macros := MakeMacros( ['SUITE=D:\Vendor\ComponentSuite\Delphi13\Lib'] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'SUITE=D:\Vendor\ComponentSuite\Delphi13\Lib' ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
@@ -436,13 +436,13 @@ begin
       'D:\Vendor\ComponentSuite\Delphi13\Lib\Gamma' );
     Analysis.Analyse;
 
-    Vars := Analysis.AcceptedVariables;
-    Reused := False;
+    Vars            := Analysis.AcceptedVariables;
+    Reused          := False;
     for I := Low( Vars ) to High( Vars ) do
-      if SameText( Vars[I].Name, 'SUITE' ) then
+      if SameText( Vars[ I ].Name, 'SUITE' ) then
       begin
-        Reused := True;
-        Assert.IsTrue( Vars[I].PreExisting,
+        Reused      := True;
+        Assert.IsTrue( Vars[ I ].PreExisting,
           'an existing variable of the same value must be flagged PreExisting' );
       end;
 
@@ -455,14 +455,14 @@ end;
 
 procedure TTestPathCompactor.TestReservedNameIsNeverEmitted;
 var
-  Macros, Reserved: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
+  Macros, Reserved  : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
-  Reserved := TStringList.Create;
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
+  Reserved          := TStringList.Create;
   try
     Reserved.Add( 'BDS' );
     Analysis.SetReservedNames( Reserved );
@@ -473,9 +473,9 @@ begin
       'D:\Vendor\Tooling\Bds\Alpha;D:\Vendor\Tooling\Bds\Beta;D:\Vendor\Tooling\Bds\Gamma' );
     Analysis.Analyse;
 
-    Vars := Analysis.AcceptedVariables;
+    Vars            := Analysis.AcceptedVariables;
     for I := Low( Vars ) to High( Vars ) do
-      Assert.AreNotEqual( 'BDS', Vars[I].Name,
+      Assert.AreNotEqual( 'BDS', Vars[ I ].Name,
         'shadowing an IDE built-in would break path resolution IDE-wide' );
   finally
     Reserved.Free;
@@ -486,20 +486,20 @@ end;
 
 procedure TTestPathCompactor.TestEntryCountPreserved;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Value: string;
-  Parts: TArray<string>;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Value             : string;
+  Parts             : TArray<string>;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.AddPathSet( 'Win64', lptSearchPath,
       'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
     Analysis.Analyse;
 
-    Value := Analysis.Sets[0].BuildResult;
-    Parts := Value.Split( [';'] );
+    Value           := Analysis.Sets[ 0 ].BuildResult;
+    Parts           := Value.Split( [ ';' ] );
     Assert.AreEqual( 3, Integer( Length( Parts ) ), 'no entry may be lost while rebuilding' );
   finally
     Analysis.Free;
@@ -518,13 +518,13 @@ end;
 
 procedure TTestPathCompactor.TestAlreadyMacroisedEntryNotLengthened;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Entries: TArray<TPathEntry>;
-  I: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Entries           : TArray<TPathEntry>;
+  I                 : Integer;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     // Every entry is already stored as $(BDS)\... — scoring in EXPANDED space
     // would rank the Studio directory top and rewrite all of them LONGER while
@@ -537,12 +537,12 @@ begin
     Assert.IsTrue( Analysis.TotalStoredAfter <= Analysis.TotalStoredBefore,
       'already-macroised entries must never be made longer' );
 
-    Entries := Analysis.Sets[0].Entries;
+    Entries         := Analysis.Sets[ 0 ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if Entries[I].NewRaw <> '' then
-        Assert.IsTrue( Length( Entries[I].NewRaw ) < Length( Entries[I].Raw ),
-          'a rewrite must be shorter than what it replaces: ' + Entries[I].Raw +
-          ' -> ' + Entries[I].NewRaw );
+      if Entries[ I ].NewRaw <> '' then
+        Assert.IsTrue( Length( Entries[ I ].NewRaw ) < Length( Entries[ I ].Raw ),
+          'a rewrite must be shorter than what it replaces: ' + Entries[ I ].Raw +
+          ' -> ' + Entries[ I ].NewRaw );
   finally
     Analysis.Free;
     Macros.Free;
@@ -551,14 +551,14 @@ end;
 
 procedure TTestPathCompactor.TestBuiltInMacroPreferredOverNewVariable;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
-  UsedBds: Boolean;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
+  UsedBds           : Boolean;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     // Stored as literals directly under the Studio directory, with no common
@@ -568,13 +568,13 @@ begin
       BdsDir + '\source;' + BdsDir + '\lib;' + BdsDir + '\include;' + BdsDir + '\bin' );
     Analysis.Analyse;
 
-    Vars := Analysis.AcceptedVariables;
-    UsedBds := False;
+    Vars            := Analysis.AcceptedVariables;
+    UsedBds         := False;
     for I := Low( Vars ) to High( Vars ) do
-      if SameText( Vars[I].Name, 'BDS' ) then
+      if SameText( Vars[ I ].Name, 'BDS' ) then
       begin
-        UsedBds := True;
-        Assert.IsTrue( Vars[I].PreExisting, 'a built-in must be flagged PreExisting' );
+        UsedBds     := True;
+        Assert.IsTrue( Vars[ I ].PreExisting, 'a built-in must be flagged PreExisting' );
       end;
 
     Assert.IsTrue( UsedBds, 'the existing $(BDS) built-in should have been used' );
@@ -586,21 +586,21 @@ end;
 
 procedure TTestPathCompactor.TestNamespacePrefixesRefused;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Raised: Boolean;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Raised            : Boolean;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     // Enforced in the core, not just omitted from the dialog: a stale config
     // must not be able to reach the compactor with this path type.
-    Raised := False;
+    Raised          := False;
     try
       Analysis.AddPathSet( 'Win64', lptNamespacePrefixes, 'Vcl;System;Winapi' );
     except
       on E: EPathCompactorError do
-        Raised := True;
+        Raised      := True;
     end;
     Assert.IsTrue( Raised,
       'the core must refuse Namespace Prefixes, not merely have the dialog hide it' );
@@ -612,14 +612,14 @@ end;
 
 procedure TTestPathCompactor.TestMacroTableNotModified;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Before: string;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Before            : string;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir, 'SUITE=D:\Vendor\Suite'] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir, 'SUITE=D:\Vendor\Suite' ] );
+  Analysis          := MakeAnalysis( Macros );
   try
-    Before := Macros.Text;
+    Before          := Macros.Text;
     Analysis.MinNetSaving := 10;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
       'D:\Vendor\Suite\Alpha;D:\Vendor\Suite\Beta;D:\Vendor\Suite\Gamma' );
@@ -636,13 +636,13 @@ end;
 
 procedure TTestPathCompactor.TestStoredLengthNeverIncreases;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Original: TArray<string>;
-  I: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Original          : TArray<string>;
+  I                 : Integer;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     // A deliberately mixed fixture: already-macroised entries alongside long
@@ -658,7 +658,7 @@ begin
 
     SetLength( Original, Analysis.Sets.Count );
     for I := 0 to Analysis.Sets.Count - 1 do
-      Original[I] := OriginalExpandedOf( Analysis.Sets[I] );
+      Original[ I ] := OriginalExpandedOf( Analysis.Sets[ I ] );
 
     AssertInvariants( Analysis, Macros, Original );
     Assert.IsTrue( Analysis.TotalStoredAfter < Analysis.TotalStoredBefore,
@@ -671,12 +671,12 @@ end;
 
 procedure TTestPathCompactor.TestDuplicateRemovalIsOptIn;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Parts: TArray<string>;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Parts             : TArray<string>;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     // RemoveDuplicates defaults to False: detection is always on, removal is not.
     Assert.IsFalse( Analysis.RemoveDuplicates, 'duplicate removal must default to off' );
@@ -686,7 +686,7 @@ begin
 
     Assert.AreEqual( 1, Analysis.DuplicateCount, 'the duplicate must still be reported' );
 
-    Parts := Analysis.Sets[0].BuildResult.Split( [';'] );
+    Parts           := Analysis.Sets[ 0 ].BuildResult.Split( [ ';' ] );
     Assert.AreEqual( 3, Integer( Length( Parts ) ),
       'nothing may be dropped while removal is off' );
   finally
@@ -697,13 +697,13 @@ end;
 
 procedure TTestPathCompactor.TestDeadMacroRemovableButDivergentIsNot;
 var
-  Macros, Divergent: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Entries: TArray<TPathEntry>;
+  Macros, Divergent : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Entries           : TArray<TPathEntry>;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
-  Divergent := TStringList.Create;
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
+  Divergent         := TStringList.Create;
   try
     // DUNITX is defined in the OTHER IDE bitness only, so the entry is live
     // there; NOPE is defined nowhere at all.
@@ -714,15 +714,15 @@ begin
     Analysis.AddPathSet( 'Win64', lptSearchPath, '$(DUNITX);$(NOPE)\Lib;D:\Real\Path' );
     Analysis.Analyse;
 
-    Entries := Analysis.Sets[0].Entries;
+    Entries         := Analysis.Sets[ 0 ].Entries;
 
-    Assert.IsTrue( Entries[0].DivergentMacro, '$(DUNITX) should be divergent' );
-    Assert.IsFalse( Entries[0].UndefinedMacro, 'a divergent macro is not dead' );
-    Assert.IsFalse( Entries[0].Drop,
+    Assert.IsTrue( Entries[ 0 ].DivergentMacro, '$(DUNITX) should be divergent' );
+    Assert.IsFalse( Entries[ 0 ].UndefinedMacro, 'a divergent macro is not dead' );
+    Assert.IsFalse( Entries[ 0 ].Drop,
       'a divergent entry must never be removed - it resolves in the other IDE' );
 
-    Assert.IsTrue( Entries[1].UndefinedMacro, '$(NOPE) resolves nowhere' );
-    Assert.IsTrue( Entries[1].Drop, 'a dead macro reference should be removable' );
+    Assert.IsTrue( Entries[ 1 ].UndefinedMacro, '$(NOPE) resolves nowhere' );
+    Assert.IsTrue( Entries[ 1 ].Drop, 'a dead macro reference should be removable' );
 
     Assert.AreEqual( 1, Analysis.DivergentMacroCount );
     Assert.AreEqual( 1, Analysis.UndefinedMacroCount );
@@ -736,12 +736,12 @@ end;
 
 procedure TTestPathCompactor.TestRevalidateRescuesResolvedMacro;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Rescued: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Rescued           : Integer;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.RemoveUndefinedMacros := True;
     Analysis.AddPathSet( 'Win64', lptSearchPath, '$(LATER)\Lib;D:\Real\Path' );
@@ -753,7 +753,7 @@ begin
     Macros.Add( 'LATER=D:\Now\Defined' );
     Analysis.SetMacros( Macros );
 
-    Rescued := Analysis.RevalidateDrops;
+    Rescued         := Analysis.RevalidateDrops;
     Assert.AreEqual( 1, Rescued, 'the entry should have been rescued' );
     Assert.AreEqual( 0, Analysis.DropCount, 'nothing should remain marked' );
   finally
@@ -813,14 +813,14 @@ end;
 
 procedure TTestPathCompactor.TestCollisionWidensRatherThanSuffixes;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
-  Suffixed: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
+  Suffixed          : Integer;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 5;
     // Two different libraries whose paths end identically. Naming from the tail
@@ -835,12 +835,12 @@ begin
       'D:\gllZylIdleTimer\packages\Florence\37.0\Zeta' );
     Analysis.Analyse;
 
-    Vars := Analysis.AcceptedVariables;
+    Vars            := Analysis.AcceptedVariables;
     Assert.IsTrue( Length( Vars ) >= 2, 'expected a variable for each library' );
 
-    Suffixed := 0;
+    Suffixed        := 0;
     for I := Low( Vars ) to High( Vars ) do
-      if EndsText( '_2', Vars[I].Name ) or EndsText( '_3', Vars[I].Name ) then
+      if EndsText( '_2', Vars[ I ].Name ) or EndsText( '_3', Vars[ I ].Name ) then
         Inc( Suffixed );
 
     Assert.AreEqual( 0, Suffixed,
@@ -849,7 +849,7 @@ begin
     // Every accepted name must still be unique.
     for I := Low( Vars ) to High( Vars ) do
       for var J := I + 1 to High( Vars ) do
-        Assert.AreNotEqual( Vars[I].Name, Vars[J].Name, 'names must be unique' );
+        Assert.AreNotEqual( Vars[ I ].Name, Vars[ J ].Name, 'names must be unique' );
   finally
     Analysis.Free;
     Macros.Free;
@@ -858,13 +858,13 @@ end;
 
 procedure TTestPathCompactor.TestDroppedEntriesDoNotVoteForVariables;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Vars: TArray<TVarCandidate>;
-  I: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Vars              : TArray<TVarCandidate>;
+  I                 : Integer;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     // Only ONE surviving entry sits under this prefix; the other two are exact
     // duplicates that hygiene will drop. Before hygiene ran ahead of candidate
@@ -882,9 +882,9 @@ begin
 
     Assert.AreEqual( 2, Analysis.DropCount, 'the two duplicates should be dropped' );
 
-    Vars := Analysis.AcceptedVariables;
+    Vars            := Analysis.AcceptedVariables;
     for I := Low( Vars ) to High( Vars ) do
-      Assert.IsFalse( ContainsText( Vars[I].Prefix, 'ComponentSuite' ),
+      Assert.IsFalse( ContainsText( Vars[ I ].Prefix, 'ComponentSuite' ),
         'a prefix used by only one surviving entry must not become a variable' );
   finally
     Analysis.Free;
@@ -894,13 +894,13 @@ end;
 
 procedure TTestPathCompactor.TestRoundTripInvariant;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Original: TArray<string>;
-  I: Integer;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Original          : TArray<string>;
+  I                 : Integer;
 begin
-  Macros := MakeMacros( ['BDS=' + BdsDir, 'SUITE=D:\Vendor\ComponentSuite\Delphi13\Lib'] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ 'BDS=' + BdsDir, 'SUITE=D:\Vendor\ComponentSuite\Delphi13\Lib' ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
@@ -911,7 +911,7 @@ begin
 
     SetLength( Original, Analysis.Sets.Count );
     for I := 0 to Analysis.Sets.Count - 1 do
-      Original[I] := OriginalExpandedOf( Analysis.Sets[I] );
+      Original[ I ] := OriginalExpandedOf( Analysis.Sets[ I ] );
 
     AssertInvariants( Analysis, Macros, Original );
   finally
@@ -922,26 +922,26 @@ end;
 
 procedure TTestPathCompactor.TestDisabledVariableIsNotUsed;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.MinNetSaving := 10;
     Analysis.AddPathSet( 'Win64', lptSearchPath,
       'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
     Analysis.Analyse;
-    var Vars := Analysis.AcceptedVariables;
+    var Vars        := Analysis.AcceptedVariables;
     Assert.IsTrue( Length( Vars ) > 0, 'the fixture must propose a variable' );
-    Assert.IsTrue( Pos( '$(' + Vars[0].Name + ')', Analysis.Sets[0].BuildResult ) > 0, 'precondition: variable used' );
+    Assert.IsTrue( Pos( '$(' + Vars[ 0 ].Name + ')', Analysis.Sets[ 0 ].BuildResult ) > 0, 'precondition: variable used' );
 
     Analysis.SetVariableEnabled( 0, False );
 
-    Assert.AreEqual( 0, Pos( '$(' + Vars[0].Name + ')', Analysis.Sets[0].BuildResult ),
+    Assert.AreEqual( 0, Pos( '$(' + Vars[ 0 ].Name + ')', Analysis.Sets[ 0 ].BuildResult ),
       'an unticked variable must not appear in the value written' );
     Assert.AreEqual( 'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma',
-      Analysis.Sets[0].BuildResult, 'with its only variable unticked the value is unchanged' );
+      Analysis.Sets[ 0 ].BuildResult, 'with its only variable unticked the value is unchanged' );
   finally
     Analysis.Free;
     Macros.Free;
@@ -950,12 +950,12 @@ end;
 
 procedure TTestPathCompactor.TestDivergentNameNeverTaken;
 var
-  Macros, Divergent: TStringList;
-  Analysis: TPathCompactorAnalysis;
+  Macros, Divergent : TStringList;
+  Analysis          : TPathCompactorAnalysis;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
-  Divergent := TStringList.Create;
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
+  Divergent         := TStringList.Create;
   try
     Divergent.Add( 'BDS' );
     Analysis.SetDivergentNames( Divergent );
@@ -965,7 +965,7 @@ begin
       'D:\Vendor\Tooling\Bds\Alpha;D:\Vendor\Tooling\Bds\Beta;D:\Vendor\Tooling\Bds\Gamma' );
     Analysis.Analyse;
 
-    var Vars := Analysis.AcceptedVariables;
+    var Vars        := Analysis.AcceptedVariables;
     Assert.IsTrue( Length( Vars ) > 0, 'the fixture must propose a variable' );
     for var Candidate in Vars do
       Assert.IsFalse( SameText( 'BDS', Candidate.Name ), 'the other IDE''s variable would be overwritten' );
@@ -978,22 +978,22 @@ end;
 
 procedure TTestPathCompactor.TestReuseRestrictedToReusableNames;
 var
-  Macros, Reusable: TStringList;
-  Analysis: TPathCompactorAnalysis;
-  Value: string;
+  Macros, Reusable  : TStringList;
+  Analysis          : TPathCompactorAnalysis;
+  Value             : string;
 begin
-  Macros := MakeMacros( ['MINEONLY=D:\Vendor\Suite\Lib'] );
-  Reusable := TStringList.Create;
+  Macros            := MakeMacros( [ 'MINEONLY=D:\Vendor\Suite\Lib' ] );
+  Reusable          := TStringList.Create;
   try
     // Restricted, MINEONLY not listed: it must not be reused.
-    Analysis := MakeAnalysis( Macros );
+    Analysis        := MakeAnalysis( Macros );
     try
       Analysis.SetReusableNames( Reusable );
       Analysis.MinNetSaving := 10;
       Analysis.AddPathSet( 'Win64', lptSearchPath,
         'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
       Analysis.Analyse;
-      Value := Analysis.Sets[0].BuildResult;
+      Value         := Analysis.Sets[ 0 ].BuildResult;
       Assert.AreEqual( 0, Pos( '$(MINEONLY)', Value ), 'a variable not reusable everywhere was reused' );
       for var Candidate in Analysis.AcceptedVariables do
         Assert.IsFalse( SameText( 'MINEONLY', Candidate.Name ), 'the existing name must not be redefined either' );
@@ -1003,14 +1003,14 @@ begin
 
     // Listed: it is reused.
     Reusable.Add( 'MINEONLY' );
-    Analysis := MakeAnalysis( Macros );
+    Analysis        := MakeAnalysis( Macros );
     try
       Analysis.SetReusableNames( Reusable );
       Analysis.MinNetSaving := 10;
       Analysis.AddPathSet( 'Win64', lptSearchPath,
         'D:\Vendor\Suite\Lib\Alpha;D:\Vendor\Suite\Lib\Beta;D:\Vendor\Suite\Lib\Gamma' );
       Analysis.Analyse;
-      Assert.IsTrue( Pos( '$(MINEONLY)', Analysis.Sets[0].BuildResult ) > 0, 'a reusable variable was not reused' );
+      Assert.IsTrue( Pos( '$(MINEONLY)', Analysis.Sets[ 0 ].BuildResult ) > 0, 'a reusable variable was not reused' );
     finally
       Analysis.Free;
     end;
@@ -1022,18 +1022,18 @@ end;
 
 procedure TTestPathCompactor.TestRelativeEntryLeftAlone;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
 begin
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.CheckExistence := True;
     Analysis.RemoveMissing := True;
     Analysis.RemoveDuplicates := True;
     Analysis.AddPathSet( 'Win64', lptSearchPath, '..\Lib;..\Lib;Source' );
     Analysis.Analyse;
-    Assert.AreEqual( '..\Lib;..\Lib;Source', Analysis.Sets[0].BuildResult,
+    Assert.AreEqual( '..\Lib;..\Lib;Source', Analysis.Sets[ 0 ].BuildResult,
       'relative entries must survive exactly as stored' );
     Assert.AreEqual( 0, Analysis.DropCount, 'no relative entry may be marked for removal' );
   finally
@@ -1044,20 +1044,20 @@ end;
 
 procedure TTestPathCompactor.TestRemoveMissingDropsOnlyAbsentDirectories;
 var
-  Macros: TStringList;
-  Analysis: TPathCompactorAnalysis;
+  Macros            : TStringList;
+  Analysis          : TPathCompactorAnalysis;
 begin
-  var Existing := ExcludeTrailingPathDelimiter( TPath.GetTempPath );
-  var Missing := TPath.Combine( Existing, 'DDevExt-missing-' + TGUID.NewGuid.ToString );
-  Macros := MakeMacros( [] );
-  Analysis := MakeAnalysis( Macros );
+  var Existing      := ExcludeTrailingPathDelimiter( TPath.GetTempPath );
+  var Missing       := TPath.Combine( Existing, 'DDevExt-missing-' + TGUID.NewGuid.ToString );
+  Macros            := MakeMacros( [ ] );
+  Analysis          := MakeAnalysis( Macros );
   try
     Analysis.CheckExistence := True;
     Analysis.RemoveMissing := True;
     Analysis.AddPathSet( 'Win64', lptSearchPath, Existing + ';' + Missing );
     Analysis.Analyse;
     Assert.AreEqual( 1, Analysis.DropCount, 'exactly the missing directory is marked' );
-    Assert.AreEqual( Existing, Analysis.Sets[0].BuildResult, 'the existing directory is kept, the missing one dropped' );
+    Assert.AreEqual( Existing, Analysis.Sets[ 0 ].BuildResult, 'the existing directory is kept, the missing one dropped' );
   finally
     Analysis.Free;
     Macros.Free;
@@ -1068,3 +1068,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestPathCompactor );
 
 end.
+

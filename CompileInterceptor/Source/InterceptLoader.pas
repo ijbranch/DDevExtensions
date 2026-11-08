@@ -42,33 +42,33 @@ implementation
 
 type
   /// <summary>Stand-in services returned after the interceptor DLL has shut down: registers nothing, ignores the rest.</summary>
-  TShutDownInterceptorServices = class(TInterfacedObject, ICompileInterceptorServices)
+  TShutDownInterceptorServices = class( TInterfacedObject, ICompileInterceptorServices )
   public
     /// <summary>Registers nothing.</summary>
     /// <param name="Interceptor">Ignored.</param>
     /// <returns>-1 (not registered).</returns>
-    function RegisterInterceptor(Interceptor: ICompileInterceptor): Integer; stdcall;
+    function RegisterInterceptor( Interceptor: ICompileInterceptor ): Integer; stdcall;
     /// <summary>Does nothing.</summary>
     /// <param name="Id">Ignored.</param>
-    procedure UnregisterInterceptor(Id: Integer); stdcall;
+    procedure UnregisterInterceptor( Id: Integer ); stdcall;
     /// <summary>Supplies no content.</summary>
     /// <param name="Filename">Ignored.</param>
     /// <returns>nil.</returns>
-    function GetFileContent(Filename: PWideChar): IVirtualStream; stdcall;
+    function GetFileContent( Filename: PWideChar ): IVirtualStream; stdcall;
   end;
 
-function TShutDownInterceptorServices.RegisterInterceptor(Interceptor: ICompileInterceptor): Integer;
+function TShutDownInterceptorServices.RegisterInterceptor( Interceptor: ICompileInterceptor ): Integer;
 begin
-  Result := -1;
+  Result            := -1;
 end;
 
-procedure TShutDownInterceptorServices.UnregisterInterceptor(Id: Integer);
+procedure TShutDownInterceptorServices.UnregisterInterceptor( Id: Integer );
 begin
 end;
 
-function TShutDownInterceptorServices.GetFileContent(Filename: PWideChar): IVirtualStream;
+function TShutDownInterceptorServices.GetFileContent( Filename: PWideChar ): IVirtualStream;
 begin
-  Result := nil;
+  Result            := nil;
 end;
 
 var
@@ -77,29 +77,29 @@ var
 
 function GetCompileInterceptorServices: ICompileInterceptorServices;
 const
-  {$IFDEF WIN64}
+{$IFDEF WIN64}
   InterceptorDllName = 'CompileInterceptorWx64.dll';
-  {$ELSE}
+{$ELSE}
   InterceptorDllName = 'CompileInterceptorW.dll';
-  {$ENDIF}
+{$ENDIF}
 begin
-  if not Assigned(_GetCompileInterceptorServices) then
+  if not Assigned( _GetCompileInterceptorServices ) then
   begin
-    CompilerInterceptorLib := SafeLoadLibrary(PChar(ExtractFilePath(GetModuleName(HInstance)) + InterceptorDllName));
+    CompilerInterceptorLib := SafeLoadLibrary( PChar( ExtractFilePath( GetModuleName( HInstance ) ) + InterceptorDllName ) );
     if CompilerInterceptorLib = 0 then
-      CompilerInterceptorLib := SafeLoadLibrary(InterceptorDllName); // search all PATHs
+      CompilerInterceptorLib := SafeLoadLibrary( InterceptorDllName ); // search all PATHs
     if CompilerInterceptorLib <> 0 then
-      _GetCompileInterceptorServices := GetProcAddress(CompilerInterceptorLib, 'GetCompileInterceptorServices');
+      _GetCompileInterceptorServices := GetProcAddress( CompilerInterceptorLib, 'GetCompileInterceptorServices' );
   end;
-  if Assigned(_GetCompileInterceptorServices) then
+  if Assigned( _GetCompileInterceptorServices ) then
   begin
-    Result := _GetCompileInterceptorServices();
+    Result          := _GetCompileInterceptorServices( );
     // nil once the DLL has finalised its interceptor: hand back a stand-in that ignores every call
     if Result = nil then
-      Result := TShutDownInterceptorServices.Create;
+      Result        := TShutDownInterceptorServices.Create;
   end
   else
-    raise Exception.CreateFmt('Cannot find %s', [InterceptorDllName]);
+    raise Exception.CreateFmt( 'Cannot find %s', [ InterceptorDllName ] );
 end;
 
 procedure UnloadCompilerInterceptorServices;
@@ -114,5 +114,5 @@ begin
   end;
 end;
 
-
 end.
+

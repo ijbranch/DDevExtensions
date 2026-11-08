@@ -157,11 +157,11 @@ uses
 function TPathBackup.DisplayTime: string;
 begin
   if ( TimestampText <> '' ) then
-    Result := TimestampText
+    Result          := TimestampText
   else if ( Timestamp = 0 ) then
-    Result := '(unknown)'
+    Result          := '(unknown)'
   else
-    Result := DateTimeToStr( Timestamp );
+    Result          := DateTimeToStr( Timestamp );
 end;
 
 { TLibraryPathBackupManager }
@@ -169,20 +169,20 @@ end;
 constructor TLibraryPathBackupManager.Create( const ABackupFilename, ALegacyFilename: string );
 begin
   inherited Create;
-  FBackupFilename := ABackupFilename;
-  FLegacyFilename := ALegacyFilename;
+  FBackupFilename   := ABackupFilename;
+  FLegacyFilename   := ALegacyFilename;
   FMaxBackupsPerType := 10;
 end;
 
 function TLibraryPathBackupManager.AcquireLock: THandle;
 begin
   // One mutex per history file, visible to every IDE in this session (32-bit and 64-bit).
-  var Name := 'Local\DDevExtensions.LibraryPathBackups.' +
+  var Name          := 'Local\DDevExtensions.LibraryPathBackups.' +
     THashMD5.GetHashString( AnsiLowerCase( ExpandFileName( FBackupFilename ) ) );
-  Result := CreateMutex( nil, False, PChar( Name ) );
+  Result            := CreateMutex( nil, False, PChar( Name ) );
   if ( Result = 0 ) then
     raise ELibraryPathBackupError.CreateFmt( 'Cannot create the backup-history lock: %s',
-      [SysErrorMessage( GetLastError )] );
+      [ SysErrorMessage( GetLastError ) ] );
   case WaitForSingleObject( Result, 10000 ) of
     WAIT_OBJECT_0, WAIT_ABANDONED:
       ;
@@ -205,19 +205,19 @@ end;
 /// <exception cref="Exception">The file is not well-formed XML.</exception>
 procedure ReadHistoryFile( const AFileName: string; AList: TList<TPathBackup> );
 begin
-  var Doc := LoadXmlDocument( AFileName );
-  var Root := Doc.DocumentElement;
+  var Doc           := LoadXmlDocument( AFileName );
+  var Root          := Doc.DocumentElement;
   if ( Root = nil ) then
     raise ELibraryPathBackupError.Create( 'The file has no root element.' );
 
   for var I := 0 to Root.ChildNodes.Count - 1 do
   begin
-    var Node := Root.ChildNodes[I];
+    var Node        := Root.ChildNodes[ I ];
     if ( Node.NodeName <> 'Backup' ) then
       Continue;
 
-    var Backup := Default( TPathBackup );
-    var PathTypeStr := VarToStr( Node.Attributes['PathType'] );
+    var Backup      := Default( TPathBackup );
+    var PathTypeStr := VarToStr( Node.Attributes[ 'PathType' ] );
     Backup.PathType := lptSearchPath;
     for var PathType := Low( TLibraryPathType ) to High( TLibraryPathType ) do
       if SameText( PathType.ToRegistryValueName, PathTypeStr ) then
@@ -225,8 +225,8 @@ begin
         Backup.PathType := PathType;
         Break;
       end;
-    Backup.Platform := VarToStr( Node.Attributes['Platform'] );
-    var TimeText := VarToStr( Node.Attributes['Timestamp'] );
+    Backup.Platform := VarToStr( Node.Attributes[ 'Platform' ] );
+    var TimeText    := VarToStr( Node.Attributes[ 'Timestamp' ] );
     // Only ISO 8601 is interpreted. Text an older build wrote in its locale is kept as it
     // is: parsing it in today's locale could swap day and month without any sign.
     if not TryISO8601ToDate( TimeText, Backup.Timestamp, False ) then
@@ -234,15 +234,15 @@ begin
       Backup.Timestamp := 0;
       Backup.TimestampText := TimeText;
     end;
-    Backup.Description := VarToStr( Node.Attributes['Description'] );
-    Backup.Paths := VarToStr( Node.NodeValue );
-    Backup.Pinned := SameText( VarToStr( Node.Attributes['Pinned'] ), 'true' ) or
+    Backup.Description := VarToStr( Node.Attributes[ 'Description' ] );
+    Backup.Paths    := VarToStr( Node.NodeValue );
+    Backup.Pinned   := SameText( VarToStr( Node.Attributes[ 'Pinned' ] ), 'true' ) or
       Backup.Description.StartsWith( CompactionBackupPrefix, True );
-    Backup.Id := VarToStr( Node.Attributes['Id'] );
+    Backup.Id       := VarToStr( Node.Attributes[ 'Id' ] );
     if ( Backup.Id = '' ) then
       // An entry from before identifiers existed: derive a stable one, so it can be
       // found again after the file is re-read.
-      Backup.Id := 'legacy-' + THashMD5.GetHashString( PathTypeStr + '|' + Backup.Platform + '|' + TimeText + '|' +
+      Backup.Id     := 'legacy-' + THashMD5.GetHashString( PathTypeStr + '|' + Backup.Platform + '|' + TimeText + '|' +
         Backup.Description + '|' + Backup.Paths );
     AList.Add( Backup );
   end;
@@ -256,16 +256,16 @@ begin
   begin
     // First use by this build: start from the older builds' history, read only.
     if ( FLegacyFilename <> '' ) and FileExists( FLegacyFilename ) then
-    try
-      ReadHistoryFile( FLegacyFilename, AList );
-    except
-      on E: Exception do
-      begin
-        AList.Clear;
-        FNotice := Format( 'The older library-path backup history "%s" could not be read (%s), so it was not ' +
-          'imported. The file has been left as it is.', [FLegacyFilename, E.Message] );
+      try
+        ReadHistoryFile( FLegacyFilename, AList );
+      except
+        on E: Exception do
+        begin
+          AList.Clear;
+          FNotice   := Format( 'The older library-path backup history "%s" could not be read (%s), so it was not ' +
+            'imported. The file has been left as it is.', [ FLegacyFilename, E.Message ] );
+        end;
       end;
-    end;
     Exit;
   end;
 
@@ -275,13 +275,13 @@ begin
     on E: Exception do
     begin
       // Never overwrite a history we cannot read: set it aside and say so.
-      var Aside := FBackupFilename + '.corrupt-' + FormatDateTime( 'yyyymmdd-hhnnss', Now );
+      var Aside     := FBackupFilename + '.corrupt-' + FormatDateTime( 'yyyymmdd-hhnnss', Now );
       if RenameFile( FBackupFilename, Aside ) then
-        FNotice := Format( 'The library-path backup history could not be read (%s). It has been moved to "%s" ' +
-          'and a new history started.', [E.Message, Aside] )
+        FNotice     := Format( 'The library-path backup history could not be read (%s). It has been moved to "%s" ' +
+          'and a new history started.', [ E.Message, Aside ] )
       else
         raise ELibraryPathBackupError.CreateFmt( 'The library-path backup history "%s" could not be read (%s) ' +
-          'and could not be set aside.', [FBackupFilename, E.Message] );
+          'and could not be set aside.', [ FBackupFilename, E.Message ] );
       AList.Clear;
     end;
   end;
@@ -291,53 +291,53 @@ procedure TLibraryPathBackupManager.SaveFrom( AList: TList<TPathBackup> );
 begin
   ForceDirectories( ExtractFileDir( FBackupFilename ) );
 
-  var Doc := NewXmlDocument;
-  var Root := Doc.CreateElement( 'LibraryPathBackups', '' );
+  var Doc           := NewXmlDocument;
+  var Root          := Doc.CreateElement( 'LibraryPathBackups', '' );
   Doc.DocumentElement := Root;
   for var Backup in AList do
   begin
     var Node := Root.AddChild( 'Backup' );
-    Node.Attributes['Id'] := Backup.Id;
-    Node.Attributes['PathType'] := Backup.PathType.ToRegistryValueName;
-    Node.Attributes['Platform'] := Backup.Platform;
+    Node.Attributes[ 'Id' ] := Backup.Id;
+    Node.Attributes[ 'PathType' ] := Backup.PathType.ToRegistryValueName;
+    Node.Attributes[ 'Platform' ] := Backup.Platform;
     if ( Backup.TimestampText <> '' ) then
-      Node.Attributes['Timestamp'] := Backup.TimestampText // an older entry's time, kept exactly as written
+      Node.Attributes[ 'Timestamp' ] := Backup.TimestampText // an older entry's time, kept exactly as written
     else if ( Backup.Timestamp <> 0 ) then
-      Node.Attributes['Timestamp'] := DateToISO8601( Backup.Timestamp, False );
-    Node.Attributes['Description'] := Backup.Description;
+      Node.Attributes[ 'Timestamp' ] := DateToISO8601( Backup.Timestamp, False );
+    Node.Attributes[ 'Description' ] := Backup.Description;
     if Backup.Pinned then
-      Node.Attributes['Pinned'] := 'true';
-    Node.NodeValue := Backup.Paths;
+      Node.Attributes[ 'Pinned' ] := 'true';
+    Node.NodeValue  := Backup.Paths;
   end;
-  Doc.Options := Doc.Options + [doNodeAutoIndent];
+  Doc.Options       := Doc.Options + [ doNodeAutoIndent ];
 
-  var TempName := FBackupFilename + '.tmp';
+  var TempName      := FBackupFilename + '.tmp';
   try
     Doc.SaveToFile( TempName );
   except
     on E: Exception do
-      raise ELibraryPathBackupError.CreateFmt( 'The backup history could not be written: %s', [E.Message] );
+      raise ELibraryPathBackupError.CreateFmt( 'The backup history could not be written: %s', [ E.Message ] );
   end;
   if not MoveFileEx( PChar( TempName ), PChar( FBackupFilename ), MOVEFILE_REPLACE_EXISTING or MOVEFILE_WRITE_THROUGH ) then
   begin
-    var Error := GetLastError;
+    var Error       := GetLastError;
     System.SysUtils.DeleteFile( TempName );
-    raise ELibraryPathBackupError.CreateFmt( 'The backup history could not be replaced: %s', [SysErrorMessage( Error )] );
+    raise ELibraryPathBackupError.CreateFmt( 'The backup history could not be replaced: %s', [ SysErrorMessage( Error ) ] );
   end;
 end;
 
 procedure TLibraryPathBackupManager.TrimSet( AList: TList<TPathBackup>; APathType: TLibraryPathType;
   const APlatform: string );
 begin
-  var Unpinned := 0;
+  var Unpinned      := 0;
   for var Backup in AList do
     if ( Backup.PathType = APathType ) and SameText( Backup.Platform, APlatform ) and not Backup.Pinned then
       Inc( Unpinned );
 
   // Oldest first: the list is in file order, which is creation order.
-  var I := 0;
+  var I             := 0;
   while ( Unpinned > FMaxBackupsPerType ) and ( I < AList.Count ) do
-    if ( AList[I].PathType = APathType ) and SameText( AList[I].Platform, APlatform ) and not AList[I].Pinned then
+    if ( AList[ I ].PathType = APathType ) and SameText( AList[ I ].Platform, APlatform ) and not AList[ I ].Pinned then
     begin
       AList.Delete( I );
       Dec( Unpinned );
@@ -349,22 +349,22 @@ end;
 function TLibraryPathBackupManager.CreateBackup( PathType: TLibraryPathType; const APlatform, APaths: string;
   const ADescription: string; APinned: Boolean ): Boolean;
 begin
-  Result := False;
-  FLastError := '';
+  Result            := False;
+  FLastError        := '';
   if ( APaths = '' ) then
   begin
-    FLastError := 'There is nothing to back up.';
+    FLastError      := 'There is nothing to back up.';
     Exit;
   end;
 
   try
-    var Mutex := AcquireLock;
+    var Mutex       := AcquireLock;
     try
-      var List := TList<TPathBackup>.Create;
+      var List      := TList<TPathBackup>.Create;
       try
         LoadInto( List );
-        var Backup := Default( TPathBackup );
-        Backup.Id := TGUID.NewGuid.ToString;
+        var Backup  := Default( TPathBackup );
+        Backup.Id   := TGUID.NewGuid.ToString;
         Backup.PathType := PathType;
         Backup.Platform := APlatform;
         Backup.Timestamp := Now;
@@ -374,7 +374,7 @@ begin
         List.Add( Backup );
         TrimSet( List, PathType, APlatform );
         SaveFrom( List );
-        Result := True;
+        Result      := True;
       finally
         List.Free;
       end;
@@ -383,21 +383,21 @@ begin
     end;
   except
     on E: Exception do
-      FLastError := E.Message;
+      FLastError    := E.Message;
   end;
 end;
 
 function TLibraryPathBackupManager.GetAllBackups: TArray<TPathBackup>;
 begin
-  var List := TList<TPathBackup>.Create;
+  var List          := TList<TPathBackup>.Create;
   try
-    var Mutex := AcquireLock;
+    var Mutex       := AcquireLock;
     try
       LoadInto( List );
     finally
       ReleaseLock( Mutex );
     end;
-    Result := List.ToArray;
+    Result          := List.ToArray;
   finally
     List.Free;
   end;
@@ -405,12 +405,12 @@ end;
 
 function TLibraryPathBackupManager.GetBackups( PathType: TLibraryPathType; const APlatform: string ): TArray<TPathBackup>;
 begin
-  var List := TList<TPathBackup>.Create;
+  var List          := TList<TPathBackup>.Create;
   try
     for var Backup in GetAllBackups do
       if ( Backup.PathType = PathType ) and SameText( Backup.Platform, APlatform ) then
         List.Add( Backup );
-    Result := List.ToArray;
+    Result          := List.ToArray;
   finally
     List.Free;
   end;
@@ -418,22 +418,22 @@ end;
 
 function TLibraryPathBackupManager.DeleteBackup( const AId: string ): Boolean;
 begin
-  Result := False;
-  FLastError := '';
+  Result            := False;
+  FLastError        := '';
   try
-    var Mutex := AcquireLock;
+    var Mutex       := AcquireLock;
     try
-      var List := TList<TPathBackup>.Create;
+      var List      := TList<TPathBackup>.Create;
       try
         LoadInto( List );
         for var I := 0 to List.Count - 1 do
-          if ( List[I].Id = AId ) then
+          if ( List[ I ].Id = AId ) then
           begin
             List.Delete( I );
             SaveFrom( List );
             Exit( True );
           end;
-        FLastError := 'The backup no longer exists.';
+        FLastError  := 'The backup no longer exists.';
       finally
         List.Free;
       end;
@@ -442,14 +442,15 @@ begin
     end;
   except
     on E: Exception do
-      FLastError := E.Message;
+      FLastError    := E.Message;
   end;
 end;
 
 function TLibraryPathBackupManager.TakeNotice: string;
 begin
-  Result := FNotice;
-  FNotice := '';
+  Result            := FNotice;
+  FNotice           := '';
 end;
 
 end.
+

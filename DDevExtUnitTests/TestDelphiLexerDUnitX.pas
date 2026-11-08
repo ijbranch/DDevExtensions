@@ -21,92 +21,92 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the Delphi lexer's token kinds and positions.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDelphiLexer = class
   public
     /// <summary>
     /// Proves a routine header splits into keyword, identifier and semicolon, so the
     /// analysers that look for <c>tkI_procedure</c> followed by a name can find one.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestProcedureTokens;
     /// <summary>
     /// Proves a reserved word is classified as its keyword kind and an ordinary name as
     /// <c>tkIdent</c>; the analysers would otherwise mistake keywords for symbols.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestKeywordVsIdentifier;
     /// <summary>
     /// Proves decimal integers, floats and <c>$</c>-prefixed hex literals each lex as a
     /// single token of the right numeric kind (the magic-number analyser keys on them).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestNumericLiterals;
     /// <summary>Proves a quoted literal containing a space is one <c>tkString</c> token, not split at the space.</summary>
-    [Test]
+    [ Test ]
     procedure TestStringLiteral;
     /// <summary>
     /// Proves the two-character operators <c>:=</c>, <c>&lt;&gt;</c>, <c>&lt;=</c>,
     /// <c>&gt;=</c> and <c>..</c> each lex as one token, not as two single-character ones.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestOperators;
     /// <summary>
     /// Proves <c>[</c> and <c>]</c> bracket the inner index expression as their own
     /// tokens; the Code Quality analyser's bracket-depth exemption for array-index
     /// literals (v3.19.9) depends on it.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestArrayIndexBrackets;
     /// <summary>Proves all three comment styles (<c>//</c>, braces, parenthesis-star) lex as a single <c>tkComment</c>.</summary>
-    [Test]
+    [ Test ]
     procedure TestComments;
     /// <summary>Proves a brace beginning with <c>$</c> is a <c>tkDirective</c>, not a comment, so the preprocessor sees it.</summary>
-    [Test]
+    [ Test ]
     procedure TestDirective;
     /// <summary>
     /// Proves the position contract: the first token is Line 0, Column 1, and a token
     /// at the start of the second source line is Line 1, Column 1.  Analyser navigation
     /// adds one to <c>Line</c>; an off-by-one here lands every jump on the wrong line.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestLineIsZeroBasedColumnOneBased;
     /// <summary>
     /// Proves a Delphi 12 multi-line string (<c>'''</c> to <c>'''</c>, including the five-quote
     /// form) is one <c>tkString</c>, so the keywords, braces and apostrophes inside it are not
     /// lexed as code, and that the next token's line accounts for the string's lines.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestMultilineString;
     /// <summary>
     /// Proves an <c>&amp;</c>-escaped reserved word (<c>&amp;End</c>, <c>&amp;Type</c>) is one
     /// <c>tkIdent</c>; it used to lex as <c>&amp;</c> plus the keyword, so an analyser counting
     /// begin/end saw a phantom <c>end</c>.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestEscapedIdentifier;
     /// <summary>Proves binary literals (<c>%1010</c>) and digit separators (<c>1_000</c>, <c>$FF_FF</c>) are single <c>tkInt</c> tokens.</summary>
-    [Test]
+    [ Test ]
     procedure TestBinaryLiteralAndDigitSeparators;
     /// <summary>
     /// Proves malformed UTF-8 (a lead byte with its continuation bytes missing, at the end of the
     /// text and mid-text) lexes to a finite token stream without reading past the text.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestTruncatedUtf8;
     /// <summary>
     /// Proves the file reader decodes a UTF-16 file with a BOM to the same text (it used to read
     /// twice the file's length as characters) and a BOM-less UTF-8 file as UTF-8, not ANSI - even when
     /// a read limit cuts a multi-byte character in half at the end of the block.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestFileReaderEncodings;
     /// <summary>
     /// Proves <c>NextTokenNoComment</c> skips comments and other directives but stops at an include
     /// directive (<c>{$I file}</c>, <c>{$INCLUDE file}</c>), and not at the <c>{$I+}</c> switch.  The
     /// test used to compare the arguments the wrong way round, so it never stopped.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestNextTokenNoCommentStopsAtInclude;
   end;
 
@@ -120,9 +120,9 @@ uses
 /// <returns>The kinds of every token the lexer produced, in source order.</returns>
 function LexKinds( const ASource: string ): TArray<TTokenKind>;
 begin
-  var oList := TList<TTokenKind>.Create;
+  var oList         := TList<TTokenKind>.Create;
   try
-    var oLexer := TDelphiLexer.Create( 'test.pas', UTF8String( ASource ) );
+    var oLexer      := TDelphiLexer.Create( 'test.pas', UTF8String( ASource ) );
     try
       var oToken: TToken;
       while oLexer.NextToken( oToken ) do oList.Add( oToken.Kind );
@@ -130,7 +130,7 @@ begin
       oLexer.Free;
     end;
 
-    Result := oList.ToArray;
+    Result          := oList.ToArray;
   finally
     oList.Free;
   end;
@@ -141,12 +141,12 @@ end;
 /// <returns>The kind names joined with a comma and a space; empty for no kinds.</returns>
 function KindsText( const AKinds: array of TTokenKind ): string;
 begin
-  Result := '';
+  Result            := '';
   for var eKind in AKinds do
   begin
     if Result <> '' then
-      Result := Result + ', ';
-    Result := Result + TokenKindToString( eKind );
+      Result        := Result + ', ';
+    Result          := Result + TokenKindToString( eKind );
   end;
 end;
 
@@ -165,7 +165,7 @@ end;
 /// <returns>The first token of kind AKind, or nil when the source runs out first.</returns>
 function FirstTokenOfKind( ALexer: TDelphiLexer; AKind: TTokenKind ): TToken;
 begin
-  Result := nil;
+  Result            := nil;
 
   var oToken: TToken;
   while ALexer.NextToken( oToken ) do
@@ -226,14 +226,14 @@ end;
 
 procedure TTestDelphiLexer.TestLineIsZeroBasedColumnOneBased;
 begin
-  var oLexer := TDelphiLexer.Create( 'test.pas', UTF8String( 'unit X;'#13#10'procedure Foo;' ) );
+  var oLexer        := TDelphiLexer.Create( 'test.pas', UTF8String( 'unit X;'#13#10'procedure Foo;' ) );
   try
     var oToken: TToken;
     Assert.IsTrue( oLexer.NextToken( oToken ), 'reads the first token' );
     Assert.AreEqual<Integer>( 0, oToken.Line, 'first line is 0-based' );
     Assert.AreEqual<Integer>( 1, oToken.Column, 'first column is 1-based' );
 
-    var oProcToken := FirstTokenOfKind( oLexer, tkI_procedure );
+    var oProcToken  := FirstTokenOfKind( oLexer, tkI_procedure );
     Assert.IsNotNull( oProcToken, 'finds the procedure keyword' );
     Assert.AreEqual<Integer>( 1, oProcToken.Line, 'second source line reports Line 1' );
     Assert.AreEqual<Integer>( 1, oProcToken.Column, 'procedure starts at column 1' );
@@ -258,10 +258,10 @@ begin
     '  '''''''''';',
     [ tkIdent, tkAssign, tkString, tkSemicolon ], 'five-quote multi-line string is one token' );
 
-  var oLexer := TDelphiLexer.Create( 'test.pas', UTF8String( 'S := '''''''#13#10'  a'#13#10'  '''''';'#13#10'X' ) );
+  var oLexer        := TDelphiLexer.Create( 'test.pas', UTF8String( 'S := '''''''#13#10'  a'#13#10'  '''''';'#13#10'X' ) );
   try
     Assert.IsNotNull( FirstTokenOfKind( oLexer, tkIdent ), 'finds S' );
-    var oToken := FirstTokenOfKind( oLexer, tkIdent );   // X
+    var oToken      := FirstTokenOfKind( oLexer, tkIdent ); // X
     Assert.IsNotNull( oToken, 'finds X after the string' );
     Assert.AreEqual( 'X', oToken.Value, 'the token after the string is X' );
     Assert.AreEqual<Integer>( 3, oToken.Line, 'X is on the fourth line (0-based 3)' );
@@ -301,9 +301,9 @@ procedure TTestDelphiLexer.TestTruncatedUtf8;
 begin
   for var sText in [ RawUtf8( [ $41, $20, $E4 ] ), RawUtf8( [ $41, $20, $E4, $B8 ] ), RawUtf8( [ $41, $20, $F0, $9F ] ) ] do
   begin
-    var oLexer := TDelphiLexer.Create( 'test.pas', sText );
+    var oLexer      := TDelphiLexer.Create( 'test.pas', sText );
     try
-      var iCount := 0;
+      var iCount    := 0;
       var oToken: TToken;
       while oLexer.NextToken( oToken ) and ( iCount < 100 ) do
       begin
@@ -316,10 +316,10 @@ begin
     end;
   end;
 
-  var oLexer := TDelphiLexer.Create( 'test.pas', RawUtf8( [ $41, $20, $E4, $20, $42 ] ) );
+  var oLexer        := TDelphiLexer.Create( 'test.pas', RawUtf8( [ $41, $20, $E4, $20, $42 ] ) );
   try
     Assert.IsNotNull( FirstTokenOfKind( oLexer, tkIdent ), 'A is read' );
-    var oB := FirstTokenOfKind( oLexer, tkIdent );
+    var oB          := FirstTokenOfKind( oLexer, tkIdent );
     Assert.IsNotNull( oB, 'B after the stray lead byte is read' );
     Assert.AreEqual( 'B', oB.Value, 'the stray byte does not swallow B' );
   finally
@@ -329,17 +329,17 @@ end;
 
 procedure TTestDelphiLexer.TestFileReaderEncodings;
 begin
-  var sDir := IncludeTrailingPathDelimiter( TPath.GetTempPath ) + 'DDevExtLexerTest' + IntToStr( GetCurrentProcessId );
+  var sDir          := IncludeTrailingPathDelimiter( TPath.GetTempPath ) + 'DDevExtLexerTest' + IntToStr( GetCurrentProcessId );
   ForceDirectories( sDir );
   try
-    var sUtf16 := sDir + '\utf16.pas';
-    TFile.WriteAllText( sUtf16, 'unit Größe;', TEncoding.Unicode );   // with BOM
+    var sUtf16      := sDir + '\utf16.pas';
+    TFile.WriteAllText( sUtf16, 'unit Größe;', TEncoding.Unicode ); // with BOM
     Assert.AreEqual( 'unit Größe;', UTF8ToString( LoadTextFileToUtf8String( sUtf16 ) ), 'UTF-16 LE with BOM' );
 
-    var sUtf8 := sDir + '\utf8.pas';
-    var oNoBom := TUTF8Encoding.Create( False );
+    var sUtf8       := sDir + '\utf8.pas';
+    var oNoBom      := TUTF8Encoding.Create( False );
     try
-      TFile.WriteAllText( sUtf8, 'unit Größe;', oNoBom );   // no BOM
+      TFile.WriteAllText( sUtf8, 'unit Größe;', oNoBom ); // no BOM
     finally
       oNoBom.Free;
     end;
@@ -347,14 +347,14 @@ begin
 
     // A read limit that ends the text inside a two-byte "ö" (the reader stops at a 4 KB block
     // boundary; the "ö" straddles byte 8192): still UTF-8, not ANSI mojibake ("Ã").
-    var sLong := sDir + '\long.pas';
-    var oNoBom2 := TUTF8Encoding.Create( False );
+    var sLong       := sDir + '\long.pas';
+    var oNoBom2     := TUTF8Encoding.Create( False );
     try
       TFile.WriteAllText( sLong, StringOfChar( 'a', 8191 ) + 'ö' + StringOfChar( 'b', 100 ), oNoBom2 );
     finally
       oNoBom2.Free;
     end;
-    var sCut := UTF8ToString( LoadTextFileToUtf8String( sLong, 4096 ) );
+    var sCut        := UTF8ToString( LoadTextFileToUtf8String( sLong, 4096 ) );
     Assert.IsTrue( sCut.StartsWith( 'aaaa' ), 'the text before the cut is kept' );
     Assert.AreEqual( 0, Pos( 'Ã', sCut ), 'a sequence cut at the block end does not turn the file into ANSI' );
   finally
@@ -364,13 +364,13 @@ end;
 
 procedure TTestDelphiLexer.TestNextTokenNoCommentStopsAtInclude;
 begin
-  var oLexer := TDelphiLexer.Create( 'test.pas',
+  var oLexer        := TDelphiLexer.Create( 'test.pas',
     UTF8String( 'A { note } {$IFDEF X} {$I+} {$I Settings.inc} B (*$INCLUDE More.inc*) C' ) );
   try
-    var sSeen := '';
+    var sSeen       := '';
     var oToken: TToken;
     while oLexer.NextTokenNoComment( oToken ) do
-      sSeen := sSeen + oToken.Value + ' ';
+      sSeen         := sSeen + oToken.Value + ' ';
     Assert.AreEqual( 'A {$I Settings.inc} B (*$INCLUDE More.inc*) C', Trim( sSeen ),
       'comments, $IFDEF and $I+ are skipped; the two include directives are returned' );
   finally
@@ -382,3 +382,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDelphiLexer );
 
 end.
+

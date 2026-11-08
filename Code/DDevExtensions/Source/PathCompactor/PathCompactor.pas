@@ -120,22 +120,22 @@ uses
 procedure TPathCompactorPlugin.Init;
 begin
   inherited Init;
-  FEnabled := True;
+  FEnabled          := True;
   FWarnStoredLength := 2048;
   FWriteUserEnvironment := False;
 end;
 
 constructor TPathCompactorPlugin.Create;
 var
-  ToolsMenu: TMenuItem;
-  I, InsertIndex: Integer;
+  ToolsMenu         : TMenuItem;
+  I, InsertIndex    : Integer;
 begin
   inherited Create( AppDataDirectory + '\PathCompactor.xml', 'PathCompactor' );
 
-  ToolsMenu := FindMenuItem( 'ToolsMenu' );
+  ToolsMenu         := FindMenuItem( 'ToolsMenu' );
   if ToolsMenu <> nil then
   begin
-    FMenuItem := TMenuItem.Create( ToolsMenu );
+    FMenuItem       := TMenuItem.Create( ToolsMenu );
     FMenuItem.Caption := 'IDE Path &Compactor...';
     FMenuItem.OnClick := MenuItemClick;
 
@@ -143,9 +143,9 @@ begin
     // caption rather than copying its "first item containing Build" scan
     // matters: two plugins both inserting at the Build item land at the same
     // index, so the order would depend on registration order, not intent.
-    InsertIndex := -1;
+    InsertIndex     := -1;
     for I := 0 to ToolsMenu.Count - 1 do
-      if Pos( 'IDE Path &Sorter', ToolsMenu.Items[I].Caption ) > 0 then
+      if Pos( 'IDE Path &Sorter', ToolsMenu.Items[ I ].Caption ) > 0 then
       begin
         InsertIndex := I + 1;
         Break;
@@ -155,7 +155,7 @@ begin
     // back to the Build item when it is not there.
     if InsertIndex < 0 then
       for I := 0 to ToolsMenu.Count - 1 do
-        if Pos( 'Build', ToolsMenu.Items[I].Caption ) > 0 then
+        if Pos( 'Build', ToolsMenu.Items[ I ].Caption ) > 0 then
         begin
           InsertIndex := I + 1;
           Break;
@@ -186,14 +186,14 @@ end;
 
 function TPathCompactorPlugin.CreatedVariableNames: TArray<string>;
 var
-  List: TStringList;
+  List              : TStringList;
 begin
-  List := TStringList.Create;
+  List              := TStringList.Create;
   try
-    List.Delimiter := ';';
+    List.Delimiter  := ';';
     List.StrictDelimiter := True;
     List.DelimitedText := FCreatedVariables;
-    Result := List.ToStringArray;
+    Result          := List.ToStringArray;
   finally
     List.Free;
   end;
@@ -206,18 +206,18 @@ end;
 /// <returns>The updated list text.</returns>
 function UpdateNameList( const AList, AName: string; APresent: Boolean ): string;
 begin
-  var List := TStringList.Create;
+  var List          := TStringList.Create;
   try
-    List.Delimiter := ';';
+    List.Delimiter  := ';';
     List.StrictDelimiter := True;
     List.CaseSensitive := False;
     List.DelimitedText := AList;
-    var Index := List.IndexOf( AName );
+    var Index       := List.IndexOf( AName );
     if APresent and ( Index < 0 ) then
       List.Add( AName )
     else if not APresent and ( Index >= 0 ) then
       List.Delete( Index );
-    Result := List.DelimitedText;
+    Result          := List.DelimitedText;
   finally
     List.Free;
   end;
@@ -228,7 +228,7 @@ end;
 /// <returns>Its bitmask.</returns>
 function LocationsToMask( ALocations: TVariableLocations ): Integer;
 begin
-  Result := 0;
+  Result            := 0;
   for var Location in ALocations do
     Result := Result or ( 1 shl Ord( Location ) );
 end;
@@ -238,7 +238,7 @@ end;
 /// <returns>The set.</returns>
 function MaskToLocations( AMask: Integer ): TVariableLocations;
 begin
-  Result := [];
+  Result            := [ ];
   for var Location := Low( TVariableLocation ) to High( TVariableLocation ) do
     if ( AMask and ( 1 shl Ord( Location ) ) ) <> 0 then
       Include( Result, Location );
@@ -251,18 +251,18 @@ end;
 /// <returns>The updated text.</returns>
 function UpdateValueList( const ALines, AName, AValue: string ): string;
 begin
-  var List := TStringList.Create;
+  var List          := TStringList.Create;
   try
-    List.Delimiter := ';';
+    List.Delimiter  := ';';
     List.StrictDelimiter := True;
     List.CaseSensitive := False;
     List.DelimitedText := ALines;
-    var Index := List.IndexOfName( AName );
+    var Index       := List.IndexOfName( AName );
     if ( Index >= 0 ) then
       List.Delete( Index );
     if ( AValue <> '' ) then
       List.Add( AName + '=' + AValue );
-    Result := List.DelimitedText;
+    Result          := List.DelimitedText;
   finally
     List.Free;
   end;
@@ -289,23 +289,23 @@ end;
 
 function TPathCompactorPlugin.CreatedLocations( const AName: string ): TVariableLocations;
 begin
-  Result := [];
-  var List := TStringList.Create;
+  Result            := [ ];
+  var List          := TStringList.Create;
   try
-    List.Delimiter := ';';
+    List.Delimiter  := ';';
     List.StrictDelimiter := True;
     List.CaseSensitive := False;
 
     List.DelimitedText := FCreatedVariableLocations;
-    var Index := List.IndexOfName( AName );
+    var Index       := List.IndexOfName( AName );
     if ( Index >= 0 ) then
-      Exit( MaskToLocations( StrToIntDef( List.ValueFromIndex[Index], 0 ) ) );
+      Exit( MaskToLocations( StrToIntDef( List.ValueFromIndex[ Index ], 0 ) ) );
 
     // Recorded by an older build, which did not keep the locations.
     List.DelimitedText := FCreatedVariables;
     if ( List.IndexOf( AName ) < 0 ) then
       Exit;
-    Result := [vlIde32, vlIde64];
+    Result          := [ vlIde32, vlIde64 ];
     List.DelimitedText := FCreatedEnvironmentVariables;
     if ( List.IndexOf( AName ) >= 0 ) then
       Include( Result, vlUserEnvironment );
@@ -330,3 +330,4 @@ begin
 end;
 
 end.
+

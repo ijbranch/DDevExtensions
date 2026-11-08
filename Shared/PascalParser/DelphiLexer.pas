@@ -26,27 +26,27 @@ uses
 
 const
   /// <summary>Control characters and the space, which the lexer skips between tokens.</summary>
-  WhiteChars = [#1..#32];
+  WhiteChars        = [ #1..#32 ];
   /// <summary>Decimal digits, used to recognise integer and float literals.</summary>
-  NumberChars = ['0'..'9'];
+  NumberChars       = [ '0'..'9' ];
   /// <summary>Digits allowed in a $-prefixed hexadecimal literal.</summary>
-  HexNumberChars = NumberChars + ['A'..'F', 'a'..'f'];
+  HexNumberChars    = NumberChars + [ 'A'..'F', 'a'..'f' ];
   /// <summary>ASCII characters that may start an identifier.</summary>
-  IdentFirstChars = ['a'..'z', 'A'..'Z', '_'];
+  IdentFirstChars   = [ 'a'..'z', 'A'..'Z', '_' ];
   /// <summary>ASCII characters that may continue an identifier after its first character.</summary>
-  IdentChars = IdentFirstChars + NumberChars;
+  IdentChars        = IdentFirstChars + NumberChars;
 
 type
   /// <summary>Pointer to a byte of the UTF-8 source text the lexer scans.</summary>
   PUTF8Char = PAnsiChar;
   /// <summary>One byte of the UTF-8 source text the lexer scans.</summary>
   UTF8Char = AnsiChar;
-  {$IFNDEF UNICODE}
+{$IFNDEF UNICODE}
   /// <summary>Fallback for compilers before Delphi 2009, which lack RawByteString.</summary>
   RawByteString = AnsiString;
   /// <summary>Fallback for compilers before Delphi 2009, which lack UnicodeString.</summary>
   UnicodeString = WideString;
-  {$ENDIF UNICODE}
+{$ENDIF UNICODE}
 
   /// <summary>
   /// Classification of a lexed token.  The values are ordered in ranges that callers compare against:
@@ -59,32 +59,32 @@ type
     tkNone,
 
     tkSymbol,
-      tkEqual,
-      tkGreaterThan,
-      tkLessThan,
-      tkMinus,
-      tkPlus,
-      tkMultiply,
-      tkDivide,
+    tkEqual,
+    tkGreaterThan,
+    tkLessThan,
+    tkMinus,
+    tkPlus,
+    tkMultiply,
+    tkDivide,
 
-      tkLParan,
-      tkRParan,
-      tkLBracket,
-      tkRBracket,
-      tkColon,
-      tkSemicolon,
-      tkComma,
-      tkPointer,     // '^'
-      tkAddr,        // '@'
-      tkAmp,         // '&' // D8/9
-      tkQualifier,   // '.'
+    tkLParan,
+    tkRParan,
+    tkLBracket,
+    tkRBracket,
+    tkColon,
+    tkSemicolon,
+    tkComma,
+    tkPointer, // '^'
+    tkAddr, // '@'
+    tkAmp, // '&' // D8/9
+    tkQualifier, // '.'
 
     // tkSymbolLevel2 >= tkGreaterEqualThan
-      tkGreaterEqualThan, // '>='
-      tkLessEqualThan,    // '<='
-      tkNotEqual,         // '<>'
-      tkRange,            // '..'
-      tkAssign,           // ':='
+    tkGreaterEqualThan, // '>='
+    tkLessEqualThan, // '<='
+    tkNotEqual, // '<>'
+    tkRange, // '..'
+    tkAssign, // ':='
 
     tkComment,
     tkDirective,
@@ -95,162 +95,162 @@ type
 
     tkMacro, // macro support
     tkIdent,
-      tkI_read,
-      tkI_write,
-      tkI_add,
-      tkI_remove,
-      tkI_default,
-      tkI_name,
-      tkI_index,
-      tkI_message,
-      tkI_static, // D9
-      tkI_forward,
-      tkI_requires,
-      tkI_contains,
-      tkI_platform,
-      tkI_deprecated,
-      tkI_experimental, // D9
-      tkI_out,
-      tkI_helper,
+    tkI_read,
+    tkI_write,
+    tkI_add,
+    tkI_remove,
+    tkI_default,
+    tkI_name,
+    tkI_index,
+    tkI_message,
+    tkI_static, // D9
+    tkI_forward,
+    tkI_requires,
+    tkI_contains,
+    tkI_platform,
+    tkI_deprecated,
+    tkI_experimental, // D9
+    tkI_out,
+    tkI_helper,
 
-      tkI_overload,
-      tkI_virtual,
-      tkI_override,
-      tkI_dynamic,
-      tkI_abstract,
-      tkI_reintroduce,
+    tkI_overload,
+    tkI_virtual,
+    tkI_override,
+    tkI_dynamic,
+    tkI_abstract,
+    tkI_reintroduce,
 
-      tkI_assembler,
-      tkI_register,
-      tkI_stdcall,
-      tkI_cdecl,
-      tkI_safecall,
-      tkI_pascal,
-      tkI_external,
+    tkI_assembler,
+    tkI_register,
+    tkI_stdcall,
+    tkI_cdecl,
+    tkI_safecall,
+    tkI_pascal,
+    tkI_external,
 
-      tkI_automated,
-      tkI_strict, // D9
-      tkI_private,
-      tkI_protected,
-      tkI_public,
-      tkI_published,
-      tkI_local,  // D9
-      tkI_export,
-      tkI_resident, // D9
-      tkI_far,
-      tkI_near,
-      tkI_readonly,
-      tkI_writeonly,
-      tkI_nodefault,
-      tki_stored,
-      tkI_implements,
-      tkI_varargs,
-      tkI_dispid,
+    tkI_automated,
+    tkI_strict, // D9
+    tkI_private,
+    tkI_protected,
+    tkI_public,
+    tkI_published,
+    tkI_local, // D9
+    tkI_export,
+    tkI_resident, // D9
+    tkI_far,
+    tkI_near,
+    tkI_readonly,
+    tkI_writeonly,
+    tkI_nodefault,
+    tki_stored,
+    tkI_implements,
+    tkI_varargs,
+    tkI_dispid,
 
-      tkI_absolute,
-      tkI_final, // D9
-      tkI_unsafe, // D9
-      tkI_sealed, // D9
+    tkI_absolute,
+    tkI_final, // D9
+    tkI_unsafe, // D9
+    tkI_sealed, // D9
 
-      tkI_package,
-      tkI_reference,
+    tkI_package,
+    tkI_reference,
 
-      tkI_on,
-      tkI_at,
+    tkI_on,
+    tkI_at,
 
     //tkIdentStrictReserved >= tkI_if
-      tkI_if,
-      tkI_else,
-      tkI_then,
-      tkI_while,
-      tkI_do,
-      tkI_for,
-      tkI_to,
-      tkI_downto,
-      tkI_repeat,
-      tkI_until,
-      tkI_case,
-      tkI_with,
-      tkI_raise,
-      tkI_in,
-      tkI_is,
-      tkI_as,
-      tkI_of,
-      tkI_file,
-      tkI_goto,
-      tkI_except,
-      tkI_finally,
-      tkI_try,
-      tkI_nil,
+    tkI_if,
+    tkI_else,
+    tkI_then,
+    tkI_while,
+    tkI_do,
+    tkI_for,
+    tkI_to,
+    tkI_downto,
+    tkI_repeat,
+    tkI_until,
+    tkI_case,
+    tkI_with,
+    tkI_raise,
+    tkI_in,
+    tkI_is,
+    tkI_as,
+    tkI_of,
+    tkI_file,
+    tkI_goto,
+    tkI_except,
+    tkI_finally,
+    tkI_try,
+    tkI_nil,
 
-      tkI_shl,
-      tkI_shr,
-      tkI_mod,
-      tkI_div,
-      tkI_and,
-      tkI_or,
-      tkI_not,
-      tkI_xor,
+    tkI_shl,
+    tkI_shr,
+    tkI_mod,
+    tkI_div,
+    tkI_and,
+    tkI_or,
+    tkI_not,
+    tkI_xor,
 
-      tkI_class,
-      tkI_object,
-      tkI_record,
-      tkI_var,
-      tkI_const,
-      tkI_type,
-      tkI_threadvar,
-      tkI_label,
-      tkI_exports,
-      tkI_resourcestring,
-      tkI_unit,
-      tkI_program,
-      tkI_uses,
-      tkI_interface,
-      tkI_implementation,
-      tkI_begin,
-      tkI_end,
-      tkI_procedure,
-      tkI_function,
-      tkI_operator,
-      tkI_constructor,
-      tkI_destructor,
-      tkI_property,
-      tkI_packed,
-      tkI_dispinterface,
-      tkI_string,
+    tkI_class,
+    tkI_object,
+    tkI_record,
+    tkI_var,
+    tkI_const,
+    tkI_type,
+    tkI_threadvar,
+    tkI_label,
+    tkI_exports,
+    tkI_resourcestring,
+    tkI_unit,
+    tkI_program,
+    tkI_uses,
+    tkI_interface,
+    tkI_implementation,
+    tkI_begin,
+    tkI_end,
+    tkI_procedure,
+    tkI_function,
+    tkI_operator,
+    tkI_constructor,
+    tkI_destructor,
+    tkI_property,
+    tkI_packed,
+    tkI_dispinterface,
+    tkI_string,
 
-      tkI_array,
-      tkI_set,
+    tkI_array,
+    tkI_set,
 
-      tkI_asm,
+    tkI_asm,
 
-      tkI_inherited,
-      tkI_inline,
+    tkI_inherited,
+    tkI_inline,
 
-      tkI_library,
-      tkI_initialization,
-      tkI_finalization
-  );
+    tkI_library,
+    tkI_initialization,
+    tkI_finalization
+    );
 
   /// <summary>Set of token kinds, for testing a token against several kinds at once.</summary>
   TTokenKindSet = set of TTokenKind;
 
 const
   /// <summary>First token kind that represents a multi-character compound operator (&gt;=, &lt;=, ...).</summary>
-  tkSymbolLevel2 = tkGreaterEqualThan;
+  tkSymbolLevel2    = tkGreaterEqualThan;
   /// <summary>First token kind that represents a strictly-reserved keyword (if, else, ...).</summary>
   tkIdentStrictReserved = tkI_if;
   /// <summary>Highest TTokenKind value; useful for array bounds.</summary>
-  tkLast = High(TTokenKind);
+  tkLast            = High( TTokenKind );
   /// <summary>Alias for tkQualifier so callers can use the more descriptive name "tkDot".</summary>
-  tkDot = tkQualifier;
+  tkDot             = tkQualifier;
 
 type
   /// <summary>Forward declaration of the lexer.</summary>
   TDelphiLexer = class;
 
   /// <summary>Single token produced by the lexer: classification, source value and source location.</summary>
-  TToken = class(TObject)
+  TToken = class( TObject )
   private
     /// <summary>0-based position of this token in the lexer's token list.</summary>
     FTokenIndex: Integer;
@@ -270,14 +270,14 @@ type
     FTokenLength: Integer;
     /// <summary>Computes the 1-based byte index of the token's last character.</summary>
     /// <returns>Index + TokenLength - 1.</returns>
-    function GetEndIndex: Integer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    function GetEndIndex: Integer; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
   protected
     /// <summary>Shifts the token's position after the lexer's text was edited before it.</summary>
     /// <param name="OffsetTokenIndex">Amount added to TokenIndex.</param>
     /// <param name="OffsetIndex">Amount added to Index.</param>
     /// <param name="OffsetColumn">Amount added to Column.</param>
     /// <param name="OffsetLine">Amount added to Line.</param>
-    procedure OffsetToken(OffsetTokenIndex, OffsetIndex, OffsetColumn, OffsetLine: Integer);
+    procedure OffsetToken( OffsetTokenIndex, OffsetIndex, OffsetColumn, OffsetLine: Integer );
   public
     /// <summary>Creates a token with the classification, text and position the lexer found.</summary>
     /// <param name="ATokenIndex">0-based position of the token in the lexer's token list.</param>
@@ -288,20 +288,20 @@ type
     /// <param name="AColumn">1-based column of the token's first character.</param>
     /// <param name="AIndex">1-based byte index of the token's first character.</param>
     /// <param name="ATokenLength">Number of bytes the token occupies in the source text.</param>
-    constructor Create(ATokenIndex: Integer; AKind: TTokenKind; const AValue, AFilename: string;
-      ALine, AColumn, AIndex, ATokenLength: Integer);
+    constructor Create( ATokenIndex: Integer; AKind: TTokenKind; const AValue, AFilename: string;
+      ALine, AColumn, AIndex, ATokenLength: Integer );
     //class function NewInstance: TObject; override;
     //procedure FreeInstance; override;
 
     /// <summary>Tells whether the token is an identifier or any keyword or directive word.</summary>
     /// <returns>True when Kind is tkIdent or later.</returns>
-    function IsIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    function IsIdent: Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
     /// <summary>Tells whether the token can be used as a plain identifier, i.e. is not a strictly reserved word.</summary>
     /// <returns>True when Kind is from tkIdent up to, but not including, tkIdentStrictReserved.</returns>
-    function IsFreeUsableIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    function IsFreeUsableIdent: Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
     /// <summary>Tells whether the token can name a type: a freely usable identifier or the word "string".</summary>
     /// <returns>True for a freely usable identifier or tkI_string.</returns>
-    function IsTypeIdent: Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    function IsTypeIdent: Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 
     /// <summary>Extracts the text of a comment token without its delimiters.</summary>
     /// <returns>The text inside { }, (* *) or after //; empty when the token is not a comment.</returns>
@@ -333,7 +333,7 @@ type
   /// UTF-8; on Delphi 5..2007 it is treated as ANSI. Maintains a list of previously parsed tokens
   /// so the caller can rewind, look ahead and edit the source via DeleteToken / InsertText.
   /// </summary>
-  TDelphiLexer = class(TObject)
+  TDelphiLexer = class( TObject )
   private
     /// <summary>Name of the file being lexed, copied into every token.</summary>
     FFilename: string;
@@ -366,14 +366,14 @@ type
     /// <summary>Reads Tokens[Index].</summary>
     /// <param name="Index">0-based position in the token list.</param>
     /// <returns>The token at Index.</returns>
-    function GetTokenProp(Index: Integer): TToken;
+    function GetTokenProp( Index: Integer ): TToken;
     /// <summary>
     /// Drops the lexed tokens at or after StartIndex after an edit and moves the scan position back to
     /// re-lex from there; drops all tokens and restarts from the beginning when StartIndex is at or before the
     /// first token.
     /// </summary>
     /// <param name="StartIndex">1-based byte index in Text where the edit began.</param>
-    procedure DiscardTokens(StartIndex: Integer);
+    procedure DiscardTokens( StartIndex: Integer );
     /// <summary>Reads CurrentToken.</summary>
     /// <returns>The token NextToken returned last, or nil.</returns>
     function GetCurrentToken: TToken;
@@ -383,7 +383,7 @@ type
     /// <summary>Counts the tabs and spaces in Text from StartIndex on.</summary>
     /// <param name="StartIndex">1-based byte index in Text to start counting at.</param>
     /// <returns>Number of consecutive tab and space characters.</returns>
-    function CountSpaces(StartIndex: Integer): Integer;
+    function CountSpaces( StartIndex: Integer ): Integer;
   public
     /// <summary>Creates a lexer over AText, positioned at its start.</summary>
     /// <param name="AFilename">Name of the file AText came from, copied into every token.</param>
@@ -391,8 +391,8 @@ type
     /// <param name="AOwnsTokens">True to free the tokens with the lexer; False when the caller keeps them.</param>
     /// <param name="AStartLine">0-based line number to give the first line of AText.</param>
     /// <param name="AStartColumn">1-based column to give the first character of AText (values below 1 become 1).</param>
-    constructor Create(const AFilename: string; const AText: UTF8String;
-      AOwnsTokens: Boolean = True; AStartLine: Integer = 0; AStartColumn: Integer = 1);
+    constructor Create( const AFilename: string; const AText: UTF8String;
+      AOwnsTokens: Boolean = True; AStartLine: Integer = 0; AStartColumn: Integer = 1 );
     /// <summary>Frees the token list (and the tokens when the lexer owns them).</summary>
     destructor Destroy; override;
 
@@ -406,7 +406,7 @@ type
     /// <summary>Low level: lexes the next token from the scan position and appends it to Tokens.</summary>
     /// <param name="Token">Receives the new token, or nil at the end of Text.</param>
     /// <returns>True when a token was lexed.</returns>
-    function GetToken(out Token: TToken): Boolean; overload;
+    function GetToken( out Token: TToken ): Boolean; overload;
 
     /// <summary>High level: moves the read position back to the first token; lexed tokens are kept.</summary>
     procedure RestartLexer;
@@ -418,7 +418,7 @@ type
     /// <summary>Returns the token at the read position, lexing it if needed, and advances the read position.</summary>
     /// <param name="Token">Receives the next token, or nil at the end of Text.</param>
     /// <returns>True when there was a token.</returns>
-    function NextToken(out Token: TToken): Boolean; overload;
+    function NextToken( out Token: TToken ): Boolean; overload;
     /// <summary>
     /// As NextToken, but skips comments and compiler directives - except an include directive
     /// (<c>{$I file}</c>, <c>{$INCLUDE file}</c> and the <c>(*$ *)</c> forms; not the <c>{$I+}</c>
@@ -429,23 +429,23 @@ type
     /// <summary>As NextToken, but skips comments and compiler directives other than include directives.</summary>
     /// <param name="Token">Receives the next token that is not a comment or a non-include directive, or nil.</param>
     /// <returns>True when there was such a token.</returns>
-    function NextTokenNoComment(out Token: TToken): Boolean; overload;
+    function NextTokenNoComment( out Token: TToken ): Boolean; overload;
     /// <summary>Finds the already-lexed token before Token.</summary>
     /// <param name="Token">A token of this lexer.</param>
     /// <returns>The preceding token, or nil when Token is the first.</returns>
-    function PreTokenOf(Token: TToken): TToken;
+    function PreTokenOf( Token: TToken ): TToken;
     /// <summary>Finds the nearest already-lexed token before Token that is not a comment (directives count).</summary>
     /// <param name="Token">A token of this lexer.</param>
     /// <returns>The preceding non-comment token, or nil when there is none.</returns>
-    function PreTokenNoCommentOf(Token: TToken): TToken;
+    function PreTokenNoCommentOf( Token: TToken ): TToken;
     /// <summary>Finds the already-lexed token after Token; does not lex further.</summary>
     /// <param name="Token">A token of this lexer.</param>
     /// <returns>The following token, or nil when Token is the last lexed so far.</returns>
-    function NextTokenOf(Token: TToken): TToken;
+    function NextTokenOf( Token: TToken ): TToken;
     /// <summary>Finds the nearest already-lexed token after Token that is not a comment; does not lex further.</summary>
     /// <param name="Token">A token of this lexer.</param>
     /// <returns>The following non-comment token, or nil when there is none yet.</returns>
-    function NextTokenNoCommentOf(Token: TToken): TToken;
+    function NextTokenNoCommentOf( Token: TToken ): TToken;
     /// <summary>
     /// Builds the source text of the string expression starting at CurrentToken: the string constant and
     /// every following "+ string" or "+ identifier" part.  Leaves the read position after the last part.
@@ -458,7 +458,7 @@ type
     /// </summary>
     /// <param name="CombinedString">Receives the combined source text when CurrentToken is a string.</param>
     /// <returns>Number of string tokens joined; 0 when CurrentToken is not a string.</returns>
-    function GetCombinedStringConstantNext(var CombinedString: string): Integer;
+    function GetCombinedStringConstantNext( var CombinedString: string ): Integer;
     /// <summary>Peeks at the next token without moving the read position.</summary>
     /// <returns>The token NextToken would return, or nil.</returns>
     function LookAhead: TToken;
@@ -479,51 +479,50 @@ type
     /// <summary>Modification: removes Token's text from Text and the token from Tokens, shifting later tokens.</summary>
     /// <param name="Token">Token to delete; nil does nothing.</param>
     /// <param name="DeleteEndSpaces">True to delete the tabs and spaces after the token as well.</param>
-    procedure DeleteToken(Token: TToken; DeleteEndSpaces: Boolean = False);
+    procedure DeleteToken( Token: TToken; DeleteEndSpaces: Boolean = False );
     /// <summary>Removes the text from StartToken to EndToken inclusive, and those tokens, shifting later tokens.</summary>
     /// <param name="StartToken">First token to delete; when nil only EndToken is deleted.</param>
     /// <param name="EndToken">Last token to delete; when nil only StartToken is deleted.</param>
     /// <param name="DeleteEndSpaces">True to delete the tabs and spaces after EndToken as well.</param>
-    procedure DeleteTokens(StartToken, EndToken: TToken; DeleteEndSpaces: Boolean = False);
+    procedure DeleteTokens( StartToken, EndToken: TToken; DeleteEndSpaces: Boolean = False );
     /// <summary>Inserts UTF-8 text directly after Token; tokens from there on are re-lexed.</summary>
     /// <param name="Token">Token to insert after.</param>
     /// <param name="Text">UTF-8 text to insert.</param>
-    procedure InsertTextAfter(Token: TToken; const Text: UTF8String); overload;
+    procedure InsertTextAfter( Token: TToken; const Text: UTF8String ); overload;
     /// <summary>Inserts text directly after Token; tokens from there on are re-lexed.</summary>
     /// <param name="Token">Token to insert after.</param>
     /// <param name="Text">Text to insert (stored as UTF-8).</param>
-    procedure InsertTextAfter(Token: TToken; const Text: string); overload;
+    procedure InsertTextAfter( Token: TToken; const Text: string ); overload;
     /// <summary>Replaces Token's text with UTF-8 text; tokens from there on are re-lexed.</summary>
     /// <param name="Token">Token to replace.</param>
     /// <param name="Text">UTF-8 replacement text.</param>
-    procedure ReplaceToken(Token: TToken; const Text: UTF8String); overload;
+    procedure ReplaceToken( Token: TToken; const Text: UTF8String ); overload;
     /// <summary>Replaces Token's text; tokens from there on are re-lexed.</summary>
     /// <param name="Token">Token to replace.</param>
     /// <param name="Text">Replacement text (stored as UTF-8).</param>
-    procedure ReplaceToken(Token: TToken; const Text: string); overload;
+    procedure ReplaceToken( Token: TToken; const Text: string ); overload;
     /// <summary>Deletes Len bytes of Text at StartIndex; tokens from there on are re-lexed.</summary>
     /// <param name="StartIndex">1-based byte index of the first byte to delete.</param>
     /// <param name="Len">Number of bytes to delete; 0 or less does nothing.</param>
-    procedure DeleteText(StartIndex, Len: Integer);
+    procedure DeleteText( StartIndex, Len: Integer );
     /// <summary>Inserts UTF-8 text at StartIndex; tokens from there on are re-lexed.</summary>
     /// <param name="StartIndex">1-based byte index to insert at.</param>
     /// <param name="Text">UTF-8 text to insert; empty does nothing.</param>
-    procedure InsertText(StartIndex: Integer; const Text: UTF8String); overload;
+    procedure InsertText( StartIndex: Integer; const Text: UTF8String ); overload;
     /// <summary>Inserts text at StartIndex; tokens from there on are re-lexed.</summary>
     /// <param name="StartIndex">1-based byte index to insert at.</param>
     /// <param name="Text">Text to insert (stored as UTF-8).</param>
-    procedure InsertText(StartIndex: Integer; const Text: string); overload;
+    procedure InsertText( StartIndex: Integer; const Text: string ); overload;
     /// <summary>Replaces Len bytes of Text at StartIndex with UTF-8 text; tokens from there on are re-lexed.</summary>
     /// <param name="StartIndex">1-based byte index of the first byte to replace.</param>
     /// <param name="Len">Number of bytes to replace.</param>
     /// <param name="Text">UTF-8 replacement text.</param>
-    procedure ReplaceText(StartIndex, Len: Integer; const Text: UTF8String); overload;
+    procedure ReplaceText( StartIndex, Len: Integer; const Text: UTF8String ); overload;
     /// <summary>Replaces Len bytes of Text at StartIndex; tokens from there on are re-lexed.</summary>
     /// <param name="StartIndex">1-based byte index of the first byte to replace.</param>
     /// <param name="Len">Number of bytes to replace.</param>
     /// <param name="Text">Replacement text (stored as UTF-8).</param>
-    procedure ReplaceText(StartIndex, Len: Integer; const Text: string); overload;
-
+    procedure ReplaceText( StartIndex, Len: Integer; const Text: string ); overload;
 
     /// <summary>1-based byte index in Text of the next character to lex.</summary>
     property Index: Integer read FIndex;
@@ -539,7 +538,7 @@ type
     /// <summary>Number of tokens already lexed.</summary>
     property Count: Integer read GetCount;
     /// <summary>The already-lexed tokens, by 0-based position.</summary>
-    property Tokens[Index: Integer]: TToken read GetTokenProp;
+    property Tokens[ Index: Integer ]: TToken read GetTokenProp;
     /// <summary>True once Text has been changed by a modification method.</summary>
     property Modified: Boolean read FModified;
     /// <summary>The token before CurrentToken, or nil.</summary>
@@ -553,24 +552,24 @@ type
 
 type
   /// <summary>Byte-order-mark identifier returned by TTextFileReader after BOM detection.</summary>
-  TBOMType = (bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE);
+  TBOMType = ( bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE );
 
-  {$IFDEF CONDITIONALEXPRESSIONS}
-   {$IF not declared(TBytes)}
+{$IFDEF CONDITIONALEXPRESSIONS}
+{$IF not declared(TBytes)}
   /// <summary>Fallback declaration of TBytes for Delphi versions that lack it.</summary>
   TBytes = array of Byte;
-   {$IFEND}
-  {$ELSE}
+{$IFEND}
+{$ELSE}
   /// <summary>Fallback declaration of TBytes for pre-conditional-expression compilers.</summary>
   TBytes = array of Byte;
-  {$ENDIF}
+{$ENDIF}
 
   /// <summary>
   /// Buffered text reader that detects the input's BOM and decodes the text to a native or UTF-8 string.
   /// A file without a BOM is read as UTF-8 when its first block is valid UTF-8, otherwise as ANSI; that
   /// decision is made once and holds for the whole file.
   /// </summary>
-  TTextFileReader = class(TObject)
+  TTextFileReader = class( TObject )
   private
     /// <summary>True when the reader frees FStream on destruction.</summary>
     FOwnStream: Boolean;
@@ -593,7 +592,7 @@ type
     /// <summary>Returns True when the BOM-less file is UTF-8, deciding from Data on the first call.</summary>
     /// <param name="Data">The first block of text read (later calls ignore it).</param>
     /// <returns>True for UTF-8, False for the ANSI code page.</returns>
-    function AnsiDataIsUtf8(const Data: TBytes): Boolean;
+    function AnsiDataIsUtf8( const Data: TBytes ): Boolean;
 
     /// <summary>Fills the buffer with the first block of the stream and sets BOMType from any BOM, skipping it.</summary>
     procedure ReadBOM;
@@ -605,11 +604,11 @@ type
     /// <summary>Decodes Data according to the BOM found by ReadBOM: ANSI, UTF-8, UTF-16 (either byte order) or UCS-4.</summary>
     /// <param name="Data">Raw bytes read after the BOM.</param>
     /// <returns>The decoded text; empty when Data is nil.</returns>
-    function DataToString(const Data: TBytes): string;
+    function DataToString( const Data: TBytes ): string;
     /// <summary>Converts Data to UTF-8: UTF-8 (and BOM-less UTF-8) bytes are copied as they are, anything else is decoded first.</summary>
     /// <param name="Data">Raw bytes read after the BOM.</param>
     /// <returns>The text as UTF-8; empty when Data is nil.</returns>
-    function DataToUtf8String(const Data: TBytes): UTF8String;
+    function DataToUtf8String( const Data: TBytes ): UTF8String;
     /// <summary>Reads every remaining byte of the stream, up to MaxReadBytes.</summary>
     /// <returns>The raw bytes read.</returns>
     function InternReadAll: TBytes;
@@ -621,12 +620,12 @@ type
     /// <summary>Opens AFileName for reading (deny write) and detects its BOM; the reader owns the file stream.</summary>
     /// <param name="AFileName">File to read.</param>
     /// <param name="ABufferSize">Read buffer size in bytes (at least 16).</param>
-    constructor Create(const AFileName: string; ABufferSize: Integer = 4096); overload;
+    constructor Create( const AFileName: string; ABufferSize: Integer = 4096 ); overload;
     /// <summary>Reads from AStream, starting at its current position, and detects its BOM.</summary>
     /// <param name="AStream">Stream to read.</param>
     /// <param name="ABufferSize">Read buffer size in bytes (at least 16).</param>
     /// <param name="AOwnStream">True to free AStream with the reader.</param>
-    constructor Create(AStream: TStream; ABufferSize: Integer = 4096; AOwnStream: Boolean = False); overload;
+    constructor Create( AStream: TStream; ABufferSize: Integer = 4096; AOwnStream: Boolean = False ); overload;
     /// <summary>Frees the stream when the reader owns it.</summary>
     destructor Destroy; override;
 
@@ -656,17 +655,17 @@ type
 /// <summary>Returns a display name for a token kind: the symbol itself, the keyword in upper case, or a literal kind's name.</summary>
 /// <param name="Kind">Token kind to name.</param>
 /// <returns>The display name; tkNone, tkSymbol, tkComment, tkDirective and tkMacro have none and are not assigned one.</returns>
-function TokenKindToString(Kind: TTokenKind): string;
+function TokenKindToString( Kind: TTokenKind ): string;
 /// <summary>Reads Filename via TTextFileReader and returns its content as a native string.</summary>
 /// <param name="Filename">File to read.</param>
 /// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
 /// <returns>The decoded text, without the BOM.</returns>
-function LoadTextFileToString(const Filename: string; MaxReadBytes: Cardinal = 0): string;
+function LoadTextFileToString( const Filename: string; MaxReadBytes: Cardinal = 0 ): string;
 /// <summary>Reads up to MaxReadBytes from Filename and returns it as UTF-8 (BOM-stripped).</summary>
 /// <param name="Filename">File to read.</param>
 /// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
 /// <returns>The text as UTF-8.</returns>
-function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string; MaxReadBytes: Cardinal ): UTF8String; overload;
 /// <summary>Reads up to MaxReadBytes from Filename as UTF-8 (BOM-stripped) and reports the encoding found.</summary>
 /// <param name="Filename">File to read.</param>
 /// <param name="MaxReadBytes">Most bytes to read; 0 for the whole file.</param>
@@ -675,29 +674,29 @@ function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal
 /// UTF-16 encoding of the same byte order), or TEncoding.Default when there is no BOM, even when the text was read as UTF-8.
 /// </param>
 /// <returns>The text as UTF-8.</returns>
-function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding ): UTF8String; overload;
 /// <summary>Reads the entire Filename and returns it as UTF-8 (BOM-stripped).</summary>
 /// <param name="Filename">File to read.</param>
 /// <returns>The text as UTF-8.</returns>
-function LoadTextFileToUtf8String(const Filename: string): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string ): UTF8String; overload;
 /// <summary>Reads the entire Filename as UTF-8 (BOM-stripped) and reports the encoding found.</summary>
 /// <param name="Filename">File to read.</param>
 /// <param name="Encoding">Receives the encoding found from the BOM, as for the MaxReadBytes overload.</param>
 /// <returns>The text as UTF-8.</returns>
-function LoadTextFileToUtf8String(const Filename: string; out Encoding: TEncoding): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string; out Encoding: TEncoding ): UTF8String; overload;
 /// <summary>Returns the C++Builder mangled form of a name: its length followed by the name, with every '.' replaced by '_'.</summary>
 /// <param name="Name">Name to mangle.</param>
 /// <returns>The mangled name.</returns>
-function Mangle(const Name: string): string;
+function Mangle( const Name: string ): string;
 /// <summary>Tells whether Token is an $ENDIF or $IFEND directive, in { } or (* *) form.</summary>
 /// <param name="Token">Token to test.</param>
 /// <returns>True for an $ENDIF or $IFEND directive.</returns>
-function IsEndIfToken(Token: TToken): Boolean; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+function IsEndIfToken( Token: TToken ): Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 /// <summary>ASCII-only case-insensitive StartsText that does not depend on the locale.</summary>
 /// <param name="SubStr">Prefix to look for.</param>
 /// <param name="S">String to test.</param>
 /// <returns>True when S starts with SubStr, ignoring ASCII case.</returns>
-function AsciiStartsText(const SubStr, S: string): Boolean;
+function AsciiStartsText( const SubStr, S: string ): Boolean;
 
 implementation
 
@@ -705,56 +704,56 @@ uses
   Winapi.Windows{$IFDEF UNICODE}, System.WideStrUtils, System.Character{$ENDIF UNICODE};
 
 resourcestring
-  RsIdentifier = 'Identifier';
-  RsString = 'String';
-  RsInteger = 'Integer';
-  RsFloat = 'Float number';
+  RsIdentifier      = 'Identifier';
+  RsString          = 'String';
+  RsInteger         = 'Integer';
+  RsFloat           = 'Float number';
 
 type
-  TLexerTokenStringList = class(TStringList)
+  TLexerTokenStringList = class( TStringList )
   protected
-    function CompareStrings(const S1: string; const S2: string): Integer; override;
+    function CompareStrings( const S1: string; const S2: string ): Integer; override;
   end;
 
-function TLexerTokenStringList.CompareStrings(const S1: string; const S2: string): Integer;
+function TLexerTokenStringList.CompareStrings( const S1: string; const S2: string ): Integer;
 begin
-  Result := CompareText(S1, S2);
+  Result            := CompareText( S1, S2 );
 end;
 
 var
-  TokenStrings: TLexerTokenStringList;
+  TokenStrings      : TLexerTokenStringList;
 
 procedure InitTokenStrings;
 var
-  Kind: TTokenKind;
-  Info: PTypeInfo;
+  Kind              : TTokenKind;
+  Info              : PTypeInfo;
 begin
-  TokenStrings := TLexerTokenStringList.Create;
+  TokenStrings      := TLexerTokenStringList.Create;
 
-  Info := TypeInfo(TTokenKind);
-  for Kind := Succ(tkIdent) to High(TTokenKind) do
+  Info              := TypeInfo( TTokenKind );
+  for Kind := Succ( tkIdent ) to High( TTokenKind ) do
     TokenStrings.AddObject(
-      Copy(GetEnumName(Info, Ord(Kind)), 5, MaxInt),
-      TObject(Integer(Kind))
-    );
+      Copy( GetEnumName( Info, Ord( Kind ) ), 5, MaxInt ),
+      TObject( Integer( Kind ) )
+      );
 
   TokenStrings.Sorted := True;
 end;
 
-function FindTokenIdentKind(const Value: string): TTokenKind;
+function FindTokenIdentKind( const Value: string ): TTokenKind;
 var
-  Index: Integer;
+  Index             : Integer;
 begin
-  if TokenStrings.Find(Value, Index) then
-    Result := TTokenKind(Integer(TokenStrings.Objects[Index]))
+  if TokenStrings.Find( Value, Index ) then
+    Result          := TTokenKind( Integer( TokenStrings.Objects[ Index ] ) )
   else
-    Result := tkIdent;
+    Result          := tkIdent;
 end;
 
-function TokenKindToString(Kind: TTokenKind): string;
+function TokenKindToString( Kind: TTokenKind ): string;
 begin
   if Kind > tkIdent then
-    Result := AnsiUpperCase(Copy(GetEnumName(TypeInfo(TTokenKind), Integer(Kind)), 5, MaxInt))
+    Result          := AnsiUpperCase( Copy( GetEnumName( TypeInfo( TTokenKind ), Integer( Kind ) ), 5, MaxInt ) )
   else
   begin
     case Kind of
@@ -784,61 +783,61 @@ begin
       tkRange: Result := '..';
       tkAssign: Result := ':=';
 
-    {tkComment: Result := RsComment;
-    tkDirective: Result := RsCompilerDirective}
+      {tkComment: Result := RsComment;
+      tkDirective: Result := RsCompilerDirective}
 
       tkIdent: Result := RsIdentifier;
       tkString: Result := RsString;
       tkInt: Result := RsInteger;
       tkFloat: Result := RsFloat;
     end;
-    Result := '' + Result + '';
+    Result          := '' + Result + '';
   end;
 end;
 
 {$IFDEF UNICODE}
-procedure SetStringFromUtf8(var S: string; P: PAnsiChar; Len: Integer);
+procedure SetStringFromUtf8( var S: string; P: PAnsiChar; Len: Integer );
 begin
-  SetLength(S, Len);
-  Len := Utf8ToUnicode(PWideChar(S), Len + 1, P, Len);
+  SetLength( S, Len );
+  Len               := Utf8ToUnicode( PWideChar( S ), Len + 1, P, Len );
   if Len <= 0 then
-    S := ''
-  else if Length(S) <> Len - 1 then
-    SetLength(S, Len - 1);
+    S               := ''
+  else if Length( S ) <> Len - 1 then
+    SetLength( S, Len - 1 );
 end;
 {$ENDIF UNICODE}
 
-function LoadTextFileToString(const Filename: string; MaxReadBytes: Cardinal = 0): string;
+function LoadTextFileToString( const Filename: string; MaxReadBytes: Cardinal = 0 ): string;
 var
-  Reader: TTextFileReader;
+  Reader            : TTextFileReader;
 begin
-  Reader := TTextFileReader.Create(Filename);
+  Reader            := TTextFileReader.Create( Filename );
   try
     Reader.MaxReadBytes := MaxReadBytes;
-    Result := Reader.ReadAll;
+    Result          := Reader.ReadAll;
   finally
     Reader.Free;
   end;
 end;
 
-function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal): UTF8String;
+function LoadTextFileToUtf8String( const Filename: string; MaxReadBytes: Cardinal ): UTF8String;
 var
-  Encoding: TEncoding;
+  Encoding          : TEncoding;
 begin
-  Result := LoadTextFileToUtf8String(FileName, MaxReadBytes, Encoding);
+  Result            := LoadTextFileToUtf8String( FileName, MaxReadBytes, Encoding );
 end;
 
-function LoadTextFileToUtf8String(const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string; MaxReadBytes: Cardinal; out Encoding: TEncoding ): UTF8String; overload;
 var
-  Reader: TTextFileReader;
+  Reader            : TTextFileReader;
 begin
-  Reader := TTextFileReader.Create(Filename);
+  Reader            := TTextFileReader.Create( Filename );
   try
     if MaxReadBytes > 0 then
       Reader.MaxReadBytes := MaxReadBytes;
-    Result := Reader.Utf8ReadAll;
+    Result          := Reader.Utf8ReadAll;
 
-    Encoding := TEncoding.Default;
+    Encoding        := TEncoding.Default;
     case Reader.BOMType of
       //bomAnsi: Encoding := TEncoding.Default;
       bomUtf8: Encoding := TEncoding.UTF8;
@@ -852,62 +851,62 @@ begin
   end;
 end;
 
-function LoadTextFileToUtf8String(const Filename: string): UTF8String;
+function LoadTextFileToUtf8String( const Filename: string ): UTF8String;
 var
-  Encoding: TEncoding;
+  Encoding          : TEncoding;
 begin
-  Result := LoadTextFileToUtf8String(Filename, 0, Encoding);
+  Result            := LoadTextFileToUtf8String( Filename, 0, Encoding );
 end;
 
-function LoadTextFileToUtf8String(const Filename: string; out Encoding: TEncoding): UTF8String; overload;
+function LoadTextFileToUtf8String( const Filename: string; out Encoding: TEncoding ): UTF8String; overload;
 begin
-  Result := LoadTextFileToUtf8String(FileName, 0, Encoding);
+  Result            := LoadTextFileToUtf8String( FileName, 0, Encoding );
 end;
 
-function AsciiStartsText(const SubStr, S: string): Boolean;
+function AsciiStartsText( const SubStr, S: string ): Boolean;
 var
-  Len: Integer;
+  Len               : Integer;
 begin
-  Len := Length(SubStr);
-  if Len <= Length(S) then
-    Result := StrLIComp(PChar(SubStr), PChar(S), Length(SubStr)) = 0
+  Len               := Length( SubStr );
+  if Len <= Length( S ) then
+    Result          := StrLIComp( PChar( SubStr ), PChar( S ), Length( SubStr ) ) = 0
   else
-    Result := False;
+    Result          := False;
 end;
 
-function Mangle(const Name: string): string;
+function Mangle( const Name: string ): string;
 var
-  P: PChar;
+  P                 : PChar;
 begin
-  Result := IntToStr(Length(Name)) + Name;
-  P := PChar(Result);
-  while P[0] <> #0 do
+  Result            := IntToStr( Length( Name ) ) + Name;
+  P                 := PChar( Result );
+  while P[ 0 ] <> #0 do
   begin
-    if P[0] = '.' then
-      P[0] := '_';
-    Inc(P);
+    if P[ 0 ] = '.' then
+      P[ 0 ]        := '_';
+    Inc( P );
   end;
 end;
 
-function IsEndIfToken(Token: TToken): Boolean;
+function IsEndIfToken( Token: TToken ): Boolean;
 begin
-  Result := (Token.Kind = tkDirective) and
-            (AsciiStartsText('{$ENDIF', Token.Value) or AsciiStartsText('{$IFEND', Token.Value) or
-             AsciiStartsText('(*$ENDIF', Token.Value) or AsciiStartsText('(*$IFEND', Token.Value));
+  Result            := ( Token.Kind = tkDirective ) and
+    ( AsciiStartsText( '{$ENDIF', Token.Value ) or AsciiStartsText( '{$IFEND', Token.Value ) or
+    AsciiStartsText( '(*$ENDIF', Token.Value ) or AsciiStartsText( '(*$IFEND', Token.Value ) );
 end;
 
-function FindLineStart(const S: UTF8String; Index: Integer): Integer;
+function FindLineStart( const S: UTF8String; Index: Integer ): Integer;
 begin
-  Result := Index;
-  while (Result > 0) do
+  Result            := Index;
+  while ( Result > 0 ) do
   begin
-    case S[Result] of
+    case S[ Result ] of
       #10, #13:
         Break;
     end;
-    Dec(Result);
+    Dec( Result );
   end;
-  Inc(Result);
+  Inc( Result );
 end;
 
 {$IFDEF UNICODE}
@@ -921,50 +920,50 @@ end;
 /// <param name="Index">Offset of the lead byte in P.</param>
 /// <param name="Ch">Receives the first decoded code unit.</param>
 /// <returns>True when a complete, valid sequence was decoded.</returns>
-function DecodeUtf8Char(P: PUTF8Char; Index: Integer; out Ch: WideChar): Boolean;
+function DecodeUtf8Char( P: PUTF8Char; Index: Integer; out Ch: WideChar ): Boolean;
 var
-  C: array[0..2] of WideChar;
-  iSize, i: Integer;
+  C                 : array[ 0..2 ] of WideChar;
+  iSize, i          : Integer;
 begin
-  Result := False;
-  Ch := #0;
-  iSize := UTF8CharSize(P[Index]);
-  if (iSize < 2) or (iSize > 4) then
+  Result            := False;
+  Ch                := #0;
+  iSize             := UTF8CharSize( P[ Index ] );
+  if ( iSize < 2 ) or ( iSize > 4 ) then
     Exit;
   for i := 1 to iSize - 1 do
-    if (Byte(P[Index + i]) and $C0) <> $80 then
+    if ( Byte( P[ Index + i ] ) and $C0 ) <> $80 then
       Exit;
 
-  FillChar(C, SizeOf(C), 0);
-  if Utf8ToUnicode(@C, Length(C), @P[Index], iSize) <= 0 then
+  FillChar( C, SizeOf( C ), 0 );
+  if Utf8ToUnicode( @C, Length( C ), @P[ Index ], iSize ) <= 0 then
     Exit;
-  Ch := C[0];
-  Result := True;
+  Ch                := C[ 0 ];
+  Result            := True;
 end;
 
-function IsUtf8Letter(P: PUTF8Char; Index: Integer): Boolean;
+function IsUtf8Letter( P: PUTF8Char; Index: Integer ): Boolean;
 var
-  Ch: WideChar;
+  Ch                : WideChar;
 begin
-  Result := DecodeUtf8Char(P, Index, Ch) and Ch.IsLetter;
+  Result            := DecodeUtf8Char( P, Index, Ch ) and Ch.IsLetter;
 end;
 
-function IsUtf8LetterOrDigit(P: PUTF8Char; Index: Integer): Boolean;
+function IsUtf8LetterOrDigit( P: PUTF8Char; Index: Integer ): Boolean;
 var
-  Ch: WideChar;
+  Ch                : WideChar;
 begin
-  Result := DecodeUtf8Char(P, Index, Ch) and Ch.IsLetterOrDigit;
+  Result            := DecodeUtf8Char( P, Index, Ch ) and Ch.IsLetterOrDigit;
 end;
 {$ENDIF UNICODE}
 
 /// <summary>Returns True when only blanks (space, tab) follow P up to a line break.</summary>
 /// <param name="P">The first character after the candidate multi-line string opener.</param>
 /// <returns>True when the line ends (CR or LF) after nothing but blanks; False at the end of the text.</returns>
-function IsBlankToLineEnd(P: PUTF8Char): Boolean;
+function IsBlankToLineEnd( P: PUTF8Char ): Boolean;
 begin
-  while P[0] in [#9, ' '] do
-    Inc(P);
-  Result := P[0] in [#10, #13];
+  while P[ 0 ] in [ #9, ' ' ] do
+    Inc( P );
+  Result            := P[ 0 ] in [ #10, #13 ];
 end;
 
 /// <summary>
@@ -973,48 +972,48 @@ end;
 /// </summary>
 /// <param name="Data">The file bytes after any BOM.</param>
 /// <returns>True when Data decodes as UTF-8 without an invalid sequence.</returns>
-function IsValidUtf8(const Data: TBytes): Boolean;
+function IsValidUtf8( const Data: TBytes ): Boolean;
 var
-  Len, Lead, Need: Integer;
+  Len, Lead, Need   : Integer;
 begin
-  Len := Length(Data);
+  Len               := Length( Data );
 
   // drop an incomplete final sequence: find its lead byte among the last three bytes
-  Lead := Len - 1;
-  while (Lead >= 0) and (Lead >= Len - 3) and ((Data[Lead] and $C0) = $80) do
-    Dec(Lead);
-  if (Lead >= 0) and (Data[Lead] >= $C0) then
+  Lead              := Len - 1;
+  while ( Lead >= 0 ) and ( Lead >= Len - 3 ) and ( ( Data[ Lead ] and $C0 ) = $80 ) do
+    Dec( Lead );
+  if ( Lead >= 0 ) and ( Data[ Lead ] >= $C0 ) then
   begin
-    if Data[Lead] >= $F0 then
-      Need := 4
-    else if Data[Lead] >= $E0 then
-      Need := 3
+    if Data[ Lead ] >= $F0 then
+      Need          := 4
+    else if Data[ Lead ] >= $E0 then
+      Need          := 3
     else
-      Need := 2;
+      Need          := 2;
     if Len - Lead < Need then
-      Len := Lead;
+      Len           := Lead;
   end;
 
-  Result := (Len = 0) or
-            (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, PAnsiChar(@Data[0]), Len, nil, 0) > 0);
+  Result            := ( Len = 0 ) or
+    ( MultiByteToWideChar( CP_UTF8, MB_ERR_INVALID_CHARS, PAnsiChar( @Data[ 0 ] ), Len, nil, 0 ) > 0 );
 end;
 
 { TTextFileReader }
 
-constructor TTextFileReader.Create(const AFileName: string; ABufferSize: Integer);
+constructor TTextFileReader.Create( const AFileName: string; ABufferSize: Integer );
 begin
-  Create(TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite), ABufferSize, True);
+  Create( TFileStream.Create( AFileName, fmOpenRead or fmShareDenyWrite ), ABufferSize, True );
 end;
 
-constructor TTextFileReader.Create(AStream: TStream; ABufferSize: Integer; AOwnStream: Boolean);
+constructor TTextFileReader.Create( AStream: TStream; ABufferSize: Integer; AOwnStream: Boolean );
 begin
   inherited Create;
-  FOwnStream := AOwnStream;
-  FStream := AStream;
+  FOwnStream        := AOwnStream;
+  FStream           := AStream;
 
   if ABufferSize < 16 then
-    ABufferSize := 16;
-  SetLength(FBuffer, ABufferSize);
+    ABufferSize     := 16;
+  SetLength( FBuffer, ABufferSize );
 
   ReadBOM;
 
@@ -1022,10 +1021,10 @@ begin
   case BOMType of
     bomUcs2BE, bomUcs2LE:
       if ABufferSize mod 2 <> 0 then
-        SetLength(FBuffer, ABufferSize + 1);
+        SetLength( FBuffer, ABufferSize + 1 );
     bomUcs4BE, bomUcs4LE:
       if ABufferSize mod 4 <> 0 then
-        SetLength(FBuffer, ABufferSize + (4 - (ABufferSize mod 4)));
+        SetLength( FBuffer, ABufferSize + ( 4 - ( ABufferSize mod 4 ) ) );
   end;
 end;
 
@@ -1038,281 +1037,280 @@ end;
 
 procedure TTextFileReader.FillBuffer;
 var
-  BufSize: Integer;
+  BufSize           : Integer;
 begin
   if FBufStart >= FBufCount then
   begin
-    FBufStart := 0;
-    BufSize := Length(FBuffer);
+    FBufStart       := 0;
+    BufSize         := Length( FBuffer );
     if FMaxReadBytes > 0 then
     begin
-      if FBytesRead + Cardinal(BufSize) > FMaxReadBytes then
-        BufSize := FMaxReadBytes - FBytesRead;
+      if FBytesRead + Cardinal( BufSize ) > FMaxReadBytes then
+        BufSize     := FMaxReadBytes - FBytesRead;
       if BufSize <= 0 then
       begin
-        FBufCount := 0;
+        FBufCount   := 0;
         Exit;
       end;
     end;
-    FBufCount := FStream.Read(FBuffer[0], BufSize);
-    Inc(FBytesRead, FBufCount);
+    FBufCount       := FStream.Read( FBuffer[ 0 ], BufSize );
+    Inc( FBytesRead, FBufCount );
   end;
 end;
 
 function TTextFileReader.GetEof: Boolean;
 begin
-  Result := FBufCount = 0;
+  Result            := FBufCount = 0;
 end;
 
-function TTextFileReader.DataToString(const Data: TBytes): string;
+function TTextFileReader.DataToString( const Data: TBytes ): string;
 
-  procedure SwapBytes(Data: TBytes);
+  procedure SwapBytes( Data: TBytes );
   var
-    I: Integer;
-    b: Byte;
+    I               : Integer;
+    b               : Byte;
   begin
-    for I := 0 to Length(Data) div 2 - 1 do
+    for I := 0 to Length( Data ) div 2 - 1 do
     begin
-      b := Data[I * 2];
-      Data[I * 2] := Data[I * 2 + 1];
-      Data[I * 2 + 1] := b;
+      b             := Data[ I * 2 ];
+      Data[ I * 2 ] := Data[ I * 2 + 1 ];
+      Data[ I * 2 + 1 ] := b;
     end;
   end;
 
 var
-  A: AnsiString;
-  W: UnicodeString;
-  UCS4: UCS4String;
+  A                 : AnsiString;
+  W                 : UnicodeString;
+  UCS4              : UCS4String;
 begin
-  Result := '';
+  Result            := '';
   if Data = nil then
     Exit;
   case BOMType of
     bomAnsi:
       begin
-        SetString(A, PAnsiChar(@Data[0]), Length(Data));
+        SetString( A, PAnsiChar( @Data[ 0 ] ), Length( Data ) );
         // No BOM: Delphi source is UTF-8 in practice, so valid UTF-8 is read as UTF-8; only text
         // that is not valid UTF-8 falls back to the ANSI code page.
-        if AnsiDataIsUtf8(Data) then
-          Result := UTF8ToString(A)
+        if AnsiDataIsUtf8( Data ) then
+          Result    := UTF8ToString( A )
         else
-          Result := string(A);
+          Result    := string( A );
       end;
     bomUtf8:
       begin
-        SetString(A, PAnsiChar(@Data[0]), Length(Data));
-        Result := UTF8ToString(A); // Utf8ToAnsi would drop every character outside the ANSI code page
+        SetString( A, PAnsiChar( @Data[ 0 ] ), Length( Data ) );
+        Result      := UTF8ToString( A ); // Utf8ToAnsi would drop every character outside the ANSI code page
       end;
     bomUcs2BE:
       begin
-        SwapBytes(Data);
+        SwapBytes( Data );
         // the length is in characters: two bytes each (it used to pass the byte count and read
         // twice the data's length)
-        SetString(W, PWideChar(@Data[0]), Length(Data) div SizeOf(WideChar));
-        Result := W;
+        SetString( W, PWideChar( @Data[ 0 ] ), Length( Data ) div SizeOf( WideChar ) );
+        Result      := W;
       end;
     bomUcs2LE:
       begin
-        SetString(W, PWideChar(@Data[0]), Length(Data) div SizeOf(WideChar));
-        Result := W;
+        SetString( W, PWideChar( @Data[ 0 ] ), Length( Data ) div SizeOf( WideChar ) );
+        Result      := W;
       end;
     bomUcs4BE, bomUcs4LE:
       begin
         if BOMType = bomUcs4BE then
-          SwapBytes(Data);
+          SwapBytes( Data );
         // UCS4String carries a terminating #0 element; copy the data INTO it (the arguments used to
         // be reversed, which overwrote the file data with zeros)
-        SetLength(UCS4, Length(Data) div SizeOf(UCS4Char) + 1);
-        Move(Data[0], UCS4[0], (Length(UCS4) - 1) * SizeOf(UCS4Char));
-        UCS4[High(UCS4)] := 0;
-        Result := UCS4StringToWideString(UCS4);
+        SetLength( UCS4, Length( Data ) div SizeOf( UCS4Char ) + 1 );
+        Move( Data[ 0 ], UCS4[ 0 ], ( Length( UCS4 ) - 1 ) * SizeOf( UCS4Char ) );
+        UCS4[ High( UCS4 ) ] := 0;
+        Result      := UCS4StringToWideString( UCS4 );
       end;
   end;
 end;
 
-function TTextFileReader.AnsiDataIsUtf8(const Data: TBytes): Boolean;
+function TTextFileReader.AnsiDataIsUtf8( const Data: TBytes ): Boolean;
 begin
   if FBomlessEncoding = 0 then
   begin
-    if IsValidUtf8(Data) then
+    if IsValidUtf8( Data ) then
       FBomlessEncoding := 1
     else
       FBomlessEncoding := 2;
   end;
-  Result := FBomlessEncoding = 1;
+  Result            := FBomlessEncoding = 1;
 end;
 
-function TTextFileReader.DataToUtf8String(const Data: TBytes): UTF8String;
+function TTextFileReader.DataToUtf8String( const Data: TBytes ): UTF8String;
 begin
   if Data = nil then
     Exit;
-  if (BOMType = bomUtf8) or ((BOMType = bomAnsi) and AnsiDataIsUtf8(Data)) then
-    SetString(Result, PAnsiChar(@Data[0]), Length(Data))
+  if ( BOMType = bomUtf8 ) or ( ( BOMType = bomAnsi ) and AnsiDataIsUtf8( Data ) ) then
+    SetString( Result, PAnsiChar( @Data[ 0 ] ), Length( Data ) )
   else
-    Result := UTF8Encode(DataToString(Data));
+    Result          := UTF8Encode( DataToString( Data ) );
 end;
 
 function TTextFileReader.InternReadAll: TBytes;
 var
-  Len: Integer;
+  Len               : Integer;
 begin
-  SetLength(Result, FStream.Size - (FStream.Position - FBufCount));
+  SetLength( Result, FStream.Size - ( FStream.Position - FBufCount ) );
   FillBuffer;
-  Len := 0;
+  Len               := 0;
   while FBufCount > 0 do
   begin
-    Move(FBuffer[FBufStart], Result[Len], FBufCount);
-    Inc(Len, FBufCount);
-    FBufStart := FBufCount;
+    Move( FBuffer[ FBufStart ], Result[ Len ], FBufCount );
+    Inc( Len, FBufCount );
+    FBufStart       := FBufCount;
     FillBuffer;
   end;
-  if Len <> Length(Result) then
-    SetLength(Result, Len);
+  if Len <> Length( Result ) then
+    SetLength( Result, Len );
 end;
 
 function TTextFileReader.InternReadLine: TBytes;
 var
-  Start: Integer;
-  Len, AddLen: Integer;
+  Start             : Integer;
+  Len, AddLen       : Integer;
 
   procedure AppendData;
   begin
-    AddLen := (FBufStart - Start);
-    SetLength(Result, Len + AddLen);
-    Move(FBuffer[Start], Result[Len], AddLen);
-    Inc(Len, AddLen);
+    AddLen          := ( FBufStart - Start );
+    SetLength( Result, Len + AddLen );
+    Move( FBuffer[ Start ], Result[ Len ], AddLen );
+    Inc( Len, AddLen );
   end;
 
 begin
   FillBuffer;
   if FBufCount = 0 then
   begin
-    Result := nil;
+    Result          := nil;
     Exit;
   end;
 
-  Len := 0;
-  Start := FBufStart;
+  Len               := 0;
+  Start             := FBufStart;
 
-  if BOMType in [bomAnsi, bomUtf8] then
+  if BOMType in [ bomAnsi, bomUtf8 ] then
   begin
     while FBufCount > 0 do
     begin
-      if FBuffer[FBufStart] in [10, 13] then
+      if FBuffer[ FBufStart ] in [ 10, 13 ] then
       begin
         AppendData;
 
         { Skip line break }
-        if FBuffer[FBufStart] = 13 then // => leading byte of #13#10
+        if FBuffer[ FBufStart ] = 13 then // => leading byte of #13#10
         begin
-          Inc(FBufStart);
+          Inc( FBufStart );
           if FBufStart >= FBufCount then
             FillBuffer;
         end;
-        if FBuffer[FBufStart] = 10 then
+        if FBuffer[ FBufStart ] = 10 then
         begin
-          Inc(FBufStart);
+          Inc( FBufStart );
           if FBufStart >= FBufCount then
             FillBuffer;
         end;
 
         Break;
       end;
-      Inc(FBufStart);
+      Inc( FBufStart );
       if FBufStart >= FBufCount then
       begin
         AppendData;
         FillBuffer;
-        Start := FBufStart;
+        Start       := FBufStart;
       end;
     end;
   end
   else
-    raise Exception.Create('Only ANSI and UTF8 encodings are supported');
+    raise Exception.Create( 'Only ANSI and UTF8 encodings are supported' );
 end;
 
 function TTextFileReader.ReadAll: string;
 begin
-  Result := DataToString(InternReadAll);
+  Result            := DataToString( InternReadAll );
 end;
 
 function TTextFileReader.ReadLine: string;
 begin
-  Result := DataToString(InternReadLine);
+  Result            := DataToString( InternReadLine );
 end;
 
 function TTextFileReader.Utf8ReadAll: UTF8String;
 begin
-  Result := DataToUtf8String(InternReadAll);
+  Result            := DataToUtf8String( InternReadAll );
 end;
 
 function TTextFileReader.Utf8ReadLine: UTF8String;
 begin
-  Result := DataToUtf8String(InternReadLine);
+  Result            := DataToUtf8String( InternReadLine );
 end;
 
 procedure TTextFileReader.ReadBOM;
 begin
-  Assert(Length(FBuffer) >= 4);
+  Assert( Length( FBuffer ) >= 4 );
 
-  FBOMType := bomAnsi;
-  FBufCount := FStream.Read(FBuffer[0], Length(FBuffer));
+  FBOMType          := bomAnsi;
+  FBufCount         := FStream.Read( FBuffer[ 0 ], Length( FBuffer ) );
   if FBufCount >= 2 then
   begin
-    if (FBuffer[0] = $EF) and (FBuffer[1] = $BB) then
+    if ( FBuffer[ 0 ] = $EF ) and ( FBuffer[ 1 ] = $BB ) then
     begin
-      if FBuffer[2] = $BF then
+      if FBuffer[ 2 ] = $BF then
       begin
-        FBOMType := bomUtf8;
-        FBufStart := 3;
+        FBOMType    := bomUtf8;
+        FBufStart   := 3;
       end;
     end
-    else if (FBuffer[0] = $FF) and (FBuffer[1] = $FE) then
+    else if ( FBuffer[ 0 ] = $FF ) and ( FBuffer[ 1 ] = $FE ) then
     begin
-      if (FBuffer[2] = 0) and (FBuffer[3] = 0) then
+      if ( FBuffer[ 2 ] = 0 ) and ( FBuffer[ 3 ] = 0 ) then
       begin
-        FBOMType := bomUcs4LE;
-        FBufStart := 4;
+        FBOMType    := bomUcs4LE;
+        FBufStart   := 4;
       end
       else
       begin
-        FBOMType := bomUcs2LE;
-        FBufStart := 2;
+        FBOMType    := bomUcs2LE;
+        FBufStart   := 2;
       end;
     end
-    else if (FBuffer[0] = $FE) and (FBuffer[1] = $FF) then
+    else if ( FBuffer[ 0 ] = $FE ) and ( FBuffer[ 1 ] = $FF ) then
     begin
-      FBOMType := bomUcs2BE;
-      FBufStart := 2;
+      FBOMType      := bomUcs2BE;
+      FBufStart     := 2;
     end
-    else if (FBuffer[0] = 0) and (FBuffer[1] = 0) then
+    else if ( FBuffer[ 0 ] = 0 ) and ( FBuffer[ 1 ] = 0 ) then
     begin
-      if (FBuffer[2] = $FE) and (FBuffer[3] = $FF) then
+      if ( FBuffer[ 2 ] = $FE ) and ( FBuffer[ 3 ] = $FF ) then
       begin
-        FBOMType := bomUcs4BE;
-        FBufStart := 4;
+        FBOMType    := bomUcs4BE;
+        FBufStart   := 4;
       end;
     end;
   end;
 
-  Dec(FBufCount, FBufStart);
+  Dec( FBufCount, FBufStart );
 end;
-
 
 { TToken }
 
-constructor TToken.Create(ATokenIndex: Integer; AKind: TTokenKind;
-  const AValue, AFilename: string; ALine, AColumn, AIndex, ATokenLength: Integer);
+constructor TToken.Create( ATokenIndex: Integer; AKind: TTokenKind;
+  const AValue, AFilename: string; ALine, AColumn, AIndex, ATokenLength: Integer );
 begin
   inherited Create;
-  FTokenIndex := ATokenIndex;
-  FKind := AKind;
-  FValue := AValue;
-  FLine := ALine;
-  FColumn := AColumn;
-  FIndex := AIndex;
-  FTokenLength := ATokenLength;
-  FFilename := AFilename;
+  FTokenIndex       := ATokenIndex;
+  FKind             := AKind;
+  FValue            := AValue;
+  FLine             := ALine;
+  FColumn           := AColumn;
+  FIndex            := AIndex;
+  FTokenLength      := ATokenLength;
+  FFilename         := AFilename;
 end;
 
 {procedure TToken.FreeInstance;
@@ -1328,66 +1326,65 @@ end;}
 
 function TToken.IsIdent: Boolean;
 begin
-  Result := Kind >= tkIdent;
+  Result            := Kind >= tkIdent;
 end;
 
 function TToken.IsTypeIdent: Boolean;
 begin
-  Result := (Kind >= tkIdent) and ((Kind < tkIdentStrictReserved) or (Kind = tkI_string));
+  Result            := ( Kind >= tkIdent ) and ( ( Kind < tkIdentStrictReserved ) or ( Kind = tkI_string ) );
 end;
 
 function TToken.GetCommentBody: string;
 begin
   if Kind = tkComment then
   begin
-    if Value[1] = '{' then
-      Result := Copy(Value, 2, Length(Value) - 2)
+    if Value[ 1 ] = '{' then
+      Result        := Copy( Value, 2, Length( Value ) - 2 )
+    else if Value[ 1 ] = '(' then
+      Result        := Copy( Value, 3, Length( Value ) - 4 )
+    else if Value[ 1 ] = '/' then
+      Result        := Copy( Value, 3, MaxInt )
     else
-    if Value[1] = '(' then
-      Result := Copy(Value, 3, Length(Value) - 4)
-    else if Value[1] = '/' then
-      Result := Copy(Value, 3, MaxInt)
-    else
-      Result := '';
+      Result        := '';
   end
   else
-    Result := '';
+    Result          := '';
 end;
 
 function TToken.GetEndIndex: Integer;
 begin
-  Result := Index + TokenLength - 1;
+  Result            := Index + TokenLength - 1;
 end;
 
 function TToken.IsFreeUsableIdent: Boolean;
 begin
-  Result := (Kind >= tkIdent) and (Kind < tkIdentStrictReserved);
+  Result            := ( Kind >= tkIdent ) and ( Kind < tkIdentStrictReserved );
 end;
 
-procedure TToken.OffsetToken(OffsetTokenIndex, OffsetIndex, OffsetColumn, OffsetLine: Integer);
+procedure TToken.OffsetToken( OffsetTokenIndex, OffsetIndex, OffsetColumn, OffsetLine: Integer );
 begin
-  Inc(FTokenIndex, OffsetTokenIndex);
-  Inc(FColumn, OffsetColumn);
-  Inc(FLine, OffsetLine);
-  Inc(FIndex, OffsetIndex);
+  Inc( FTokenIndex, OffsetTokenIndex );
+  Inc( FColumn, OffsetColumn );
+  Inc( FLine, OffsetLine );
+  Inc( FIndex, OffsetIndex );
 end;
 
 { TDelphiLexer }
 
-constructor TDelphiLexer.Create(const AFilename: string; const AText: UTF8String;
-  AOwnsTokens: Boolean; AStartLine: Integer; AStartColumn: Integer);
+constructor TDelphiLexer.Create( const AFilename: string; const AText: UTF8String;
+  AOwnsTokens: Boolean; AStartLine: Integer; AStartColumn: Integer );
 begin
   inherited Create;
-  FTokens := TObjectList.Create(AOwnsTokens);
-  FFilename := AFilename;
-  FText := AText;
-  FStartLine := AStartLine;
-  FLine := AStartLine;
-  FIndex := 1;
+  FTokens           := TObjectList.Create( AOwnsTokens );
+  FFilename         := AFilename;
+  FText             := AText;
+  FStartLine        := AStartLine;
+  FLine             := AStartLine;
+  FIndex            := 1;
   if AStartColumn < 1 then
-    AStartColumn := 1;
-  FStartColumn := AStartColumn;
-  FColumn := AStartColumn;
+    AStartColumn    := 1;
+  FStartColumn      := AStartColumn;
+  FColumn           := AStartColumn;
 end;
 
 destructor TDelphiLexer.Destroy;
@@ -1396,156 +1393,156 @@ begin
   inherited Destroy;
 end;
 
-function TDelphiLexer.GetTokenProp(Index: Integer): TToken;
+function TDelphiLexer.GetTokenProp( Index: Integer ): TToken;
 begin
-  Result := TToken(FTokens[Index]);
+  Result            := TToken( FTokens[ Index ] );
 end;
 
 function TDelphiLexer.GetCount: Integer;
 begin
-  Result := FTokens.Count;
+  Result            := FTokens.Count;
 end;
 
-function TDelphiLexer.GetToken(out Token: TToken): Boolean;
+function TDelphiLexer.GetToken( out Token: TToken ): Boolean;
 begin
-  Token := GetToken;
-  Result := Token <> nil;
+  Token             := GetToken;
+  Result            := Token <> nil;
 end;
 
-function TDelphiLexer.CountSpaces(StartIndex: Integer): Integer;
+function TDelphiLexer.CountSpaces( StartIndex: Integer ): Integer;
 var
-  Len: Integer;
+  Len               : Integer;
 begin
-  Len := Length(FText);
-  Result := 0;
-  while (StartIndex <= Len) and (FText[StartIndex] in [#9, ' ']) do
+  Len               := Length( FText );
+  Result            := 0;
+  while ( StartIndex <= Len ) and ( FText[ StartIndex ] in [ #9, ' ' ] ) do
   begin
-    Inc(Result);
-    Inc(StartIndex);
+    Inc( Result );
+    Inc( StartIndex );
   end;
 end;
 
-procedure TDelphiLexer.DeleteToken(Token: TToken; DeleteEndSpaces: Boolean);
+procedure TDelphiLexer.DeleteToken( Token: TToken; DeleteEndSpaces: Boolean );
 var
-  TokenIndex, Len: Integer;
-  I: Integer;
-  Tk: TToken;
-  Line: Integer;
+  TokenIndex, Len   : Integer;
+  I                 : Integer;
+  Tk                : TToken;
+  Line              : Integer;
 begin
   if Token <> nil then
   begin
     { There is no line break change by deleting one token }
-    Len := Token.TokenLength;
+    Len             := Token.TokenLength;
     if DeleteEndSpaces then
-      Inc(Len, CountSpaces(Token.Index + Len));
-    System.Delete(FText, Token.Index, Len);
-    TokenIndex := Token.TokenIndex;
-    Line := Token.Line;
+      Inc( Len, CountSpaces( Token.Index + Len ) );
+    System.Delete( FText, Token.Index, Len );
+    TokenIndex      := Token.TokenIndex;
+    Line            := Token.Line;
     for I := TokenIndex + 1 to FTokens.Count - 1 do
     begin
-      Tk := TToken(FTokens[I]);
+      Tk            := TToken( FTokens[ I ] );
       if Tk.Line = Line then
-        Tk.OffsetToken(-1, -Len, 0, 0)
+        Tk.OffsetToken( -1, -Len, 0, 0 )
       else
-        Tk.OffsetToken(-1, -Len, -Len, 0);
+        Tk.OffsetToken( -1, -Len, -Len, 0 );
     end;
-    FTokens.Delete(TokenIndex);
+    FTokens.Delete( TokenIndex );
     if FCurTokenIndex > 0 then
-      Dec(FCurTokenIndex);
-    FModified := True;
+      Dec( FCurTokenIndex );
+    FModified       := True;
   end;
 end;
 
-procedure TDelphiLexer.DeleteTokens(StartToken, EndToken: TToken; DeleteEndSpaces: Boolean);
+procedure TDelphiLexer.DeleteTokens( StartToken, EndToken: TToken; DeleteEndSpaces: Boolean );
 var
-  I: Integer;
+  I                 : Integer;
   StartIndex, EndIndex: Integer;
   StartTokenIndex, EndTokenIndex: Integer;
-  OffsetLine, Len: Integer;
-  TokenDeleteCount: Integer;
-  Tk: TToken;
-  LineStartIndex: Integer;
+  OffsetLine, Len   : Integer;
+  TokenDeleteCount  : Integer;
+  Tk                : TToken;
+  LineStartIndex    : Integer;
 begin
-  if (StartToken <> nil) or (EndToken <> nil) then
+  if ( StartToken <> nil ) or ( EndToken <> nil ) then
   begin
     if StartToken = nil then
-      DeleteToken(EndToken, DeleteEndSpaces)
+      DeleteToken( EndToken, DeleteEndSpaces )
     else if EndToken = nil then
-      DeleteToken(StartToken, DeleteEndSpaces)
+      DeleteToken( StartToken, DeleteEndSpaces )
     else
     begin
-      StartIndex := StartToken.Index;
-      EndIndex := EndToken.Index + EndToken.TokenLength;
+      StartIndex    := StartToken.Index;
+      EndIndex      := EndToken.Index + EndToken.TokenLength;
       if DeleteEndSpaces then
-        Inc(EndIndex, CountSpaces(EndIndex));
+        Inc( EndIndex, CountSpaces( EndIndex ) );
 
-      Delete(FText, StartIndex, EndIndex - StartIndex);
+      Delete( FText, StartIndex, EndIndex - StartIndex );
       StartTokenIndex := StartToken.TokenIndex;
       EndTokenIndex := EndToken.TokenIndex;
       TokenDeleteCount := EndTokenIndex - StartTokenIndex + 1;
-      Len := EndIndex - StartIndex;
+      Len           := EndIndex - StartIndex;
 
-      LineStartIndex := FindLineStart(FText, EndToken.Index - 1);
+      LineStartIndex := FindLineStart( FText, EndToken.Index - 1 );
       if LineStartIndex < StartIndex then
         LineStartIndex := StartIndex;
 
-      OffsetLine := EndToken.Line - StartToken.Line;
-      Dec(FLine, OffsetLine);
+      OffsetLine    := EndToken.Line - StartToken.Line;
+      Dec( FLine, OffsetLine );
       for I := EndTokenIndex + 1 to FTokens.Count - 1 do
       begin
-        Tk := TToken(FTokens[I]);
+        Tk          := TToken( FTokens[ I ] );
         if Tk.Line = Line then
-          Tk.OffsetToken(-TokenDeleteCount, -Len, -(EndIndex - LineStartIndex), -OffsetLine)
+          Tk.OffsetToken( -TokenDeleteCount, -Len, -( EndIndex - LineStartIndex ), -OffsetLine )
         else
-          Tk.OffsetToken(-TokenDeleteCount, -Len, 0, -OffsetLine);
+          Tk.OffsetToken( -TokenDeleteCount, -Len, 0, -OffsetLine );
       end;
       for I := EndTokenIndex downto StartTokenIndex do
-        FTokens.Delete(I);
+        FTokens.Delete( I );
 
       if FCurTokenIndex >= TokenDeleteCount then
-        Dec(FCurTokenIndex, TokenDeleteCount);
-      FModified := True;
+        Dec( FCurTokenIndex, TokenDeleteCount );
+      FModified     := True;
     end;
   end;
 end;
 
-procedure TDelphiLexer.InsertTextAfter(Token: TToken; const Text: UTF8String);
+procedure TDelphiLexer.InsertTextAfter( Token: TToken; const Text: UTF8String );
 begin
-  InsertText(Token.EndIndex + 1, Text);
+  InsertText( Token.EndIndex + 1, Text );
 end;
 
-procedure TDelphiLexer.InsertTextAfter(Token: TToken; const Text: string);
+procedure TDelphiLexer.InsertTextAfter( Token: TToken; const Text: string );
 begin
-  InsertText(Token.EndIndex + 1, Text);
+  InsertText( Token.EndIndex + 1, Text );
 end;
 
-procedure TDelphiLexer.ReplaceToken(Token: TToken; const Text: UTF8String);
+procedure TDelphiLexer.ReplaceToken( Token: TToken; const Text: UTF8String );
 var
-  Index: Integer;
+  Index             : Integer;
 begin
-  Index := Token.Index;
-  DeleteToken(Token);
-  InsertText(Index, Text);
+  Index             := Token.Index;
+  DeleteToken( Token );
+  InsertText( Index, Text );
 end;
 
-procedure TDelphiLexer.ReplaceToken(Token: TToken; const Text: string);
+procedure TDelphiLexer.ReplaceToken( Token: TToken; const Text: string );
 begin
-  ReplaceToken(Token, UTF8Encode(Text));
+  ReplaceToken( Token, UTF8Encode( Text ) );
 end;
 
-procedure TDelphiLexer.DiscardTokens(StartIndex: Integer);
+procedure TDelphiLexer.DiscardTokens( StartIndex: Integer );
 var
-  I: Integer;
-  Tk: TToken;
+  I                 : Integer;
+  Tk                : TToken;
 begin
   if FTokens.Count > 0 then
   begin
-    Tk := TToken(FTokens[0]);
+    Tk              := TToken( FTokens[ 0 ] );
     if StartIndex <= Tk.Index then
     begin
-      FIndex := 1;
-      FLine := FStartLine;
-      FColumn := FStartColumn;
+      FIndex        := 1;
+      FLine         := FStartLine;
+      FColumn       := FStartColumn;
       FCurTokenIndex := 0;
       FTokens.Clear;
     end
@@ -1553,23 +1550,23 @@ begin
     begin
       for I := FTokens.Count - 1 downto 0 do
       begin
-        Tk := TToken(FTokens[I]);
+        Tk          := TToken( FTokens[ I ] );
         if Tk.Index >= StartIndex then
-          FTokens.Delete(I)
+          FTokens.Delete( I )
         else
         begin
           if Tk.Index + Tk.TokenLength > StartIndex then
           begin
-            FIndex := Tk.Index;
-            FLine := Tk.Line;
+            FIndex  := Tk.Index;
+            FLine   := Tk.Line;
             FColumn := Tk.Column;
-            FTokens.Delete(I);
+            FTokens.Delete( I );
           end
           else
           begin
-            FIndex := Tk.Index + Tk.TokenLength;
+            FIndex  := Tk.Index + Tk.TokenLength;
             FColumn := Tk.Column + Tk.TokenLength;
-            FLine := Tk.Line;
+            FLine   := Tk.Line;
           end;
           if FCurTokenIndex > FTokens.Count then
             FCurTokenIndex := FTokens.Count;
@@ -1577,236 +1574,236 @@ begin
         end;
       end;
     end;
-    FModified := True;
+    FModified       := True;
   end;
 end;
 
-procedure TDelphiLexer.DeleteText(StartIndex, Len: Integer);
+procedure TDelphiLexer.DeleteText( StartIndex, Len: Integer );
 begin
   if Len > 0 then
   begin
-    Delete(FText, StartIndex, Len);
-    DiscardTokens(StartIndex);
-    FModified := True;
+    Delete( FText, StartIndex, Len );
+    DiscardTokens( StartIndex );
+    FModified       := True;
   end;
 end;
 
-procedure TDelphiLexer.InsertText(StartIndex: Integer; const Text: UTF8String);
+procedure TDelphiLexer.InsertText( StartIndex: Integer; const Text: UTF8String );
 begin
   if Text <> '' then
   begin
-    Insert(Text, FText, StartIndex);
-    DiscardTokens(StartIndex);
-    FModified := True;
+    Insert( Text, FText, StartIndex );
+    DiscardTokens( StartIndex );
+    FModified       := True;
   end;
 end;
 
-procedure TDelphiLexer.InsertText(StartIndex: Integer; const Text: string);
+procedure TDelphiLexer.InsertText( StartIndex: Integer; const Text: string );
 begin
-  InsertText(StartIndex, UTF8Encode(Text));
+  InsertText( StartIndex, UTF8Encode( Text ) );
 end;
 
-procedure TDelphiLexer.ReplaceText(StartIndex, Len: Integer; const Text: UTF8String);
+procedure TDelphiLexer.ReplaceText( StartIndex, Len: Integer; const Text: UTF8String );
 begin
-  if (Len > 0) and (Text = '') then
-    DeleteText(StartIndex, Len)
-  else if (Len = 0) and (Text <> '') then
-    InsertText(StartIndex, Text)
+  if ( Len > 0 ) and ( Text = '' ) then
+    DeleteText( StartIndex, Len )
+  else if ( Len = 0 ) and ( Text <> '' ) then
+    InsertText( StartIndex, Text )
   else
   begin
-    Delete(FText, StartIndex, Len);
-    Insert(Text, FText, StartIndex);
+    Delete( FText, StartIndex, Len );
+    Insert( Text, FText, StartIndex );
 
-    DiscardTokens(StartIndex);
-    FModified := True;
+    DiscardTokens( StartIndex );
+    FModified       := True;
   end;
 end;
 
-procedure TDelphiLexer.ReplaceText(StartIndex, Len: Integer; const Text: string);
+procedure TDelphiLexer.ReplaceText( StartIndex, Len: Integer; const Text: string );
 begin
-  ReplaceText(StartIndex, Len, UTF8Encode(Text));
+  ReplaceText( StartIndex, Len, UTF8Encode( Text ) );
 end;
 
 procedure TDelphiLexer.RestartLexer;
 begin
-  FCurTokenIndex := 0;
+  FCurTokenIndex    := 0;
 end;
 
 procedure TDelphiLexer.RewindLastToken;
 begin
   if FCurTokenIndex > 0 then
-    Dec(FCurTokenIndex);
+    Dec( FCurTokenIndex );
 end;
 
 function TDelphiLexer.LookAhead: TToken;
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
-  Idx := FCurTokenIndex;
-  Result := NextToken;
-  FCurTokenIndex := Idx;
+  Idx               := FCurTokenIndex;
+  Result            := NextToken;
+  FCurTokenIndex    := Idx;
 end;
 
 function TDelphiLexer.LookAheadNoComment: TToken;
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
-  Idx := FCurTokenIndex;
-  Result := NextTokenNoComment;
-  FCurTokenIndex := Idx;
+  Idx               := FCurTokenIndex;
+  Result            := NextTokenNoComment;
+  FCurTokenIndex    := Idx;
 end;
 
 function TDelphiLexer.NextToken: TToken;
 begin
-  Result := nil;
+  Result            := nil;
   while FTokens.Count <= FCurTokenIndex do
   begin
-    Result := GetToken;
+    Result          := GetToken;
     if Result = nil then
       Break;
   end;
   if FCurTokenIndex < FTokens.Count then
   begin
-    Result := TToken(FTokens[FCurTokenIndex]);
-    Inc(FCurTokenIndex);
+    Result          := TToken( FTokens[ FCurTokenIndex ] );
+    Inc( FCurTokenIndex );
   end;
 end;
 
-function TDelphiLexer.NextToken(out Token: TToken): Boolean;
+function TDelphiLexer.NextToken( out Token: TToken ): Boolean;
 begin
-  Token := NextToken;
-  Result := Token <> nil;
+  Token             := NextToken;
+  Result            := Token <> nil;
 end;
 
 function TDelphiLexer.NextTokenNoComment: TToken;
 begin
   repeat
-    Result := NextToken;
-    if (Result <> nil) and (Result.Kind = tkDirective) then
+    Result          := NextToken;
+    if ( Result <> nil ) and ( Result.Kind = tkDirective ) then
     begin
       // AsciiStartsText takes the prefix first, and a directive's text starts with "{$" / "(*$"
       // (the test used to pass the token first and omit the "$", so it never matched).
-      if AsciiStartsText('{$INCLUDE ', Result.Value) or
-         AsciiStartsText('{$I ', Result.Value) or
-         AsciiStartsText('(*$INCLUDE ', Result.Value) or
-         AsciiStartsText('(*$I ', Result.Value) then
+      if AsciiStartsText( '{$INCLUDE ', Result.Value ) or
+        AsciiStartsText( '{$I ', Result.Value ) or
+        AsciiStartsText( '(*$INCLUDE ', Result.Value ) or
+        AsciiStartsText( '(*$I ', Result.Value ) then
         Break;
     end;
-  until (Result = nil) or not (Result.Kind in [tkComment, tkDirective]);
+  until ( Result = nil ) or not ( Result.Kind in [ tkComment, tkDirective ] );
 end;
 
-function TDelphiLexer.NextTokenNoComment(out Token: TToken): Boolean;
+function TDelphiLexer.NextTokenNoComment( out Token: TToken ): Boolean;
 begin
-  Token := NextTokenNoComment;
-  Result := Token <> nil;
+  Token             := NextTokenNoComment;
+  Result            := Token <> nil;
 end;
 
 function TDelphiLexer.ParseIdentifierName: string;
 var
-  Token: TToken;
+  Token             : TToken;
 begin
-  Result := '';
-  Token := CurrentToken;
+  Result            := '';
+  Token             := CurrentToken;
   if Token <> nil then
   begin
     repeat
-      while (Token <> nil) and (Token.Kind in [tkComment, tkDirective]) do
-        Token := NextToken;
+      while ( Token <> nil ) and ( Token.Kind in [ tkComment, tkDirective ] ) do
+        Token       := NextToken;
       if not Token.IsTypeIdent then
         Exit;
-      Result := Result + Token.Value;
-      Token := NextToken;
-      while (Token <> nil) and (Token.Kind in [tkComment, tkDirective]) do
-        Token := NextToken;
+      Result        := Result + Token.Value;
+      Token         := NextToken;
+      while ( Token <> nil ) and ( Token.Kind in [ tkComment, tkDirective ] ) do
+        Token       := NextToken;
 
       if Token.Kind <> tkQualifier then
         Break;
-      Result := Result + '.';
-    until not NextTokenNoComment(Token);
+      Result        := Result + '.';
+    until not NextTokenNoComment( Token );
   end;
   // leave: token after last identifier part
 end;
 
 function TDelphiLexer.ParseIfdefToken: TToken;
 begin
-  FPreprocMode := True;
+  FPreprocMode      := True;
   try
-    Result := GetToken;
+    Result          := GetToken;
   finally
-    FPreprocMode := False;
+    FPreprocMode    := False;
   end;
 end;
 
-function TDelphiLexer.PreTokenOf(Token: TToken): TToken;
+function TDelphiLexer.PreTokenOf( Token: TToken ): TToken;
 begin
-  Result := nil;
+  Result            := nil;
   if Token.TokenIndex > 0 then
-    Result := Tokens[Token.TokenIndex - 1];
+    Result          := Tokens[ Token.TokenIndex - 1 ];
 end;
 
-function TDelphiLexer.PreTokenNoCommentOf(Token: TToken): TToken;
+function TDelphiLexer.PreTokenNoCommentOf( Token: TToken ): TToken;
 begin
-  Result := Token;
+  Result            := Token;
   while Result.TokenIndex > 0 do
   begin
-    Result := Tokens[Result.TokenIndex - 1];
+    Result          := Tokens[ Result.TokenIndex - 1 ];
     if Result.Kind <> tkComment then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
-function TDelphiLexer.NextTokenOf(Token: TToken): TToken;
+function TDelphiLexer.NextTokenOf( Token: TToken ): TToken;
 begin
-  Result := nil;
+  Result            := nil;
   if Token.TokenIndex + 1 < Count then
-    Result := Tokens[Token.TokenIndex + 1];
+    Result          := Tokens[ Token.TokenIndex + 1 ];
 end;
 
-function TDelphiLexer.NextTokenNoCommentOf(Token: TToken): TToken;
+function TDelphiLexer.NextTokenNoCommentOf( Token: TToken ): TToken;
 begin
-  Result := Token;
+  Result            := Token;
   while Result.TokenIndex + 1 < Count do
   begin
-    Result := Tokens[Result.TokenIndex + 1];
+    Result          := Tokens[ Result.TokenIndex + 1 ];
     if Result.Kind <> tkComment then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
 function TDelphiLexer.GetCurrentToken: TToken;
 begin
   if FCurTokenIndex - 1 < FTokens.Count then
-    Result := TToken(FTokens[FCurTokenIndex - 1])
+    Result          := TToken( FTokens[ FCurTokenIndex - 1 ] )
   else
-    Result := nil;
+    Result          := nil;
 end;
 
 function TDelphiLexer.GetFullStringNext: string;
 var
-  Token: TToken;
-  S: string;
+  Token             : TToken;
+  S                 : string;
 begin
-  Token := CurrentToken;
-  if (Token <> nil) and (Token.Kind = tkString) then
+  Token             := CurrentToken;
+  if ( Token <> nil ) and ( Token.Kind = tkString ) then
   begin
-    if GetCombinedStringConstantNext(Result) > 0 then
+    if GetCombinedStringConstantNext( Result ) > 0 then
       RewindLastToken;
 
-    while NextTokenNoComment(Token) and (Token.Kind = tkPlus) do
+    while NextTokenNoComment( Token ) and ( Token.Kind = tkPlus ) do
     begin
-      Result := Result + ' + ';
-      if NextTokenNoComment(Token) and ((Token.Kind = tkString) or Token.IsIdent) then
+      Result        := Result + ' + ';
+      if NextTokenNoComment( Token ) and ( ( Token.Kind = tkString ) or Token.IsIdent ) then
       begin
         if Token.Kind = tkString then
         begin
-          if GetCombinedStringConstantNext(S) > 0 then
+          if GetCombinedStringConstantNext( S ) > 0 then
             RewindLastToken;
-          Result := Result + S;
+          Result    := Result + S;
         end
         else
-          Result := Result + Token.Value;
+          Result    := Result + Token.Value;
       end
       else
         Break;
@@ -1814,311 +1811,311 @@ begin
   end;
 end;
 
-function TDelphiLexer.GetCombinedStringConstantNext(var CombinedString: string): Integer;
+function TDelphiLexer.GetCombinedStringConstantNext( var CombinedString: string ): Integer;
 var
-  Token: TToken;
-  LastEndIndex: Integer;
+  Token             : TToken;
+  LastEndIndex      : Integer;
 begin
-  Result := 0;
-  Token := CurrentToken;
-  if (Token <> nil) and (Token.Kind = tkString) then
+  Result            := 0;
+  Token             := CurrentToken;
+  if ( Token <> nil ) and ( Token.Kind = tkString ) then
   begin
-    CombinedString := Token.Value;
-    Result := 1;
+    CombinedString  := Token.Value;
+    Result          := 1;
 
     { Handle "'a'#13#10" but not "#13 #10"}
-    LastEndIndex := Token.EndIndex;
+    LastEndIndex    := Token.EndIndex;
     while True do
     begin
       Token := NextToken;
-      if (Token = nil) or (Token.Kind <> tkString) or (Token.Value[1] <> '#') or
-         (Token.Index <> LastEndIndex + 1) then
+      if ( Token = nil ) or ( Token.Kind <> tkString ) or ( Token.Value[ 1 ] <> '#' ) or
+        ( Token.Index <> LastEndIndex + 1 ) then
       begin
         Break;
       end;
-      Inc(Result);
+      Inc( Result );
       CombinedString := CombinedString + Token.Value;
-      LastEndIndex := Token.EndIndex;
+      LastEndIndex  := Token.EndIndex;
     end;
   end;
 end;
 
 function TDelphiLexer.GetPreviousToken: TToken;
 begin
-  if (FCurTokenIndex > 0) and (FCurTokenIndex - 1 - 1 < FTokens.Count) then
-    Result := TToken(FTokens[FCurTokenIndex - 1 - 1])
+  if ( FCurTokenIndex > 0 ) and ( FCurTokenIndex - 1 - 1 < FTokens.Count ) then
+    Result          := TToken( FTokens[ FCurTokenIndex - 1 - 1 ] )
   else
-    Result := nil;
+    Result          := nil;
 end;
 
 function TDelphiLexer.GetToken: TToken;
 var
-  Data, P, F: PUTF8Char;
-  ch1, ch2: UTF8Char;
-  S: UTF8String;
-  TokenValue: string;
+  Data, P, F        : PUTF8Char;
+  ch1, ch2          : UTF8Char;
+  S                 : UTF8String;
+  TokenValue        : string;
 
-  CharSize: Integer;
-  IndexAdd: Integer;
-  IsDecimal: Boolean;
-  IsExp: Boolean;
-  IsExpSign: Boolean;
+  CharSize          : Integer;
+  IndexAdd          : Integer;
+  IsDecimal         : Boolean;
+  IsExp             : Boolean;
+  IsExpSign         : Boolean;
   StartLine, StartColumn, Line, Column: Integer;
-  Kind: TTokenKind;
-  StartIndex: Integer;
-  IsEscapedIdent: Boolean;
+  Kind              : TTokenKind;
+  StartIndex        : Integer;
+  IsEscapedIdent    : Boolean;
   QuoteRun, ClosingRun: Integer;
-  ClosingFound: Boolean;
+  ClosingFound      : Boolean;
 begin
-  Result := nil;
-  if FIndex > Length(FText) then
+  Result            := nil;
+  if FIndex > Length( FText ) then
     Exit;
-  Data := Pointer(Text);
-  P := Data + FIndex - 1;
+  Data              := Pointer( Text );
+  P                 := Data + FIndex - 1;
 
   // skip white chars
-  Column := FColumn;
-  Line := FLine;
-  ch1 := P[0];
+  Column            := FColumn;
+  Line              := FLine;
+  ch1               := P[ 0 ];
   while ch1 in WhiteChars do
   begin
     if ch1 = #10 then
     begin
-      Inc(Line);
-      Column := 0;
+      Inc( Line );
+      Column        := 0;
     end;
-    Inc(P);
-    ch1 := P[0];
+    Inc( P );
+    ch1             := P[ 0 ];
     if ch1 <> #13 then
-      Inc(Column);
+      Inc( Column );
   end;
 
   if ch1 = #0 then
   begin
-    FLine := Line;
-    FColumn := Column;
+    FLine           := Line;
+    FColumn         := Column;
     Exit;
   end;
 
-  StartLine := Line;
-  StartColumn := Column;
-  StartIndex := P - Data + 1;
+  StartLine         := Line;
+  StartColumn       := Column;
+  StartIndex        := P - Data + 1;
 
-  F := P;
-  IndexAdd := 0;
-  IsEscapedIdent := False;
-  QuoteRun := 0;
-  while P[QuoteRun] = '''' do
-    Inc(QuoteRun);
+  F                 := P;
+  IndexAdd          := 0;
+  IsEscapedIdent    := False;
+  QuoteRun          := 0;
+  while P[ QuoteRun ] = '''' do
+    Inc( QuoteRun );
 
-  if (QuoteRun >= 3) and Odd(QuoteRun) and IsBlankToLineEnd(P + QuoteRun) then
+  if ( QuoteRun >= 3 ) and Odd( QuoteRun ) and IsBlankToLineEnd( P + QuoteRun ) then
   begin
     // Delphi 12 multi-line string: an odd run of three or more quotes ends the line; the string
     // runs to the first later line that holds, after leading blanks, the same run of quotes.
     // Its lines are text, never code.
-    Inc(P, QuoteRun);
-    Inc(Column, QuoteRun);
-    ClosingFound := False;
-    while not ClosingFound and (P[0] <> #0) do
+    Inc( P, QuoteRun );
+    Inc( Column, QuoteRun );
+    ClosingFound    := False;
+    while not ClosingFound and ( P[ 0 ] <> #0 ) do
     begin
       // to the start of the next line
-      while not (P[0] in [#0, #10, #13]) do
+      while not ( P[ 0 ] in [ #0, #10, #13 ] ) do
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
-      if P[0] = #0 then
+      if P[ 0 ] = #0 then
         Break; // unterminated at the end of the text
-      if P[0] = #13 then
-        Inc(P);
-      if P[0] = #10 then
-        Inc(P);
-      Inc(Line);
-      Column := 1;
+      if P[ 0 ] = #13 then
+        Inc( P );
+      if P[ 0 ] = #10 then
+        Inc( P );
+      Inc( Line );
+      Column        := 1;
 
       // a closing line: blanks, then the quote run
-      while P[0] in [#9, ' '] do
+      while P[ 0 ] in [ #9, ' ' ] do
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
-      ClosingRun := 0;
-      while P[ClosingRun] = '''' do
-        Inc(ClosingRun);
+      ClosingRun    := 0;
+      while P[ ClosingRun ] = '''' do
+        Inc( ClosingRun );
       if ClosingRun >= QuoteRun then
       begin
-        Inc(P, QuoteRun);
-        Inc(Column, QuoteRun);
+        Inc( P, QuoteRun );
+        Inc( Column, QuoteRun );
         ClosingFound := True;
       end;
     end;
-    Kind := tkString;
+    Kind            := tkString;
   end
   else if ch1 = '''' then
   begin
-    Inc(P);
-    Inc(Column);
+    Inc( P );
+    Inc( Column );
     // string
     while True do
     begin
-      case P[0] of
+      case P[ 0 ] of
         #0:
           Break;
         '''':
           begin
-            if P[1] = '''' then
-              Inc(P)
+            if P[ 1 ] = '''' then
+              Inc( P )
             else
               Break;
           end;
         #10, #13:
           begin
-            Dec(P);
-            Column := 0;
+            Dec( P );
+            Column  := 0;
             Break; // line end is string end in pascal
           end;
       end;
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
-    if P[0] <> #0 then
+    if P[ 0 ] <> #0 then
     begin
-      Inc(P); // include P[0] which is now P[-1]
-      Inc(Column);
+      Inc( P ); // include P[0] which is now P[-1]
+      Inc( Column );
     end;
-    Kind := tkString;
+    Kind            := tkString;
   end
   else if ch1 = '{' then
   begin
     // comment { ... } -> find comment end
-    Inc(P);
-    Inc(Column);
-    if P[0] = '$' then
+    Inc( P );
+    Inc( Column );
+    if P[ 0 ] = '$' then
     begin
-      Kind := tkDirective;
-      Inc(P);
-      Inc(Column);
+      Kind          := tkDirective;
+      Inc( P );
+      Inc( Column );
     end
     else
-      Kind := tkComment;
+      Kind          := tkComment;
 
     while True do
     begin
-      case P[0] of
+      case P[ 0 ] of
         #0, '}':
           Break;
         #10:
           begin
-            Inc(Line);
-            Column := 0;
+            Inc( Line );
+            Column  := 0;
           end;
       end;
-      Inc(P);
-      if P[0] <> #13 then
-        Inc(Column);
+      Inc( P );
+      if P[ 0 ] <> #13 then
+        Inc( Column );
     end;
 
-    if P[0] <> #0 then
+    if P[ 0 ] <> #0 then
     begin
-      Inc(P); // include P[0] which is now P[-1]
-      Inc(Column);
+      Inc( P ); // include P[0] which is now P[-1]
+      Inc( Column );
     end;
   end
-  else if (ch1 = '(') and (P[1] = '*') then
+  else if ( ch1 = '(' ) and ( P[ 1 ] = '*' ) then
   begin
     // comment (* ... *) -> find comment end
-    Inc(P, 2);
-    Inc(Column, 2);
-    if P[0] = '$' then
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    if P[ 0 ] = '$' then
     begin
-      Kind := tkDirective;
-      Inc(P);
-      Inc(Column);
+      Kind          := tkDirective;
+      Inc( P );
+      Inc( Column );
     end
     else
-      Kind := tkComment;
+      Kind          := tkComment;
 
-    ch1 := P[0];
-    while (ch1 <> #0) and not ((ch1 = '*') and (P[1] = ')')) do
+    ch1             := P[ 0 ];
+    while ( ch1 <> #0 ) and not ( ( ch1 = '*' ) and ( P[ 1 ] = ')' ) ) do
     begin
       if ch1 = #10 then
       begin
-        Inc(Line);
-        Column := 0;
+        Inc( Line );
+        Column      := 0;
       end;
-      Inc(P);
-      ch1 := P[0];
+      Inc( P );
+      ch1           := P[ 0 ];
       if ch1 <> #13 then
-        Inc(Column);
+        Inc( Column );
     end;
 
     if ch1 <> #0 then
     begin
-      Inc(P, 2); // include P[0],P[1] which is now P[-2],P[-1]
-      Inc(Column, 2);
+      Inc( P, 2 ); // include P[0],P[1] which is now P[-2],P[-1]
+      Inc( Column, 2 );
     end;
   end
-  else if (ch1 = '/') and (P[1] = '/') then
+  else if ( ch1 = '/' ) and ( P[ 1 ] = '/' ) then
   begin
     // comment "// ..." -> find comment end
-    Inc(P, 2);
-    Inc(Column, 2);
-    while not (P[0] in [#0, #10, #13]) do
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    while not ( P[ 0 ] in [ #0, #10, #13 ] ) do
     begin
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
-    Kind := tkComment;
-    if P[0] <> #0 then
+    Kind            := tkComment;
+    if P[ 0 ] <> #0 then
     begin
-      if P[0] = #13 then
-        Inc(IndexAdd); {do not parse the #13 again}
-      Inc(Line);
-      Inc(IndexAdd); {do not parse the #10 again}
-      Column := 1;
+      if P[ 0 ] = #13 then
+        Inc( IndexAdd ); {do not parse the #13 again}
+      Inc( Line );
+      Inc( IndexAdd ); {do not parse the #10 again}
+      Column        := 1;
     end;
   end
-  else if (ch1 in IdentFirstChars) {$IFDEF UNICODE}or ((P[0] >= #128) and IsUtf8Letter(P, 0)){$ENDIF}
-         or (FPreprocMode and (ch1 in IdentChars)) then
+  else if ( ch1 in IdentFirstChars ){$IFDEF UNICODE} or ( ( P[ 0 ] >= #128 ) and IsUtf8Letter( P, 0 ) ){$ENDIF}
+  or ( FPreprocMode and ( ch1 in IdentChars ) ) then
   begin
     // identifier
-    CharSize := UTF8CharLength(ch1);
-    Inc(P, CharSize);
-    Inc(Column, CharSize);
+    CharSize        := UTF8CharLength( ch1 );
+    Inc( P, CharSize );
+    Inc( Column, CharSize );
 
-    while (P[0] in IdentChars) {$IFDEF UNICODE}or ((P[0] >= #128) and IsUtf8LetterOrDigit(P, 0)){$ENDIF} do
+    while ( P[ 0 ] in IdentChars ){$IFDEF UNICODE} or ( ( P[ 0 ] >= #128 ) and IsUtf8LetterOrDigit( P, 0 ) ){$ENDIF} do
     begin
-      if Byte(P[0]) and $80 > 0 then
+      if Byte( P[ 0 ] ) and $80 > 0 then
       begin
-        CharSize := UTF8CharLength(P[0]);
-        Inc(P, CharSize);
-        Inc(Column, CharSize);
+        CharSize    := UTF8CharLength( P[ 0 ] );
+        Inc( P, CharSize );
+        Inc( Column, CharSize );
       end
       else
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
     end;
 
-    Kind := tkIdent;
+    Kind            := tkIdent;
   end
   else if ch1 in NumberChars then
   begin
     // number
-    Inc(P);
-    Inc(Column);
+    Inc( P );
+    Inc( Column );
 
-    IsDecimal := False;
-    IsExp := False;
-    IsExpSign := False;
+    IsDecimal       := False;
+    IsExp           := False;
+    IsExpSign       := False;
     repeat
-      case P[0] of
+      case P[ 0 ] of
         '0'..'9', '_': ; // '_' is a digit separator (Delphi 11+): 1_000_000
 
         '.':
           begin
-            if P[1] = '.' then  // '..' "range symbol"
+            if P[ 1 ] = '.' then // '..' "range symbol"
               Break;
             if IsDecimal or IsExp then
               Break
@@ -2136,177 +2133,184 @@ begin
           if IsDecimal or IsExp then
             Break
           else
-            IsExp := True;
+            IsExp   := True;
 
       else
         Break;
       end;
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     until False;
     if IsExp or IsDecimal then
-      Kind := tkFloat
+      Kind          := tkFloat
     else
-      Kind := tkInt;
+      Kind          := tkInt;
   end
-  else if (ch1 = '$') and (P[1] in HexNumberChars) then
+  else if ( ch1 = '$' ) and ( P[ 1 ] in HexNumberChars ) then
   begin
     // hex number ('_' digit separators allowed: $FF_FF)
-    Inc(P, 2);
-    Inc(Column, 2);
-    while P[0] in HexNumberChars + ['_'] do
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    while P[ 0 ] in HexNumberChars + [ '_' ] do
     begin
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
-    Kind := tkInt;
+    Kind            := tkInt;
   end
-  else if (ch1 = '%') and (P[1] in ['0', '1']) then
+  else if ( ch1 = '%' ) and ( P[ 1 ] in [ '0', '1' ] ) then
   begin
     // binary literal (Delphi 11+): %1010, separators allowed
-    Inc(P, 2);
-    Inc(Column, 2);
-    while P[0] in ['0', '1', '_'] do
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    while P[ 0 ] in [ '0', '1', '_' ] do
     begin
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
-    Kind := tkInt;
+    Kind            := tkInt;
   end
-  else if (ch1 = '&') and ((P[1] in IdentFirstChars) {$IFDEF UNICODE}or ((P[1] >= #128) and IsUtf8Letter(P, 1)){$ENDIF}) then
+  else if ( ch1 = '&' ) and ( ( P[ 1 ] in IdentFirstChars ){$IFDEF UNICODE} or ( ( P[ 1 ] >= #128 ) and IsUtf8Letter( P, 1 ) ){$ENDIF} ) then
   begin
     // &-escaped identifier (&End, &Type): an identifier even when the word is reserved
-    Inc(P);
-    Inc(Column);
-    while (P[0] in IdentChars) {$IFDEF UNICODE}or ((P[0] >= #128) and IsUtf8LetterOrDigit(P, 0)){$ENDIF} do
+    Inc( P );
+    Inc( Column );
+    while ( P[ 0 ] in IdentChars ){$IFDEF UNICODE} or ( ( P[ 0 ] >= #128 ) and IsUtf8LetterOrDigit( P, 0 ) ){$ENDIF} do
     begin
-      if Byte(P[0]) and $80 > 0 then
+      if Byte( P[ 0 ] ) and $80 > 0 then
       begin
-        CharSize := UTF8CharLength(P[0]);
-        Inc(P, CharSize);
-        Inc(Column, CharSize);
+        CharSize    := UTF8CharLength( P[ 0 ] );
+        Inc( P, CharSize );
+        Inc( Column, CharSize );
       end
       else
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
     end;
-    Kind := tkIdent;
-    IsEscapedIdent := True;
+    Kind            := tkIdent;
+    IsEscapedIdent  := True;
   end
-  else if SupportMacroTokens and (ch1 = '$') and (P[1] = '_') and (P[2] = '_') then // macro support
+  else if SupportMacroTokens and ( ch1 = '$' ) and ( P[ 1 ] = '_' ) and ( P[ 2 ] = '_' ) then // macro support
   begin
     // identifier
-    Inc(P, 2);
-    Inc(Column, 2);
-    while P[0] in IdentChars do
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    while P[ 0 ] in IdentChars do
     begin
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
-    SetString(S, F, P - F);
-    Kind := tkMacro;
+    SetString( S, F, P - F );
+    Kind            := tkMacro;
   end
-  else if (ch1 = '#') and ((P[1] = '$') or (P[1] in NumberChars)) then
+  else if ( ch1 = '#' ) and ( ( P[ 1 ] = '$' ) or ( P[ 1 ] in NumberChars ) ) then
   begin
     // char
-    Inc(P, 2);
-    Inc(Column, 2);
-    if P[-1] = '$' then
+    Inc( P, 2 );
+    Inc( Column, 2 );
+    if P[ -1 ] = '$' then
     begin
-      while P[0] in HexNumberChars do
+      while P[ 0 ] in HexNumberChars do
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
     end
     else
     begin
-      while P[0] in NumberChars do
+      while P[ 0 ] in NumberChars do
       begin
-        Inc(P);
-        Inc(Column);
+        Inc( P );
+        Inc( Column );
       end;
     end;
-    Kind := tkString;
+    Kind            := tkString;
   end
   else {if ch1 in SymbolChars then}
   begin
-    Inc(P);
-    Inc(Column);
-    ch2 := P[0];
+    Inc( P );
+    Inc( Column );
+    ch2             := P[ 0 ];
     case ch1 of
-      ';': Kind := tkSemicolon;
-      ',': Kind := tkComma;
-      '^': Kind := tkPointer;
-      '@': Kind := tkAddr;
-      '&': Kind := tkAmp;
-      '[': Kind := tkLBracket;
-      ']': Kind := tkRBracket;
-      '+': Kind := tkPlus;
-      '-': Kind := tkMinus;
-      '*': Kind := tkMultiply;
-      '/': Kind := tkDivide;
-      '=': Kind := tkEqual;
-      ':': if ch2 = '=' then Kind := tkAssign else Kind := tkColon;
+      ';': Kind     := tkSemicolon;
+      ',': Kind     := tkComma;
+      '^': Kind     := tkPointer;
+      '@': Kind     := tkAddr;
+      '&': Kind     := tkAmp;
+      '[': Kind     := tkLBracket;
+      ']': Kind     := tkRBracket;
+      '+': Kind     := tkPlus;
+      '-': Kind     := tkMinus;
+      '*': Kind     := tkMultiply;
+      '/': Kind     := tkDivide;
+      '=': Kind     := tkEqual;
+      ':': if ch2 = '=' then
+          Kind      := tkAssign
+        else
+          Kind      := tkColon;
       '<': if ch2 = '=' then
-             Kind := tkLessEqualThan
-           else if ch2 = '>' then
-             Kind := tkNotEqual
-           else
-             Kind := tkLessThan;
-      '>': if ch2 = '=' then Kind := tkGreaterEqualThan else Kind := tkGreaterThan;
+          Kind      := tkLessEqualThan
+        else if ch2 = '>' then
+          Kind      := tkNotEqual
+        else
+          Kind      := tkLessThan;
+      '>': if ch2 = '=' then
+          Kind      := tkGreaterEqualThan
+        else
+          Kind      := tkGreaterThan;
       '.': if ch2 = '.' then
-             Kind := tkRange
-           else if ch2 = ')' then
-           begin
-             Kind := tkRBracket; // '.)' => ']'
-             Inc(P);
-             Inc(Column);
-           end
-           else
-             Kind := tkQualifier;
+          Kind      := tkRange
+        else if ch2 = ')' then
+        begin
+          Kind      := tkRBracket; // '.)' => ']'
+          Inc( P );
+          Inc( Column );
+        end
+        else
+          Kind      := tkQualifier;
       '(': if ch2 = '.' then
-           begin
-             Kind := tkLBracket; // '(.' => '['
-             Inc(P);
-             Inc(Column);
-           end
-           else
-             Kind := tkLParan;
-      ')': Kind := tkRParan;
+        begin
+          Kind      := tkLBracket; // '(.' => '['
+          Inc( P );
+          Inc( Column );
+        end
+        else
+          Kind      := tkLParan;
+      ')': Kind     := tkRParan;
     else
-      Kind := tkSymbol;
+      Kind          := tkSymbol;
     end;
     if Kind >= tkSymbolLevel2 then
     begin
-      Inc(P);
-      Inc(Column);
+      Inc( P );
+      Inc( Column );
     end;
   end;
-  FIndex := P - Data + 1;
-  FLine := Line;
-  FColumn := Column;
+  FIndex            := P - Data + 1;
+  FLine             := Line;
+  FColumn           := Column;
 
-  {$IFDEF UNICODE}
-  SetStringFromUtf8(TokenValue, F, P - F);
-  {$ELSE}
-  SetString(TokenValue, F, P - F);
-  {$ENDIF UNICODE}
-  if (Kind = tkIdent) and not IsEscapedIdent then
-    Kind := FindTokenIdentKind(TokenValue);
+{$IFDEF UNICODE}
+  SetStringFromUtf8( TokenValue, F, P - F );
+{$ELSE}
+  SetString( TokenValue, F, P - F );
+{$ENDIF UNICODE}
+  if ( Kind = tkIdent ) and not IsEscapedIdent then
+    Kind            := FindTokenIdentKind( TokenValue );
 
-  Result := TToken.Create(FTokens.Count, Kind, TokenValue, FFilename, StartLine, StartColumn, StartIndex, P - F);
-  FTokens.Add(Result);
+  Result            := TToken.Create( FTokens.Count, Kind, TokenValue, FFilename, StartLine, StartColumn, StartIndex, P - F );
+  FTokens.Add( Result );
 
-  Inc(FIndex, IndexAdd); // skip some chars if necessary
+  Inc( FIndex, IndexAdd ); // skip some chars if necessary
 end;
 
 initialization
   InitTokenStrings;
 
 finalization
-  FreeAndNil(TokenStrings);
+  FreeAndNil( TokenStrings );
 
 end.
+

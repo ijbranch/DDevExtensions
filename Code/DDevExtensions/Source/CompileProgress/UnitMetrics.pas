@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -35,7 +35,7 @@ type
 /// </summary>
 /// <param name="FileName">Absolute path to the .pas file to analyse.</param>
 /// <returns>Populated TUnitMetrics; returns zero values when the file cannot be loaded.</returns>
-function CalculateUnitMetrics(const FileName: string): TUnitMetrics;
+function CalculateUnitMetrics( const FileName: string ): TUnitMetrics;
 
 implementation
 
@@ -48,25 +48,25 @@ uses
 // points), and the case-label heuristic does not distinguish a 'case' statement
 // from a 'case'-variant record type declaration. Treat the numbers as a relative
 // indicator for ranking units, not an authoritative measurement.
-function CalculateUnitMetrics(const FileName: string): TUnitMetrics;
+function CalculateUnitMetrics( const FileName: string ): TUnitMetrics;
 var
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  Content: UTF8String;
-  CodeLines: array of Boolean;
-  MaxLine: Integer;
-  I: Integer;
-  InCaseStatement: Boolean;
-  CaseDepth: Integer;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
+  Content           : UTF8String;
+  CodeLines         : array of Boolean;
+  MaxLine           : Integer;
+  I                 : Integer;
+  InCaseStatement   : Boolean;
+  CaseDepth         : Integer;
 begin
   Result.LinesOfCode := 0;
   Result.CyclomaticComplexity := 1; // Base complexity
 
-  if not FileExists(FileName) then
+  if not FileExists( FileName ) then
     Exit;
 
   try
-    Content := LoadTextFileToUtf8String(FileName);
+    Content         := LoadTextFileToUtf8String( FileName );
   except
     Exit;
   end;
@@ -74,51 +74,51 @@ begin
   if Content = '' then
     Exit;
 
-  Lexer := TDelphiLexer.Create(FileName, Content);
+  Lexer             := TDelphiLexer.Create( FileName, Content );
   try
-    MaxLine := 0;
+    MaxLine         := 0;
     InCaseStatement := False;
-    CaseDepth := 0;
+    CaseDepth       := 0;
 
     // First pass: find max line and calculate complexity
-    while Lexer.NextToken(Token) do
+    while Lexer.NextToken( Token ) do
     begin
       // Track max line for LOC calculation
       if Token.Line > MaxLine then
-        MaxLine := Token.Line;
+        MaxLine     := Token.Line;
 
       // Skip comments and directives for LOC
-      if not (Token.Kind in [tkComment, tkDirective]) then
+      if not ( Token.Kind in [ tkComment, tkDirective ] ) then
       begin
         // Ensure array is large enough
-        if Token.Line >= Length(CodeLines) then
-          SetLength(CodeLines, Token.Line + 100);
+        if Token.Line >= Length( CodeLines ) then
+          SetLength( CodeLines, Token.Line + 100 );
 
-        CodeLines[Token.Line] := True;
+        CodeLines[ Token.Line ] := True;
       end;
 
       // Calculate cyclomatic complexity
       case Token.Kind of
         tkI_if:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_while:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_for:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_repeat:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_except:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_and:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_or:
-          Inc(Result.CyclomaticComplexity);
+          Inc( Result.CyclomaticComplexity );
 
         tkI_case:
           begin
@@ -130,7 +130,7 @@ begin
           begin
             if InCaseStatement then
             begin
-              Dec(CaseDepth);
+              Dec( CaseDepth );
               if CaseDepth <= 0 then
                 InCaseStatement := False;
             end;
@@ -139,23 +139,23 @@ begin
         tkI_begin, tkI_try:
           begin
             if InCaseStatement then
-              Inc(CaseDepth);
+              Inc( CaseDepth );
           end;
 
         tkColon:
           begin
             // Count case labels (colon after case value, not in declarations)
-            if InCaseStatement and (CaseDepth = 1) then
-              Inc(Result.CyclomaticComplexity);
+            if InCaseStatement and ( CaseDepth = 1 ) then
+              Inc( Result.CyclomaticComplexity );
           end;
       end;
     end;
 
     // Count lines with code
-    for I := 0 to Length(CodeLines) - 1 do
+    for I := 0 to Length( CodeLines ) - 1 do
     begin
-      if CodeLines[I] then
-        Inc(Result.LinesOfCode);
+      if CodeLines[ I ] then
+        Inc( Result.LinesOfCode );
     end;
 
   finally
@@ -164,3 +164,4 @@ begin
 end;
 
 end.
+

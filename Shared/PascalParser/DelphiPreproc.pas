@@ -21,55 +21,55 @@ uses
 
 type
   /// <summary>Notification raised when the preprocessor emits a token (such as a comment or directive).</summary>
-  TTokenEvent = procedure(Sender: TObject; Token: TToken) of object;
+  TTokenEvent = procedure( Sender: TObject; Token: TToken ) of object;
   /// <summary>Notification raised when an $INCLUDE file is encountered, before its contents are inlined.</summary>
-  TIncludeEvent = procedure(Sender: TObject; const Name: string) of object;
+  TIncludeEvent = procedure( Sender: TObject; const Name: string ) of object;
   /// <summary>Notification raised when the preprocessor reports an error.</summary>
-  TPreprocessorErrorEvent = procedure(Sender: TObject; const Msg: string; Token: TToken) of object;
+  TPreprocessorErrorEvent = procedure( Sender: TObject; const Msg: string; Token: TToken ) of object;
   /// <summary>Subscriber-supplied resolver for Boolean compile-time constants in $IF expressions.</summary>
-  TGetConstBoolValueEvent = procedure(Sender: TObject; const Name: string; var Value: Boolean) of object;
+  TGetConstBoolValueEvent = procedure( Sender: TObject; const Name: string; var Value: Boolean ) of object;
   /// <summary>Subscriber-supplied resolver for non-Boolean compile-time constants in $IF expressions.</summary>
-  TGetConstValueEvent = procedure(Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string) of object;
+  TGetConstValueEvent = procedure( Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string ) of object;
   /// <summary>Subscriber-supplied resolver for the Declared() pseudo-function.</summary>
-  TGetDeclaredEvent = procedure(Sender: TObject; const Name: string; var Value: Boolean) of object;
+  TGetDeclaredEvent = procedure( Sender: TObject; const Name: string; var Value: Boolean ) of object;
 
   /// <summary>Method used to handle a single compiler directive token (such as $IFDEF or $DEFINE).</summary>
-  TTokenParserMethod = procedure(Token: TToken; Lexer: TDelphiLexer) of object;
+  TTokenParserMethod = procedure( Token: TToken; Lexer: TDelphiLexer ) of object;
 
   /// <summary>Exception type raised by the preprocessor on unrecoverable errors.</summary>
-  EDelphiPreprocessor = class(Exception);
+  EDelphiPreprocessor = class( Exception );
 
   /// <summary>Hash-table entry pairing a directive name with its handler method.</summary>
-  TTokenParserItem = class(TObject)
+  TTokenParserItem = class( TObject )
   private
     /// <summary>The handler for the directive.</summary>
     FMethod: TTokenParserMethod;
   public
     /// <summary>Creates the entry for a handler.</summary>
     /// <param name="AMethod">The handler for the directive.</param>
-    constructor Create(AMethod: TTokenParserMethod);
+    constructor Create( AMethod: TTokenParserMethod );
     /// <summary>The handler for the directive.</summary>
     property Method: TTokenParserMethod read FMethod;
   end;
 
   /// <summary>Hash-table mapping directive names to TTokenParserMethod handlers.</summary>
-  TTokenParserList = class(THashtable)
+  TTokenParserList = class( THashtable )
   private
     /// <summary>Getter for Methods.</summary>
     /// <param name="Name">Directive name ( without the '$' ).</param>
     /// <returns>The handler registered for Name, or nil when there is none.</returns>
-    function GetMethod(const Name: string): TTokenParserMethod;
+    function GetMethod( const Name: string ): TTokenParserMethod;
   public
     /// <summary>Registers a handler for a directive name, wrapping it in an owned TTokenParserItem.</summary>
     /// <param name="Name">Directive name ( without the '$' ).</param>
     /// <param name="Method">The handler.</param>
-    procedure Add(const Name: string; Method: TTokenParserMethod);
+    procedure Add( const Name: string; Method: TTokenParserMethod );
     /// <summary>Handlers by directive name; nil for a directive with no handler.</summary>
-    property Methods[const Name: string]: TTokenParserMethod read GetMethod; default;
+    property Methods[ const Name: string ]: TTokenParserMethod read GetMethod; default;
   end;
 
   /// <summary>State for a single $IF/$IFDEF block on TIfdefStack.</summary>
-  TIfdefStackItem = class(TObject)
+  TIfdefStackItem = class( TObject )
   private
     /// <summary>Whether the block's current branch is excluded by its own condition.</summary>
     FSkip: Boolean;
@@ -77,7 +77,7 @@ type
     FOuterSkip: Boolean;
     /// <summary>Setter for Skip; clearing it also marks a branch of the block as taken ( Processed ).</summary>
     /// <param name="Value">True to exclude the current branch.</param>
-    procedure SetSkip(const Value: Boolean);
+    procedure SetSkip( const Value: Boolean );
   public
     /// <summary>True for a block opened by $IFDEF, $IFNDEF or $IFOPT; False for $IF, or once an $ELSEIF has been seen.</summary>
     IsIfdef: Boolean;
@@ -98,7 +98,7 @@ type
   end;
 
   /// <summary>Stack of nested $IF/$IFDEF blocks; combines outer-skip flags so nested blocks remain skipped.</summary>
-  TIfdefStack = class(TObject)
+  TIfdefStack = class( TObject )
   private
     /// <summary>The open blocks ( owned TIfdefStackItem objects ), innermost on top.</summary>
     FStack: TStack;
@@ -118,7 +118,7 @@ type
 
     /// <summary>Opens an $IFDEF-style block ( $IFDEF, $IFNDEF, $IFOPT ).</summary>
     /// <param name="ASkip">True when the condition excludes the block's first branch.</param>
-    procedure Ifdef(ASkip: Boolean);
+    procedure Ifdef( ASkip: Boolean );
     /// <summary>Switches the innermost block to its $ELSE branch, which is excluded when an earlier branch was taken (except in an all-branches block).</summary>
     procedure _Else;
     /// <summary>Closes the innermost block, whichever directive opened it, and restores the enclosing skip state.</summary>
@@ -129,7 +129,7 @@ type
     /// all-branches block, otherwise decided by ASkip; either way the block is switched to $IF mode.
     /// </summary>
     /// <param name="ASkip">True when the $ELSEIF condition is false (ignored when the branch is decided otherwise).</param>
-    procedure ElseIf(ASkip: Boolean);
+    procedure ElseIf( ASkip: Boolean );
     /// <summary>
     /// True when the innermost block's next $ELSEIF branch depends on its condition: no earlier branch
     /// was taken, the block is not all-branches, and no enclosing branch is excluded.  When False the
@@ -144,7 +144,7 @@ type
     procedure IfUnknown;
     /// <summary>Opens an $IF block.</summary>
     /// <param name="ASkip">True when the condition excludes the block's first branch.</param>
-    procedure _If(ASkip: Boolean);
+    procedure _If( ASkip: Boolean );
     /// <summary>Closes the innermost block for $IFEND and restores the enclosing skip state.</summary>
     /// <returns>True when the closed block was an $IF block; False when $IFEND closed an $IFDEF-style block.</returns>
     function IfEnd: Boolean;
@@ -161,7 +161,7 @@ type
   /// Pascal preprocessor. Owns a stack of TDelphiLexer instances (one per active $INCLUDE) and
   /// emits tokens via GetToken with conditional-compilation rules applied.
   /// </summary>
-  TDelphiPreprocessor = class(TObject)
+  TDelphiPreprocessor = class( TObject )
   private
     /// <summary>Owned stack of lexers: the main file first, then one per active $INCLUDE; the last is the current one.</summary>
     FLexers: TObjectList;
@@ -205,7 +205,7 @@ type
     /// <summary>Getter for Tokens.</summary>
     /// <param name="Index">Zero-based index, in the order GetToken returned them.</param>
     /// <returns>The token at Index.</returns>
-    function GetTokenProp(Index: Integer): TToken;
+    function GetTokenProp( Index: Integer ): TToken;
     /// <summary>Getter for CurrentFileName.</summary>
     /// <returns>The file name of the current lexer, or '' once every lexer is exhausted.</returns>
     function GetCurrentFileName: string;
@@ -218,30 +218,30 @@ type
     /// </summary>
     /// <param name="Token">The directive token.</param>
     /// <exception cref="EDelphiPreprocessor">The directive is malformed or its handler reports an error, and OnError is not assigned.</exception>
-    procedure ProcessDirective(Token: TToken); virtual;
+    procedure ProcessDirective( Token: TToken ); virtual;
     /// <summary>Reports an error at a token: calls OnError when assigned, otherwise raises.</summary>
     /// <param name="Fmt">Format string of the message.</param>
     /// <param name="Args">Arguments for Fmt.</param>
     /// <param name="Token">The token the error refers to; must not be nil.</param>
     /// <exception cref="EDelphiPreprocessor">OnError is not assigned; the message is prefixed with the file name and line.</exception>
-    procedure Error(const Fmt: string; const Args: array of const; Token: TToken);
+    procedure Error( const Fmt: string; const Args: array of const; Token: TToken );
     /// <summary>Resolves a bare identifier used as a Boolean in an $IF expression through OnGetConstBoolValue.</summary>
     /// <param name="Name">The identifier.</param>
     /// <returns>The value OnGetConstBoolValue supplies; False when it is not assigned.</returns>
-    function GetConstBoolValue(const Name: string): Boolean; virtual;
+    function GetConstBoolValue( const Name: string ): Boolean; virtual;
     /// <summary>Resolves an identifier used as a value in an $IF expression through OnGetConstValue.</summary>
     /// <param name="Name">The identifier.</param>
     /// <param name="Kind">Receives the token kind of the value; tkString unless the handler changes it.</param>
     /// <param name="Value">Receives the value as literal text; '' unless the handler changes it.</param>
-    procedure GetConstValue(const Name: string; out Kind: TTokenKind; out Value: string); virtual;
+    procedure GetConstValue( const Name: string; out Kind: TTokenKind; out Value: string ); virtual;
     /// <summary>Evaluates declared() through OnGetDeclared.</summary>
     /// <param name="Name">The identifier passed to declared().</param>
     /// <returns>The value OnGetDeclared supplies; False when it is not assigned.</returns>
-    function GetDeclared(const Name: string): Boolean; virtual;
+    function GetDeclared( const Name: string ): Boolean; virtual;
     /// <summary>Evaluates defined().</summary>
     /// <param name="Name">The conditional symbol.</param>
     /// <returns>True when Name is currently defined.</returns>
-    function GetDefined(const Name: string): Boolean; virtual;
+    function GetDefined( const Name: string ): Boolean; virtual;
 
     /// <summary>Handlers for the directives the preprocessor interprets, by directive name.</summary>
     property CompilerDirectives: TTokenParserList read FCompilerDirectives;
@@ -250,22 +250,22 @@ type
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">No identifier follows, and OnError is not assigned.</exception>
-    procedure ParseDefine(Token: TToken; L: TDelphiLexer);
+    procedure ParseDefine( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $UNDEF: removes the symbol unless the current branch is skipped.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">No identifier follows, and OnError is not assigned.</exception>
-    procedure ParseUndef(Token: TToken; L: TDelphiLexer);
+    procedure ParseUndef( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $IFDEF: opens a block whose first branch is taken when the symbol is defined.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">No identifier follows, and OnError is not assigned.</exception>
-    procedure ParseIfdef(Token: TToken; L: TDelphiLexer);
+    procedure ParseIfdef( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $IFNDEF: opens a block whose first branch is taken when the symbol is not defined.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">No identifier follows, and OnError is not assigned.</exception>
-    procedure ParseIfndef(Token: TToken; L: TDelphiLexer);
+    procedure ParseIfndef( Token: TToken; L: TDelphiLexer );
     /// <summary>
     /// Handles $IFOPT: opens a block.  Compiler option states are not tracked, so both the first branch and its
     /// $ELSE are kept (an all-branches block): neither branch's declarations, such as uses entries, are dropped.
@@ -273,17 +273,17 @@ type
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">No identifier follows, and OnError is not assigned.</exception>
-    procedure ParseIfopt(Token: TToken; L: TDelphiLexer);
+    procedure ParseIfopt( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $ENDIF: closes the innermost block, whether $IF or $IFDEF-style.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name ( not used ).</param>
     /// <exception cref="EDelphiPreprocessor">No block is open, and OnError is not assigned.</exception>
-    procedure ParseEndif(Token: TToken; L: TDelphiLexer);
+    procedure ParseEndif( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $ELSE: switches the innermost block to its else branch.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name ( not used ).</param>
     /// <exception cref="EDelphiPreprocessor">No block is open or it already had an $ELSE, and OnError is not assigned.</exception>
-    procedure ParseElse(Token: TToken; L: TDelphiLexer);
+    procedure ParseElse( Token: TToken; L: TDelphiLexer );
     /// <summary>
     /// Handles $ELSEIF: evaluates its expression when it can decide the branch (no earlier branch taken, the block
     /// not all-branches, no enclosing branch excluded) and applies the result to the innermost block.
@@ -291,19 +291,19 @@ type
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned at the start of the expression.</param>
     /// <exception cref="EDelphiPreprocessor">No block is open, or the expression is invalid, and OnError is not assigned.</exception>
-    procedure ParseElseif(Token: TToken; L: TDelphiLexer);
+    procedure ParseElseif( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $IF: evaluates its expression ( unless skipping ) and opens an $IF block.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned at the start of the expression.</param>
     /// <exception cref="EDelphiPreprocessor">The expression is invalid, and OnError is not assigned.</exception>
-    procedure ParseIf(Token: TToken; L: TDelphiLexer);
+    procedure ParseIf( Token: TToken; L: TDelphiLexer );
     /// <summary>Handles $IFEND: closes the innermost block, which must be an $IF block.</summary>
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name ( not used ).</param>
     /// <exception cref="EDelphiPreprocessor">
     /// No block is open, or the closed block was $IFDEF-style ( "$ENDIF expected" ), and OnError is not assigned.
     /// </exception>
-    procedure ParseIfEnd(Token: TToken; L: TDelphiLexer);
+    procedure ParseIfEnd( Token: TToken; L: TDelphiLexer );
     /// <summary>
     /// Handles $INCLUDE / $I: unless skipping, extracts the file name ( quoted or bare ) and passes it to OnIncludeFile,
     /// whose handler is expected to load the file and call AddInclude.
@@ -311,12 +311,12 @@ type
     /// <param name="Token">The directive token, used for error locations.</param>
     /// <param name="L">Lexer positioned after the directive name.</param>
     /// <exception cref="EDelphiPreprocessor">The file name is missing or unterminated, and OnError is not assigned.</exception>
-    procedure ParseInclude(Token: TToken; L: TDelphiLexer);
+    procedure ParseInclude( Token: TToken; L: TDelphiLexer );
   public
     /// <summary>Creates a preprocessor for a source text, with CONDITIONALEXPRESSIONS defined.</summary>
     /// <param name="AFilename">File name of the source, used in error messages and token locations.</param>
     /// <param name="Text">The source text.</param>
-    constructor Create(const AFilename: string; const Text: UTF8String);
+    constructor Create( const AFilename: string; const Text: UTF8String );
     /// <summary>Frees the lexers, the definitions and every token returned, which become invalid.</summary>
     destructor Destroy; override;
 
@@ -327,13 +327,13 @@ type
     /// <param name="Filename">File name of the include, recorded in IncludeFiles.</param>
     /// <param name="Text">The include file's text.</param>
     /// <exception cref="EDelphiPreprocessor">Include recursion, and OnError is not assigned.</exception>
-    procedure AddInclude(const Filename: string; const Text: UTF8String); overload;
+    procedure AddInclude( const Filename: string; const Text: UTF8String ); overload;
     /// <summary>Defines a conditional symbol; does nothing when it is already defined.</summary>
     /// <param name="Name">The symbol ( case-insensitive ).</param>
-    procedure Define(const Name: string);
+    procedure Define( const Name: string );
     /// <summary>Removes a conditional symbol; does nothing when it is not defined.</summary>
     /// <param name="Name">The symbol ( case-insensitive ).</param>
-    procedure Undefine(const Name: string);
+    procedure Undefine( const Name: string );
     /// <summary>
     /// Returns the next token that survives conditional compilation: directives are processed and consumed, tokens in
     /// skipped branches are dropped, and include files are read in place.
@@ -341,7 +341,7 @@ type
     /// <param name="AllowComments">True to return comment tokens; otherwise they are only passed to OnComment.</param>
     /// <returns>The next token, owned by the preprocessor; nil at the end of the main file.</returns>
     /// <exception cref="EDelphiPreprocessor">A directive reports an error, and OnError is not assigned.</exception>
-    function GetToken(AllowComments: Boolean = False): TToken;
+    function GetToken( AllowComments: Boolean = False ): TToken;
 
     /// <summary>Distinct names of the files passed to AddInclude.</summary>
     property IncludeFiles: TStrings read FIncludeFiles;
@@ -371,14 +371,14 @@ type
     /// <summary>The number of tokens GetToken has returned.</summary>
     property TokenCount: Integer read GetTokenCount;
     /// <summary>Every token GetToken has returned, in order; owned by the preprocessor.</summary>
-    property Tokens[Index: Integer]: TToken read GetTokenProp;
+    property Tokens[ Index: Integer ]: TToken read GetTokenProp;
   end;
 
   /// <summary>Discriminator passed to TExpressionParser.Match to decide whether failure raises an exception.</summary>
-  MatchFail = (mfYes, mfNo);
+  MatchFail = ( mfYes, mfNo );
 
   /// <summary>$IF expression evaluator that consults the owning preprocessor for identifier resolution.</summary>
-  TPreprocessorIfParser = class(TExpressionParser)
+  TPreprocessorIfParser = class( TExpressionParser )
   private
     /// <summary>The preprocessor that resolves identifiers and reports errors ( not owned ).</summary>
     FPreprocessor: TDelphiPreprocessor;
@@ -386,34 +386,34 @@ type
     /// <summary>Creates a parser for one $IF or $ELSEIF expression.</summary>
     /// <param name="APreprocessor">The preprocessor that resolves identifiers and reports errors.</param>
     /// <param name="ALexer">Lexer positioned at the start of the expression.</param>
-    constructor Create(APreprocessor: TDelphiPreprocessor; ALexer: TDelphiLexer);
+    constructor Create( APreprocessor: TDelphiPreprocessor; ALexer: TDelphiLexer );
   protected
     /// <summary>Resolves an identifier through the preprocessor's OnGetConstValue; every identifier is accepted.</summary>
     /// <param name="Name">The identifier.</param>
     /// <param name="Kind">Receives the token kind of the value.</param>
     /// <param name="Value">Receives the value as literal text ( '' when unresolved ).</param>
     /// <returns>Always True.</returns>
-    function GetConstValue(const Name: string; out Kind: TTokenKind; out Value: string): Boolean; override;
+    function GetConstValue( const Name: string; out Kind: TTokenKind; out Value: string ): Boolean; override;
     /// <summary>Resolves True and False itself, and any other identifier through the preprocessor's OnGetConstBoolValue.</summary>
     /// <param name="Name">The identifier.</param>
     /// <returns>The identifier's Boolean value.</returns>
-    function GetConstBoolValue(const Name: string): Boolean; override;
+    function GetConstBoolValue( const Name: string ): Boolean; override;
     /// <summary>Recognises the $IF functions defined() and declared().</summary>
     /// <param name="Name">The identifier.</param>
     /// <returns>True for 'defined' or 'declared' ( case-insensitive ).</returns>
-    function IsBoolFunction(const Name: string): Boolean; override;
+    function IsBoolFunction( const Name: string ): Boolean; override;
     /// <summary>Evaluates defined( Ident ) against the defined symbols, or declared( Ident ) through OnGetDeclared.</summary>
     /// <param name="IdentToken">Token holding the function name.</param>
     /// <param name="Args">The argument tokens; exactly one identifier is required.</param>
     /// <returns>The function's result.</returns>
     /// <exception cref="EDelphiPreprocessor">A wrong argument list or an unknown function, and OnError is not assigned.</exception>
-    function EvalBoolFunction(IdentToken: TToken; const Args: TDynTokenArray): Boolean; override;
+    function EvalBoolFunction( IdentToken: TToken; const Args: TDynTokenArray ): Boolean; override;
     /// <summary>Forwards the error to the preprocessor's Error, located at the directive token when Token is nil.</summary>
     /// <param name="Msg">Format string of the message.</param>
     /// <param name="Args">Arguments for Msg.</param>
     /// <param name="Token">Token the error refers to, or nil.</param>
     /// <exception cref="EDelphiPreprocessor">OnError is not assigned.</exception>
-    procedure ErrorMsg(const Msg: string; const Args: array of const; Token: TToken); override;
+    procedure ErrorMsg( const Msg: string; const Args: array of const; Token: TToken ); override;
   end;
 
 /// <summary>
@@ -423,7 +423,7 @@ type
 /// <param name="Filename1">First file name.</param>
 /// <param name="Filename2">Second file name.</param>
 /// <returns>True when the names refer to the same file.</returns>
-function CompareFileName(const Filename1, Filename2: string): Boolean;
+function CompareFileName( const Filename1, Filename2: string ): Boolean;
 
 /// <summary>
 /// The conditional symbols the compiler predefines for a Windows target, so a source scan sees the
@@ -443,48 +443,48 @@ resourcestring
   RsIdentifierExpected = 'Identifier expected';
   RsFilenameExpected = 'Filename expected';
   RsStringEndMissing = 'String end is missing';
-  RsNoIfdefOpen = 'No conditional block open';
-  RsExpected = '%s expected';
+  RsNoIfdefOpen     = 'No conditional block open';
+  RsExpected        = '%s expected';
   RsMultipleElseNotAllowed = '$ELSE already used';
 
-function CompareFileName(const Filename1, Filename2: string): Boolean;
+function CompareFileName( const Filename1, Filename2: string ): Boolean;
 {$IFDEF MSWINDOWS}
 var
-  Fn1, Fn2: string;
+  Fn1, Fn2          : string;
 {$ENDIF MSWINDOWS}
 begin
-  {$IFDEF LINUX}
-  Result := CompareStr(Filename1, Filename2) = 0;
-  {$ENDIF LINUX}
-  {$IFDEF MSWINDOWS}
-  if (Pos('~', Filename1) > 0) or (Pos('~', Filename2) > 0) then
+{$IFDEF LINUX}
+  Result            := CompareStr( Filename1, Filename2 ) = 0;
+{$ENDIF LINUX}
+{$IFDEF MSWINDOWS}
+  if ( Pos( '~', Filename1 ) > 0 ) or ( Pos( '~', Filename2 ) > 0 ) then
   begin
-    Fn1 := ExtractShortPathName(Filename1);
-    Fn2 := ExtractShortPathName(Filename2);
-    Result := (Fn1 <> '') and (Fn2 <> '') and (CompareText(Fn1, Fn2) = 0);
+    Fn1             := ExtractShortPathName( Filename1 );
+    Fn2             := ExtractShortPathName( Filename2 );
+    Result          := ( Fn1 <> '' ) and ( Fn2 <> '' ) and ( CompareText( Fn1, Fn2 ) = 0 );
   end
   else
-    Result := CompareText(Filename1, Filename2) = 0;  // it compared the empty locals, so every pair matched
-  {$ENDIF MSWINDOWS}
+    Result          := CompareText( Filename1, Filename2 ) = 0; // it compared the empty locals, so every pair matched
+{$ENDIF MSWINDOWS}
 end;
 
 function PredefinedSymbols( const Platform: string ): TArray<string>;
 begin
-  Result := [ 'MSWINDOWS', 'UNICODE', 'CONDITIONALEXPRESSIONS', 'NATIVECODE', 'DCC', 'ASSEMBLER',
-              'VER' + IntToStr( Trunc( CompilerVersion * 10 ) ) ];
+  Result            := [ 'MSWINDOWS', 'UNICODE', 'CONDITIONALEXPRESSIONS', 'NATIVECODE', 'DCC', 'ASSEMBLER',
+    'VER' + IntToStr( Trunc( CompilerVersion * 10 ) ) ];
 
   if SameText( Platform, 'Win64' ) then
-    Result := Result + [ 'WIN64', 'CPUX64', 'CPU64BITS' ]
+    Result          := Result + [ 'WIN64', 'CPUX64', 'CPU64BITS' ]
   else
-    Result := Result + [ 'WIN32', 'CPUX86', 'CPU386', 'CPU32BITS', 'UNDERSCOREIMPORTNAME' ];
+    Result          := Result + [ 'WIN32', 'CPUX86', 'CPU386', 'CPU32BITS', 'UNDERSCOREIMPORTNAME' ];
 end;
 
 { TPreprocessorIfParser }
 
-constructor TPreprocessorIfParser.Create(APreprocessor: TDelphiPreprocessor; ALexer: TDelphiLexer);
+constructor TPreprocessorIfParser.Create( APreprocessor: TDelphiPreprocessor; ALexer: TDelphiLexer );
 begin
-  inherited Create(ALexer);
-  FPreprocessor := APreprocessor;
+  inherited Create( ALexer );
+  FPreprocessor     := APreprocessor;
 end;
 
 {function TPreprocessorIfParser.BoolIdent: IBoolNode;
@@ -540,103 +540,103 @@ begin
   end;
 end;}
 
-function TPreprocessorIfParser.GetConstBoolValue(const Name: string): Boolean;
+function TPreprocessorIfParser.GetConstBoolValue( const Name: string ): Boolean;
 begin
-  if SameText(Name, 'True') then
-    Result := True
-  else if SameText(Name, 'False') then
-    Result := False
+  if SameText( Name, 'True' ) then
+    Result          := True
+  else if SameText( Name, 'False' ) then
+    Result          := False
   else
-    Result := FPreprocessor.GetConstBoolValue(Name);
+    Result          := FPreprocessor.GetConstBoolValue( Name );
 end;
 
-function TPreprocessorIfParser.GetConstValue(const Name: string; out Kind: TTokenKind;
-  out Value: string): Boolean;
+function TPreprocessorIfParser.GetConstValue( const Name: string; out Kind: TTokenKind;
+  out Value: string ): Boolean;
 begin
-  FPreprocessor.GetConstValue(Name, Kind, Value);
-  Result := True;
+  FPreprocessor.GetConstValue( Name, Kind, Value );
+  Result            := True;
 end;
 
-function TPreprocessorIfParser.IsBoolFunction(const Name: string): Boolean;
+function TPreprocessorIfParser.IsBoolFunction( const Name: string ): Boolean;
 begin
-  Result := SameText(Name, 'defined') or
-            SameText(Name, 'declared');
+  Result            := SameText( Name, 'defined' ) or
+    SameText( Name, 'declared' );
 end;
 
-procedure TPreprocessorIfParser.ErrorMsg(const Msg: string; const Args: array of const; Token: TToken);
+procedure TPreprocessorIfParser.ErrorMsg( const Msg: string; const Args: array of const; Token: TToken );
 begin
   if Token = nil then
-    Token := FPreprocessor.FPreprocToken;
-  FPreprocessor.Error(Msg, Args, Token);
+    Token           := FPreprocessor.FPreprocToken;
+  FPreprocessor.Error( Msg, Args, Token );
 end;
 
-function TPreprocessorIfParser.EvalBoolFunction(IdentToken: TToken; const Args: TDynTokenArray): Boolean;
+function TPreprocessorIfParser.EvalBoolFunction( IdentToken: TToken; const Args: TDynTokenArray ): Boolean;
 begin
-  if SameText(IdentToken.Value, 'defined') then
+  if SameText( IdentToken.Value, 'defined' ) then
   begin
-    if Length(Args) <> 1 then
-      Error('Invalid defined() syntax')
-    else if Args[0].Kind <> tkIdent then
-      Error(Format('defined() requires an identifier: %s', [Args[0].Value]));
-    Result := FPreprocessor.GetDefined(Args[0].Value);
+    if Length( Args ) <> 1 then
+      Error( 'Invalid defined() syntax' )
+    else if Args[ 0 ].Kind <> tkIdent then
+      Error( Format( 'defined() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
+    Result          := FPreprocessor.GetDefined( Args[ 0 ].Value );
   end
-  else if SameText(IdentToken.Value, 'declared') then
+  else if SameText( IdentToken.Value, 'declared' ) then
   begin
-    if Length(Args) <> 1 then
-      Error('Invalid declared() syntax')
-    else if Args[0].Kind <> tkIdent then
-      Error(Format('declared() requires an identifier: %s', [Args[0].Value]));
-    Result := FPreprocessor.GetDeclared(Args[0].Value);
+    if Length( Args ) <> 1 then
+      Error( 'Invalid declared() syntax' )
+    else if Args[ 0 ].Kind <> tkIdent then
+      Error( Format( 'declared() requires an identifier: %s', [ Args[ 0 ].Value ] ) );
+    Result          := FPreprocessor.GetDeclared( Args[ 0 ].Value );
   end
   else
   begin
-    ErrorMsg('Unknown $IF function "%s"', [IdentToken.Value], IdentToken);
-    Result := False;
+    ErrorMsg( 'Unknown $IF function "%s"', [ IdentToken.Value ], IdentToken );
+    Result          := False;
   end;
 end;
 
 { TTokenParserList }
 
-procedure TTokenParserList.Add(const Name: string; Method: TTokenParserMethod);
+procedure TTokenParserList.Add( const Name: string; Method: TTokenParserMethod );
 begin
-  inherited Add(Name, TTokenParserItem.Create(Method));
+  inherited Add( Name, TTokenParserItem.Create( Method ) );
 end;
 
-function TTokenParserList.GetMethod(const Name: string): TTokenParserMethod;
+function TTokenParserList.GetMethod( const Name: string ): TTokenParserMethod;
 var
-  Item: TTokenParserItem;
+  Item              : TTokenParserItem;
 begin
-  Item := TTokenParserItem(Values[Name]);
+  Item              := TTokenParserItem( Values[ Name ] );
   if Item <> nil then
-    Result := Item.Method
+    Result          := Item.Method
   else
-    Result := nil;
+    Result          := nil;
 end;
 
 { TTokenParserItem }
 
-constructor TTokenParserItem.Create(AMethod: TTokenParserMethod);
+constructor TTokenParserItem.Create( AMethod: TTokenParserMethod );
 begin
   inherited Create;
-  FMethod := AMethod;
+  FMethod           := AMethod;
 end;
 
 { TDelphiPreprocessor }
 
-constructor TDelphiPreprocessor.Create(const AFilename: string; const Text: UTF8String);
+constructor TDelphiPreprocessor.Create( const AFilename: string; const Text: UTF8String );
 begin
   inherited Create;
-  FLexers := TObjectList.Create;
-  FLexers.Add(TDelphiLexer.Create(AFilename, Text, {OwnsObjects:=}False));
-  FCurLexer := TDelphiLexer(FLexers[0]);
-  FDefines := THashtable.Create(False);
-  FIncludeFiles := TStringList.Create;
-  FTokens := TObjectList.Create;
-  FIfdefStack := TIfdefStack.Create;
+  FLexers           := TObjectList.Create;
+  FLexers.Add( TDelphiLexer.Create( AFilename, Text, {OwnsObjects:=}False ) );
+  FCurLexer         := TDelphiLexer( FLexers[ 0 ] );
+  FDefines          := THashtable.Create( False );
+  FIncludeFiles     := TStringList.Create;
+  FTokens           := TObjectList.Create;
+  FIfdefStack       := TIfdefStack.Create;
 
-  FCompilerDirectives := TTokenParserList.Create(False);
+  FCompilerDirectives := TTokenParserList.Create( False );
   InitCompilerDirectives;
-  Define('CONDITIONALEXPRESSIONS');
+  Define( 'CONDITIONALEXPRESSIONS' );
 end;
 
 destructor TDelphiPreprocessor.Destroy;
@@ -650,88 +650,88 @@ begin
   inherited Destroy;
 end;
 
-procedure TDelphiPreprocessor.AddInclude(const Filename: string; const Text: UTF8String);
+procedure TDelphiPreprocessor.AddInclude( const Filename: string; const Text: UTF8String );
 var
-  InclCount, i: Integer;
+  InclCount, i      : Integer;
 begin
   // detect include recursion
-  InclCount := 0;
+  InclCount         := 0;
   for i := 0 to FLexers.Count - 1 do
-    if CompareFileName(TDelphiLexer(FLexers[i]).Filename, Filename) then
-      Inc(InclCount);
+    if CompareFileName( TDelphiLexer( FLexers[ i ] ).Filename, Filename ) then
+      Inc( InclCount );
   if InclCount > 50 then
   begin
-    Error(RsIncludeRecursion, [ExtractFileName(Filename)], FPreprocToken);
+    Error( RsIncludeRecursion, [ ExtractFileName( Filename ) ], FPreprocToken );
     Exit;
   end;
 
-  FCurLexer := TDelphiLexer.Create(Filename, Text, {OwnsObjects:=}False);
-  FCurLexer.SupportMacroTokens := TDelphiLexer(FLexers[0]).SupportMacroTokens;
-  FLexers.Add(FCurLexer);
+  FCurLexer         := TDelphiLexer.Create( Filename, Text, {OwnsObjects:=}False );
+  FCurLexer.SupportMacroTokens := TDelphiLexer( FLexers[ 0 ] ).SupportMacroTokens;
+  FLexers.Add( FCurLexer );
 
-  if FIncludeFiles.IndexOf(Filename) < 0 then
-    FIncludeFiles.Add(Filename);
+  if FIncludeFiles.IndexOf( Filename ) < 0 then
+    FIncludeFiles.Add( Filename );
 end;
 
 function TDelphiPreprocessor.GetCurrentFileName: string;
 begin
   if FCurLexer <> nil then
-    Result := FCurLexer.Filename
+    Result          := FCurLexer.Filename
   else
-    Result := '';
+    Result          := '';
 end;
 
 function TDelphiPreprocessor.GetCurrentToken: TToken;
 begin
   if FTokens.Count > 0 then
-    Result := TToken(FTokens[FTokens.Count - 1])
+    Result          := TToken( FTokens[ FTokens.Count - 1 ] )
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-procedure TDelphiPreprocessor.Define(const Name: string);
+procedure TDelphiPreprocessor.Define( const Name: string );
 begin
-  if not FDefines.Contains(Name) then
-    FDefines.Add(Name, nil);
+  if not FDefines.Contains( Name ) then
+    FDefines.Add( Name, nil );
 end;
 
-procedure TDelphiPreprocessor.Undefine(const Name: string);
+procedure TDelphiPreprocessor.Undefine( const Name: string );
 begin
-  FDefines.Remove(Name);
+  FDefines.Remove( Name );
 end;
 
 procedure TDelphiPreprocessor.InitCompilerDirectives;
 begin
-  CompilerDirectives.Add('define', ParseDefine);
-  CompilerDirectives.Add('undef', ParseUndef);
-  CompilerDirectives.Add('ifdef', ParseIfdef);
-  CompilerDirectives.Add('ifopt', ParseIfopt);
-  CompilerDirectives.Add('ifndef', ParseIfndef);
-  CompilerDirectives.Add('endif', ParseEndif);
-  CompilerDirectives.Add('else', ParseElse);
-  CompilerDirectives.Add('if', ParseIf);
-  CompilerDirectives.Add('ifend', ParseIfend);
-  CompilerDirectives.Add('elseif', ParseElseif);
+  CompilerDirectives.Add( 'define', ParseDefine );
+  CompilerDirectives.Add( 'undef', ParseUndef );
+  CompilerDirectives.Add( 'ifdef', ParseIfdef );
+  CompilerDirectives.Add( 'ifopt', ParseIfopt );
+  CompilerDirectives.Add( 'ifndef', ParseIfndef );
+  CompilerDirectives.Add( 'endif', ParseEndif );
+  CompilerDirectives.Add( 'else', ParseElse );
+  CompilerDirectives.Add( 'if', ParseIf );
+  CompilerDirectives.Add( 'ifend', ParseIfend );
+  CompilerDirectives.Add( 'elseif', ParseElseif );
 
-  CompilerDirectives.Add('i', ParseInclude);
-  CompilerDirectives.Add('include', ParseInclude);
+  CompilerDirectives.Add( 'i', ParseInclude );
+  CompilerDirectives.Add( 'include', ParseInclude );
 end;
 
-function TDelphiPreprocessor.GetToken(AllowComments: Boolean): TToken;
+function TDelphiPreprocessor.GetToken( AllowComments: Boolean ): TToken;
 begin
-  if Assigned(FCurLexer) then
+  if Assigned( FCurLexer ) then
   begin
-    Result := nil;
+    Result          := nil;
     repeat
       Result.Free;
-      Result := FCurLexer.GetToken;
+      Result        := FCurLexer.GetToken;
       if Result = nil then
       begin
         // lexer has no further tokens, return to previous lexer
-        FLexers.Delete(FLexers.Count - 1);
+        FLexers.Delete( FLexers.Count - 1 );
         if FLexers.Count > 0 then
         begin
-          FCurLexer := TDelphiLexer(FLexers[FLexers.Count - 1]);
+          FCurLexer := TDelphiLexer( FLexers[ FLexers.Count - 1 ] );
           Continue; // next token
         end
         else
@@ -746,14 +746,14 @@ begin
         // evaluate preprocessor tokens and remove comments
         if Result.Kind = tkComment then
         begin
-          if Assigned(FOnComment) then
-            FOnComment(Self, Result);
+          if Assigned( FOnComment ) then
+            FOnComment( Self, Result );
           if not AllowComments then
             Continue; // next token
         end
         else if Result.Kind = tkDirective then
         begin
-          ProcessDirective(Result);
+          ProcessDirective( Result );
           Continue; // next token
         end;
       end;
@@ -763,225 +763,225 @@ begin
     until False; // for "continue"
 
     if Result <> nil then
-      FTokens.Add(Result);
+      FTokens.Add( Result );
   end
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-procedure TDelphiPreprocessor.ProcessDirective(Token: TToken);
+procedure TDelphiPreprocessor.ProcessDirective( Token: TToken );
 var
-  ps: Integer;
-  Opt: string;
-  S: string;
-  L: TDelphiLexer;
-  NameToken: TToken;
-  TokenParser: TTokenParserMethod;
+  ps                : Integer;
+  Opt               : string;
+  S                 : string;
+  L                 : TDelphiLexer;
+  NameToken         : TToken;
+  TokenParser       : TTokenParserMethod;
 begin
-  FPreprocToken := Token;
+  FPreprocToken     := Token;
   try
-    S := Token.Value;
-    ps := Pos('$', S);
-    Opt := Copy(S, ps + 1, Length(S) - ps * 2 + 1);
+    S               := Token.Value;
+    ps              := Pos( '$', S );
+    Opt             := Copy( S, ps + 1, Length( S ) - ps * 2 + 1 );
 
-    L := TDelphiLexer.Create('', UTF8Encode(Opt), {OwnsObjects:=}True); // we do not put the tokens into the FTokens list
+    L               := TDelphiLexer.Create( '', UTF8Encode( Opt ), {OwnsObjects:=}True ); // we do not put the tokens into the FTokens list
     try
-      NameToken := L.GetToken;
-      if (NameToken = nil) or (NameToken.Kind < tkIdent) then
+      NameToken     := L.GetToken;
+      if ( NameToken = nil ) or ( NameToken.Kind < tkIdent ) then
       begin
-        Error(RsUnknownCompilerDirective,[], Token);
+        Error( RsUnknownCompilerDirective, [ ], Token );
         Exit;
       end;
 
-      TokenParser := CompilerDirectives[NameToken.Value];
-      if Assigned(TokenParser) then
-        TokenParser(Token, L)
-      else if not FIfdefStack.Skip and Assigned(FOnDirective) then
-        FOnDirective(Self, Token);
-        { TODO : reactivate when all directives are parsed };
-        //Error(RsUnknownCompilerDirective, [NameToken.Value], Token);
+      TokenParser   := CompilerDirectives[ NameToken.Value ];
+      if Assigned( TokenParser ) then
+        TokenParser( Token, L )
+      else if not FIfdefStack.Skip and Assigned( FOnDirective ) then
+        FOnDirective( Self, Token );
+      { TODO : reactivate when all directives are parsed };
+      //Error(RsUnknownCompilerDirective, [NameToken.Value], Token);
     finally
       L.Free;
     end;
 
   finally
-    FPreprocToken := nil;
+    FPreprocToken   := nil;
   end;
 end;
 
-procedure TDelphiPreprocessor.Error(const Fmt: string; const Args: array of const;
-  Token: TToken);
+procedure TDelphiPreprocessor.Error( const Fmt: string; const Args: array of const;
+  Token: TToken );
 begin
-  Assert(Token <> nil);
-  if Assigned(FOnError) then
-    FOnError(Self, Format(Fmt, Args), Token)
+  Assert( Token <> nil );
+  if Assigned( FOnError ) then
+    FOnError( Self, Format( Fmt, Args ), Token )
   else
-    raise EDelphiPreprocessor.CreateFmt('%s(%d): %s',
-            [Token.Filename, (Token.Line + 1), Format(Fmt, Args)]);
+    raise EDelphiPreprocessor.CreateFmt( '%s(%d): %s',
+      [ Token.Filename, ( Token.Line + 1 ), Format( Fmt, Args ) ] );
 end;
 
-procedure TDelphiPreprocessor.ParseInclude(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseInclude( Token: TToken; L: TDelphiLexer );
 var
-  S, Filename: string;
-  i: Integer;
-  Len: Integer;
+  S, Filename       : string;
+  i                 : Integer;
+  Len               : Integer;
 begin
   if FIfdefStack.Skip then
     Exit;
 
-  Filename := Trim(Copy(UTF8ToString(L.Text), L.Index, MaxInt));
+  Filename          := Trim( Copy( UTF8ToString( L.Text ), L.Index, MaxInt ) );
   if Filename = '' then
   begin
-    Error(RsFilenameExpected, [], Token);
+    Error( RsFilenameExpected, [ ], Token );
     Exit; // an OnError handler that does not raise must not reach Filename[1]
   end;
-  Len := Length(Filename);
-  if Filename[1] = '''' then
+  Len               := Length( Filename );
+  if Filename[ 1 ] = '''' then
   begin
-    S := Filename;
-    Filename := '';
+    S               := Filename;
+    Filename        := '';
     for i := 2 to Len do
-      if S[i] = '''' then
+      if S[ i ] = '''' then
       begin
-        Filename := Copy(S, 2, i - 2);
+        Filename    := Copy( S, 2, i - 2 );
         Break;
       end;
     if Filename = '' then
     begin
-      Error(RsStringEndMissing, [], Token);
+      Error( RsStringEndMissing, [ ], Token );
       Exit;
     end;
   end
   else
   begin
-    i := 2;
-    while (i <= Len) and (Filename[i] > ' ') do
-      Inc(i);
-    Filename := Copy(Filename, 1, i - 1);
+    i               := 2;
+    while ( i <= Len ) and ( Filename[ i ] > ' ' ) do
+      Inc( i );
+    Filename        := Copy( Filename, 1, i - 1 );
   end;
 
-  if Assigned(FOnIncludeFile) then
-    FOnIncludeFile(Self, Filename);
+  if Assigned( FOnIncludeFile ) then
+    FOnIncludeFile( Self, Filename );
 end;
 
-procedure TDelphiPreprocessor.ParseIfEnd(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseIfEnd( Token: TToken; L: TDelphiLexer );
 begin
   if FIfdefStack.Count = 0 then
-    Error(RsNoIfdefOpen, [], Token)
+    Error( RsNoIfdefOpen, [ ], Token )
   else if not FIfdefStack.IfEnd then
-    Error(RsExpected, ['$ENDIF'], Token);
+    Error( RsExpected, [ '$ENDIF' ], Token );
 end;
 
-procedure TDelphiPreprocessor.ParseEndif(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseEndif( Token: TToken; L: TDelphiLexer );
 begin
   // $ENDIF closes $IFDEF, $IFNDEF, $IFOPT and - since XE4 - $IF as well, so which kind of block it
   // closes is not checked (it used to demand $IFEND for $IF and raise on legal code).
   if FIfdefStack.Count = 0 then
-    Error(RsNoIfdefOpen, [], Token)
+    Error( RsNoIfdefOpen, [ ], Token )
   else
     FIfdefStack.EndIf;
 end;
 
-procedure TDelphiPreprocessor.ParseIf(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseIf( Token: TToken; L: TDelphiLexer );
 var
-  p: TPreprocessorIfParser;
+  p                 : TPreprocessorIfParser;
 begin
   if FIfdefStack.Skip then
-    FIfdefStack._If(False)
+    FIfdefStack._If( False )
   else
   begin
-    p := TPreprocessorIfParser.Create(Self, L);
+    p               := TPreprocessorIfParser.Create( Self, L );
     try
-      FIfdefStack._If(not p.Parse);
+      FIfdefStack._If( not p.Parse );
     finally
       p.Free;
     end;
   end;
 end;
 
-procedure TDelphiPreprocessor.ParseIfdef(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseIfdef( Token: TToken; L: TDelphiLexer );
 var
-  t: TToken;
+  t                 : TToken;
 begin
-  t := L.ParseIfdefToken;
-  if (t = nil) or (t.Kind < tkIdent) then
+  t                 := L.ParseIfdefToken;
+  if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error(RsIdentifierExpected, [], Token);
-    FIfdefStack.Ifdef(False); // default to undefined if no exception was raised
+    Error( RsIdentifierExpected, [ ], Token );
+    FIfdefStack.Ifdef( False ); // default to undefined if no exception was raised
     Exit;
   end;
   if FIfdefStack.Skip then
-    FIfdefStack.Ifdef(False)
+    FIfdefStack.Ifdef( False )
   else
-    FIfdefStack.Ifdef(not FDefines.Contains(t.Value));
+    FIfdefStack.Ifdef( not FDefines.Contains( t.Value ) );
 end;
 
-procedure TDelphiPreprocessor.ParseIfndef(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseIfndef( Token: TToken; L: TDelphiLexer );
 var
-  t: TToken;
+  t                 : TToken;
 begin
-  t := L.ParseIfdefToken;
-  if (t = nil) or (t.Kind < tkIdent) then
+  t                 := L.ParseIfdefToken;
+  if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error(RsIdentifierExpected, [], Token);
-    FIfdefStack.Ifdef(True); // default to undefined if no exception was raised
+    Error( RsIdentifierExpected, [ ], Token );
+    FIfdefStack.Ifdef( True ); // default to undefined if no exception was raised
     Exit;
   end;
 
   if FIfdefStack.Skip then
-    FIfdefStack.Ifdef(False)
+    FIfdefStack.Ifdef( False )
   else
-    FIfdefStack.Ifdef(FDefines.Contains(t.Value));
+    FIfdefStack.Ifdef( FDefines.Contains( t.Value ) );
 end;
 
-procedure TDelphiPreprocessor.ParseIfopt(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseIfopt( Token: TToken; L: TDelphiLexer );
 var
-  t: TToken;
+  t                 : TToken;
 begin
-  t := L.ParseIfdefToken;
-  if (t = nil) or (t.Kind < tkIdent) then
+  t                 := L.ParseIfdefToken;
+  if ( t = nil ) or ( t.Kind < tkIdent ) then
   begin
-    Error(RsIdentifierExpected, [], Token);
-    FIfdefStack.Ifdef(False); // default to undefined if no exception was raised
+    Error( RsIdentifierExpected, [ ], Token );
+    FIfdefStack.Ifdef( False ); // default to undefined if no exception was raised
     Exit;
   end;
   // Compiler option states are not tracked, so neither branch can be ruled out: both are kept, and a
   // caller collecting declarations (the uses lists) sees both.  (It used to pick a branch by whether
   // the option letter happened to name a directive handler.)
   if FIfdefStack.Skip then
-    FIfdefStack.Ifdef(False)
+    FIfdefStack.Ifdef( False )
   else
     FIfdefStack.IfUnknown;
 end;
 
-procedure TDelphiPreprocessor.ParseElse(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseElse( Token: TToken; L: TDelphiLexer );
 begin
   if FIfdefStack.Count = 0 then
-    Error(RsNoIfdefOpen, [], Token)
+    Error( RsNoIfdefOpen, [ ], Token )
   else if FIfdefStack.InElse then
-    Error(RsMultipleElseNotAllowed, [], Token)
+    Error( RsMultipleElseNotAllowed, [ ], Token )
   else
     FIfdefStack._Else;
 end;
 
-procedure TDelphiPreprocessor.ParseElseif(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseElseif( Token: TToken; L: TDelphiLexer );
 var
-  p: TPreprocessorIfParser;
+  p                 : TPreprocessorIfParser;
 begin
   if FIfdefStack.Count = 0 then
-    Error(RsNoIfdefOpen, [], Token)
+    Error( RsNoIfdefOpen, [ ], Token )
   else
   begin
     // An earlier branch was taken, the block keeps every branch, or the whole block is excluded: the
     // condition does not decide anything.  (It used to test the stack's Skip, which is also True when
     // only this block's own false $IF excluded the text - the $ELSEIF was then taken unevaluated.)
     if not FIfdefStack.ElseIfNeedsCondition then
-      FIfdefStack.ElseIf(True)
+      FIfdefStack.ElseIf( True )
     else
     begin
-      p := TPreprocessorIfParser.Create(Self, L);
+      p             := TPreprocessorIfParser.Create( Self, L );
       try
-        FIfdefStack.ElseIf(not p.Parse);
+        FIfdefStack.ElseIf( not p.Parse );
       finally
         p.Free;
       end;
@@ -989,83 +989,83 @@ begin
   end;
 end;
 
-procedure TDelphiPreprocessor.ParseDefine(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseDefine( Token: TToken; L: TDelphiLexer );
 var
-  t: TToken;
+  t                 : TToken;
 begin
   if not FIfdefStack.Skip then
   begin
-    t := L.ParseIfdefToken;
-    if (t = nil) or (t.Kind < tkIdent) then
+    t               := L.ParseIfdefToken;
+    if ( t = nil ) or ( t.Kind < tkIdent ) then
     begin
-      Error(RsIdentifierExpected, [], Token);
+      Error( RsIdentifierExpected, [ ], Token );
       Exit;
     end;
-    Define(t.Value);
+    Define( t.Value );
   end;
 end;
 
-procedure TDelphiPreprocessor.ParseUndef(Token: TToken; L: TDelphiLexer);
+procedure TDelphiPreprocessor.ParseUndef( Token: TToken; L: TDelphiLexer );
 var
-  t: TToken;
+  t                 : TToken;
 begin
   if not FIfdefStack.Skip then
   begin
-    t := L.ParseIfdefToken;
-    if (t = nil) or (t.Kind < tkIdent) then
+    t               := L.ParseIfdefToken;
+    if ( t = nil ) or ( t.Kind < tkIdent ) then
     begin
-      Error(RsIdentifierExpected, [], Token);
+      Error( RsIdentifierExpected, [ ], Token );
       Exit;
     end;
-    Undefine(t.Value);
+    Undefine( t.Value );
   end;
 end;
 
-function TDelphiPreprocessor.GetConstBoolValue(const Name: string): Boolean;
+function TDelphiPreprocessor.GetConstBoolValue( const Name: string ): Boolean;
 begin
-  Result := False;
-  if Assigned(FOnGetConstBoolValue) then
-    FOnGetConstBoolValue(Self, Name, Result);
+  Result            := False;
+  if Assigned( FOnGetConstBoolValue ) then
+    FOnGetConstBoolValue( Self, Name, Result );
 end;
 
-function TDelphiPreprocessor.GetDeclared(const Name: string): Boolean;
+function TDelphiPreprocessor.GetDeclared( const Name: string ): Boolean;
 begin
-  Result := False;
-  if Assigned(FOnGetDeclared) then
-    FOnGetDeclared(Self, Name, Result);
+  Result            := False;
+  if Assigned( FOnGetDeclared ) then
+    FOnGetDeclared( Self, Name, Result );
 end;
 
-function TDelphiPreprocessor.GetDefined(const Name: string): Boolean;
+function TDelphiPreprocessor.GetDefined( const Name: string ): Boolean;
 begin
-  Result := Defines.Contains(Name);
+  Result            := Defines.Contains( Name );
 end;
 
 function TDelphiPreprocessor.GetTokenCount: Integer;
 begin
-  Result := FTokens.Count;
+  Result            := FTokens.Count;
 end;
 
-function TDelphiPreprocessor.GetTokenProp(Index: Integer): TToken;
+function TDelphiPreprocessor.GetTokenProp( Index: Integer ): TToken;
 begin
-  Result := TToken(FTokens[Index]);
+  Result            := TToken( FTokens[ Index ] );
 end;
 
-procedure TDelphiPreprocessor.GetConstValue(const Name: string;
-  out Kind: TTokenKind; out Value: string);
+procedure TDelphiPreprocessor.GetConstValue( const Name: string;
+  out Kind: TTokenKind; out Value: string );
 begin
-  Value := '';
-  Kind := tkString;
-  if Assigned(FOnGetConstValue) then
-    FOnGetConstValue(Self, Name, Kind, Value);
+  Value             := '';
+  Kind              := tkString;
+  if Assigned( FOnGetConstValue ) then
+    FOnGetConstValue( Self, Name, Kind, Value );
 end;
 
 { TIfdefStackItem }
 
-procedure TIfdefStackItem.SetSkip(const Value: Boolean);
+procedure TIfdefStackItem.SetSkip( const Value: Boolean );
 begin
-  FSkip := Value;
+  FSkip             := Value;
   if not Value then
-    Processed := True;
+    Processed       := True;
 end;
 
 { TIfdefStack }
@@ -1073,126 +1073,127 @@ end;
 constructor TIfdefStack.Create;
 begin
   inherited Create;
-  FSkip := False;
-  FStack := TObjectStack.Create;
+  FSkip             := False;
+  FStack            := TObjectStack.Create;
 end;
 
 destructor TIfdefStack.Destroy;
 begin
   while FStack.Count > 0 do // there shouldn't be anything but keep memory leaks low
-    TObject(FStack.Pop).Free;
+    TObject( FStack.Pop ).Free;
   FStack.Free;
   inherited Destroy;
 end;
 
 function TIfdefStack.GetCount: Integer;
 begin
-  Result := FStack.Count;
+  Result            := FStack.Count;
 end;
 
-procedure TIfdefStack._If(ASkip: Boolean);
+procedure TIfdefStack._If( ASkip: Boolean );
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem.Create;
-  Item.IsIfdef := False;
-  Item.Skip := ASkip;
-  Item.OuterSkip := FSkip;
-  FStack.Push(Item);
-  FSkip := Item.OuterSkip or Item.Skip;
+  Item              := TIfdefStackItem.Create;
+  Item.IsIfdef      := False;
+  Item.Skip         := ASkip;
+  Item.OuterSkip    := FSkip;
+  FStack.Push( Item );
+  FSkip             := Item.OuterSkip or Item.Skip;
 end;
 
 function TIfdefStack.IfEnd: Boolean;
 var
-  LOuterSkip: Boolean;
+  LOuterSkip        : Boolean;
 begin
-  with TIfdefStackItem(FStack.Pop) do
+  with TIfdefStackItem( FStack.Pop ) do
   begin
-    LOuterSkip := OuterSkip;
-    Result := not IsIfdef;
+    LOuterSkip      := OuterSkip;
+    Result          := not IsIfdef;
     Free;
   end;
-  FSkip := LOuterSkip;
+  FSkip             := LOuterSkip;
 end;
 
-procedure TIfdefStack.ElseIf(ASkip: Boolean);
+procedure TIfdefStack.ElseIf( ASkip: Boolean );
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem(FStack.Peek);
+  Item              := TIfdefStackItem( FStack.Peek );
   //Assert(not Item.ElseProceeded);
   if Item.AllBranches then
-    Item.Skip := False
+    Item.Skip       := False
   else if Item.Processed then
-    Item.Skip := True  // an earlier branch was taken: this one is excluded (it used to stay as it was)
+    Item.Skip       := True // an earlier branch was taken: this one is excluded (it used to stay as it was)
   else
-    Item.Skip := ASkip;
-  FSkip := Item.OuterSkip or Item.Skip;
-  Item.IsIfdef := False; // switch to $IF mode
+    Item.Skip       := ASkip;
+  FSkip             := Item.OuterSkip or Item.Skip;
+  Item.IsIfdef      := False; // switch to $IF mode
 end;
 
 function TIfdefStack.ElseIfNeedsCondition: Boolean;
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem(FStack.Peek);
-  Result := not (Item.OuterSkip or Item.Processed or Item.AllBranches);
+  Item              := TIfdefStackItem( FStack.Peek );
+  Result            := not ( Item.OuterSkip or Item.Processed or Item.AllBranches );
 end;
 
 procedure TIfdefStack.IfUnknown;
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem.Create;
-  Item.IsIfdef := True;
-  Item.AllBranches := True;
-  Item.Skip := False;
-  Item.OuterSkip := FSkip;
-  FStack.Push(Item);
-  FSkip := Item.OuterSkip;
+  Item              := TIfdefStackItem.Create;
+  Item.IsIfdef      := True;
+  Item.AllBranches  := True;
+  Item.Skip         := False;
+  Item.OuterSkip    := FSkip;
+  FStack.Push( Item );
+  FSkip             := Item.OuterSkip;
 end;
 
-procedure TIfdefStack.Ifdef(ASkip: Boolean);
+procedure TIfdefStack.Ifdef( ASkip: Boolean );
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem.Create;
-  Item.IsIfdef := True;
-  Item.Skip := ASkip;
-  Item.OuterSkip := FSkip;
-  FStack.Push(Item);
-  FSkip := Item.OuterSkip or Item.Skip;
+  Item              := TIfdefStackItem.Create;
+  Item.IsIfdef      := True;
+  Item.Skip         := ASkip;
+  Item.OuterSkip    := FSkip;
+  FStack.Push( Item );
+  FSkip             := Item.OuterSkip or Item.Skip;
 end;
 
 procedure TIfdefStack._Else;
 var
-  Item: TIfdefStackItem;
+  Item              : TIfdefStackItem;
 begin
-  Item := TIfdefStackItem(FStack.Peek);
-  Item.Skip := Item.Processed and not Item.AllBranches;
-  FSkip := Item.OuterSkip or Item.Skip;
+  Item              := TIfdefStackItem( FStack.Peek );
+  Item.Skip         := Item.Processed and not Item.AllBranches;
+  FSkip             := Item.OuterSkip or Item.Skip;
   Item.ElseProceeded := True;
 end;
 
 function TIfdefStack.EndIf: Boolean;
 var
-  LOuterSkip: Boolean;
+  LOuterSkip        : Boolean;
 begin
-  with TIfdefStackItem(FStack.Pop) do
+  with TIfdefStackItem( FStack.Pop ) do
   begin
-    LOuterSkip := OuterSkip;
-    Result := IsIfdef;
+    LOuterSkip      := OuterSkip;
+    Result          := IsIfdef;
     Free;
   end;
-  FSkip := LOuterSkip;
+  FSkip             := LOuterSkip;
 end;
 
 function TIfdefStack.GetInElse: Boolean;
 begin
   if FStack.Count > 0 then
-    Result := TIfdefStackItem(FStack.Peek).ElseProceeded
+    Result          := TIfdefStackItem( FStack.Peek ).ElseProceeded
   else
-    Result := False;
+    Result          := False;
 end;
 
 end.
+

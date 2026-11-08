@@ -110,7 +110,7 @@ function PositiveOr( const AText: string; ACurrent: Integer ): Integer;
 begin
   // 0 or a negative threshold would report every string or every comment.
   if ( not TryStrToInt( Trim( AText ), Result ) ) or ( Result < 1 ) then
-    Result := ACurrent;
+    Result          := ACurrent;
 end;
 
 { TFrameOptionPageCodeQuality }
@@ -122,7 +122,7 @@ end;
 
 procedure TFrameOptionPageCodeQuality.SetUserData( UserData: TObject );
 begin
-  FPlugin := UserData as TCodeQualityAnalyzerPlugin;
+  FPlugin           := UserData as TCodeQualityAnalyzerPlugin;
 end;
 
 procedure TFrameOptionPageCodeQuality.LoadData;
@@ -167,7 +167,7 @@ begin
   if FPlugin = nil then
     Exit;
 
-  FPlugin.Enabled := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
 
   // Magic Numbers
   FPlugin.CheckMagicNumbers := chkMagicNumbers.Checked;
@@ -205,3 +205,4 @@ begin
 end;
 
 end.
+

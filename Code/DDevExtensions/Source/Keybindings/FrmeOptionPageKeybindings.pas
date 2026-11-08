@@ -31,7 +31,7 @@ type
   /// that the Key Bindings options page exposes and (un)registers IDE key bindings as
   /// settings change.
   /// </summary>
-  TKeybindings = class(TPluginConfig, IOTAKeyboardBinding)
+  TKeybindings = class( TPluginConfig, IOTAKeyboardBinding )
   private
     /// <summary>Notifier index returned by AddKeyboardBinding; -1 when not currently registered.</summary>
     FNotifierIndex: Integer;
@@ -47,10 +47,10 @@ type
     FSwitchedExtendedHome: Boolean;
     /// <summary>True to enable richer Ctrl-Left/Ctrl-Right cursor moves through tokens/operators.</summary>
     FExtendedCtrlLeftRight: Boolean;
-    {$IF CompilerVersion <= 20.0}
+{$IF CompilerVersion <= 20.0}
     /// <summary>True to make Shift-F3 perform a reverse search on Delphi 2009 and earlier.</summary>
     FShiftF3: Boolean;
-    {$IFEND}
+{$IFEND}
     /// <summary>True to enable the Move-Line/Block-up/down feature.</summary>
     FMoveLineBlock: Boolean;
     /// <summary>True to enable Ctrl-Alt-PgUp Find-Declaration-on-caret.</summary>
@@ -67,49 +67,49 @@ type
     FMoveLineBlockDownKey: TShortCut;
     /// <summary>Updates FActive and (un)registers the keyboard binding with the IDE.</summary>
     /// <param name="Value">True to register the binding, False to remove it.</param>
-    procedure SetActive(const Value: Boolean);
+    procedure SetActive( const Value: Boolean );
     /// <summary>Moves the caret to the interface or implementation section header.</summary>
     /// <param name="EditBuffer">The active editor buffer to navigate.</param>
     /// <param name="GoToImplementation">True jumps to the implementation section, False jumps to the interface section
     /// (so the Up/Down shortcuts are directional).</param>
-    procedure ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
+    procedure ToggleSection( EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean );
     /// <summary>IOTAKeyboardBinding callback: runs <see cref="HandleKeyBinding"/> and lets no exception
     /// leave it, because one unwinding out of the IDE's ProcessKeyStroke wedged every later keystroke
     /// in the 64-bit IDE.  A fault is shown to the user and the key counts as handled.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
     /// <param name="KeyCode">The shortcut that was pressed.</param>
     /// <param name="BindingResult">Set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
-    procedure DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
-      var BindingResult: TKeyBindingResult);
+    procedure DoKeyBinding( const Context: IOTAKeyContext; KeyCode: TShortcut;
+      var BindingResult: TKeyBindingResult );
     /// <summary>Dispatches each registered shortcut.
     /// On the 64-bit IDE the next-binding probe is skipped (GetNextBindingRec AVs there),
     /// so unhandled keys always use the built-in HOME/TAB fallback instead of krNextProc.</summary>
     /// <param name="Context">Editor context for the keystroke.</param>
     /// <param name="KeyCode">The shortcut that was pressed.</param>
     /// <param name="BindingResult">Set to krHandled / krUnhandled / krNextProc (krNextProc on Win32 only).</param>
-    procedure HandleKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
-      var BindingResult: TKeyBindingResult);
+    procedure HandleKeyBinding( const Context: IOTAKeyContext; KeyCode: TShortcut;
+      var BindingResult: TKeyBindingResult );
     /// <summary>Internal worker for CtrlMoveCursor that consumes a single token starting at the caret.</summary>
     /// <param name="EditPosition">Edit position at the caret; it is moved past the token.</param>
     /// <param name="InComment">True if the caret is in a comment, where any run of non-alphanumeric, non-blank characters counts as one token.</param>
-    procedure InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
+    procedure InternCtrlMoveCursor( EditPosition: IOTAEditPosition; InComment: Boolean );
     /// <summary>Smart Ctrl-Left/Ctrl-Right cursor movement with optional selection extension.</summary>
     /// <param name="EditBuffer">The active buffer, whose block is extended when selecting; may be nil.</param>
     /// <param name="View">The edit view, used to tell whether the caret is in a comment.</param>
     /// <param name="EditPosition">The edit position to move.</param>
     /// <param name="ForwardMove">True for Ctrl-Right, False for Ctrl-Left.</param>
-    procedure CtrlMoveCursor(EditBuffer: IOTAEditBuffer; View: IOTAEditView;
-      EditPosition: IOTAEditPosition; ForwardMove: Boolean);
+    procedure CtrlMoveCursor( EditBuffer: IOTAEditBuffer; View: IOTAEditView;
+      EditPosition: IOTAEditPosition; ForwardMove: Boolean );
     /// <summary>Moves the current line or selected block up or down within the buffer.</summary>
     /// <param name="EditBuffer">Buffer to operate on.</param>
     /// <param name="Down">True to move down, False to move up.</param>
     /// <exception cref="Exception">Raised when the buffer's writer is not the IDE's own edit writer.</exception>
-    procedure MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
+    procedure MoveLineBlockText( EditBuffer: IOTAEditBuffer; Down: Boolean );
     /// <summary>Triggers the IDE's Find Declaration action against the caret position.</summary>
     /// <param name="EditBuffer">The active editor buffer (resolution itself uses the IDE's active control).</param>
     /// <returns>True if the Find Declaration action was located and executed; False if it could not be resolved,
     /// so the caller leaves the keystroke unhandled for the IDE's own handler.</returns>
-    function FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
+    function FindDeclaration( EditBuffer: IOTAEditBuffer ): Boolean;
     //procedure ReturnPressed(EditBuffer: IOTAEditBuffer);
   protected
     /// <summary>Returns the option-page descriptor for the IDE Tools > Options dialog.</summary>
@@ -128,7 +128,7 @@ type
     { IOTAKeyboardBinding }
     /// <summary>Adds every active key binding to the IDE's keyboard service.</summary>
     /// <param name="BindingServices">The IDE service the shortcuts are added to.</param>
-    procedure BindKeyboard(const BindingServices: IOTAKeyBindingServices);
+    procedure BindKeyboard( const BindingServices: IOTAKeyBindingServices );
     /// <summary>Returns btPartial - this binding only handles selected shortcuts.</summary>
     /// <returns>Always btPartial.</returns>
     function GetBindingType: TBindingType;
@@ -159,10 +159,10 @@ type
     property SwitchedExtendedHome: Boolean read FSwitchedExtendedHome write FSwitchedExtendedHome;
     /// <summary>True to enable the smarter Ctrl-Left/Ctrl-Right movement.</summary>
     property ExtendedCtrlLeftRight: Boolean read FExtendedCtrlLeftRight write FExtendedCtrlLeftRight;
-    {$IF CompilerVersion <= 20.0}
+{$IF CompilerVersion <= 20.0}
     /// <summary>True to provide reverse-Find behaviour for Shift-F3 on Delphi 2009 and earlier.</summary>
     property ShiftF3: Boolean read FShiftF3 write FShiftF3;
-    {$IFEND}
+{$IFEND}
     /// <summary>True to enable the Move-Line/Block feature.</summary>
     property MoveLineBlock: Boolean read FMoveLineBlock write FMoveLineBlock;
     /// <summary>True to enable Ctrl-Alt-PgUp Find-Declaration-on-caret.</summary>
@@ -183,7 +183,7 @@ type
   /// Designer frame providing the user interface for the Key Bindings options page hosted in
   /// the IDE's Tools > Options dialog.
   /// </summary>
-  TFrameOptionPageKeybindings = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageKeybindings = class( TFrameBase, ITreePageComponent )
     /// <summary>Master on/off check box.</summary>
     cbxActive: TCheckBox;
     /// <summary>Toggle for Tab indentation.</summary>
@@ -222,26 +222,26 @@ type
     hkSectionDown: THotKey;
     /// <summary>Re-evaluates dependent control enabled state when Active changes.</summary>
     /// <param name="Sender">The Active check box.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
     /// <summary>Enables/disables the swap-order check box based on cbxExtendedHome.</summary>
     /// <param name="Sender">The Extended Home check box.</param>
-    procedure cbxExtendedHomeClick(Sender: TObject);
+    procedure cbxExtendedHomeClick( Sender: TObject );
     /// <summary>Enables/disables cbxIndentSingleLine based on cbxTabIndent.</summary>
     /// <param name="Sender">The Tab Indent check box.</param>
-    procedure cbxTabIndentClick(Sender: TObject);
+    procedure cbxTabIndentClick( Sender: TObject );
     /// <summary>Enables/disables the Move-Line shortcut controls based on the master check box.</summary>
     /// <param name="Sender">The Move Line/Block check box.</param>
-    procedure chkMoveLineBlockClick(Sender: TObject);
+    procedure chkMoveLineBlockClick( Sender: TObject );
     /// <summary>Enables/disables the Section-Toggle shortcut controls based on the master check box.</summary>
     /// <param name="Sender">The Section Toggle check box.</param>
-    procedure chkSectionToggleClick(Sender: TObject);
+    procedure chkSectionToggleClick( Sender: TObject );
   private
     /// <summary>Configuration object passed in via SetUserData.</summary>
     FKeyBindings: TKeybindings;
   public
     /// <summary>Receives the TKeybindings configuration object that backs this page.</summary>
     /// <param name="UserData">Must be a TKeybindings instance.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Copies current configuration values into the controls.</summary>
     procedure LoadData;
     /// <summary>Persists control values back into the configuration object and saves to disk.</summary>
@@ -257,7 +257,7 @@ type
 /// unload.
 /// </summary>
 /// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -271,57 +271,57 @@ type
   PUTF8Char = ^UTF8Char;
 
 var
-  Keybindings: TKeybindings;
+  Keybindings       : TKeybindings;
 
 {$IF CompilerVersion <= 20.0}
-procedure TCustomEditControl_RepeatSearch(AEditControl: TWinControl);
-  external coreide_bpl name '@Editorcontrol@TCustomEditControl@RepeatSearch$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
+procedure TCustomEditControl_RepeatSearch( AEditControl: TWinControl );
+  external coreide_bpl name '@Editorcontrol@TCustomEditControl@RepeatSearch$qqrv'{$IFDEF WIN64} delayed{$ENDIF};
 procedure EnvironmentOptionsAddr;
-  external coreide_bpl name '@Envoptions@EnvironmentOptions' {$IFDEF WIN64} delayed {$ENDIF};
+  external coreide_bpl name '@Envoptions@EnvironmentOptions'{$IFDEF WIN64} delayed{$ENDIF};
 {$IFEND}
 
 procedure EditorActionListsPtr;
-  external coreide_bpl name '@Editoractions@EditorActionLists' {$IFDEF WIN64} delayed {$ENDIF};
+  external coreide_bpl name '@Editoractions@EditorActionLists'{$IFDEF WIN64} delayed{$ENDIF};
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
-    Keybindings := TKeybindings.Create
+    Keybindings     := TKeybindings.Create
   else
-    FreeAndNil(Keybindings);
+    FreeAndNil( Keybindings );
 end;
 
 var
   /// <summary>True once a key-binding fault has been shown; later faults are only logged, so a
   /// fault that repeats on every keystroke cannot raise a dialog per key.</summary>
-  KeyFaultShown: Boolean = False;
+  KeyFaultShown     : Boolean = False;
 
 /// <summary>Returns the tab width of an editor tab-stop setting ( "2", or "3 5" for stops at 3 and 5 ).</summary>
 /// <param name="ATabStops">The buffer's TabStops option.</param>
 /// <returns>The distance to the first tab stop, at least 1; 2 when the setting cannot be read.</returns>
-function TabWidthOf(const ATabStops: string): Integer;
+function TabWidthOf( const ATabStops: string ): Integer;
 var
-  Parts: TArray<string>;
+  Parts             : TArray<string>;
 begin
-  Parts := ATabStops.Trim.Split([' '], TStringSplitOptions.ExcludeEmpty);
-  if (Length(Parts) = 0) or not TryStrToInt(Parts[0], Result) then
-    Exit(2);
+  Parts             := ATabStops.Trim.Split( [ ' ' ], TStringSplitOptions.ExcludeEmpty );
+  if ( Length( Parts ) = 0 ) or not TryStrToInt( Parts[ 0 ], Result ) then
+    Exit( 2 );
   // A first stop at column N is a width of N - 1 when N is given as a column ( "3 5" ), and N
   // itself when only a width is given ( "2" ).
-  if Length(Parts) > 1 then
-    Dec(Result);
+  if Length( Parts ) > 1 then
+    Dec( Result );
   if Result < 1 then
-    Result := 1;
+    Result          := 1;
 end;
 
-function GetEndColumn(EditPosition: IOTAEditPosition): Integer;
+function GetEndColumn( EditPosition: IOTAEditPosition ): Integer;
 var
-  Col: Integer;
+  Col               : Integer;
 begin
-  Col := EditPosition.Column;
+  Col               := EditPosition.Column;
   EditPosition.MoveEOL;
-  Result := EditPosition.Column;
-  EditPosition.Move(EditPosition.Row, Col);
+  Result            := EditPosition.Column;
+  EditPosition.Move( EditPosition.Row, Col );
 end;
 
 {function IsPascalFile(const Filename: string): Boolean;
@@ -334,51 +334,51 @@ end;}
 
 { TFrameOptionPageKeybindings }
 
-procedure TFrameOptionPageKeybindings.SetUserData(UserData: TObject);
+procedure TFrameOptionPageKeybindings.SetUserData( UserData: TObject );
 begin
-  FKeyBindings := UserData as TKeyBindings;
+  FKeyBindings      := UserData as TKeyBindings;
 end;
 
-procedure TFrameOptionPageKeybindings.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageKeybindings.cbxActiveClick( Sender: TObject );
 begin
   cbxTabIndent.Enabled := cbxActive.Checked;
-  cbxTabIndentClick(cbxTabIndent);
+  cbxTabIndentClick( cbxTabIndent );
   cbxExtendedHome.Enabled := cbxActive.Checked;
   cbxExtendedCtrlLeftRight.Enabled := cbxActive.Checked;
   chkMoveLineBlock.Enabled := cbxActive.Checked;
   chkFindDeclOnCaret.Enabled := cbxActive.Checked;
   chkSectionToggle.Enabled := cbxActive.Checked;
-  cbxExtendedHomeClick(cbxExtendedHome);
-  chkMoveLineBlockClick(chkMoveLineBlock);
-  chkSectionToggleClick(chkSectionToggle);
+  cbxExtendedHomeClick( cbxExtendedHome );
+  chkMoveLineBlockClick( chkMoveLineBlock );
+  chkSectionToggleClick( chkSectionToggle );
 end;
 
-procedure TFrameOptionPageKeybindings.cbxExtendedHomeClick(Sender: TObject);
+procedure TFrameOptionPageKeybindings.cbxExtendedHomeClick( Sender: TObject );
 begin
   cbxSwitchExtendedHome.Enabled := cbxExtendedHome.Enabled and cbxExtendedHome.Checked;
 end;
 
-procedure TFrameOptionPageKeybindings.cbxTabIndentClick(Sender: TObject);
+procedure TFrameOptionPageKeybindings.cbxTabIndentClick( Sender: TObject );
 begin
   cbxIndentSingleLine.Enabled := cbxTabIndent.Enabled;
 end;
 
-procedure TFrameOptionPageKeybindings.chkMoveLineBlockClick(Sender: TObject);
+procedure TFrameOptionPageKeybindings.chkMoveLineBlockClick( Sender: TObject );
 var
-  FieldsEnabled: Boolean;
+  FieldsEnabled     : Boolean;
 begin
-  FieldsEnabled := chkMoveLineBlock.Enabled and chkMoveLineBlock.Checked;
+  FieldsEnabled     := chkMoveLineBlock.Enabled and chkMoveLineBlock.Checked;
   lblMoveLineUp.Enabled := FieldsEnabled;
   lblMoveLineDown.Enabled := FieldsEnabled;
   hkMoveLineUp.Enabled := FieldsEnabled;
   hkMoveLineDown.Enabled := FieldsEnabled;
 end;
 
-procedure TFrameOptionPageKeybindings.chkSectionToggleClick(Sender: TObject);
+procedure TFrameOptionPageKeybindings.chkSectionToggleClick( Sender: TObject );
 var
-  FieldsEnabled: Boolean;
+  FieldsEnabled     : Boolean;
 begin
-  FieldsEnabled := chkSectionToggle.Enabled and chkSectionToggle.Checked;
+  FieldsEnabled     := chkSectionToggle.Enabled and chkSectionToggle.Checked;
   lblSectionUp.Enabled := FieldsEnabled;
   lblSectionDown.Enabled := FieldsEnabled;
   hkSectionUp.Enabled := FieldsEnabled;
@@ -393,10 +393,10 @@ begin
   cbxExtendedHome.Checked := FKeyBindings.ExtendedHome;
   cbxSwitchExtendedHome.Checked := FKeyBindings.SwitchedExtendedHome;
   cbxExtendedCtrlLeftRight.Checked := FKeyBindings.ExtendedCtrlLeftRight;
-  {$IF CompilerVersion <= 20.0}
+{$IF CompilerVersion <= 20.0}
   cbxShiftF3.Checked := FKeyBindings.ShiftF3;
   cbxShiftF3.Visible := True;
-  {$IFEND}
+{$IFEND}
   chkMoveLineBlock.Checked := FKeyBindings.MoveLineBlock;
   chkFindDeclOnCaret.Checked := FKeyBindings.FindDeclOnCaret;
   chkSectionToggle.Checked := FKeyBindings.SectionToggle;
@@ -405,8 +405,8 @@ begin
   hkSectionUp.HotKey := FKeyBindings.SectionToggleUpKey;
   hkSectionDown.HotKey := FKeyBindings.SectionToggleDownKey;
 
-  cbxActiveClick(cbxActive);
-  cbxExtendedHomeClick(cbxExtendedHome);
+  cbxActiveClick( cbxActive );
+  cbxExtendedHomeClick( cbxExtendedHome );
 end;
 
 procedure TFrameOptionPageKeybindings.SaveData;
@@ -416,25 +416,25 @@ type
     Key: TShortCut;
   end;
 var
-  KeyUses: TList<TKeyUse>;
-  Clashes: string;
+  KeyUses           : TList<TKeyUse>;
+  Clashes           : string;
 
   procedure AddUse( AEnabled: Boolean; const AName: string; AKey: TShortCut );
   var
-    Use: TKeyUse;
+    Use             : TKeyUse;
   begin
     if not AEnabled or ( AKey = scNone ) then
       Exit;
-    Use.Name := AName;
-    Use.Key := AKey;
+    Use.Name        := AName;
+    Use.Key         := AKey;
     KeyUses.Add( Use );
   end;
 
 begin
   // The same shortcut on two features means the later one in DoKeyBinding's order never fires;
   // say so instead of saving a binding that silently does nothing.  Listed in dispatch order.
-  Clashes := '';
-  KeyUses := TList<TKeyUse>.Create;
+  Clashes           := '';
+  KeyUses           := TList<TKeyUse>.Create;
   try
     AddUse( cbxActive.Checked and chkMoveLineBlock.Checked, 'Move line/block up', hkMoveLineUp.HotKey );
     AddUse( cbxActive.Checked and chkMoveLineBlock.Checked, 'Move line/block down', hkMoveLineDown.HotKey );
@@ -444,7 +444,7 @@ begin
     for var I := 0 to KeyUses.Count - 1 do
       for var J := I + 1 to KeyUses.Count - 1 do
         if KeyUses[ I ].Key = KeyUses[ J ].Key then
-          Clashes := Clashes + Format( '%s and %s both use %s; only %s will work.'#13#10,
+          Clashes   := Clashes + Format( '%s and %s both use %s; only %s will work.'#13#10,
             [ KeyUses[ I ].Name, KeyUses[ J ].Name, ShortCutToText( KeyUses[ I ].Key ), KeyUses[ I ].Name ] );
   finally
     KeyUses.Free;
@@ -459,9 +459,9 @@ begin
   FKeyBindings.ExtendedHome := cbxExtendedHome.Checked;
   FKeyBindings.SwitchedExtendedHome := cbxSwitchExtendedHome.Checked;
   FKeyBindings.ExtendedCtrlLeftRight := cbxExtendedCtrlLeftRight.Checked;
-  {$IF CompilerVersion <= 20.0}
+{$IF CompilerVersion <= 20.0}
   FKeyBindings.ShiftF3 := cbxShiftF3.Checked;
-  {$IFEND}
+{$IFEND}
   FKeyBindings.MoveLineBlock := chkMoveLineBlock.Checked;
   FKeyBindings.FindDeclOnCaret := chkFindDeclOnCaret.Checked;
   FKeyBindings.SectionToggle := chkSectionToggle.Checked;
@@ -485,46 +485,46 @@ end;
 
 constructor TKeybindings.Create;
 begin
-  inherited Create(AppDataDirectory + '\KeyBindings.xml', 'KeyBindings');
+  inherited Create( AppDataDirectory + '\KeyBindings.xml', 'KeyBindings' );
 end;
 
 destructor TKeybindings.Destroy;
 begin
-  Active := False;
+  Active            := False;
   inherited Destroy;
 end;
 
 function TKeybindings.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Key Bindings', TFrameOptionPageKeybindings, Self);
+  Result            := TTreePage.Create( 'Key Bindings', TFrameOptionPageKeybindings, Self );
 end;
 
 procedure TKeybindings.Init;
 begin
   inherited Init;
-  TabIndent := True;
-  IndentSingleLine := False;
-  ExtendedHome := True;
+  TabIndent         := True;
+  IndentSingleLine  := False;
+  ExtendedHome      := True;
   ExtendedCtrlLeftRight := False;
-  {$IF CompilerVersion <= 20.0}
-  ShiftF3 := True;
-  {$IFEND}
-  MoveLineBlock := True;
-  MoveLineBlockUpKey := ShortCut(VK_UP, [ssShift, ssCtrl, ssAlt]);
-  MoveLineBlockDownKey := ShortCut(VK_DOWN, [ssShift, ssCtrl, ssAlt]);
-  FindDeclOnCaret := True;
+{$IF CompilerVersion <= 20.0}
+  ShiftF3           := True;
+{$IFEND}
+  MoveLineBlock     := True;
+  MoveLineBlockUpKey := ShortCut( VK_UP, [ ssShift, ssCtrl, ssAlt ] );
+  MoveLineBlockDownKey := ShortCut( VK_DOWN, [ ssShift, ssCtrl, ssAlt ] );
+  FindDeclOnCaret   := True;
   // SectionToggle defaults off. When the feature first shipped it was on and
   // silently shadowed the IDE's native Ctrl+Shift+Up/Down (jump between method
   // declaration and implementation body). Users must now opt in and pick keys.
-  SectionToggle := False;
+  SectionToggle     := False;
   SectionToggleUpKey := scNone;
   SectionToggleDownKey := scNone;
-  Active := True;
+  Active            := True;
 end;
 
-procedure TKeybindings.InternCtrlMoveCursor(EditPosition: IOTAEditPosition; InComment: Boolean);
+procedure TKeybindings.InternCtrlMoveCursor( EditPosition: IOTAEditPosition; InComment: Boolean );
 const
-  TwoChars: array[0..25] of string = (
+  TwoChars          : array[ 0..25 ] of string = (
     // Common
     '<=', '>=', '//',
 
@@ -535,27 +535,27 @@ const
     '==', '!=',
     '++', '--', '+=', '-=', '*=', '/=', '~=', '^=', '|=', '&=',
     '&&', '||', '::', '->', '/*', '*/'
-  );
+    );
 
 var
-  EndCol: Integer;
-  BufferPos: Integer;
-  Buffer: string;
-  Ch, StartCh: Char;
+  EndCol            : Integer;
+  BufferPos         : Integer;
+  Buffer            : string;
+  Ch, StartCh       : Char;
 
   procedure ReadChar;
   begin
-    if BufferPos > Length(Buffer) then
+    if BufferPos > Length( Buffer ) then
     begin
-      Buffer := EditPosition.Read(1024);
-      BufferPos := 1;
+      Buffer        := EditPosition.Read( 1024 );
+      BufferPos     := 1;
     end;
-    if BufferPos > Length(Buffer) then
-      Ch := #0
+    if BufferPos > Length( Buffer ) then
+      Ch            := #0
     else
     begin
-      Ch := Buffer[BufferPos];
-      Inc(BufferPos);
+      Ch            := Buffer[ BufferPos ];
+      Inc( BufferPos );
     end;
     //Ch := EditPosition.Character;
   end;
@@ -563,86 +563,86 @@ var
   function StepNext: Boolean;
   begin
     if EditPosition.Column > EndCol then
-      Result := False
+      Result        := False
     else
-      Result := EditPosition.MoveRelative(0, 1);
+      Result        := EditPosition.MoveRelative( 0, 1 );
     if Result then
       ReadChar
     else
-      Ch := #0;
+      Ch            := #0;
   end;
 
-  function IsWhiteSpace(Ch: Char): Boolean; inline;
+  function IsWhiteSpace( Ch: Char ): Boolean; inline;
   begin
-    Result := (Ch = ' ') or (Ch = #9);
+    Result          := ( Ch = ' ' ) or ( Ch = #9 );
   end;
 
 var
-  Ch1: Char;
-  I: Integer;
-  Handled: Boolean;
+  Ch1               : Char;
+  I                 : Integer;
+  Handled           : Boolean;
 begin
-  EndCol := GetEndColumn(EditPosition);
-  Handled := False;
+  EndCol            := GetEndColumn( EditPosition );
+  Handled           := False;
 
-  BufferPos := 1;
-  Buffer := '';
+  BufferPos         := 1;
+  Buffer            := '';
   ReadChar;
 
   if Ch = '#' then // string-code
   begin
-    Handled := True;
+    Handled         := True;
     if StepNext then
     begin
       if Ch = '$' then
       begin
-        while StepNext and (Ch in ['0'..'9', 'A'..'F', 'a'..'f']) do ; // hex
+        while StepNext and ( Ch in [ '0'..'9', 'A'..'F', 'a'..'f' ] ) do ; // hex
       end
       else
       begin
-        while (Ch in ['0'..'9']) and StepNext do ;
+        while ( Ch in [ '0'..'9' ] ) and StepNext do ;
       end;
     end;
   end
-  else if Ch in ['0'..'9', '$', '.'] then // number, hex number
+  else if Ch in [ '0'..'9', '$', '.' ] then // number, hex number
   begin
-    Handled := True;
-    StartCh := Ch;
+    Handled         := True;
+    StartCh         := Ch;
     if StepNext then
     begin
-      if (StartCh = '$') or ((StartCh = '0') and (Ch = 'x')) then // hex
+      if ( StartCh = '$' ) or ( ( StartCh = '0' ) and ( Ch = 'x' ) ) then // hex
       begin
-        while StepNext and (Ch in ['0'..'9', 'A'..'F', 'a'..'f']) do ;
+        while StepNext and ( Ch in [ '0'..'9', 'A'..'F', 'a'..'f' ] ) do ;
       end
-      else if not ((StartCh = '.') and (Ch in ['E', 'e'])) then
+      else if not ( ( StartCh = '.' ) and ( Ch in [ 'E', 'e' ] ) ) then
       begin
-        if (StartCh = '.') and (Ch = '.') then // ".."
+        if ( StartCh = '.' ) and ( Ch = '.' ) then // ".."
           StepNext
         else
-        begin  // 1.23e-45
-          while (Ch in ['0'..'9']) and StepNext do ; // digit
-          if (Ch = '.') then
+        begin // 1.23e-45
+          while ( Ch in [ '0'..'9' ] ) and StepNext do ; // digit
+          if ( Ch = '.' ) then
             StepNext;
-          while (Ch in ['0'..'9']) and StepNext do ; // digit
-          if Ch in ['E', 'e'] then
+          while ( Ch in [ '0'..'9' ] ) and StepNext do ; // digit
+          if Ch in [ 'E', 'e' ] then
           begin
             if StepNext then
             begin
-              if Ch in ['-', '+'] then
+              if Ch in [ '-', '+' ] then
                 StepNext;
             end;
-            while (Ch in ['0'..'9']) and StepNext do ; // digit
+            while ( Ch in [ '0'..'9' ] ) and StepNext do ; // digit
           end;
         end;
       end;
     end;
   end
-  else if (Ch = '_') or IsCharAlphaNumeric(Ch){EditPosition.IsWordCharacter} then
+  else if ( Ch = '_' ) or IsCharAlphaNumeric( Ch ) {EditPosition.IsWordCharacter} then
   begin
-    Handled := True;
+    Handled         := True;
     if StepNext then
     begin
-      while (Ch in ['_', '0'..'9']) or IsCharAlphaNumeric(Ch){EditPosition.IsWordCharacter} do
+      while ( Ch in [ '_', '0'..'9' ] ) or IsCharAlphaNumeric( Ch ) {EditPosition.IsWordCharacter} do
         if not StepNext then
           Break;
     end;
@@ -653,18 +653,18 @@ begin
     if InComment then
     begin
       { Skip whitespaces }
-      while (EditPosition.Column < EndCol) and not IsCharAlphaNumeric(Ch) and not IsWhiteSpace(Ch) {EditPosition.IsSpecialCharacter} do
+      while ( EditPosition.Column < EndCol ) and not IsCharAlphaNumeric( Ch ) and not IsWhiteSpace( Ch ) {EditPosition.IsSpecialCharacter} do
         if not StepNext then
           Break;
     end
     else
     begin
-      Ch1 := Ch;
+      Ch1           := Ch;
       if StepNext then
       begin
-        for I := 0 to High(TwoChars) do
+        for I := 0 to High( TwoChars ) do
         begin
-          if (Ch1 = TwoChars[I][1]) and (Ch = TwoChars[I][2]) then
+          if ( Ch1 = TwoChars[ I ][ 1 ] ) and ( Ch = TwoChars[ I ][ 2 ] ) then
           begin
             StepNext;
             Break;
@@ -675,37 +675,37 @@ begin
   end;
 
   { Skip whitespaces }
-  while (EditPosition.Column < EndCol) and EditPosition.IsWhiteSpace do
+  while ( EditPosition.Column < EndCol ) and EditPosition.IsWhiteSpace do
     if not StepNext then
       Break;
 end;
 
-procedure TKeybindings.CtrlMoveCursor(EditBuffer: IOTAEditBuffer; View: IOTAEditView;
-  EditPosition: IOTAEditPosition; ForwardMove: Boolean);
+procedure TKeybindings.CtrlMoveCursor( EditBuffer: IOTAEditBuffer; View: IOTAEditView;
+  EditPosition: IOTAEditPosition; ForwardMove: Boolean );
 
   function IsInComment: Boolean;
   var
     Element, LineFlag: Integer;
   begin
-    View.GetAttributeAtPos(View.CursorPos, False, Element, LineFlag);
-    Result := Element = atComment;
+    View.GetAttributeAtPos( View.CursorPos, False, Element, LineFlag );
+    Result          := Element = atComment;
   end;
 
 var
   CurCol, EndCol, Col, CurRow: Integer;
-  OldCol, OldRow: Integer;
-  TopLeft: TOTAEditPos;
+  OldCol, OldRow    : Integer;
+  TopLeft           : TOTAEditPos;
 begin
   EditPosition.Save;
   if EditBuffer <> nil then
     EditBuffer.EditBlock.Save;
-  TopLeft := View.TopPos;
+  TopLeft           := View.TopPos;
 
-  OldCol := EditPosition.Column;
-  OldRow := EditPosition.Row;
+  OldCol            := EditPosition.Column;
+  OldRow            := EditPosition.Row;
 
-  CurCol := OldCol;
-  EndCol := GetEndColumn(EditPosition); // makes the block invisible
+  CurCol            := OldCol;
+  EndCol            := GetEndColumn( EditPosition ); // makes the block invisible
 
   repeat
     if ForwardMove then
@@ -714,16 +714,16 @@ begin
       begin
         if EditPosition.Row < EditPosition.LastRow then
         begin
-          EditPosition.Move(EditPosition.Row + 1, 1);
-          EndCol := GetEndColumn(EditPosition);
+          EditPosition.Move( EditPosition.Row + 1, 1 );
+          EndCol    := GetEndColumn( EditPosition );
           // skip only whitespaces
-          while (EditPosition.Column < EndCol) and EditPosition.IsWhiteSpace do
-            if not EditPosition.MoveRelative(0, 1) then
+          while ( EditPosition.Column < EndCol ) and EditPosition.IsWhiteSpace do
+            if not EditPosition.MoveRelative( 0, 1 ) then
               Break;
         end;
       end
       else
-        InternCtrlMoveCursor(EditPosition, IsInComment);
+        InternCtrlMoveCursor( EditPosition, IsInComment );
     end
     else
     begin
@@ -731,43 +731,42 @@ begin
       begin
         if EditPosition.Row > 1 then
         begin
-          EditPosition.Move(EditPosition.Row - 1, 1);
+          EditPosition.Move( EditPosition.Row - 1, 1 );
           EditPosition.MoveEOL;
-          CurCol := EditPosition.Column;
+          CurCol    := EditPosition.Column;
         end
         else
           Break; // nothing to do
       end
-      else
-        if CurCol > EndCol then
-          CurCol := EndCol;
+      else if CurCol > EndCol then
+        CurCol      := EndCol;
       { Find the column by stepping from the BOL to the CurCol }
-      EditPosition.Move(EditPosition.Row, 1);
+      EditPosition.Move( EditPosition.Row, 1 );
       repeat
-        Col := EditPosition.Column;
-        InternCtrlMoveCursor(EditPosition, IsInComment);
+        Col         := EditPosition.Column;
+        InternCtrlMoveCursor( EditPosition, IsInComment );
       until EditPosition.Column >= CurCol;
-      EditPosition.Move(EditPosition.Row, Col);
+      EditPosition.Move( EditPosition.Row, Col );
     end;
   until True;
 
-  CurRow := EditPosition.Row;
-  CurCol := EditPosition.Column;
+  CurRow            := EditPosition.Row;
+  CurCol            := EditPosition.Column;
   EditPosition.Restore;
-  View.TopPos := TopLeft;
+  View.TopPos       := TopLeft;
 
   if EditBuffer = nil then
-    EditPosition.Move(CurRow, CurCol)
+    EditPosition.Move( CurRow, CurCol )
   else
   begin
     EditBuffer.EditBlock.Restore;
-    EditBuffer.EditBlock.ExtendRelative(CurRow - OldRow, CurCol - OldCol);
+    EditBuffer.EditBlock.ExtendRelative( CurRow - OldRow, CurCol - OldCol );
   end;
 end;
 
-function SkipToNextLine(P: PAnsiChar): PAnsiChar;
+function SkipToNextLine( P: PAnsiChar ): PAnsiChar;
 begin
-  Result := P;
+  Result            := P;
   while True do
   begin
     case Result^ of
@@ -777,35 +776,34 @@ begin
         begin
           // A lone LF ends the line too.  The old code stepped over it AND the byte after it
           // without stopping, which miscounted rows and, with the LF last, ran past the #0.
-          Inc(Result);
+          Inc( Result );
           Break;
         end;
       #13:
         begin
-          Inc(Result);
+          Inc( Result );
           if Result^ = #10 then
-            Inc(Result);
+            Inc( Result );
           Break;
         end;
     end;
-    Inc(Result);
+    Inc( Result );
   end;
 end;
 
-function GetLenWithoutLastLineBreak(S: UTF8String): Integer;
+function GetLenWithoutLastLineBreak( S: UTF8String ): Integer;
 begin
-  Result := Length(S);
-  while (Result > 0) and (S[Result] in [#10, #13]) do
-    Dec(Result);
+  Result            := Length( S );
+  while ( Result > 0 ) and ( S[ Result ] in [ #10, #13 ] ) do
+    Dec( Result );
 end;
-
 
 const
   emKeepTrailingBlanks = $00000020;
-  emOptimalFill        = $00000040;
-  emGroupUndo          = $00000100;
-  emPersistentBlocks   = $00000200;
-  emDisableUndo        = $00000800;
+  emOptimalFill     = $00000040;
+  emGroupUndo       = $00000100;
+  emPersistentBlocks = $00000200;
+  emDisableUndo     = $00000800;
 
 type
   TCharIndex = SmallInt;
@@ -848,49 +846,49 @@ type
     // ...
   end;
 
-  TEditWriter = class(TInterfacedObject)
+  TEditWriter = class( TInterfacedObject )
   protected
     EkView: PEkView;
     EdFile: TEdFile;
     FilePos: Longint;
   end;
 
-function SetEkViewEdModes(EkView: PEkView; SetFlags, ClearFlags: TEdModes): Int64;
+function SetEkViewEdModes( EkView: PEkView; SetFlags, ClearFlags: TEdModes ): Int64;
 begin
-  Result := 0;
+  Result            := 0;
   if SetFlags and emDisableUndo <> 0 then
   begin
-    ClearFlags := ClearFlags or emOptimalFill;
-    SetFlags := SetFlags or emKeepTrailingBlanks;
+    ClearFlags      := ClearFlags or emOptimalFill;
+    SetFlags        := SetFlags or emKeepTrailingBlanks;
   end;
 
   // Prefer ClearFlags over SetFlags
-  SetFlags := SetFlags and not ClearFlags;
+  SetFlags          := SetFlags and not ClearFlags;
 
-  if (EkView <> nil) and (EkView.Editor <> nil) then
+  if ( EkView <> nil ) and ( EkView.Editor <> nil ) then
   begin
-    ULARGE_INTEGER(Result).LowPart := SetFlags and not (EkView.Editor.EdModes and SetFlags);
-    ULARGE_INTEGER(Result).HighPart := EkView.Editor.EdModes and ClearFlags;
+    ULARGE_INTEGER( Result ).LowPart := SetFlags and not ( EkView.Editor.EdModes and SetFlags );
+    ULARGE_INTEGER( Result ).HighPart := EkView.Editor.EdModes and ClearFlags;
 
-    EkView.Editor.EdModes := (EkView.Editor.EdModes and not ClearFlags) or SetFlags;
+    EkView.Editor.EdModes := ( EkView.Editor.EdModes and not ClearFlags ) or SetFlags;
   end;
 end;
 
-procedure RestoreEkViewEdModes(EkView: PEkView; RestoreFlags: Int64);
+procedure RestoreEkViewEdModes( EkView: PEkView; RestoreFlags: Int64 );
 var
   SetFlags, ClearFlags: TEdModes;
 begin
-  if (EkView <> nil) and (EkView.Editor <> nil) then
+  if ( EkView <> nil ) and ( EkView.Editor <> nil ) then
   begin
-    ClearFlags := ULARGE_INTEGER(RestoreFlags).LowPart;
-    SetFlags := ULARGE_INTEGER(RestoreFlags).HighPart;
+    ClearFlags      := ULARGE_INTEGER( RestoreFlags ).LowPart;
+    SetFlags        := ULARGE_INTEGER( RestoreFlags ).HighPart;
 
     // apply in reverse to restore the original settings
-    EkView.Editor.EdModes := (EkView.Editor.EdModes and not ClearFlags) or SetFlags;
+    EkView.Editor.EdModes := ( EkView.Editor.EdModes and not ClearFlags ) or SetFlags;
   end;
 end;
 
-procedure TKeybindings.MoveLineBlockText(EditBuffer: IOTAEditBuffer; Down: Boolean);
+procedure TKeybindings.MoveLineBlockText( EditBuffer: IOTAEditBuffer; Down: Boolean );
 type
   TBlock = record
     Row: Integer;
@@ -903,148 +901,148 @@ type
 
 var
   StartRow, EndRow, LastRow, Row, RowOffset: Integer;
-  BlockSize: Integer;
-  EditBlock: IOTAEditBlock;
-  EditPosition: IOTAEditPosition;
-  Source: UTF8String;
+  BlockSize         : Integer;
+  EditBlock         : IOTAEditBlock;
+  EditPosition      : IOTAEditPosition;
+  Source            : UTF8String;
   Start, UnchangedP, BlockStart, BlockEnd, AffectedLineP: PAnsiChar;
-  Writer: IOTAEditWriter;
-  S: UTF8String;
-  LastUnchangedRow: Integer;
-  Block: TBlock;
-  {$IFNDEF CPUX64}
-  EkView: PEkView;
-  RestoreFlags: Int64;
-  EditWriter: TEditWriter;
-  {$ENDIF}
+  Writer            : IOTAEditWriter;
+  S                 : UTF8String;
+  LastUnchangedRow  : Integer;
+  Block             : TBlock;
+{$IFNDEF CPUX64}
+  EkView            : PEkView;
+  RestoreFlags      : Int64;
+  EditWriter        : TEditWriter;
+{$ENDIF}
 begin
   // A read-only buffer refuses the writer; do nothing rather than raise into the key handler.
   if EditBuffer.IsReadOnly then
     Exit;
 
-  EditPosition := EditBuffer.EditPosition;
-  EditBlock := EditBuffer.EditBlock;
-  StartRow := EditPosition.Row;
-  BlockSize := EditBlock.Size;
+  EditPosition      := EditBuffer.EditPosition;
+  EditBlock         := EditBuffer.EditBlock;
+  StartRow          := EditPosition.Row;
+  BlockSize         := EditBlock.Size;
 
-  Block.Row := EditPosition.Row;
-  Block.Col := EditPosition.Column;
+  Block.Row         := EditPosition.Row;
+  Block.Col         := EditPosition.Column;
   Block.StartingRow := EditBlock.StartingRow;
-  Block.EndingRow := EditBlock.EndingRow;
+  Block.EndingRow   := EditBlock.EndingRow;
   Block.StartingColumn := EditBlock.StartingColumn;
   Block.EndingColumn := EditBlock.EndingColumn;
 
-  if (BlockSize <> 0) and (EditBlock.Style = btColumn) then
+  if ( BlockSize <> 0 ) and ( EditBlock.Style = btColumn ) then
   begin
     // EditBlock.Starting*/Ending* are wrong in this mode, stick to moving one line
     Block.StartingRow := Block.Row;
     Block.EndingRow := Block.Row;
-    BlockSize := 0;
+    BlockSize       := 0;
   end;
   // If only the caret is in the last line and first column than ignore that line.
-  if (BlockSize > 0) and (Block.EndingRow > Block.StartingRow) and (Block.EndingColumn = 1) then
+  if ( BlockSize > 0 ) and ( Block.EndingRow > Block.StartingRow ) and ( Block.EndingColumn = 1 ) then
   begin
     if Block.Row = Block.EndingRow then
-      Dec(Block.Row);
-    Dec(Block.EndingRow);
+      Dec( Block.Row );
+    Dec( Block.EndingRow );
   end;
 
-  LastRow := EditBuffer.GetLinesInBuffer;
+  LastRow           := EditBuffer.GetLinesInBuffer;
   if BlockSize = 0 then
-    EndRow := StartRow
+    EndRow          := StartRow
   else
   begin
-    StartRow := Block.StartingRow;
-    EndRow := Block.EndingRow;
+    StartRow        := Block.StartingRow;
+    EndRow          := Block.EndingRow;
   end;
 
   // MoveUp on first line is not allowed. MoveUp/Down is not allowed on the last line because it doesn't work and Delphi inserts #13#10 where it wants
-  if (not Down and ((StartRow <= 1) or (EndRow >= LastRow))) or (Down and (EndRow >= LastRow - 1)) then
+  if ( not Down and ( ( StartRow <= 1 ) or ( EndRow >= LastRow ) ) ) or ( Down and ( EndRow >= LastRow - 1 ) ) then
     Exit;
 
-  Source := GetEditorSource(EditBuffer);
-  UnchangedP := PAnsiChar(Source);
-  Start := UnchangedP;
-  LastUnchangedRow := StartRow;
+  Source            := GetEditorSource( EditBuffer );
+  UnchangedP        := PAnsiChar( Source );
+  Start             := UnchangedP;
+  LastUnchangedRow  := StartRow;
   if not Down then
-    Dec(LastUnchangedRow);
-  Row := 1;
-  while (UnchangedP^ <> #0) and (Row < LastUnchangedRow) do
+    Dec( LastUnchangedRow );
+  Row               := 1;
+  while ( UnchangedP^ <> #0 ) and ( Row < LastUnchangedRow ) do
   begin
-    UnchangedP := SkipToNextLine(UnchangedP);
-    Inc(Row);
+    UnchangedP      := SkipToNextLine( UnchangedP );
+    Inc( Row );
   end;
 
   if Row = LastUnchangedRow then
   begin
-    BlockStart :=  UnchangedP;
+    BlockStart      := UnchangedP;
     if not Down then // we skippt the unchanged line
     begin
-      BlockStart := SkipToNextLine(BlockStart);
-      Inc(Row);
+      BlockStart    := SkipToNextLine( BlockStart );
+      Inc( Row );
     end;
-    BlockEnd := BlockStart;
-    while (BlockEnd^ <> #0) and (Row <= EndRow) do
+    BlockEnd        := BlockStart;
+    while ( BlockEnd^ <> #0 ) and ( Row <= EndRow ) do
     begin
-      BlockEnd := SkipToNextLine(BlockEnd);
-      Inc(Row);
+      BlockEnd      := SkipToNextLine( BlockEnd );
+      Inc( Row );
     end;
 
-    AffectedLineP := nil;
+    AffectedLineP   := nil;
     if Down then
-      AffectedLineP := SkipToNextLine(BlockEnd);
+      AffectedLineP := SkipToNextLine( BlockEnd );
 
-    SetString(S, BlockStart, BlockEnd - BlockStart);
+    SetString( S, BlockStart, BlockEnd - BlockStart );
 
-    Writer := EditBuffer.CreateUndoableWriter;
-    {$IFNDEF CPUX64}
+    Writer          := EditBuffer.CreateUndoableWriter;
+{$IFNDEF CPUX64}
     // Acquire the IDE-internal EkView by hand-casting the IOTAEditWriter to the
     // replica TEditWriter, whose fields sit at fixed 32-bit offsets. On Win64 the
     // 8-byte pointer fields shift every offset, so this cast and the EdModes
     // poking below are skipped; the block move itself uses only the documented
     // IOTAEditWriter API and stays correct (only undo grouping / persistent-block
     // restoration is degraded on x64).
-    EditWriter := TEditWriter(DelphiInterfaceToObject(Writer));
-    if not EditWriter.ClassNameIs('TEditWriter') then
-      raise Exception.CreateFmt('EditBuffer (%s) is not of type TEditWriter', [EditWriter.ClassName]);
-    EkView := EditWriter.EkView;
-    {$ENDIF}
+    EditWriter      := TEditWriter( DelphiInterfaceToObject( Writer ) );
+    if not EditWriter.ClassNameIs( 'TEditWriter' ) then
+      raise Exception.CreateFmt( 'EditBuffer (%s) is not of type TEditWriter', [ EditWriter.ClassName ] );
+    EkView          := EditWriter.EkView;
+{$ENDIF}
 
     // Copy unaffected part
-    Writer.CopyTo(UnchangedP - Start);
+    Writer.CopyTo( UnchangedP - Start );
     if Down then
     begin
       // Delete moved block
-      Writer.DeleteTo(BlockEnd - Start);
+      Writer.DeleteTo( BlockEnd - Start );
       // Copy line that was moved up due to the moved block
-      Writer.CopyTo(AffectedLineP - Start);
+      Writer.CopyTo( AffectedLineP - Start );
     end;
 
     // Insert moved block
-    Writer.Insert(PAnsiChar(S));
+    Writer.Insert( PAnsiChar( S ) );
 
     if not Down then
     begin
       // Copy line that was moved down due to the moved block
-      Writer.CopyTo(BlockStart - Start);
+      Writer.CopyTo( BlockStart - Start );
       // Delete moved block
-      Writer.DeleteTo(BlockEnd - Start);
+      Writer.DeleteTo( BlockEnd - Start );
     end;
     // Copy unaffected part
-    Writer.CopyTo(Length(Source));
-    Writer := nil; // end undo group
+    Writer.CopyTo( Length( Source ) );
+    Writer          := nil; // end undo group
 
     if Down then
-      RowOffset := 1
+      RowOffset     := 1
     else
-      RowOffset := -1;
+      RowOffset     := -1;
 
-    {$IFNDEF CPUX64}
-    RestoreFlags := SetEkViewEdModes(EkView, emDisableUndo or emPersistentBlocks, 0);
+{$IFNDEF CPUX64}
+    RestoreFlags    := SetEkViewEdModes( EkView, emDisableUndo or emPersistentBlocks, 0 );
     try
-    {$ENDIF}
+{$ENDIF}
       if BlockSize = 0 then
-        EditPosition.Move(Block.Row + RowOffset, 0)
+        EditPosition.Move( Block.Row + RowOffset, 0 )
       else
       begin
         EditBlock.Reset;
@@ -1053,24 +1051,24 @@ begin
         //PersistentBlocks := EditBuffer.BufferOptions.PersistentBlocks;
         try
           //EditBuffer.BufferOptions.PersistentBlocks := True;
-          EditPosition.Move(Block.StartingRow + RowOffset, 1);
+          EditPosition.Move( Block.StartingRow + RowOffset, 1 );
           EditBlock.BeginBlock;
           try
-            EditPosition.Move(Block.EndingRow + 1 + RowOffset, 1);
+            EditPosition.Move( Block.EndingRow + 1 + RowOffset, 1 );
             //EditPosition.MoveEOL;
           finally
             EditBlock.EndBlock;
           end;
-          EditPosition.Move(Block.StartingRow + RowOffset, 1);
+          EditPosition.Move( Block.StartingRow + RowOffset, 1 );
         finally
           //EditBuffer.BufferOptions.PersistentBlocks := PersistentBlocks;
         end;
       end;
-    {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
     finally
-      RestoreEkViewEdModes(EkView, RestoreFlags);
+      RestoreEkViewEdModes( EkView, RestoreFlags );
     end;
-    {$ENDIF}
+{$ENDIF}
   end;
 end;
 
@@ -1128,10 +1126,10 @@ begin
     EditBuffer.EditBlock.Indent(1);}
 end;*)
 
-procedure TKeybindings.DoKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
-  var BindingResult: TKeyBindingResult);
+procedure TKeybindings.DoKeyBinding( const Context: IOTAKeyContext; KeyCode: TShortcut;
+  var BindingResult: TKeyBindingResult );
 begin
-  BindingResult := krUnhandled;
+  BindingResult     := krUnhandled;
   try
     HandleKeyBinding( Context, KeyCode, BindingResult );
   except
@@ -1155,35 +1153,35 @@ begin
   end;
 end;
 
-procedure TKeybindings.HandleKeyBinding(const Context: IOTAKeyContext; KeyCode: TShortcut;
-  var BindingResult: TKeyBindingResult);
+procedure TKeybindings.HandleKeyBinding( const Context: IOTAKeyContext; KeyCode: TShortcut;
+  var BindingResult: TKeyBindingResult );
 
   function GetIndentSize: Integer;
   begin
-    Result := (BorlandIDEServices as IOTAEditorServices).EditOptions.BlockIndent;
+    Result          := ( BorlandIDEServices as IOTAEditorServices ).EditOptions.BlockIndent;
   end;
 
 var
-  EditPosition: IOTAEditPosition;
-  EditBuffer: IOTAEditBuffer;
-  EditBlock: IOTAEditBlock;
-  Column: Integer;
-  BufferOptions: IOTABufferOptions;
-  Distance: Integer;
-  {$IFNDEF CPUX64}
-  BindingRec: TKeyBindingRec;
-  {$ENDIF}
-  {$IF CompilerVersion <= 20.0}
+  EditPosition      : IOTAEditPosition;
+  EditBuffer        : IOTAEditBuffer;
+  EditBlock         : IOTAEditBlock;
+  Column            : Integer;
+  BufferOptions     : IOTABufferOptions;
+  Distance          : Integer;
+{$IFNDEF CPUX64}
+  BindingRec        : TKeyBindingRec;
+{$ENDIF}
+{$IF CompilerVersion <= 20.0}
   SearchForwardEnvProp: TPropField;
   OldSearchForwardValue: Boolean;
-  {$IFEND}
+{$IFEND}
 begin
-  BindingResult := krUnhandled;
+  BindingResult     := krUnhandled;
 
-  EditBuffer := Context.EditBuffer;
+  EditBuffer        := Context.EditBuffer;
   if EditBuffer <> nil then
   begin
-    EditPosition := EditBuffer.EditPosition;
+    EditPosition    := EditBuffer.EditPosition;
     if EditPosition = nil then
     begin
       // Non-text / read-only buffer (e.g. a designer surface): nothing to do.
@@ -1193,42 +1191,41 @@ begin
     // A read-only buffer refuses every edit: leave Tab and Shift+Tab unhandled before any branch
     // that indents or inserts ( on Win64 every unhandled Tab reaches the inserting fallback below,
     // so each Tab in a read-only file raised ).
-    if EditBuffer.IsReadOnly and ( ( KeyCode = ShortCut( VK_TAB, [] ) ) or ( KeyCode = ShortCut( VK_TAB, [ ssShift ] ) ) ) then
+    if EditBuffer.IsReadOnly and ( ( KeyCode = ShortCut( VK_TAB, [ ] ) ) or ( KeyCode = ShortCut( VK_TAB, [ ssShift ] ) ) ) then
       Exit;
     if Active then
     begin
-      EditBlock := EditBuffer.EditBlock;
-      if (EditBlock <> nil) and (EditBlock.Size > 0) then
+      EditBlock     := EditBuffer.EditBlock;
+      if ( EditBlock <> nil ) and ( EditBlock.Size > 0 ) then
       begin
-        if TabIndent and (KeyCode = ShortCut(VK_TAB, [])) then
+        if TabIndent and ( KeyCode = ShortCut( VK_TAB, [ ] ) ) then
         begin
-          if (IndentSingleLine or (EditBlock.StartingRow <> EditBlock.EndingRow)) then // un/indent only if a line break is included in the block
-            EditBlock.Indent(GetIndentSize)
+          if ( IndentSingleLine or ( EditBlock.StartingRow <> EditBlock.EndingRow ) ) then // un/indent only if a line break is included in the block
+            EditBlock.Indent( GetIndentSize )
           else
-            EditPosition.InsertCharacter(#9); // Delphi 2010 always uses "IndentSingleLine"
+            EditPosition.InsertCharacter( #9 ); // Delphi 2010 always uses "IndentSingleLine"
           BindingResult := krHandled;
         end
-        else
-        if TabIndent and (KeyCode = ShortCut(VK_TAB, [ssShift])) then
+        else if TabIndent and ( KeyCode = ShortCut( VK_TAB, [ ssShift ] ) ) then
         begin
-          if (IndentSingleLine or (EditBlock.StartingRow <> EditBlock.EndingRow)) then // un/indent only if a line break is included in the block
-            EditBlock.Indent(-GetIndentSize)
+          if ( IndentSingleLine or ( EditBlock.StartingRow <> EditBlock.EndingRow ) ) then // un/indent only if a line break is included in the block
+            EditBlock.Indent( -GetIndentSize )
           else
-            EditPosition.Tab(-1);
+            EditPosition.Tab( -1 );
           BindingResult := krHandled;
         end;
       end;
 
       if BindingResult <> krHandled then
       begin
-        if ExtendedHome and (KeyCode = ShortCut(VK_HOME, [])) then
+        if ExtendedHome and ( KeyCode = ShortCut( VK_HOME, [ ] ) ) then
         begin
-          if SwitchedExtendedHome and (EditPosition.Column > 1) then
+          if SwitchedExtendedHome and ( EditPosition.Column > 1 ) then
           begin
             { First jump to the first non-whitespace and then to the BOL }
-            Column := EditPosition.Column;
+            Column  := EditPosition.Column;
             EditPosition.MoveBOL;
-            while (EditPosition.Character in [#9, ' ']) and EditPosition.MoveRelative(0, 1) do
+            while ( EditPosition.Character in [ #9, ' ' ] ) and EditPosition.MoveRelative( 0, 1 ) do
               ;
             if EditPosition.Column = Column then
               EditPosition.MoveBOL;
@@ -1239,56 +1236,55 @@ begin
             { First jump to the BOL and then to the first non-whitespace }
             if EditPosition.Column = 1 then
             begin
-              while (EditPosition.Character in [#9, ' ']) and EditPosition.MoveRelative(0, 1) do
+              while ( EditPosition.Character in [ #9, ' ' ] ) and EditPosition.MoveRelative( 0, 1 ) do
                 ;
               BindingResult := krHandled;
             end;
           end;
         end
 
-        else if (KeyCode = ShortCut(VK_RIGHT, [ssCtrl])) or
-                (KeyCode = ShortCut(VK_LEFT, [ssCtrl])) then
+        else if ( KeyCode = ShortCut( VK_RIGHT, [ ssCtrl ] ) ) or
+          ( KeyCode = ShortCut( VK_LEFT, [ ssCtrl ] ) ) then
         begin
-          CtrlMoveCursor(nil, EditBuffer.TopView, EditPosition, Byte(KeyCode) = VK_RIGHT{, IsPascalFile(EditBuffer.FileName)});
+          CtrlMoveCursor( nil, EditBuffer.TopView, EditPosition, Byte( KeyCode ) = VK_RIGHT {, IsPascalFile(EditBuffer.FileName)} );
           BindingResult := krHandled;
         end
-        else if (KeyCode = ShortCut(VK_RIGHT, [ssCtrl, ssShift])) or
-                (KeyCode = ShortCut(VK_LEFT, [ssCtrl, ssShift])) then
+        else if ( KeyCode = ShortCut( VK_RIGHT, [ ssCtrl, ssShift ] ) ) or
+          ( KeyCode = ShortCut( VK_LEFT, [ ssCtrl, ssShift ] ) ) then
         begin
-          CtrlMoveCursor(EditBuffer, EditBuffer.TopView, EditPosition, Byte(KeyCode) = VK_RIGHT{, IsPascalFile(EditBuffer.FileName)});
-          BindingResult := krHandled;
-        end
-
-        else if MoveLineBlock and (FMoveLineBlockUpKey <> scNone) and (KeyCode = FMoveLineBlockUpKey) then
-        begin
-          MoveLineBlockText(EditBuffer, False);
-          BindingResult := krHandled;
-        end
-        else if MoveLineBlock and (FMoveLineBlockDownKey <> scNone) and (KeyCode = FMoveLineBlockDownKey) then
-        begin
-          MoveLineBlockText(EditBuffer, True);
+          CtrlMoveCursor( EditBuffer, EditBuffer.TopView, EditPosition, Byte( KeyCode ) = VK_RIGHT {, IsPascalFile(EditBuffer.FileName)} );
           BindingResult := krHandled;
         end
 
-        else if KeyCode = ShortCut(VK_PRIOR, [ssCtrl, ssAlt]) then
+        else if MoveLineBlock and ( FMoveLineBlockUpKey <> scNone ) and ( KeyCode = FMoveLineBlockUpKey ) then
+        begin
+          MoveLineBlockText( EditBuffer, False );
+          BindingResult := krHandled;
+        end
+        else if MoveLineBlock and ( FMoveLineBlockDownKey <> scNone ) and ( KeyCode = FMoveLineBlockDownKey ) then
+        begin
+          MoveLineBlockText( EditBuffer, True );
+          BindingResult := krHandled;
+        end
+
+        else if KeyCode = ShortCut( VK_PRIOR, [ ssCtrl, ssAlt ] ) then
         begin
           // Only consume the keystroke if Find Declaration actually ran; else
           // leave it krUnhandled so the IDE's own handler can still act.
-          if FindDeclaration(EditBuffer) then
+          if FindDeclaration( EditBuffer ) then
             BindingResult := krHandled;
         end
 
-        else if SectionToggle and (FSectionToggleUpKey <> scNone) and (KeyCode = FSectionToggleUpKey) then
+        else if SectionToggle and ( FSectionToggleUpKey <> scNone ) and ( KeyCode = FSectionToggleUpKey ) then
         begin
-          ToggleSection(EditBuffer, False);   // Up -> jump to the interface section
+          ToggleSection( EditBuffer, False ); // Up -> jump to the interface section
           BindingResult := krHandled;
         end
-        else if SectionToggle and (FSectionToggleDownKey <> scNone) and (KeyCode = FSectionToggleDownKey) then
+        else if SectionToggle and ( FSectionToggleDownKey <> scNone ) and ( KeyCode = FSectionToggleDownKey ) then
         begin
-          ToggleSection(EditBuffer, True);    // Down -> jump to the implementation section
+          ToggleSection( EditBuffer, True ); // Down -> jump to the implementation section
           BindingResult := krHandled;
         end;
-
 
         {else if KeyCode = ShortCut(VK_RETURN, []) then
         begin
@@ -1297,21 +1293,22 @@ begin
         end;}
       end;
 
-      {$IF CompilerVersion <= 20.0} // Delphi 2009- (Delphi 2010 introduced Shift-F3)
+{$IF CompilerVersion <= 20.0} // Delphi 2009- (Delphi 2010 introduced Shift-F3)
       if BindingResult <> krHandled then
       begin
-        if ShiftF3 and (KeyCode = ShortCut(VK_F3, [ssShift])) then
+        if ShiftF3 and ( KeyCode = ShortCut( VK_F3, [ ssShift ] ) ) then
         begin
-          if (Screen.ActiveControl <> nil) and (Screen.ActiveControl.Name = 'Editor') and
-             Screen.ActiveControl.ClassNameIs('TEditControl') then
+          if ( Screen.ActiveControl <> nil ) and ( Screen.ActiveControl.Name = 'Editor' ) and
+            Screen.ActiveControl.ClassNameIs( 'TEditControl' ) then
           begin
-            SearchForwardEnvProp := TPropField((TObject(PPointer(GetActualAddr(@EnvironmentOptionsAddr))^) as TComponent).FindComponent('SearchForward'));
+            SearchForwardEnvProp := TPropField( ( TObject( PPointer( GetActualAddr( @EnvironmentOptionsAddr ) )^ ) as TComponent ).FindComponent( 'SearchForward' )
+              );
             if SearchForwardEnvProp <> nil then
             begin
               OldSearchForwardValue := SearchForwardEnvProp.Value;
               try
                 SearchForwardEnvProp.Value := not OldSearchForwardValue;
-                TCustomEditControl_RepeatSearch(Screen.ActiveControl);
+                TCustomEditControl_RepeatSearch( Screen.ActiveControl );
               finally
                 SearchForwardEnvProp.Value := OldSearchForwardValue;
               end;
@@ -1320,54 +1317,52 @@ begin
           end;
         end;
       end;
-      {$IFEND}
+{$IFEND}
     end;
 
     if BindingResult = krUnhandled then
     begin
-      {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
       // GetNextBindingRec/FillBindingRec round-trip an x64 binding-list pointer
       // through the 32-bit TKeyBindingRec.Next field; in the 64-bit IDE the
       // truncated/sign-extended pointer AVs inside Kbclient.FillBindingRec and
       // wedges keystroke processing. Probe on Win32 only; on Win64 fall through
       // to our own HOME/TAB fallback handling below.
-      if Context.GetKeyBindingRec(BindingRec) and Context.KeyboardServices.GetNextBindingRec(BindingRec) then
+      if Context.GetKeyBindingRec( BindingRec ) and Context.KeyboardServices.GetNextBindingRec( BindingRec ) then
       begin
         { Let the next proc struggle with the IDE }
         BindingResult := krNextProc;
         Exit;
       end;
-      {$ENDIF}
+{$ENDIF}
 
       { The HOME key isn't processed when bound to a method }
-      if KeyCode = ShortCut(VK_HOME, []) then
+      if KeyCode = ShortCut( VK_HOME, [ ] ) then
       begin
         EditPosition.MoveBOL;
         BindingResult := krHandled;
       end
-      else
-      if KeyCode = ShortCut(VK_TAB, [ssShift]) then
+      else if KeyCode = ShortCut( VK_TAB, [ ssShift ] ) then
       begin
         { The Shift-TAB key isn't processed when bound to a method }
-        EditPosition.Tab(-1);
+        EditPosition.Tab( -1 );
         BindingResult := krHandled;
       end
-      else
-      if KeyCode = ShortCut(VK_TAB, []) then
+      else if KeyCode = ShortCut( VK_TAB, [ ] ) then
       begin
         { The TAB key isn't processed when bound to a method.  Honour the buffer's options:
           smart tab aligns; otherwise a hard tab only when "Use tab character" is on, else spaces
           to the next tab stop ( InsertCharacter( #9 ) always typed a raw tab, which on Win64 -
           where every unhandled Tab ends here - put hard tabs into space-indented code ). }
-        BufferOptions := (BorlandIDEServices as IOTAEditorServices).EditOptions.BufferOptions;
+        BufferOptions := ( BorlandIDEServices as IOTAEditorServices ).EditOptions.BufferOptions;
         if BufferOptions.SmartTab then
-          EditPosition.Align(1)
+          EditPosition.Align( 1 )
         else if BufferOptions.UseTabCharacter then
-          EditPosition.InsertCharacter(#9)
+          EditPosition.InsertCharacter( #9 )
         else
         begin
           // On a tab stop the distance to the next one can be 0: use the buffer's tab width then.
-          Distance := EditPosition.DistanceToTab( sdForward );
+          Distance  := EditPosition.DistanceToTab( sdForward );
           if Distance <= 0 then
             Distance := TabWidthOf( BufferOptions.TabStops );
           EditPosition.InsertText( StringOfChar( ' ', Distance ) );
@@ -1378,56 +1373,56 @@ begin
   end;
 end;
 
-function TKeybindings.FindDeclaration(EditBuffer: IOTAEditBuffer): Boolean;
+function TKeybindings.FindDeclaration( EditBuffer: IOTAEditBuffer ): Boolean;
 var
-  DataModule: TDataModule;
-  FindDecl: TComponent;
-  EditCtrl: TWinControl;
+  DataModule        : TDataModule;
+  FindDecl          : TComponent;
+  EditCtrl          : TWinControl;
 begin
-  Result := False;
-  DataModule := TDataModule(GetActualAddr(@EditorActionListsPtr)^);
+  Result            := False;
+  DataModule        := TDataModule( GetActualAddr( @EditorActionListsPtr )^ );
   if DataModule <> nil then
   begin
-    FindDecl := DataModule.FindComponent('FindDeclaration');
+    FindDecl        := DataModule.FindComponent( 'FindDeclaration' );
     if FindDecl is TAction then
     begin
-      EditCtrl := Screen.ActiveControl;
-      if (EditCtrl <> nil) and (EditCtrl.Name = 'Editor') and EditCtrl.ClassNameIs('TEditControl') then
+      EditCtrl      := Screen.ActiveControl;
+      if ( EditCtrl <> nil ) and ( EditCtrl.Name = 'Editor' ) and EditCtrl.ClassNameIs( 'TEditControl' ) then
       begin
-        TAction(FindDecl).ActionList.Tag := NativeInt(EditCtrl);
-        TAction(FindDecl).Execute;
-        Result := True;
+        TAction( FindDecl ).ActionList.Tag := NativeInt( EditCtrl );
+        TAction( FindDecl ).Execute;
+        Result      := True;
       end;
     end;
   end;
 end;
 
-procedure TKeybindings.ToggleSection(EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean);
+procedure TKeybindings.ToggleSection( EditBuffer: IOTAEditBuffer; GoToImplementation: Boolean );
 var
-  Source: UTF8String;
-  EditPosition: IOTAEditPosition;
+  Source            : UTF8String;
+  EditPosition      : IOTAEditPosition;
   InterfaceRow, ImplementationRow: Integer;
-  TargetRow: Integer;
-  Lexer: TDelphiLexer;
-  Token: TToken;
+  TargetRow         : Integer;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
 begin
   if EditBuffer = nil then
     Exit;
 
-  Source := GetEditorSource(EditBuffer);
+  Source            := GetEditorSource( EditBuffer );
   if Source = '' then
     Exit;
 
-  EditPosition := EditBuffer.EditPosition;
+  EditPosition      := EditBuffer.EditPosition;
   if EditPosition = nil then
     Exit;
 
   // Find the section keywords as tokens, so a comment or string line that merely starts with
   // "interface" or "implementation" is not taken for the section.  The first "interface" token is
   // the section keyword: a type's "= interface" can only follow it.
-  InterfaceRow := 0;
+  InterfaceRow      := 0;
   ImplementationRow := 0;
-  Lexer := TDelphiLexer.Create( '', Source );
+  Lexer             := TDelphiLexer.Create( '', Source );
   try
     while ( ImplementationRow = 0 ) and Lexer.NextToken( Token ) do
       case Token.Kind of
@@ -1442,90 +1437,90 @@ begin
   end;
 
   // If we didn't find both sections, nothing to do
-  if (InterfaceRow = 0) or (ImplementationRow = 0) then
+  if ( InterfaceRow = 0 ) or ( ImplementationRow = 0 ) then
     Exit;
 
   // The Up shortcut always lands on the interface section, the Down shortcut on
   // the implementation section, regardless of the current caret position.
   if GoToImplementation then
-    TargetRow := ImplementationRow + 1
+    TargetRow       := ImplementationRow + 1
   else
-    TargetRow := InterfaceRow + 1;
+    TargetRow       := InterfaceRow + 1;
 
   // Clamp to the buffer so we never move past the last line.
   if TargetRow > EditBuffer.GetLinesInBuffer then
-    TargetRow := EditBuffer.GetLinesInBuffer;
+    TargetRow       := EditBuffer.GetLinesInBuffer;
 
-  EditPosition.Move(TargetRow, 1);
+  EditPosition.Move( TargetRow, 1 );
   EditBuffer.TopView.MoveViewToCursor;
 end;
 
-procedure TKeybindings.BindKeyboard(const BindingServices: IOTAKeyBindingServices);
+procedure TKeybindings.BindKeyboard( const BindingServices: IOTAKeyBindingServices );
 begin
   if TabIndent then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_TAB, [ssShift])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_TAB, [])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding( [ ShortCut( VK_TAB, [ ssShift ] ) ], DoKeyBinding, nil, 0 );
+    BindingServices.AddKeyBinding( [ ShortCut( VK_TAB, [ ] ) ], DoKeyBinding, nil, 0 );
   end;
 
   if ExtendedHome then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_HOME, [])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding( [ ShortCut( VK_HOME, [ ] ) ], DoKeyBinding, nil, 0 );
   end;
 
   if ExtendedCtrlLeftRight then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_RIGHT, [ssCtrl])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_RIGHT, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_LEFT, [ssCtrl])], DoKeyBinding, nil, 0);
-    BindingServices.AddKeyBinding([ShortCut(VK_LEFT, [ssCtrl, ssShift])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding( [ ShortCut( VK_RIGHT, [ ssCtrl ] ) ], DoKeyBinding, nil, 0 );
+    BindingServices.AddKeyBinding( [ ShortCut( VK_RIGHT, [ ssCtrl, ssShift ] ) ], DoKeyBinding, nil, 0 );
+    BindingServices.AddKeyBinding( [ ShortCut( VK_LEFT, [ ssCtrl ] ) ], DoKeyBinding, nil, 0 );
+    BindingServices.AddKeyBinding( [ ShortCut( VK_LEFT, [ ssCtrl, ssShift ] ) ], DoKeyBinding, nil, 0 );
   end;
 
   //BindingServices.AddKeyBinding([ShortCut(VK_RETURN, [])], DoKeyBinding, nil, 0);
 
-  {$IF CompilerVersion <= 20.0}
+{$IF CompilerVersion <= 20.0}
   if ShiftF3 then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_F3, [ssShift])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding( [ ShortCut( VK_F3, [ ssShift ] ) ], DoKeyBinding, nil, 0 );
   end;
-  {$IFEND}
+{$IFEND}
 
   if MoveLineBlock then
   begin
     if FMoveLineBlockUpKey <> scNone then
-      BindingServices.AddKeyBinding([FMoveLineBlockUpKey], DoKeyBinding, nil, 0);
+      BindingServices.AddKeyBinding( [ FMoveLineBlockUpKey ], DoKeyBinding, nil, 0 );
     if FMoveLineBlockDownKey <> scNone then
-      BindingServices.AddKeyBinding([FMoveLineBlockDownKey], DoKeyBinding, nil, 0);
+      BindingServices.AddKeyBinding( [ FMoveLineBlockDownKey ], DoKeyBinding, nil, 0 );
   end;
 
   if FindDeclOnCaret then
   begin
-    BindingServices.AddKeyBinding([ShortCut(VK_PRIOR, [ssCtrl, ssAlt])], DoKeyBinding, nil, 0);
+    BindingServices.AddKeyBinding( [ ShortCut( VK_PRIOR, [ ssCtrl, ssAlt ] ) ], DoKeyBinding, nil, 0 );
   end;
 
   if SectionToggle then
   begin
     if FSectionToggleUpKey <> scNone then
-      BindingServices.AddKeyBinding([FSectionToggleUpKey], DoKeyBinding, nil, 0);
+      BindingServices.AddKeyBinding( [ FSectionToggleUpKey ], DoKeyBinding, nil, 0 );
     if FSectionToggleDownKey <> scNone then
-      BindingServices.AddKeyBinding([FSectionToggleDownKey], DoKeyBinding, nil, 0);
+      BindingServices.AddKeyBinding( [ FSectionToggleDownKey ], DoKeyBinding, nil, 0 );
   end;
 
 end;
 
 function TKeybindings.GetBindingType: TBindingType;
 begin
-  Result := btPartial;
+  Result            := btPartial;
 end;
 
 function TKeybindings.GetDisplayName: string;
 begin
-  Result := 'DDevExtensions KeyBindings';
+  Result            := 'DDevExtensions KeyBindings';
 end;
 
 function TKeybindings.GetName: string;
 begin
-  Result := 'DDevExtensions.KeyBindings';
+  Result            := 'DDevExtensions.KeyBindings';
 end;
 
 procedure TKeybindings.AfterSave;
@@ -1544,33 +1539,33 @@ procedure TKeybindings.Modified;
 begin
 end;
 
-procedure TKeybindings.SetActive(const Value: Boolean);
+procedure TKeybindings.SetActive( const Value: Boolean );
 var
-  KS: IOTAKeyboardServices;
+  KS                : IOTAKeyboardServices;
 begin
   if Value <> FActive then
   begin
     // The keyboard service can be unavailable during early load or teardown
     // (Destroy sets Active := False). A hard 'as' cast would raise EIntfCastError
     // inside the destructor on Win64 shutdown; Supports lets us skip safely.
-    if not Supports(BorlandIDEServices, IOTAKeyboardServices, KS) then
+    if not Supports( BorlandIDEServices, IOTAKeyboardServices, KS ) then
     begin
       // Reflect intent even when the service is gone, so state stays consistent.
-      if FActive and (Value = False) then
+      if FActive and ( Value = False ) then
         FNotifierIndex := -1;
-      FActive := Value;
+      FActive       := Value;
       Exit;
     end;
 
     if FActive then
     begin
       if FNotifierIndex >= 0 then
-        KS.RemoveKeyboardBinding(FNotifierIndex);
+        KS.RemoveKeyboardBinding( FNotifierIndex );
       FNotifierIndex := -1;
     end;
-    FActive := Value;
+    FActive         := Value;
     if FActive then
-      FNotifierIndex := KS.AddKeyboardBinding(Self);
+      FNotifierIndex := KS.AddKeyboardBinding( Self );
     if not Application.Terminated then
       KS.RestartKeyboardServices;
   end;
@@ -1581,9 +1576,10 @@ begin
   inherited Loaded;
   if Active then
   begin
-    Active := False;
-    Active := True;
+    Active          := False;
+    Active          := True;
   end;
 end;
 
 end.
+

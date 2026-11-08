@@ -20,47 +20,47 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the $IF expression nodes and parser.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDelphiExpr = class
   public
     /// <summary>
     /// Proves integer, float and string literal nodes evaluate successfully to their own
     /// value with the matching value kind, which every operator node builds on.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestConstants;
     /// <summary>
     /// Proves integer addition and multiplication stay integers, int plus float is
     /// promoted to float, and unary minus negates; a wrong promotion would make
     /// <c>{$IF CompilerVersion &gt;= 37.0}</c>-style comparisons misbehave.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestArithmetic;
     /// <summary>
     /// Proves float division by zero is reported as a failed evaluation with an error
     /// message, not raised; the preprocessor runs inside the IDE, where an unhandled
     /// exception would surface to the user.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDivByZero;
     /// <summary>
     /// Proves the boolean constant, not, relational (&gt;, &lt;, =) and and/or nodes each
     /// give the right truth value, and that a successful evaluation leaves the error empty.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestBooleanNodes;
     /// <summary>
     /// Proves the parser turns lexed text into a tree that evaluates correctly, including
     /// operator precedence (<c>10 - 4 * 2 = 2</c> holds only when <c>*</c> binds tighter).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestParserEndToEnd;
     /// <summary>
     /// Proves a comparison of an integer with a float (<c>1 &lt; 2.5</c>) uses the float's value:
     /// the right operand's kind was tested on the left operand, so a float on the right of an
     /// integer read as 0 and <c>1 &lt; 2.5</c> came out False.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestIntegerComparedWithFloat;
   end;
 
@@ -75,7 +75,7 @@ uses
 /// <returns>A constant node holding the literal.</returns>
 function Lit( AKind: TTokenKind; const AValue: string ): IExprNode;
 begin
-  Result := TExprNodeConst.Create( AKind, AValue );
+  Result            := TExprNodeConst.Create( AKind, AValue );
 end;
 
 /// <summary>Lexes, parses and evaluates a $IF-style boolean expression.</summary>
@@ -83,11 +83,11 @@ end;
 /// <returns>The truth value the parser computes for AExpression.</returns>
 function EvalExpr( const AExpression: string ): Boolean;
 begin
-  var oLexer := TDelphiLexer.Create( 'expr', UTF8String( AExpression ) );
+  var oLexer        := TDelphiLexer.Create( 'expr', UTF8String( AExpression ) );
   try
-    var oParser := TExpressionParser.Create( oLexer );
+    var oParser     := TExpressionParser.Create( oLexer );
     try
-      Result := oParser.Parse;
+      Result        := oParser.Parse;
     finally
       oParser.Free;
     end;
@@ -100,7 +100,7 @@ end;
 
 procedure TTestDelphiExpr.TestConstants;
 var
-  rValue: TExprNodeValueRec;
+  rValue            : TExprNodeValueRec;
 begin
   Assert.IsTrue( Lit( tkInt, '42' ).GetValue( rValue ), 'int 42 evaluates' );
   Assert.AreEqual<TValueKind>( vkIsInt, rValue.Typ, 'int 42 kind' );
@@ -117,30 +117,30 @@ end;
 
 procedure TTestDelphiExpr.TestArithmetic;
 var
-  rValue: TExprNodeValueRec;
+  rValue            : TExprNodeValueRec;
 begin
   var intfNode: IExprNode := TExprNodeBinOp.Create( tkPlus, '+', Lit( tkInt, '2' ), Lit( tkInt, '3' ) );
   Assert.IsTrue( intfNode.GetValue( rValue ), '2 + 3 evaluates' );
   Assert.AreEqual<TValueKind>( vkIsInt, rValue.Typ, '2 + 3 stays an integer' );
   Assert.AreEqual<Int64>( 5, rValue.ValueInt, '2 + 3 = 5' );
 
-  intfNode := TExprNodeBinOp.Create( tkMultiply, '*', Lit( tkInt, '4' ), Lit( tkInt, '5' ) );
+  intfNode          := TExprNodeBinOp.Create( tkMultiply, '*', Lit( tkInt, '4' ), Lit( tkInt, '5' ) );
   Assert.IsTrue( intfNode.GetValue( rValue ), '4 * 5 evaluates' );
   Assert.AreEqual<Int64>( 20, rValue.ValueInt, '4 * 5 = 20' );
 
-  intfNode := TExprNodeBinOp.Create( tkPlus, '+', Lit( tkInt, '2' ), Lit( tkFloat, '3.0' ) );
+  intfNode          := TExprNodeBinOp.Create( tkPlus, '+', Lit( tkInt, '2' ), Lit( tkFloat, '3.0' ) );
   Assert.IsTrue( intfNode.GetValue( rValue ), '2 + 3.0 evaluates' );
   Assert.AreEqual<TValueKind>( vkIsFloat, rValue.Typ, 'int + float is promoted to float' );
   Assert.AreEqual( 5.0, rValue.ValueFloat, 1E-9, '2 + 3.0 = 5.0' );
 
-  intfNode := TExprNodeUnaryMinus.Create( Lit( tkInt, '7' ) );
+  intfNode          := TExprNodeUnaryMinus.Create( Lit( tkInt, '7' ) );
   Assert.IsTrue( intfNode.GetValue( rValue ), '-( 7 ) evaluates' );
   Assert.AreEqual<Int64>( -7, rValue.ValueInt, 'unary minus gives -7' );
 end;
 
 procedure TTestDelphiExpr.TestDivByZero;
 var
-  rValue: TExprNodeValueRec;
+  rValue            : TExprNodeValueRec;
 begin
   var intfNode: IExprNode := TExprNodeBinOp.Create( tkDivide, '/', Lit( tkFloat, '1.0' ), Lit( tkFloat, '0.0' ) );
   Assert.IsFalse( intfNode.GetValue( rValue ), 'float / 0 reports failure' );
@@ -149,38 +149,38 @@ end;
 
 procedure TTestDelphiExpr.TestBooleanNodes;
 begin
-  var sError := '';
+  var sError        := '';
   var intfNode: IBoolNode := TBoolNodeConst.Create( True );
   Assert.IsTrue( intfNode.GetValue( sError ), 'const True' );
   Assert.AreEqual( '', sError, 'const True leaves no error' );
 
-  sError   := '';
-  intfNode := TBoolNodeConst.Create( False );
+  sError            := '';
+  intfNode          := TBoolNodeConst.Create( False );
   Assert.IsFalse( intfNode.GetValue( sError ), 'const False' );
 
-  sError   := '';
-  intfNode := TBoolNodeNot.Create( TBoolNodeConst.Create( True ) );
+  sError            := '';
+  intfNode          := TBoolNodeNot.Create( TBoolNodeConst.Create( True ) );
   Assert.IsFalse( intfNode.GetValue( sError ), 'not True = False' );
 
-  sError   := '';
-  intfNode := TBoolNodeRelOp.Create( tkGreaterThan, '>', Lit( tkInt, '5' ), Lit( tkInt, '3' ) );
+  sError            := '';
+  intfNode          := TBoolNodeRelOp.Create( tkGreaterThan, '>', Lit( tkInt, '5' ), Lit( tkInt, '3' ) );
   Assert.IsTrue( intfNode.GetValue( sError ), '5 > 3 = True' );
   Assert.AreEqual( '', sError, '5 > 3 leaves no error' );
 
-  sError   := '';
-  intfNode := TBoolNodeRelOp.Create( tkLessThan, '<', Lit( tkInt, '5' ), Lit( tkInt, '3' ) );
+  sError            := '';
+  intfNode          := TBoolNodeRelOp.Create( tkLessThan, '<', Lit( tkInt, '5' ), Lit( tkInt, '3' ) );
   Assert.IsFalse( intfNode.GetValue( sError ), '5 < 3 = False' );
 
-  sError   := '';
-  intfNode := TBoolNodeRelOp.Create( tkEqual, '=', Lit( tkInt, '4' ), Lit( tkInt, '4' ) );
+  sError            := '';
+  intfNode          := TBoolNodeRelOp.Create( tkEqual, '=', Lit( tkInt, '4' ), Lit( tkInt, '4' ) );
   Assert.IsTrue( intfNode.GetValue( sError ), '4 = 4 = True' );
 
-  sError   := '';
-  intfNode := TBoolNodeOp.Create( tkI_And, 'and', TBoolNodeConst.Create( True ), TBoolNodeConst.Create( False ) );
+  sError            := '';
+  intfNode          := TBoolNodeOp.Create( tkI_And, 'and', TBoolNodeConst.Create( True ), TBoolNodeConst.Create( False ) );
   Assert.IsFalse( intfNode.GetValue( sError ), 'True and False = False' );
 
-  sError   := '';
-  intfNode := TBoolNodeOp.Create( tkI_Or, 'or', TBoolNodeConst.Create( True ), TBoolNodeConst.Create( False ) );
+  sError            := '';
+  intfNode          := TBoolNodeOp.Create( tkI_Or, 'or', TBoolNodeConst.Create( True ), TBoolNodeConst.Create( False ) );
   Assert.IsTrue( intfNode.GetValue( sError ), 'True or False = True' );
 end;
 
@@ -205,3 +205,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDelphiExpr );
 
 end.
+

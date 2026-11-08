@@ -18,42 +18,42 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the TODO scanner core.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestTodoAggregatorCore = class
   private
     /// <summary>Scanner with the default patterns, created per test.</summary>
     FScanner: TTodoScanner;
   public
     /// <summary>Creates the scanner.</summary>
-    [Setup]
+    [ Setup ]
     procedure Setup;
     /// <summary>Frees the scanner.</summary>
-    [TearDown]
+    [ TearDown ]
     procedure TearDown;
     /// <summary>Proves a tag is still found when the same letters first appear inside a longer word
     /// ( "BUGFIX" before "BUG" ): every occurrence is tried, not only the first.</summary>
-    [Test]
+    [ Test ]
     procedure TestLaterWholeWordOccurrenceIsFound;
     /// <summary>Proves an ordinary word in prose ( "a bug in", "note that" ) is not reported as a tag.</summary>
-    [Test]
+    [ Test ]
     procedure TestProseWordIsNotATag;
     /// <summary>Proves the tag that comes FIRST in the comment wins, whatever the pattern order.</summary>
-    [Test]
+    [ Test ]
     procedure TestEarliestTagWins;
     /// <summary>Proves the common forms are still tags: a capitalised tag without a colon, a lower-case
     /// tag with a colon, and a tag opening the comment.</summary>
-    [Test]
+    [ Test ]
     procedure TestUsualFormsAreTags;
     /// <summary>Proves TODO(high) sets the priority and the text starts after the colon.</summary>
-    [Test]
+    [ Test ]
     procedure TestPriorityIsParsed;
     /// <summary>Proves the scanner reports 1-based lines and columns from the lexer.</summary>
-    [Test]
+    [ Test ]
     procedure TestScanSourceReportsOneBasedLines;
     /// <summary>Proves a lower-case tag after comment decoration or a date still opens the comment:
     /// "// @todo", "/// todo" ( body starts "/" ), "//- todo", "// 2026-11 fixme" - while a word of
     /// prose before the tag still makes it prose.</summary>
-    [Test]
+    [ Test ]
     procedure TestLeadInBeforeLowerCaseTag;
   end;
 
@@ -64,7 +64,7 @@ uses
 
 procedure TTestTodoAggregatorCore.Setup;
 begin
-  FScanner := TTodoScanner.Create;
+  FScanner          := TTodoScanner.Create;
 end;
 
 procedure TTestTodoAggregatorCore.TearDown;
@@ -127,7 +127,7 @@ end;
 
 procedure TTestTodoAggregatorCore.TestScanSourceReportsOneBasedLines;
 begin
-  var Items := FScanner.ScanSource( UTF8String( 'unit U;'#13#10'interface'#13#10'  // TODO: one'#13#10'end.' ),
+  var Items         := FScanner.ScanSource( UTF8String( 'unit U;'#13#10'interface'#13#10'  // TODO: one'#13#10'end.' ),
     'C:\x\U.pas' );
   Assert.AreEqual( 1, Length( Items ) );
   Assert.AreEqual( 3, Items[ 0 ].Line );
@@ -158,3 +158,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestTodoAggregatorCore );
 
 end.
+

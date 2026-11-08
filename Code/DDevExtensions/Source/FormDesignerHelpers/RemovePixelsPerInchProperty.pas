@@ -16,13 +16,12 @@ interface
 uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.Controls, IDEHooks, Hooking;
 
-
 /// <summary>
 /// Activates or deactivates the TDataModule.DefineProperties redirection that suppresses
 /// streaming of the PixelsPerInch property.
 /// </summary>
 /// <param name="Active">True to install the redirect, False to restore the original method.</param>
-procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
+procedure SetRemovePixelsPerInchPropertyActive( Active: Boolean );
 
 implementation
 
@@ -42,90 +41,92 @@ type
   TDataModuleHelper = class helper for TDataModule
     /// <summary>Replacement DefineProperties body installed by the hook.</summary>
     /// <param name="Filer">The DFM filer that the VCL passes during streaming.</param>
-    procedure DefineProperties2(Filer: TFiler);
-    {$IFNDEF COMPILER110_UP}
+    procedure DefineProperties2( Filer: TFiler );
+{$IFNDEF COMPILER110_UP}
     // Delphi 10.2-10.4: TDataModule doesn't have these methods (added in Delphi 11)
     /// <summary>Reads and discards an identifier (used for OldCreateOrder on Delphi 10.x).</summary>
-    procedure IgnoreIdent(Reader: TReader);
+    procedure IgnoreIdent( Reader: TReader );
     /// <summary>Reads and discards an integer (used for PixelsPerInch on Delphi 10.x).</summary>
-    procedure IgnoreInteger(Reader: TReader);
-    {$ENDIF}
+    procedure IgnoreInteger( Reader: TReader );
+{$ENDIF}
   end;
 
 type
   /// <summary>Friend declaration giving the unit visibility of TDataModule's protected DefineProperties.</summary>
-  TOpenDataModule = class(TDataModule);
+  TOpenDataModule = class( TDataModule );
 
   /// <summary>Friend declaration giving the unit access to TComponent's protected DefineProperties.</summary>
-  TOpenComponent = class(TComponent);
+  TOpenComponent = class( TComponent );
 
   /// <summary>Method-pointer shape of DefineProperties, used to call TComponent's version directly.</summary>
-  TDefinePropertiesProc = procedure(Filer: TFiler) of object;
+  TDefinePropertiesProc = procedure( Filer: TFiler ) of object;
 
 var
-  IsActive: Boolean;
+  IsActive          : Boolean;
 
 {$IFNDEF COMPILER110_UP}
-procedure TDataModuleHelper.IgnoreIdent(Reader: TReader);
+procedure TDataModuleHelper.IgnoreIdent( Reader: TReader );
 begin
-  Reader.ReadIdent;  // Read and discard the identifier
+  Reader.ReadIdent; // Read and discard the identifier
 end;
 
-procedure TDataModuleHelper.IgnoreInteger(Reader: TReader);
+procedure TDataModuleHelper.IgnoreInteger( Reader: TReader );
 begin
-  Reader.ReadInteger;  // Read and discard the value
+  Reader.ReadInteger; // Read and discard the value
 end;
 {$ENDIF}
 
-procedure SetRemovePixelsPerInchPropertyActive(Active: Boolean);
+procedure SetRemovePixelsPerInchPropertyActive( Active: Boolean );
 begin
   if Active <> IsActive then
   begin
-    IsActive := Active;
+    IsActive        := Active;
     if Active then
     begin
-      InstallFullReplaceHook(@TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties);
+      InstallFullReplaceHook( @TOpenDataModule.DefineProperties, @TDataModule.DefineProperties2, HookTControl_DefineProperties );
       // A failed patch (memory protection refused) leaves the hook empty: do not report
       // the option as active, and log it so the failure is diagnosable.
-      if ( {$IFDEF CPUX64} HookTControl_DefineProperties.RealProc {$ELSE} HookTControl_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      if ( {$IFDEF CPUX64}HookTControl_DefineProperties.RealProc{$ELSE}HookTControl_DefineProperties.Redir.RealProc{$ENDIF} = nil ) then
       begin
-        IsActive := False;
+        IsActive    := False;
         OutputDebugString( 'DDevExtensions RemovePixelsPerInchProperty: TDataModule.DefineProperties could not be patched.' );
       end;
     end
     else
-      RemoveFullReplaceHook(HookTControl_DefineProperties);
+      RemoveFullReplaceHook( HookTControl_DefineProperties );
   end;
 end;
 
-procedure TDataModuleHelper.DefineProperties2(Filer: TFiler);
+procedure TDataModuleHelper.DefineProperties2( Filer: TFiler );
 var
-  Ancestor: TDataModule;
+  Ancestor          : TDataModule;
 
   function DoWriteWidth: Boolean;
   begin
-    Result := True;
+    Result          := True;
     if Ancestor <> nil then
-      Result := DesignSize.X <> Ancestor.DesignSize.X;
+      Result        := DesignSize.X <> Ancestor.DesignSize.X;
   end;
 
   function DoWriteHorizontalOffset: Boolean;
   begin
     if Ancestor <> nil then
-      Result := DesignOffset.X <> Ancestor.DesignOffset.X else
-      Result := DesignOffset.X <> 0;
+      Result        := DesignOffset.X <> Ancestor.DesignOffset.X
+    else
+      Result        := DesignOffset.X <> 0;
   end;
 
   function DoWriteVerticalOffset: Boolean;
   begin
     if Ancestor <> nil then
-      Result := DesignOffset.Y <> Ancestor.DesignOffset.Y else
-      Result := DesignOffset.Y <> 0;
+      Result        := DesignOffset.Y <> Ancestor.DesignOffset.Y
+    else
+      Result        := DesignOffset.Y <> 0;
   end;
 
   function DoWriteHeight: Boolean;
   begin
-    Result := True;
+    Result          := True;
     if Ancestor <> nil then Result := DesignSize.Y <> Ancestor.DesignSize.Y;
   end;
 
@@ -139,29 +140,31 @@ begin
   TMethod( LInheritedDefine ).Data := Self;
   LInheritedDefine( Filer );
 
-  Ancestor := TDataModule(Filer.Ancestor);
-  with self do begin // access to private parts
-    Filer.DefineProperty('Height', ReadHeight, WriteHeight, DoWriteHeight);
-    Filer.DefineProperty('HorizontalOffset', ReadHorizontalOffset,
-      WriteHorizontalOffset, DoWriteHorizontalOffset);
-    Filer.DefineProperty('VerticalOffset', ReadVerticalOffset,
-      WriteVerticalOffset, DoWriteVerticalOffset);
-    Filer.DefineProperty('Width', ReadWidth, WriteWidth, DoWriteWidth);
-    Filer.DefineProperty('OldCreateOrder', IgnoreIdent, nil, False);
+  Ancestor          := TDataModule( Filer.Ancestor );
+  with self do
+  begin // access to private parts
+    Filer.DefineProperty( 'Height', ReadHeight, WriteHeight, DoWriteHeight );
+    Filer.DefineProperty( 'HorizontalOffset', ReadHorizontalOffset,
+      WriteHorizontalOffset, DoWriteHorizontalOffset );
+    Filer.DefineProperty( 'VerticalOffset', ReadVerticalOffset,
+      WriteVerticalOffset, DoWriteVerticalOffset );
+    Filer.DefineProperty( 'Width', ReadWidth, WriteWidth, DoWriteWidth );
+    Filer.DefineProperty( 'OldCreateOrder', IgnoreIdent, nil, False );
 {$IFDEF COMPILER110_UP}
     // We need to read if it exists else it Errors, but never write it..
     // ReadPixelsPerInch/WritePixelsPerInch were introduced in Delphi 11 Alexandria
-    Filer.DefineProperty('PixelsPerInch', ReadPixelsPerInch, WritePixelsPerInch, (csReading in ComponentState));
+    Filer.DefineProperty( 'PixelsPerInch', ReadPixelsPerInch, WritePixelsPerInch, ( csReading in ComponentState ) );
 {$ELSE}
     // Delphi 10.2-10.4: Read and discard PixelsPerInch if present (from DFMs created in Delphi 11+)
     // This allows 10.2-10.4 to open DFMs that contain PixelsPerInch without error
-    Filer.DefineProperty('PixelsPerInch', IgnoreInteger, nil, False);
+    Filer.DefineProperty( 'PixelsPerInch', IgnoreInteger, nil, False );
 {$ENDIF}
   end;
 
 {$IF CompilerVersion > 37}
-  {$MESSAGE WARN 'Re-verify TDataModule.DefineProperties against the RTL for this compiler version'}
+{$MESSAGE WARN 'Re-verify TDataModule.DefineProperties against the RTL for this compiler version'}
 {$IFEND}
 end;
 
 end.
+

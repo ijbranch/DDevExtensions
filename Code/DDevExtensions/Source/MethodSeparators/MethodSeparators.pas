@@ -47,7 +47,7 @@ type
     slsDashed,
     /// <summary>A solid line.</summary>
     slsSolid
-  );
+    );
 
   /// <summary>Cached scan result for one open source file.</summary>
   TSeparatorCacheEntry = class
@@ -283,7 +283,7 @@ type
       ImmediateScanLimit = 256 * 1024;
       /// <summary>Pause in typing, in milliseconds, after which a large changed buffer is rescanned.</summary>
       RescanDelayMs = 400;
-    /// <summary>Creates the configuration, loads its settings and registers the notifier when Active.</summary>
+      /// <summary>Creates the configuration, loads its settings and registers the notifier when Active.</summary>
     constructor Create;
     /// <summary>Unregisters the notifier and frees the cache and timer.</summary>
     destructor Destroy; override;
@@ -347,14 +347,14 @@ constructor TMethodSeparatorPainter.Create( AOwner: TMethodSeparatorsConfig );
 begin
 
   inherited Create;
-  FOwner := AOwner;
+  FOwner            := AOwner;
 
 end;
 
 procedure TMethodSeparatorPainter.Detach;
 begin
 
-  FOwner := nil;
+  FOwner            := nil;
 
 end;
 
@@ -423,28 +423,28 @@ end;
 function TMethodSeparatorPainter.AllowedEvents: TCodeEditorEvents;
 begin
 
-  Result := [cevBeginEndPaintEvents, cevPaintLineEvents];
+  Result            := [ cevBeginEndPaintEvents, cevPaintLineEvents ];
 
 end;
 
 function TMethodSeparatorPainter.AllowedGutterStages: TPaintGutterStages;
 begin
 
-  Result := [];
+  Result            := [ ];
 
 end;
 
 function TMethodSeparatorPainter.AllowedLineStages: TPaintLineStages;
 begin
 
-  Result := [plsEndPaint];
+  Result            := [ plsEndPaint ];
 
 end;
 
 function TMethodSeparatorPainter.UIOptions: TCodeEditorUIOptions;
 begin
 
-  Result := [];
+  Result            := [ ];
 
 end;
 
@@ -454,7 +454,7 @@ constructor TEditorWatch.Create( AOwner: TComponent );
 begin
 
   inherited Create( AOwner );
-  FEditors := TList<TWinControl>.Create;
+  FEditors          := TList<TWinControl>.Create;
 
 end;
 
@@ -492,14 +492,14 @@ end;
 constructor TMethodSeparatorsConfig.Create;
 begin
 
-  FNotifierIndex := -1;
-  FCache := TObjectDictionary<string, TSeparatorCacheEntry>.Create( [doOwnsValues] );
-  FEditors := TEditorWatch.Create( nil );
-  FRecheckTimer := TTimer.Create( nil );
+  FNotifierIndex    := -1;
+  FCache            := TObjectDictionary<string, TSeparatorCacheEntry>.Create( [ doOwnsValues ] );
+  FEditors          := TEditorWatch.Create( nil );
+  FRecheckTimer     := TTimer.Create( nil );
   FRecheckTimer.Enabled := False;
   FRecheckTimer.Interval := RecheckDelayMs;
   FRecheckTimer.OnTimer := HandleRecheckTimer;
-  FRescanTimer := TTimer.Create( nil );
+  FRescanTimer      := TTimer.Create( nil );
   FRescanTimer.Enabled := False;
   FRescanTimer.Interval := RescanDelayMs;
   FRescanTimer.OnTimer := HandleRescanTimer;
@@ -527,26 +527,26 @@ procedure TMethodSeparatorsConfig.Init;
 begin
 
   inherited Init;
-  FActive := True;
-  FShowTypes := True;
-  FShowSections := True;
-  FShowInterface := False;
-  FLineStyle := slsDotted;
-  FUseCustomColor := False;
-  FCustomColor := TColors.Gray;
+  FActive           := True;
+  FShowTypes        := True;
+  FShowSections     := True;
+  FShowInterface    := False;
+  FLineStyle        := slsDotted;
+  FUseCustomColor   := False;
+  FCustomColor      := TColors.Gray;
 
 end;
 
 function TMethodSeparatorsConfig.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Method Separators', TFrameOptionPageMethodSeparators, Self );
+  Result            := TTreePage.Create( 'Method Separators', TFrameOptionPageMethodSeparators, Self );
 
 end;
 
 procedure TMethodSeparatorsConfig.ApplySettings;
 var
-  Services: INTACodeEditorServices;
+  Services          : INTACodeEditorServices;
 begin
 
   FRecheckTimer.Enabled := False;
@@ -556,7 +556,7 @@ begin
   if FFaulted then
   begin
     UnregisterPainter;
-    FFaulted := False;
+    FFaulted        := False;
   end;
   if FActive then
     RegisterPainter
@@ -570,7 +570,7 @@ end;
 
 procedure TMethodSeparatorsConfig.RegisterPainter;
 var
-  Services: INTACodeEditorServices;
+  Services          : INTACodeEditorServices;
 begin
 
   if FNotifierIndex >= 0 then
@@ -578,15 +578,15 @@ begin
   if not Supports( BorlandIDEServices, INTACodeEditorServices, Services ) then
     Exit;
 
-  FPainter := TMethodSeparatorPainter.Create( Self );
-  FPainterIntf := FPainter;
-  FNotifierIndex := Services.AddEditorEventsNotifier( FPainterIntf );
+  FPainter          := TMethodSeparatorPainter.Create( Self );
+  FPainterIntf      := FPainter;
+  FNotifierIndex    := Services.AddEditorEventsNotifier( FPainterIntf );
 
 end;
 
 procedure TMethodSeparatorsConfig.UnregisterPainter;
 var
-  Services: INTACodeEditorServices;
+  Services          : INTACodeEditorServices;
 begin
 
   if FNotifierIndex < 0 then
@@ -596,9 +596,9 @@ begin
   FPainter.Detach;
   if Supports( BorlandIDEServices, INTACodeEditorServices, Services ) then
     Services.RemoveEditorEventsNotifier( FNotifierIndex );
-  FNotifierIndex := -1;
-  FPainter := nil;
-  FPainterIntf := nil;
+  FNotifierIndex    := -1;
+  FPainter          := nil;
+  FPainterIntf      := nil;
 
 end;
 
@@ -613,27 +613,27 @@ end;
 
 procedure TMethodSeparatorsConfig.RefreshEntry( Entry: TSeparatorCacheEntry; const View: IOTAEditView );
 var
-  Text: UTF8String;
+  Text              : UTF8String;
 begin
 
   Entry.CheckedTick := GetTickCount64;
   if ( View = nil ) or ( View.Buffer = nil ) then
     Exit;
 
-  Text := GetEditorSource( View.Buffer );
+  Text              := GetEditorSource( View.Buffer );
   if Text = Entry.Text then
     Exit;
-  Entry.Text := Text;
+  Entry.Text        := Text;
   // A small buffer, or one never scanned, is scanned now.  A large one keeps its previous lines
   // until typing pauses: scanning it costs tens of milliseconds, too much for every paint.
   if ( Length( Text ) <= ImmediateScanLimit ) or ( Entry.Lines = nil ) then
   begin
-    Entry.Lines := FindSeparatorLines( Text, ScanOptions );
-    Entry.Dirty := False;
+    Entry.Lines     := FindSeparatorLines( Text, ScanOptions );
+    Entry.Dirty     := False;
   end
   else
   begin
-    Entry.Dirty := True;
+    Entry.Dirty     := True;
     FRescanTimer.Enabled := False;
     FRescanTimer.Enabled := True;
   end;
@@ -642,23 +642,23 @@ end;
 
 function TMethodSeparatorsConfig.EntryFor( const Context: INTACodeEditorPaintContext ): TSeparatorCacheEntry;
 var
-  FileName: string;
-  Key: string;
+  FileName          : string;
+  Key               : string;
 begin
 
-  FileName := Context.FileName;
+  FileName          := Context.FileName;
   if not IsPascalSourceFile( FileName ) then
     Exit( nil );
 
-  Key := AnsiLowerCase( FileName );
+  Key               := AnsiLowerCase( FileName );
   if not FCache.TryGetValue( Key, Result ) then
   begin
     if FCache.Count >= MaxCachedFiles then
       FCache.Clear;
-    Result := TSeparatorCacheEntry.Create;
+    Result          := TSeparatorCacheEntry.Create;
     FCache.Add( Key, Result );
     RefreshEntry( Result, Context.EditView );
-    FCycleChecked := True;
+    FCycleChecked   := True;
     Exit;
   end;
 
@@ -671,7 +671,7 @@ begin
       if not FRecheckTimer.Enabled then
         FRecheckTimer.Enabled := True;
   end;
-  FCycleChecked := True;
+  FCycleChecked     := True;
 
 end;
 
@@ -683,7 +683,7 @@ begin
   // re-registers it.
   if not FFaulted then
     OutputDebugString( PChar( Format( 'Method Separators: switched off after %s: %s', [ E.ClassName, E.Message ] ) ) );
-  FFaulted := True;
+  FFaulted          := True;
   FRecheckTimer.Enabled := False;
   FRescanTimer.Enabled := False;
   if FPainter <> nil then
@@ -693,17 +693,17 @@ end;
 
 procedure TMethodSeparatorsConfig.HandleBeginPaint( const Editor: TWinControl );
 var
-  Services: INTACodeEditorServices;
-  Background: TColor;
+  Services          : INTACodeEditorServices;
+  Background        : TColor;
 begin
 
   try
-    FCycleChecked := False;
+    FCycleChecked   := False;
     FEditors.Add( Editor );
-    Background := clWindow;
+    Background      := clWindow;
     if Supports( BorlandIDEServices, INTACodeEditorServices, Services ) and ( Services.Options <> nil ) then
-      Background := Services.Options.BackgroundColor[atWhiteSpace];
-    FLineColor := ResolveSeparatorColor( ColorToRGB( Background ), ColorToRGB( FCustomColor ), FUseCustomColor );
+      Background    := Services.Options.BackgroundColor[ atWhiteSpace ];
+    FLineColor      := ResolveSeparatorColor( ColorToRGB( Background ), ColorToRGB( FCustomColor ), FUseCustomColor );
   except
     on E: Exception do
       PaintFaulted( E );
@@ -714,14 +714,14 @@ end;
 procedure TMethodSeparatorsConfig.HandlePaintLine( const Rect: TRect; const Stage: TPaintLineStage; const BeforeEvent: Boolean;
   const Context: INTACodeEditorPaintContext );
 var
-  Entry: TSeparatorCacheEntry;
+  Entry             : TSeparatorCacheEntry;
 begin
 
   if ( Stage <> plsEndPaint ) or BeforeEvent or ( Context = nil ) then
     Exit;
 
   try
-    Entry := EntryFor( Context );
+    Entry           := EntryFor( Context );
     if ( Entry <> nil ) and IsSeparatorLine( Entry.Lines, Context.LogicalLineNum ) then
       DrawSeparator( Context.Canvas, Rect );
   except
@@ -733,30 +733,30 @@ end;
 
 procedure TMethodSeparatorsConfig.DrawSeparator( Canvas: TCanvas; const Rect: TRect );
 const
-  PenStyles: array[TSeparatorLineStyle] of TPenStyle = ( psDot, psDash, psSolid );
+  PenStyles         : array[ TSeparatorLineStyle ] of TPenStyle = ( psDot, psDash, psSolid );
 var
-  OldColor: TColor;
-  OldStyle: TPenStyle;
-  OldWidth: Integer;
-  OldMode: TPenMode;
-  OldBkMode: Integer;
-  Style: TSeparatorLineStyle;
+  OldColor          : TColor;
+  OldStyle          : TPenStyle;
+  OldWidth          : Integer;
+  OldMode           : TPenMode;
+  OldBkMode         : Integer;
+  Style             : TSeparatorLineStyle;
 begin
 
   // LineStyle is read from an XML file the user can edit: an out-of-range value falls back to dotted.
-  Style := FLineStyle;
+  Style             := FLineStyle;
   if ( Ord( Style ) < Ord( Low( TSeparatorLineStyle ) ) ) or ( Ord( Style ) > Ord( High( TSeparatorLineStyle ) ) ) then
-    Style := slsDotted;
+    Style           := slsDotted;
 
-  OldColor := Canvas.Pen.Color;
-  OldStyle := Canvas.Pen.Style;
-  OldWidth := Canvas.Pen.Width;
-  OldMode := Canvas.Pen.Mode;
+  OldColor          := Canvas.Pen.Color;
+  OldStyle          := Canvas.Pen.Style;
+  OldWidth          := Canvas.Pen.Width;
+  OldMode           := Canvas.Pen.Mode;
   // Transparent background mode, or the gaps of a dotted line are filled with the brush colour.
-  OldBkMode := SetBkMode( Canvas.Handle, TRANSPARENT );
+  OldBkMode         := SetBkMode( Canvas.Handle, TRANSPARENT );
   try
     Canvas.Pen.Color := FLineColor;
-    Canvas.Pen.Style := PenStyles[Style];
+    Canvas.Pen.Style := PenStyles[ Style ];
     Canvas.Pen.Width := 1;
     Canvas.Pen.Mode := pmCopy;
     Canvas.MoveTo( Rect.Left, Rect.Top );
@@ -773,7 +773,7 @@ end;
 
 procedure TMethodSeparatorsConfig.InvalidateEditors;
 var
-  Services: INTACodeEditorServices;
+  Services          : INTACodeEditorServices;
 begin
 
   if not Supports( BorlandIDEServices, INTACodeEditorServices, Services ) then
@@ -823,3 +823,4 @@ begin
 end;
 
 end.
+

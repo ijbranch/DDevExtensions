@@ -28,7 +28,7 @@ uses
 /// of the ExplicitLeft/Top/Width/Height properties.
 /// </summary>
 /// <param name="Active">True to install the redirect, False to restore the original method.</param>
-procedure SetRemoveExplicitPropertyActive(Active: Boolean);
+procedure SetRemoveExplicitPropertyActive( Active: Boolean );
 
 implementation
 
@@ -36,161 +36,162 @@ uses
   Winapi.Windows, IDEUtils;
 
 {$IF CompilerVersion > 37}
-  {$MESSAGE WARN 'Re-verify TControl.DefineProperties against the VCL for this compiler version'}
+{$MESSAGE WARN 'Re-verify TControl.DefineProperties against the VCL for this compiler version'}
 {$IFEND}
 
 var
   HookTControl_DefineProperties: TFullReplaceHook;
 
 type
-  TControlEx = class(TControl)
+  TControlEx = class( TControl )
   protected
-    procedure ReadIsControl(Reader: TReader);
-    procedure WriteIsControl(Writer: TWriter);
+    procedure ReadIsControl( Reader: TReader );
+    procedure WriteIsControl( Writer: TWriter );
 
-    procedure WriteExplicitLeft(Writer: TWriter);
-    procedure WriteExplicitTop(Writer: TWriter);
-    procedure WriteExplicitWidth(Writer: TWriter);
-    procedure WriteExplicitHeight(Writer: TWriter);
+    procedure WriteExplicitLeft( Writer: TWriter );
+    procedure WriteExplicitTop( Writer: TWriter );
+    procedure WriteExplicitWidth( Writer: TWriter );
+    procedure WriteExplicitHeight( Writer: TWriter );
 
-    procedure ReadExplicitLeft(Reader: TReader);
-    procedure ReadExplicitTop(Reader: TReader);
-    procedure ReadExplicitWidth(Reader: TReader);
-    procedure ReadExplicitHeight(Reader: TReader);
+    procedure ReadExplicitLeft( Reader: TReader );
+    procedure ReadExplicitTop( Reader: TReader );
+    procedure ReadExplicitWidth( Reader: TReader );
+    procedure ReadExplicitHeight( Reader: TReader );
 
-    procedure IgnoreInteger(Reader: TReader);
+    procedure IgnoreInteger( Reader: TReader );
 
-    procedure DefineProperties(Filer: TFiler); override;
+    procedure DefineProperties( Filer: TFiler ); override;
   end;
 
-  TOpenControl = class(TControl);
+  TOpenControl = class( TControl );
 
-procedure TControlEx.ReadIsControl(Reader: TReader);
+procedure TControlEx.ReadIsControl( Reader: TReader );
 begin
-  IsControl := Reader.ReadBoolean;
+  IsControl         := Reader.ReadBoolean;
 end;
 
-procedure TControlEx.WriteIsControl(Writer: TWriter);
+procedure TControlEx.WriteIsControl( Writer: TWriter );
 begin
-  Writer.WriteBoolean(IsControl);
+  Writer.WriteBoolean( IsControl );
 end;
 
-procedure TControlEx.WriteExplicitTop(Writer: TWriter);
+procedure TControlEx.WriteExplicitTop( Writer: TWriter );
 begin
-  Writer.WriteInteger(FExplicitTop);
+  Writer.WriteInteger( FExplicitTop );
 end;
 
-procedure TControlEx.WriteExplicitHeight(Writer: TWriter);
+procedure TControlEx.WriteExplicitHeight( Writer: TWriter );
 begin
-  Writer.WriteInteger(FExplicitHeight);
+  Writer.WriteInteger( FExplicitHeight );
 end;
 
-procedure TControlEx.WriteExplicitLeft(Writer: TWriter);
+procedure TControlEx.WriteExplicitLeft( Writer: TWriter );
 begin
-  Writer.WriteInteger(FExplicitLeft);
+  Writer.WriteInteger( FExplicitLeft );
 end;
 
-procedure TControlEx.ReadExplicitWidth(Reader: TReader);
+procedure TControlEx.ReadExplicitWidth( Reader: TReader );
 begin
-  FExplicitWidth := Reader.ReadInteger;
+  FExplicitWidth    := Reader.ReadInteger;
 end;
 
-procedure TControlEx.WriteExplicitWidth(Writer: TWriter);
+procedure TControlEx.WriteExplicitWidth( Writer: TWriter );
 begin
-  Writer.WriteInteger(FExplicitWidth);
+  Writer.WriteInteger( FExplicitWidth );
 end;
 
-procedure TControlEx.ReadExplicitTop(Reader: TReader);
+procedure TControlEx.ReadExplicitTop( Reader: TReader );
 begin
-  FExplicitTop := Reader.ReadInteger;
+  FExplicitTop      := Reader.ReadInteger;
 end;
 
-procedure TControlEx.ReadExplicitHeight(Reader: TReader);
+procedure TControlEx.ReadExplicitHeight( Reader: TReader );
 begin
-  FExplicitHeight := Reader.ReadInteger;
+  FExplicitHeight   := Reader.ReadInteger;
 end;
 
-procedure TControlEx.ReadExplicitLeft(Reader: TReader);
+procedure TControlEx.ReadExplicitLeft( Reader: TReader );
 begin
-  FExplicitLeft := Reader.ReadInteger;
+  FExplicitLeft     := Reader.ReadInteger;
 end;
 
-procedure TControlEx.IgnoreInteger(Reader: TReader);
+procedure TControlEx.IgnoreInteger( Reader: TReader );
 begin
   Reader.ReadInteger;
 end;
 
-procedure TControlEx.DefineProperties(Filer: TFiler);
+procedure TControlEx.DefineProperties( Filer: TFiler );
 type
-  TExplicitDimension = (edLeft, edTop, edWidth, edHeight);
+  TExplicitDimension = ( edLeft, edTop, edWidth, edHeight );
 
   function DoWriteIsControl: Boolean;
   begin
     if Filer.Ancestor <> nil then
-      Result := TControlEx(Filer.Ancestor).IsControl <> IsControl else
-      Result := IsControl;
+      Result        := TControlEx( Filer.Ancestor ).IsControl <> IsControl
+    else
+      Result        := IsControl;
   end;
 
-  function DoWriteExplicit(Dim: TExplicitDimension): Boolean;
+  function DoWriteExplicit( Dim: TExplicitDimension ): Boolean;
   begin
     case Dim of
-      edLeft: Result := ((Filer.Ancestor <> nil) and (TControl(Filer.Ancestor).ExplicitLeft <> FExplicitLeft)) or
-        ((Filer.Ancestor = nil) and ((Align <> alNone) or ((Anchors * [akLeft]) = [])) and (FExplicitLeft <> Left));
-      edTop: Result := ((Filer.Ancestor <> nil) and (TControl(Filer.Ancestor).ExplicitTop <> FExplicitTop)) or
-        ((Filer.Ancestor = nil) and ((Align <> alNone) or ((Anchors * [akTop]) = [])) and (FExplicitTop <> Top));
-      edWidth: Result := ((Filer.Ancestor <> nil) and (TControl(Filer.Ancestor).ExplicitWidth <> FExplicitWidth)) or
-        ((Filer.Ancestor = nil) and ((Align <> alNone) or ((Anchors * [akLeft, akRight]) = [akLeft, akRight])) and (FExplicitWidth <> Width));
-      edHeight: Result := ((Filer.Ancestor <> nil) and (TControl(Filer.Ancestor).ExplicitHeight <> FExplicitHeight)) or
-        ((Filer.Ancestor = nil) and ((Align <> alNone) or ((Anchors * [akTop, akBottom]) = [akTop, akBottom])) and (FExplicitHeight <> Height));
+      edLeft: Result := ( ( Filer.Ancestor <> nil ) and ( TControl( Filer.Ancestor ).ExplicitLeft <> FExplicitLeft ) ) or
+        ( ( Filer.Ancestor = nil ) and ( ( Align <> alNone ) or ( ( Anchors * [ akLeft ] ) = [ ] ) ) and ( FExplicitLeft <> Left ) );
+      edTop: Result := ( ( Filer.Ancestor <> nil ) and ( TControl( Filer.Ancestor ).ExplicitTop <> FExplicitTop ) ) or
+        ( ( Filer.Ancestor = nil ) and ( ( Align <> alNone ) or ( ( Anchors * [ akTop ] ) = [ ] ) ) and ( FExplicitTop <> Top ) );
+      edWidth: Result := ( ( Filer.Ancestor <> nil ) and ( TControl( Filer.Ancestor ).ExplicitWidth <> FExplicitWidth ) ) or
+        ( ( Filer.Ancestor = nil ) and ( ( Align <> alNone ) or ( ( Anchors * [ akLeft, akRight ] ) = [ akLeft, akRight ] ) ) and ( FExplicitWidth <> Width ) );
+      edHeight: Result := ( ( Filer.Ancestor <> nil ) and ( TControl( Filer.Ancestor ).ExplicitHeight <> FExplicitHeight ) ) or
+        ( ( Filer.Ancestor = nil ) and ( ( Align <> alNone ) or ( ( Anchors * [ akTop, akBottom ] ) = [ akTop, akBottom ] ) ) and ( FExplicitHeight <> Height ) );
     else
-      Result := False;
+      Result        := False;
     end;
   end;
 
 begin
   { The call to inherited DefinedProperties is omitted since the Left and
     Top special properties are redefined with real properties }
-  Filer.DefineProperty('IsControl', ReadIsControl, WriteIsControl, DoWriteIsControl);
+  Filer.DefineProperty( 'IsControl', ReadIsControl, WriteIsControl, DoWriteIsControl );
 
   if csDesigning in ComponentState then
   begin
-    Filer.DefineProperty('ExplicitLeft', IgnoreInteger, nil, False);
-    Filer.DefineProperty('ExplicitTop', IgnoreInteger, nil, False);
-    Filer.DefineProperty('ExplicitWidth', IgnoreInteger, nil, False);
-    Filer.DefineProperty('ExplicitHeight', IgnoreInteger, nil, False);
+    Filer.DefineProperty( 'ExplicitLeft', IgnoreInteger, nil, False );
+    Filer.DefineProperty( 'ExplicitTop', IgnoreInteger, nil, False );
+    Filer.DefineProperty( 'ExplicitWidth', IgnoreInteger, nil, False );
+    Filer.DefineProperty( 'ExplicitHeight', IgnoreInteger, nil, False );
   end
   else
   begin
-    Filer.DefineProperty('ExplicitLeft', ReadExplicitLeft, WriteExplicitLeft, not (csReading in ComponentState) and DoWriteExplicit(edLeft));
-    Filer.DefineProperty('ExplicitTop', ReadExplicitTop, WriteExplicitTop, not (csReading in ComponentState) and DoWriteExplicit(edTop));
-    Filer.DefineProperty('ExplicitWidth', ReadExplicitWidth, WriteExplicitWidth, not (csReading in ComponentState) and DoWriteExplicit(edWidth));
-    Filer.DefineProperty('ExplicitHeight', ReadExplicitHeight, WriteExplicitHeight, not (csReading in ComponentState) and DoWriteExplicit(edHeight));
+    Filer.DefineProperty( 'ExplicitLeft', ReadExplicitLeft, WriteExplicitLeft, not ( csReading in ComponentState ) and DoWriteExplicit( edLeft ) );
+    Filer.DefineProperty( 'ExplicitTop', ReadExplicitTop, WriteExplicitTop, not ( csReading in ComponentState ) and DoWriteExplicit( edTop ) );
+    Filer.DefineProperty( 'ExplicitWidth', ReadExplicitWidth, WriteExplicitWidth, not ( csReading in ComponentState ) and DoWriteExplicit( edWidth ) );
+    Filer.DefineProperty( 'ExplicitHeight', ReadExplicitHeight, WriteExplicitHeight, not ( csReading in ComponentState ) and DoWriteExplicit( edHeight ) );
   end;
 end;
 
-
 var
-  IsActive: Boolean;
+  IsActive          : Boolean;
 
-procedure SetRemoveExplicitPropertyActive(Active: Boolean);
+procedure SetRemoveExplicitPropertyActive( Active: Boolean );
 begin
   if Active <> IsActive then
   begin
-    IsActive := Active;
+    IsActive        := Active;
     if Active then
     begin
-      InstallFullReplaceHook(@TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties);
+      InstallFullReplaceHook( @TOpenControl.DefineProperties, @TControlEx.DefineProperties, HookTControl_DefineProperties );
       // A failed patch (memory protection refused) leaves the hook empty: do not report
       // the option as active, and log it so the failure is diagnosable.
-      if ( {$IFDEF CPUX64} HookTControl_DefineProperties.RealProc {$ELSE} HookTControl_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      if ( {$IFDEF CPUX64}HookTControl_DefineProperties.RealProc{$ELSE}HookTControl_DefineProperties.Redir.RealProc{$ENDIF} = nil ) then
       begin
-        IsActive := False;
+        IsActive    := False;
         OutputDebugString( 'DDevExtensions RemoveExplicitProperty: TControl.DefineProperties could not be patched.' );
       end;
     end
     else
-      RemoveFullReplaceHook(HookTControl_DefineProperties);
+      RemoveFullReplaceHook( HookTControl_DefineProperties );
   end;
 end;
 
 end.
+

@@ -44,7 +44,7 @@ type
     urAfterHalt,
     /// <summary>Code follows an Abort call.</summary>
     urAfterAbort
-  );
+    );
 
   /// <summary>One detected block of unreachable code.</summary>
   TUnreachableCodeItem = record
@@ -135,17 +135,17 @@ uses
 
 const
   /// <summary>Control-flow terminators, lower case, with the reason each reports.</summary>
-  Terminators: array[ 0..5 ] of record
+  Terminators       : array[ 0..5 ] of record
     Keyword: string;
     Reason: TUnreachableReason;
-  end = (
-    ( Keyword: 'exit';     Reason: urAfterExit ),
-    ( Keyword: 'raise';    Reason: urAfterRaise ),
-    ( Keyword: 'break';    Reason: urAfterBreak ),
+  end               = (
+    ( Keyword: 'exit'; Reason: urAfterExit ),
+    ( Keyword: 'raise'; Reason: urAfterRaise ),
+    ( Keyword: 'break'; Reason: urAfterBreak ),
     ( Keyword: 'continue'; Reason: urAfterContinue ),
-    ( Keyword: 'halt';     Reason: urAfterHalt ),
-    ( Keyword: 'abort';    Reason: urAfterAbort )
-  );
+    ( Keyword: 'halt'; Reason: urAfterHalt ),
+    ( Keyword: 'abort'; Reason: urAfterAbort )
+    );
 
 { Lexical helpers }
 
@@ -154,7 +154,7 @@ const
 /// <returns>True for a letter or underscore.</returns>
 function IsIdentStart( C: Char ): Boolean;
 begin
-  Result := CharInSet( C, [ 'A'..'Z', 'a'..'z', '_' ] ) or ( ( Ord( C ) >= 128 ) and C.IsLetter );
+  Result            := CharInSet( C, [ 'A'..'Z', 'a'..'z', '_' ] ) or ( ( Ord( C ) >= 128 ) and C.IsLetter );
 end;
 
 /// <summary>True for a character that can continue an identifier.</summary>
@@ -162,7 +162,7 @@ end;
 /// <returns>True for a letter, digit or underscore.</returns>
 function IsIdentChar( C: Char ): Boolean;
 begin
-  Result := CharInSet( C, [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] ) or ( ( Ord( C ) >= 128 ) and C.IsLetterOrDigit );
+  Result            := CharInSet( C, [ 'A'..'Z', 'a'..'z', '0'..'9', '_' ] ) or ( ( Ord( C ) >= 128 ) and C.IsLetterOrDigit );
 end;
 
 /// <summary>Returns the position just after the string literal starting at Pos (a quote).</summary>
@@ -173,15 +173,15 @@ end;
 /// ordinary literal ends at its closing quote or, unterminated, at the end of its line.</returns>
 function SkipString( const Source: string; Pos: Integer ): Integer;
 begin
-  var iLen := Length( Source );
+  var iLen          := Length( Source );
 
-  var iRun := 0;
+  var iRun          := 0;
   while ( Pos + iRun <= iLen ) and ( Source[ Pos + iRun ] = '''' ) do
     Inc( iRun );
 
   if ( iRun >= 3 ) and Odd( iRun ) then
   begin
-    var j := Pos + iRun;
+    var j           := Pos + iRun;
     while ( j <= iLen ) and CharInSet( Source[ j ], [ ' ', #9 ] ) do
       Inc( j );
 
@@ -208,7 +208,7 @@ begin
   end;
 
   // ordinary literal: '' is an escaped quote
-  Result := Pos + 1;
+  Result            := Pos + 1;
   while Result <= iLen do
   begin
     if Source[ Result ] = '''' then
@@ -219,7 +219,7 @@ begin
         Exit( Result + 1 );
     end
     else if CharInSet( Source[ Result ], [ #10, #13 ] ) then
-      Exit( Result )   // a Pascal literal ends with its line
+      Exit( Result ) // a Pascal literal ends with its line
     else
       Inc( Result );
   end;
@@ -231,9 +231,9 @@ end;
 /// <returns>True for "{$" and "(*$".</returns>
 function IsDirectiveAt( const Source: string; Pos: Integer ): Boolean;
 begin
-  var iLen := Length( Source );
-  Result := ( ( Source[ Pos ] = '{' ) and ( Pos < iLen ) and ( Source[ Pos + 1 ] = '$' ) ) or
-            ( ( Source[ Pos ] = '(' ) and ( Pos + 2 <= iLen ) and ( Source[ Pos + 1 ] = '*' ) and ( Source[ Pos + 2 ] = '$' ) );
+  var iLen          := Length( Source );
+  Result            := ( ( Source[ Pos ] = '{' ) and ( Pos < iLen ) and ( Source[ Pos + 1 ] = '$' ) ) or
+    ( ( Source[ Pos ] = '(' ) and ( Pos + 2 <= iLen ) and ( Source[ Pos + 1 ] = '*' ) and ( Source[ Pos + 2 ] = '$' ) );
 end;
 
 /// <summary>True when a comment (or directive) starts at Pos.</summary>
@@ -242,10 +242,10 @@ end;
 /// <returns>True for "{", "(*" and "//".</returns>
 function IsCommentStart( const Source: string; Pos: Integer ): Boolean;
 begin
-  var iLen := Length( Source );
-  Result := ( Source[ Pos ] = '{' ) or
-            ( ( Pos < iLen ) and ( Source[ Pos ] = '(' ) and ( Source[ Pos + 1 ] = '*' ) ) or
-            ( ( Pos < iLen ) and ( Source[ Pos ] = '/' ) and ( Source[ Pos + 1 ] = '/' ) );
+  var iLen          := Length( Source );
+  Result            := ( Source[ Pos ] = '{' ) or
+    ( ( Pos < iLen ) and ( Source[ Pos ] = '(' ) and ( Source[ Pos + 1 ] = '*' ) ) or
+    ( ( Pos < iLen ) and ( Source[ Pos ] = '/' ) and ( Source[ Pos + 1 ] = '/' ) );
 end;
 
 /// <summary>Returns the position just after the comment or directive starting at Pos.</summary>
@@ -254,24 +254,24 @@ end;
 /// <returns>The position after it; past the end of the text when it is unterminated.</returns>
 function SkipComment( const Source: string; Pos: Integer ): Integer;
 begin
-  var iLen := Length( Source );
+  var iLen          := Length( Source );
   if Source[ Pos ] = '{' then
   begin
-    Result := Pos + 1;
+    Result          := Pos + 1;
     while ( Result <= iLen ) and ( Source[ Result ] <> '}' ) do
       Inc( Result );
     Inc( Result );
   end
   else if Source[ Pos ] = '(' then
   begin
-    Result := Pos + 2;
+    Result          := Pos + 2;
     while ( Result < iLen ) and not ( ( Source[ Result ] = '*' ) and ( Source[ Result + 1 ] = ')' ) ) do
       Inc( Result );
     Inc( Result, 2 );
   end
   else
   begin
-    Result := Pos + 2;
+    Result          := Pos + 2;
     while ( Result <= iLen ) and not CharInSet( Source[ Result ], [ #10, #13 ] ) do
       Inc( Result );
   end;
@@ -285,22 +285,22 @@ end;
 /// <returns>The position just after the directive.</returns>
 function ReadDirective( const Source: string; Pos: Integer; out Name, Argument: string ): Integer;
 begin
-  Result := SkipComment( Source, Pos );
+  Result            := SkipComment( Source, Pos );
 
-  var iBodyStart := Pos + 2;          // after "{$"
-  var iBodyEnd   := Result - 2;       // before "}"
+  var iBodyStart    := Pos + 2; // after "{$"
+  var iBodyEnd      := Result - 2; // before "}"
   if Source[ Pos ] = '(' then
   begin
-    iBodyStart := Pos + 3;            // after "(*$"
-    iBodyEnd   := Result - 3;         // before "*)"
+    iBodyStart      := Pos + 3; // after "(*$"
+    iBodyEnd        := Result - 3; // before "*)"
   end;
 
-  var sBody := Copy( Source, iBodyStart, iBodyEnd - iBodyStart + 1 );
-  var i := 1;
+  var sBody         := Copy( Source, iBodyStart, iBodyEnd - iBodyStart + 1 );
+  var i             := 1;
   while ( i <= Length( sBody ) ) and IsIdentChar( sBody[ i ] ) do
     Inc( i );
-  Name     := UpperCase( Copy( sBody, 1, i - 1 ) );
-  Argument := Trim( Copy( sBody, i, MaxInt ) );
+  Name              := UpperCase( Copy( sBody, 1, i - 1 ) );
+  Argument          := Trim( Copy( sBody, i, MaxInt ) );
 end;
 
 /// <summary>Returns the position of the first character after whitespace and comments (directives are NOT skipped).</summary>
@@ -309,14 +309,14 @@ end;
 /// <returns>The position of the next code character or directive; past the end of the text at its end.</returns>
 function SkipBlanksAndComments( const Source: string; Pos: Integer ): Integer;
 begin
-  var iLen := Length( Source );
-  Result := Pos;
+  var iLen          := Length( Source );
+  Result            := Pos;
   while Result <= iLen do
   begin
     if CharInSet( Source[ Result ], [ ' ', #9, #10, #13 ] ) then
       Inc( Result )
     else if IsCommentStart( Source, Result ) and not IsDirectiveAt( Source, Result ) then
-      Result := SkipComment( Source, Result )
+      Result        := SkipComment( Source, Result )
     else
       Break;
   end;
@@ -328,13 +328,13 @@ end;
 /// <returns>The identifier text.</returns>
 function WordAt( const Source: string; Pos: Integer ): string;
 begin
-  Result := '';
+  Result            := '';
   if ( Pos > Length( Source ) ) or not IsIdentStart( Source[ Pos ] ) then
     Exit;
-  var i := Pos;
+  var i             := Pos;
   while ( i <= Length( Source ) ) and IsIdentChar( Source[ i ] ) do
     Inc( i );
-  Result := Copy( Source, Pos, i - Pos );
+  Result            := Copy( Source, Pos, i - Pos );
 end;
 
 /// <summary>True when Word ends a statement list (end, else, until, except, finally).</summary>
@@ -342,8 +342,8 @@ end;
 /// <returns>True for a block-closing keyword.</returns>
 function IsBlockEndWord( const Word: string ): Boolean;
 begin
-  Result := SameText( Word, 'end' ) or SameText( Word, 'else' ) or SameText( Word, 'until' ) or
-            SameText( Word, 'except' ) or SameText( Word, 'finally' );
+  Result            := SameText( Word, 'end' ) or SameText( Word, 'else' ) or SameText( Word, 'until' ) or
+    SameText( Word, 'except' ) or SameText( Word, 'finally' );
 end;
 
 /// <summary>
@@ -355,16 +355,16 @@ end;
 /// <returns>The position of the semicolon, or 0 when the statement is instead closed by a block keyword (end, else, ...) or the text ends.</returns>
 function FindStatementEnd( const Source: string; Pos: Integer ): Integer;
 begin
-  var iLen   := Length( Source );
-  var iDepth := 0;
-  var i      := Pos;
+  var iLen          := Length( Source );
+  var iDepth        := 0;
+  var i             := Pos;
   while i <= iLen do
   begin
-    var C := Source[ i ];
+    var C           := Source[ i ];
     if C = '''' then
-      i := SkipString( Source, i )
+      i             := SkipString( Source, i )
     else if IsCommentStart( Source, i ) then
-      i := SkipComment( Source, i )
+      i             := SkipComment( Source, i )
     else if CharInSet( C, [ '(', '[' ] ) then
     begin
       Inc( iDepth );
@@ -379,15 +379,15 @@ begin
       Exit( i )
     else if IsIdentStart( C ) then
     begin
-      var sWord := WordAt( Source, i );
+      var sWord     := WordAt( Source, i );
       if ( iDepth <= 0 ) and IsBlockEndWord( sWord ) then
-        Exit( 0 );   // "begin Exit end" - nothing follows inside this block
+        Exit( 0 ); // "begin Exit end" - nothing follows inside this block
       Inc( i, Length( sWord ) );
     end
     else
       Inc( i );
   end;
-  Result := 0;
+  Result            := 0;
 end;
 
 /// <summary>
@@ -399,22 +399,22 @@ end;
 /// <returns>True for "tkB, tkC:", "'a'..'z':", "TKind.B:", "-1:", "Lbl:".</returns>
 function IsLabelAt( const Source: string; Pos: Integer ): Boolean;
 begin
-  Result := False;
-  var iLen := Length( Source );
-  var i    := Pos;
+  Result            := False;
+  var iLen          := Length( Source );
+  var i             := Pos;
   while ( i <= iLen ) and ( i - Pos < 1000 ) do
   begin
-    var C := Source[ i ];
+    var C           := Source[ i ];
     if C = '''' then
-      i := SkipString( Source, i )
+      i             := SkipString( Source, i )
     else if IsCommentStart( Source, i ) then
-      i := SkipComment( Source, i )
+      i             := SkipComment( Source, i )
     else if C = ':' then
       Exit( ( i = iLen ) or ( Source[ i + 1 ] <> '=' ) )
     else if IsIdentChar( C ) or CharInSet( C, [ '.', ',', ' ', #9, #10, #13, '+', '-', '#', '$', '%' ] ) then
       Inc( i )
     else
-      Exit;   // ";", "(", ":=" ... - a statement, not a label
+      Exit; // ";", "(", ":=" ... - a statement, not a label
   end;
 end;
 
@@ -427,22 +427,22 @@ end;
 /// <returns>The position of the first "/" of the comment, or 0.</returns>
 function LineCommentStart( const Source: string; Pos: Integer ): Integer;
 begin
-  Result := 0;
-  var iStart := Pos;
+  Result            := 0;
+  var iStart        := Pos;
   while ( iStart > 1 ) and not CharInSet( Source[ iStart - 1 ], [ #10, #13 ] ) do
     Dec( iStart );
 
-  var i := iStart;
+  var i             := iStart;
   while i <= Pos do
   begin
     if Source[ i ] = '''' then
-      i := SkipString( Source, i )
+      i             := SkipString( Source, i )
     else if ( Source[ i ] = '{' ) or ( ( i < Length( Source ) ) and ( Source[ i ] = '(' ) and ( Source[ i + 1 ] = '*' ) ) then
     begin
-      var iAfter := SkipComment( Source, i );
+      var iAfter    := SkipComment( Source, i );
       if iAfter > Pos then
-        Exit;   // Pos is inside a block comment that began on this line
-      i := iAfter;
+        Exit; // Pos is inside a block comment that began on this line
+      i             := iAfter;
     end
     else if ( i < Length( Source ) ) and ( Source[ i ] = '/' ) and ( Source[ i + 1 ] = '/' ) then
       Exit( i )
@@ -461,12 +461,12 @@ end;
 /// <returns>True when the code after it may still run.</returns>
 function IsConditionalTerminator( const Source: string; TerminatorPos: Integer ): Boolean;
 begin
-  Result := False;
+  Result            := False;
 
   // Back over blanks, comments and line comments.  A directive on the way back ends the walk as
   // "conditional": the text before it may be another configuration's, which this backward walk
   // cannot tell apart from active code.
-  var i := TerminatorPos - 1;
+  var i             := TerminatorPos - 1;
   while i >= 1 do
   begin
     if CharInSet( Source[ i ], [ ' ', #9, #10, #13 ] ) then
@@ -491,10 +491,10 @@ begin
     else
     begin
       // "then // bail out" on the line above: the text found is inside a line comment
-      var iComment := LineCommentStart( Source, i );
+      var iComment  := LineCommentStart( Source, i );
       if iComment = 0 then
         Break;
-      i := iComment - 1;
+      i             := iComment - 1;
     end;
   end;
 
@@ -507,12 +507,12 @@ begin
   if not IsIdentChar( Source[ i ] ) then
     Exit;
 
-  var iEnd := i;
+  var iEnd          := i;
   while ( i > 1 ) and IsIdentChar( Source[ i - 1 ] ) do
     Dec( i );
-  var sPrev := Copy( Source, i, iEnd - i + 1 );
+  var sPrev         := Copy( Source, i, iEnd - i + 1 );
 
-  Result := SameText( sPrev, 'then' ) or SameText( sPrev, 'else' ) or SameText( sPrev, 'do' );
+  Result            := SameText( sPrev, 'then' ) or SameText( sPrev, 'else' ) or SameText( sPrev, 'do' );
 end;
 
 /// <summary>
@@ -524,37 +524,37 @@ end;
 procedure CollectOwnRoutineNames( const Source: string; Names: TStrings );
 begin
   Names.Clear;
-  var iLen      := Length( Source );
-  var i         := 1;
-  var bHeader   := False;   // reading the name after procedure / function / constructor / destructor
-  var sLastName := '';
+  var iLen          := Length( Source );
+  var i             := 1;
+  var bHeader       := False; // reading the name after procedure / function / constructor / destructor
+  var sLastName     := '';
   while i <= iLen do
   begin
-    var C := Source[ i ];
+    var C           := Source[ i ];
     if C = '''' then
-      i := SkipString( Source, i )
+      i             := SkipString( Source, i )
     else if IsCommentStart( Source, i ) then
-      i := SkipComment( Source, i )
+      i             := SkipComment( Source, i )
     else if CharInSet( C, [ ' ', #9, #10, #13 ] ) then
       Inc( i )
     else if IsIdentStart( C ) then
     begin
-      var sWord := WordAt( Source, i );
+      var sWord     := WordAt( Source, i );
       Inc( i, Length( sWord ) );
       if bHeader then
-        sLastName := sWord
+        sLastName   := sWord
       else
-        bHeader := SameText( sWord, 'procedure' ) or SameText( sWord, 'function' ) or
-                   SameText( sWord, 'constructor' ) or SameText( sWord, 'destructor' );
+        bHeader     := SameText( sWord, 'procedure' ) or SameText( sWord, 'function' ) or
+          SameText( sWord, 'constructor' ) or SameText( sWord, 'destructor' );
     end
     else if ( C = '.' ) and bHeader then
-      Inc( i )   // TFoo.Abort: the name part follows
+      Inc( i ) // TFoo.Abort: the name part follows
     else
     begin
       if bHeader and ( sLastName <> '' ) then
         Names.Add( sLastName );
-      bHeader   := False;
-      sLastName := '';
+      bHeader       := False;
+      sLastName     := '';
       Inc( i );
     end;
   end;
@@ -566,7 +566,7 @@ end;
 /// <returns>The line number.</returns>
 function GetLineNumber( const Source: string; Position: Integer ): Integer;
 begin
-  Result := 1;
+  Result            := 1;
   for var i := 1 to Position - 1 do
   begin
     if i > Length( Source ) then
@@ -584,8 +584,8 @@ end;
 /// <returns>The trimmed text, with "..." when it was cut short.</returns>
 function GetCodePreview( const Source: string; StartPos: Integer ): string;
 begin
-  var iEnd := StartPos;
-  var iCount := 0;
+  var iEnd          := StartPos;
+  var iCount        := 0;
   while ( iEnd <= Length( Source ) ) and ( iCount < 50 ) and not CharInSet( Source[ iEnd ], [ #10, #13 ] ) do
   begin
     Inc( iEnd );
@@ -593,11 +593,11 @@ begin
   end;
 
   // Truncated only when the 50-char cap was hit with more non-EOL content remaining.
-  var bTruncated := ( iCount >= 50 ) and ( iEnd <= Length( Source ) ) and not CharInSet( Source[ iEnd ], [ #10, #13 ] );
+  var bTruncated    := ( iCount >= 50 ) and ( iEnd <= Length( Source ) ) and not CharInSet( Source[ iEnd ], [ #10, #13 ] );
 
-  Result := Trim( Copy( Source, StartPos, iEnd - StartPos ) );
+  Result            := Trim( Copy( Source, StartPos, iEnd - StartPos ) );
   if bTruncated then
-    Result := Result + '...';
+    Result          := Result + '...';
 end;
 
 { TUnreachableCodeItem }
@@ -605,14 +605,14 @@ end;
 function TUnreachableCodeItem.ReasonText: string;
 begin
   case Reason of
-    urAfterExit:     Result := 'After Exit';
-    urAfterRaise:    Result := 'After Raise';
-    urAfterBreak:    Result := 'After Break';
+    urAfterExit: Result := 'After Exit';
+    urAfterRaise: Result := 'After Raise';
+    urAfterBreak: Result := 'After Break';
     urAfterContinue: Result := 'After Continue';
-    urAfterHalt:     Result := 'After Halt';
-    urAfterAbort:    Result := 'After Abort';
+    urAfterHalt: Result := 'After Halt';
+    urAfterAbort: Result := 'After Abort';
   else
-    Result := 'Unknown';
+    Result          := 'Unknown';
   end;
 end;
 
@@ -621,15 +621,15 @@ end;
 constructor TUnreachableCodeScanner.Create;
 begin
   inherited Create;
-  FItems   := TList<TUnreachableCodeItem>.Create;
-  FOwnRoutines := TStringList.Create;
+  FItems            := TList<TUnreachableCodeItem>.Create;
+  FOwnRoutines      := TStringList.Create;
   FOwnRoutines.CaseSensitive := False;
-  FOwnRoutines.Sorted        := True;
-  FOwnRoutines.Duplicates    := dupIgnore;
-  FDefines := TStringList.Create;
+  FOwnRoutines.Sorted := True;
+  FOwnRoutines.Duplicates := dupIgnore;
+  FDefines          := TStringList.Create;
   FDefines.CaseSensitive := False;
-  FDefines.Sorted        := True;
-  FDefines.Duplicates    := dupIgnore;
+  FDefines.Sorted   := True;
+  FDefines.Duplicates := dupIgnore;
   SetTarget( 'Win64', '' );
 end;
 
@@ -651,69 +651,69 @@ begin
   FDefines.Clear;
   FDefines.AddStrings( PredefinedSymbols( Platform ) );
   for var sDefine in ProjectDefines.Split( [ ';' ] ) do
-    if ( Trim( sDefine ) <> '' ) and ( Pos( '$(', sDefine ) = 0 ) then   // an unexpanded $(DCC_Define) is no symbol
+    if ( Trim( sDefine ) <> '' ) and ( Pos( '$(', sDefine ) = 0 ) then // an unexpanded $(DCC_Define) is no symbol
       FDefines.Add( Trim( sDefine ) );
 end;
 
 function TUnreachableCodeScanner.IsDefineDefined( const DefineName: string ): Boolean;
 begin
-  Result := FDefines.IndexOf( DefineName ) >= 0;
+  Result            := FDefines.IndexOf( DefineName ) >= 0;
 end;
 
 function TUnreachableCodeScanner.EvaluateIfCondition( const Condition: string ): Integer;
 begin
-  var sCond := Trim( Condition );
+  var sCond         := Trim( Condition );
   if sCond = '' then
     Exit( -1 );
 
-  var bNot := False;
+  var bNot          := False;
   if SameText( Copy( sCond, 1, 4 ), 'NOT ' ) then
   begin
-    bNot  := True;
-    sCond := Trim( Copy( sCond, 5, MaxInt ) );
+    bNot            := True;
+    sCond           := Trim( Copy( sCond, 5, MaxInt ) );
   end;
 
-  var sName := '';
+  var sName         := '';
   if SameText( Copy( sCond, 1, 7 ), 'Defined' ) and ( Pos( '(', sCond ) > 0 ) and ( sCond[ Length( sCond ) ] = ')' ) then
   begin
-    var iOpen := Pos( '(', sCond );
+    var iOpen       := Pos( '(', sCond );
     if Trim( Copy( sCond, 8, iOpen - 8 ) ) <> '' then
       Exit( -1 );
-    sName := Trim( Copy( sCond, iOpen + 1, Length( sCond ) - iOpen - 1 ) );
+    sName           := Trim( Copy( sCond, iOpen + 1, Length( sCond ) - iOpen - 1 ) );
   end
   else if ( Pos( '(', sCond ) = 0 ) and ( Pos( ' ', sCond ) = 0 ) then
-    sName := sCond;   // {$IF MyDefine}
+    sName           := sCond; // {$IF MyDefine}
 
   // a complex expression (and / or / CompilerVersion ...) is not evaluated: skip the block
   if ( sName = '' ) or ( WordAt( sName, 1 ) <> sName ) then
     Exit( -1 );
 
-  Result := Ord( IsDefineDefined( sName ) );
+  Result            := Ord( IsDefineDefined( sName ) );
   if bNot then
-    Result := 1 - Result;
+    Result          := 1 - Result;
 end;
 
 function TUnreachableCodeScanner.SkipInactiveBlock( const Source: string; Pos: Integer; AllowElse: Boolean ): Integer;
 begin
-  var iLen   := Length( Source );
-  var iLevel := 1;
-  Result     := Pos;
+  var iLen          := Length( Source );
+  var iLevel        := 1;
+  Result            := Pos;
   while Result <= iLen do
   begin
-    var C := Source[ Result ];
+    var C           := Source[ Result ];
     if C = '''' then
-      Result := SkipString( Source, Result )
+      Result        := SkipString( Source, Result )
     else if IsCommentStart( Source, Result ) then
     begin
       if not IsDirectiveAt( Source, Result ) then
       begin
-        Result := SkipComment( Source, Result );
+        Result      := SkipComment( Source, Result );
         Continue;
       end;
 
       var sName, sArg: string;
-      var iAfter := ReadDirective( Source, Result, sName, sArg );
-      Result := iAfter;
+      var iAfter    := ReadDirective( Source, Result, sName, sArg );
+      Result        := iAfter;
 
       // ENDIF / IFEND are tested by exact name before any IF: "IFEND" starts with "IF" and used to
       // count as a new nested block, so the inactive block never closed.
@@ -728,7 +728,7 @@ begin
       else if ( iLevel = 1 ) and AllowElse and ( sName = 'ELSE' ) then
         Exit
       else if ( iLevel = 1 ) and AllowElse and ( sName = 'ELSEIF' ) and ( EvaluateIfCondition( sArg ) = 1 ) then
-        Exit;   // a false or unknown $ELSEIF stays inactive
+        Exit; // a false or unknown $ELSEIF stays inactive
     end
     else
       Inc( Result );
@@ -738,40 +738,40 @@ end;
 function TUnreachableCodeScanner.HandleDirective( const Source: string; Pos: Integer ): Integer;
 begin
   var sName, sArg: string;
-  Result := ReadDirective( Source, Pos, sName, sArg );
+  Result            := ReadDirective( Source, Pos, sName, sArg );
 
   if sName = 'IFDEF' then
   begin
     if not IsDefineDefined( WordAt( sArg, 1 ) ) then
-      Result := SkipInactiveBlock( Source, Result, True );
+      Result        := SkipInactiveBlock( Source, Result, True );
   end
   else if sName = 'IFNDEF' then
   begin
     if IsDefineDefined( WordAt( sArg, 1 ) ) then
-      Result := SkipInactiveBlock( Source, Result, True );
+      Result        := SkipInactiveBlock( Source, Result, True );
   end
   else if sName = 'IF' then
   begin
     if EvaluateIfCondition( sArg ) <> 1 then
-      Result := SkipInactiveBlock( Source, Result, True );
+      Result        := SkipInactiveBlock( Source, Result, True );
   end
   else if sName = 'IFOPT' then
-    Result := SkipInactiveBlock( Source, Result, True )   // compiler options are unknown here: treat as inactive
+    Result          := SkipInactiveBlock( Source, Result, True ) // compiler options are unknown here: treat as inactive
   else if ( sName = 'ELSE' ) or ( sName = 'ELSEIF' ) then
-    Result := SkipInactiveBlock( Source, Result, False );   // the active branch has run: skip to the $ENDIF
+    Result          := SkipInactiveBlock( Source, Result, False ); // the active branch has run: skip to the $ENDIF
   // ENDIF, IFEND and every other directive: carry on after it
 end;
 
 function TUnreachableCodeScanner.CheckTerminator( const Source: string; WordStart, WordEnd: Integer ): Integer;
 begin
-  Result := WordEnd;
-  var iLen  := Length( Source );
-  var sWord := LowerCase( Copy( Source, WordStart, WordEnd - WordStart ) );
+  Result            := WordEnd;
+  var iLen          := Length( Source );
+  var sWord         := LowerCase( Copy( Source, WordStart, WordEnd - WordStart ) );
 
-  var iTerminator := -1;
+  var iTerminator   := -1;
   for var j := Low( Terminators ) to High( Terminators ) do
     if Terminators[ j ].Keyword = sWord then
-      iTerminator := j;
+      iTerminator   := j;
   if iTerminator < 0 then
     Exit;
 
@@ -781,7 +781,7 @@ begin
     Exit;
 
   // The character before the word, past blanks
-  var k := WordStart - 1;
+  var k             := WordStart - 1;
   while ( k >= 1 ) and CharInSet( Source[ k ], [ ' ', #9 ] ) do
     Dec( k );
 
@@ -794,24 +794,24 @@ begin
     Exit;
 
   // A parameter or variable named like the keyword: var / const / out Continue
-  var sPrevWord := '';
+  var sPrevWord     := '';
   if ( k >= 1 ) and IsIdentChar( Source[ k ] ) then
   begin
-    var iPrevEnd := k;
+    var iPrevEnd    := k;
     while ( k > 1 ) and IsIdentChar( Source[ k - 1 ] ) do
       Dec( k );
-    sPrevWord := Copy( Source, k, iPrevEnd - k + 1 );
+    sPrevWord       := Copy( Source, k, iPrevEnd - k + 1 );
   end;
   if SameText( sPrevWord, 'var' ) or SameText( sPrevWord, 'const' ) or SameText( sPrevWord, 'out' ) then
     Exit;
 
   // A declaration of a routine or property with that name: procedure Abort; override;
   if SameText( sPrevWord, 'procedure' ) or SameText( sPrevWord, 'function' ) or SameText( sPrevWord, 'constructor' ) or
-     SameText( sPrevWord, 'destructor' ) or SameText( sPrevWord, 'property' ) or SameText( sPrevWord, 'operator' ) then
+    SameText( sPrevWord, 'destructor' ) or SameText( sPrevWord, 'property' ) or SameText( sPrevWord, 'operator' ) then
     Exit;
 
   // An assignment target (Continue := False) or a declaration (Break: Boolean)
-  var m := WordEnd;
+  var m             := WordEnd;
   while ( m <= iLen ) and CharInSet( Source[ m ], [ ' ', #9 ] ) do
     Inc( m );
   if ( m <= iLen ) and ( Source[ m ] = ':' ) then
@@ -820,12 +820,12 @@ begin
   if IsConditionalTerminator( Source, WordStart ) then
     Exit;
 
-  var iSemicolon := FindStatementEnd( Source, WordEnd );
+  var iSemicolon    := FindStatementEnd( Source, WordEnd );
   if iSemicolon = 0 then
     Exit;
-  Result := iSemicolon + 1;
+  Result            := iSemicolon + 1;
 
-  var iNext := SkipBlanksAndComments( Source, iSemicolon + 1 );
+  var iNext         := SkipBlanksAndComments( Source, iSemicolon + 1 );
   if iNext > iLen then
     Exit;
 
@@ -842,37 +842,37 @@ begin
     Exit;
 
   var rItem: TUnreachableCodeItem;
-  rItem.FileName       := '';
-  rItem.UnitName       := '';
-  rItem.Line           := GetLineNumber( Source, iNext );
-  rItem.Column         := 1;
-  rItem.Reason         := Terminators[ iTerminator ].Reason;
+  rItem.FileName    := '';
+  rItem.UnitName    := '';
+  rItem.Line        := GetLineNumber( Source, iNext );
+  rItem.Column      := 1;
+  rItem.Reason      := Terminators[ iTerminator ].Reason;
   rItem.TerminatorLine := GetLineNumber( Source, WordStart );
-  rItem.CodePreview    := GetCodePreview( Source, iNext );
+  rItem.CodePreview := GetCodePreview( Source, iNext );
   FItems.Add( rItem );
 end;
 
 procedure TUnreachableCodeScanner.ScanSource( const Source, FileName, UnitName: string );
 begin
-  var iFirstNew := FItems.Count;
+  var iFirstNew     := FItems.Count;
   CollectOwnRoutineNames( Source, FOwnRoutines );
-  var iLen      := Length( Source );
-  var i         := 1;
-  var bInCode   := False;   // in the implementation section (or anywhere in a program / library)
-  var bSawFirst := False;
+  var iLen          := Length( Source );
+  var i             := 1;
+  var bInCode       := False; // in the implementation section (or anywhere in a program / library)
+  var bSawFirst     := False;
 
   while i <= iLen do
   begin
-    var C := Source[ i ];
+    var C           := Source[ i ];
 
     if C = '''' then
-      i := SkipString( Source, i )
+      i             := SkipString( Source, i )
     else if IsCommentStart( Source, i ) then
     begin
       if IsDirectiveAt( Source, i ) then
-        i := HandleDirective( Source, i )
+        i           := HandleDirective( Source, i )
       else
-        i := SkipComment( Source, i );
+        i           := SkipComment( Source, i );
     end
     else if ( C = '&' ) and ( i < iLen ) and IsIdentStart( Source[ i + 1 ] ) then
     begin
@@ -883,20 +883,20 @@ begin
     end
     else if IsIdentStart( C ) then
     begin
-      var iStart := i;
+      var iStart    := i;
       while ( i <= iLen ) and IsIdentChar( Source[ i ] ) do
         Inc( i );
 
       if not bSawFirst then
       begin
         // a unit's code starts at "implementation"; a program's or library's at once
-        bSawFirst := True;
-        bInCode   := not SameText( Copy( Source, iStart, i - iStart ), 'unit' );
+        bSawFirst   := True;
+        bInCode     := not SameText( Copy( Source, iStart, i - iStart ), 'unit' );
       end
       else if not bInCode then
-        bInCode := SameText( Copy( Source, iStart, i - iStart ), 'implementation' )
+        bInCode     := SameText( Copy( Source, iStart, i - iStart ), 'implementation' )
       else
-        i := CheckTerminator( Source, iStart, i );
+        i           := CheckTerminator( Source, iStart, i );
     end
     else if CharInSet( C, [ '0'..'9', '$', '#', '%' ] ) then
     begin
@@ -911,10 +911,10 @@ begin
 
   for var j := iFirstNew to FItems.Count - 1 do
   begin
-    var rItem := FItems[ j ];
-    rItem.FileName := FileName;
-    rItem.UnitName := UnitName;
-    FItems[ j ] := rItem;
+    var rItem       := FItems[ j ];
+    rItem.FileName  := FileName;
+    rItem.UnitName  := UnitName;
+    FItems[ j ]     := rItem;
   end;
 end;
 
@@ -922,7 +922,7 @@ procedure TUnreachableCodeScanner.ScanFile( const FileName: string );
 begin
   Clear;
 
-  var oLines := TStringList.Create;
+  var oLines        := TStringList.Create;
   try
     oLines.LoadFromFile( FileName );
     ScanSource( oLines.Text, FileName, ChangeFileExt( ExtractFileName( FileName ), '' ) );
@@ -933,7 +933,8 @@ end;
 
 function TUnreachableCodeScanner.GetItems: TArray<TUnreachableCodeItem>;
 begin
-  Result := FItems.ToArray;
+  Result            := FItems.ToArray;
 end;
 
 end.
+

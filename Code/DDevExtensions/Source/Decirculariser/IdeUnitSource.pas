@@ -107,44 +107,44 @@ uses
 
 function ReadSourceFile( const AFileName: string ): UTF8String;
 begin
-  Result := DecodeSourceBytes( TFile.ReadAllBytes( AFileName ) );
+  Result            := DecodeSourceBytes( TFile.ReadAllBytes( AFileName ) );
 end;
 
 function FindSourceEditor( const AFileName: string; AOpen: Boolean ): IOTASourceEditor;
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
 begin
-  Result := nil;
+  Result            := nil;
   if ( not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) ) then
     Exit;
 
-  Module := ModuleServices.FindModule( AFileName );
+  Module            := ModuleServices.FindModule( AFileName );
   if ( Module = nil ) and AOpen then
-    Module := ModuleServices.OpenModule( AFileName );
+    Module          := ModuleServices.OpenModule( AFileName );
   if ( Module = nil ) then
     Exit;
 
   for var I := 0 to Module.ModuleFileCount - 1 do
     if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, Result ) and
-       SameText( Result.FileName, AFileName ) then
+      SameText( Result.FileName, AFileName ) then
       Exit;
-  Result := nil;
+  Result            := nil;
 end;
 
 function ReadUnitSource( const AFileName: string; out ASource: UTF8String ): Boolean;
 begin
-  ASource := '';
-  var Editor := FindSourceEditor( AFileName, False );
+  ASource           := '';
+  var Editor        := FindSourceEditor( AFileName, False );
   if ( Editor <> nil ) then
   begin
-    ASource := GetEditorSource( Editor );
+    ASource         := GetEditorSource( Editor );
     Exit( True );
   end;
 
-  Result := FileExists( AFileName );
+  Result            := FileExists( AFileName );
   if Result then
-    ASource := ReadSourceFile( AFileName );
+    ASource         := ReadSourceFile( AFileName );
 end;
 
 /// <summary>The form editor of an open module, or nil.</summary>
@@ -153,28 +153,28 @@ end;
 /// <returns>The form editor, or nil when the unit is not open or its form is not loaded.</returns>
 function FindOpenFormEditor( const APasFileName: string; out AEditor: IOTASourceEditor ): IOTAFormEditor;
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  FormEditor: IOTAFormEditor;
-  SourceEditor: IOTASourceEditor;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  FormEditor        : IOTAFormEditor;
+  SourceEditor      : IOTASourceEditor;
 begin
-  Result  := nil;
-  AEditor := nil;
+  Result            := nil;
+  AEditor           := nil;
   if ( not Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) ) then
     Exit;
-  Module := ModuleServices.FindModule( APasFileName );
+  Module            := ModuleServices.FindModule( APasFileName );
   if ( Module = nil ) then
     Exit;
 
   for var I := 0 to Module.ModuleFileCount - 1 do
     if Supports( Module.ModuleFileEditors[ I ], IOTAFormEditor, FormEditor ) then
-      Result := FormEditor
+      Result        := FormEditor
     else if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) and
-            SameText( SourceEditor.FileName, APasFileName ) then
-      AEditor := SourceEditor;
+      SameText( SourceEditor.FileName, APasFileName ) then
+      AEditor       := SourceEditor;
 
   if ( AEditor = nil ) then
-    Result := nil;
+    Result          := nil;
 end;
 
 /// <summary>True when a form resource, converted to text, declares a root object - the designer can
@@ -183,13 +183,13 @@ end;
 /// <returns>True when an object, inherited or inline line is present.</returns>
 function HasFormObject( const ADfmBytes: TBytes ): Boolean;
 var
-  sText: string;
+  sText             : string;
 begin
-  Result := False;
+  Result            := False;
   if ( Length( ADfmBytes ) = 0 ) then
     Exit;
   try
-    sText := DfmBytesToText( ADfmBytes );
+    sText           := DfmBytesToText( ADfmBytes );
   except
     // A stream the RTL cannot convert: read the file on disk instead.
     on EParserError do
@@ -199,7 +199,7 @@ begin
   end;
   for var sLine in sText.Split( [ #10 ] ) do
   begin
-    var sTrim := LowerCase( Trim( sLine ) );
+    var sTrim       := LowerCase( Trim( sLine ) );
     if sTrim.StartsWith( 'object ' ) or sTrim.StartsWith( 'inherited ' ) or sTrim.StartsWith( 'inline ' ) then
       Exit( True );
   end;
@@ -207,43 +207,43 @@ end;
 
 function ReadFormUnit( const APasFileName: string; out APasSource: UTF8String; out ADfmBytes: TBytes ): Boolean;
 var
-  SourceEditor: IOTASourceEditor;
+  SourceEditor      : IOTASourceEditor;
 begin
-  APasSource := '';
-  ADfmBytes  := nil;
+  APasSource        := '';
+  ADfmBytes         := nil;
 
-  var FormEditor := FindOpenFormEditor( APasFileName, SourceEditor );
+  var FormEditor    := FindOpenFormEditor( APasFileName, SourceEditor );
   if ( FormEditor <> nil ) then
   begin
-    var Stream := TBytesStream.Create;
+    var Stream      := TBytesStream.Create;
     try
       SaveFormResourceTo( FormEditor, Stream );
-      ADfmBytes := Copy( Stream.Bytes, 0, Stream.Size );
+      ADfmBytes     := Copy( Stream.Bytes, 0, Stream.Size );
     finally
       Stream.Free;
     end;
     if HasFormObject( ADfmBytes ) then
     begin
-      APasSource := GetEditorSource( SourceEditor );
+      APasSource    := GetEditorSource( SourceEditor );
       Exit( True );
     end;
   end;
 
   { Not open, or the designer gave nothing: both halves from disk. }
-  var sDfmFile := ChangeFileExt( APasFileName, '.dfm' );
-  Result := FileExists( sDfmFile ) and FileExists( APasFileName );
+  var sDfmFile      := ChangeFileExt( APasFileName, '.dfm' );
+  Result            := FileExists( sDfmFile ) and FileExists( APasFileName );
   if Result then
   begin
-    ADfmBytes  := TFile.ReadAllBytes( sDfmFile );
-    APasSource := ReadSourceFile( APasFileName );
+    ADfmBytes       := TFile.ReadAllBytes( sDfmFile );
+    APasSource      := ReadSourceFile( APasFileName );
   end;
 end;
 
 procedure OpenFileAtLine( const AFileName: string; ALine, AColumn: Integer );
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
 begin
   if ( AFileName = '' ) then
   begin
@@ -259,7 +259,7 @@ begin
     Exit;
 
   try
-    Module := ModuleServices.OpenModule( AFileName );
+    Module          := ModuleServices.OpenModule( AFileName );
   except
     on E: Exception do
     begin
@@ -273,13 +273,13 @@ begin
     Exit;
   end;
 
-  SourceEditor := nil;
+  SourceEditor      := nil;
   for var I := 0 to Module.ModuleFileCount - 1 do
     if Supports( Module.ModuleFileEditors[ I ], IOTASourceEditor, SourceEditor ) and
-       SameText( SourceEditor.FileName, AFileName ) then
+      SameText( SourceEditor.FileName, AFileName ) then
       Break
     else
-      SourceEditor := nil;
+      SourceEditor  := nil;
 
   if ( SourceEditor = nil ) then
   begin
@@ -291,12 +291,12 @@ begin
   if ( ALine <= 0 ) or ( SourceEditor.EditViewCount = 0 ) then
     Exit;
 
-  var EditView := SourceEditor.EditViews[ 0 ];
+  var EditView      := SourceEditor.EditViews[ 0 ];
   if ( EditView = nil ) then
     Exit;
 
   { A result can be older than the buffer: a line past the end goes to the last line. }
-  var iLine := Min( ALine, Max( 1, SourceEditor.GetLinesInBuffer ) );
+  var iLine         := Min( ALine, Max( 1, SourceEditor.GetLinesInBuffer ) );
   EditView.Position.Move( iLine, Max( 1, AColumn ) );
   EditView.MoveViewToCursor;
   EditView.Paint;
@@ -304,14 +304,14 @@ end;
 
 function ProjectPascalFiles( const AProject: IOTAProject ): TArray<string>;
 begin
-  Result := nil;
+  Result            := nil;
   if ( AProject = nil ) then
     Exit;
   for var I := 0 to AProject.GetModuleCount - 1 do
   begin
-    var ModuleInfo := AProject.GetModule( I );
+    var ModuleInfo  := AProject.GetModule( I );
     if ( ModuleInfo <> nil ) and SameText( ExtractFileExt( ModuleInfo.FileName ), '.pas' ) then
-      Result := Result + [ ModuleInfo.FileName ];
+      Result        := Result + [ ModuleInfo.FileName ];
   end;
 end;
 
@@ -319,14 +319,14 @@ function ProjectIdentity( const AProject: IOTAProject ): IInterface;
 begin
   if ( AProject = nil ) then
     Exit( nil );
-  Result := AProject as IInterface;
+  Result            := AProject as IInterface;
 end;
 
 function IsActiveProject( const AIdentity: IInterface ): Boolean;
 begin
   { Only the ACTIVE project is asked for its identity: the scanned one may be gone. }
-  var Active := GetActiveProject;
-  Result := ( Active <> nil ) and ( ( Active as IInterface ) = AIdentity );
+  var Active        := GetActiveProject;
+  Result            := ( Active <> nil ) and ( ( Active as IInterface ) = AIdentity );
 end;
 
 procedure CheckProjectUnchanged( const AIdentity: IInterface );
@@ -347,3 +347,4 @@ begin
 end;
 
 end.
+

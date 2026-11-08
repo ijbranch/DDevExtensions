@@ -77,7 +77,7 @@ uses
 procedure TFrameOptionPageExternalModMonitor.SetUserData( UserData: TObject );
 begin
 
-  FConfig := UserData;
+  FConfig           := UserData;
 
 end;
 
@@ -93,33 +93,33 @@ begin
   cbxShowNotifications.Checked := ( FConfig as TExternalModMonitorConfig ).ShowNotifications;
   edtProjectLoadGraceMs.Text := IntToStr( ( FConfig as TExternalModMonitorConfig ).ProjectLoadGraceMs );
   cbxActiveClick( cbxActive );
-  {$IFDEF CPUX64}
+{$IFDEF CPUX64}
   // The IDE compile and file notifier is not registered on the 64-bit IDE: projects are
   // picked up by a periodic scan, and changes made during a compile are not suppressed.
-  cbxActive.Hint := 'On the 64-bit IDE, newly opened projects are picked up within a few seconds, ' +
+  cbxActive.Hint    := 'On the 64-bit IDE, newly opened projects are picked up within a few seconds, ' +
     'and files changed during a compile are not held back until it ends.';
   cbxActive.ShowHint := True;
-  {$ENDIF}
+{$ENDIF}
 
 end;
 
 procedure TFrameOptionPageExternalModMonitor.SaveData;
 var
-  Val: Integer;
-  Config: TExternalModMonitorConfig;
-  WasActive: Boolean;
+  Val               : Integer;
+  Config            : TExternalModMonitorConfig;
+  WasActive         : Boolean;
 begin
 
   if not ( FConfig is TExternalModMonitorConfig ) then
     Exit;
 
-  Config := FConfig as TExternalModMonitorConfig;
+  Config            := FConfig as TExternalModMonitorConfig;
 
   // Detect an Active transition so the live watch set is brought in sync rather
   // than only flipping the flag (which left the watch thread running on disable
   // and never picked up open projects on enable until an IDE restart).
-  WasActive := Config.Active;
-  Config.Active := cbxActive.Checked;
+  WasActive         := Config.Active;
+  Config.Active     := cbxActive.Checked;
 
   if TryStrToInt( edtDebounceMs.Text, Val ) and ( Val >= 50 ) then
     ( FConfig as TExternalModMonitorConfig ).DebounceMs := Val
@@ -163,3 +163,4 @@ begin
 end;
 
 end.
+

@@ -119,24 +119,24 @@ uses
 /// <exception cref="EStreamError">Raised when the form file exists but cannot be opened.</exception>
 function ReadFormText( const FileName: string; out FormText: string ): Boolean;
 begin
-  FormText := '';
-  Result   := True;
+  FormText          := '';
+  Result            := True;
   if not FileExists( FileName ) then
     Exit;
 
-  var oInput := TFileStream.Create( FileName, fmOpenRead or fmShareDenyWrite );
+  var oInput        := TFileStream.Create( FileName, fmOpenRead or fmShareDenyWrite );
   try
-    var oText := TStringStream.Create( '', TEncoding.UTF8 );
+    var oText       := TStringStream.Create( '', TEncoding.UTF8 );
     try
       try
         if TestStreamFormat( oInput ) = sofBinary then
           ObjectResourceToText( oInput, oText )
         else
           oText.CopyFrom( oInput, 0 );
-        FormText := oText.DataString;
+        FormText    := oText.DataString;
       except
         on E: EParserError do
-          Result := False;
+          Result    := False;
       end;
     finally
       oText.Free;
@@ -149,25 +149,25 @@ end;
 function AnalyzeProject( Analyzer: TUnitAnalyzer; const Project: IOTAProject; OnProgress: TSourceScanProgressEvent;
   out AllUnusedUnits: TArray<TUnusedUnitInfo>; out SkippedFiles: Integer ): Boolean;
 begin
-  Result         := False;
-  AllUnusedUnits := nil;
-  SkippedFiles   := 0;
+  Result            := False;
+  AllUnusedUnits    := nil;
+  SkippedFiles      := 0;
 
   if Project = nil then
     Exit;
 
-  var aFiles := GetProjectSourceFiles( Project, [ '.pas' ] );
+  var aFiles        := GetProjectSourceFiles( Project, [ '.pas' ] );
 
   // Unit name -> file: the project's own units first, then the project directory and search path.
-  var oUnitFiles  := TDictionary<string, string>.Create;
-  var oSearchDirs := TStringList.Create;
-  var oAll        := TList<TUnusedUnitInfo>.Create;
+  var oUnitFiles    := TDictionary<string, string>.Create;
+  var oSearchDirs   := TStringList.Create;
+  var oAll          := TList<TUnusedUnitInfo>.Create;
   try
     for var sFileName in aFiles do
       oUnitFiles.AddOrSetValue( UpperCase( ChangeFileExt( ExtractFileName( sFileName ), '' ) ), sFileName );
 
     oSearchDirs.Add( ExtractFileDir( Project.FileName ) );
-    var oOptions := Project.ProjectOptions;
+    var oOptions    := Project.ProjectOptions;
     if oOptions <> nil then
       for var sDir in VarToStr( oOptions.Values[ 'UnitDir' ] ).Split( [ ';' ] ) do
         if ( Trim( sDir ) <> '' ) and ( Pos( '$(', sDir ) = 0 ) then
@@ -176,27 +176,27 @@ begin
     Analyzer.OnResolveUnit :=
       function( const UnitName: string; out Source: string ): Boolean
       begin
-        Source := '';
+        Source      := '';
         var sFile: string;
         if not oUnitFiles.TryGetValue( UpperCase( UnitName ), sFile ) then
         begin
-          sFile := '';
+          sFile     := '';
           for var sDir in oSearchDirs do
             if FileExists( IncludeTrailingPathDelimiter( sDir ) + UnitName + '.pas' ) then
             begin
               sFile := IncludeTrailingPathDelimiter( sDir ) + UnitName + '.pas';
               Break;
             end;
-          oUnitFiles.Add( UpperCase( UnitName ), sFile );   // cache misses too
+          oUnitFiles.Add( UpperCase( UnitName ), sFile ); // cache misses too
         end;
 
-        Result := sFile <> '';
+        Result      := sFile <> '';
         if Result then
           try
-            Source := UTF8ToString( ReadModuleSource( sFile ) );
+            Source  := UTF8ToString( ReadModuleSource( sFile ) );
           except
             on E: EStreamError do
-              Result := False;   // unreadable: unknown, so never reported
+              Result := False; // unreadable: unknown, so never reported
           end;
       end;
 
@@ -219,20 +219,20 @@ begin
           if Analyzer.AnalyseSource( sFileName, sContent, sFormText, aUnused ) then
             oAll.AddRange( aUnused )
           else
-            Inc( SkippedFiles );   // not judged (an include file after "interface")
+            Inc( SkippedFiles ); // not judged (an include file after "interface")
         except
           on E: EStreamError do
-            Inc( SkippedFiles );   // locked / unreadable unit: skip it, the rest of the scan still runs
+            Inc( SkippedFiles ); // locked / unreadable unit: skip it, the rest of the scan still runs
           on E: EOSError do
             Inc( SkippedFiles );
         end;
       end;
     finally
-      Analyzer.OnResolveUnit := nil;   // drop the captured lookups before they are freed
+      Analyzer.OnResolveUnit := nil; // drop the captured lookups before they are freed
     end;
 
-    AllUnusedUnits := oAll.ToArray;
-    Result         := True;
+    AllUnusedUnits  := oAll.ToArray;
+    Result          := True;
   finally
     oAll.Free;
     oSearchDirs.Free;
@@ -246,17 +246,17 @@ constructor TUnusedUnitDetectorPlugin.Create;
 begin
 
   // Create FIgnoreList before inherited, because inherited calls Init and loads config
-  FIgnoreList                := TStringList.Create;
-  FIgnoreList.CaseSensitive  := False;
-  FIgnoreList.Sorted         := True;
-  FIgnoreList.Duplicates     := dupIgnore;
+  FIgnoreList       := TStringList.Create;
+  FIgnoreList.CaseSensitive := False;
+  FIgnoreList.Sorted := True;
+  FIgnoreList.Duplicates := dupIgnore;
 
   inherited Create( AppDataDirectory + '\UnusedUnitDetector.xml', 'UnusedUnitDetector' );
 
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := 'Unused &Unit Detector...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -276,7 +276,7 @@ end;
 procedure TUnusedUnitDetectorPlugin.Init;
 begin
 
-  FEnabled := True;
+  FEnabled          := True;
   // Default ignore list - commonly used units that are often required but hard to detect
   FIgnoreList.Add( 'Windows' );
   FIgnoreList.Add( 'Messages' );
@@ -288,7 +288,7 @@ end;
 function TUnusedUnitDetectorPlugin.GetIgnoreListText: string;
 begin
 
-  Result := FIgnoreList.CommaText;
+  Result            := FIgnoreList.CommaText;
 
 end;
 
@@ -302,7 +302,7 @@ end;
 function TUnusedUnitDetectorPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Unused Unit Detector', TFrameOptionPageUnusedUnitDetector, Self );
+  Result            := TTreePage.Create( 'Unused Unit Detector', TFrameOptionPageUnusedUnitDetector, Self );
 
 end;
 
@@ -342,3 +342,4 @@ begin
 end;
 
 end.
+

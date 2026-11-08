@@ -60,7 +60,7 @@ type
     lptTranslatedLibraryPath,
     /// <summary>"Translated Resource Path" registry value.</summary>
     lptTranslatedResourcePath
-  );
+    );
 
   /// <summary>Helper that exposes the registry value name and display name of a path-type value.</summary>
   TLibraryPathTypeHelper = record helper for TLibraryPathType
@@ -470,7 +470,7 @@ uses
 
 const
   /// <summary>Registry value names, indexed by TLibraryPathType.</summary>
-  PathTypeRegistryNames: array[TLibraryPathType] of string = (
+  PathTypeRegistryNames: array[ TLibraryPathType ] of string = (
     'Search Path',
     'Browsing Path',
     'Debug DCU Path',
@@ -481,10 +481,10 @@ const
     'Translated Debug Library Path',
     'Translated Library Path',
     'Translated Resource Path'
-  );
+    );
 
   /// <summary>User-facing display names, indexed by TLibraryPathType.</summary>
-  PathTypeDisplayNames: array[TLibraryPathType] of string = (
+  PathTypeDisplayNames: array[ TLibraryPathType ] of string = (
     'Library Path',
     'Browsing Path',
     'Debug DCU Path',
@@ -495,33 +495,33 @@ const
     'Translated Debug Library Path',
     'Translated Library Path',
     'Translated Resource Path'
-  );
+    );
 
   /// <summary>Platform names that must never become a variable name on their own.</summary>
-  PlatformTokens: array[0..12] of string = (
+  PlatformTokens    : array[ 0..12 ] of string = (
     'Win32', 'Win64', 'Win64x', 'WinArm64EC', 'Android32', 'Android64',
     'iOSDevice32', 'iOSDevice64', 'iOSSimARM64', 'iOSSimulator',
     'Linux64', 'OSX64', 'OSXARM64'
-  );
+    );
 
   /// <summary>Build configuration names that must never become a variable name on their own.</summary>
-  ConfigTokens: array[0..1] of string = ( 'Debug', 'Release' );
+  ConfigTokens      : array[ 0..1 ] of string = ( 'Debug', 'Release' );
 
   /// <summary>Structural folder names that identify no particular library.</summary>
-  NoiseSegments: array[0..13] of string = (
+  NoiseSegments     : array[ 0..13 ] of string = (
     'packages', 'package', 'lib', 'libs', 'bin', 'src', 'source', 'sources',
     'build', 'out', 'output', 'dcu', 'obj', 'units'
-  );
+    );
 
   /// <summary>Names too common to be safe as machine-wide environment variables.</summary>
-  GenericNames: array[0..21] of string = (
+  GenericNames      : array[ 0..21 ] of string = (
     'SRC', 'SOURCE', 'SOURCES', 'LIB', 'LIBS', 'BIN', 'DATA', 'COMMON', 'CODE',
     'DOC', 'DOCS', 'INCLUDE', 'TEMP', 'TMP', 'HOME', 'ROOT', 'DEV', 'TEST',
     'TESTS', 'BUILD', 'OUT', 'OUTPUT'
-  );
+    );
 
   /// <summary>Shortest prefix worth replacing with a macro.</summary>
-  MinPrefixLength = 8;
+  MinPrefixLength   = 8;
 
   /// <summary>Longest generated variable name.</summary>
   MaxVariableNameLength = 16;
@@ -530,18 +530,18 @@ const
   MaxWidenedNameLength = 28;
 
   /// <summary>How many parent segments may be folded in before falling back to a numeric suffix.</summary>
-  MaxWidenSteps = 3;
+  MaxWidenSteps     = 3;
 
-{ TLibraryPathTypeHelper }
+  { TLibraryPathTypeHelper }
 
 function TLibraryPathTypeHelper.ToRegistryValueName: string;
 begin
-  Result := PathTypeRegistryNames[Self];
+  Result            := PathTypeRegistryNames[ Self ];
 end;
 
 function TLibraryPathTypeHelper.ToDisplayName: string;
 begin
-  Result := PathTypeDisplayNames[Self];
+  Result            := PathTypeDisplayNames[ Self ];
 end;
 
 { Unit-level helpers }
@@ -550,35 +550,35 @@ function ExpandLibraryMacros( const APath: string; AMacros: TStrings;
   AMaxDepth: Integer ): string;
 var
   Depth, Start, Stop, Index: Integer;
-  MacroName: string;
+  MacroName         : string;
 begin
-  Result := APath;
+  Result            := APath;
   if AMacros = nil then
     Exit;
 
   for Depth := 1 to AMaxDepth do
   begin
-    Start := Pos( '$(', Result );
+    Start           := Pos( '$(', Result );
     if Start = 0 then
       Exit;
 
-    Stop := Pos( ')', Result, Start + 2 );
+    Stop            := Pos( ')', Result, Start + 2 );
     if Stop = 0 then
       Exit;
 
-    MacroName := Copy( Result, Start + 2, Stop - Start - 2 );
-    Index := AMacros.IndexOfName( MacroName );
+    MacroName       := Copy( Result, Start + 2, Stop - Start - 2 );
+    Index           := AMacros.IndexOfName( MacroName );
     if Index < 0 then
       Exit; // Unknown macro: leave it intact and stop, so the caller can see it.
 
-    Result := Copy( Result, 1, Start - 1 ) + AMacros.ValueFromIndex[Index] +
+    Result          := Copy( Result, 1, Start - 1 ) + AMacros.ValueFromIndex[ Index ] +
       Copy( Result, Stop + 1, MaxInt );
   end;
 end;
 
 function NormalisePath( const APath: string ): string;
 begin
-  Result := Trim( APath );
+  Result            := Trim( APath );
   if Result = '' then
     Exit;
 
@@ -587,99 +587,99 @@ begin
     Exit;
 
   try
-    Result := TPath.GetFullPath( Result );
+    Result          := TPath.GetFullPath( Result );
   except
     // Malformed paths are left as they were rather than aborting the analysis.
   end;
 
   // Strip a trailing separator, but never from a bare drive root such as "D:\".
-  if ( Length( Result ) > 3 ) and ( Result[Length( Result )] = PathDelim ) then
+  if ( Length( Result ) > 3 ) and ( Result[ Length( Result ) ] = PathDelim ) then
     SetLength( Result, Length( Result ) - 1 );
 end;
 
 function StartsWithSegment( const APath, APrefix: string ): Boolean;
 begin
-  Result := False;
+  Result            := False;
   if ( APrefix = '' ) or ( Length( APath ) < Length( APrefix ) ) then
     Exit;
 
   if not SameText( Copy( APath, 1, Length( APrefix ) ), APrefix ) then
     Exit;
 
-  Result := ( Length( APath ) = Length( APrefix ) ) or
-            ( APath[Length( APrefix ) + 1] = PathDelim );
+  Result            := ( Length( APath ) = Length( APrefix ) ) or
+    ( APath[ Length( APrefix ) + 1 ] = PathDelim );
 end;
 
 function IsPlatformOrConfigToken( const ASegment: string ): Boolean;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := True;
+  Result            := True;
   for I := Low( PlatformTokens ) to High( PlatformTokens ) do
-    if SameText( ASegment, PlatformTokens[I] ) then
+    if SameText( ASegment, PlatformTokens[ I ] ) then
       Exit;
   for I := Low( ConfigTokens ) to High( ConfigTokens ) do
-    if SameText( ASegment, ConfigTokens[I] ) then
+    if SameText( ASegment, ConfigTokens[ I ] ) then
       Exit;
-  Result := False;
+  Result            := False;
 end;
 
 function IsVersionLikeSegment( const ASegment: string ): Boolean;
 var
-  I: Integer;
-  HasDigit: Boolean;
+  I                 : Integer;
+  HasDigit          : Boolean;
 begin
-  Result := False;
-  HasDigit := False;
+  Result            := False;
+  HasDigit          := False;
   if ASegment = '' then
     Exit;
 
   for I := 1 to Length( ASegment ) do
   begin
-    if CharInSet( ASegment[I], ['0'..'9'] ) then
-      HasDigit := True
-    else if not CharInSet( ASegment[I], ['.', '-', '_', ' '] ) then
+    if CharInSet( ASegment[ I ], [ '0'..'9' ] ) then
+      HasDigit      := True
+    else if not CharInSet( ASegment[ I ], [ '.', '-', '_', ' ' ] ) then
       Exit;
   end;
 
-  Result := HasDigit;
+  Result            := HasDigit;
 end;
 
 function IsNoiseSegment( const ASegment: string ): Boolean;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := True;
+  Result            := True;
   for I := Low( NoiseSegments ) to High( NoiseSegments ) do
-    if SameText( ASegment, NoiseSegments[I] ) then
+    if SameText( ASegment, NoiseSegments[ I ] ) then
       Exit;
-  Result := False;
+  Result            := False;
 end;
 
 function IsGenericVariableName( const AName: string ): Boolean;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := True;
+  Result            := True;
   for I := Low( GenericNames ) to High( GenericNames ) do
-    if SameText( AName, GenericNames[I] ) then
+    if SameText( AName, GenericNames[ I ] ) then
       Exit;
-  Result := False;
+  Result            := False;
 end;
 
 function DeriveVariableName( const APrefix: string; AExtraSegments: Integer;
   AMaxLength: Integer ): string;
 var
-  Segments: TArray<string>;
-  Chosen: TArray<Integer>;
+  Segments          : TArray<string>;
+  Chosen            : TArray<Integer>;
   Last, First, Next, I, J, Limit: Integer;
-  Raw: string;
-  Ch: Char;
+  Raw               : string;
+  Ch                : Char;
 begin
-  Segments := APrefix.Split( [PathDelim] );
+  Segments          := APrefix.Split( [ PathDelim ] );
 
-  Last := High( Segments );
-  while ( Last > 0 ) and ( Segments[Last] = '' ) do
+  Last              := High( Segments );
+  while ( Last > 0 ) and ( Segments[ Last ] = '' ) do
     Dec( Last );
   if Last < 0 then
     Exit( 'PATH' );
@@ -687,10 +687,10 @@ begin
   // Widen while the trailing segment names nothing on its own: a platform or
   // config token ("...\Dcp\Win32" -> DCP_WIN32, not WIN32) or a bare version
   // folder ("...\Florence\37.0" -> FLORENCE_37_0, not V37_0).
-  First := Last;
+  First             := Last;
   while ( First > 0 ) and
-        ( IsPlatformOrConfigToken( Segments[First] ) or
-          IsVersionLikeSegment( Segments[First] ) ) do
+    ( IsPlatformOrConfigToken( Segments[ First ] ) or
+    IsVersionLikeSegment( Segments[ First ] ) ) do
     Dec( First );
 
   // Everything from First to Last is part of the base name: the trailing
@@ -699,7 +699,7 @@ begin
   for I := First to Last do
   begin
     SetLength( Chosen, Length( Chosen ) + 1 );
-    Chosen[High( Chosen )] := I;
+    Chosen[ High( Chosen ) ] := I;
   end;
 
   // Fold in further parents on request, to break a collision with a name that
@@ -708,75 +708,75 @@ begin
   // gives V37_0_SOURCE, no better than the suffix it replaced; "packages"
   // folded in gives PACKAGES_D13, which identifies no library at all. Reach
   // past both to a segment that actually names something.
-  Next := First;
+  Next              := First;
   for I := 1 to AExtraSegments do
   begin
     if Next <= 1 then
       Break;
     Dec( Next );
     while ( Next > 1 ) and
-          ( IsPlatformOrConfigToken( Segments[Next] ) or
-            IsVersionLikeSegment( Segments[Next] ) or
-            IsNoiseSegment( Segments[Next] ) ) do
+      ( IsPlatformOrConfigToken( Segments[ Next ] ) or
+      IsVersionLikeSegment( Segments[ Next ] ) or
+      IsNoiseSegment( Segments[ Next ] ) ) do
       Dec( Next );
 
     // Prepend it, keeping path order.
     SetLength( Chosen, Length( Chosen ) + 1 );
     for J := High( Chosen ) downto 1 do
-      Chosen[J] := Chosen[J - 1];
-    Chosen[0] := Next;
+      Chosen[ J ]   := Chosen[ J - 1 ];
+    Chosen[ 0 ]     := Next;
   end;
 
-  Raw := '';
+  Raw               := '';
   for J := Low( Chosen ) to High( Chosen ) do
   begin
     if Raw <> '' then
-      Raw := Raw + '_';
-    Raw := Raw + Segments[Chosen[J]];
+      Raw           := Raw + '_';
+    Raw             := Raw + Segments[ Chosen[ J ] ];
   end;
 
-  Result := '';
+  Result            := '';
   for J := 1 to Length( Raw ) do
   begin
-    Ch := Raw[J];
-    if CharInSet( Ch, ['A'..'Z', 'a'..'z', '0'..'9'] ) then
-      Result := Result + UpCase( Ch )
+    Ch              := Raw[ J ];
+    if CharInSet( Ch, [ 'A'..'Z', 'a'..'z', '0'..'9' ] ) then
+      Result        := Result + UpCase( Ch )
     else
-      Result := Result + '_';
+      Result        := Result + '_';
   end;
 
   // A name must start with a letter to be a legal macro identifier.
-  if ( Result = '' ) or not CharInSet( Result[1], ['A'..'Z'] ) then
-    Result := 'V' + Result;
+  if ( Result = '' ) or not CharInSet( Result[ 1 ], [ 'A'..'Z' ] ) then
+    Result          := 'V' + Result;
 
-  Limit := AMaxLength;
+  Limit             := AMaxLength;
   if Limit <= 0 then
     if AExtraSegments > 0 then
-      Limit := MaxWidenedNameLength
+      Limit         := MaxWidenedNameLength
     else
-      Limit := MaxVariableNameLength;
+      Limit         := MaxVariableNameLength;
 
   if Length( Result ) > Limit then
     SetLength( Result, Limit );
 
   // Never end on a separator left behind by truncation.
-  while ( Result <> '' ) and ( Result[Length( Result )] = '_' ) do
+  while ( Result <> '' ) and ( Result[ Length( Result ) ] = '_' ) do
     SetLength( Result, Length( Result ) - 1 );
 end;
 
 procedure SplitPathValue( AList: TStrings; const AValue: string );
 var
-  Parts: TArray<string>;
-  I: Integer;
-  Item: string;
+  Parts             : TArray<string>;
+  I                 : Integer;
+  Item              : string;
 begin
   AList.Clear;
-  Parts := AValue.Split( [';'] );
+  Parts             := AValue.Split( [ ';' ] );
   for I := Low( Parts ) to High( Parts ) do
   begin
     // The IDE stores paths unquoted, but tolerate quotes on the read side.
-    Item := Trim( Parts[I] ).DeQuotedString( '"' );
-    Item := Trim( Item );
+    Item            := Trim( Parts[ I ] ).DeQuotedString( '"' );
+    Item            := Trim( Item );
     if Item <> '' then
       AList.Add( Item );
   end;
@@ -784,16 +784,16 @@ end;
 
 function FirstMacroName( const APath: string ): string;
 var
-  Start, Stop: Integer;
+  Start, Stop       : Integer;
 begin
-  Result := '';
-  Start := Pos( '$(', APath );
+  Result            := '';
+  Start             := Pos( '$(', APath );
   if Start = 0 then
     Exit;
-  Stop := Pos( ')', APath, Start + 2 );
+  Stop              := Pos( ')', APath, Start + 2 );
   if Stop = 0 then
     Exit;
-  Result := Copy( APath, Start + 2, Stop - Start - 2 );
+  Result            := Copy( APath, Start + 2, Stop - Start - 2 );
 end;
 
 /// <summary>True for a drive-absolute (<c>C:\x</c>) or UNC (<c>\\server\share</c>) path.</summary>
@@ -801,9 +801,9 @@ end;
 /// <returns>False for a relative or root-relative (<c>\x</c>) path.</returns>
 function IsAbsolutePath( const APath: string ): Boolean;
 begin
-  var Path := Trim( APath );
-  Result := ( ( Length( Path ) >= 3 ) and CharInSet( Path[1], ['A'..'Z', 'a'..'z'] ) and ( Path[2] = ':' ) and
-    CharInSet( Path[3], ['\', '/'] ) ) or StartsText( '\\', Path );
+  var Path          := Trim( APath );
+  Result            := ( ( Length( Path ) >= 3 ) and CharInSet( Path[ 1 ], [ 'A'..'Z', 'a'..'z' ] ) and ( Path[ 2 ] = ':' ) and
+    CharInSet( Path[ 3 ], [ '\', '/' ] ) ) or StartsText( '\\', Path );
 end;
 
 { TPathSet }
@@ -811,20 +811,20 @@ end;
 constructor TPathSet.Create( const APlatformName: string; APathType: TLibraryPathType;
   const AValue: string );
 var
-  List: TStringList;
-  I: Integer;
+  List              : TStringList;
+  I                 : Integer;
 begin
   inherited Create;
-  FPlatformName := APlatformName;
-  FPathType := APathType;
-  FOriginal := AValue;
+  FPlatformName     := APlatformName;
+  FPathType         := APathType;
+  FOriginal         := AValue;
 
-  List := TStringList.Create;
+  List              := TStringList.Create;
   try
     SplitPathValue( List, AValue );
     SetLength( FEntries, List.Count );
     for I := 0 to List.Count - 1 do
-      FEntries[I].Raw := List[I];
+      FEntries[ I ].Raw := List[ I ];
   finally
     List.Free;
   end;
@@ -832,56 +832,56 @@ end;
 
 function TPathSet.BuildResult: string;
 var
-  I, Expected: Integer;
-  Item: string;
-  Count: Integer;
+  I, Expected       : Integer;
+  Item              : string;
+  Count             : Integer;
 begin
-  Result := '';
-  Count := 0;
+  Result            := '';
+  Count             := 0;
   for I := Low( FEntries ) to High( FEntries ) do
   begin
-    if FEntries[I].Drop then
+    if FEntries[ I ].Drop then
       Continue;
 
-    if FEntries[I].NewRaw <> '' then
-      Item := FEntries[I].NewRaw
+    if FEntries[ I ].NewRaw <> '' then
+      Item          := FEntries[ I ].NewRaw
     else
-      Item := FEntries[I].Raw;
+      Item          := FEntries[ I ].Raw;
 
     if Result = '' then
-      Result := Item
+      Result        := Item
     else
-      Result := Result + ';' + Item;
+      Result        := Result + ';' + Item;
     Inc( Count );
   end;
 
   // Losing a library path silently is the worst failure this feature has, so
   // verify the count the way TLibraryPathHandler.SortPaths does.
-  Expected := KeptCount;
+  Expected          := KeptCount;
   if Count <> Expected then
     raise EPathCompactorError.CreateFmt(
       'Path count mismatch while rebuilding %s / %s: expected %d, produced %d',
-      [FPlatformName, FPathType.ToDisplayName, Expected, Count] );
+      [ FPlatformName, FPathType.ToDisplayName, Expected, Count ] );
 end;
 
 function TPathSet.KeptCount: Integer;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := 0;
+  Result            := 0;
   for I := Low( FEntries ) to High( FEntries ) do
-    if not FEntries[I].Drop then
+    if not FEntries[ I ].Drop then
       Inc( Result );
 end;
 
 function TPathSet.OriginalLength: Integer;
 begin
-  Result := Length( FOriginal );
+  Result            := Length( FOriginal );
 end;
 
 function TPathSet.ResultLength: Integer;
 begin
-  Result := Length( BuildResult );
+  Result            := Length( BuildResult );
 end;
 
 { TPathCompactorAnalysis }
@@ -889,36 +889,36 @@ end;
 constructor TPathCompactorAnalysis.Create;
 begin
   inherited Create;
-  FSets := TObjectList<TPathSet>.Create( True );
+  FSets             := TObjectList<TPathSet>.Create( True );
 
-  FMacros := TStringList.Create;
+  FMacros           := TStringList.Create;
   FMacros.CaseSensitive := False;
   FMacros.NameValueSeparator := '=';
 
-  FReservedNames := TStringList.Create;
+  FReservedNames    := TStringList.Create;
   FReservedNames.CaseSensitive := False;
   FReservedNames.Duplicates := dupIgnore;
   FReservedNames.Sorted := True;
 
-  FDivergentNames := TStringList.Create;
+  FDivergentNames   := TStringList.Create;
   FDivergentNames.CaseSensitive := False;
   FDivergentNames.Duplicates := dupIgnore;
   FDivergentNames.Sorted := True;
 
-  FReusableNames := TStringList.Create;
+  FReusableNames    := TStringList.Create;
   FReusableNames.CaseSensitive := False;
   FReusableNames.Duplicates := dupIgnore;
   FReusableNames.Sorted := True;
-  FRestrictReuse := False;
+  FRestrictReuse    := False;
 
-  FMaxVariables := 12;
-  FMinOccurrences := 2;
-  FMinNetSaving := 40;
+  FMaxVariables     := 12;
+  FMinOccurrences   := 2;
+  FMinNetSaving     := 40;
   FBakePlatformMacro := False;
   FRemoveDuplicates := False;
-  FRemoveMissing := False;
+  FRemoveMissing    := False;
   FRemoveUndefinedMacros := False;
-  FCheckExistence := True;
+  FCheckExistence   := True;
 end;
 
 destructor TPathCompactorAnalysis.Destroy;
@@ -942,44 +942,44 @@ end;
 
 procedure TPathCompactorAnalysis.SetReservedNames( ANames: TStrings );
 var
-  I: Integer;
+  I                 : Integer;
 begin
   FReservedNames.Clear;
   if ANames = nil then
     Exit;
   for I := 0 to ANames.Count - 1 do
-    if Trim( ANames[I] ) <> '' then
-      FReservedNames.Add( Trim( ANames[I] ) );
+    if Trim( ANames[ I ] ) <> '' then
+      FReservedNames.Add( Trim( ANames[ I ] ) );
 end;
 
 procedure TPathCompactorAnalysis.SetDivergentNames( ANames: TStrings );
 var
-  I: Integer;
+  I                 : Integer;
 begin
   FDivergentNames.Clear;
   if ANames = nil then
     Exit;
   for I := 0 to ANames.Count - 1 do
-    if Trim( ANames[I] ) <> '' then
-      FDivergentNames.Add( Trim( ANames[I] ) );
+    if Trim( ANames[ I ] ) <> '' then
+      FDivergentNames.Add( Trim( ANames[ I ] ) );
 end;
 
 procedure TPathCompactorAnalysis.SetReusableNames( ANames: TStrings );
 begin
   FReusableNames.Clear;
-  FRestrictReuse := True;
+  FRestrictReuse    := True;
   if ( ANames = nil ) then
     Exit;
   for var I := 0 to ANames.Count - 1 do
-    if ( Trim( ANames[I] ) <> '' ) then
-      FReusableNames.Add( Trim( ANames[I] ) );
+    if ( Trim( ANames[ I ] ) <> '' ) then
+      FReusableNames.Add( Trim( ANames[ I ] ) );
 end;
 
 procedure TPathCompactorAnalysis.SetVariableEnabled( AIndex: Integer; AEnabled: Boolean );
 begin
   if ( AIndex < Low( FAccepted ) ) or ( AIndex > High( FAccepted ) ) then
-    raise EPathCompactorError.CreateFmt( 'No accepted variable has index %d.', [AIndex] );
-  FCandidates[FAccepted[AIndex]].Enabled := AEnabled;
+    raise EPathCompactorError.CreateFmt( 'No accepted variable has index %d.', [ AIndex ] );
+  FCandidates[ FAccepted[ AIndex ] ].Enabled := AEnabled;
   RewriteEntries;
 end;
 
@@ -999,15 +999,15 @@ end;
 
 procedure TPathCompactorAnalysis.ExpandEntries;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Expanded: string;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  Expanded          : string;
 begin
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
     for I := Low( Entries ) to High( Entries ) do
     begin
@@ -1016,12 +1016,12 @@ begin
       // $(LangDir) is resolved per translation language and appears only in the
       // three Translated* path types — it is genuinely deferred, not undefined,
       // and must not be reported as a dead macro reference.
-      Entries[I].Opaque :=
-        ContainsText( Entries[I].Raw, '$(Config)' ) or
-        ContainsText( Entries[I].Raw, '$(LangDir)' ) or
-        ( not FBakePlatformMacro and ContainsText( Entries[I].Raw, '$(Platform)' ) );
+      Entries[ I ].Opaque :=
+        ContainsText( Entries[ I ].Raw, '$(Config)' ) or
+        ContainsText( Entries[ I ].Raw, '$(LangDir)' ) or
+        ( not FBakePlatformMacro and ContainsText( Entries[ I ].Raw, '$(Platform)' ) );
 
-      Expanded := ExpandLibraryMacros( Entries[I].Raw, FMacros );
+      Expanded      := ExpandLibraryMacros( Entries[ I ].Raw, FMacros );
 
       // A relative entry resolves against the directory of whatever is being built,
       // not against anything known here. Resolving it against this process's current
@@ -1029,11 +1029,11 @@ begin
       // candidate for rewriting into an absolute path - so it is left exactly as it is.
       if ( Pos( '$(', Expanded ) = 0 ) and not IsAbsolutePath( Expanded ) then
       begin
-        Entries[I].Opaque := True;
-        Entries[I].UndefinedMacro := False;
-        Entries[I].DivergentMacro := False;
-        Entries[I].Expanded := Trim( Expanded );
-        Entries[I].Exists := False;
+        Entries[ I ].Opaque := True;
+        Entries[ I ].UndefinedMacro := False;
+        Entries[ I ].DivergentMacro := False;
+        Entries[ I ].Expanded := Trim( Expanded );
+        Entries[ I ].Exists := False;
         Continue;
       end;
 
@@ -1041,27 +1041,27 @@ begin
       // exist — but it still cannot be rewritten, so it is opaque as well. The
       // build-time macros handled above are already opaque and are deliberately
       // never counted here, or every Translated* entry would be a false report.
-      Entries[I].UndefinedMacro := False;
-      Entries[I].DivergentMacro := False;
+      Entries[ I ].UndefinedMacro := False;
+      Entries[ I ].DivergentMacro := False;
 
-      if ( Pos( '$(', Expanded ) > 0 ) and not Entries[I].Opaque then
+      if ( Pos( '$(', Expanded ) > 0 ) and not Entries[ I ].Opaque then
       begin
         // Distinguish dead from merely divergent: a macro the OTHER IDE bitness
         // defines still resolves there, so the entry is live and must never be
         // removed — the fix for it is to define the variable in both lists.
         if FDivergentNames.IndexOf( FirstMacroName( Expanded ) ) >= 0 then
-          Entries[I].DivergentMacro := True
+          Entries[ I ].DivergentMacro := True
         else
-          Entries[I].UndefinedMacro := True;
-        Entries[I].Opaque := True;
+          Entries[ I ].UndefinedMacro := True;
+        Entries[ I ].Opaque := True;
       end;
 
-      Entries[I].Expanded := NormalisePath( Expanded );
+      Entries[ I ].Expanded := NormalisePath( Expanded );
 
-      Entries[I].Exists := False;
-      if FCheckExistence and not Entries[I].UndefinedMacro and
-         ( Entries[I].Expanded <> '' ) then
-        Entries[I].Exists := TDirectory.Exists( Entries[I].Expanded );
+      Entries[ I ].Exists := False;
+      if FCheckExistence and not Entries[ I ].UndefinedMacro and
+        ( Entries[ I ].Expanded <> '' ) then
+        Entries[ I ].Exists := TDirectory.Exists( Entries[ I ].Expanded );
     end;
 
     PathSet.Entries := Entries;
@@ -1070,34 +1070,34 @@ end;
 
 procedure TPathCompactorAnalysis.DetectDuplicates;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Seen: TStringList;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  Seen              : TStringList;
 begin
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
-    Seen := TStringList.Create;
+    Seen            := TStringList.Create;
     try
       Seen.CaseSensitive := False;
       Seen.Duplicates := dupIgnore;
-      Seen.Sorted := True;
+      Seen.Sorted   := True;
 
       for I := Low( Entries ) to High( Entries ) do
       begin
-        Entries[I].Duplicate := False;
+        Entries[ I ].Duplicate := False;
         // Opaque entries are never deduplicated — two $(Config) entries may
         // resolve to different directories at build time.
-        if Entries[I].Opaque or ( Entries[I].Expanded = '' ) then
+        if Entries[ I ].Opaque or ( Entries[ I ].Expanded = '' ) then
           Continue;
 
-        if Seen.IndexOf( Entries[I].Expanded ) >= 0 then
-          Entries[I].Duplicate := True
+        if Seen.IndexOf( Entries[ I ].Expanded ) >= 0 then
+          Entries[ I ].Duplicate := True
         else
-          Seen.Add( Entries[I].Expanded );
+          Seen.Add( Entries[ I ].Expanded );
       end;
     finally
       Seen.Free;
@@ -1110,24 +1110,24 @@ end;
 function TPathCompactorAnalysis.StoredPrefixLengthFor( const AEntry: TPathEntry;
   const APrefix: string ): Integer;
 var
-  Segments: TArray<string>;
-  I: Integer;
-  Trial: string;
+  Segments          : TArray<string>;
+  I                 : Integer;
+  Trial             : string;
 begin
-  Result := 0;
+  Result            := 0;
   if APrefix = '' then
     Exit;
 
   // Find the shortest RAW prefix of the entry that expands to APrefix. For an
   // entry stored as "$(BDS)\source" that is 6 characters, not 46 — which is
   // exactly why saving must be scored here and not in expanded space.
-  Segments := AEntry.Raw.Split( [PathDelim] );
-  Trial := '';
+  Segments          := AEntry.Raw.Split( [ PathDelim ] );
+  Trial             := '';
   for I := Low( Segments ) to High( Segments ) do
   begin
     if Trial <> '' then
-      Trial := Trial + PathDelim;
-    Trial := Trial + Segments[I];
+      Trial         := Trial + PathDelim;
+    Trial           := Trial + Segments[ I ];
 
     if SameText( NormalisePath( ExpandLibraryMacros( Trial, FMacros ) ), APrefix ) then
       Exit( Length( Trial ) );
@@ -1136,44 +1136,44 @@ end;
 
 procedure TPathCompactorAnalysis.GenerateCandidates;
 var
-  Tally: TDictionary<string, Integer>;
-  Canonical: TDictionary<string, string>;
-  SetIndex, I, J, K: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Segments: TArray<string>;
-  Prefix: string;
-  Pair: TPair<string, Integer>;
-  Candidate: TVarCandidate;
-  Matches: TArray<TEntryMatch>;
-  StoredLen: Integer;
-  ExistingName: string;
+  Tally             : TDictionary<string, Integer>;
+  Canonical         : TDictionary<string, string>;
+  SetIndex, I, J, K : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  Segments          : TArray<string>;
+  Prefix            : string;
+  Pair              : TPair<string, Integer>;
+  Candidate         : TVarCandidate;
+  Matches           : TArray<TEntryMatch>;
+  StoredLen         : Integer;
+  ExistingName      : string;
 begin
   SetLength( FCandidates, 0 );
   SetLength( FAccepted, 0 );
 
-  Tally := TDictionary<string, Integer>.Create;
-  Canonical := TDictionary<string, string>.Create;
+  Tally             := TDictionary<string, Integer>.Create;
+  Canonical         := TDictionary<string, string>.Create;
   try
     // Ancestors only: a prefix equal to the entry itself saves nothing worth a
     // variable, and walking segments gives boundary alignment for free.
     for SetIndex := 0 to FSets.Count - 1 do
     begin
-      Entries := FSets[SetIndex].Entries;
+      Entries       := FSets[ SetIndex ].Entries;
       for I := Low( Entries ) to High( Entries ) do
       begin
         // A dropped entry is not going to be written, so it neither votes for a
         // candidate nor contributes to its saving.
-        if Entries[I].Opaque or Entries[I].Drop or ( Entries[I].Expanded = '' ) then
+        if Entries[ I ].Opaque or Entries[ I ].Drop or ( Entries[ I ].Expanded = '' ) then
           Continue;
 
-        Segments := Entries[I].Expanded.Split( [PathDelim] );
-        Prefix := '';
+        Segments    := Entries[ I ].Expanded.Split( [ PathDelim ] );
+        Prefix      := '';
         for J := Low( Segments ) to High( Segments ) - 1 do
         begin
           if Prefix <> '' then
-            Prefix := Prefix + PathDelim;
-          Prefix := Prefix + Segments[J];
+            Prefix  := Prefix + PathDelim;
+          Prefix    := Prefix + Segments[ J ];
 
           if Length( Prefix ) < MinPrefixLength then
             Continue;
@@ -1184,7 +1184,7 @@ begin
           // Tally case-insensitively, but remember the first casing seen so the
           // proposed variable value reads the way the user wrote it.
           if Tally.ContainsKey( Prefix.ToLower ) then
-            Tally[Prefix.ToLower] := Tally[Prefix.ToLower] + 1
+            Tally[ Prefix.ToLower ] := Tally[ Prefix.ToLower ] + 1
           else
           begin
             Tally.Add( Prefix.ToLower, 1 );
@@ -1201,7 +1201,7 @@ begin
       if Pair.Value < FMinOccurrences then
         Continue;
 
-      Candidate := Default( TVarCandidate );
+      Candidate     := Default( TVarCandidate );
       if not Canonical.TryGetValue( Pair.Key, Candidate.Prefix ) then
         Candidate.Prefix := Pair.Key;
       Candidate.Occurrences := Pair.Value;
@@ -1209,7 +1209,7 @@ begin
 
       // Reuse an existing macro of the same value where one exists, rather than
       // defining a redundant new variable; this is where the real wins are.
-      ExistingName := ExistingMacroFor( Candidate.Prefix );
+      ExistingName  := ExistingMacroFor( Candidate.Prefix );
       if ExistingName <> '' then
       begin
         Candidate.Name := ExistingName;
@@ -1227,7 +1227,7 @@ begin
       end;
 
       SetLength( FCandidates, Length( FCandidates ) + 1 );
-      FCandidates[High( FCandidates )] := Candidate;
+      FCandidates[ High( FCandidates ) ] := Candidate;
     end;
   finally
     Canonical.Free;
@@ -1238,26 +1238,26 @@ begin
   // stored space. Doing it once keeps the selection loop cheap.
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
     for I := Low( Entries ) to High( Entries ) do
     begin
       SetLength( Matches, 0 );
-      if not Entries[I].Opaque and not Entries[I].Drop and ( Entries[I].Expanded <> '' ) then
+      if not Entries[ I ].Opaque and not Entries[ I ].Drop and ( Entries[ I ].Expanded <> '' ) then
         for K := Low( FCandidates ) to High( FCandidates ) do
-          if StartsWithSegment( Entries[I].Expanded, FCandidates[K].Prefix ) then
+          if StartsWithSegment( Entries[ I ].Expanded, FCandidates[ K ].Prefix ) then
           begin
-            StoredLen := StoredPrefixLengthFor( Entries[I], FCandidates[K].Prefix );
+            StoredLen := StoredPrefixLengthFor( Entries[ I ], FCandidates[ K ].Prefix );
             if StoredLen <= 0 then
               Continue;
 
             SetLength( Matches, Length( Matches ) + 1 );
-            Matches[High( Matches )].CandidateIndex := K;
-            Matches[High( Matches )].StoredPrefixLen := StoredLen;
-            Matches[High( Matches )].ExpandedPrefixLen := Length( FCandidates[K].Prefix );
+            Matches[ High( Matches ) ].CandidateIndex := K;
+            Matches[ High( Matches ) ].StoredPrefixLen := StoredLen;
+            Matches[ High( Matches ) ].ExpandedPrefixLen := Length( FCandidates[ K ].Prefix );
           end;
-      Entries[I].Matches := Matches;
+      Entries[ I ].Matches := Matches;
     end;
 
     PathSet.Entries := Entries;
@@ -1267,22 +1267,22 @@ end;
 function TPathCompactorAnalysis.StoredLengthUnder( const AEntry: TPathEntry;
   const AAcceptedSet: TArray<Integer> ): Integer;
 var
-  I, J, BestMatch: Integer;
+  I, J, BestMatch   : Integer;
 begin
-  Result := Length( AEntry.Raw );
+  Result            := Length( AEntry.Raw );
   if AEntry.Opaque then
     Exit;
 
   // Longest accepted expanded prefix wins, so $(GITLAKTHIRD) is not pre-empted
   // by $(GITLAK).
-  BestMatch := -1;
+  BestMatch         := -1;
   for I := Low( AEntry.Matches ) to High( AEntry.Matches ) do
     for J := Low( AAcceptedSet ) to High( AAcceptedSet ) do
-      if AEntry.Matches[I].CandidateIndex = AAcceptedSet[J] then
+      if AEntry.Matches[ I ].CandidateIndex = AAcceptedSet[ J ] then
       begin
         if ( BestMatch < 0 ) or
-           ( AEntry.Matches[I].ExpandedPrefixLen >
-             AEntry.Matches[BestMatch].ExpandedPrefixLen ) then
+          ( AEntry.Matches[ I ].ExpandedPrefixLen >
+          AEntry.Matches[ BestMatch ].ExpandedPrefixLen ) then
           BestMatch := I;
         Break;
       end;
@@ -1290,33 +1290,33 @@ begin
   if BestMatch < 0 then
     Exit;
 
-  Result := Length( AEntry.Raw ) - AEntry.Matches[BestMatch].StoredPrefixLen +
-    Length( FCandidates[AEntry.Matches[BestMatch].CandidateIndex].Name ) + 3;
+  Result            := Length( AEntry.Raw ) - AEntry.Matches[ BestMatch ].StoredPrefixLen +
+    Length( FCandidates[ AEntry.Matches[ BestMatch ].CandidateIndex ].Name ) + 3;
 end;
 
 function TPathCompactorAnalysis.IncrementalSaving( ACandidateIndex: Integer ): Integer;
 var
-  Trial: TArray<Integer>;
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  Trial             : TArray<Integer>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
-  if FCandidates[ACandidateIndex].Accepted then
+  Result            := 0;
+  if FCandidates[ ACandidateIndex ].Accepted then
     Exit;
 
-  Trial := Copy( FAccepted );
+  Trial             := Copy( FAccepted );
   SetLength( Trial, Length( Trial ) + 1 );
-  Trial[High( Trial )] := ACandidateIndex;
+  Trial[ High( Trial ) ] := ACandidateIndex;
 
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
     begin
-      if Entries[I].Drop then
+      if Entries[ I ].Drop then
         Continue;
-      Inc( Result, StoredLengthUnder( Entries[I], FAccepted ) -
-                   StoredLengthUnder( Entries[I], Trial ) );
+      Inc( Result, StoredLengthUnder( Entries[ I ], FAccepted ) -
+        StoredLengthUnder( Entries[ I ], Trial ) );
     end;
   end;
 end;
@@ -1327,18 +1327,18 @@ var
 begin
   while Length( FAccepted ) < FMaxVariables do
   begin
-    Best := -1;
-    BestGain := 0;
+    Best            := -1;
+    BestGain        := 0;
 
     // Re-score after every acceptance: prefixes nest, so a static ranking is
     // wrong the moment the first candidate is taken.
     for I := Low( FCandidates ) to High( FCandidates ) do
     begin
-      Gain := IncrementalSaving( I );
+      Gain          := IncrementalSaving( I );
       if Gain > BestGain then
       begin
-        BestGain := Gain;
-        Best := I;
+        BestGain    := Gain;
+        Best        := I;
       end;
     end;
 
@@ -1348,44 +1348,44 @@ begin
     // Assign the final name now, in descending order of value, so the most
     // valuable prefix gets the unsuffixed name and only genuine collisions
     // between ACCEPTED variables ever pick up a _2/_3 suffix.
-    if not FCandidates[Best].PreExisting then
-      FCandidates[Best].Name := UniqueVariableName( FCandidates[Best].Prefix );
+    if not FCandidates[ Best ].PreExisting then
+      FCandidates[ Best ].Name := UniqueVariableName( FCandidates[ Best ].Prefix );
 
-    FCandidates[Best].Accepted := True;
-    FCandidates[Best].Enabled := True;
-    FCandidates[Best].NetSaving := BestGain;
+    FCandidates[ Best ].Accepted := True;
+    FCandidates[ Best ].Enabled := True;
+    FCandidates[ Best ].NetSaving := BestGain;
     SetLength( FAccepted, Length( FAccepted ) + 1 );
-    FAccepted[High( FAccepted )] := Best;
+    FAccepted[ High( FAccepted ) ] := Best;
   end;
 end;
 
 procedure TPathCompactorAnalysis.RewriteEntries;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  J, K, BestMatch: Integer;
-  Candidate: TVarCandidate;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  J, K, BestMatch   : Integer;
+  Candidate         : TVarCandidate;
 begin
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
     for I := Low( Entries ) to High( Entries ) do
     begin
-      Entries[I].NewRaw := '';
-      if Entries[I].Opaque or Entries[I].Drop then
+      Entries[ I ].NewRaw := '';
+      if Entries[ I ].Opaque or Entries[ I ].Drop then
         Continue;
 
-      BestMatch := -1;
-      for J := Low( Entries[I].Matches ) to High( Entries[I].Matches ) do
+      BestMatch     := -1;
+      for J := Low( Entries[ I ].Matches ) to High( Entries[ I ].Matches ) do
         for K := Low( FAccepted ) to High( FAccepted ) do
-          if ( Entries[I].Matches[J].CandidateIndex = FAccepted[K] ) and FCandidates[FAccepted[K]].Enabled then
+          if ( Entries[ I ].Matches[ J ].CandidateIndex = FAccepted[ K ] ) and FCandidates[ FAccepted[ K ] ].Enabled then
           begin
             if ( BestMatch < 0 ) or
-               ( Entries[I].Matches[J].ExpandedPrefixLen >
-                 Entries[I].Matches[BestMatch].ExpandedPrefixLen ) then
+              ( Entries[ I ].Matches[ J ].ExpandedPrefixLen >
+              Entries[ I ].Matches[ BestMatch ].ExpandedPrefixLen ) then
               BestMatch := J;
             Break;
           end;
@@ -1393,17 +1393,17 @@ begin
       if BestMatch < 0 then
         Continue;
 
-      Candidate := FCandidates[Entries[I].Matches[BestMatch].CandidateIndex];
+      Candidate     := FCandidates[ Entries[ I ].Matches[ BestMatch ].CandidateIndex ];
 
       // Rewrite from the RAW text, replacing the raw prefix that maps to the
       // accepted expanded prefix. Rewriting from the expanded path instead
       // would lengthen every entry that was already stored as a macro.
-      Entries[I].NewRaw := '$(' + Candidate.Name + ')' +
-        Copy( Entries[I].Raw, Entries[I].Matches[BestMatch].StoredPrefixLen + 1, MaxInt );
+      Entries[ I ].NewRaw := '$(' + Candidate.Name + ')' +
+        Copy( Entries[ I ].Raw, Entries[ I ].Matches[ BestMatch ].StoredPrefixLen + 1, MaxInt );
 
       // Never emit a change that makes the stored string longer.
-      if Length( Entries[I].NewRaw ) >= Length( Entries[I].Raw ) then
-        Entries[I].NewRaw := '';
+      if Length( Entries[ I ].NewRaw ) >= Length( Entries[ I ].Raw ) then
+        Entries[ I ].NewRaw := '';
     end;
 
     PathSet.Entries := Entries;
@@ -1412,35 +1412,35 @@ end;
 
 procedure TPathCompactorAnalysis.ApplyHygiene;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
 begin
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
     for I := Low( Entries ) to High( Entries ) do
     begin
-      Entries[I].Drop := False;
+      Entries[ I ].Drop := False;
 
       // A dead macro reference is removable even though it is opaque — there is
       // nothing behind it to preserve. A DIVERGENT one never is.
-      if FRemoveUndefinedMacros and Entries[I].UndefinedMacro then
+      if FRemoveUndefinedMacros and Entries[ I ].UndefinedMacro then
       begin
-        Entries[I].Drop := True;
+        Entries[ I ].Drop := True;
         Continue;
       end;
 
-      if Entries[I].Opaque then
+      if Entries[ I ].Opaque then
         Continue;
 
-      if FRemoveDuplicates and Entries[I].Duplicate then
-        Entries[I].Drop := True;
+      if FRemoveDuplicates and Entries[ I ].Duplicate then
+        Entries[ I ].Drop := True;
 
-      if FRemoveMissing and FCheckExistence and not Entries[I].Exists then
-        Entries[I].Drop := True;
+      if FRemoveMissing and FCheckExistence and not Entries[ I ].Exists then
+        Entries[ I ].Drop := True;
     end;
 
     PathSet.Entries := Entries;
@@ -1449,39 +1449,39 @@ end;
 
 function TPathCompactorAnalysis.ExistingMacroFor( const APrefix: string ): string;
 var
-  I: Integer;
-  Value: string;
+  I                 : Integer;
+  Value             : string;
 begin
-  Result := '';
+  Result            := '';
   for I := 0 to FMacros.Count - 1 do
   begin
-    if FMacros.Names[I] = '' then
+    if FMacros.Names[ I ] = '' then
       Continue;
 
     // Only a macro that resolves the same in both IDEs and in every session may be
     // reused; anything else would leave the rewritten entries dead somewhere.
-    if FRestrictReuse and ( FReusableNames.IndexOf( FMacros.Names[I] ) < 0 ) then
+    if FRestrictReuse and ( FReusableNames.IndexOf( FMacros.Names[ I ] ) < 0 ) then
       Continue;
 
     // Compare fully expanded, so "InterBase=$(BDS)\InterBase2020" is matched
     // by its resolved value rather than its literal text.
-    Value := NormalisePath( ExpandLibraryMacros( FMacros.ValueFromIndex[I], FMacros ) );
+    Value           := NormalisePath( ExpandLibraryMacros( FMacros.ValueFromIndex[ I ], FMacros ) );
     if ( Value <> '' ) and SameText( Value, APrefix ) then
-      Exit( FMacros.Names[I] );
+      Exit( FMacros.Names[ I ] );
   end;
 end;
 
 function TPathCompactorAnalysis.UniqueVariableName( const APrefix: string ): string;
 var
-  Base: string;
-  Suffix, I, Widen: Integer;
-  Taken: Boolean;
+  Base              : string;
+  Suffix, I, Widen  : Integer;
+  Taken             : Boolean;
 
   function NameIsTaken( const AName: string ): Boolean;
   var
-    K: Integer;
+    K               : Integer;
   begin
-    Result := True;
+    Result          := True;
 
     // Never shadow an IDE built-in or a process environment variable.
     if FReservedNames.IndexOf( AName ) >= 0 then
@@ -1495,10 +1495,10 @@ var
       Exit;
     // Only ALREADY-ACCEPTED variables can genuinely collide.
     for K := Low( FAccepted ) to High( FAccepted ) do
-      if SameText( FCandidates[FAccepted[K]].Name, AName ) then
+      if SameText( FCandidates[ FAccepted[ K ] ].Name, AName ) then
         Exit;
 
-    Result := False;
+    Result          := False;
   end;
 
 begin
@@ -1507,47 +1507,47 @@ begin
   // "...\Delphi 13 Florence\37.0" get their own names rather than X and X_2.
   for Widen := 0 to MaxWidenSteps do
   begin
-    Result := DeriveVariableName( APrefix, Widen );
+    Result          := DeriveVariableName( APrefix, Widen );
     if not NameIsTaken( Result ) then
       Exit;
   end;
 
-  Base := DeriveVariableName( APrefix, MaxWidenSteps );
-  Result := Base;
-  Suffix := 1;
+  Base              := DeriveVariableName( APrefix, MaxWidenSteps );
+  Result            := Base;
+  Suffix            := 1;
 
   repeat
-    Taken := False;
+    Taken           := False;
 
     // Never shadow an IDE built-in or a process environment variable: the
     // IDE's own expander consults the process environment first, so shadowing
     // one would break path resolution well beyond this feature.
     if FReservedNames.IndexOf( Result ) >= 0 then
-      Taken := True;
+      Taken         := True;
 
     // Nor an existing IDE variable holding a different value.
     if not Taken and ( FMacros.IndexOfName( Result ) >= 0 ) then
-      Taken := True;
+      Taken         := True;
 
     // Nor a variable only the other IDE bitness defines.
     if not Taken and ( FDivergentNames.IndexOf( Result ) >= 0 ) then
-      Taken := True;
+      Taken         := True;
 
     // Only ALREADY-ACCEPTED variables can genuinely collide. Testing every
     // candidate would compare against provisional names — including this
     // candidate's own — so every name would pick up a needless _2 suffix.
     if not Taken then
       for I := Low( FAccepted ) to High( FAccepted ) do
-        if SameText( FCandidates[FAccepted[I]].Name, Result ) then
+        if SameText( FCandidates[ FAccepted[ I ] ].Name, Result ) then
         begin
-          Taken := True;
+          Taken     := True;
           Break;
         end;
 
     if Taken then
     begin
       Inc( Suffix );
-      Result := Base + '_' + IntToStr( Suffix );
+      Result        := Base + '_' + IntToStr( Suffix );
     end;
   until not Taken;
 end;
@@ -1570,107 +1570,107 @@ end;
 
 function TPathCompactorAnalysis.AcceptedVariables: TArray<TVarCandidate>;
 var
-  I: Integer;
+  I                 : Integer;
 begin
   SetLength( Result, Length( FAccepted ) );
   for I := Low( FAccepted ) to High( FAccepted ) do
-    Result[I] := FCandidates[FAccepted[I]];
+    Result[ I ]     := FCandidates[ FAccepted[ I ] ];
 end;
 
 function TPathCompactorAnalysis.TotalStoredBefore: Integer;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := 0;
+  Result            := 0;
   for I := 0 to FSets.Count - 1 do
-    Inc( Result, FSets[I].OriginalLength );
+    Inc( Result, FSets[ I ].OriginalLength );
 end;
 
 function TPathCompactorAnalysis.TotalStoredAfter: Integer;
 var
-  I: Integer;
+  I                 : Integer;
 begin
-  Result := 0;
+  Result            := 0;
   for I := 0 to FSets.Count - 1 do
-    Inc( Result, FSets[I].ResultLength );
+    Inc( Result, FSets[ I ].ResultLength );
 end;
 
 function TPathCompactorAnalysis.DuplicateCount: Integer;
 var
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
+  Result            := 0;
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if Entries[I].Duplicate then
+      if Entries[ I ].Duplicate then
         Inc( Result );
   end;
 end;
 
 function TPathCompactorAnalysis.MissingCount: Integer;
 var
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
+  Result            := 0;
   if not FCheckExistence then
     Exit;
 
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if not Entries[I].Opaque and not Entries[I].Exists then
+      if not Entries[ I ].Opaque and not Entries[ I ].Exists then
         Inc( Result );
   end;
 end;
 
 function TPathCompactorAnalysis.RevalidateDrops: Integer;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Expanded: string;
-  StillGone: Boolean;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  Expanded          : string;
+  StillGone         : Boolean;
 begin
-  Result := 0;
+  Result            := 0;
 
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
 
     for I := Low( Entries ) to High( Entries ) do
     begin
-      if not Entries[I].Drop then
+      if not Entries[ I ].Drop then
         Continue;
 
       // A duplicate cannot stop being a duplicate, so only the two disc- and
       // macro-dependent reasons are worth re-testing.
-      if Entries[I].UndefinedMacro then
+      if Entries[ I ].UndefinedMacro then
       begin
-        Expanded := ExpandLibraryMacros( Entries[I].Raw, FMacros );
-        StillGone := Pos( '$(', Expanded ) > 0;
+        Expanded    := ExpandLibraryMacros( Entries[ I ].Raw, FMacros );
+        StillGone   := Pos( '$(', Expanded ) > 0;
         if not StillGone then
         begin
           // The macro resolves now; keep the entry and correct its state.
-          Entries[I].Drop := False;
-          Entries[I].UndefinedMacro := False;
-          Entries[I].Expanded := NormalisePath( Expanded );
+          Entries[ I ].Drop := False;
+          Entries[ I ].UndefinedMacro := False;
+          Entries[ I ].Expanded := NormalisePath( Expanded );
           Inc( Result );
         end;
       end
-      else if not Entries[I].Duplicate and FCheckExistence then
+      else if not Entries[ I ].Duplicate and FCheckExistence then
       begin
         // Re-probe the file system: a share may have reconnected, or an
         // installer finished, since the analysis ran.
-        if ( Entries[I].Expanded <> '' ) and TDirectory.Exists( Entries[I].Expanded ) then
+        if ( Entries[ I ].Expanded <> '' ) and TDirectory.Exists( Entries[ I ].Expanded ) then
         begin
-          Entries[I].Drop := False;
-          Entries[I].Exists := True;
+          Entries[ I ].Drop := False;
+          Entries[ I ].Exists := True;
           Inc( Result );
         end;
       end;
@@ -1682,78 +1682,79 @@ end;
 
 function TPathCompactorAnalysis.DropCount: Integer;
 var
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
+  Result            := 0;
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if Entries[I].Drop then
+      if Entries[ I ].Drop then
         Inc( Result );
   end;
 end;
 
 function TPathCompactorAnalysis.DropSummary: TArray<string>;
 var
-  SetIndex, I: Integer;
-  PathSet: TPathSet;
-  Entries: TArray<TPathEntry>;
-  Reason: string;
+  SetIndex, I       : Integer;
+  PathSet           : TPathSet;
+  Entries           : TArray<TPathEntry>;
+  Reason            : string;
 begin
   SetLength( Result, 0 );
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    PathSet := FSets[SetIndex];
-    Entries := PathSet.Entries;
+    PathSet         := FSets[ SetIndex ];
+    Entries         := PathSet.Entries;
     for I := Low( Entries ) to High( Entries ) do
     begin
-      if not Entries[I].Drop then
+      if not Entries[ I ].Drop then
         Continue;
 
-      if Entries[I].UndefinedMacro then
-        Reason := 'undefined macro'
-      else if Entries[I].Duplicate then
-        Reason := 'duplicate'
+      if Entries[ I ].UndefinedMacro then
+        Reason      := 'undefined macro'
+      else if Entries[ I ].Duplicate then
+        Reason      := 'duplicate'
       else
-        Reason := 'directory missing';
+        Reason      := 'directory missing';
 
       SetLength( Result, Length( Result ) + 1 );
-      Result[High( Result )] := Format( '%s / %s  [%s]  %s',
-        [PathSet.PlatformName, PathSet.PathType.ToDisplayName, Reason, Entries[I].Raw] );
+      Result[ High( Result ) ] := Format( '%s / %s  [%s]  %s',
+        [ PathSet.PlatformName, PathSet.PathType.ToDisplayName, Reason, Entries[ I ].Raw ] );
     end;
   end;
 end;
 
 function TPathCompactorAnalysis.DivergentMacroCount: Integer;
 var
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
+  Result            := 0;
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if Entries[I].DivergentMacro then
+      if Entries[ I ].DivergentMacro then
         Inc( Result );
   end;
 end;
 
 function TPathCompactorAnalysis.UndefinedMacroCount: Integer;
 var
-  SetIndex, I: Integer;
-  Entries: TArray<TPathEntry>;
+  SetIndex, I       : Integer;
+  Entries           : TArray<TPathEntry>;
 begin
-  Result := 0;
+  Result            := 0;
   for SetIndex := 0 to FSets.Count - 1 do
   begin
-    Entries := FSets[SetIndex].Entries;
+    Entries         := FSets[ SetIndex ].Entries;
     for I := Low( Entries ) to High( Entries ) do
-      if Entries[I].UndefinedMacro then
+      if Entries[ I ].UndefinedMacro then
         Inc( Result );
   end;
 end;
 
 end.
+

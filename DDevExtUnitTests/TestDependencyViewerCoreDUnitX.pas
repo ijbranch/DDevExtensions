@@ -16,7 +16,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the dependency viewer core.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDependencyViewerCore = class
   private
     /// <summary>Scanner created per test.</summary>
@@ -28,53 +28,53 @@ type
     function DependsOn( const AFrom, ATo: string ): Boolean;
   public
     /// <summary>Creates the scanner.</summary>
-    [Setup]
+    [ Setup ]
     procedure Setup;
     /// <summary>Frees the scanner.</summary>
-    [TearDown]
+    [ TearDown ]
     procedure TearDown;
     /// <summary>Proves the compiler's own symbols count: a unit used under {$IFDEF MSWINDOWS} is a
     /// dependency for Win64, and the {$ELSE} branch is not.</summary>
-    [Test]
+    [ Test ]
     procedure TestPredefinedSymbolsAreDefined;
     /// <summary>Proves {$DEFINE} and {$UNDEF} inside the unit change what follows.</summary>
-    [Test]
+    [ Test ]
     procedure TestDefineAndUndefInTheUnitCount;
     /// <summary>Proves a {$DEFINE} in an {$I} include file counts.</summary>
-    [Test]
+    [ Test ]
     procedure TestIncludeFileDefinesCount;
     /// <summary>Proves {$IFOPT} ... {$ENDIF} does not close the enclosing {$IFDEF}.</summary>
-    [Test]
+    [ Test ]
     procedure TestIfOptKeepsTheConditionalStack;
     /// <summary>Proves a directive written in (*$ ... *) form is honoured like {$ ... }.</summary>
-    [Test]
+    [ Test ]
     procedure TestParenStarDirectiveIsHonoured;
     /// <summary>Proves two units using each other are ONE circular reference, not one per member.</summary>
-    [Test]
+    [ Test ]
     procedure TestEachCycleIsReportedOnce;
     /// <summary>Proves a group of three entangled units is one reference listing all three members.</summary>
-    [Test]
+    [ Test ]
     procedure TestGroupListsEveryMember;
     /// <summary>Proves a rule line matches its layer whatever the case it is written in.</summary>
-    [Test]
+    [ Test ]
     procedure TestRulesAreCaseInsensitive;
     /// <summary>Proves showing the rules in the Layers dialog and pressing OK keeps "no rules = allow
     /// all" for a layer that had no rule line.</summary>
-    [Test]
+    [ Test ]
     procedure TestRulesMatrixRoundTripKeepsAllowAll;
     /// <summary>Proves NOT binds to its own term: "not Defined(A) and Defined(B)" is (not A) and B.</summary>
-    [Test]
+    [ Test ]
     procedure TestNotBindsToItsTerm;
     /// <summary>Proves a comparison without spaces ( CompilerVersion>=36 ) is unknown and included,
     /// in $IF and in $ELSEIF alike, and is never taken for a define name.</summary>
-    [Test]
+    [ Test ]
     procedure TestComparisonIsUnknownAndIncluded;
     /// <summary>Proves both branches of $IFOPT count, the $ELSE as well as the $IFOPT.</summary>
-    [Test]
+    [ Test ]
     procedure TestIfOptElseBranchCounts;
     /// <summary>Proves a fully ticked row is stored as no rule line, and a rule line for a layer the
     /// file never defined survives the dialog.</summary>
-    [Test]
+    [ Test ]
     procedure TestAllTickedRowAndUnknownLayerRule;
   end;
 
@@ -85,7 +85,7 @@ uses
 
 procedure TTestDependencyViewerCore.Setup;
 begin
-  FScanner := TDependencyScanner.Create;
+  FScanner          := TDependencyScanner.Create;
 end;
 
 procedure TTestDependencyViewerCore.TearDown;
@@ -95,8 +95,8 @@ end;
 
 function TTestDependencyViewerCore.DependsOn( const AFrom, ATo: string ): Boolean;
 begin
-  Result := False;
-  var Info := FScanner.GetUnitInfo( AFrom );
+  Result            := False;
+  var Info          := FScanner.GetUnitInfo( AFrom );
   if ( Info = nil ) then
     Exit;
   for var Dep in Info.Dependencies do
@@ -130,9 +130,9 @@ begin
   FScanner.OnReadSource :=
     function( const AFileName: string; out AContent: string ): Boolean
     begin
-      Result := SameText( ExtractFileName( AFileName ), 'Settings.inc' );
+      Result        := SameText( ExtractFileName( AFileName ), 'Settings.inc' );
       if Result then
-        AContent := '{$DEFINE USE_EXTRA}';
+        AContent    := '{$DEFINE USE_EXTRA}';
     end;
   FScanner.ScanSource( 'A', 'C:\Proj\A.pas', 'unit A; {$I Settings.inc} interface uses ' +
     '{$IFDEF USE_EXTRA} Extra, {$ENDIF} Base; implementation end.' );
@@ -171,7 +171,7 @@ begin
   FScanner.ScanSource( 'C', '', 'unit C; interface implementation uses A, B; end.' );
   FScanner.Analyse;
   Assert.AreEqual( 1, FScanner.CircularReferences.Count, 'one entangled group' );
-  var Ref := FScanner.CircularReferences[ 0 ];
+  var Ref           := FScanner.CircularReferences[ 0 ];
   Assert.AreEqual( 3, Length( Ref.Members ) );
   Assert.AreEqual( 'A', Ref.Members[ 0 ] );
   Assert.AreEqual( 'C', Ref.Members[ 2 ] );
@@ -180,10 +180,10 @@ end;
 
 procedure TTestDependencyViewerCore.TestRulesAreCaseInsensitive;
 begin
-  var Config := TLayerConfig.Create( '' );
-  var Lines  := TStringList.Create;
+  var Config        := TLayerConfig.Create( '' );
+  var Lines         := TStringList.Create;
   try
-    Lines.Text := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'Business=*Logic'#13#10 +
+    Lines.Text      := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'Business=*Logic'#13#10 +
       '[Rules]'#13#10'ui=Core';
     Config.LoadFromStrings( Lines );
     Assert.IsTrue( Config.IsDependencyAllowed( 'UI', 'Core' ) );
@@ -196,15 +196,15 @@ end;
 
 procedure TTestDependencyViewerCore.TestRulesMatrixRoundTripKeepsAllowAll;
 begin
-  var Config := TLayerConfig.Create( '' );
-  var Lines  := TStringList.Create;
+  var Config        := TLayerConfig.Create( '' );
+  var Lines         := TStringList.Create;
   try
-    Lines.Text := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'[Rules]'#13#10'Core=';
+    Lines.Text      := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'[Rules]'#13#10'Core=';
     Config.LoadFromStrings( Lines );
     Assert.IsTrue( Config.IsDependencyAllowed( 'UI', 'Core' ), 'no rule line for UI: all allowed' );
 
     var Names: TArray<string> := [ 'UI', 'Core' ];
-    var Matrix := LayerRulesMatrix( Config, Names );
+    var Matrix      := LayerRulesMatrix( Config, Names );
     ApplyLayerRulesMatrix( Config, Names, Matrix );
     Assert.IsTrue( Config.IsDependencyAllowed( 'UI', 'Core' ), 'unchanged dialog, unchanged meaning' );
     Assert.IsFalse( Config.IsDependencyAllowed( 'Core', 'UI' ), 'an explicit empty rule stays empty' );
@@ -242,23 +242,23 @@ end;
 
 procedure TTestDependencyViewerCore.TestAllTickedRowAndUnknownLayerRule;
 begin
-  var Config := TLayerConfig.Create( '' );
-  var Lines  := TStringList.Create;
+  var Config        := TLayerConfig.Create( '' );
+  var Lines         := TStringList.Create;
   try
-    Lines.Text := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'[Rules]'#13#10'UI=Core'#13#10 +
+    Lines.Text      := '[Layers]'#13#10'UI=Frm*'#13#10'Core=*Utils'#13#10'[Rules]'#13#10'UI=Core'#13#10 +
       'Core='#13#10'Ghost=Core';
     Config.LoadFromStrings( Lines );
 
     // What the Layers dialog does on OK: redefine the layers, then store the ticks.
     var Names: TArray<string> := [ 'UI', 'Core' ];
-    var Matrix := LayerRulesMatrix( Config, Names );
+    var Matrix      := LayerRulesMatrix( Config, Names );
     Config.ClearLayers;
     Config.AddLayer( 'UI', [ 'Frm*' ] );
     Config.AddLayer( 'Core', [ '*Utils' ] );
     ApplyLayerRulesMatrix( Config, Names, Matrix );
 
     Config.SaveToStrings( Lines );
-    var iRules := Lines.IndexOf( '[Rules]' );
+    var iRules      := Lines.IndexOf( '[Rules]' );
     Assert.IsTrue( iRules > 0 );
     for var I := iRules + 1 to Lines.Count - 1 do
       Assert.IsFalse( Lines[ I ].StartsWith( 'UI=' ), 'every box ticked: no rule line' );
@@ -275,3 +275,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDependencyViewerCore );
 
 end.
+

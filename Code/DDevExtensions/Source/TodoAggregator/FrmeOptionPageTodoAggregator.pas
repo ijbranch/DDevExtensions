@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -71,7 +71,7 @@ end;
 procedure TFrameOptionPageTodoAggregator.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TTodoAggregatorPlugin;
+  FPlugin           := UserData as TTodoAggregatorPlugin;
 
 end;
 
@@ -79,15 +79,15 @@ procedure TFrameOptionPageTodoAggregator.LoadData;
 begin
 
   chkEnabled.Checked := FPlugin.Enabled;
-  edtPatterns.Text   := FPlugin.Patterns;
+  edtPatterns.Text  := FPlugin.Patterns;
 
 end;
 
 procedure TFrameOptionPageTodoAggregator.SaveData;
 begin
 
-  FPlugin.Enabled  := chkEnabled.Checked;
-  FPlugin.Patterns := Trim( edtPatterns.Text );
+  FPlugin.Enabled   := chkEnabled.Checked;
+  FPlugin.Patterns  := Trim( edtPatterns.Text );
   FPlugin.Save;
 
 end;
@@ -101,3 +101,4 @@ begin
 end;
 
 end.
+

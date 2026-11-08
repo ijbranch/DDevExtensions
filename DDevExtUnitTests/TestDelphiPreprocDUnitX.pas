@@ -19,7 +19,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the preprocessor's conditional branch selection.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestDelphiPreproc = class
   public
     /// <summary>
@@ -27,57 +27,56 @@ type
     /// only the <c>$ELSE</c> branch when it is not; the analysers would otherwise see
     /// code the compiler never compiles.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestIfdef;
     /// <summary>Proves <c>$IFNDEF</c> selects the branches the opposite way round to <c>$IFDEF</c>.</summary>
-    [Test]
+    [ Test ]
     procedure TestIfndef;
     /// <summary>
     /// Proves a nested <c>$IFDEF</c> with an undefined symbol is skipped inside a live
     /// outer block, and that a dead outer block skips everything it contains.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestNestedIfdef;
     /// <summary>
     /// Proves an in-source <c>$DEFINE</c> takes effect for later conditions, a following
     /// <c>$UNDEF</c> reverses it, and the <c>Define</c> / <c>Undefine</c> API is reflected
     /// in the <c>Defines</c> table.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDefineUndef;
     /// <summary>
     /// Proves <c>{$IF ...}</c> may be closed by <c>{$ENDIF}</c> (legal since XE4 and common in
     /// our code): it used to raise "$IFEND expected", which aborted the File Selector's parse.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestIfClosedByEndif;
     /// <summary>
     /// Proves the predefined-symbol table matches the target platform: Win64 gets WIN64, CPUX64 and
     /// MSWINDOWS but not WIN32; Win32 gets WIN32 and CPUX86 but not WIN64.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestPredefinedSymbols;
     /// <summary>
     /// Proves <c>CompareFileName</c> tells different file names apart; it compared two
     /// uninitialised locals and so called every pair of names equal.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestCompareFileName;
     /// <summary>
     /// Proves exactly one branch of an <c>$IF</c> / <c>$ELSEIF</c> / <c>$ELSE</c> chain survives: a
     /// taken <c>$IF</c> skips the <c>$ELSEIF</c> branch (it used to keep it), and a false
     /// <c>$ELSEIF</c> after a false <c>$IF</c> is skipped (it used to be taken without being evaluated).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestElseIfTakesOneBranch;
     /// <summary>
     /// Proves both branches of <c>$IFOPT</c> survive: option states are not tracked, so neither
     /// branch can be dropped (it used to pick one by whether the option letter named a directive).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestIfoptKeepsBothBranches;
   end;
-
 
 implementation
 
@@ -90,22 +89,23 @@ uses
 /// <returns>The surviving <c>tkIdent</c> token values in source order, joined with a space.</returns>
 function SurvivingIdents( const ASource: string; const ADefineName: string ): string;
 begin
-  Result := '';
+  Result            := '';
 
   var oPreprocessor := TDelphiPreprocessor.Create( 'test.pas', UTF8String( ASource ) );
   try
     if ADefineName <> '' then oPreprocessor.Define( ADefineName );
 
-    var iGuard := 0;
+    var iGuard      := 0;
     repeat
-      var oToken := oPreprocessor.GetToken( False );
+    var
+      oToken := oPreprocessor.GetToken( False );
       if oToken = nil then Break;
 
       if oToken.Kind = tkIdent then
       begin
         if Result <> '' then
-          Result := Result + ' ';
-        Result := Result + oToken.Value;
+          Result    := Result + ' ';
+        Result      := Result + oToken.Value;
       end;
 
       Inc( iGuard );
@@ -119,7 +119,7 @@ end;
 
 procedure TTestDelphiPreproc.TestIfdef;
 begin
-  var sSource :=
+  var sSource       :=
     '{$IFDEF FOO}'#13#10 +
     '  Alpha;'#13#10 +
     '{$ELSE}'#13#10 +
@@ -131,7 +131,7 @@ end;
 
 procedure TTestDelphiPreproc.TestIfndef;
 begin
-  var sSource :=
+  var sSource       :=
     '{$IFNDEF BAR}'#13#10 +
     '  NoBar;'#13#10 +
     '{$ELSE}'#13#10 +
@@ -143,7 +143,7 @@ end;
 
 procedure TTestDelphiPreproc.TestNestedIfdef;
 begin
-  var sSource :=
+  var sSource       :=
     '{$IFDEF OUTER}'#13#10 +
     '  Outer;'#13#10 +
     '  {$IFDEF INNER}'#13#10 +
@@ -175,7 +175,7 @@ end;
 
 procedure TTestDelphiPreproc.TestIfClosedByEndif;
 begin
-  var sSource :=
+  var sSource       :=
     '{$IF Defined( FOO )}'#13#10 +
     '  Alpha'#13#10 +
     '{$ELSE}'#13#10 +
@@ -188,7 +188,7 @@ end;
 
 procedure TTestDelphiPreproc.TestPredefinedSymbols;
 begin
-  var aWin64 := PredefinedSymbols( 'Win64' );
+  var aWin64        := PredefinedSymbols( 'Win64' );
   Assert.IsTrue( MatchText( 'WIN64', aWin64 ), 'Win64 defines WIN64' );
   Assert.IsTrue( MatchText( 'CPUX64', aWin64 ), 'Win64 defines CPUX64' );
   Assert.IsTrue( MatchText( 'MSWINDOWS', aWin64 ), 'Win64 defines MSWINDOWS' );
@@ -196,7 +196,7 @@ begin
   Assert.IsTrue( MatchText( 'VER' + IntToStr( Trunc( CompilerVersion * 10 ) ), aWin64 ), 'the compiler''s VERnnn is defined' );
   Assert.IsFalse( MatchText( 'WIN32', aWin64 ), 'Win64 does not define WIN32' );
 
-  var aWin32 := PredefinedSymbols( 'Win32' );
+  var aWin32        := PredefinedSymbols( 'Win32' );
   Assert.IsTrue( MatchText( 'WIN32', aWin32 ), 'Win32 defines WIN32' );
   Assert.IsTrue( MatchText( 'CPUX86', aWin32 ), 'Win32 defines CPUX86' );
   Assert.IsFalse( MatchText( 'WIN64', aWin32 ), 'Win32 does not define WIN64' );
@@ -210,7 +210,7 @@ end;
 
 procedure TTestDelphiPreproc.TestElseIfTakesOneBranch;
 begin
-  var sChain :=
+  var sChain        :=
     '{$IF Defined( %s )}A' +
     '{$ELSEIF Defined( %s )}B' +
     '{$ELSE}C' +
@@ -233,3 +233,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestDelphiPreproc );
 
 end.
+

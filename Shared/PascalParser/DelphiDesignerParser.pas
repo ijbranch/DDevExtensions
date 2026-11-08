@@ -19,7 +19,6 @@ unit DelphiDesignerParser;
 /// TDelphiPreprocessor / TDelphiLexer.
 /// </summary>
 
-
 interface
 
 uses
@@ -32,38 +31,38 @@ type
   /// <summary>Discriminator for the kind of compilation unit (unit/program/library/package).</summary>
   TModuleType = (
     mtUnit, mtProgram, mtLibrary, mtPackage
-  );
+    );
 
   /// <summary>Visibility of a class member (private/protected/public/published with strict variants).</summary>
   TAccessKind = (
     akPrivate, akStrictPrivate, akProtected, akStrictProtected,
     akPublic, akPublished
-  );
+    );
 
   /// <summary>Virtual-table classification for a method (static/virtual/override/abstract/dynamic/message).</summary>
   TVirtualKind = (
     vkStatic, vkVirtual, vkOverride, vkAbstract, vkDynamic, vkMessage
-  );
+    );
 
   /// <summary>Calling convention applied to a method or procedure pointer.</summary>
   TCallConvention = (
     ccRegister, ccStdCall, ccCdecl, ccPascal, ccSafecall
-  );
+    );
 
   /// <summary>Parameter passing modifier (none / var / out / const).</summary>
   TArgModifier = (
     amNone, amVar, amOut, amConst
-  );
+    );
 
   /// <summary>Kind of method being parsed (constructor/destructor/function/procedure).</summary>
   TMethodType = (
     mtConstructor, mtDestructor, mtFunction, mtProcedure
-  );
+    );
 
   /// <summary>Hint that selects how the variable-list parser interprets the current declaration.</summary>
   TVarListMode = (
     vmFunctionArguments, vmFields, vmVariables
-  );
+    );
 
   /// <summary>Source location captured by parser symbols (line, column, filename and absolute index).</summary>
   TLocation = record
@@ -76,7 +75,7 @@ type
   end;
 
   /// <summary>Base class for every parsed symbol; carries a name plus three source locations (start, name, end).</summary>
-  TCodeSymbol = class(TObject)
+  TCodeSymbol = class( TObject )
   private
     /// <summary>Backing field for <see cref="Name"/>.</summary>
     FName: string;
@@ -93,12 +92,12 @@ type
     /// <param name="List">A list whose items are all TCodeSymbol descendants.</param>
     /// <param name="AName">The name to look for.</param>
     /// <returns>The first matching symbol, or nil when none matches.</returns>
-    class function FindSymbol(List: TObjectList; const AName: string): TCodeSymbol;
+    class function FindSymbol( List: TObjectList; const AName: string ): TCodeSymbol;
   public
     /// <summary>Creates a symbol with the given name and name location; its access starts as akPublished.</summary>
     /// <param name="AName">The symbol's name.</param>
     /// <param name="ALocation">The location of the symbol's name in the source.</param>
-    constructor Create(const AName: string; const ALocation: TLocation);
+    constructor Create( const AName: string; const ALocation: TLocation );
 
     /// <summary>Describes the symbol for display and debugging.</summary>
     /// <returns>The symbol's name.</returns>
@@ -117,7 +116,7 @@ type
   end;
 
   /// <summary>Field of a class or record (also used as a base for local variables and method arguments).</summary>
-  TCodeField = class(TCodeSymbol)
+  TCodeField = class( TCodeSymbol )
   private
     /// <summary>Backing field for <see cref="TypeName"/>.</summary>
     FTypeName: string;
@@ -129,7 +128,7 @@ type
     /// name of the group receives the type afterwards.
     /// </summary>
     /// <param name="ATypeName">The reformatted type name.</param>
-    procedure SetTypeNameLater(const ATypeName: string);
+    procedure SetTypeNameLater( const ATypeName: string );
   public
     /// <summary>Describes the field for display and debugging.</summary>
     /// <returns>The field in the form <c>Name: TypeName</c>.</returns>
@@ -142,7 +141,7 @@ type
   end;
 
   /// <summary>Class property declaration with getter/setter/storage information.</summary>
-  TCodeProperty = class(TCodeSymbol)
+  TCodeProperty = class( TCodeSymbol )
   private
     /// <summary>Backing field for <see cref="TypeName"/>.</summary>
     FTypeName: string;
@@ -202,11 +201,11 @@ type
   end;
 
   /// <summary>Local variable inside a procedure or function: a TCodeField descendant that adds nothing, kept as its own class for clarity.</summary>
-  TCodeLocalVariable = class(TCodeField)
+  TCodeLocalVariable = class( TCodeField )
   end;
 
   /// <summary>Argument of a method, including the parameter modifier (var/out/const/none).</summary>
-  TCodeMethodArg = class(TCodeField)
+  TCodeMethodArg = class( TCodeField )
   private
     /// <summary>Backing field for <see cref="Modifier"/>.</summary>
     FModifier: TArgModifier;
@@ -224,7 +223,7 @@ type
   /// implementation body so callers can navigate between them and find safe insertion locations
   /// for new local variables or generated code.
   /// </summary>
-  TCodeMethod = class(TCodeSymbol)
+  TCodeMethod = class( TCodeSymbol )
   private
     /// <summary>Owns the parameters (TCodeMethodArg) in declaration order; backs <see cref="Args"/>.</summary>
     FArgs: TObjectList;
@@ -263,21 +262,21 @@ type
     /// <summary>Read accessor for <see cref="Args"/>.</summary>
     /// <param name="Index">The 0-based parameter index.</param>
     /// <returns>The parameter at Index.</returns>
-    function GetArg(Index: Integer): TCodeMethodArg;
+    function GetArg( Index: Integer ): TCodeMethodArg;
     /// <summary>Read accessor for <see cref="ArgCount"/>.</summary>
     /// <returns>The number of parameters.</returns>
     function GetArgCount: Integer;
     /// <summary>Read accessor for <see cref="LocalVariables"/>.</summary>
     /// <param name="Index">The 0-based local-variable index.</param>
     /// <returns>The local variable at Index.</returns>
-    function GetLocalVariable(Index: Integer): TCodeLocalVariable;
+    function GetLocalVariable( Index: Integer ): TCodeLocalVariable;
     /// <summary>Read accessor for <see cref="LocalVariableCount"/>.</summary>
     /// <returns>The number of local variables.</returns>
     function GetLocalVariableCount: Integer;
     /// <summary>Read accessor for <see cref="LocalProcss"/>.</summary>
     /// <param name="Index">The 0-based local-procedure index.</param>
     /// <returns>The local procedure at Index.</returns>
-    function GetLocalProc(Index: Integer): TCodeMethod;
+    function GetLocalProc( Index: Integer ): TCodeMethod;
     /// <summary>Read accessor for <see cref="LocalProcCount"/>.</summary>
     /// <returns>The number of local procedures.</returns>
     function GetLocalProcCount: Integer;
@@ -285,20 +284,20 @@ type
     /// <summary>Appends a parameter; the method takes ownership of it.</summary>
     /// <param name="Item">The parameter to add.</param>
     /// <returns>The index of the added parameter.</returns>
-    function AddArg(Item: TCodeMethodArg): Integer;
+    function AddArg( Item: TCodeMethodArg ): Integer;
     /// <summary>Appends a local variable; the method takes ownership of it.</summary>
     /// <param name="Item">The local variable to add.</param>
     /// <returns>The index of the added local variable.</returns>
-    function AddLocalVariable(Item: TCodeLocalVariable): Integer;
+    function AddLocalVariable( Item: TCodeLocalVariable ): Integer;
     /// <summary>Appends a nested procedure or function; the method takes ownership of it.</summary>
     /// <param name="Item">The local procedure to add.</param>
     /// <returns>The index of the added local procedure.</returns>
-    function AddLocalProc(Item: TCodeMethod): Integer;
+    function AddLocalProc( Item: TCodeMethod ): Integer;
   public
     /// <summary>Creates a method with empty parameter, local-variable and local-procedure lists.</summary>
     /// <param name="AName">The method's name (without the class qualifier).</param>
     /// <param name="ALocation">The location of the method's name in its declaration (EmptyLocation when only the implementation was found).</param>
-    constructor Create(const AName: string; const ALocation: TLocation);
+    constructor Create( const AName: string; const ALocation: TLocation );
     /// <summary>Frees the method together with its parameters, local variables and local procedures.</summary>
     destructor Destroy; override;
 
@@ -309,7 +308,7 @@ type
     /// <summary>Finds a parameter by name, ignoring case.</summary>
     /// <param name="AName">The parameter name to look for.</param>
     /// <returns>The matching parameter, or nil if no parameter has that name.</returns>
-    function FindArg(const AName: string): TCodeMethodArg;
+    function FindArg( const AName: string ): TCodeMethodArg;
 
     /// <summary>
     /// Tells whether M has the same signature: method type, calling convention, class/static flags, return type and the
@@ -317,7 +316,7 @@ type
     /// </summary>
     /// <param name="M">The method to compare with; nil is never compatible, Self always is.</param>
     /// <returns>True if both methods have the same signature.</returns>
-    function IsCompatible(M: TCodeMethod): Boolean;
+    function IsCompatible( M: TCodeMethod ): Boolean;
 
     /// <summary>The location of the method's name in its implementation.</summary>
     property ImplLocation: TLocation read FImplLocation;
@@ -355,26 +354,26 @@ type
     property ArgCount: Integer read GetArgCount;
     /// <summary>The parameters, in declaration order.</summary>
     /// <param name="Index">The 0-based parameter index.</param>
-    property Args[Index: Integer]: TCodeMethodArg read GetArg;
+    property Args[ Index: Integer ]: TCodeMethodArg read GetArg;
 
     /// <summary>The number of local variables in the implementation.</summary>
     property LocalVariableCount: Integer read GetLocalVariableCount;
     /// <summary>The local variables declared in the implementation's VAR sections.</summary>
     /// <param name="Index">The 0-based local-variable index.</param>
-    property LocalVariables[Index: Integer]: TCodeLocalVariable read GetLocalVariable;
+    property LocalVariables[ Index: Integer ]: TCodeLocalVariable read GetLocalVariable;
 
     /// <summary>The number of local (nested) procedures in the implementation.</summary>
     property LocalProcCount: Integer read GetLocalProcCount;
     /// <summary>The local (nested) procedures and functions of the implementation.</summary>
     /// <param name="Index">The 0-based local-procedure index.</param>
-    property LocalProcss[Index: Integer]: TCodeMethod read GetLocalProc;
+    property LocalProcss[ Index: Integer ]: TCodeMethod read GetLocalProc;
   end;
 
   /// <summary>Class declaration: base class, supported interfaces, fields, properties and methods.</summary>
-  TCodeClass = class(TCodeSymbol)
+  TCodeClass = class( TCodeSymbol )
   private
     /// <summary>Backing field for <see cref="AccessInsert"/>; an entry with an empty Filename has not been recorded.</summary>
-    FAccessInsert: array[TAccessKind] of TLocation;
+    FAccessInsert: array[ TAccessKind ] of TLocation;
     /// <summary>Backing field for <see cref="BaseClass"/>.</summary>
     FBaseClass: string;
     /// <summary>Backing field for <see cref="IsUnitPrivate"/>.</summary>
@@ -395,15 +394,15 @@ type
     /// <summary>Read accessor for <see cref="Interfaces"/>.</summary>
     /// <param name="Index">The 0-based interface index.</param>
     /// <returns>The interface name at Index.</returns>
-    function GetInterfaceItem(Index: Integer): string;
+    function GetInterfaceItem( Index: Integer ): string;
     /// <summary>Read accessor for <see cref="AccessInsert"/>.</summary>
     /// <param name="Access">The visibility section.</param>
     /// <returns>The recorded insert location for that section, or a location with an empty Filename if none was recorded.</returns>
-    function GetAccessInsert(Access: TAccessKind): TLocation;
+    function GetAccessInsert( Access: TAccessKind ): TLocation;
     /// <summary>Read accessor for <see cref="Fields"/>.</summary>
     /// <param name="Index">The 0-based field index.</param>
     /// <returns>The field at Index.</returns>
-    function GetField(Index: Integer): TCodeField;
+    function GetField( Index: Integer ): TCodeField;
     /// <summary>Read accessor for <see cref="FieldCount"/>.</summary>
     /// <returns>The number of fields.</returns>
     function GetFieldCount: Integer;
@@ -413,11 +412,11 @@ type
     /// <summary>Read accessor for <see cref="Methods"/>.</summary>
     /// <param name="Index">The 0-based method index.</param>
     /// <returns>The method at Index.</returns>
-    function GetMethodItem(Index: Integer): TCodeMethod;
+    function GetMethodItem( Index: Integer ): TCodeMethod;
     /// <summary>Read accessor for <see cref="Properties"/>.</summary>
     /// <param name="Index">The 0-based property index.</param>
     /// <returns>The property at Index.</returns>
-    function GetProperty(Index: Integer): TCodeProperty;
+    function GetProperty( Index: Integer ): TCodeProperty;
     /// <summary>Read accessor for <see cref="PropertyCount"/>.</summary>
     /// <returns>The number of properties.</returns>
     function GetPropertyCount: Integer;
@@ -425,50 +424,50 @@ type
     /// <summary>Records the name of a directly implemented interface.</summary>
     /// <param name="Item">The interface name.</param>
     /// <returns>The index of the added name.</returns>
-    function AddInterface(const Item: string): Integer;
+    function AddInterface( const Item: string ): Integer;
     /// <summary>Appends a field; the class takes ownership of it.</summary>
     /// <param name="Item">The field to add.</param>
     /// <returns>The index of the added field.</returns>
-    function AddField(Item: TCodeField): Integer;
+    function AddField( Item: TCodeField ): Integer;
     /// <summary>Appends a property; the class takes ownership of it.</summary>
     /// <param name="Item">The property to add.</param>
     /// <returns>The index of the added property.</returns>
-    function AddProperty(Item: TCodeProperty): Integer;
+    function AddProperty( Item: TCodeProperty ): Integer;
     /// <summary>Appends a method; the class takes ownership of it.</summary>
     /// <param name="Item">The method to add.</param>
     /// <returns>The index of the added method.</returns>
-    function AddMethod(Item: TCodeMethod): Integer;
+    function AddMethod( Item: TCodeMethod ): Integer;
   public
     /// <summary>Creates a class symbol with empty interface, field, property and method lists.</summary>
     /// <param name="AName">The class's name.</param>
     /// <param name="ALocation">The location of the class's name in its declaration.</param>
-    constructor Create(const AName: string; const ALocation: TLocation);
+    constructor Create( const AName: string; const ALocation: TLocation );
     /// <summary>Frees the class together with its interface names, fields, properties and methods.</summary>
     destructor Destroy; override;
 
     /// <summary>Tells whether the class lists the interface directly in its declaration (inherited ones are not seen).</summary>
     /// <param name="AName">The interface name, as written in the class declaration.</param>
     /// <returns>True if the class implements the interface directly.</returns>
-    function SupportsInterface(const AName: string): Boolean;
+    function SupportsInterface( const AName: string ): Boolean;
     /// <summary>Finds a property by name, ignoring case.</summary>
     /// <param name="AName">The property name.</param>
     /// <returns>The matching property, or nil if none was found.</returns>
-    function FindProperty(const AName: string): TCodeProperty;
+    function FindProperty( const AName: string ): TCodeProperty;
     /// <summary>Finds a field by name, ignoring case.</summary>
     /// <param name="AName">The field name.</param>
     /// <returns>The matching field, or nil if none was found.</returns>
-    function FindField(const AName: string): TCodeField;
+    function FindField( const AName: string ): TCodeField;
     /// <summary>Finds the first method with the given name, ignoring case (overloads are not told apart).</summary>
     /// <param name="AName">The method name.</param>
     /// <returns>The first matching method, or nil if none was found.</returns>
-    function FindMethod(const AName: string): TCodeMethod;
+    function FindMethod( const AName: string ): TCodeMethod;
 
     /// <summary>
     /// The location where members of the given visibility section can be inserted: the token at which the first section of
     /// that kind ends (the next visibility keyword).  Its Filename is empty if no such section ended there.
     /// </summary>
     /// <param name="Access">The visibility section (private, public, ...).</param>
-    property AccessInsert[Access: TAccessKind]: TLocation read GetAccessInsert;
+    property AccessInsert[ Access: TAccessKind ]: TLocation read GetAccessInsert;
 
     /// <summary>The name of the base class; TObject when the declaration names none.</summary>
     property BaseClass: string read FBaseClass;
@@ -479,36 +478,36 @@ type
     property InterfaceCount: Integer read GetInterfaceCount;
     /// <summary>The names of the directly implemented interfaces, in declaration order.</summary>
     /// <param name="Index">The 0-based interface index.</param>
-    property Interfaces[Index: Integer]: string read GetInterfaceItem;
+    property Interfaces[ Index: Integer ]: string read GetInterfaceItem;
 
     /// <summary>The number of member methods.</summary>
     property MethodCount: Integer read GetMethodCount;
     /// <summary>The member methods (declared, plus implemented ones with no matching declaration).</summary>
     /// <param name="Index">The 0-based method index.</param>
-    property Methods[Index: Integer]: TCodeMethod read GetMethodItem;
+    property Methods[ Index: Integer ]: TCodeMethod read GetMethodItem;
 
     /// <summary>The number of member properties.</summary>
     property PropertyCount: Integer read GetPropertyCount;
     /// <summary>The member properties, in declaration order.</summary>
     /// <param name="Index">The 0-based property index.</param>
-    property Properties[Index: Integer]: TCodeProperty read GetProperty;
+    property Properties[ Index: Integer ]: TCodeProperty read GetProperty;
 
     /// <summary>The number of member fields.</summary>
     property FieldCount: Integer read GetFieldCount;
     /// <summary>The member fields, in declaration order.</summary>
     /// <param name="Index">The 0-based field index.</param>
-    property Fields[Index: Integer]: TCodeField read GetField;
+    property Fields[ Index: Integer ]: TCodeField read GetField;
   end;
 
   /// <summary>Owned collection of TCodeClass instances with name-based look-up.</summary>
-  TCodeClassList = class(TObject)
+  TCodeClassList = class( TObject )
   private
     /// <summary>Owns the classes (TCodeClass); backs <see cref="Items"/>.</summary>
     FItems: TObjectList;
     /// <summary>Read accessor for <see cref="Items"/>.</summary>
     /// <param name="Index">The 0-based class index.</param>
     /// <returns>The class at Index.</returns>
-    function GetItem(Index: Integer): TCodeClass;
+    function GetItem( Index: Integer ): TCodeClass;
     /// <summary>Read accessor for <see cref="Count"/>.</summary>
     /// <returns>The number of classes.</returns>
     function GetCount: Integer;
@@ -518,7 +517,7 @@ type
     /// <summary>Appends a class; the list takes ownership of it.</summary>
     /// <param name="Item">The class to add.</param>
     /// <returns>The index of the added class.</returns>
-    function Add(Item: TCodeClass): Integer;
+    function Add( Item: TCodeClass ): Integer;
   public
     /// <summary>Creates an empty class list.</summary>
     constructor Create;
@@ -528,17 +527,17 @@ type
     /// <summary>Finds a class by name, ignoring case.</summary>
     /// <param name="ClassName">The class name.</param>
     /// <returns>The first matching class, or nil if the class was not found.</returns>
-    function Find(const ClassName: string): TCodeClass;
+    function Find( const ClassName: string ): TCodeClass;
 
     /// <summary>The number of classes.</summary>
     property Count: Integer read GetCount;
     /// <summary>The classes, in the order the parser found them.</summary>
     /// <param name="Index">The 0-based class index.</param>
-    property Items[Index: Integer]: TCodeClass read GetItem; default;
+    property Items[ Index: Integer ]: TCodeClass read GetItem; default;
   end;
 
   /// <summary>Single entry in a uses/contains/requires clause: unit name plus an optional "in 'file.pas'" filename.</summary>
-  TUsesItem = class(TCodeSymbol)
+  TUsesItem = class( TCodeSymbol )
   private
     /// <summary>Backing field for <see cref="Filename"/>.</summary>
     FFilename: string;
@@ -547,7 +546,7 @@ type
     /// <param name="AName">The (possibly dotted) unit name.</param>
     /// <param name="AFilename">The filename given with IN, unquoted, or '' if none was given.</param>
     /// <param name="ALocation">The location of the unit name.</param>
-    constructor Create(const AName, AFilename: string; const ALocation: TLocation);
+    constructor Create( const AName, AFilename: string; const ALocation: TLocation );
 
     /// <summary>The included unit name (dotted names are kept whole).</summary>
     property Name;
@@ -557,7 +556,7 @@ type
   end;
 
   /// <summary>Collection of TUsesItem entries that also captures the source location of the surrounding clause.</summary>
-  TUsesList = class(TObject)
+  TUsesList = class( TObject )
   private
     /// <summary>Owns the entries (TUsesItem); backs <see cref="Items"/>.</summary>
     FItems: TObjectList;
@@ -571,14 +570,14 @@ type
     /// <summary>Read accessor for <see cref="Items"/>.</summary>
     /// <param name="Index">The 0-based entry index.</param>
     /// <returns>The entry at Index.</returns>
-    function GetItem(Index: Integer): TUsesItem;
+    function GetItem( Index: Integer ): TUsesItem;
   protected
     /// <summary>Removes and frees every entry; the locations are left as they are.</summary>
     procedure Clear;
     /// <summary>Appends an entry; the list takes ownership of it.</summary>
     /// <param name="Item">The entry to add.</param>
     /// <returns>The index of the added entry.</returns>
-    function AddUses(Item: TUsesItem): Integer;
+    function AddUses( Item: TUsesItem ): Integer;
   public
     /// <summary>Creates an empty uses list.</summary>
     constructor Create;
@@ -588,17 +587,17 @@ type
     /// <summary>Finds an entry by unit name, ignoring case.</summary>
     /// <param name="AName">The unit name.</param>
     /// <returns>The first matching entry, or nil if no matching USES-item was found.</returns>
-    function FindUses(const AName: string): TUsesItem;
+    function FindUses( const AName: string ): TUsesItem;
     /// <summary>Finds the position of an entry object in the list.</summary>
     /// <param name="AItem">The entry to look for (compared by reference).</param>
     /// <returns>The 0-based index of AItem, or -1 if it is not in the list.</returns>
-    function IndexOf(AItem: TUsesItem): Integer;
+    function IndexOf( AItem: TUsesItem ): Integer;
 
     /// <summary>The number of entries.</summary>
     property Count: Integer read GetCount;
     /// <summary>The entries, in clause order.</summary>
     /// <param name="Index">The 0-based entry index.</param>
-    property Items[Index: Integer]: TUsesItem read GetItem; default;
+    property Items[ Index: Integer ]: TUsesItem read GetItem; default;
 
     /// <summary>The location of the USES (or REQUIRES / CONTAINS) keyword.</summary>
     property Location: TLocation read FLocation;
@@ -611,7 +610,7 @@ type
   /// the form designer (unit/program/library/package, uses, class, property, function, ...) and
   /// captures sufficient location data to navigate, refactor and generate code.
   /// </summary>
-  TDesignerParser = class(TObject)
+  TDesignerParser = class( TObject )
   private
     /// <summary>The token source while a parse runs; created by ParseHead and freed (set to nil) when the parse ends or fails.</summary>
     p: TDelphiPreprocessor;
@@ -660,19 +659,19 @@ type
     /// </summary>
     /// <param name="Sender">The TDelphiPreprocessor that met the include directive.</param>
     /// <param name="Name">The include file name as written, possibly quoted.</param>
-    procedure IncludeFile(Sender: TObject; const Name: string);
+    procedure IncludeFile( Sender: TObject; const Name: string );
     /// <summary>Finds the include file LName (beside the current file, then in IncludeDirs) and hands its text to Preprocessor.</summary>
     /// <param name="Preprocessor">The preprocessor that met the include directive.</param>
     /// <param name="LName">The include file name, unquoted.</param>
     /// <exception cref="EFOpenError">Raised when the file exists but cannot be opened.</exception>
-    procedure IncludeFoundFile(Preprocessor: TDelphiPreprocessor; const LName: string);
+    procedure IncludeFoundFile( Preprocessor: TDelphiPreprocessor; const LName: string );
     /// <summary>
     /// OnDirective handler: records every <c>{$R ...}</c> resource in <see cref="Resources"/>, and a form resource
     /// (<c>*.dfm</c>, <c>*.fmx</c>, <c>*.nfm</c>, <c>*.xfm</c>, <c>*.lfm</c>) also in <see cref="FormResource"/>.
     /// </summary>
     /// <param name="Sender">The preprocessor that met the directive.</param>
     /// <param name="Token">The directive's comment token, braces or <c>(* *)</c> included.</param>
-    procedure Directive(Sender: TObject; Token: TToken);
+    procedure Directive( Sender: TObject; Token: TToken );
     /// <summary>
     /// OnGetDeclared handler for <c>Declared()</c>: a name counts as declared when it is a unit in either uses clause, a
     /// class or a stand-alone routine found so far.
@@ -680,18 +679,18 @@ type
     /// <param name="Sender">The preprocessor that evaluates the expression.</param>
     /// <param name="Name">The identifier passed to <c>Declared()</c>.</param>
     /// <param name="Value">Receives True if the name is declared.</param>
-    procedure GetDeclared(Sender: TObject; const Name: string; var Value: Boolean);
+    procedure GetDeclared( Sender: TObject; const Name: string; var Value: Boolean );
     /// <summary>OnGetConstValue handler: supplies <c>CompilerVersion</c> as a float; any other name is left unchanged.</summary>
     /// <param name="Sender">The preprocessor that evaluates the expression.</param>
     /// <param name="Name">The constant's name.</param>
     /// <param name="Kind">Receives tkFloat for <c>CompilerVersion</c>.</param>
     /// <param name="Value">Receives the compiler version, e.g. <c>37.0</c>, for <c>CompilerVersion</c>.</param>
-    procedure GetConstValue(Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string);
+    procedure GetConstValue( Sender: TObject; const Name: string; var Kind: TTokenKind; var Value: string );
     /// <summary>OnGetConstBoolValue handler: does nothing, so Value keeps whatever the preprocessor passed in.</summary>
     /// <param name="Sender">The preprocessor that evaluates the expression.</param>
     /// <param name="Name">The constant's name.</param>
     /// <param name="Value">Left unchanged.</param>
-    procedure GetConstBoolValue(Sender: TObject; const Name: string; var Value: Boolean);
+    procedure GetConstBoolValue( Sender: TObject; const Name: string; var Value: Boolean );
 
     /// <summary>
     /// Resets every result (uses lists, resources, include files, classes, functions, module name and type, locations,
@@ -724,7 +723,7 @@ type
     /// </summary>
     /// <param name="Empty">Receives True if the block contains no tokens between BEGIN and END.</param>
     /// <returns>The location of the first token after BEGIN.</returns>
-    function IgnoreBlock(out Empty: Boolean): TLocation;
+    function IgnoreBlock( out Empty: Boolean ): TLocation;
     /// <summary>
     /// Skips a nested TYPE or CONST section in a class up to the next visibility keyword or END.  At the end of the text it
     /// aborts the parse through <see cref="NextA"/>.
@@ -748,17 +747,17 @@ type
     /// <param name="C">The class being parsed.</param>
     /// <param name="Access">The visibility section the declaration is in.</param>
     /// <param name="IsClass">True if the declaration is preceded by CLASS.</param>
-    procedure ParseMethodDecl(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    procedure ParseMethodDecl( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
     /// <summary>Parses a property declaration (type, accessors, STORED, DEFAULT/NODEFAULT) and adds it to the class's properties.</summary>
     /// <param name="C">The class being parsed.</param>
     /// <param name="Access">The visibility section the declaration is in.</param>
     /// <param name="IsClass">True if the declaration is preceded by CLASS.</param>
-    procedure ParseProperty(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    procedure ParseProperty( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
     /// <summary>Parses a field declaration (one or more comma-separated names) and adds the fields to the class.</summary>
     /// <param name="C">The class being parsed.</param>
     /// <param name="Access">The visibility section the declaration is in.</param>
     /// <param name="IsClass">True for a class variable.</param>
-    procedure ParseField(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+    procedure ParseField( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
     /// <summary>
     /// Reads a type expression and reformats it as a string: a qualified name, <c>array[...] of ...</c>,
     /// <c>set of ...</c>; record, object and procedural types are skipped.  An unreadable type gives
@@ -766,13 +765,13 @@ type
     /// </summary>
     /// <param name="Stop">The tokens that end the type; passed on to the element type of an array.</param>
     /// <returns>The reformatted type name.</returns>
-    function ParseTypeName(const Stop: TTokenKindSet): string;
+    function ParseTypeName( const Stop: TTokenKindSet ): string;
     /// <summary>Parses a parenthesised parameter list into M's parameters.</summary>
     /// <param name="M">The method that receives the parameters, or nil to skip the list.</param>
-    procedure ParseFunctionArgs(M: TCodeMethod);
+    procedure ParseFunctionArgs( M: TCodeMethod );
     /// <summary>Parses a USES, REQUIRES or CONTAINS clause from its keyword up to the closing semicolon.</summary>
     /// <param name="List">Receives the entries and the clause's locations.</param>
-    procedure ParseUses(List: TUsesList);
+    procedure ParseUses( List: TUsesList );
     /// <summary>
     /// Parses a routine heading met outside a class declaration, matches it with the declared method (or earlier stand-alone
     /// routine) of the same signature and records its implementation: locations, local variables, nested routines and the
@@ -780,13 +779,13 @@ type
     /// implementation section is added to <see cref="Functions"/>.  Procedural types and variables are skipped.
     /// </summary>
     /// <param name="AParent">The routine this one is nested in, or nil for a top-level routine.</param>
-    procedure ParseFunctionImpl(AParent: TCodeMethod);
+    procedure ParseFunctionImpl( AParent: TCodeMethod );
     /// <summary>
     /// Reads the directives after a routine heading (STATIC, VIRTUAL, OVERRIDE, ..., calling conventions, EXTERNAL) into M,
     /// stopping at the first token that is not a directive.
     /// </summary>
     /// <param name="M">The method that receives the directives.</param>
-    procedure ParseDirectives(M: TCodeMethod);
+    procedure ParseDirectives( M: TCodeMethod );
     /// <summary>
     /// Parses a list of <c>Name[, Name]: Type;</c> declarations, as parameters, class fields or local variables.
     /// </summary>
@@ -794,22 +793,22 @@ type
     /// Receives a TCodeMethodArg (parameters) or TCodeField (otherwise) per name, or nil to only skip the declarations.
     /// </param>
     /// <param name="Mode">What is being parsed, which decides the item class and the tokens that end the list.</param>
-    procedure ParseVariableList(List: TObjectList; Mode: TVarListMode);
+    procedure ParseVariableList( List: TObjectList; Mode: TVarListMode );
     /// <summary>Parses the declarations of a VAR section into List (vmVariables mode).</summary>
     /// <param name="List">Receives a TCodeField per declared name.</param>
-    procedure ParseVariableDecl(List: TObjectList);
+    procedure ParseVariableDecl( List: TObjectList );
 
     /// <summary>Read accessor for <see cref="Resources"/>.</summary>
     /// <param name="Index">The 0-based resource index.</param>
     /// <returns>The resource name at Index.</returns>
-    function GetResource(Index: Integer): string;
+    function GetResource( Index: Integer ): string;
     /// <summary>Read accessor for <see cref="ResourceCount"/>.</summary>
     /// <returns>The number of resources.</returns>
     function GetResourceCount: Integer;
     /// <summary>Read accessor for <see cref="IncludeFiles"/>.</summary>
     /// <param name="Index">The 0-based include-file index.</param>
     /// <returns>The include file name at Index.</returns>
-    function GetIncludeFiles(Index: Integer): string;
+    function GetIncludeFiles( Index: Integer ): string;
     /// <summary>Read accessor for <see cref="IncludeFileCount"/>.</summary>
     /// <returns>The number of include files.</returns>
     function GetIncludeFileCount: Integer;
@@ -820,11 +819,11 @@ type
     /// <summary>Read accessor for <see cref="Functions"/>.</summary>
     /// <param name="Index">The 0-based routine index.</param>
     /// <returns>The routine at Index.</returns>
-    function GetFunctionItem(Index: Integer): TCodeMethod;
+    function GetFunctionItem( Index: Integer ): TCodeMethod;
     /// <summary>Appends a stand-alone routine; the parser takes ownership of it.</summary>
     /// <param name="Item">The routine to add.</param>
     /// <returns>The index of the added routine.</returns>
-    function AddFunction(Item: TCodeMethod): Integer;
+    function AddFunction( Item: TCodeMethod ): Integer;
     /// <summary>Reads a dotted name (<c>A.B.C</c>) from the current token on.</summary>
     /// <returns>The qualified name; '' if the current token is not an identifier.</returns>
     function ParseQualifiedName: string;
@@ -841,12 +840,12 @@ type
     /// bitness, Win64 or Win32, since the project's target is not known.  Override to add more.
     /// </summary>
     /// <param name="Parser">The preprocessor that will run over the source.</param>
-    procedure InitDefines(Parser: TDelphiPreprocessor); virtual;
+    procedure InitDefines( Parser: TDelphiPreprocessor ); virtual;
   public
     /// <summary>Creates a parser for the given source; nothing is parsed until <see cref="Parse"/> or <see cref="ParseUsesOnly"/>.</summary>
     /// <param name="AFilename">The source's file name, used to locate include files and reported in token locations.</param>
     /// <param name="AText">The source text to parse.</param>
-    constructor Create(const AFilename: string; const AText: UTF8String);
+    constructor Create( const AFilename: string; const AText: UTF8String );
     /// <summary>Frees the parser and every result it holds (classes, routines, uses lists).</summary>
     destructor Destroy; override;
 
@@ -889,13 +888,13 @@ type
     property ResourceCount: Integer read GetResourceCount;
     /// <summary>The resource file names (or <c>*.xxx</c>) included with $R.  The FormResource is also in this list.</summary>
     /// <param name="Index">The 0-based resource index.</param>
-    property Resources[Index: Integer]: string read GetResource;
+    property Resources[ Index: Integer ]: string read GetResource;
 
     /// <summary>The number of files included with $I / $INCLUDE.</summary>
     property IncludeFileCount: Integer read GetIncludeFileCount;
     /// <summary>The names of the files included with $I / $INCLUDE, unquoted, as written in the directive.</summary>
     /// <param name="Index">The 0-based include-file index.</param>
-    property IncludeFiles[Index: Integer]: string read GetIncludeFiles;
+    property IncludeFiles[ Index: Integer ]: string read GetIncludeFiles;
 
     /// <summary>
     /// Every unit name (and filename, if given) of the first USES clause: the interface uses of a unit, or the uses of a
@@ -912,12 +911,12 @@ type
     /// <summary>Finds a stand-alone routine of the implementation section by name, ignoring case.</summary>
     /// <param name="AName">The routine's name.</param>
     /// <returns>The first matching routine, or nil if none was found.</returns>
-    function FindFunction(const AName: string): TCodeMethod;
+    function FindFunction( const AName: string ): TCodeMethod;
     /// <summary>The number of stand-alone routines found in the implementation section.</summary>
     property FunctionCount: Integer read GetFunctionCount;
     /// <summary>The stand-alone (non-method) routines found in the implementation section.</summary>
     /// <param name="Index">The 0-based routine index.</param>
-    property Functions[Index: Integer]: TCodeMethod read GetFunctionItem;
+    property Functions[ Index: Integer ]: TCodeMethod read GetFunctionItem;
 
     /// <summary>The location of the INTERFACE keyword; EmptyLocation if there is none.</summary>
     property InterfaceLocation: TLocation read FInterfaceLocation;
@@ -932,7 +931,7 @@ type
 
 const
   /// <summary>Sentinel TLocation value used to indicate "no location".</summary>
-  EmptyLocation: TLocation = (Line: 0; Column: 0; Filename: '');
+  EmptyLocation     : TLocation = ( Line: 0; Column: 0; Filename: '' );
 
 implementation
 
@@ -940,88 +939,87 @@ uses
   System.StrUtils;
 
 const
-  ClassAvailableTokens = [tkIdent..tkIdentStrictReserved] -
-    [tkI_public, tkI_private, tkI_protected, tkI_strict, tkI_published,
-     tkI_end, tkI_class, tkI_var,  tkI_const, tkI_out, tkI_property,
-     tkI_implementation];
+  ClassAvailableTokens = [ tkIdent..tkIdentStrictReserved ] -
+  [ tkI_public, tkI_private, tkI_protected, tkI_strict, tkI_published,
+    tkI_end, tkI_class, tkI_var, tkI_const, tkI_out, tkI_property,
+    tkI_implementation ];
 
-  SectionEndTokens = [tkIdentStrictReserved..tkLast];
-  ClassSectionEndTokens = SectionEndTokens + [tkI_strict];
-  ArgModifierTokens = [tkI_var, tkI_out, tkI_const];
+  SectionEndTokens  = [ tkIdentStrictReserved..tkLast ];
+  ClassSectionEndTokens = SectionEndTokens + [ tkI_strict ];
+  ArgModifierTokens = [ tkI_var, tkI_out, tkI_const ];
 
-  PropertyTokens = [tkI_read, tkI_write, tkI_add, tkI_remove, tkI_stored, tkI_default];
+  PropertyTokens    = [ tkI_read, tkI_write, tkI_add, tkI_remove, tkI_stored, tkI_default ];
 
-function TokenToLocation(Token: TToken): TLocation;
+function TokenToLocation( Token: TToken ): TLocation;
 begin
-  Result.Line := Token.Line;
-  Result.Column := Token.Column;
-  Result.Filename := Token.Filename;
-  Result.Index := Token.Index;
+  Result.Line       := Token.Line;
+  Result.Column     := Token.Column;
+  Result.Filename   := Token.Filename;
+  Result.Index      := Token.Index;
 end;
 
 { TCodeSymbol }
 
-constructor TCodeSymbol.Create(const AName: string; const ALocation: TLocation);
+constructor TCodeSymbol.Create( const AName: string; const ALocation: TLocation );
 begin
   inherited Create;
-  FName := AName;
-  FLocation := ALocation;
-  FAccess := akPublished;
+  FName             := AName;
+  FLocation         := ALocation;
+  FAccess           := akPublished;
 end;
 
-class function TCodeSymbol.FindSymbol(List: TObjectList; const AName: string): TCodeSymbol;
+class function TCodeSymbol.FindSymbol( List: TObjectList; const AName: string ): TCodeSymbol;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to List.Count - 1 do
   begin
-    Result := TCodeSymbol(List[i]);
-    if SameText(Result.Name, AName) then
+    Result          := TCodeSymbol( List[ i ] );
+    if SameText( Result.Name, AName ) then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
 function TCodeSymbol.ToString: string;
 begin
-  Result := FName;
+  Result            := FName;
 end;
 
 { TCodeField }
 
-procedure TCodeField.SetTypeNameLater(const ATypeName: string);
+procedure TCodeField.SetTypeNameLater( const ATypeName: string );
 begin
-  FTypeName := ATypeName;
+  FTypeName         := ATypeName;
 end;
 
 function TCodeField.ToString: string;
 begin
-  Result := Name + ': ' + TypeName;
+  Result            := Name + ': ' + TypeName;
 end;
 
 { TCodeProperty }
 
 function TCodeProperty.ToString: string;
 begin
-  Result := Name;
+  Result            := Name;
   if IsArray then
-    Result := Result + '[]';
-  Result := Result + ': ' + TypeName;
+    Result          := Result + '[]';
+  Result            := Result + ': ' + TypeName;
   if Getter <> '' then
-    Result := Result + ' read ' + Getter;
+    Result          := Result + ' read ' + Getter;
   if Adder <> '' then
-    Result := Result + ' add ' + Adder;
+    Result          := Result + ' add ' + Adder;
   if Setter <> '' then
-    Result := Result + ' write ' + Setter;
+    Result          := Result + ' write ' + Setter;
   if Remover <> '' then
-    Result := Result + ' remove ' + Remover;
+    Result          := Result + ' remove ' + Remover;
   if Storer <> '' then
-    Result := Result + ' stored ' + Storer;
+    Result          := Result + ' stored ' + Storer;
   if IsDefault then
-    Result := Result + '; default'
-  else
-  if IsNoDefault then
-    Result := Result + '; nodefault';
+    Result          := Result + '; default'
+  else if IsNoDefault then
+    Result          := Result + '; nodefault';
 end;
 
 { TCodeMethodArg }
@@ -1029,38 +1027,38 @@ end;
 function TCodeMethodArg.ToString: string;
 begin
   case Modifier of
-    amVar: Result := 'var ';
-    amOut: Result := 'out ';
+    amVar: Result   := 'var ';
+    amOut: Result   := 'out ';
     amConst: Result := 'const ';
   else
-    Result := '';
+    Result          := '';
   end;
-  Result := Result + inherited ToString;
+  Result            := Result + inherited ToString;
 end;
 
 { TCodeMethod }
 
-function TCodeMethod.AddArg(Item: TCodeMethodArg): Integer;
+function TCodeMethod.AddArg( Item: TCodeMethodArg ): Integer;
 begin
-  Result :=  FArgs.Add(Item);
+  Result            := FArgs.Add( Item );
 end;
 
-function TCodeMethod.AddLocalVariable(Item: TCodeLocalVariable): Integer;
+function TCodeMethod.AddLocalVariable( Item: TCodeLocalVariable ): Integer;
 begin
-  Result := FLocalVariables.Add(Item);
+  Result            := FLocalVariables.Add( Item );
 end;
 
-function TCodeMethod.AddLocalProc(Item: TCodeMethod): Integer;
+function TCodeMethod.AddLocalProc( Item: TCodeMethod ): Integer;
 begin
-  Result := FLocalProcs.Add(Item);
+  Result            := FLocalProcs.Add( Item );
 end;
 
-constructor TCodeMethod.Create(const AName: string; const ALocation: TLocation);
+constructor TCodeMethod.Create( const AName: string; const ALocation: TLocation );
 begin
-  inherited Create(AName, ALocation);
-  FArgs := TObjectList.Create;
-  FLocalVariables := TObjectList.Create;
-  FLocalProcs := TObjectList.Create;
+  inherited Create( AName, ALocation );
+  FArgs             := TObjectList.Create;
+  FLocalVariables   := TObjectList.Create;
+  FLocalProcs       := TObjectList.Create;
 end;
 
 destructor TCodeMethod.Destroy;
@@ -1071,26 +1069,26 @@ begin
   inherited Destroy;
 end;
 
-function TCodeMethod.IsCompatible(M: TCodeMethod): Boolean;
+function TCodeMethod.IsCompatible( M: TCodeMethod ): Boolean;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   if M = Self then
-    Result := True
+    Result          := True
   else if M = nil then
-    Result := False
+    Result          := False
   else
   begin
-    Result := (MethodType = M.MethodType) and (Convention = M.Convention) and
-        (IsClassMethod = M.IsClassMethod) and (IsClassStatic = M.IsClassStatic) and
-        (ArgCount = M.ArgCount) and (ReturnTypeName = M.ReturnTypeName);
+    Result          := ( MethodType = M.MethodType ) and ( Convention = M.Convention ) and
+      ( IsClassMethod = M.IsClassMethod ) and ( IsClassStatic = M.IsClassStatic ) and
+      ( ArgCount = M.ArgCount ) and ( ReturnTypeName = M.ReturnTypeName );
 
     if Result then
     begin
       for i := 0 to ArgCount - 1 do
       begin
-        Result := (Args[i].Modifier = M.Args[i].Modifier) and
-                  (Args[i].TypeName = M.Args[i].TypeName);
+        Result      := ( Args[ i ].Modifier = M.Args[ i ].Modifier ) and
+          ( Args[ i ].TypeName = M.Args[ i ].TypeName );
         if not Result then
           Exit;
       end;
@@ -1098,24 +1096,24 @@ begin
   end;
 end;
 
-function TCodeMethod.FindArg(const AName: string): TCodeMethodArg;
+function TCodeMethod.FindArg( const AName: string ): TCodeMethodArg;
 begin
-  Result := TCodeMethodArg(FindSymbol(FArgs, AName));
+  Result            := TCodeMethodArg( FindSymbol( FArgs, AName ) );
 end;
 
-function TCodeMethod.GetArg(Index: Integer): TCodeMethodArg;
+function TCodeMethod.GetArg( Index: Integer ): TCodeMethodArg;
 begin
-  Result := TCodeMethodArg(FArgs[Index]);
+  Result            := TCodeMethodArg( FArgs[ Index ] );
 end;
 
 function TCodeMethod.GetArgCount: Integer;
 begin
-  Result := FArgs.Count;
+  Result            := FArgs.Count;
 end;
 
 function TCodeMethod.ToString: string;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   case MethodType of
     mtConstructor: Result := 'constructor';
@@ -1123,47 +1121,47 @@ begin
     mtFunction: Result := 'function';
     mtProcedure: Result := 'procedure';
   end;
-  Result := Result + ' ' + Name + '(';
+  Result            := Result + ' ' + Name + '(';
   for i := 0 to ArgCount - 1 do
   begin
-    Result := Result + Args[i].ToString;
+    Result          := Result + Args[ i ].ToString;
     if i < ArgCount - 1 then
-      Result := Result + '; ';
+      Result        := Result + '; ';
   end;
-  Result := Result + ')';
+  Result            := Result + ')';
   if ReturnTypeName <> '' then
-    Result := Result + ': ' + ReturnTypeName;
+    Result          := Result + ': ' + ReturnTypeName;
 end;
 
 function TCodeMethod.GetLocalVariableCount: Integer;
 begin
-  Result := FLocalVariables.Count;
+  Result            := FLocalVariables.Count;
 end;
 
-function TCodeMethod.GetLocalVariable(Index: Integer): TCodeLocalVariable;
+function TCodeMethod.GetLocalVariable( Index: Integer ): TCodeLocalVariable;
 begin
-  Result := TCodeLocalVariable(FLocalVariables[Index]);
+  Result            := TCodeLocalVariable( FLocalVariables[ Index ] );
 end;
 
 function TCodeMethod.GetLocalProcCount: Integer;
 begin
-  Result := FLocalProcs.Count;
+  Result            := FLocalProcs.Count;
 end;
 
-function TCodeMethod.GetLocalProc(Index: Integer): TCodeMethod;
+function TCodeMethod.GetLocalProc( Index: Integer ): TCodeMethod;
 begin
-  Result := TCodeMethod(FLocalProcs[Index]);
+  Result            := TCodeMethod( FLocalProcs[ Index ] );
 end;
 
 { TCodeClass }
 
-constructor TCodeClass.Create(const AName: string; const ALocation: TLocation);
+constructor TCodeClass.Create( const AName: string; const ALocation: TLocation );
 begin
-  inherited Create(AName, ALocation);
-  FInterfaces := TStringList.Create;
-  FFields := TObjectList.Create;
-  FProperties := TObjectList.Create;
-  FMethods := TObjectList.Create;
+  inherited Create( AName, ALocation );
+  FInterfaces       := TStringList.Create;
+  FFields           := TObjectList.Create;
+  FProperties       := TObjectList.Create;
+  FMethods          := TObjectList.Create;
 end;
 
 destructor TCodeClass.Destroy;
@@ -1175,89 +1173,89 @@ begin
   inherited Destroy;
 end;
 
-function TCodeClass.GetInterfaceItem(Index: Integer): string;
+function TCodeClass.GetInterfaceItem( Index: Integer ): string;
 begin
-  Result := FInterfaces[Index];
+  Result            := FInterfaces[ Index ];
 end;
 
 function TCodeClass.GetInterfaceCount: Integer;
 begin
-  Result := FInterfaces.Count;
+  Result            := FInterfaces.Count;
 end;
 
-function TCodeClass.GetAccessInsert(Access: TAccessKind): TLocation;
+function TCodeClass.GetAccessInsert( Access: TAccessKind ): TLocation;
 begin
-  Result := FAccessInsert[Access];
+  Result            := FAccessInsert[ Access ];
 end;
 
 function TCodeClass.GetPropertyCount: Integer;
 begin
-  Result := FProperties.Count;
+  Result            := FProperties.Count;
 end;
 
 function TCodeClass.GetMethodCount: Integer;
 begin
-  Result := FMethods.Count;
+  Result            := FMethods.Count;
 end;
 
 function TCodeClass.GetFieldCount: Integer;
 begin
-  Result := FFields.Count;
+  Result            := FFields.Count;
 end;
 
-function TCodeClass.GetProperty(Index: Integer): TCodeProperty;
+function TCodeClass.GetProperty( Index: Integer ): TCodeProperty;
 begin
-  Result := TCodeProperty(FProperties[Index]);
+  Result            := TCodeProperty( FProperties[ Index ] );
 end;
 
-function TCodeClass.GetMethodItem(Index: Integer): TCodeMethod;
+function TCodeClass.GetMethodItem( Index: Integer ): TCodeMethod;
 begin
-  Result := TCodeMethod(FMethods[Index]);
+  Result            := TCodeMethod( FMethods[ Index ] );
 end;
 
-function TCodeClass.GetField(Index: Integer): TCodeField;
+function TCodeClass.GetField( Index: Integer ): TCodeField;
 begin
-  Result := TCodeField(FFields[Index]);
+  Result            := TCodeField( FFields[ Index ] );
 end;
 
-function TCodeClass.FindField(const AName: string): TCodeField;
+function TCodeClass.FindField( const AName: string ): TCodeField;
 begin
-  Result := TCodeField(FindSymbol(FFields, AName));
+  Result            := TCodeField( FindSymbol( FFields, AName ) );
 end;
 
-function TCodeClass.FindProperty(const AName: string): TCodeProperty;
+function TCodeClass.FindProperty( const AName: string ): TCodeProperty;
 begin
-  Result := TCodeProperty(FindSymbol(FProperties, AName));
+  Result            := TCodeProperty( FindSymbol( FProperties, AName ) );
 end;
 
-function TCodeClass.FindMethod(const AName: string): TCodeMethod;
+function TCodeClass.FindMethod( const AName: string ): TCodeMethod;
 begin
-  Result := TCodeMethod(FindSymbol(FMethods, AName));
+  Result            := TCodeMethod( FindSymbol( FMethods, AName ) );
 end;
 
-function TCodeClass.AddProperty(Item: TCodeProperty): Integer;
+function TCodeClass.AddProperty( Item: TCodeProperty ): Integer;
 begin
-  Result := FProperties.Add(Item);
+  Result            := FProperties.Add( Item );
 end;
 
-function TCodeClass.AddMethod(Item: TCodeMethod): Integer;
+function TCodeClass.AddMethod( Item: TCodeMethod ): Integer;
 begin
-  Result := FMethods.Add(Item);
+  Result            := FMethods.Add( Item );
 end;
 
-function TCodeClass.AddField(Item: TCodeField): Integer;
+function TCodeClass.AddField( Item: TCodeField ): Integer;
 begin
-  Result := FFields.Add(Item);
+  Result            := FFields.Add( Item );
 end;
 
-function TCodeClass.AddInterface(const Item: string): Integer;
+function TCodeClass.AddInterface( const Item: string ): Integer;
 begin
-  Result := FInterfaces.Add(Item);
+  Result            := FInterfaces.Add( Item );
 end;
 
-function TCodeClass.SupportsInterface(const AName: string): Boolean;
+function TCodeClass.SupportsInterface( const AName: string ): Boolean;
 begin
-  Result := FInterfaces.IndexOf(AName) >= 0;
+  Result            := FInterfaces.IndexOf( AName ) >= 0;
 end;
 
 { TCodeClassList }
@@ -1265,7 +1263,7 @@ end;
 constructor TCodeClassList.Create;
 begin
   inherited Create;
-  FItems := TObjectList.Create;
+  FItems            := TObjectList.Create;
 end;
 
 destructor TCodeClassList.Destroy;
@@ -1276,30 +1274,30 @@ end;
 
 function TCodeClassList.GetCount: Integer;
 begin
-  Result := FItems.Count;
+  Result            := FItems.Count;
 end;
 
-function TCodeClassList.Find(const ClassName: string): TCodeClass;
+function TCodeClassList.Find( const ClassName: string ): TCodeClass;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to Count - 1 do
   begin
-    Result := Items[i];
-    if SameText(Result.Name, ClassName) then
+    Result          := Items[ i ];
+    if SameText( Result.Name, ClassName ) then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
-function TCodeClassList.Add(Item: TCodeClass): Integer;
+function TCodeClassList.Add( Item: TCodeClass ): Integer;
 begin
-  Result := FItems.Add(Item);
+  Result            := FItems.Add( Item );
 end;
 
-function TCodeClassList.GetItem(Index: Integer): TCodeClass;
+function TCodeClassList.GetItem( Index: Integer ): TCodeClass;
 begin
-  Result := TCodeClass(FItems[Index]);
+  Result            := TCodeClass( FItems[ Index ] );
 end;
 
 procedure TCodeClassList.Clear;
@@ -1309,12 +1307,12 @@ end;
 
 { TUsesItem }
 
-constructor TUsesItem.Create(const AName, AFilename: string; const ALocation: TLocation);
+constructor TUsesItem.Create( const AName, AFilename: string; const ALocation: TLocation );
 begin
-  inherited Create(AName,  ALocation);
-  FName := AName;
-  FFilename := AFilename;
-  FLocation := ALocation;
+  inherited Create( AName, ALocation );
+  FName             := AName;
+  FFilename         := AFilename;
+  FLocation         := ALocation;
 end;
 
 { TUsesList }
@@ -1322,7 +1320,7 @@ end;
 constructor TUsesList.Create;
 begin
   inherited Create;
-  FItems := TObjectList.Create;
+  FItems            := TObjectList.Create;
 end;
 
 destructor TUsesList.Destroy;
@@ -1331,37 +1329,37 @@ begin
   inherited Destroy;
 end;
 
-function TUsesList.AddUses(Item: TUsesItem): Integer;
+function TUsesList.AddUses( Item: TUsesItem ): Integer;
 begin
-  Result := FItems.Add(Item);
+  Result            := FItems.Add( Item );
 end;
 
-function TUsesList.FindUses(const AName: string): TUsesItem;
+function TUsesList.FindUses( const AName: string ): TUsesItem;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to Count - 1 do
   begin
-    Result := Items[i];
-    if SameText(Result.Name, AName) then
+    Result          := Items[ i ];
+    if SameText( Result.Name, AName ) then
       Exit;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
 function TUsesList.GetCount: Integer;
 begin
-  Result := FItems.Count;
+  Result            := FItems.Count;
 end;
 
-function TUsesList.GetItem(Index: Integer): TUsesItem;
+function TUsesList.GetItem( Index: Integer ): TUsesItem;
 begin
-  Result := TUsesItem(FItems[Index]);
+  Result            := TUsesItem( FItems[ Index ] );
 end;
 
-function TUsesList.IndexOf(AItem: TUsesItem): Integer;
+function TUsesList.IndexOf( AItem: TUsesItem ): Integer;
 begin
-  Result := FItems.IndexOf(AItem);
+  Result            := FItems.IndexOf( AItem );
 end;
 
 procedure TUsesList.Clear;
@@ -1371,20 +1369,20 @@ end;
 
 { TDesignerParser }
 
-constructor TDesignerParser.Create(const AFilename: string; const AText: UTF8String);
+constructor TDesignerParser.Create( const AFilename: string; const AText: UTF8String );
 begin
   inherited Create;
-  FClasses := TCodeClassList.Create;
-  FFilename := AFilename;
-  FText := AText;
-  FInterfaceUses := TUsesList.Create;
-  FImplUses := TUsesList.Create;
-  FResources := TStringList.Create;
-  FIncludeFiles := TStringList.Create;
-  FRequires := TUsesList.Create;
-  FContains := TUsesList.Create;
-  FFunctions := TObjectList.Create;
-  FIncludeDirs := TStringList.Create;
+  FClasses          := TCodeClassList.Create;
+  FFilename         := AFilename;
+  FText             := AText;
+  FInterfaceUses    := TUsesList.Create;
+  FImplUses         := TUsesList.Create;
+  FResources        := TStringList.Create;
+  FIncludeFiles     := TStringList.Create;
+  FRequires         := TUsesList.Create;
+  FContains         := TUsesList.Create;
+  FFunctions        := TObjectList.Create;
+  FIncludeDirs      := TStringList.Create;
 end;
 
 destructor TDesignerParser.Destroy;
@@ -1408,70 +1406,70 @@ begin
   FResources.Clear;
   FIncludeFiles.Clear;
   FClasses.Clear;
-  FModuleName := '';
-  FModuleType := mtUnit;
-  FFormResource := '';
-  FImplLocation := EmptyLocation;
+  FModuleName       := '';
+  FModuleType       := mtUnit;
+  FFormResource     := '';
+  FImplLocation     := EmptyLocation;
   FInterfaceLocation := EmptyLocation;
-  FImplementation := False;
-  FRepeatLastToken := False;
-  FParseError := False;
+  FImplementation   := False;
+  FRepeatLastToken  := False;
+  FParseError       := False;
   FRequires.Clear;
   FContains.Clear;
   FFunctions.Clear;
 end;
 
-function TDesignerParser.GetResource(Index: Integer): string;
+function TDesignerParser.GetResource( Index: Integer ): string;
 begin
-  Result := FResources[Index];
+  Result            := FResources[ Index ];
 end;
 
 function TDesignerParser.GetResourceCount: Integer;
 begin
-  Result := FResources.Count;
+  Result            := FResources.Count;
 end;
 
-function TDesignerParser.GetIncludeFiles(Index: Integer): string;
+function TDesignerParser.GetIncludeFiles( Index: Integer ): string;
 begin
-  Result := FIncludeFiles[Index];
+  Result            := FIncludeFiles[ Index ];
 end;
 
 function TDesignerParser.GetIncludeFileCount: Integer;
 begin
-  Result := FIncludeFiles.Count;
+  Result            := FIncludeFiles.Count;
 end;
 
-function TDesignerParser.AddFunction(Item: TCodeMethod): Integer;
+function TDesignerParser.AddFunction( Item: TCodeMethod ): Integer;
 begin
-  Result := FFunctions.Add(Item);
+  Result            := FFunctions.Add( Item );
 end;
 
 function TDesignerParser.GetFunctionCount: Integer;
 begin
-  Result := FFunctions.Count;
+  Result            := FFunctions.Count;
 end;
 
-function TDesignerParser.GetFunctionItem(Index: Integer): TCodeMethod;
+function TDesignerParser.GetFunctionItem( Index: Integer ): TCodeMethod;
 begin
-  Result := TCodeMethod(FFunctions[Index]);
+  Result            := TCodeMethod( FFunctions[ Index ] );
 end;
 
 function TDesignerParser.Look: TToken;
 begin
-  Result := p.CurrentToken;
+  Result            := p.CurrentToken;
 end;
 
 function TDesignerParser.Next: Boolean;
 begin
   if p = nil then
-    Exit(False); // the preprocessor was dropped after an error: nothing more to read
+    Exit( False ); // the preprocessor was dropped after an error: nothing more to read
   if FRepeatLastToken then
   begin
-    Result := p.CurrentToken <> nil;
+    Result          := p.CurrentToken <> nil;
     FRepeatLastToken := False;
   end
   else
-    Result := p.GetToken <> nil;
+    Result          := p.GetToken <> nil;
 end;
 
 procedure TDesignerParser.NextA;
@@ -1480,43 +1478,43 @@ begin
     Abort;
 end;
 
-procedure TDesignerParser.IncludeFile(Sender: TObject; const Name: string);
+procedure TDesignerParser.IncludeFile( Sender: TObject; const Name: string );
 var
-  LName: string;
+  LName             : string;
 begin
-  LName := AnsiDequotedStr(Name, '''');
-  FIncludeFiles.Add(LName);
+  LName             := AnsiDequotedStr( Name, '''' );
+  FIncludeFiles.Add( LName );
   // An include that exists but cannot be read (locked, no access) leaves the parse incomplete: it is
   // reported through ParseError, never raised into the caller.
   try
-    IncludeFoundFile(Sender as TDelphiPreprocessor, LName);
+    IncludeFoundFile( Sender as TDelphiPreprocessor, LName );
   except
     on E: EStreamError do
-      FParseError := True;
+      FParseError   := True;
     on E: EOSError do
-      FParseError := True;
+      FParseError   := True;
   end;
 end;
 
-procedure TDesignerParser.IncludeFoundFile(Preprocessor: TDelphiPreprocessor; const LName: string);
+procedure TDesignerParser.IncludeFoundFile( Preprocessor: TDelphiPreprocessor; const LName: string );
 var
-  Dir, FileName: string;
-  I: Integer;
+  Dir, FileName     : string;
+  I                 : Integer;
 begin
-  Dir := ExtractFileDir(Preprocessor.CurrentFileName);
-  if (Length(LName) >= 2) and (LName[1] <> '\') and (LName[2] <> ':') then
+  Dir               := ExtractFileDir( Preprocessor.CurrentFileName );
+  if ( Length( LName ) >= 2 ) and ( LName[ 1 ] <> '\' ) and ( LName[ 2 ] <> ':' ) then
   begin
-    FileName := Dir + '\' + LName;
-    if (Dir <> '') and FileExists(FileName) then
-      Preprocessor.AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName))
+    FileName        := Dir + '\' + LName;
+    if ( Dir <> '' ) and FileExists( FileName ) then
+      Preprocessor.AddInclude( ExpandFileName( FileName ), LoadTextFileToUtf8String( FileName ) )
     else
     begin
       for I := 0 to IncludeDirs.Count - 1 do
       begin
-        FileName := ExcludeTrailingPathDelimiter(IncludeDirs[I]) + '\' + LName;
-        if FileExists(FileName) then
+        FileName    := ExcludeTrailingPathDelimiter( IncludeDirs[ I ] ) + '\' + LName;
+        if FileExists( FileName ) then
         begin
-          Preprocessor.AddInclude(ExpandFileName(FileName), LoadTextFileToUtf8String(FileName));
+          Preprocessor.AddInclude( ExpandFileName( FileName ), LoadTextFileToUtf8String( FileName ) );
           Break;
         end;
       end;
@@ -1524,43 +1522,43 @@ begin
   end;
 end;
 
-procedure TDesignerParser.InitDefines(Parser: TDelphiPreprocessor);
+procedure TDesignerParser.InitDefines( Parser: TDelphiPreprocessor );
 begin
   // The compiler's predefined symbols for the IDE's own bitness (the parser does not know the
   // project's target), shared with the Unreachable Code scanner.
-  for var sSymbol in PredefinedSymbols({$IFDEF WIN64}'Win64'{$ELSE}'Win32'{$ENDIF}) do
-    Parser.Define(sSymbol);
+  for var sSymbol in PredefinedSymbols( {$IFDEF WIN64} 'Win64'{$ELSE} 'Win32'{$ENDIF} ) do
+    Parser.Define( sSymbol );
 end;
 
-procedure TDesignerParser.Directive(Sender: TObject; Token: TToken);
+procedure TDesignerParser.Directive( Sender: TObject; Token: TToken );
 var
-  Op: string;
+  Op                : string;
 begin
-  Op := Token.Value;
-  if Op[1] = '{' then
-    Op := Trim(Copy(Op, 2, Length(Op) - 2))
+  Op                := Token.Value;
+  if Op[ 1 ] = '{' then
+    Op              := Trim( Copy( Op, 2, Length( Op ) - 2 ) )
   else
-    Op := Trim(Copy(Op, 3, Length(Op) - 4));
-  if StartsText('$R', Op) and (PChar(Op)[2] <= ' ') then
+    Op              := Trim( Copy( Op, 3, Length( Op ) - 4 ) );
+  if StartsText( '$R', Op ) and ( PChar( Op )[ 2 ] <= ' ' ) then
   begin
     // resource inclusion
-    Op := AnsiDequotedStr(Trim(Copy(Op, 4, MaxInt)), '''');
-    if EndsText('*.dfm', Op) or EndsText('*.fmx', Op) or
-       EndsText('*.nfm', Op) or EndsText('*.xfm', Op) or
-       EndsText('*.lfm', Op) then
+    Op              := AnsiDequotedStr( Trim( Copy( Op, 4, MaxInt ) ), '''' );
+    if EndsText( '*.dfm', Op ) or EndsText( '*.fmx', Op ) or
+      EndsText( '*.nfm', Op ) or EndsText( '*.xfm', Op ) or
+      EndsText( '*.lfm', Op ) then
       FFormResource := Op;
-    FResources.Add(Op);
+    FResources.Add( Op );
   end;
 end;
 
 procedure TDesignerParser.ParseHead;
 begin
-  p := TDelphiPreprocessor.Create(FFilename, FText);
+  p                 := TDelphiPreprocessor.Create( FFilename, FText );
   try
-    InitDefines(p);
+    InitDefines( p );
 
     p.OnIncludeFile := IncludeFile;
-    p.OnDirective := Directive;
+    p.OnDirective   := Directive;
     p.OnGetDeclared := GetDeclared;
     p.OnGetConstValue := GetConstValue;
     p.OnGetConstBoolValue := GetConstBoolValue;
@@ -1580,9 +1578,9 @@ begin
 
       case Look.Kind of
         tkI_Unit,
-        tkI_Program,
-        tkI_Library,
-        tkI_Package:
+          tkI_Program,
+          tkI_Library,
+          tkI_Package:
           begin
             NextA;
             FModuleName := ParseQualifiedName;
@@ -1592,55 +1590,55 @@ begin
           end;
       end;
     end;
-    if (Look <> nil) and (Look.Kind = tkI_interface) then
+    if ( Look <> nil ) and ( Look.Kind = tkI_interface ) then
     begin
-      FInterfaceLocation := TokenToLocation(Look);
+      FInterfaceLocation := TokenToLocation( Look );
       NextA;
     end;
 
-    if (Look <> nil) and (Look.Kind = tkI_uses) then
+    if ( Look <> nil ) and ( Look.Kind = tkI_uses ) then
     begin
-      ParseUses(FInterfaceUses);
+      ParseUses( FInterfaceUses );
       if Look.Kind = tkSemicolon then
         Next;
     end;
 
     if ModuleType = mtPackage then
     begin
-      while (Look <> nil) and (Look.Kind <> tkI_requires) do
+      while ( Look <> nil ) and ( Look.Kind <> tkI_requires ) do
         Next;
-      if (Look <> nil) and (Look.Kind = tkI_requires) then
+      if ( Look <> nil ) and ( Look.Kind = tkI_requires ) then
       begin
-        ParseUses(FRequires);
+        ParseUses( FRequires );
         if Look.Kind = tkSemicolon then
           Next;
       end;
 
-      while (Look <> nil) and (Look.Kind <> tkI_contains) do
+      while ( Look <> nil ) and ( Look.Kind <> tkI_contains ) do
         Next;
-      if (Look <> nil) and (Look.Kind = tkI_contains) then
+      if ( Look <> nil ) and ( Look.Kind = tkI_contains ) then
       begin
-        ParseUses(FContains);
+        ParseUses( FContains );
         if Look.Kind = tkSemicolon then
           Next;
       end;
     end;
 
-    if (Look <> nil) and (Look.Kind <> tkSemicolon) then
+    if ( Look <> nil ) and ( Look.Kind <> tkSemicolon ) then
       FRepeatLastToken := True;
   except
     // Only the parser's own stop signals are absorbed, and a preprocessor error is recorded, so a
     // caller can tell a complete parse from a truncated one.  Anything else (an AV) propagates.
     on E: EDelphiPreprocessor do
     begin
-      FParseError := True;
-      FreeAndNil(p);
+      FParseError   := True;
+      FreeAndNil( p );
     end;
     on E: EAbort do
-      FreeAndNil(p);
+      FreeAndNil( p );
     on E: Exception do
     begin
-      FreeAndNil(p);
+      FreeAndNil( p );
       raise;
     end;
   end;
@@ -1656,20 +1654,20 @@ begin
       begin
         if Look.Kind = tkI_implementation then
         begin
-          FImplLocation := TokenToLocation(Look);
+          FImplLocation := TokenToLocation( Look );
           FImplementation := True;
           NextA;
           if Look.Kind = tkI_uses then
-            ParseUses(FImplUses);
+            ParseUses( FImplUses );
           Break;
         end;
       end;
     finally
-      FreeAndNil(p);
+      FreeAndNil( p );
     end;
   except
     on E: EDelphiPreprocessor do
-      FParseError := True;
+      FParseError   := True;
     on E: EAbort do
       ;
   end;
@@ -1686,40 +1684,40 @@ begin
       begin
         case Look.Kind of
           tkI_class:
-            if Next and ((Look.Kind = tkLParan) or not (Look.Kind in [tkI_of, tkI_helper, tkSemicolon])) then // "... class("
-              if (p.TokenCount > 3) and (p.Tokens[p.TokenCount - 1 - 2].Kind = tkEqual) then
+            if Next and ( ( Look.Kind = tkLParan ) or not ( Look.Kind in [ tkI_of, tkI_helper, tkSemicolon ] ) ) then // "... class("
+              if ( p.TokenCount > 3 ) and ( p.Tokens[ p.TokenCount - 1 - 2 ].Kind = tkEqual ) then
                 ParseClass
               else
                 FRepeatLastToken := True;
           tkI_function,
-          tkI_procedure,
-          tkI_constructor,
-          tkI_destructor,
-          tkI_operator:
-            ParseFunctionImpl(nil);
+            tkI_procedure,
+            tkI_constructor,
+            tkI_destructor,
+            tkI_operator:
+            ParseFunctionImpl( nil );
           tkI_interface:
             IgnoreInterface;
           tkI_record,
-          tkI_object:
+            tkI_object:
             IgnoreRecord;
 
           tkI_implementation:
             begin
-              FImplLocation := TokenToLocation(Look);
+              FImplLocation := TokenToLocation( Look );
               FImplementation := True;
               NextA;
               if Look.Kind = tkI_uses then
-                ParseUses(FImplUses);
+                ParseUses( FImplUses );
             end;
         end;
       end;
 
     finally
-      FreeAndNil(p);
+      FreeAndNil( p );
     end;
   except
     on E: EDelphiPreprocessor do
-      FParseError := True;
+      FParseError   := True;
     on E: EAbort do
       ;
   end;
@@ -1727,18 +1725,18 @@ end;
 
 procedure TDesignerParser.IgnoreRecord;
 var
-  OpenParan: Integer;
+  OpenParan         : Integer;
 begin
   Next;
   if Look.Kind = tkLParan then
   begin
-    OpenParan := 1;
-    while Next and (OpenParan > 0) do
+    OpenParan       := 1;
+    while Next and ( OpenParan > 0 ) do
     begin
       if Look.Kind = tkLParan then
-        Inc(OpenParan)
+        Inc( OpenParan )
       else if Look.Kind = tkRParan then
-        Dec(OpenParan);
+        Dec( OpenParan );
     end;
   end;
 
@@ -1748,15 +1746,15 @@ begin
   repeat
     case Look.Kind of
       tkI_procedure,
-      tkI_function,
-      tkI_constructor,
-      tkI_destructor,
-      tkI_operator:
+        tkI_function,
+        tkI_constructor,
+        tkI_destructor,
+        tkI_operator:
         IgnoreProc;
 
       tkI_interface,
-      tkI_record,
-      tkI_object: // does the developer know what he does?
+        tkI_record,
+        tkI_object: // does the developer know what he does?
         IgnoreRecord;
 
       tkI_reference:
@@ -1774,10 +1772,10 @@ begin
           NextA;
           case Look.Kind of
             tkI_procedure,
-            tkI_function,
-            tkI_constructor,
-            tkI_destructor,
-            tkI_operator:
+              tkI_function,
+              tkI_constructor,
+              tkI_destructor,
+              tkI_operator:
               IgnoreProc;
           else
             FRepeatLastToken := True;
@@ -1793,7 +1791,7 @@ end;
 
 procedure TDesignerParser.IgnoreProc;
 var
-  Empty: Boolean;
+  Empty             : Boolean;
 begin
   if not Next then
     Exit;
@@ -1802,12 +1800,12 @@ begin
     if not Next then
       Exit;
   if Look.Kind = tkLParan then
-    ParseFunctionArgs(nil);
+    ParseFunctionArgs( nil );
 
   if Look.Kind = tkColon then
   begin
     NextA;
-    ParseTypeName([]);
+    ParseTypeName( [ ] );
   end;
 
   if Look.Kind <> tkSemicolon then
@@ -1817,28 +1815,28 @@ begin
   begin
     case Look.Kind of
       tkI_implementation,
-      tkI_public,
-      tkI_private,
-      tkI_strict,
-      tkI_protected,
-      tkI_published,
-      tkI_property,
-      tkI_class:
+        tkI_public,
+        tkI_private,
+        tkI_strict,
+        tkI_protected,
+        tkI_published,
+        tkI_property,
+        tkI_class:
         begin
           FRepeatLastToken := True;
           Break;
         end;
 
       tkI_function,
-      tkI_procedure,
-      tkI_constructor,
-      tkI_destructor,
-      tkI_operator,
-      tkI_type,
-      tkI_var,
-      tkI_const,
-      tkI_threadvar,
-      tkI_end:
+        tkI_procedure,
+        tkI_constructor,
+        tkI_destructor,
+        tkI_operator,
+        tkI_type,
+        tkI_var,
+        tkI_const,
+        tkI_threadvar,
+        tkI_end:
         if not FImplementation then
         begin
           FRepeatLastToken := True;
@@ -1846,47 +1844,47 @@ begin
         end;
 
       tkI_begin:
-        IgnoreBlock(Empty);
+        IgnoreBlock( Empty );
     end;
   end;
 end;
 
-function TDesignerParser.IgnoreBlock(out Empty: Boolean): TLocation;
+function TDesignerParser.IgnoreBlock( out Empty: Boolean ): TLocation;
 var
-  BlockCount: Integer;
+  BlockCount        : Integer;
 begin
-  Empty := True;
+  Empty             := True;
   if Look.Kind = tkI_begin then
   begin
     NextA;
     FRepeatLastToken := True;
   end;
-  Result := TokenToLocation(Look);
-  BlockCount := 1;
+  Result            := TokenToLocation( Look );
+  BlockCount        := 1;
   while Next do
   begin
     case Look.Kind of
       tkI_end:
         begin
-          Dec(BlockCount);
+          Dec( BlockCount );
           if BlockCount = 0 then
             Break;
         end;
       tkI_case,
-      tkI_try,
-      tkI_begin:
+        tkI_try,
+        tkI_begin:
         begin
-          Inc(BlockCount);
-          Empty := False;
+          Inc( BlockCount );
+          Empty     := False;
         end;
       tkI_procedure,
-      tkI_function: // anonymous method
+        tkI_function: // anonymous method
         begin
           IgnoreProc;
-          Empty := False;
+          Empty     := False;
         end;
     else
-      Empty := False;
+      Empty         := False;
     end;
   end;
 end;
@@ -1897,11 +1895,11 @@ begin
   begin
     case Look.Kind of
       tkI_private,
-      tkI_protected,
-      tkI_public,
-      tkI_published,
-      tkI_strict,
-      tkI_end:
+        tkI_protected,
+        tkI_public,
+        tkI_published,
+        tkI_strict,
+        tkI_end:
         Exit;
     end;
   end;
@@ -1914,10 +1912,10 @@ begin
   begin
     case Look.Kind of
       tkI_name,
-      tkI_index,
-      tkString,
-      tkIdent,
-      tkPlus:
+        tkI_index,
+        tkString,
+        tkIdent,
+        tkPlus:
         ;
     else
       FRepeatLastToken := True;
@@ -1928,33 +1926,33 @@ end;
 
 function TDesignerParser.ParseQualifiedName: string;
 begin
-  Result := '';
+  Result            := '';
   repeat
     if Look.Kind >= tkIdent then
-      Result := Result + Look.Value
+      Result        := Result + Look.Value
     else
       Break;
     NextA;
     if Look.Kind <> tkDot then
       Break;
-    Result := Result + '.';
+    Result          := Result + '.';
     NextA;
   until False;
 end;
 
 procedure TDesignerParser.ParseClass;
 var
-  NameToken: TToken;
-  C: TCodeClass;
-  Access, NewAccess: TAccessKind;
-  IntfName: string;
+  NameToken         : TToken;
+  C                 : TCodeClass;
+  Access, NewAccess : TAccessKind;
+  IntfName          : string;
 begin
   try
-    NameToken := p.Tokens[p.TokenCount - 1 - 3];
+    NameToken       := p.Tokens[ p.TokenCount - 1 - 3 ];
     if NameToken.Kind = tkIdent then
     begin
-      C := TCodeClass.Create(NameToken.Value, TokenToLocation(NameToken));
-      Classes.Add(C);
+      C             := TCodeClass.Create( NameToken.Value, TokenToLocation( NameToken ) );
+      Classes.Add( C );
       C.FStartLocation := C.Location;
       C.FIsUnitPrivate := FImplementation;
 
@@ -1965,9 +1963,9 @@ begin
         while Look.Kind = tkComma do
         begin
           NextA;
-          IntfName := ParseQualifiedName;
+          IntfName  := ParseQualifiedName;
           if IntfName <> '' then
-            C.AddInterface(IntfName);
+            C.AddInterface( IntfName );
           NextA;
         end;
         if Look.Kind = tkRParan then
@@ -1979,8 +1977,8 @@ begin
       if Look.Kind <> tkSemicolon then
       begin
         FRepeatLastToken := True;
-        Access := akPublished;
-        NewAccess := Access;
+        Access      := akPublished;
+        NewAccess   := Access;
 
         while Next do
         begin
@@ -1990,28 +1988,28 @@ begin
                 NextA;
                 case Look.Kind of
                   tkI_procedure,
-                  tkI_function,
-                  tkI_constructor,
-                  tkI_destructor,
-                  tkI_operator:
-                    ParseMethodDecl(C, Access, True);
+                    tkI_function,
+                    tkI_constructor,
+                    tkI_destructor,
+                    tkI_operator:
+                    ParseMethodDecl( C, Access, True );
                   tkI_property:
-                    ParseProperty(C, Access, True);
-                  tkIdent..Pred(tkIdentStrictReserved):
-                    ParseField(C, Access, True);
+                    ParseProperty( C, Access, True );
+                  tkIdent..Pred( tkIdentStrictReserved ):
+                    ParseField( C, Access, True );
                 end;
               end;
 
             tkI_procedure,
-            tkI_function,
-            tkI_constructor,
-            tkI_destructor,
-            tkI_operator:
-              ParseMethodDecl(C, Access, False);
+              tkI_function,
+              tkI_constructor,
+              tkI_destructor,
+              tkI_operator:
+              ParseMethodDecl( C, Access, False );
             tkI_property:
-              ParseProperty(C, Access, False);
+              ParseProperty( C, Access, False );
 
-            tkIdent..Pred(tkIdentStrictReserved):
+            tkIdent..Pred( tkIdentStrictReserved ):
               begin
                 case Look.Kind of
                   tkI_strict:
@@ -2033,35 +2031,35 @@ begin
                   tkI_published:
                     NewAccess := akPublished;
                 else
-                  ParseField(C, Access, False);
+                  ParseField( C, Access, False );
                 end;
               end;
 
             tkI_type,
-            tkI_const:
+              tkI_const:
               begin
                 // inner classes/constants (Delphi 8+)
                 IgnoreToClassAccess;
               end;
 
             tkI_implementation,
-            tkI_begin:
+              tkI_begin:
               begin
                 FRepeatLastToken := True;
                 Break;
               end;
             tkI_end:
               begin
-                C.FEndLocation := TokenToLocation(Look);
+                C.FEndLocation := TokenToLocation( Look );
                 Break;
               end;
           end;
 
           if NewAccess <> Access then
           begin
-            if C.FAccessInsert[Access].Filename = '' then
-              C.FAccessInsert[Access] := TokenToLocation(Look);
-            Access := NewAccess;
+            if C.FAccessInsert[ Access ].Filename = '' then
+              C.FAccessInsert[ Access ] := TokenToLocation( Look );
+            Access  := NewAccess;
           end;
         end;
       end;
@@ -2074,106 +2072,106 @@ begin
   end;
 end;
 
-procedure TDesignerParser.ParseField(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+procedure TDesignerParser.ParseField( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
 var
-  StartIndex, i: Integer;
-  F: TCodeField;
+  StartIndex, i     : Integer;
+  F                 : TCodeField;
 begin
-  FRepeatLastToken := True; // current token is already the NameToken
-  StartIndex := C.FFields.Count;
-  ParseVariableList(C.FFields, vmFields);
+  FRepeatLastToken  := True; // current token is already the NameToken
+  StartIndex        := C.FFields.Count;
+  ParseVariableList( C.FFields, vmFields );
   for i := StartIndex to C.FFields.Count - 1 do
   begin
-    F := C.Fields[i];
+    F               := C.Fields[ i ];
     F.FIsClassField := IsClass;
-    F.FAccess := Access;
+    F.FAccess       := Access;
   end;
   if Look.Kind <> tkSemicolon then
     FRepeatLastToken := True;
 end;
 
-procedure TDesignerParser.ParseProperty(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+procedure TDesignerParser.ParseProperty( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
 var
-  P: TCodeProperty;
+  P                 : TCodeProperty;
   PropToken, NameToken: TToken;
-  IsArray: Boolean;
-  IsInheritChange: Boolean;
+  IsArray           : Boolean;
+  IsInheritChange   : Boolean;
 begin
-  PropToken := Look;
+  PropToken         := Look;
   NextA;
-  NameToken := Look;
+  NameToken         := Look;
   NextA;
 
-  IsArray := False;
+  IsArray           := False;
   if Look.Kind = tkLBracket then
   begin
     // array
     NextA;
-    IsArray := True;
-    while Next and not (Look.Kind in [tkRBracket] + PropertyTokens + ClassSectionEndTokens) do
+    IsArray         := True;
+    while Next and not ( Look.Kind in [ tkRBracket ] + PropertyTokens + ClassSectionEndTokens ) do
       ;
   end;
 
-  IsInheritChange := Look.Kind <> tkColon;
+  IsInheritChange   := Look.Kind <> tkColon;
   if not IsInheritChange then
     NextA;
 
-  P := TCodeProperty.Create(NameToken.Value, TokenToLocation(NameToken));
-  C.AddProperty(P);
-  P.FStartLocation := TokenToLocation(PropToken);
+  P                 := TCodeProperty.Create( NameToken.Value, TokenToLocation( NameToken ) );
+  C.AddProperty( P );
+  P.FStartLocation  := TokenToLocation( PropToken );
   P.FIsClassProperty := IsClass;
-  P.FAccess := Access;
-  P.FIsArray := IsArray;
+  P.FAccess         := Access;
+  P.FIsArray        := IsArray;
   P.FIsInheritChange := IsInheritChange;
   if not IsInheritChange then
-    P.FTypeName := ParseTypeName(PropertyTokens + ClassSectionEndTokens);
+    P.FTypeName     := ParseTypeName( PropertyTokens + ClassSectionEndTokens );
 
   if Look.Kind = tkI_read then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FGetter := Look.Value;
+      P.FGetter     := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_write then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FSetter := Look.Value;
+      P.FSetter     := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_add then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FAdder := Look.Value;
+      P.FAdder      := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_remove then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FRemover := Look.Value;
+      P.FRemover    := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_read then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FGetter := Look.Value;
+      P.FGetter     := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_stored then
   begin
     NextA;
     if Look.Kind >= tkIdent then
-      P.FStorer := Look.Value;
+      P.FStorer     := Look.Value;
     NextA;
   end;
   if Look.Kind = tkI_default then
   begin
     NextA;
-    while not (Look.Kind in [tkSemicolon] + ClassSectionEndTokens) do
+    while not ( Look.Kind in [ tkSemicolon ] + ClassSectionEndTokens ) do
       NextA;
   end;
 
@@ -2195,37 +2193,37 @@ begin
       FRepeatLastToken := True;
     end;
   end;
-  P.FEndLocation := TokenToLocation(Look);
+  P.FEndLocation    := TokenToLocation( Look );
 end;
 
-function TDesignerParser.ParseTypeName(const Stop: TTokenKindSet): string;
+function TDesignerParser.ParseTypeName( const Stop: TTokenKindSet ): string;
 begin
-  Result := Look.Value;
+  Result            := Look.Value;
   case Look.Kind of
     tkI_array:
       begin
         NextA;
-        Result := 'array';
+        Result      := 'array';
         if Look.Kind = tkLBracket then
         begin
-          Result := 'array[';
-          while Next and (Look.Kind <> tkRBracket) do
-            if Result[Length(Result)] = ',' then
+          Result    := 'array[';
+          while Next and ( Look.Kind <> tkRBracket ) do
+            if Result[ Length( Result ) ] = ',' then
               Result := Result + ' ' + Look.Value
             else
               Result := Result + Look.Value;
-          Result := Result + ']';
+          Result    := Result + ']';
           NextA;
         end;
         if Look.Kind = tkI_of then
         begin
           NextA;
-          Result := Result + ' of ' + ParseTypeName(Stop);
+          Result    := Result + ' of ' + ParseTypeName( Stop );
         end
         else
         begin
           FRepeatLastToken := True;
-          Result := Result + ' of errornous';
+          Result    := Result + ' of errornous';
         end;
       end;
     tkI_set:
@@ -2234,39 +2232,39 @@ begin
         if Look.Kind = tkI_of then
         begin
           NextA;
-          Result := 'set of ';
+          Result    := 'set of ';
           if Look.Kind = tkLBracket then
           begin
-            Result := Result + '[';
-            while Next and (Look.Kind <> tkRBracket) do
-              if Result[Length(Result)] = ',' then
+            Result  := Result + '[';
+            while Next and ( Look.Kind <> tkRBracket ) do
+              if Result[ Length( Result ) ] = ',' then
                 Result := Result + ' ' + Look.Value
               else
                 Result := Result + Look.Value;
-            Result := Result + ']';
+            Result  := Result + ']';
           end
           else if Look.Kind in ClassAvailableTokens then
-            Result := Result + Look.Value
+            Result  := Result + Look.Value
           else
           begin
             FRepeatLastToken := True;
-            Result := Result + 'errornous';
+            Result  := Result + 'errornous';
           end;
         end;
       end;
 
     tkI_record,
-    tkI_object:
+      tkI_object:
       IgnoreRecord;
 
     tkI_function,
-    tkI_procedure:
+      tkI_procedure:
       IgnoreProc;
 
   else
-    if not (Look.Kind in ClassAvailableTokens) and (Look.Kind <> tkI_string) then
+    if not ( Look.Kind in ClassAvailableTokens ) and ( Look.Kind <> tkI_string ) then
     begin
-      Result := 'errornous';
+      Result        := 'errornous';
       FRepeatLastToken := True;
     end
     else if Look.Kind = tkI_reference then
@@ -2280,35 +2278,35 @@ begin
     end
 
     else if Look.Kind >= tkIdent then
-      Result := ParseQualifiedName;
+      Result        := ParseQualifiedName;
   end;
 end;
 
-procedure TDesignerParser.ParseFunctionArgs(M: TCodeMethod);
+procedure TDesignerParser.ParseFunctionArgs( M: TCodeMethod );
 begin
   if M = nil then
-    ParseVariableList(nil, vmFunctionArguments)
+    ParseVariableList( nil, vmFunctionArguments )
   else
-    ParseVariableList(M.FArgs, vmFunctionArguments);
+    ParseVariableList( M.FArgs, vmFunctionArguments );
 end;
 
-procedure TDesignerParser.ParseVariableList(List: TObjectList; Mode: TVarListMode);
+procedure TDesignerParser.ParseVariableList( List: TObjectList; Mode: TVarListMode );
 var
-  A: TCodeField;
-  ArgModifier: TArgModifier;
-  StartIndex: Integer;
-  NameToken: TToken;
-  TypeName: string;
+  A                 : TCodeField;
+  ArgModifier       : TArgModifier;
+  StartIndex        : Integer;
+  NameToken         : TToken;
+  TypeName          : string;
 begin
-  ArgModifier := amNone;
-  StartIndex := 0;
+  ArgModifier       := amNone;
+  StartIndex        := 0;
   if List <> nil then
-    StartIndex := List.Count;
+    StartIndex      := List.Count;
   while Next do
   begin
     if Mode = vmFunctionArguments then
     begin
-      ArgModifier := amNone;
+      ArgModifier   := amNone;
       case Look.Kind of
         tkI_const:
           ArgModifier := amConst;
@@ -2321,22 +2319,22 @@ begin
         NextA;
     end;
 
-    A := nil;
+    A               := nil;
     if Look.Kind >= tkIdent then
     begin
-      NameToken := Look;
+      NameToken     := Look;
       NextA;
       if List <> nil then
       begin
         if Mode = vmFunctionArguments then
         begin
-          A := TCodeMethodArg.Create(NameToken.Value, TokenToLocation(NameToken));
-          TCodeMethodArg(A).FModifier := ArgModifier;
+          A         := TCodeMethodArg.Create( NameToken.Value, TokenToLocation( NameToken ) );
+          TCodeMethodArg( A ).FModifier := ArgModifier;
         end
         else
-          A := TCodeField.Create(NameToken.Value, TokenToLocation(NameToken));
+          A         := TCodeField.Create( NameToken.Value, TokenToLocation( NameToken ) );
         A.FStartLocation := A.Location;
-        List.Add(A);
+        List.Add( A );
       end;
     end;
 
@@ -2344,38 +2342,37 @@ begin
       tkColon:
         begin
           NextA;
-          TypeName := ParseTypeName([tkRParan, tkComma]);
+          TypeName  := ParseTypeName( [ tkRParan, tkComma ] );
           if Look.Kind = tkSemicolon then
           begin
             if A <> nil then
-              A.FEndLocation := TokenToLocation(Look);
+              A.FEndLocation := TokenToLocation( Look );
             NextA;
             FRepeatLastToken := True;
           end
-          else
-          if A <> nil then
-            A.FEndLocation := TokenToLocation(Look);
+          else if A <> nil then
+            A.FEndLocation := TokenToLocation( Look );
 
           if List <> nil then
           begin
             while StartIndex < List.Count do
             begin
-              TCodeField(List[StartIndex]).SetTypeNameLater(TypeName);
-              Inc(StartIndex);
+              TCodeField( List[ StartIndex ] ).SetTypeNameLater( TypeName );
+              Inc( StartIndex );
             end;
           end;
         end;
       tkComma:
         begin
           if A <> nil then
-            A.FEndLocation := TokenToLocation(Look);
+            A.FEndLocation := TokenToLocation( Look );
           Continue;
         end;
     end;
 
     case Mode of
       vmFunctionArguments:
-        if Look.Kind in [tkRParan] + SectionEndTokens - ArgModifierTokens then
+        if Look.Kind in [ tkRParan ] + SectionEndTokens - ArgModifierTokens then
         begin
           NextA;
           Break;
@@ -2396,17 +2393,17 @@ begin
   end;
 end;
 
-procedure TDesignerParser.ParseMethodDecl(C: TCodeClass; Access: TAccessKind; IsClass: Boolean);
+procedure TDesignerParser.ParseMethodDecl( C: TCodeClass; Access: TAccessKind; IsClass: Boolean );
 var
-  M: TCodeMethod;
-  MethodType: TMethodType;
-  NameToken: TToken;
-  StartToken: TToken;
+  M                 : TCodeMethod;
+  MethodType        : TMethodType;
+  NameToken         : TToken;
+  StartToken        : TToken;
 begin
-  StartToken := Look;
+  StartToken        := Look;
   if IsClass then
-    StartToken := p.Tokens[p.TokenCount - 1 - 1];
-  MethodType := mtFunction;
+    StartToken      := p.Tokens[ p.TokenCount - 1 - 1 ];
+  MethodType        := mtFunction;
   case Look.Kind of
     tkI_constructor: MethodType := mtConstructor;
     tkI_destructor: MethodType := mtDestructor;
@@ -2419,43 +2416,43 @@ begin
     IgnoreProc;
     Exit;
   end;
-  NameToken := Look;
+  NameToken         := Look;
   NextA;
 
-  M := TCodeMethod.Create(NameToken.Value, TokenToLocation(NameToken));
-  C.AddMethod(M);
-  M.FStartLocation := TokenToLocation(StartToken);
-  M.FIsDeclared := True;
-  M.FAccess := Access;
-  M.FIsClassMethod := IsClass;
-  M.FMethodType := MethodType;
+  M                 := TCodeMethod.Create( NameToken.Value, TokenToLocation( NameToken ) );
+  C.AddMethod( M );
+  M.FStartLocation  := TokenToLocation( StartToken );
+  M.FIsDeclared     := True;
+  M.FAccess         := Access;
+  M.FIsClassMethod  := IsClass;
+  M.FMethodType     := MethodType;
   if Look.Kind = tkLParan then
-    ParseFunctionArgs(M);
+    ParseFunctionArgs( M );
   if Look.Kind = tkColon then
   begin
     NextA;
-    M.FReturnTypeName := ParseTypeName([tkI_cdecl, tkI_stdcall, tkI_register,
-      tkI_safecall, tkI_pascal, tkI_overload,
-      tkI_reintroduce, tkI_virtual, tkI_override, tkI_abstract, tkI_message, tkI_dynamic,
-      tkI_forward, tkI_export, tkI_external]);
+    M.FReturnTypeName := ParseTypeName( [ tkI_cdecl, tkI_stdcall, tkI_register,
+        tkI_safecall, tkI_pascal, tkI_overload,
+        tkI_reintroduce, tkI_virtual, tkI_override, tkI_abstract, tkI_message, tkI_dynamic,
+        tkI_forward, tkI_export, tkI_external ] );
   end;
 
-  ParseDirectives(M);
+  ParseDirectives( M );
   if Look.Kind = tkSemicolon then
   begin
     NextA;
     FRepeatLastToken := True;
   end;
-  M.FEndLocation := TokenToLocation(Look);
+  M.FEndLocation    := TokenToLocation( Look );
 end;
 
-procedure TDesignerParser.ParseUses(List: TUsesList);
+procedure TDesignerParser.ParseUses( List: TUsesList );
 var
   StartToken, NameToken: TToken;
-  Name, Filename: string;
-  Item: TUsesItem;
+  Name, Filename    : string;
+  Item              : TUsesItem;
 begin
-  List.FLocation := TokenToLocation(Look);
+  List.FLocation    := TokenToLocation( Look );
   while Next do
   begin
     if Look.Kind in SectionEndTokens then
@@ -2465,57 +2462,57 @@ begin
     end;
     if Look.Kind >= tkIdent then
     begin
-      StartToken := Look;
-      NameToken := StartToken;
-      Name := ParseQualifiedName;
-      Filename := '';
+      StartToken    := Look;
+      NameToken     := StartToken;
+      Name          := ParseQualifiedName;
+      Filename      := '';
       if Look.Kind = tkI_in then
       begin
         NextA;
         if Look.Kind = tkString then
-          Filename := AnsiDequotedStr(Look.Value, '''');
+          Filename  := AnsiDequotedStr( Look.Value, '''' );
         if Look.Kind = tkSemicolon then
           Break;
         NextA;
       end;
 
-      Item := TUsesItem.Create(Name, Filename, TokenToLocation(NameToken));
-      List.AddUses(Item);
-      Item.FStartLocation := TokenToLocation(StartToken);
-      Item.FEndLocation := TokenToLocation(Look);
+      Item          := TUsesItem.Create( Name, Filename, TokenToLocation( NameToken ) );
+      List.AddUses( Item );
+      Item.FStartLocation := TokenToLocation( StartToken );
+      Item.FEndLocation := TokenToLocation( Look );
     end;
     if Look.Kind = tkSemicolon then
     begin
-      List.FEndLocation := TokenToLocation(Look);
+      List.FEndLocation := TokenToLocation( Look );
       FRepeatLastToken := True;
       Break;
     end;
   end;
 end;
 
-procedure TDesignerParser.ParseFunctionImpl(AParent: TCodeMethod);
+procedure TDesignerParser.ParseFunctionImpl( AParent: TCodeMethod );
 var
-  M, MatchM: TCodeMethod;
-  MethodType: TMethodType;
+  M, MatchM         : TCodeMethod;
+  MethodType        : TMethodType;
   StartToken, NameToken: TToken;
-  MethodClass: TCodeClass;
-  i: Integer;
-  IsClass, Empty: Boolean;
+  MethodClass       : TCodeClass;
+  i                 : Integer;
+  IsClass, Empty    : Boolean;
 begin
-  FRepeatLastToken := False;
+  FRepeatLastToken  := False;
 
-  IsClass := (p.TokenCount > 1) and (p.Tokens[p.TokenCount - 1 - 1].Kind = tkI_class);
-  StartToken := Look;
+  IsClass           := ( p.TokenCount > 1 ) and ( p.Tokens[ p.TokenCount - 1 - 1 ].Kind = tkI_class );
+  StartToken        := Look;
   if IsClass then
-    StartToken := p.Tokens[p.TokenCount - 1 - 1];
-  if (p.TokenCount > 2) then
-    if p.Tokens[p.TokenCount - 2].Kind in [tkColon, tkEqual] then // ignore function variables/types
+    StartToken      := p.Tokens[ p.TokenCount - 1 - 1 ];
+  if ( p.TokenCount > 2 ) then
+    if p.Tokens[ p.TokenCount - 2 ].Kind in [ tkColon, tkEqual ] then // ignore function variables/types
     begin
       IgnoreFunctionType;
       Exit;
     end;
 
-  MethodType := mtFunction;
+  MethodType        := mtFunction;
   case Look.Kind of
     tkI_constructor: MethodType := mtConstructor;
     tkI_destructor: MethodType := mtDestructor;
@@ -2528,20 +2525,20 @@ begin
     IgnoreProc;
     Exit;
   end;
-  NameToken := Look;
+  NameToken         := Look;
   NextA;
 
-  MethodClass := nil;
+  MethodClass       := nil;
   while Look.Kind = tkDot do
   begin
-    MethodClass := Classes.Find(NameToken.Value);
+    MethodClass     := Classes.Find( NameToken.Value );
     if MethodClass = nil then
     begin
       IgnoreProc;
       Exit;
     end;
     NextA;
-    NameToken := Look;
+    NameToken       := Look;
     if NameToken.Kind < tkIdent then
     begin
       IgnoreProc;
@@ -2549,20 +2546,20 @@ begin
     end;
     NextA;
   end;
-  M := TCodeMethod.Create(NameToken.Value, EmptyLocation);
+  M                 := TCodeMethod.Create( NameToken.Value, EmptyLocation );
   try
     M.FIsImplemented := True;
-    M.FImplLocation := TokenToLocation(NameToken);
+    M.FImplLocation := TokenToLocation( NameToken );
     M.FIsClassMethod := IsClass;
-    M.FMethodType := MethodType;
+    M.FMethodType   := MethodType;
 
     if Look.Kind = tkLParan then
-      ParseFunctionArgs(M);
+      ParseFunctionArgs( M );
     if Look.Kind = tkColon then
     begin
       NextA;
-      M.FReturnTypeName := ParseTypeName([tkI_Cdecl, tkI_Stdcall, tkI_Register,
-        tkI_Safecall, tkI_Pascal, tkI_external, tkI_export, tkI_forward]);
+      M.FReturnTypeName := ParseTypeName( [ tkI_Cdecl, tkI_Stdcall, tkI_Register,
+          tkI_Safecall, tkI_Pascal, tkI_external, tkI_export, tkI_forward ] );
     end
     else if Look.Kind = tkI_of then
     begin
@@ -2571,31 +2568,31 @@ begin
         NextA;
     end;
 
-    MatchM := nil;
+    MatchM          := nil;
     if MethodClass <> nil then
     begin
       // find a matching method
       for i := 0 to MethodClass.MethodCount - 1 do
       begin
-        if SameText(MethodClass.Methods[i].Name, M.Name) and
-           MethodClass.Methods[i].IsCompatible(M) then
+        if SameText( MethodClass.Methods[ i ].Name, M.Name ) and
+          MethodClass.Methods[ i ].IsCompatible( M ) then
         begin
-          MatchM := MethodClass.Methods[i];
+          MatchM    := MethodClass.Methods[ i ];
           Break;
         end;
       end;
-      if (MatchM = nil) and (M.ArgCount = 0) and (M.ReturnTypeName = '') then
-        MatchM := MethodClass.FindMethod(M.Name);
+      if ( MatchM = nil ) and ( M.ArgCount = 0 ) and ( M.ReturnTypeName = '' ) then
+        MatchM      := MethodClass.FindMethod( M.Name );
     end
     else
     begin
       // find a matching method
       for i := 0 to FunctionCount - 1 do
       begin
-        if SameText(Functions[i].Name, M.Name) and
-           Functions[i].IsCompatible(M) then
+        if SameText( Functions[ i ].Name, M.Name ) and
+          Functions[ i ].IsCompatible( M ) then
         begin
-          MatchM := Functions[i];
+          MatchM    := Functions[ i ];
           Break;
         end;
       end;
@@ -2613,61 +2610,61 @@ begin
       if AParent <> nil then
       begin
         M.FIsImplemented := True;
-        AParent.AddLocalProc(M);
+        AParent.AddLocalProc( M );
       end
       else if MethodClass = nil then
       begin
         M.FIsImplemented := True;
         if FImplementation then
-          AddFunction(M);
+          AddFunction( M );
       end
       else
-        MethodClass.AddMethod(M);
-      MatchM := M;
-      if (MethodClass <> nil) or FImplementation then
-        M := nil;
+        MethodClass.AddMethod( M );
+      MatchM        := M;
+      if ( MethodClass <> nil ) or FImplementation then
+        M           := nil;
     end;
 
-    if (MethodClass <> nil) and (M <> nil) then
-      ParseDirectives(M) // here M not MatchM
+    if ( MethodClass <> nil ) and ( M <> nil ) then
+      ParseDirectives( M ) // here M not MatchM
     else
-      ParseDirectives(MatchM);
+      ParseDirectives( MatchM );
 
     if Look.Kind = tkI_forward then
       NextA
     else if FImplementation then
     begin
       MatchM.FIsImplEmpty := True;
-      while (Look <> nil) and (Look.Kind <> tkI_begin) do
+      while ( Look <> nil ) and ( Look.Kind <> tkI_begin ) do
       begin
         MatchM.FIsImplEmpty := False;
         case Look.Kind of
           tkI_record,
-          tkI_object,
-          tkI_class:
+            tkI_object,
+            tkI_class:
             IgnoreRecord;
 
           tkI_procedure,
-          tkI_function:
-            ParseFunctionImpl(MatchM);
+            tkI_function:
+            ParseFunctionImpl( MatchM );
 
           tkI_forward,
-          tkI_end:
+            tkI_end:
             Break;
 
           tkI_var:
             begin
-              MatchM.FVarInsert := TokenToLocation(Look);
+              MatchM.FVarInsert := TokenToLocation( Look );
               NextA;
-              ParseVariableDecl(MatchM.FLocalVariables);
+              ParseVariableDecl( MatchM.FLocalVariables );
             end;
         end;
         NextA;
       end;
     end;
 
-    if (Look <> nil) and (Look.Kind = tkI_begin) then
-      MatchM.FCodeInsert := IgnoreBlock(Empty);
+    if ( Look <> nil ) and ( Look.Kind = tkI_begin ) then
+      MatchM.FCodeInsert := IgnoreBlock( Empty );
     MatchM.FIsImplEmpty := MatchM.FIsImplEmpty and Empty;
 
     if Look.Kind = tkSemicolon then
@@ -2675,7 +2672,7 @@ begin
       NextA;
       FRepeatLastToken := True;
     end;
-    if FImplementation and (Look.Kind = tkI_end) then
+    if FImplementation and ( Look.Kind = tkI_end ) then
     begin
       NextA;
       if Look.Kind = tkI_end then
@@ -2683,14 +2680,14 @@ begin
       FRepeatLastToken := True;
     end;
 
-    MatchM.FImplBeginLocation := TokenToLocation(StartToken);
-    MatchM.FImplEndLocation := TokenToLocation(Look);
+    MatchM.FImplBeginLocation := TokenToLocation( StartToken );
+    MatchM.FImplEndLocation := TokenToLocation( Look );
   finally
     M.Free;
   end;
 end;
 
-procedure TDesignerParser.ParseDirectives(M: TCodeMethod);
+procedure TDesignerParser.ParseDirectives( M: TCodeMethod );
 begin
   repeat
     case Look.Kind of
@@ -2745,14 +2742,14 @@ end;
 
 procedure TDesignerParser.IgnoreFunctionType;
 var
-  M: TCodeMethod;
+  M                 : TCodeMethod;
 begin
-  Next; 
+  Next;
   if Look.Kind = tkLParan then
   begin
-    M := TCodeMethod.Create('', TokenToLocation(Look));
+    M               := TCodeMethod.Create( '', TokenToLocation( Look ) );
     try
-      ParseFunctionArgs(M);
+      ParseFunctionArgs( M );
     finally
       M.Free;
     end;
@@ -2760,8 +2757,8 @@ begin
   if Look.Kind = tkColon then
   begin
     NextA;
-    ParseTypeName([tkI_Cdecl, tkI_Stdcall, tkI_Register,
-      tkI_Safecall, tkI_Pascal, tkI_external, tkI_export]);
+    ParseTypeName( [ tkI_Cdecl, tkI_Stdcall, tkI_Register,
+        tkI_Safecall, tkI_Pascal, tkI_external, tkI_export ] );
   end;
   if Look.Kind = tkI_of then
   begin
@@ -2781,52 +2778,53 @@ begin
   IgnoreRecord;
 end;
 
-procedure TDesignerParser.GetDeclared(Sender: TObject; const Name: string;
-  var Value: Boolean);
+procedure TDesignerParser.GetDeclared( Sender: TObject; const Name: string;
+  var Value: Boolean );
 begin
-  Value := InterfaceUses.FindUses(Name) <> nil;
+  Value             := InterfaceUses.FindUses( Name ) <> nil;
   if not Value then
-    Value := ImplUses.FindUses(Name) <> nil;
+    Value           := ImplUses.FindUses( Name ) <> nil;
   if not Value then
-    Value := Classes.Find(Name) <> nil;
+    Value           := Classes.Find( Name ) <> nil;
   if not Value then
-    Value := FindFunction(Name) <> nil;
+    Value           := FindFunction( Name ) <> nil;
 end;
 
-procedure TDesignerParser.GetConstValue(Sender: TObject; const Name: string; var Kind: TTokenKind;
-  var Value: string);
+procedure TDesignerParser.GetConstValue( Sender: TObject; const Name: string; var Kind: TTokenKind;
+  var Value: string );
 var
-  S: ShortString;
+  S                 : ShortString;
 begin
-  if SameText(Name, 'CompilerVersion') then
+  if SameText( Name, 'CompilerVersion' ) then
   begin
-    Kind := tkFloat;
-    Str(CompilerVersion:1:1, S);
-    Value := UTF8ToString(S);
+    Kind            := tkFloat;
+    Str( CompilerVersion: 1: 1, S );
+    Value           := UTF8ToString( S );
   end;
 end;
 
-procedure TDesignerParser.GetConstBoolValue(Sender: TObject; const Name: string; var Value: Boolean);
+procedure TDesignerParser.GetConstBoolValue( Sender: TObject; const Name: string; var Value: Boolean );
 begin
 
 end;
 
-function TDesignerParser.FindFunction(const AName: string): TCodeMethod;
+function TDesignerParser.FindFunction( const AName: string ): TCodeMethod;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FunctionCount - 1 do
-    if SameText(Functions[i].Name, AName) then
+    if SameText( Functions[ i ].Name, AName ) then
     begin
-      Result := Functions[i];
+      Result        := Functions[ i ];
       Exit;
     end;
-  Result := nil;
+  Result            := nil;
 end;
 
-procedure TDesignerParser.ParseVariableDecl(List: TObjectList);
+procedure TDesignerParser.ParseVariableDecl( List: TObjectList );
 begin
-  ParseVariableList(List, vmVariables);
+  ParseVariableList( List, vmVariables );
 end;
 
 end.
+

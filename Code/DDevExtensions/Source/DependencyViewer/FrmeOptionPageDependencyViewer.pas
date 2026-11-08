@@ -69,14 +69,14 @@ end;
 procedure TFrameOptionPageDependencyViewer.SetUserData( UserData: TObject );
 begin
 
-  FPlugin := UserData as TDependencyViewerPlugin;
+  FPlugin           := UserData as TDependencyViewerPlugin;
 
 end;
 
 procedure TFrameOptionPageDependencyViewer.LoadData;
 begin
 
-  chkEnabled.Checked             := FPlugin.Enabled;
+  chkEnabled.Checked := FPlugin.Enabled;
   chkRespectConditionals.Checked := FPlugin.RespectConditionals;
 
 end;
@@ -84,7 +84,7 @@ end;
 procedure TFrameOptionPageDependencyViewer.SaveData;
 begin
 
-  FPlugin.Enabled             := chkEnabled.Checked;
+  FPlugin.Enabled   := chkEnabled.Checked;
   FPlugin.RespectConditionals := chkRespectConditionals.Checked;
   FPlugin.Save;
 
@@ -99,3 +99,4 @@ begin
 end;
 
 end.
+

@@ -30,7 +30,7 @@ uses
 /// streaming of the TextHeight property.
 /// </summary>
 /// <param name="Active">True to install the redirect, False to restore the original method.</param>
-procedure SetRemoveTextHeightPropertyActive(Active: Boolean);
+procedure SetRemoveTextHeightPropertyActive( Active: Boolean );
 
 {$ENDIF DELPHI28_UP}
 
@@ -42,79 +42,80 @@ uses
   Winapi.Windows, IDEUtils;
 
 {$IF CompilerVersion > 37}
-  {$MESSAGE WARN 'Re-verify TCustomForm.DefineProperties against the VCL for this compiler version'}
+{$MESSAGE WARN 'Re-verify TCustomForm.DefineProperties against the VCL for this compiler version'}
 {$IFEND}
 
 var
   HookTForm_DefineProperties: TFullReplaceHook;
 
 type
-  TFormEx = class(TCustomForm)
-    procedure IgnoreInteger(Reader: TReader);
-    procedure ReadIgnoreFontProperty(Reader: TReader);
-    procedure IgnoreIdent(Reader: TReader);
-    procedure DefineProperties(Filer: TFiler); override;
+  TFormEx = class( TCustomForm )
+    procedure IgnoreInteger( Reader: TReader );
+    procedure ReadIgnoreFontProperty( Reader: TReader );
+    procedure IgnoreIdent( Reader: TReader );
+    procedure DefineProperties( Filer: TFiler ); override;
   end;
 
-  TOpenForm = class(TCustomForm);
+  TOpenForm = class( TCustomForm );
 
-procedure TFormEx.IgnoreInteger(Reader: TReader);
+procedure TFormEx.IgnoreInteger( Reader: TReader );
 begin
   Reader.ReadInteger;
 end;
 
-procedure TFormEx.ReadIgnoreFontProperty(Reader: TReader);
-begin   // reroute BCB IgnoreFontProperty to use VCL locale font solution
+procedure TFormEx.ReadIgnoreFontProperty( Reader: TReader );
+begin // reroute BCB IgnoreFontProperty to use VCL locale font solution
   if Reader.ReadBoolean then
-    ParentFont := True;
+    ParentFont      := True;
 end;
 
-procedure TFormEx.IgnoreIdent(Reader: TReader);
+procedure TFormEx.IgnoreIdent( Reader: TReader );
 begin
   Reader.ReadIdent;
 end;
 
 type
-  TDefinePropertiesProc = procedure(Filer: TFiler) of object;
+  TDefinePropertiesProc = procedure( Filer: TFiler ) of object;
 
-procedure TFormEx.DefineProperties(Filer: TFiler);
+procedure TFormEx.DefineProperties( Filer: TFiler );
 begin
   // Call grandparent TScrollingWinControl.DefineProperties directly
   // to avoid infinite recursion (TCustomForm.DefineProperties is hooked)
   var DefinePropertiesProc: TDefinePropertiesProc;
-  TMethod(DefinePropertiesProc).Code := @TScrollingWinControl.DefineProperties;
-  TMethod(DefinePropertiesProc).Data := Self;
-  DefinePropertiesProc(Filer);
+  TMethod( DefinePropertiesProc ).Code := @TScrollingWinControl.DefineProperties;
+  TMethod( DefinePropertiesProc ).Data := Self;
+  DefinePropertiesProc( Filer );
 
-  Filer.DefineProperty('TextHeight', IgnoreInteger, nil, False);
-  Filer.DefineProperty('IgnoreFontProperty', ReadIgnoreFontProperty, nil, False);
-  Filer.DefineProperty('OldCreateOrder', IgnoreIdent, nil, False);
+  Filer.DefineProperty( 'TextHeight', IgnoreInteger, nil, False );
+  Filer.DefineProperty( 'IgnoreFontProperty', ReadIgnoreFontProperty, nil, False );
+  Filer.DefineProperty( 'OldCreateOrder', IgnoreIdent, nil, False );
 end;
 
 var
-  IsActive: Boolean;
+  IsActive          : Boolean;
 
-procedure SetRemoveTextHeightPropertyActive(Active: Boolean);
+procedure SetRemoveTextHeightPropertyActive( Active: Boolean );
 begin
   if Active <> IsActive then
   begin
-    IsActive := Active;
+    IsActive        := Active;
     if Active then
     begin
-      InstallFullReplaceHook(@TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties);
+      InstallFullReplaceHook( @TOpenForm.DefineProperties, @TFormEx.DefineProperties, HookTForm_DefineProperties );
       // A failed patch (memory protection refused) leaves the hook empty: do not report
       // the option as active, and log it so the failure is diagnosable.
-      if ( {$IFDEF CPUX64} HookTForm_DefineProperties.RealProc {$ELSE} HookTForm_DefineProperties.Redir.RealProc {$ENDIF} = nil ) then
+      if ( {$IFDEF CPUX64}HookTForm_DefineProperties.RealProc{$ELSE}HookTForm_DefineProperties.Redir.RealProc{$ENDIF} = nil ) then
       begin
-        IsActive := False;
+        IsActive    := False;
         OutputDebugString( 'DDevExtensions RemoveTextHeightProperty: TCustomForm.DefineProperties could not be patched.' );
       end;
     end
     else
-      RemoveFullReplaceHook(HookTForm_DefineProperties);
+      RemoveFullReplaceHook( HookTForm_DefineProperties );
   end;
 end;
 
 {$ENDIF DELPHI28_UP}
 
 end.
+

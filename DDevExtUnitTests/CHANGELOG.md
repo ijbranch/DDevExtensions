@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- (2026-11-09) **GExperts formatter pass over every test unit** (layout only, proved by an identical token stream before and after) - `TestDeadCodeCoreDUnitX.pas`, `TestDecirculariserCoreDUnitX.pas`, `TestDelphiDesignerParserDUnitX.pas`, `TestDelphiExprDUnitX.pas`, `TestDelphiLexerDUnitX.pas`, `TestDelphiParserContainersDUnitX.pas`, `TestDelphiPreprocDUnitX.pas`, `TestDependencyViewerCoreDUnitX.pas`, and the other test units
 - (2026-11-09) **The characterisation test `TestDuplicateUnitNameCurrentlyRaises` became `TestDuplicateUnitNameFirstOneWins`**, pinning the fixed behaviour - `TestUsesClauseManagerCoreDUnitX.pas`
 
 ## [3.23.15] - 2026-10-21

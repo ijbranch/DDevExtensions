@@ -150,15 +150,15 @@ implementation
 
 class function TFormLayerConfig.Execute( LayerConfig: TLayerConfig ): Boolean;
 var
-  Form: TFormLayerConfig;
+  Form              : TFormLayerConfig;
 begin
 
-  Form := TFormLayerConfig.Create( Application );
+  Form              := TFormLayerConfig.Create( Application );
 
   try
     Form.FLayerConfig := LayerConfig;
     Form.LoadFromConfig( LayerConfig );
-    Result := Form.ShowModal = mrOK;
+    Result          := Form.ShowModal = mrOK;
 
     if Result then
       Form.SaveToConfig;
@@ -171,13 +171,13 @@ end;
 procedure TFormLayerConfig.FormCreate( Sender: TObject );
 begin
 
-  FUpdating := False;
+  FUpdating         := False;
 
 end;
 
 procedure TFormLayerConfig.FormDestroy( Sender: TObject );
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
   // Free the per-layer pattern lists stored in Items.Objects[] (otherwise only
@@ -192,16 +192,16 @@ end;
 
 procedure TFormLayerConfig.LoadFromConfig( AConfig: TLayerConfig );
 var
-  Layers: TArray<TLayerDefinition>;
-  Names: TArray<string>;
-  I, J: Integer;
-  SL: TStringList;
+  Layers            : TArray<TLayerDefinition>;
+  Names             : TArray<string>;
+  I, J              : Integer;
+  SL                : TStringList;
 begin
 
-  FUpdating := True;
+  FUpdating         := True;
 
   try
-    Layers := AConfig.GetLayers;
+    Layers          := AConfig.GetLayers;
 
     // Populate layer list with patterns attached as Objects
     ListBoxLayers.Items.Clear;
@@ -209,7 +209,7 @@ begin
     for I := 0 to High( Layers ) do
     begin
       // Create TStringList to hold patterns for this layer
-      SL := TStringList.Create;
+      SL            := TStringList.Create;
 
       for J := 0 to High( Layers[ I ].Patterns ) do
         SL.Add( Layers[ I ].Patterns[ J ] );
@@ -221,8 +221,8 @@ begin
     // ticked, so OK on an untouched dialog does not change what the rules mean.
     SetLength( Names, Length( Layers ) );
     for I := 0 to High( Layers ) do
-      Names[ I ] := Layers[ I ].Name;
-    FRulesMatrix := LayerRulesMatrix( AConfig, Names );
+      Names[ I ]    := Layers[ I ].Name;
+    FRulesMatrix    := LayerRulesMatrix( AConfig, Names );
 
     RefreshLayerList;
     RefreshRulesGrid;
@@ -240,16 +240,16 @@ begin
         MemoPatterns.Clear;
     end;
   finally
-    FUpdating := False;
+    FUpdating       := False;
   end;
 
 end;
 
 procedure TFormLayerConfig.SaveToConfig;
 var
-  I: Integer;
-  Patterns: TArray<string>;
-  Names: TArray<string>;
+  I                 : Integer;
+  Patterns          : TArray<string>;
+  Names             : TArray<string>;
 begin
 
   // A layer deleted here loses its rule line; a rule line for a layer the file never defined is
@@ -265,7 +265,7 @@ begin
     // Get patterns from stored object
     if ListBoxLayers.Items.Objects[ I ] <> nil then
     begin
-      Patterns := TArray<string>( TStringList( ListBoxLayers.Items.Objects[ I ] ).ToStringArray );
+      Patterns      := TArray<string>( TStringList( ListBoxLayers.Items.Objects[ I ] ).ToStringArray );
       FLayerConfig.AddLayer( ListBoxLayers.Items[ I ], Patterns );
     end
     else
@@ -273,7 +273,7 @@ begin
   end;
 
   // Save rules
-  Names := ListBoxLayers.Items.ToStringArray;
+  Names             := ListBoxLayers.Items.ToStringArray;
   ApplyLayerRulesMatrix( FLayerConfig, Names, FRulesMatrix );
 
   try
@@ -295,7 +295,7 @@ end;
 
 procedure TFormLayerConfig.RefreshRulesGrid;
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
   if ListBoxLayers.Items.Count = 0 then
@@ -331,16 +331,16 @@ end;
 
 procedure TFormLayerConfig.ListBoxLayersClick( Sender: TObject );
 var
-  Idx: Integer;
-  SL: TStringList;
-  Layers: TArray<TLayerDefinition>;
-  I, J: Integer;
+  Idx               : Integer;
+  SL                : TStringList;
+  Layers            : TArray<TLayerDefinition>;
+  I, J              : Integer;
 begin
 
   if FUpdating then
     Exit;
 
-  Idx := ListBoxLayers.ItemIndex;
+  Idx               := ListBoxLayers.ItemIndex;
   RefreshLayerList;
 
   if Idx < 0 then
@@ -351,19 +351,19 @@ begin
   end;
 
   MemoPatterns.Enabled := True;
-  FUpdating := True;
+  FUpdating         := True;
 
   try
     // Load patterns from stored TStringList or from config
     if ListBoxLayers.Items.Objects[ Idx ] <> nil then
     begin
-      SL := TStringList( ListBoxLayers.Items.Objects[ Idx ] );
+      SL            := TStringList( ListBoxLayers.Items.Objects[ Idx ] );
       MemoPatterns.Lines.Assign( SL );
     end
     else
     begin
       // Get from config
-      Layers := FLayerConfig.GetLayers;
+      Layers        := FLayerConfig.GetLayers;
 
       for I := 0 to High( Layers ) do
       begin
@@ -376,7 +376,7 @@ begin
             MemoPatterns.Lines.Add( Layers[ I ].Patterns[ J ] );
 
           // Store for future use
-          SL := TStringList.Create;
+          SL        := TStringList.Create;
           SL.Assign( MemoPatterns.Lines );
           ListBoxLayers.Items.Objects[ Idx ] := SL;
           Break;
@@ -384,7 +384,7 @@ begin
       end;
     end;
   finally
-    FUpdating := False;
+    FUpdating       := False;
   end;
 
 end;
@@ -398,14 +398,14 @@ end;
 
 procedure TFormLayerConfig.SaveCurrentPatterns;
 var
-  Idx: Integer;
-  SL: TStringList;
+  Idx               : Integer;
+  SL                : TStringList;
 begin
 
   if FUpdating then
     Exit;
 
-  Idx := ListBoxLayers.ItemIndex;
+  Idx               := ListBoxLayers.ItemIndex;
 
   if Idx < 0 then
     Exit;
@@ -414,19 +414,19 @@ begin
   if ListBoxLayers.Items.Objects[ Idx ] = nil then
     ListBoxLayers.Items.Objects[ Idx ] := TStringList.Create;
 
-  SL := TStringList( ListBoxLayers.Items.Objects[ Idx ] );
+  SL                := TStringList( ListBoxLayers.Items.Objects[ Idx ] );
   SL.Assign( MemoPatterns.Lines );
 
 end;
 
 procedure TFormLayerConfig.btnAddLayerClick( Sender: TObject );
 var
-  LayerName: string;
-  I, J, OldCount: Integer;
-  NewMatrix: TBoolMatrix;
+  LayerName         : string;
+  I, J, OldCount    : Integer;
+  NewMatrix         : TBoolMatrix;
 begin
 
-  LayerName := Trim( InputBox( 'Add Layer', 'Enter layer name:', '' ) );
+  LayerName         := Trim( InputBox( 'Add Layer', 'Enter layer name:', '' ) );
 
   if LayerName = '' then
     Exit;
@@ -450,7 +450,7 @@ begin
     end;
   end;
 
-  OldCount := ListBoxLayers.Items.Count;
+  OldCount          := ListBoxLayers.Items.Count;
 
   // Resize rules matrix
   SetLength( NewMatrix, OldCount + 1, OldCount + 1 );
@@ -470,7 +470,7 @@ begin
     NewMatrix[ OldCount, I ] := False;
   end;
 
-  FRulesMatrix := NewMatrix;
+  FRulesMatrix      := NewMatrix;
 
   // Add layer
   ListBoxLayers.Items.AddObject( LayerName, TStringList.Create );
@@ -482,13 +482,13 @@ end;
 
 procedure TFormLayerConfig.btnDeleteLayerClick( Sender: TObject );
 var
-  Idx, I, J: Integer;
-  NewMatrix: TBoolMatrix;
-  OldCount: Integer;
-  SrcI, SrcJ: Integer;
+  Idx, I, J         : Integer;
+  NewMatrix         : TBoolMatrix;
+  OldCount          : Integer;
+  SrcI, SrcJ        : Integer;
 begin
 
-  Idx := ListBoxLayers.ItemIndex;
+  Idx               := ListBoxLayers.ItemIndex;
 
   if Idx < 0 then
     Exit;
@@ -497,14 +497,14 @@ begin
     mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 
-  OldCount := ListBoxLayers.Items.Count;
+  OldCount          := ListBoxLayers.Items.Count;
 
   // Resize rules matrix (remove row and column at Idx)
   if OldCount > 1 then
   begin
     SetLength( NewMatrix, OldCount - 1, OldCount - 1 );
 
-    SrcI := 0;
+    SrcI            := 0;
 
     for I := 0 to OldCount - 2 do
     begin
@@ -512,7 +512,7 @@ begin
       if SrcI = Idx then
         Inc( SrcI );
 
-      SrcJ := 0;
+      SrcJ          := 0;
 
       for J := 0 to OldCount - 2 do
       begin
@@ -527,7 +527,7 @@ begin
       Inc( SrcI );
     end;
 
-    FRulesMatrix := NewMatrix;
+    FRulesMatrix    := NewMatrix;
   end
   else
     SetLength( FRulesMatrix, 0 );
@@ -567,7 +567,7 @@ end;
 
 procedure TFormLayerConfig.btnDefaultsClick( Sender: TObject );
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
   if MessageDlg( 'Reset to default layer configuration?', mtConfirmation,
@@ -585,7 +585,7 @@ begin
 
   // Show the defaults without touching the configuration being edited: only OK stores them,
   // and Cancel leaves the viewer's rules as they were.
-  var Defaults := TLayerConfig.Create( '' );
+  var Defaults      := TLayerConfig.Create( '' );
   try
     Defaults.LoadDefaults;
     LoadFromConfig( Defaults );
@@ -598,9 +598,9 @@ end;
 procedure TFormLayerConfig.StringGridRulesDrawCell( Sender: TObject;
   ACol, ARow: Integer; Rect: TRect; State: TGridDrawState );
 var
-  CheckRect: TRect;
-  IsChecked: Boolean;
-  CheckSize: Integer;
+  CheckRect         : TRect;
+  IsChecked         : Boolean;
+  CheckSize         : Integer;
 begin
 
   // Draw header cells normally
@@ -619,17 +619,17 @@ begin
   StringGridRules.Canvas.Brush.Color := clWindow;
   StringGridRules.Canvas.FillRect( Rect );
 
-  CheckSize := 13;
-  CheckRect.Left   := Rect.Left + ( Rect.Right - Rect.Left - CheckSize ) div 2;
-  CheckRect.Top    := Rect.Top + ( Rect.Bottom - Rect.Top - CheckSize ) div 2;
-  CheckRect.Right  := CheckRect.Left + CheckSize;
-  CheckRect.Bottom := CheckRect.Top + CheckSize;
+  CheckSize         := 13;
+  CheckRect.Left    := Rect.Left + ( Rect.Right - Rect.Left - CheckSize ) div 2;
+  CheckRect.Top     := Rect.Top + ( Rect.Bottom - Rect.Top - CheckSize ) div 2;
+  CheckRect.Right   := CheckRect.Left + CheckSize;
+  CheckRect.Bottom  := CheckRect.Top + CheckSize;
 
   // Get checked state from matrix (ARow-1 is "From", ACol-1 is "To")
   if ( ARow - 1 < Length( FRulesMatrix ) ) and ( ACol - 1 < Length( FRulesMatrix ) ) then
-    IsChecked := FRulesMatrix[ ARow - 1, ACol - 1 ]
+    IsChecked       := FRulesMatrix[ ARow - 1, ACol - 1 ]
   else
-    IsChecked := False;
+    IsChecked       := False;
 
   // Draw checkbox frame
   DrawFrameControl( StringGridRules.Canvas.Handle, CheckRect, DFC_BUTTON,
@@ -645,7 +645,7 @@ procedure TFormLayerConfig.ToggleRule( ACol, ARow: Integer );
 begin
 
   if ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow ) and
-     ( ARow - 1 < Length( FRulesMatrix ) ) and ( ACol - 1 < Length( FRulesMatrix ) ) then
+    ( ARow - 1 < Length( FRulesMatrix ) ) and ( ACol - 1 < Length( FRulesMatrix ) ) then
   begin
     FRulesMatrix[ ARow - 1, ACol - 1 ] := not FRulesMatrix[ ARow - 1, ACol - 1 ];
     StringGridRules.Invalidate;
@@ -656,7 +656,7 @@ end;
 procedure TFormLayerConfig.StringGridRulesMouseUp( Sender: TObject; Button: TMouseButton; Shift: TShiftState;
   X, Y: Integer );
 var
-  iCol, iRow: Integer;
+  iCol, iRow        : Integer;
 begin
 
   if ( Button <> mbLeft ) then
@@ -672,7 +672,7 @@ begin
   if ( Key = ' ' ) then
   begin
     ToggleRule( StringGridRules.Col, StringGridRules.Row );
-    Key := #0;
+    Key             := #0;
   end;
 
 end;
@@ -682,8 +682,9 @@ procedure TFormLayerConfig.StringGridRulesSelectCell( Sender: TObject;
 begin
 
   // Selecting a cell only moves the focus: arrow keys used to flip every rule they passed.
-  CanSelect := ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow );
+  CanSelect         := ( ACol > 0 ) and ( ARow > 0 ) and ( ACol <> ARow );
 
 end;
 
 end.
+

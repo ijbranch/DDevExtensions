@@ -37,7 +37,7 @@ type
   /// properties to and from an XML node and registers any option pages with
   /// <see cref="TFormDDevExtOptions"/>.
   /// </summary>
-  TPluginConfig = class(TComponent)
+  TPluginConfig = class( TComponent )
   private
     /// <summary>Legacy stand-alone XML filename (used during one-off migration into the shared document).</summary>
     FFilename: string;
@@ -47,7 +47,7 @@ type
     FLoading: Boolean;
     /// <summary>Loads from a stand-alone XML file on disk (legacy migration path).</summary>
     /// <param name="Filename">Path of the legacy XML file; its document element is passed to <see cref="LoadFromXml"/>.</param>
-    procedure LoadFromFile(const Filename: string);
+    procedure LoadFromFile( const Filename: string );
   protected
     /// <summary>
     /// Override to return the option-page tree for this plug-in. The default
@@ -69,16 +69,16 @@ type
     /// </summary>
     /// <param name="AFilename">Legacy stand-alone XML filename (used for one-off migration).</param>
     /// <param name="ARootNodeName">Name of the XML root node used for this plug-in's settings.</param>
-    constructor Create(const AFilename, ARootNodeName: string); reintroduce;
+    constructor Create( const AFilename, ARootNodeName: string ); reintroduce;
     /// <summary>Withdraws this configuration's option pages, so the Options dialog never calls into a freed object.</summary>
     destructor Destroy; override;
 
     /// <summary>Streams every supported published property of <c>Self</c> into <paramref name="Node"/>.</summary>
     /// <param name="Node">The XML node that receives this plug-in's settings.</param>
-    procedure SaveToXml(Node: IXmlNode); virtual;
+    procedure SaveToXml( Node: IXmlNode ); virtual;
     /// <summary>Loads every supported published property of <c>Self</c> from <paramref name="Node"/>.</summary>
     /// <param name="Node">The XML node holding this plug-in's settings.</param>
-    procedure LoadFromXml(Node: IXmlNode); virtual;
+    procedure LoadFromXml( Node: IXmlNode ); virtual;
 
     /// <summary>Persists current settings into the shared <see cref="TConfiguration"/> document.</summary>
     procedure Save;
@@ -91,7 +91,7 @@ type
   /// Singleton XML document holding the merged settings of every DDevExtensions
   /// plug-in. Loaded on first access via <see cref="Configuration"/>.
   /// </summary>
-  TConfiguration = class(TObject)
+  TConfiguration = class( TObject )
   private
     /// <summary>True when in-memory state differs from disk; triggers a save on <see cref="EndUpdate"/>.</summary>
     FModified: Boolean;
@@ -114,7 +114,7 @@ type
     /// </summary>
     /// <param name="Outcome">Why the load failed: <c>sloUnreadable</c> or <c>sloLocked</c>.</param>
     /// <param name="Reason">The last load error, for the warning.</param>
-    procedure HandleLoadFailure(Outcome: TSettingsLoadOutcome; const Reason: string);
+    procedure HandleLoadFailure( Outcome: TSettingsLoadOutcome; const Reason: string );
   public
     /// <summary>Creates an empty in-memory document with a <c>DDevExtensions</c> root element.</summary>
     constructor Create;
@@ -124,30 +124,30 @@ type
     /// <summary>Returns True if a child node with the given name exists under the document root.</summary>
     /// <param name="NodeName">Name of the child element to look for.</param>
     /// <returns>True when the document root has a child element of that name.</returns>
-    function HasNode(const NodeName: string): Boolean;
+    function HasNode( const NodeName: string ): Boolean;
     /// <summary>Returns the named child node under the document root, or nil if it does not exist.</summary>
     /// <param name="NodeName">Name of the child element to look for.</param>
     /// <returns>The child node, or nil when it does not exist.</returns>
-    function FindNode(const NodeName: string): IXmlNode;
+    function FindNode( const NodeName: string ): IXmlNode;
     /// <summary>Returns the named child node under the document root, creating it if needed.</summary>
     /// <param name="NodeName">Name of the child element to find or add.</param>
     /// <returns>The existing or newly added child node.</returns>
-    function GetNode(const NodeName: string): IXmlNode; overload;
+    function GetNode( const NodeName: string ): IXmlNode; overload;
     /// <summary>Returns the named child node under <paramref name="ParentNode"/>, creating it if needed.</summary>
     /// <param name="ParentNode">Node to search under and add to.</param>
     /// <param name="NodeName">Name of the child element to find or add.</param>
     /// <returns>The existing or newly added child node.</returns>
-    class function GetNode(ParentNode: IXmlNode; const NodeName: string): IXmlNode; overload;
+    class function GetNode( ParentNode: IXmlNode; const NodeName: string ): IXmlNode; overload;
     /// <summary>Marks the document dirty; saves immediately if no <see cref="BeginUpdate"/> is active.</summary>
     procedure Modified;
 
     /// <summary>Saves the document to a specific path without changing <see cref="Filename"/>.</summary>
     /// <param name="AFilename">Path of the file to write.</param>
-    procedure SaveToFile(const AFilename: string);
+    procedure SaveToFile( const AFilename: string );
     /// <summary>Loads the document from a file (creates an empty document if the file does not exist).</summary>
     /// <exception cref="EInOutError">Raised and handled internally to classify a document with no root element; it never reaches the caller.</exception>
     /// <param name="AFilename">The settings file to load.</param>
-    procedure LoadFromFile(const AFilename: string);
+    procedure LoadFromFile( const AFilename: string );
     /// <summary>
     /// Saves the document to <see cref="Filename"/> through a temporary file that then replaces it in one step,
     /// so a crash mid-save cannot truncate the settings.  Does nothing while saving is blocked after a failed load.
@@ -188,46 +188,44 @@ begin
   begin
     if AppDataDirectory = '' then
       InitAppDataDirectory;
-    
-    GlobalConfiguration := TConfiguration.Create;
-    GlobalConfiguration.LoadFromFile(AppDataDirectory + '\DDevExtensions' + DelphiVersion + '.xml');
-  end;
-  Result := GlobalConfiguration;
-end;
 
+    GlobalConfiguration := TConfiguration.Create;
+    GlobalConfiguration.LoadFromFile( AppDataDirectory + '\DDevExtensions' + DelphiVersion + '.xml' );
+  end;
+  Result            := GlobalConfiguration;
+end;
 
 { TPluginConfig }
 
-constructor TPluginConfig.Create(const AFilename, ARootNodeName: string);
+constructor TPluginConfig.Create( const AFilename, ARootNodeName: string );
 begin
-  inherited Create(nil);
-  FFilename := ChangeFileExt(AFilename, '') + DelphiVersion + ExtractFileExt(AFilename);
-  FRootNodeName := ARootNodeName;
+  inherited Create( nil );
+  FFilename         := ChangeFileExt( AFilename, '' ) + DelphiVersion + ExtractFileExt( AFilename );
+  FRootNodeName     := ARootNodeName;
 
   Init;
 
-  if Configuration.HasNode(RootNodeName) then
-    LoadFromXml(Configuration.GetNode(RootNodeName))
-  else
-  if FileExists(FFilename) then
-  try
-    LoadFromFile(FFilename);
-    Save; // save to Configuration
-    System.SysUtils.DeleteFile(FFilename);
-  except
-    on E: Exception do
-      // Do not swallow silently: a corrupt legacy file leaves migration half-done
-      // and the stale file undeleted on every start, so record why.
-      OutputDebugString(PChar('PluginConfig: legacy settings migration failed for ' +
-        FFilename + ' - ' + E.ClassName + ': ' + E.Message));
-  end;
+  if Configuration.HasNode( RootNodeName ) then
+    LoadFromXml( Configuration.GetNode( RootNodeName ) )
+  else if FileExists( FFilename ) then
+    try
+      LoadFromFile( FFilename );
+      Save; // save to Configuration
+      System.SysUtils.DeleteFile( FFilename );
+    except
+      on E: Exception do
+        // Do not swallow silently: a corrupt legacy file leaves migration half-done
+        // and the stale file undeleted on every start, so record why.
+        OutputDebugString( PChar( 'PluginConfig: legacy settings migration failed for ' +
+            FFilename + ' - ' + E.ClassName + ': ' + E.Message ) );
+    end;
 
   RegisterOptionPages;
 end;
 
 function TPluginConfig.GetOptionPages: TTreePage;
 begin
-  Result := nil;
+  Result            := nil;
 end;
 
 procedure TPluginConfig.Init;
@@ -240,162 +238,162 @@ begin
   inherited Destroy;
 end;
 
-procedure TPluginConfig.LoadFromFile(const Filename: string);
+procedure TPluginConfig.LoadFromFile( const Filename: string );
 var
-  Doc: IXmlDocument;
+  Doc               : IXmlDocument;
 begin
-  Doc := LoadXmlDocument(Filename);
-  LoadFromXml(Doc.DocumentElement);
+  Doc               := LoadXmlDocument( Filename );
+  LoadFromXml( Doc.DocumentElement );
 end;
 
 procedure TPluginConfig.RegisterOptionPages;
 begin
-  TFormDDevExtOptions.RegisterPages(GetOptionPages);
+  TFormDDevExtOptions.RegisterPages( GetOptionPages );
 end;
 
 procedure TPluginConfig.Save;
 begin
-  Configuration.GetNode(FRootNodeName).ChildNodes.Clear;
-  SaveToXml(Configuration.GetNode(FRootNodeName));
+  Configuration.GetNode( FRootNodeName ).ChildNodes.Clear;
+  SaveToXml( Configuration.GetNode( FRootNodeName ) );
   Configuration.Modified;
 end;
 
-procedure TPluginConfig.SaveToXml(Node: IXmlNode);
+procedure TPluginConfig.SaveToXml( Node: IXmlNode );
 var
-  i: Integer;
-  PropList: PPropList;
-  Info: PPropInfo;
-  Count: Integer;
-  HasActive: Boolean;
-  Obj: TObject;
-  PropName: string;
+  i                 : Integer;
+  PropList          : PPropList;
+  Info              : PPropInfo;
+  Count             : Integer;
+  HasActive         : Boolean;
+  Obj               : TObject;
+  PropName          : string;
 begin
-  HasActive := False;
-  Info := GetPropInfo(Self, 'Active', tkProperties);
-  if (Info <> nil) and (Info.PropType^.Kind = tkEnumeration) then
+  HasActive         := False;
+  Info              := GetPropInfo( Self, 'Active', tkProperties );
+  if ( Info <> nil ) and ( Info.PropType^.Kind = tkEnumeration ) then
   begin
-    Node.Attributes['Active'] := GetEnumProp(Self, Info);
-    HasActive := True;
+    Node.Attributes[ 'Active' ] := GetEnumProp( Self, Info );
+    HasActive       := True;
   end;
 
-  Count := GetPropList(ClassInfo, PropList);
+  Count             := GetPropList( ClassInfo, PropList );
   try
     for i := 0 to Count - 1 do
     begin
-      PropName := string(PropList[i].Name);
-      if ((AnsiCompareText(PropName, 'Active') <> 0) or not HasActive) and
-         (AnsiCompareText(PropName, 'Tag') <> 0) and
-         (AnsiCompareText(PropName, 'Name') <> 0) then
+      PropName      := string( PropList[ i ].Name );
+      if ( ( AnsiCompareText( PropName, 'Active' ) <> 0 ) or not HasActive ) and
+        ( AnsiCompareText( PropName, 'Tag' ) <> 0 ) and
+        ( AnsiCompareText( PropName, 'Name' ) <> 0 ) then
       begin
-        Node.ChildNodes.DeleteNodes(PropName);;
-        case PropList[i].PropType^.Kind of
+        Node.ChildNodes.DeleteNodes( PropName ); ;
+        case PropList[ i ].PropType^.Kind of
           tkInteger:
-            TConfiguration.GetNode(Node, PropName).Attributes['Value'] := GetOrdProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).Attributes[ 'Value' ] := GetOrdProp( Self, PropList[ i ] );
           tkString, tkUString, tkLString:
-            TConfiguration.GetNode(Node, PropName).NodeValue := GetStrProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).NodeValue := GetStrProp( Self, PropList[ i ] );
           tkWString:
-            TConfiguration.GetNode(Node, PropName).NodeValue := GetWideStrProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).NodeValue := GetWideStrProp( Self, PropList[ i ] );
           tkVariant:
-            TConfiguration.GetNode(Node, PropName).NodeValue := GetVariantProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).NodeValue := GetVariantProp( Self, PropList[ i ] );
           tkFloat:
-            TConfiguration.GetNode(Node, PropName).Attributes['Value'] := GetFloatProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).Attributes[ 'Value' ] := GetFloatProp( Self, PropList[ i ] );
           tkEnumeration:
-            TConfiguration.GetNode(Node, PropName).Attributes['Value'] := GetEnumProp(Self, PropList[i]);
+            TConfiguration.GetNode( Node, PropName ).Attributes[ 'Value' ] := GetEnumProp( Self, PropList[ i ] );
           tkClass:
             begin
-              Obj := GetObjectProp(Self, PropList[i]);
+              Obj   := GetObjectProp( Self, PropList[ i ] );
               if Obj is TStrings then
-                TConfiguration.GetNode(Node, PropName).NodeValue := TStrings(Obj).CommaText;
+                TConfiguration.GetNode( Node, PropName ).NodeValue := TStrings( Obj ).CommaText;
             end;
         end;
       end;
     end;
   finally
-    if Assigned(PropList) then
-      FreeMem(PropList);
+    if Assigned( PropList ) then
+      FreeMem( PropList );
   end;
 end;
 
-procedure TPluginConfig.LoadFromXml(Node: IXmlNode);
+procedure TPluginConfig.LoadFromXml( Node: IXmlNode );
 var
-  i: Integer;
-  PropList: PPropList;
-  Info: PPropInfo;
-  Count: Integer;
-  HasActive: Boolean;
-  Xml, N: IXmlNode;
-  Obj: TObject;
-  PropName: string;
+  i                 : Integer;
+  PropList          : PPropList;
+  Info              : PPropInfo;
+  Count             : Integer;
+  HasActive         : Boolean;
+  Xml, N            : IXmlNode;
+  Obj               : TObject;
+  PropName          : string;
 begin
-  FLoading := True;
+  FLoading          := True;
   try
     if Node <> nil then
     begin
-      Info := GetPropInfo(Self, 'Active', tkProperties);
-      HasActive := (Info <> nil) and (Info.PropType^.Kind = tkEnumeration) and (Node.Attributes['Active'] <> Null);
+      Info          := GetPropInfo( Self, 'Active', tkProperties );
+      HasActive     := ( Info <> nil ) and ( Info.PropType^.Kind = tkEnumeration ) and ( Node.Attributes[ 'Active' ] <> Null );
 
-      Count := GetPropList(ClassInfo, PropList);
+      Count         := GetPropList( ClassInfo, PropList );
       try
         for i := 0 to Count - 1 do
         begin
-          PropName := string(PropList[i].Name);
-          if ((AnsiCompareText(PropName, 'Active') <> 0) or not HasActive) and
-             (AnsiCompareText(PropName, 'Tag') <> 0) and
-             (AnsiCompareText(PropName, 'Name') <> 0) then
+          PropName  := string( PropList[ i ].Name );
+          if ( ( AnsiCompareText( PropName, 'Active' ) <> 0 ) or not HasActive ) and
+            ( AnsiCompareText( PropName, 'Tag' ) <> 0 ) and
+            ( AnsiCompareText( PropName, 'Name' ) <> 0 ) then
           begin
-            Xml := Node.ChildNodes.FindNode(PropName);
+            Xml     := Node.ChildNodes.FindNode( PropName );
             // The XML wrapper returns '' for a missing attribute, so test for a real value: an integer or float
             // property given '' raised EVariantTypeCastError and took the whole feature down with it
-            if (Xml <> nil) and ((PropList[i].PropType^.Kind in [tkString, tkUString, tkLString, tkWString, tkVariant, tkClass]) or
-               XmlValuePresent(Xml.Attributes['Value'])) then
-            try
-              case PropList[i].PropType^.Kind of
-                tkInteger:
-                  SetOrdProp(Self, PropList[i], Xml.Attributes['Value']);
-                tkString, tkLString, tkUString:
-                  SetStrProp(Self, PropList[i], VarToStr(Xml.NodeValue));
-                tkWString:
-                  SetWideStrProp(Self, PropList[i], VarToWideStr(Xml.NodeValue));
-                tkVariant:
-                  SetVariantProp(Self, PropList[i], Xml.NodeValue);
-                tkFloat:
-                  SetFloatProp(Self, PropList[i], Xml.Attributes['Value']);
-                tkEnumeration:
-                  if VarToStr(Xml.Attributes['Value']) <> '' then
-                  begin
-                    try
-                      SetEnumProp(Self, PropList[i], VarToStr(Xml.Attributes['Value']));
-                    except
-                      // ignore exception if the enumeration item doesn't exist (anymore)
-                    end;
-                  end;
-                tkClass:
-                  begin
-                    Obj := GetObjectProp(Self, PropList[i]);
-                    if Obj is TStrings then
+            if ( Xml <> nil ) and ( ( PropList[ i ].PropType^.Kind in [ tkString, tkUString, tkLString, tkWString, tkVariant, tkClass ] ) or
+              XmlValuePresent( Xml.Attributes[ 'Value' ] ) ) then
+              try
+                case PropList[ i ].PropType^.Kind of
+                  tkInteger:
+                    SetOrdProp( Self, PropList[ i ], Xml.Attributes[ 'Value' ] );
+                  tkString, tkLString, tkUString:
+                    SetStrProp( Self, PropList[ i ], VarToStr( Xml.NodeValue ) );
+                  tkWString:
+                    SetWideStrProp( Self, PropList[ i ], VarToWideStr( Xml.NodeValue ) );
+                  tkVariant:
+                    SetVariantProp( Self, PropList[ i ], Xml.NodeValue );
+                  tkFloat:
+                    SetFloatProp( Self, PropList[ i ], Xml.Attributes[ 'Value' ] );
+                  tkEnumeration:
+                    if VarToStr( Xml.Attributes[ 'Value' ] ) <> '' then
                     begin
-                      N := Node.ChildNodes.FindNode(PropName);
-                      if N <> nil then
-                        TStrings(Obj).CommaText := VarToStr(N.NodeValue); // an empty list's node has a Null value
+                      try
+                        SetEnumProp( Self, PropList[ i ], VarToStr( Xml.Attributes[ 'Value' ] ) );
+                      except
+                        // ignore exception if the enumeration item doesn't exist (anymore)
+                      end;
                     end;
-                  end;
+                  tkClass:
+                    begin
+                      Obj := GetObjectProp( Self, PropList[ i ] );
+                      if Obj is TStrings then
+                      begin
+                        N := Node.ChildNodes.FindNode( PropName );
+                        if N <> nil then
+                          TStrings( Obj ).CommaText := VarToStr( N.NodeValue ); // an empty list's node has a Null value
+                      end;
+                    end;
+                end;
+              except
+                on E: EVariantError do
+                  // Keep the default for this one property; the others still load
+                  OutputDebugString( PChar( 'PluginConfig: ' + RootNodeName + '.' + PropName + ' ignored - ' + E.Message ) );
               end;
-            except
-              on E: EVariantError do
-                // Keep the default for this one property; the others still load
-                OutputDebugString(PChar('PluginConfig: ' + RootNodeName + '.' + PropName + ' ignored - ' + E.Message));
-            end;
           end;
         end;
-        if HasActive and (VarToStr(Node.Attributes['Active']) <> '') then
-          SetEnumProp(Self, Info, VarToStr(Node.Attributes['Active']));
+        if HasActive and ( VarToStr( Node.Attributes[ 'Active' ] ) <> '' ) then
+          SetEnumProp( Self, Info, VarToStr( Node.Attributes[ 'Active' ] ) );
       finally
-        if Assigned(PropList) then
-          FreeMem(PropList);
+        if Assigned( PropList ) then
+          FreeMem( PropList );
       end;
     end;
   finally
-    FLoading := False;
+    FLoading        := False;
     Loaded;
   end;
 end;
@@ -410,28 +408,28 @@ end;
 
 procedure TConfiguration.NewDocument;
 begin
-  FXml := NewXmlDocument;
-  FXml.DocumentElement := FXml.CreateElement('DDevExtensions', '');
+  FXml              := NewXmlDocument;
+  FXml.DocumentElement := FXml.CreateElement( 'DDevExtensions', '' );
 end;
 
-procedure TConfiguration.HandleLoadFailure(Outcome: TSettingsLoadOutcome; const Reason: string);
+procedure TConfiguration.HandleLoadFailure( Outcome: TSettingsLoadOutcome; const Reason: string );
 begin
   // Start from defaults, but never let the next save overwrite the file: it is the user's only copy of every
   // feature's settings
   NewDocument;
-  var Text := Format( 'DDevExtensions could not read its settings file:' + sLineBreak + '%s' + sLineBreak + sLineBreak +
+  var Text          := Format( 'DDevExtensions could not read its settings file:' + sLineBreak + '%s' + sLineBreak + sLineBreak +
     '%s' + sLineBreak + sLineBreak, [ Filename, Reason ] );
   var Moved: string;
   if ( Outcome = sloUnreadable ) and QuarantineFile( Filename, Now, Moved ) then
     // Damaged content: move it aside, so a fresh file can be written and the old one recovered by hand
-    Text := Text + 'The file has been moved to:' + sLineBreak + Moved + sLineBreak + sLineBreak +
+    Text            := Text + 'The file has been moved to:' + sLineBreak + Moved + sLineBreak + sLineBreak +
       'Default settings are in use; a new settings file will be written when an option is changed.'
   else
   begin
     // Could not be opened ( another IDE may hold it ), or could not be moved: its content may be good, so leave
     // it exactly where it is and save nothing this session
-    FSaveBlocked := True;
-    Text := Text + 'The file has been left as it is, and settings will not be saved this session.  Default ' +
+    FSaveBlocked    := True;
+    Text            := Text + 'The file has been left as it is, and settings will not be saved this session.  Default ' +
       'settings are in use; restart the IDE to try again.';
   end;
   OutputDebugString( PChar( Text ) );
@@ -440,57 +438,57 @@ end;
 
 destructor TConfiguration.Destroy;
 begin
-  FXml := nil;
+  FXml              := nil;
   inherited Destroy;
 end;
 
 procedure TConfiguration.BeginUpdate;
 begin
-  Inc(FUpdateLock);
+  Inc( FUpdateLock );
 end;
 
 procedure TConfiguration.EndUpdate;
 begin
-  Assert(FUpdateLock > 0, 'Unpaired call of EndUpdate');
-  Dec(FUpdateLock);
-  if (FUpdateLock = 0) and FModified then
+  Assert( FUpdateLock > 0, 'Unpaired call of EndUpdate' );
+  Dec( FUpdateLock );
+  if ( FUpdateLock = 0 ) and FModified then
     Save;
 end;
 
-function TConfiguration.GetNode(const NodeName: string): IXMLNode;
+function TConfiguration.GetNode( const NodeName: string ): IXMLNode;
 begin
-  Result := GetNode(FXml.DocumentElement, NodeName);
+  Result            := GetNode( FXml.DocumentElement, NodeName );
 end;
 
-class function TConfiguration.GetNode(ParentNode: IXmlNode; const NodeName: string): IXmlNode;
+class function TConfiguration.GetNode( ParentNode: IXmlNode; const NodeName: string ): IXmlNode;
 begin
-  Result := ParentNode.ChildNodes.FindNode(NodeName);
+  Result            := ParentNode.ChildNodes.FindNode( NodeName );
   if Result = nil then
-    Result := ParentNode.AddChild(NodeName);
+    Result          := ParentNode.AddChild( NodeName );
 end;
 
-function TConfiguration.HasNode(const NodeName: string): Boolean;
+function TConfiguration.HasNode( const NodeName: string ): Boolean;
 begin
-  Result := FXml.DocumentElement.ChildNodes.FindNode(NodeName) <> nil;
+  Result            := FXml.DocumentElement.ChildNodes.FindNode( NodeName ) <> nil;
 end;
 
-function TConfiguration.FindNode(const NodeName: string): IXmlNode;
+function TConfiguration.FindNode( const NodeName: string ): IXmlNode;
 begin
-  Result := FXml.DocumentElement.ChildNodes.FindNode(NodeName);
+  Result            := FXml.DocumentElement.ChildNodes.FindNode( NodeName );
 end;
 
-procedure TConfiguration.LoadFromFile(const AFilename: string);
+procedure TConfiguration.LoadFromFile( const AFilename: string );
 begin
-  FFilename := AFilename;
-  FSaveBlocked := False;
-  if FileExists(Filename) then
+  FFilename         := AFilename;
+  FSaveBlocked      := False;
+  if FileExists( Filename ) then
   begin
     // A few short retries ( under a second in all ): the other-bitness IDE may be saving the file right now
     var Reason: string;
-    var Outcome := LoadSettingsWithRetry( Filename,
-      procedure(Name: string)
+    var Outcome     := LoadSettingsWithRetry( Filename,
+      procedure( Name: string )
       begin
-        FXml := LoadXmlDocument( Name );
+        FXml        := LoadXmlDocument( Name );
         if FXml.DocumentElement = nil then
           raise EInOutError.Create( 'The file has no root element' );
       end, SettingsLoadAttempts, SettingsLoadRetryDelayMs, Reason );
@@ -499,25 +497,25 @@ begin
   end
   else
     NewDocument;
-  FXml.Options := FXml.Options + [doNodeAutoIndent];
-  FModified := False;
+  FXml.Options      := FXml.Options + [ doNodeAutoIndent ];
+  FModified         := False;
 end;
 
 procedure TConfiguration.Modified;
 begin
-  FModified := True;
-  if (Filename <> '') and (FUpdateLock = 0) then
+  FModified         := True;
+  if ( Filename <> '' ) and ( FUpdateLock = 0 ) then
     Save;
 end;
 
 procedure TConfiguration.Save;
 begin
-  Assert(Filename <> '');
+  Assert( Filename <> '' );
   if FSaveBlocked then
     Exit;
 
-  ForceDirectories(ExtractFileDir(Filename));
-  var TempName := TempFileNameFor( Filename );
+  ForceDirectories( ExtractFileDir( Filename ) );
+  var TempName      := TempFileNameFor( Filename );
   try
     FXml.SaveToFile( TempName );
   except
@@ -525,17 +523,18 @@ begin
     raise;
   end;
   ReplaceFileAtomically( TempName, Filename );
-  FModified := False;
+  FModified         := False;
 end;
 
-procedure TConfiguration.SaveToFile(const AFilename: string);
+procedure TConfiguration.SaveToFile( const AFilename: string );
 begin
-  FXml.SaveToFile(AFilename);
+  FXml.SaveToFile( AFilename );
 end;
 
 initialization
 
 finalization
-  FreeAndNil(GlobalConfiguration);
+  FreeAndNil( GlobalConfiguration );
 
 end.
+

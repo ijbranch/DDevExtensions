@@ -147,7 +147,7 @@ type
 
 var
   /// <summary>Singleton form instance; nil when the form is closed.</summary>
-  FormInstance: TFormTodoAggregator = nil;
+  FormInstance      : TFormTodoAggregator = nil;
 
 implementation
 
@@ -160,9 +160,9 @@ function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
 
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 
 end;
 
@@ -176,7 +176,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormTodoAggregator.Create( Application );
+  FormInstance      := TFormTodoAggregator.Create( Application );
   FormInstance.Show;
 
 end;
@@ -197,21 +197,21 @@ begin
   // while ScanProject is still on the stack (use-after-free).
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormTodoAggregator.FormCreate( Sender: TObject );
 begin
 
-  FScanner       := TTodoScanner.Create;
-  FSortColumn    := 0;
-  FSortAscending := True;
+  FScanner          := TTodoScanner.Create;
+  FSortColumn       := 0;
+  FSortAscending    := True;
 
   // Set up category filter
   cboCategory.Items.Add( '(All)' );
@@ -260,7 +260,7 @@ end;
 procedure TFormTodoAggregator.btnCancelScanClick( Sender: TObject );
 begin
 
-  FCancelRequested := True;
+  FCancelRequested  := True;
 
 end;
 
@@ -273,10 +273,10 @@ end;
 
 procedure TFormTodoAggregator.btnScanClick( Sender: TObject );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
 
-  Project := GetActiveProject;
+  Project           := GetActiveProject;
 
   if Project = nil then
   begin
@@ -284,17 +284,17 @@ begin
     Exit;
   end;
 
-  Screen.Cursor         := crHourGlass;
-  btnScan.Enabled       := False;
-  btnScan.Visible       := False;
+  Screen.Cursor     := crHourGlass;
+  btnScan.Enabled   := False;
+  btnScan.Visible   := False;
   btnCancelScan.Visible := True;
-  FCancelRequested      := False;
-  FScanning             := True;
+  FCancelRequested  := False;
+  FScanning         := True;
 
   try
     lblProgress.Caption := 'Scanning project...';
     lblProgress.Visible := True;
-    lblSummary.Visible  := False;
+    lblSummary.Visible := False;
     Application.ProcessMessages;
 
     // Re-apply patterns here, not just in FormCreate: this is a persistent
@@ -302,29 +302,29 @@ begin
     if ( TodoAggregatorPlugin <> nil ) then
       FScanner.SetPatterns( TodoAggregatorPlugin.Patterns );
     try
-      FTodoItems := ScanProjectTodos( FScanner, Project, ScannerProgress );
+      FTodoItems    := ScanProjectTodos( FScanner, Project, ScannerProgress );
     except
       on EAbort do
       begin
-        FTodoItems := nil;
+        FTodoItems  := nil;
         PopulateList;
         lblProgress.Visible := False;
-        lblSummary.Caption  := 'Scan cancelled.';
-        lblSummary.Visible  := True;
+        lblSummary.Caption := 'Scan cancelled.';
+        lblSummary.Visible := True;
         Exit;
       end;
     end;
     PopulateList;
 
     lblProgress.Visible := False;
-    lblSummary.Caption  := Format( 'Found %d TODO items', [ Length( FTodoItems ) ] );
-    lblSummary.Visible  := True;
+    lblSummary.Caption := Format( 'Found %d TODO items', [ Length( FTodoItems ) ] );
+    lblSummary.Visible := True;
   finally
-    FScanning             := False;
+    FScanning       := False;
     btnCancelScan.Visible := False;
-    btnScan.Visible       := True;
-    btnScan.Enabled       := True;
-    Screen.Cursor         := crDefault;
+    btnScan.Visible := True;
+    btnScan.Enabled := True;
+    Screen.Cursor   := crDefault;
   end;
 
 end;
@@ -334,53 +334,53 @@ var
   CategoryFilter, PriorityFilter: string;
 begin
 
-  Result := True;
+  Result            := True;
 
   // Check category filter
   if cboCategory.ItemIndex > 0 then
   begin
-    CategoryFilter := cboCategory.Items[ cboCategory.ItemIndex ];
+    CategoryFilter  := cboCategory.Items[ cboCategory.ItemIndex ];
 
     if not SameText( Item.Category, CategoryFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
   // Check priority filter
   if Result and ( cboPriority.ItemIndex > 0 ) then
   begin
-    PriorityFilter := cboPriority.Items[ cboPriority.ItemIndex ];
+    PriorityFilter  := cboPriority.Items[ cboPriority.ItemIndex ];
 
     if not SameText( Item.Priority, PriorityFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
 end;
 
 procedure TFormTodoAggregator.PopulateList;
 var
-  TodoItem: TTodoItem;
-  Item: TListItem;
-  Idx: Integer;
+  TodoItem          : TTodoItem;
+  Item              : TListItem;
+  Idx               : Integer;
 begin
 
   ListView.Items.BeginUpdate;
 
   try
     ListView.Items.Clear;
-    Idx := 0;
+    Idx             := 0;
 
     for TodoItem in FTodoItems do
     begin
 
       if PassesFilter( TodoItem ) then
       begin
-        Item         := ListView.Items.Add;
+        Item        := ListView.Items.Add;
         Item.Caption := TodoItem.UnitName;
         Item.SubItems.Add( TodoItem.Category );
         Item.SubItems.Add( TodoItem.Priority );
         Item.SubItems.Add( IntToStr( TodoItem.Line ) );
         Item.SubItems.Add( TodoItem.Text );
-        Item.Data := Pointer( NativeInt( Idx ) );
+        Item.Data   := Pointer( NativeInt( Idx ) );
       end;
 
       Inc( Idx );
@@ -410,11 +410,11 @@ procedure TFormTodoAggregator.ListViewColumnClick( Sender: TObject;
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
 
   ListView.AlphaSort;
@@ -426,55 +426,55 @@ function PriorityRank( const Priority: string ): Integer;
 begin
 
   if SameText( Priority, 'High' ) then
-    Result := 1
+    Result          := 1
   else if SameText( Priority, 'Normal' ) then
-    Result := 2
+    Result          := 2
   else if SameText( Priority, 'Low' ) then
-    Result := 3
+    Result          := 3
   else
-    Result := High( Integer );
+    Result          := High( Integer );
 
 end;
 
 procedure TFormTodoAggregator.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
 
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
+    SubIdx          := FSortColumn - 1;
 
     if SubIdx < Item1.SubItems.Count then
-      S1 := Item1.SubItems[ SubIdx ]
+      S1            := Item1.SubItems[ SubIdx ]
     else
-      S1 := '';
+      S1            := '';
 
     if SubIdx < Item2.SubItems.Count then
-      S2 := Item2.SubItems[ SubIdx ]
+      S2            := Item2.SubItems[ SubIdx ]
     else
-      S2 := '';
+      S2            := '';
   end;
 
   // Try numeric comparison for line number column
   if FSortColumn = 3 then
-    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+    Compare         := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else if FSortColumn = 2 then
     // Priority sorting: High > Normal > Low; map to integer ranks and compare
     // numerically so any unexpected priority string sorts deterministically last.
-    Compare := PriorityRank( S1 ) - PriorityRank( S2 )
+    Compare         := PriorityRank( S1 ) - PriorityRank( S2 )
   else
-    Compare := CompareText( S1, S2 );
+    Compare         := CompareText( S1, S2 );
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
@@ -487,13 +487,13 @@ end;
 
 procedure TFormTodoAggregator.OpenSelectedFile;
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
 
   if ( ListView.Selected = nil ) then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FTodoItems ) ) then
     Exit;
@@ -511,11 +511,11 @@ end;
 
 procedure TFormTodoAggregator.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Unit'#9'Category'#9'Priority'#9'Line'#9'Text' );
@@ -525,14 +525,14 @@ begin
 
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          // A block comment's text can span lines; keep one row per item in the TSV.
-          StringReplace( StringReplace( SafeGetSubItem( Item, 3 ), #13#10, ' ', [ rfReplaceAll ] ),
-            #9, ' ', [ rfReplaceAll ] )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 ),
+              // A block comment's text can span lines; keep one row per item in the TSV.
+              StringReplace( StringReplace( SafeGetSubItem( Item, 3 ), #13#10, ' ', [ rfReplaceAll ] ),
+                #9, ' ', [ rfReplaceAll ] )
+              ] ) );
     end;
 
     CopyTextToClipboard( SL.Text );
@@ -544,8 +544,8 @@ end;
 
 procedure TFormTodoAggregator.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
   if ListView.Items.Count = 0 then
@@ -556,7 +556,7 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( 'Unit,Category,Priority,Line,Text' );
@@ -564,12 +564,12 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s","%s"', [
-          StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
-          SafeGetSubItem( Item, 2 ),
-          StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] )
-        ] ) );
+              StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
+              SafeGetSubItem( Item, 2 ),
+              StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] )
+              ] ) );
       end;
 
       try
@@ -588,3 +588,4 @@ begin
 end;
 
 end.
+

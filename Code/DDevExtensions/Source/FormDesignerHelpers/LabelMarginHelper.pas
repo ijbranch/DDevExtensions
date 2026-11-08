@@ -1,4 +1,4 @@
-{******************************************************************************}
+﻿{******************************************************************************}
 {*                                                                            *}
 {* DDevExtensions                                                             *}
 {*                                                                            *}
@@ -26,62 +26,62 @@ uses
 /// AfterConstruction with a hook that initialises Margins.Bottom to zero at design time.
 /// </summary>
 /// <param name="Active">True to install the hook, False to restore the original VMT entry.</param>
-procedure SetLabelMarginActive(Active: Boolean);
+procedure SetLabelMarginActive( Active: Boolean );
 
 implementation
 
 type
-  TLabelMargins = class(TMargins)
+  TLabelMargins = class( TMargins )
   protected
-    class procedure InitDefaults(Margins: TMargins); override;
+    class procedure InitDefaults( Margins: TMargins ); override;
   published
     property Bottom default 0;
   end;
 
-class procedure TLabelMargins.InitDefaults(Margins: TMargins);
+class procedure TLabelMargins.InitDefaults( Margins: TMargins );
 begin
-  inherited InitDefaults(Margins);
-  Margins.Bottom := 0;
+  inherited InitDefaults( Margins );
+  Margins.Bottom    := 0;
 end;
 
-procedure Label_AfterConstruction(Self: TLabel);
+procedure Label_AfterConstruction( Self: TLabel );
 type
-  TAfterConstructionProc = procedure(Self: TLabel);
+  TAfterConstructionProc = procedure( Self: TLabel );
 var
-  P: ^TMargins;
-  ChangeEvent: TNotifyEvent;
+  P                 : ^TMargins;
+  ChangeEvent       : TNotifyEvent;
 begin
   if csDesigning in Self.ComponentState then
   begin
-    P := @Self.Margins;
-    ChangeEvent := Self.Margins.OnChange;
+    P               := @Self.Margins;
+    ChangeEvent     := Self.Margins.OnChange;
     P^.Free;
-    P^ := TLabelMargins.Create(Self);
-    P^.OnChange := ChangeEvent;
+    P^              := TLabelMargins.Create( Self );
+    P^.OnChange     := ChangeEvent;
   end;
-  TAfterConstructionProc(@TLabel.AfterConstruction)(Self);
+  TAfterConstructionProc( @TLabel.AfterConstruction )( Self );
 end;
 
 var
-  IsActive: Boolean;
+  IsActive          : Boolean;
 
-procedure SetLabelMarginActive(Active: Boolean);
+procedure SetLabelMarginActive( Active: Boolean );
 var
-  Patched: Boolean;
+  Patched           : Boolean;
 begin
   if Active <> IsActive then
   begin
-    IsActive := Active;
+    IsActive        := Active;
     if Active then
-      Patched := ReplaceVmtField(TLabel, @TLabel.AfterConstruction, @Label_AfterConstruction)
+      Patched       := ReplaceVmtField( TLabel, @TLabel.AfterConstruction, @Label_AfterConstruction )
     else
-      Patched := ReplaceVmtField(TLabel, @Label_AfterConstruction, @TLabel.AfterConstruction);
+      Patched       := ReplaceVmtField( TLabel, @Label_AfterConstruction, @TLabel.AfterConstruction );
 
     // ReplaceVmtField returns False when the VMT slot is not found (e.g. an RTL
     // layout change). Log so a silently failed patch surfaces in testing rather
     // than presenting as a working option.
     if not Patched then
-      OutputDebugString('LabelMarginHelper: ReplaceVmtField(TLabel.AfterConstruction) failed.');
+      OutputDebugString( 'LabelMarginHelper: ReplaceVmtField(TLabel.AfterConstruction) failed.' );
   end;
 end;
 

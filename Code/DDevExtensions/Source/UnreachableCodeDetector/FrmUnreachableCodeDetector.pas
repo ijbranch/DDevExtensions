@@ -131,18 +131,18 @@ uses
 
 var
   /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
-  FormInstance: TFormUnreachableCodeDetector = nil;
+  FormInstance      : TFormUnreachableCodeDetector = nil;
 
 class function TFormUnreachableCodeDetector.Execute: Boolean;
 begin
 
   // One form only: each extra instance would be one more window to leave behind on unload.
   if FormInstance = nil then
-    FormInstance := TFormUnreachableCodeDetector.Create( Application );
+    FormInstance    := TFormUnreachableCodeDetector.Create( Application );
 
-  FormInstance.Show;  // Non-modal - allows working in Delphi while open
+  FormInstance.Show; // Non-modal - allows working in Delphi while open
   FormInstance.BringToFront;
-  Result := True;
+  Result            := True;
 
 end;
 
@@ -151,8 +151,8 @@ begin
   if FormInstance = nil then
     Exit;
 
-  var oForm := FormInstance;
-  FormInstance := nil;
+  var oForm         := FormInstance;
+  FormInstance      := nil;
 
   if oForm.FScanning then
   begin
@@ -170,10 +170,10 @@ end;
 procedure TFormUnreachableCodeDetector.FormCreate( Sender: TObject );
 begin
 
-  FScanner            := TUnreachableCodeScanner.Create;
-  FSortColumn         := 0;
-  FSortAscending      := True;
-  FScanCaption        := btnScan.Caption;
+  FScanner          := TUnreachableCodeScanner.Create;
+  FSortColumn       := 0;
+  FSortAscending    := True;
+  FScanCaption      := btnScan.Caption;
 
   cmbFilter.Items.Add( 'All' );
   cmbFilter.Items.Add( 'After Exit' );
@@ -194,13 +194,13 @@ begin
   // while ScanProject is still on the stack (use-after-free).
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
   if FormInstance = Self then
-    FormInstance := nil;
-  Action := caFree;  // Free the form when closed (non-modal)
+    FormInstance    := nil;
+  Action            := caFree; // Free the form when closed (non-modal)
 
 end;
 
@@ -208,7 +208,7 @@ procedure TFormUnreachableCodeDetector.FormDestroy( Sender: TObject );
 begin
 
   if FormInstance = Self then
-    FormInstance := nil;
+    FormInstance    := nil;
   FScanner.Free;
 
 end;
@@ -217,7 +217,7 @@ procedure TFormUnreachableCodeDetector.ScannerProgress( const Step: string; var 
 begin
   lblProgress.Caption := Step;
   Application.ProcessMessages;
-  Cancel := FCancelRequested;
+  Cancel            := FCancelRequested;
 end;
 
 procedure TFormUnreachableCodeDetector.btnCloseClick( Sender: TObject );
@@ -237,7 +237,7 @@ begin
     Exit;
   end;
 
-  var oProject := GetActiveProject;
+  var oProject      := GetActiveProject;
 
   if oProject = nil then
   begin
@@ -247,10 +247,10 @@ begin
 
   lblProject.Caption := 'Project: ' + ChangeFileExt( ExtractFileName( oProject.FileName ), '' );
 
-  Screen.Cursor    := crHourGlass;
-  FScanning        := True;
-  FCancelRequested := False;
-  btnScan.Caption  := '&Cancel';
+  Screen.Cursor     := crHourGlass;
+  FScanning         := True;
+  FCancelRequested  := False;
+  btnScan.Caption   := '&Cancel';
 
   try
     lblProgress.Caption := 'Scanning project...';
@@ -258,8 +258,8 @@ begin
     Application.ProcessMessages;
 
     var iSkipped: Integer;
-    var bCompleted := ScanProject( FScanner, oProject, ScannerProgress, iSkipped );
-    FItems := FScanner.GetItems;
+    var bCompleted  := ScanProject( FScanner, oProject, ScannerProgress, iSkipped );
+    FItems          := FScanner.GetItems;
 
     PopulateList;
 
@@ -284,23 +284,23 @@ end;
 
 procedure TFormUnreachableCodeDetector.PopulateList;
 var
-  Item: TUnreachableCodeItem;
-  ListItem: TListItem;
-  FilterIdx: Integer;
-  VisibleCount: Integer;
-  OrigIdx: Integer;
+  Item              : TUnreachableCodeItem;
+  ListItem          : TListItem;
+  FilterIdx         : Integer;
+  VisibleCount      : Integer;
+  OrigIdx           : Integer;
 begin
 
   ListView.Items.BeginUpdate;
 
   try
     ListView.Items.Clear;
-    FilterIdx    := cmbFilter.ItemIndex;
-    VisibleCount := 0;
+    FilterIdx       := cmbFilter.ItemIndex;
+    VisibleCount    := 0;
 
     for OrigIdx := 0 to High( FItems ) do
     begin
-      Item := FItems[ OrigIdx ];
+      Item          := FItems[ OrigIdx ];
       // Apply filter
       if FilterIdx > 0 then
       begin
@@ -309,7 +309,7 @@ begin
           Continue;
       end;
 
-      ListItem         := ListView.Items.Add;
+      ListItem      := ListView.Items.Add;
       ListItem.Caption := Item.UnitName;
       ListItem.SubItems.Add( IntToStr( Item.Line ) );
       ListItem.SubItems.Add( Item.ReasonText );
@@ -338,7 +338,7 @@ end;
 
 procedure TFormUnreachableCodeDetector.ListViewDblClick( Sender: TObject );
 var
-  OrigIdx: NativeInt;
+  OrigIdx           : NativeInt;
 begin
 
   if ListView.Selected = nil then
@@ -347,7 +347,7 @@ begin
   // PopulateList stores the original FItems index in the item's Data. Resolve
   // through it rather than the visual row position, which no longer matches the
   // scan order once the user has sorted a column (AlphaSort).
-  OrigIdx := NativeInt( ListView.Selected.Data );
+  OrigIdx           := NativeInt( ListView.Selected.Data );
 
   if ( OrigIdx >= 0 ) and ( OrigIdx <= High( FItems ) ) then
     OpenItem( FItems[ OrigIdx ] );
@@ -356,11 +356,11 @@ end;
 
 procedure TFormUnreachableCodeDetector.OpenItem( const Item: TUnreachableCodeItem );
 var
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  EditView          : IOTAEditView;
+  I                 : Integer;
 begin
 
   if not FileExists( Item.FileName ) then
@@ -372,7 +372,7 @@ begin
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
     try
-      Module := ModuleServices.OpenModule( Item.FileName );
+      Module        := ModuleServices.OpenModule( Item.FileName );
     except
       on E: Exception do
       begin
@@ -387,7 +387,7 @@ begin
       Exit;
     end;
 
-    SourceEditor := nil;
+    SourceEditor    := nil;
 
     for I := 0 to Module.ModuleFileCount - 1 do
     begin
@@ -398,7 +398,7 @@ begin
 
         if SourceEditor.EditViewCount > 0 then
         begin
-          EditView := SourceEditor.EditViews[ 0 ];
+          EditView  := SourceEditor.EditViews[ 0 ];
 
           if EditView <> nil then
           begin
@@ -419,10 +419,10 @@ end;
 
 procedure TFormUnreachableCodeDetector.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  I: Integer;
-  Item: TUnreachableCodeItem;
-  SaveDlg: TSaveDialog;
+  SL                : TStringList;
+  I                 : Integer;
+  Item              : TUnreachableCodeItem;
+  SaveDlg           : TSaveDialog;
 begin
 
   if Length( FItems ) = 0 then
@@ -431,27 +431,27 @@ begin
     Exit;
   end;
 
-  SaveDlg := TSaveDialog.Create( nil );
+  SaveDlg           := TSaveDialog.Create( nil );
 
   try
-    SaveDlg.Filter     := 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*';
+    SaveDlg.Filter  := 'CSV Files (*.csv)|*.csv|All Files (*.*)|*.*';
     SaveDlg.DefaultExt := 'csv';
-    SaveDlg.FileName   := 'UnreachableCode.csv';
+    SaveDlg.FileName := 'UnreachableCode.csv';
 
     if SaveDlg.Execute then
     begin
-      SL := TStringList.Create;
+      SL            := TStringList.Create;
 
       try
         SL.Add( 'Unit,Line,Reason,Code Preview,File Path' );
 
         for I := 0 to High( FItems ) do
         begin
-          Item := FItems[ I ];
+          Item      := FItems[ I ];
           SL.Add( Format( '"%s",%d,"%s","%s","%s"',
-            [ Item.UnitName, Item.Line, Item.ReasonText,
-              StringReplace( Item.CodePreview, '"', '""', [ rfReplaceAll ] ),
-              Item.FileName ] ) );
+              [ Item.UnitName, Item.Line, Item.ReasonText,
+                StringReplace( Item.CodePreview, '"', '""', [ rfReplaceAll ] ),
+                Item.FileName ] ) );
         end;
 
         try
@@ -476,11 +476,11 @@ procedure TFormUnreachableCodeDetector.ListViewColumnClick( Sender: TObject;
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
 
   ListView.AlphaSort;
@@ -490,42 +490,43 @@ end;
 procedure TFormUnreachableCodeDetector.ListViewCompare( Sender: TObject;
   Item1, Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  N1, N2: Integer;
+  S1, S2            : string;
+  N1, N2            : Integer;
 begin
 
   case FSortColumn of
     0: // Unit
       begin
-        S1      := Item1.Caption;
-        S2      := Item2.Caption;
-        Compare := CompareText( S1, S2 );
+        S1          := Item1.Caption;
+        S2          := Item2.Caption;
+        Compare     := CompareText( S1, S2 );
       end;
     1: // Line
       begin
-        N1      := StrToIntDef( Item1.SubItems[ 0 ], 0 );
-        N2      := StrToIntDef( Item2.SubItems[ 0 ], 0 );
-        Compare := N1 - N2;
+        N1          := StrToIntDef( Item1.SubItems[ 0 ], 0 );
+        N2          := StrToIntDef( Item2.SubItems[ 0 ], 0 );
+        Compare     := N1 - N2;
       end;
     2: // Reason
       begin
-        S1      := Item1.SubItems[ 1 ];
-        S2      := Item2.SubItems[ 1 ];
-        Compare := CompareText( S1, S2 );
+        S1          := Item1.SubItems[ 1 ];
+        S2          := Item2.SubItems[ 1 ];
+        Compare     := CompareText( S1, S2 );
       end;
     3: // Code Preview
       begin
-        S1      := Item1.SubItems[ 2 ];
-        S2      := Item2.SubItems[ 2 ];
-        Compare := CompareText( S1, S2 );
+        S1          := Item1.SubItems[ 2 ];
+        S2          := Item2.SubItems[ 2 ];
+        Compare     := CompareText( S1, S2 );
       end;
   else
-    Compare := 0;
+    Compare         := 0;
   end;
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
 end.
+

@@ -136,7 +136,7 @@ type
 
 var
   /// <summary>Singleton detector form instance (nil when the form is not open).</summary>
-  FormInstance: TFormUnusedUnitDetector = nil;
+  FormInstance      : TFormUnusedUnitDetector = nil;
 
 implementation
 
@@ -149,9 +149,9 @@ function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
 
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 
 end;
 
@@ -159,7 +159,7 @@ end;
 function CsvField( const Value: string ): string;
 begin
 
-  Result := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
+  Result            := System.SysUtils.StringReplace( Value, '"', '""', [ rfReplaceAll ] );
 
 end;
 
@@ -173,7 +173,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormUnusedUnitDetector.Create( Application );
+  FormInstance      := TFormUnusedUnitDetector.Create( Application );
   FormInstance.Show;
 
 end;
@@ -183,8 +183,8 @@ begin
   if FormInstance = nil then
     Exit;
 
-  var oForm := FormInstance;
-  FormInstance := nil;
+  var oForm         := FormInstance;
+  FormInstance      := nil;
 
   if oForm.FScanning then
   begin
@@ -207,22 +207,22 @@ begin
   // while AnalyzeProject is still on the stack (use-after-free).
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormUnusedUnitDetector.FormCreate( Sender: TObject );
 begin
 
-  FAnalyzer      := TUnitAnalyzer.Create;
-  FSortColumn    := 0;
-  FSortAscending := True;
-  FScanCaption   := btnScan.Caption;
+  FAnalyzer         := TUnitAnalyzer.Create;
+  FSortColumn       := 0;
+  FSortAscending    := True;
+  FScanCaption      := btnScan.Caption;
 
 end;
 
@@ -230,7 +230,7 @@ procedure TFormUnusedUnitDetector.FormDestroy( Sender: TObject );
 begin
 
   if FormInstance = Self then
-    FormInstance := nil;   // freed by its owner rather than through Close / CloseInstance
+    FormInstance    := nil; // freed by its owner rather than through Close / CloseInstance
   FAnalyzer.Free;
 
 end;
@@ -239,7 +239,7 @@ procedure TFormUnusedUnitDetector.AnalyzerProgress( const Step: string; var Canc
 begin
   lblProgress.Caption := Step;
   Application.ProcessMessages;
-  Cancel := FCancelRequested;
+  Cancel            := FCancelRequested;
 end;
 
 procedure TFormUnusedUnitDetector.btnCloseClick( Sender: TObject );
@@ -259,7 +259,7 @@ begin
     Exit;
   end;
 
-  var oProject := GetActiveProject;
+  var oProject      := GetActiveProject;
 
   if oProject = nil then
   begin
@@ -271,24 +271,24 @@ begin
   if UnusedUnitDetectorPlugin <> nil then
     FAnalyzer.SetIgnoreList( UnusedUnitDetectorPlugin.IgnoreList );
 
-  Screen.Cursor    := crHourGlass;
-  FScanning        := True;
-  FCancelRequested := False;
-  btnScan.Caption  := '&Cancel';
+  Screen.Cursor     := crHourGlass;
+  FScanning         := True;
+  FCancelRequested  := False;
+  btnScan.Caption   := '&Cancel';
 
   try
     lblProgress.Caption := 'Scanning project...';
     lblProgress.Visible := True;
-    lblSummary.Visible  := False;
+    lblSummary.Visible := False;
     Application.ProcessMessages;
 
     var iSkipped: Integer;
-    var bCompleted := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FUnusedUnits, iSkipped );
+    var bCompleted  := AnalyzeProject( FAnalyzer, oProject, AnalyzerProgress, FUnusedUnits, iSkipped );
     PopulateList;
 
     var sInlineNote := '';
     if Length( FUnusedUnits ) > 0 then
-      sInlineNote := ' - rebuild after removing any (see hint)';
+      sInlineNote   := ' - rebuild after removing any (see hint)';
 
     lblProgress.Visible := False;
     if not bCompleted then
@@ -298,9 +298,9 @@ begin
         'unreadable unit or form, or an include file)', [ Length( FUnusedUnits ), iSkipped ] ) + sInlineNote
     else
       lblSummary.Caption := Format( 'Found %d potentially unused unit references', [ Length( FUnusedUnits ) ] ) + sInlineNote;
-    lblSummary.Hint     := UnusedUnitInlineNote;
+    lblSummary.Hint := UnusedUnitInlineNote;
     lblSummary.ShowHint := True;
-    lblSummary.Visible  := True;
+    lblSummary.Visible := True;
   finally
     FScanning       := False;
     btnScan.Caption := FScanCaption;
@@ -315,8 +315,8 @@ end;
 
 procedure TFormUnusedUnitDetector.PopulateList;
 var
-  UnusedInfo: TUnusedUnitInfo;
-  Item: TListItem;
+  UnusedInfo        : TUnusedUnitInfo;
+  Item              : TListItem;
 begin
 
   ListView.Items.BeginUpdate;
@@ -326,8 +326,8 @@ begin
 
     for UnusedInfo in FUnusedUnits do
     begin
-      Item         := ListView.Items.Add;
-      Item.Caption := UnusedInfo.SourceUnit;
+      Item := ListView.Items.Add;
+      Item.Caption  := UnusedInfo.SourceUnit;
       Item.SubItems.Add( UnusedInfo.UnusedUnit );
 
       if UnusedInfo.IsInterface then
@@ -336,7 +336,7 @@ begin
         Item.SubItems.Add( 'implementation' );
 
       Item.SubItems.Add( IntToStr( UnusedInfo.LineNumber ) );
-      Item.Data := Pointer( NativeInt( ListView.Items.Count - 1 ) );
+      Item.Data     := Pointer( NativeInt( ListView.Items.Count - 1 ) );
     end;
   finally
     ListView.Items.EndUpdate;
@@ -349,11 +349,11 @@ procedure TFormUnusedUnitDetector.ListViewColumnClick( Sender: TObject;
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
 
   ListView.AlphaSort;
@@ -363,38 +363,38 @@ end;
 procedure TFormUnusedUnitDetector.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
 
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
+    SubIdx          := FSortColumn - 1;
 
     if SubIdx < Item1.SubItems.Count then
-      S1 := Item1.SubItems[ SubIdx ]
+      S1            := Item1.SubItems[ SubIdx ]
     else
-      S1 := '';
+      S1            := '';
 
     if SubIdx < Item2.SubItems.Count then
-      S2 := Item2.SubItems[ SubIdx ]
+      S2            := Item2.SubItems[ SubIdx ]
     else
-      S2 := '';
+      S2            := '';
   end;
 
   // Try numeric comparison for line number column
   if FSortColumn = 3 then
-    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+    Compare         := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else
-    Compare := CompareText( S1, S2 );
+    Compare         := CompareText( S1, S2 );
 
   if ( not FSortAscending ) then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
@@ -407,28 +407,28 @@ end;
 
 procedure TFormUnusedUnitDetector.OpenSelectedFile;
 var
-  Idx: Integer;
-  UnusedInfo: TUnusedUnitInfo;
-  ModuleServices: IOTAModuleServices;
-  Module: IOTAModule;
-  SourceEditor: IOTASourceEditor;
-  EditView: IOTAEditView;
-  I: Integer;
+  Idx               : Integer;
+  UnusedInfo        : TUnusedUnitInfo;
+  ModuleServices    : IOTAModuleServices;
+  Module            : IOTAModule;
+  SourceEditor      : IOTASourceEditor;
+  EditView          : IOTAEditView;
+  I                 : Integer;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FUnusedUnits ) ) then
     Exit;
 
-  UnusedInfo := FUnusedUnits[ Idx ];
+  UnusedInfo        := FUnusedUnits[ Idx ];
 
   if Supports( BorlandIDEServices, IOTAModuleServices, ModuleServices ) then
   begin
-    Module := ModuleServices.OpenModule( UnusedInfo.SourceFileName );
+    Module          := ModuleServices.OpenModule( UnusedInfo.SourceFileName );
 
     if Module <> nil then
     begin
@@ -464,11 +464,11 @@ end;
 
 procedure TFormUnusedUnitDetector.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Source Unit'#9'Unused Unit'#9'Section'#9'Line' );
@@ -478,11 +478,11 @@ begin
 
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 )
+              ] ) );
     end;
 
     Clipboard.AsText := SL.Text;
@@ -494,19 +494,19 @@ end;
 
 procedure TFormUnusedUnitDetector.mnuAddToIgnoreListClick( Sender: TObject );
 var
-  Idx: Integer;
-  UnusedInfo: TUnusedUnitInfo;
+  Idx               : Integer;
+  UnusedInfo        : TUnusedUnitInfo;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FUnusedUnits ) ) then
     Exit;
 
-  UnusedInfo := FUnusedUnits[ Idx ];
+  UnusedInfo        := FUnusedUnits[ Idx ];
 
   if UnusedUnitDetectorPlugin <> nil then
   begin
@@ -519,8 +519,8 @@ end;
 
 procedure TFormUnusedUnitDetector.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
   if ListView.Items.Count = 0 then
@@ -531,7 +531,7 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( 'Source Unit,Unused Unit,Section,Line' );
@@ -539,11 +539,11 @@ begin
       for Item in ListView.Items do
       begin
         SL.Add( Format( '"%s","%s","%s","%s"', [
-          CsvField( Item.Caption ),
-          CsvField( SafeGetSubItem( Item, 0 ) ),
-          CsvField( SafeGetSubItem( Item, 1 ) ),
-          CsvField( SafeGetSubItem( Item, 2 ) )
-        ] ) );
+              CsvField( Item.Caption ),
+              CsvField( SafeGetSubItem( Item, 0 ) ),
+              CsvField( SafeGetSubItem( Item, 1 ) ),
+              CsvField( SafeGetSubItem( Item, 2 ) )
+              ] ) );
       end;
 
       try
@@ -561,3 +561,4 @@ begin
 end;
 
 end.
+

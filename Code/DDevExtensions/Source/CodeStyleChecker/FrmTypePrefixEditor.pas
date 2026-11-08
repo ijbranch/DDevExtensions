@@ -76,20 +76,20 @@ implementation
 
 class function TFormTypePrefixEditor.Execute( APlugin: TCodeStyleCheckerPlugin ): Boolean;
 var
-  Form: TFormTypePrefixEditor;
+  Form              : TFormTypePrefixEditor;
 begin
 
-  Result := False;
-  Form   := TFormTypePrefixEditor.Create( Application );
+  Result            := False;
+  Form              := TFormTypePrefixEditor.Create( Application );
 
   try
-    Form.FPlugin := APlugin;
+    Form.FPlugin    := APlugin;
     Form.LoadRules( APlugin.TypePrefixRules );
 
     if Form.ShowModal = mrOK then
     begin
       Form.SaveRules;
-      Result := True;
+      Result        := True;
     end;
   finally
     Form.Free;
@@ -106,7 +106,7 @@ end;
 
 procedure TFormTypePrefixEditor.LoadRules( const ARules: TArray<TTypePrefixRule> );
 var
-  I: Integer;
+  I                 : Integer;
 begin
 
   memRules.Lines.Clear;
@@ -126,50 +126,50 @@ end;
 
 procedure TFormTypePrefixEditor.SaveRules;
 var
-  I, Count: Integer;
+  I, Count          : Integer;
   Line, TypePattern, Prefix: string;
-  EqPos: Integer;
-  Rules: TArray<TTypePrefixRule>;
+  EqPos             : Integer;
+  Rules             : TArray<TTypePrefixRule>;
 begin
 
   // Count valid lines
-  Count := 0;
+  Count             := 0;
 
   for I := 0 to memRules.Lines.Count - 1 do
   begin
-    Line := Trim( memRules.Lines[ I ] );
+    Line            := Trim( memRules.Lines[ I ] );
 
     if ( Line <> '' ) and ( Pos( '=', Line ) > 0 ) then
       Inc( Count );
   end;
 
   SetLength( Rules, Count );
-  Count := 0;
+  Count             := 0;
 
   for I := 0 to memRules.Lines.Count - 1 do
   begin
-    Line := Trim( memRules.Lines[ I ] );
+    Line            := Trim( memRules.Lines[ I ] );
 
     if Line = '' then
       Continue;
 
     // "#Pattern=Prefix" is a rule kept but switched off.
-    var bEnabled := not Line.StartsWith( '#' );
+    var bEnabled    := not Line.StartsWith( '#' );
     if ( not bEnabled ) then
-      Line := Trim( Copy( Line, 2, MaxInt ) );
+      Line          := Trim( Copy( Line, 2, MaxInt ) );
 
-    EqPos := Pos( '=', Line );
+    EqPos           := Pos( '=', Line );
 
     if EqPos > 0 then
     begin
-      TypePattern := Trim( Copy( Line, 1, EqPos - 1 ) );
-      Prefix      := Trim( Copy( Line, EqPos + 1, MaxInt ) );
+      TypePattern   := Trim( Copy( Line, 1, EqPos - 1 ) );
+      Prefix        := Trim( Copy( Line, EqPos + 1, MaxInt ) );
 
       if ( TypePattern <> '' ) and ( Prefix <> '' ) then
       begin
         Rules[ Count ].TypePattern := TypePattern;
-        Rules[ Count ].Prefix      := Prefix;
-        Rules[ Count ].Enabled     := bEnabled;
+        Rules[ Count ].Prefix := Prefix;
+        Rules[ Count ].Enabled := bEnabled;
         Inc( Count );
       end;
     end;
@@ -197,26 +197,26 @@ end;
 
 procedure TFormTypePrefixEditor.CheckForConflicts;
 var
-  I, J, EqPos: Integer;
+  I, J, EqPos       : Integer;
   Line, Pattern1, Pattern2: string;
-  Patterns: TStringList;
-  Conflicts: TStringList;
+  Patterns          : TStringList;
+  Conflicts         : TStringList;
 begin
 
-  Patterns  := TStringList.Create;
-  Conflicts := TStringList.Create;
+  Patterns          := TStringList.Create;
+  Conflicts         := TStringList.Create;
 
   try
     // Extract all patterns from the memo
     for I := 0 to memRules.Lines.Count - 1 do
     begin
-      Line := Trim( memRules.Lines[ I ] );
+      Line          := Trim( memRules.Lines[ I ] );
 
       // A disabled ( "#" ) rule takes no part in matching, so it cannot conflict.
       if ( Line = '' ) or Line.StartsWith( '#' ) then
         Continue;
 
-      EqPos := Pos( '=', Line );
+      EqPos         := Pos( '=', Line );
 
       if EqPos > 1 then
         Patterns.Add( Trim( Copy( Line, 1, EqPos - 1 ) ) );
@@ -225,18 +225,18 @@ begin
     // Check for conflicts (pattern A is a prefix of pattern B)
     for I := 0 to Patterns.Count - 1 do
     begin
-      Pattern1 := UpperCase( Patterns[ I ] );
+      Pattern1      := UpperCase( Patterns[ I ] );
 
       for J := 0 to Patterns.Count - 1 do
       begin
         if I = J then
           Continue;
 
-        Pattern2 := UpperCase( Patterns[ J ] );
+        Pattern2    := UpperCase( Patterns[ J ] );
 
         // Check if Pattern1 is a prefix of Pattern2
         if ( Length( Pattern1 ) < Length( Pattern2 ) ) and
-           ( Pos( Pattern1, Pattern2 ) = 1 ) then
+          ( Pos( Pattern1, Pattern2 ) = 1 ) then
         begin
           // Pattern1 would match Pattern2's types before Pattern2 gets a chance
           Conflicts.Add( Patterns[ I ] + ' -> ' + Patterns[ J ] );
@@ -248,7 +248,7 @@ begin
     if Conflicts.Count > 0 then
     begin
       lblWarning.Caption := 'Warning: Rule order matters. "' + Conflicts[ 0 ] +
-                            '" - first pattern may match types intended for second.';
+        '" - first pattern may match types intended for second.';
     end
     else
       lblWarning.Caption := '';
@@ -261,3 +261,4 @@ begin
 end;
 
 end.
+

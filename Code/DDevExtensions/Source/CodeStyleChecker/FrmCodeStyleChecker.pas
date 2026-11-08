@@ -153,7 +153,7 @@ type
 
 var
   /// <summary>Singleton form reference; <c>nil</c> when the form is not visible.</summary>
-  FormInstance: TFormCodeStyleChecker = nil;
+  FormInstance      : TFormCodeStyleChecker = nil;
 
 implementation
 
@@ -166,9 +166,9 @@ function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
 
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 
 end;
 
@@ -183,7 +183,7 @@ begin
     Exit;
   end;
 
-  FormInstance := TFormCodeStyleChecker.Create( Application );
+  FormInstance      := TFormCodeStyleChecker.Create( Application );
   FormInstance.Show;
 
 end;
@@ -199,16 +199,16 @@ end;
 procedure TFormCodeStyleChecker.btnCancelScanClick( Sender: TObject );
 begin
 
-  FCancelRequested := True;
+  FCancelRequested  := True;
 
 end;
 
 procedure TFormCodeStyleChecker.FormCreate( Sender: TObject );
 begin
 
-  FChecker       := TStyleChecker.Create;
-  FSortColumn    := 0;
-  FSortAscending := True;
+  FChecker          := TStyleChecker.Create;
+  FSortColumn       := 0;
+  FSortAscending    := True;
 
   // Set up category filter
   cboCategory.Items.Add( '(All)' );
@@ -279,21 +279,21 @@ begin
   // form and FChecker are freed while CheckProject is still on the stack.
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
 
-  FormInstance := nil;
-  Action       := caFree;
+  FormInstance      := nil;
+  Action            := caFree;
 
 end;
 
 procedure TFormCodeStyleChecker.btnScanClick( Sender: TObject );
 var
-  Project: IOTAProject;
+  Project           : IOTAProject;
 begin
 
-  Project := GetActiveProject;
+  Project           := GetActiveProject;
 
   if Project = nil then
   begin
@@ -301,16 +301,16 @@ begin
     Exit;
   end;
 
-  Screen.Cursor         := crHourGlass;
-  btnScan.Visible       := False;
+  Screen.Cursor     := crHourGlass;
+  btnScan.Visible   := False;
   btnCancelScan.Visible := True;
-  FCancelRequested      := False;
-  FScanning             := True;
+  FCancelRequested  := False;
+  FScanning         := True;
 
   try
     lblProgress.Caption := 'Checking project...';
     lblProgress.Visible := True;
-    lblSummary.Visible  := False;
+    lblSummary.Visible := False;
     Application.ProcessMessages;
 
     try
@@ -321,21 +321,21 @@ begin
         FViolations := nil;
         PopulateList;
         lblProgress.Visible := False;
-        lblSummary.Caption  := 'Scan cancelled.';
-        lblSummary.Visible  := True;
+        lblSummary.Caption := 'Scan cancelled.';
+        lblSummary.Visible := True;
         Exit;
       end;
     end;
     PopulateList;
 
     lblProgress.Visible := False;
-    lblSummary.Caption  := Format( 'Found %d style violations', [ Length( FViolations ) ] );
-    lblSummary.Visible  := True;
+    lblSummary.Caption := Format( 'Found %d style violations', [ Length( FViolations ) ] );
+    lblSummary.Visible := True;
   finally
-    FScanning             := False;
+    FScanning       := False;
     btnCancelScan.Visible := False;
-    btnScan.Visible       := True;
-    Screen.Cursor         := crDefault;
+    btnScan.Visible := True;
+    Screen.Cursor   := crDefault;
   end;
 
 end;
@@ -345,69 +345,69 @@ var
   CategoryFilter, RuleFilter, SeverityFilter: string;
 begin
 
-  Result := True;
+  Result            := True;
 
   // Check category filter
   if cboCategory.ItemIndex > 0 then
   begin
-    CategoryFilter := cboCategory.Items[ cboCategory.ItemIndex ];
+    CategoryFilter  := cboCategory.Items[ cboCategory.ItemIndex ];
 
     if not SameText( Item.Category, CategoryFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
   // Check rule filter
   if Result and ( cboRule.ItemIndex > 0 ) then
   begin
-    RuleFilter := cboRule.Items[ cboRule.ItemIndex ];
+    RuleFilter      := cboRule.Items[ cboRule.ItemIndex ];
 
     if not SameText( Item.Rule, RuleFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
   // Check severity filter
   if Result and ( cboSeverity.ItemIndex > 0 ) then
   begin
-    SeverityFilter := cboSeverity.Items[ cboSeverity.ItemIndex ];
+    SeverityFilter  := cboSeverity.Items[ cboSeverity.ItemIndex ];
 
     if not SameText( Item.Severity, SeverityFilter ) then
-      Result := False;
+      Result        := False;
   end;
 
 end;
 
 procedure TFormCodeStyleChecker.PopulateList;
 var
-  Violation: TStyleViolation;
-  Item: TListItem;
-  Idx: Integer;
-  Category: string;
+  Violation         : TStyleViolation;
+  Item              : TListItem;
+  Idx               : Integer;
+  Category          : string;
 begin
 
   ListView.Items.BeginUpdate;
 
   try
     ListView.Items.Clear;
-    Idx := 0;
+    Idx             := 0;
 
     for Violation in FViolations do
     begin
 
       if PassesFilter( Violation ) then
       begin
-        Item         := ListView.Items.Add;
+        Item        := ListView.Items.Add;
         Item.Caption := Violation.UnitName;
         // Use default category if not set
-        Category := Violation.Category;
+        Category    := Violation.Category;
         if Category = '' then
-          Category := 'NamingConvention';
+          Category  := 'NamingConvention';
         Item.SubItems.Add( Category );
         Item.SubItems.Add( Violation.Rule );
         Item.SubItems.Add( IntToStr( Violation.Line ) );
         Item.SubItems.Add( Violation.Expected );
         Item.SubItems.Add( Violation.Actual );
         Item.SubItems.Add( Violation.Severity );
-        Item.Data := Pointer( NativeInt( Idx ) );
+        Item.Data   := Pointer( NativeInt( Idx ) );
       end;
 
       Inc( Idx );
@@ -444,11 +444,11 @@ procedure TFormCodeStyleChecker.ListViewColumnClick( Sender: TObject;
 begin
 
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn    := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
 
   ListView.AlphaSort;
@@ -458,38 +458,38 @@ end;
 procedure TFormCodeStyleChecker.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
 begin
 
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
+    SubIdx          := FSortColumn - 1;
 
     if SubIdx < Item1.SubItems.Count then
-      S1 := Item1.SubItems[ SubIdx ]
+      S1            := Item1.SubItems[ SubIdx ]
     else
-      S1 := '';
+      S1            := '';
 
     if SubIdx < Item2.SubItems.Count then
-      S2 := Item2.SubItems[ SubIdx ]
+      S2            := Item2.SubItems[ SubIdx ]
     else
-      S2 := '';
+      S2            := '';
   end;
 
   // Try numeric comparison for line number column (now column 3)
   if FSortColumn = 3 then
-    Compare := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
+    Compare         := StrToIntDef( S1, 0 ) - StrToIntDef( S2, 0 )
   else
-    Compare := CompareText( S1, S2 );
+    Compare         := CompareText( S1, S2 );
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 
 end;
 
@@ -502,19 +502,19 @@ end;
 
 procedure TFormCodeStyleChecker.OpenSelectedFile;
 var
-  Idx: Integer;
-  Violation: TStyleViolation;
+  Idx               : Integer;
+  Violation         : TStyleViolation;
 begin
 
   if ListView.Selected = nil then
     Exit;
 
-  Idx := NativeInt( ListView.Selected.Data );
+  Idx               := NativeInt( ListView.Selected.Data );
 
   if ( Idx < 0 ) or ( Idx >= Length( FViolations ) ) then
     Exit;
 
-  Violation := FViolations[ Idx ];
+  Violation         := FViolations[ Idx ];
 
   // Synthetic violations (LongMethod, EmptyFinally) carry Column 0; OpenFileAtLine clamps it to 1.
   OpenFileAtLine( Violation.FileName, Violation.Line, Violation.Column );
@@ -530,11 +530,11 @@ end;
 
 procedure TFormCodeStyleChecker.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
 
   try
     SL.Add( 'Unit'#9'Category'#9'Rule'#9'Line'#9'Expected'#9'Actual'#9'Severity' );
@@ -544,14 +544,14 @@ begin
 
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 ),
-          SafeGetSubItem( Item, 5 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 ),
+              SafeGetSubItem( Item, 3 ),
+              SafeGetSubItem( Item, 4 ),
+              SafeGetSubItem( Item, 5 )
+              ] ) );
     end;
 
     CopyTextToClipboard( SL.Text );
@@ -567,12 +567,12 @@ procedure TFormCodeStyleChecker.btnExportClick( Sender: TObject );
   begin
     // RFC 4180: wrap in quotes and double any embedded quote so commas,
     // parentheses and quotes in the rule text cannot corrupt the CSV.
-    Result := '"' + StringReplace( S, '"', '""', [ rfReplaceAll ] ) + '"';
+    Result          := '"' + StringReplace( S, '"', '""', [ rfReplaceAll ] ) + '"';
   end;
 
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
 
   if ListView.Items.Count = 0 then
@@ -583,7 +583,7 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
 
     try
       SL.Add( 'Unit,Category,Rule,Line,Expected,Actual,Severity' );
@@ -616,3 +616,4 @@ begin
 end;
 
 end.
+

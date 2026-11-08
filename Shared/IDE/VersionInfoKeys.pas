@@ -57,7 +57,7 @@ begin
   AList.BeginUpdate;
   try
     AList.Clear;
-    for var sPart in AKeys.Split( [';'] ) do
+    for var sPart in AKeys.Split( [ ';' ] ) do
       if ( sPart <> '' ) then
         AList.Add( sPart );
   finally
@@ -67,28 +67,29 @@ end;
 
 function JoinVersionInfoKeys( AList: TStrings ): string;
 begin
-  Result := string.Join( ';', AList.ToStringArray );
+  Result            := string.Join( ';', AList.ToStringArray );
 end;
 
 procedure SetVersionInfoKey( AList: TStrings; const AName, AValue: string );
 begin
-  var iIndex := AList.IndexOfName( AName );
+  var iIndex        := AList.IndexOfName( AName );
   if ( iIndex >= 0 ) then
-    AList[iIndex] := AList.Names[iIndex] + AList.NameValueSeparator + AValue
+    AList[ iIndex ] := AList.Names[ iIndex ] + AList.NameValueSeparator + AValue
   else
     AList.Add( AName + AList.NameValueSeparator + AValue );
 end;
 
 function UpdateVersionInfoKey( const AKeys, AName, AValue: string ): string;
 begin
-  var oList := TStringList.Create;
+  var oList         := TStringList.Create;
   try
     SplitVersionInfoKeys( AKeys, oList );
     SetVersionInfoKey( oList, AName, AValue );
-    Result := JoinVersionInfoKeys( oList );
+    Result          := JoinVersionInfoKeys( oList );
   finally
     oList.Free;
   end;
 end;
 
 end.
+

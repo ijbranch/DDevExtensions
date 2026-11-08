@@ -42,7 +42,7 @@ type
   /// In-memory representation of a Win32 icon group resource (.ico file). Supports loading from
   /// disk or from a project's MAINICON resource and saving back via SaveToProjectResource.
   /// </summary>
-  TIconResource = class(TObject)
+  TIconResource = class( TObject )
   private
     /// <summary>Owned TMemoryStream holding the raw .ico bytes.</summary>
     FStream: TStream;
@@ -57,13 +57,13 @@ type
     function GetCount: Integer;
     /// <summary>Returns the start pointer of the underlying memory buffer.</summary>
     /// <returns>Start of the icon bytes, or nil when the stream is empty.</returns>
-    function GetData: Pointer; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
+    function GetData: Pointer; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
     /// <summary>Decodes the icon directory entry at Index.</summary>
     /// <param name="Index">Image index within the icon directory.</param>
     /// <returns>The decoded metadata, with ImageData pointing into the stream.</returns>
     /// <exception cref="EListError">Raised when Index is outside 0..Count-1.</exception>
     /// <exception cref="EReadError">Raised when the entry or its image lies outside the icon data.</exception>
-    function GetImage(Index: Integer): TIconResourceItem;
+    function GetImage( Index: Integer ): TIconResourceItem;
     /// <summary>Releases the cached HICON and resets FPaintIconIndex to -1.</summary>
     procedure DestroyPaintIcon;
   protected
@@ -78,25 +78,25 @@ type
     /// <summary>Returns (and caches) an HICON for the image at Index.</summary>
     /// <param name="Index">Image index within the icon directory.</param>
     /// <returns>The icon handle (owned by this object; 0 when the image could not be converted).</returns>
-    function GetPaintIcon(Index: Integer): HICON;
+    function GetPaintIcon( Index: Integer ): HICON;
 
     //procedure LoadFromMemory(P: PByte; Size: Integer);
     /// <summary>Replaces the contents with the bytes of an .ico file on disk.</summary>
     /// <param name="FileName">Path of the .ico file.</param>
-    procedure LoadFromIconFile(const FileName: string);
+    procedure LoadFromIconFile( const FileName: string );
     /// <summary>Loads the project's MAINICON resource into this object.</summary>
     /// <param name="AProject">Project whose MainIcon option names the icon file.</param>
-    procedure LoadFromProjectResource(AProject: IOTAProject);
+    procedure LoadFromProjectResource( AProject: IOTAProject );
     /// <summary>Writes this icon back into the project as MAINICON, updating IDE settings as needed.</summary>
     /// <param name="AProject">Project whose MainIcon option is updated.</param>
-    procedure SaveToProjectResource(AProject: IOTAProject);
+    procedure SaveToProjectResource( AProject: IOTAProject );
     /// <summary>Empties the buffer and releases the cached HICON.</summary>
     procedure Clear;
 
     /// <summary>Number of images in the icon directory.</summary>
     property Count: Integer read GetCount;
     /// <summary>Indexed accessor for decoded image metadata.</summary>
-    property Images[Index: Integer]: TIconResourceItem read GetImage;
+    property Images[ Index: Integer ]: TIconResourceItem read GetImage;
     /// <summary>Underlying memory stream containing the .ico bytes.</summary>
     property Stream: TStream read FStream;
   end;
@@ -144,125 +144,126 @@ type
 /// <summary>Reads the version-info block from Project's options or .res file (depending on Delphi version).</summary>
 /// <param name="Project">Project to read.</param>
 /// <returns>The version data; Valid is False when the project has no version information.</returns>
-function GetProjectVersion(Project: IOTAProject): TProjectVersion;
+function GetProjectVersion( Project: IOTAProject ): TProjectVersion;
 /// <summary>Writes Version back into Project; pass UpdateAllPlatforms=True to mirror across every platform/configuration.</summary>
 /// <returns>True when at least one configuration was updated.</returns>
 /// <param name="Project">Project to update.</param>
 /// <param name="Version">Data to write; nothing is written unless Valid is True.</param>
 /// <param name="UpdateAllPlatforms">True to write every platform, False for the active platform only.</param>
-function SetProjectVersion(Project: IOTAProject; const Version: TProjectVersion; UpdateAllPlatforms: Boolean): Boolean;
+function SetProjectVersion( Project: IOTAProject; const Version: TProjectVersion; UpdateAllPlatforms: Boolean ): Boolean;
 /// <summary>Increments the build number of Project's file version and writes it back to all platforms.</summary>
 /// <param name="Project">Project to update; nil is ignored.</param>
-procedure IncrementBuildVersion(Project: IOTAProject);
+procedure IncrementBuildVersion( Project: IOTAProject );
 /// <summary>Adds or updates an extra StringFileInfo key (such as a custom field) across every configuration.</summary>
 /// <returns>True when at least one configuration accepted the change.</returns>
 /// <param name="AProject">Project to update.</param>
 /// <param name="AKey">Key name.</param>
 /// <param name="AValue">New value; may be empty.</param>
-function SetVersionInfoExtraKey(AProject: IOTAProject; const AKey, AValue: string): Boolean;
+function SetVersionInfoExtraKey( AProject: IOTAProject; const AKey, AValue: string ): Boolean;
 
 implementation
 
 uses
   System.Variants, CommonOptionStrs, Vcl.Consts, System.RTLConsts, System.IOUtils, IDEUtils, IDEHooks, VersionInfoKeys;
 
-procedure IncrementBuildVersion(Project: IOTAProject);
+procedure IncrementBuildVersion( Project: IOTAProject );
 var
-  Version: TProjectVersion;
+  Version           : TProjectVersion;
 begin
   if Project <> nil then
   begin
-    Version := GetProjectVersion(Project);
+    Version         := GetProjectVersion( Project );
     if Version.Valid then
     begin
       Version.FileVersion.Build := Version.FileVersion.Build + 1;
       with Version.FileVersion do
-        Version.FileVersionStr := Format('%d.%d.%d.%d', [Major, Minor, Release, Build]);
-      SetProjectVersion(Project, Version, True);
+        Version.FileVersionStr := Format( '%d.%d.%d.%d', [ Major, Minor, Release, Build ] );
+      SetProjectVersion( Project, Version, True );
     end;
   end;
 end;
 
-function GetAllConfigurations(Project: IOTAProject): TArray<IOTABuildConfiguration>;
+function GetAllConfigurations( Project: IOTAProject ): TArray<IOTABuildConfiguration>;
 
-  procedure AddChildren(var A: TArray<IOTABuildConfiguration>; var Index: Integer);
+  procedure AddChildren( var A: TArray<IOTABuildConfiguration>; var Index: Integer );
   var
-    I: Integer;
-    Config: IOTABuildConfiguration;
-    Platforms: TArray<string>;
+    I               : Integer;
+    Config          : IOTABuildConfiguration;
+    Platforms       : TArray<string>;
   begin
-    Config := A[Index - 1];
-    Platforms := Config.Platforms;
+    Config          := A[ Index - 1 ];
+    Platforms       := Config.Platforms;
 
-    SetLength(A, Length(A) + Config.ChildCount + Length(Platforms));
+    SetLength( A, Length( A ) + Config.ChildCount + Length( Platforms ) );
     for I := 0 to Config.ChildCount - 1 do
     begin
-      A[Index] := Config.Children[I];
-      Inc(Index);
-      AddChildren(A, Index);
+      A[ Index ]    := Config.Children[ I ];
+      Inc( Index );
+      AddChildren( A, Index );
     end;
 
-    for I := 0 to High(Platforms) do
+    for I := 0 to High( Platforms ) do
     begin
-      A[Index] := Config.PlatformConfiguration[Platforms[I]];
-      Inc(Index);
-      AddChildren(A, Index);
+      A[ Index ]    := Config.PlatformConfiguration[ Platforms[ I ] ];
+      Inc( Index );
+      AddChildren( A, Index );
     end;
   end;
 
 var
-  Configurations: IOTAProjectOptionsConfigurations;
-  I, Index: Integer;
+  Configurations    : IOTAProjectOptionsConfigurations;
+  I, Index          : Integer;
 begin
-  Result := nil;
-  if Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
+  Result            := nil;
+  if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
   begin
-    SetLength(Result, Configurations.ConfigurationCount);
-    Index := 0;
+    SetLength( Result, Configurations.ConfigurationCount );
+    Index           := 0;
     for I := 0 to Configurations.ConfigurationCount - 1 do
     begin
-      Result[Index] := Configurations.Configurations[I];
-      Inc(Index);
-      AddChildren(Result, Index);
+      Result[ Index ] := Configurations.Configurations[ I ];
+      Inc( Index );
+      AddChildren( Result, Index );
     end;
   end;
 end;
 
-function GetProjectVersion(Project: IOTAProject): TProjectVersion;
+function GetProjectVersion( Project: IOTAProject ): TProjectVersion;
 var
-  Configurations: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  VerInfoKeys: TStrings;
+  Configurations    : IOTAProjectOptionsConfigurations;
+  BuildConfig       : IOTABuildConfiguration;
+  VerInfoKeys       : TStrings;
 begin
-  Result.Valid := False;
+  Result.Valid      := False;
 
-  if Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
+  if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
   begin
-    if Configurations.BaseConfiguration.AsBoolean[sVerInfo_IncludeVerInfo] and (Length(Configurations.BaseConfiguration.Value[sVerInfo_Keys]) > Length(Configurations.ActiveConfiguration.Value[sVerInfo_Keys])) then
-      BuildConfig := Configurations.BaseConfiguration // this happens when a project was migrated
+    if Configurations.BaseConfiguration.AsBoolean[ sVerInfo_IncludeVerInfo ] and ( Length( Configurations.BaseConfiguration.Value[ sVerInfo_Keys ] ) > Length(
+      Configurations.ActiveConfiguration.Value[ sVerInfo_Keys ] ) ) then
+      BuildConfig   := Configurations.BaseConfiguration // this happens when a project was migrated
     else
-      BuildConfig := Configurations.ActiveConfiguration;
-    if (BuildConfig <> nil) and BuildConfig.AsBoolean[sVerInfo_IncludeVerInfo] then
+      BuildConfig   := Configurations.ActiveConfiguration;
+    if ( BuildConfig <> nil ) and BuildConfig.AsBoolean[ sVerInfo_IncludeVerInfo ] then
     begin
-      Result.Valid := True;
-      Result.FileVersion.Major := BuildConfig.AsInteger[sVerInfo_MajorVer];
-      Result.FileVersion.Minor := BuildConfig.AsInteger[sVerInfo_MinorVer];
-      Result.FileVersion.Release := BuildConfig.AsInteger[sVerInfo_Release];
-      Result.FileVersion.Build := BuildConfig.AsInteger[sVerInfo_Build];
+      Result.Valid  := True;
+      Result.FileVersion.Major := BuildConfig.AsInteger[ sVerInfo_MajorVer ];
+      Result.FileVersion.Minor := BuildConfig.AsInteger[ sVerInfo_MinorVer ];
+      Result.FileVersion.Release := BuildConfig.AsInteger[ sVerInfo_Release ];
+      Result.FileVersion.Build := BuildConfig.AsInteger[ sVerInfo_Build ];
 
-      VerInfoKeys := TStringList.Create;
+      VerInfoKeys   := TStringList.Create;
       try
-        SplitVersionInfoKeys( BuildConfig.Value[sVerInfo_Keys], VerInfoKeys );
-        Result.FileVersionStr := VerInfoKeys.Values['FileVersion'];
-        Result.ProductVersionStr := VerInfoKeys.Values['ProductVersion'];
-        Result.ProductName := VerInfoKeys.Values['ProductName'];
-        Result.CompanyName := VerInfoKeys.Values['CompanyName'];
-        Result.FileDescription := VerInfoKeys.Values['FileDescription'];
-        Result.LegalCopyright := VerInfoKeys.Values['LegalCopyright'];
-        Result.LegalTrademarks := VerInfoKeys.Values['LegalTrademarks'];
-        Result.InternalName := VerInfoKeys.Values['InternalName'];
-        Result.OriginalFilename := VerInfoKeys.Values['OriginalFilename'];
-        Result.Comments := VerInfoKeys.Values['Comments'];
+        SplitVersionInfoKeys( BuildConfig.Value[ sVerInfo_Keys ], VerInfoKeys );
+        Result.FileVersionStr := VerInfoKeys.Values[ 'FileVersion' ];
+        Result.ProductVersionStr := VerInfoKeys.Values[ 'ProductVersion' ];
+        Result.ProductName := VerInfoKeys.Values[ 'ProductName' ];
+        Result.CompanyName := VerInfoKeys.Values[ 'CompanyName' ];
+        Result.FileDescription := VerInfoKeys.Values[ 'FileDescription' ];
+        Result.LegalCopyright := VerInfoKeys.Values[ 'LegalCopyright' ];
+        Result.LegalTrademarks := VerInfoKeys.Values[ 'LegalTrademarks' ];
+        Result.InternalName := VerInfoKeys.Values[ 'InternalName' ];
+        Result.OriginalFilename := VerInfoKeys.Values[ 'OriginalFilename' ];
+        Result.Comments := VerInfoKeys.Values[ 'Comments' ];
       finally
         VerInfoKeys.Free;
       end;
@@ -270,44 +271,44 @@ begin
   end;
 end;
 
-function SetProjectVersion(Project: IOTAProject; const Version: TProjectVersion; UpdateAllPlatforms: Boolean): Boolean;
+function SetProjectVersion( Project: IOTAProject; const Version: TProjectVersion; UpdateAllPlatforms: Boolean ): Boolean;
 var
-  Configurations: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  VerInfoKeys: TStrings;
-  OrgKeys, Keys: string;
-  Modified: Boolean;
+  Configurations    : IOTAProjectOptionsConfigurations;
+  BuildConfig       : IOTABuildConfiguration;
+  VerInfoKeys       : TStrings;
+  OrgKeys, Keys     : string;
+  Modified          : Boolean;
 
-  procedure SetBuildConfigInt(const Option: string; Value: Integer);
+  procedure SetBuildConfigInt( const Option: string; Value: Integer );
   begin
-    if BuildConfig.AsInteger[Option] <> Value then
+    if BuildConfig.AsInteger[ Option ] <> Value then
     begin
-      BuildConfig.AsInteger[Option] := Value;
-      Modified := True;
+      BuildConfig.AsInteger[ Option ] := Value;
+      Modified      := True;
     end;
   end;
 
 begin
-  Result := False;
-  if Version.Valid and Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
+  Result            := False;
+  if Version.Valid and Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
   begin
     // Write it to all BuildConfigurations that have VersionInfos
-    Modified := False;
-    for BuildConfig in GetAllConfigurations(Project) do
+    Modified        := False;
+    for BuildConfig in GetAllConfigurations( Project ) do
     begin
-      if BuildConfig.AsBoolean[sVerInfo_IncludeVerInfo]
+      if BuildConfig.AsBoolean[ sVerInfo_IncludeVerInfo ]
         {and BuildConfig.PropertyExists(sVerInfo_Keys)} then // XE3: Exists(sVerInfo_Keys)=False but, Value[sVerInfo_Keys] returns value
       begin
-        if UpdateAllPlatforms or SameText(BuildConfig.Platform, Configurations.ActivePlatformName) then
+        if UpdateAllPlatforms or SameText( BuildConfig.Platform, Configurations.ActivePlatformName ) then
         begin
-          SetBuildConfigInt(sVerInfo_MajorVer, Version.FileVersion.Major);
-          SetBuildConfigInt(sVerInfo_MinorVer, Version.FileVersion.Minor);
-          SetBuildConfigInt(sVerInfo_Release, Version.FileVersion.Release);
-          SetBuildConfigInt(sVerInfo_Build, Version.FileVersion.Build);
+          SetBuildConfigInt( sVerInfo_MajorVer, Version.FileVersion.Major );
+          SetBuildConfigInt( sVerInfo_MinorVer, Version.FileVersion.Minor );
+          SetBuildConfigInt( sVerInfo_Release, Version.FileVersion.Release );
+          SetBuildConfigInt( sVerInfo_Build, Version.FileVersion.Build );
 
           VerInfoKeys := TStringList.Create;
           try
-            OrgKeys := BuildConfig.Value[sVerInfo_Keys];
+            OrgKeys := BuildConfig.Value[ sVerInfo_Keys ];
             SplitVersionInfoKeys( OrgKeys, VerInfoKeys );
 
             // SetVersionInfoKey keeps a key whose value is empty; TStrings.Values deleted it.
@@ -322,18 +323,18 @@ begin
             SetVersionInfoKey( VerInfoKeys, 'OriginalFilename', Version.OriginalFilename );
             SetVersionInfoKey( VerInfoKeys, 'Comments', Version.Comments );
 
-            Keys := JoinVersionInfoKeys( VerInfoKeys );
+            Keys    := JoinVersionInfoKeys( VerInfoKeys );
 
             if Keys <> OrgKeys then
             begin
-              BuildConfig.Value[sVerInfo_Keys] := Keys;
+              BuildConfig.Value[ sVerInfo_Keys ] := Keys;
               Modified := True;
             end;
           finally
             VerInfoKeys.Free;
           end;
         end;
-        Result := True;
+        Result      := True;
       end;
     end;
     if Modified then
@@ -341,29 +342,29 @@ begin
   end;
 end;
 
-function SetVersionInfoExtraKey(AProject: IOTAProject; const AKey, AValue: string): Boolean;
+function SetVersionInfoExtraKey( AProject: IOTAProject; const AKey, AValue: string ): Boolean;
 var
-  BuildConfig: IOTABuildConfiguration;
-  OrgKeys, Keys: string;
-  Modified: Boolean;
+  BuildConfig       : IOTABuildConfiguration;
+  OrgKeys, Keys     : string;
+  Modified          : Boolean;
 begin
-  Result := False;
-  Modified := False;
-  for BuildConfig in GetAllConfigurations(AProject) do
+  Result            := False;
+  Modified          := False;
+  for BuildConfig in GetAllConfigurations( AProject ) do
   begin
-    if BuildConfig.AsBoolean[sVerInfo_IncludeVerInfo]
+    if BuildConfig.AsBoolean[ sVerInfo_IncludeVerInfo ]
       {and BuildConfig.PropertyExists(sVerInfo_Keys)} then // XE3: Exists(sVerInfo_Keys)=False but, Value[sVerInfo_Keys] returns value
     begin
-      OrgKeys := BuildConfig.Value[sVerInfo_Keys];
+      OrgKeys       := BuildConfig.Value[ sVerInfo_Keys ];
       // Split on ';' only: ExtractStrings treated an apostrophe in any value as a quote, merged
       // every later key into it and so appended another AKey entry on each call.
-      Keys := UpdateVersionInfoKey( OrgKeys, AKey, AValue );
+      Keys          := UpdateVersionInfoKey( OrgKeys, AKey, AValue );
       if Keys <> OrgKeys then
       begin
-        BuildConfig.Value[sVerInfo_Keys] := Keys;
-        Modified := True;
+        BuildConfig.Value[ sVerInfo_Keys ] := Keys;
+        Modified    := True;
       end;
-      Result := True;
+      Result        := True;
     end;
   end;
   if Modified then
@@ -402,12 +403,12 @@ type
   end;
 {$ALIGN 8}
 
-{ TIconResource }
+  { TIconResource }
 
 constructor TIconResource.Create;
 begin
   inherited Create;
-  FStream := TMemoryStream.Create;
+  FStream           := TMemoryStream.Create;
 end;
 
 destructor TIconResource.Destroy;
@@ -420,75 +421,75 @@ end;
 procedure TIconResource.DestroyPaintIcon;
 begin
   if FPaintIcon <> 0 then
-    DestroyIcon(FPaintIcon);
-  FPaintIconIndex := -1;
-  FPaintIcon := 0;
+    DestroyIcon( FPaintIcon );
+  FPaintIconIndex   := -1;
+  FPaintIcon        := 0;
 end;
 
 procedure TIconResource.Clear;
 begin
   DestroyPaintIcon;
-  Stream.Size := 0;
-  FFileName := '';
+  Stream.Size       := 0;
+  FFileName         := '';
 end;
 
 function TIconResource.GetCount: Integer;
 begin
-  if (Data = nil) or (Stream.Size < SizeOf(TIconHeader)) then
-    Result := 0
+  if ( Data = nil ) or ( Stream.Size < SizeOf( TIconHeader ) ) then
+    Result          := 0
   else
-    Result := PIconHeader(Data).cwCount;
+    Result          := PIconHeader( Data ).cwCount;
 end;
 
 function TIconResource.GetData: Pointer;
 begin
   if Stream.Size = 0 then
-    Result := nil
+    Result          := nil
   else
-    Result := TMemoryStream(Stream).Memory;
+    Result          := TMemoryStream( Stream ).Memory;
 end;
 
-function TIconResource.GetImage(Index: Integer): TIconResourceItem;
+function TIconResource.GetImage( Index: Integer ): TIconResourceItem;
 type
   PInt64 = ^Int64;
-  TPngHeader = array[0..7] of AnsiChar;
+  TPngHeader = array[ 0..7 ] of AnsiChar;
 const
-  PNGHeader: TPngHeader = #137'PNG'#13#10#26#10;
-  MNGHeader: TPngHeader = #138'MNG'#13#10#26#10;
+  PNGHeader         : TPngHeader = #137'PNG'#13#10#26#10;
+  MNGHeader         : TPngHeader = #138'MNG'#13#10#26#10;
 var
-  Directory: PIconHeader;
-  P: PIconDirectory;
+  Directory         : PIconHeader;
+  P                 : PIconDirectory;
 begin
-  if (Data <> nil) and (Index >= 0) and (Index < Count) then
+  if ( Data <> nil ) and ( Index >= 0 ) and ( Index < Count ) then
   begin
-    Directory := Data;
-    Inc(Directory);
-    P := PIconDirectory(Directory);
-    Inc(P, Index);
+    Directory       := Data;
+    Inc( Directory );
+    P               := PIconDirectory( Directory );
+    Inc( P, Index );
 
     // The directory entry and the image it points to come from the .ico file: check both lie
     // inside the stream before anything is read through them.
     if ( SizeOf( TIconHeader ) + Int64( Index + 1 ) * SizeOf( TIconDirectory ) > Stream.Size ) or
-       ( P.lDIBOffset < 0 ) or ( P.lDIBSize <= 0 ) or
-       ( Int64( P.lDIBOffset ) + P.lDIBSize > Stream.Size ) or
-       ( P.lDIBSize < SizeOf( TBitmapInfoHeader ) ) then
-      raise EReadError.CreateFmt( 'Icon image %d lies outside the icon data (corrupt icon file)', [Index] );
+      ( P.lDIBOffset < 0 ) or ( P.lDIBSize <= 0 ) or
+      ( Int64( P.lDIBOffset ) + P.lDIBSize > Stream.Size ) or
+      ( P.lDIBSize < SizeOf( TBitmapInfoHeader ) ) then
+      raise EReadError.CreateFmt( 'Icon image %d lies outside the icon data (corrupt icon file)', [ Index ] );
 
-    Result.Width := P.bWidth;
+    Result.Width    := P.bWidth;
     if Result.Width = 0 then
-      Result.Width := 256;
-    Result.Height := P.bHeight;
+      Result.Width  := 256;
+    Result.Height   := P.bHeight;
     if Result.Height = 0 then
       Result.Height := 256;
 
-    Result.Colors := P.wColors;
+    Result.Colors   := P.wColors;
     Result.ImageDataSize := P.lDIBSize;
-    Result.ImageData := PAnsiChar(Data) + P.lDIBOffset;
+    Result.ImageData := PAnsiChar( Data ) + P.lDIBOffset;
 
     { Handle BMP and PNG icons }
-    Result.IsPng := (Result.ImageDataSize > SizeOf(Int64)) and
-                    ((PInt64(Result.ImageData)^ = PInt64(@PngHeader)^) or
-                     (PInt64(Result.ImageData)^ = PInt64(@MngHeader)^));
+    Result.IsPng    := ( Result.ImageDataSize > SizeOf( Int64 ) ) and
+      ( ( PInt64( Result.ImageData )^ = PInt64( @PngHeader )^ ) or
+      ( PInt64( Result.ImageData )^ = PInt64( @MngHeader )^ ) );
     if Result.IsPng then
     begin
       Result.Planes := 1;
@@ -496,34 +497,34 @@ begin
     end
     else
     begin
-      Result.Planes := PBitmapInfoHeader(Result.ImageData).biPlanes;
-      Result.BitCount := PBitmapInfoHeader(Result.ImageData).biBitCount;
+      Result.Planes := PBitmapInfoHeader( Result.ImageData ).biPlanes;
+      Result.BitCount := PBitmapInfoHeader( Result.ImageData ).biBitCount;
     end;
   end
   else
-    raise EListError.CreateFmt(SListIndexError, [Index]);
+    raise EListError.CreateFmt( SListIndexError, [ Index ] );
 end;
 
-function TIconResource.GetPaintIcon(Index: Integer): HICON;
+function TIconResource.GetPaintIcon( Index: Integer ): HICON;
 var
-  Item: TIconResourceItem;
+  Item              : TIconResourceItem;
 begin
   if FPaintIconIndex <> Index then
   begin
     DestroyPaintIcon;
-    Item := Images[Index];
-    FPaintIcon := CreateIconFromResourceEx(Item.ImageData, Item.ImageDataSize, True, $00030000,
-      Item.Width, Item.Height, 0);
+    Item            := Images[ Index ];
+    FPaintIcon      := CreateIconFromResourceEx( Item.ImageData, Item.ImageDataSize, True, $00030000,
+      Item.Width, Item.Height, 0 );
     FPaintIconIndex := Index;
   end;
-  Result := FPaintIcon;
+  Result            := FPaintIcon;
 end;
 
-procedure TIconResource.LoadFromIconFile(const FileName: string);
+procedure TIconResource.LoadFromIconFile( const FileName: string );
 begin
   Clear;
-  FFileName := FileName;
-  TMemoryStream(Stream).LoadFromFile(FileName);
+  FFileName         := FileName;
+  TMemoryStream( Stream ).LoadFromFile( FileName );
 end;
 
 {procedure TIconResource.LoadFromMemory(P: PByte; Size: Integer);
@@ -536,69 +537,69 @@ begin
   end;
 end;}
 
-function ExpandRootMacro(const InString: string; const AdditionalVars: TObject = nil): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash' {$IFDEF WIN64} delayed {$ENDIF};
+function ExpandRootMacro( const InString: string; const AdditionalVars: TObject = nil ): string;
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash'{$IFDEF WIN64} delayed{$ENDIF};
 
-procedure TIconResource.LoadFromProjectResource(AProject: IOTAProject);
+procedure TIconResource.LoadFromProjectResource( AProject: IOTAProject );
 var
-  Configurations: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  IconFileName: string;
+  Configurations    : IOTAProjectOptionsConfigurations;
+  BuildConfig       : IOTABuildConfiguration;
+  IconFileName      : string;
 begin
   Clear;
-  if Supports(AProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
+  if Supports( AProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
   begin
-    IconFileName := '';
-    BuildConfig := Configurations.BaseConfiguration;
-    if (BuildConfig <> nil) and (BuildConfig.Value[sIcon_MainIcon] <> '') then
-      IconFileName := BuildConfig.Value[sIcon_MainIcon]
+    IconFileName    := '';
+    BuildConfig     := Configurations.BaseConfiguration;
+    if ( BuildConfig <> nil ) and ( BuildConfig.Value[ sIcon_MainIcon ] <> '' ) then
+      IconFileName  := BuildConfig.Value[ sIcon_MainIcon ]
     else
     begin
-      BuildConfig := Configurations.ActiveConfiguration;
-      if (BuildConfig <> nil) and (BuildConfig.Value[sIcon_MainIcon] <> '') then
-        IconFileName := BuildConfig.Value[sIcon_MainIcon]
+      BuildConfig   := Configurations.ActiveConfiguration;
+      if ( BuildConfig <> nil ) and ( BuildConfig.Value[ sIcon_MainIcon ] <> '' ) then
+        IconFileName := BuildConfig.Value[ sIcon_MainIcon ]
     end;
     if IconFileName <> '' then
     begin
-      IconFileName := ExpandRootMacro(IconFileName);
+      IconFileName  := ExpandRootMacro( IconFileName );
       // Resolve a relative path against the project folder without changing the process-wide
       // current directory, which every other IDE thread shares.
       if not TPath.IsPathRooted( IconFileName ) then
         IconFileName := ExpandFileName( IncludeTrailingPathDelimiter( ExtractFilePath( AProject.FileName ) ) + IconFileName );
-      LoadFromIconFile(IconFileName);
+      LoadFromIconFile( IconFileName );
     end;
   end;
 end;
 
-procedure TIconResource.SaveToProjectResource(AProject: IOTAProject);
+procedure TIconResource.SaveToProjectResource( AProject: IOTAProject );
 var
-  Configurations: IOTAProjectOptionsConfigurations;
-  BuildConfig: IOTABuildConfiguration;
-  IconFileName: string;
-  Modified: Boolean;
+  Configurations    : IOTAProjectOptionsConfigurations;
+  BuildConfig       : IOTABuildConfiguration;
+  IconFileName      : string;
+  Modified          : Boolean;
 begin
-  if Supports(AProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
+  if Supports( AProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
   begin
-    Modified := False;
-    BuildConfig := Configurations.BaseConfiguration;
-    if (BuildConfig <> nil) {and (BuildConfig.Value[sIcon_MainIcon] <> '')} then
+    Modified        := False;
+    BuildConfig     := Configurations.BaseConfiguration;
+    if ( BuildConfig <> nil ) {and (BuildConfig.Value[sIcon_MainIcon] <> '')} then
     begin
       if FFileName = '' then
         IconFileName := ''
-      else if AnsiSameText(ExtractFilePath(FFileName), (BorlandIDEServices as IOTAServices).GetBinDirectory) then
-        IconFileName := '$(BDS)\bin\' + ExtractFileName(FFileName)
+      else if AnsiSameText( ExtractFilePath( FFileName ), ( BorlandIDEServices as IOTAServices ).GetBinDirectory ) then
+        IconFileName := '$(BDS)\bin\' + ExtractFileName( FFileName )
       else
-        IconFileName := ExtractRelativePath(ExtractFileDir(AProject.FileName), FFileName);
+        IconFileName := ExtractRelativePath( ExtractFileDir( AProject.FileName ), FFileName );
 
-      if (Configurations.ActiveConfiguration <> BuildConfig) and (Configurations.ActiveConfiguration.Value[sIcon_MainIcon] <> '') then
+      if ( Configurations.ActiveConfiguration <> BuildConfig ) and ( Configurations.ActiveConfiguration.Value[ sIcon_MainIcon ] <> '' ) then
       begin
-        Configurations.ActiveConfiguration.Value[sIcon_MainIcon] := '';
-        Modified := True;
+        Configurations.ActiveConfiguration.Value[ sIcon_MainIcon ] := '';
+        Modified    := True;
       end;
-      if BuildConfig.Value[sIcon_MainIcon] <> IconFileName then
+      if BuildConfig.Value[ sIcon_MainIcon ] <> IconFileName then
       begin
-        BuildConfig.Value[sIcon_MainIcon] := IconFileName;
-        Modified := True;
+        BuildConfig.Value[ sIcon_MainIcon ] := IconFileName;
+        Modified    := True;
       end;
       if Modified then
         AProject.MarkModified;

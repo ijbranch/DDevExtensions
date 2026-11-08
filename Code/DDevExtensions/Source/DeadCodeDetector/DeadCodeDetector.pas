@@ -116,17 +116,17 @@ uses
 function AnalyzeProject( Analyzer: TDeadCodeAnalyzer; const Project: IOTAProject; OnProgress: TSourceScanProgressEvent;
   out DeadCode: TArray<TDeadCodeItem>; out SkippedFiles: Integer ): Boolean;
 begin
-  Result       := False;
-  DeadCode     := nil;
-  SkippedFiles := 0;
+  Result            := False;
+  DeadCode          := nil;
+  SkippedFiles      := 0;
 
   if Project = nil then
     Exit;
 
   Analyzer.ClearSymbols;
 
-  var aFiles    := GetProjectSourceFiles( Project, [ '.pas' ] );
-  var oContents := TDictionary<string, UTF8String>.Create;
+  var aFiles        := GetProjectSourceFiles( Project, [ '.pas' ] );
+  var oContents     := TDictionary<string, UTF8String>.Create;
   try
     // Pass 1: read each unit once and collect its symbols
     for var sFileName in aFiles do
@@ -143,7 +143,7 @@ begin
         Analyzer.CollectSymbols( sFileName, sContent );
       except
         on E: EStreamError do
-          Inc( SkippedFiles );   // locked / unreadable unit: skip it, the rest of the scan still runs
+          Inc( SkippedFiles ); // locked / unreadable unit: skip it, the rest of the scan still runs
         on E: EOSError do
           Inc( SkippedFiles );
       end;
@@ -164,7 +164,7 @@ begin
           sIncludeFile := ExpandFileName( IncludeTrailingPathDelimiter( ExtractFilePath( oPair.Key ) ) + sIncludeFile );
         try
           if not FileExists( sIncludeFile ) then
-            Inc( SkippedFiles )   // its references are unknown
+            Inc( SkippedFiles ) // its references are unknown
           else
             Analyzer.ScanForReferences( sIncludeFile, ReadModuleSource( sIncludeFile ), oPair.Key );
         except
@@ -193,8 +193,8 @@ begin
 
     // Text that could not be read may use anything other units can see: then only private and
     // unit-local symbols are judged.
-    DeadCode := Analyzer.GetDeadCode( SkippedFiles > 0 );
-    Result   := True;
+    DeadCode        := Analyzer.GetDeadCode( SkippedFiles > 0 );
+    Result          := True;
   finally
     oContents.Free;
   end;
@@ -205,15 +205,15 @@ end;
 constructor TDeadCodeDetectorPlugin.Create;
 begin
 
-  FIgnoreList                := TStringList.Create;
-  FIgnoreList.CaseSensitive  := False;
+  FIgnoreList       := TStringList.Create;
+  FIgnoreList.CaseSensitive := False;
 
   inherited Create( AppDataDirectory + '\DeadCodeDetector.xml', 'DeadCodeDetector' );
 
   // Add menu item under DDevExtensions submenu
   if DDevExtensionsMenu <> nil then
   begin
-    FMenuItem         := TMenuItem.Create( DDevExtensionsMenu );
+    FMenuItem       := TMenuItem.Create( DDevExtensionsMenu );
     FMenuItem.Caption := '&Dead Code Detector...';
     FMenuItem.OnClick := MenuItemClick;
     DDevExtensionsMenu.Add( FMenuItem );
@@ -241,9 +241,9 @@ end;
 procedure TDeadCodeDetectorPlugin.Init;
 begin
 
-  FEnabled         := True;
-  FCheckProcedures := True;
-  FCheckFields     := True;
+  FEnabled          := True;
+  FCheckProcedures  := True;
+  FCheckFields      := True;
 
   // Default ignore patterns
   FIgnoreList.Clear;
@@ -261,7 +261,7 @@ end;
 function TDeadCodeDetectorPlugin.GetIgnoreListText: string;
 begin
 
-  Result := FIgnoreList.CommaText;
+  Result            := FIgnoreList.CommaText;
 
 end;
 
@@ -275,7 +275,7 @@ end;
 procedure TDeadCodeDetectorPlugin.ConfigureAnalyzer( Analyzer: TDeadCodeAnalyzer );
 begin
   Analyzer.CheckProcedures := FCheckProcedures;
-  Analyzer.CheckFields     := FCheckFields;
+  Analyzer.CheckFields := FCheckFields;
 
   Analyzer.ClearIgnorePatterns;
   for var sPattern in FIgnoreList do
@@ -285,7 +285,7 @@ end;
 function TDeadCodeDetectorPlugin.GetOptionPages: TTreePage;
 begin
 
-  Result := TTreePage.Create( 'Dead Code Detector', TFrameOptionPageDeadCode, Self );
+  Result            := TTreePage.Create( 'Dead Code Detector', TFrameOptionPageDeadCode, Self );
 
 end;
 
@@ -323,3 +323,4 @@ begin
 end;
 
 end.
+

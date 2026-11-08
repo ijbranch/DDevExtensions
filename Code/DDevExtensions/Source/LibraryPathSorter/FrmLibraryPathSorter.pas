@@ -347,7 +347,7 @@ type
     class procedure CloseInstance;
   end;
 
-/// <summary>Singleton instance of the sorter dialog (nil while not shown).</summary>
+  /// <summary>Singleton instance of the sorter dialog (nil while not shown).</summary>
 var
   FormLibraryPathSorterInstance: TFormLibraryPathSorter = nil;
 
@@ -363,11 +363,11 @@ uses
 
 class procedure TFormLibraryPathSorter.CloseInstance;
 var
-  Instance: TFormLibraryPathSorter;
+  Instance          : TFormLibraryPathSorter;
 begin
   // Clear the singleton first: FormClose would otherwise try to clear it again
   // while the form is already being destroyed.
-  Instance := FormLibraryPathSorterInstance;
+  Instance          := FormLibraryPathSorterInstance;
   FormLibraryPathSorterInstance := nil;
   Instance.Free;
 end;
@@ -385,7 +385,7 @@ begin
   // dictionary builds) that can raise. The VCL frees the form on a constructor
   // exception, so assigning the global only after success avoids leaving it as a
   // dangling non-nil pointer that a later Execute would Show on freed memory.
-  var Instance := TFormLibraryPathSorter.Create( Application );
+  var Instance      := TFormLibraryPathSorter.Create( Application );
   FormLibraryPathSorterInstance := Instance;
   FormLibraryPathSorterInstance.Show;
 end;
@@ -393,14 +393,14 @@ end;
 procedure TFormLibraryPathSorter.FormCreate( Sender: TObject );
 begin
 
-  FDragIndex := -1;
-  FDeletedCount := 0;
-  FChangesApplied := False;
+  FDragIndex        := -1;
+  FDeletedCount     := 0;
+  FChangesApplied   := False;
   FPathValidityCache := TDictionary<string, Boolean>.Create;
-  FMacroTable := TStringList.Create;
+  FMacroTable       := TStringList.Create;
   FMacroTable.CaseSensitive := False;
   FMacroTable.NameValueSeparator := '=';
-  FAllPlatforms := TStringList.Create;
+  FAllPlatforms     := TStringList.Create;
   FPlatformCategories := TDictionary<string, TStringList>.Create;
   FPlatformCheckboxes := TList<TCheckBox>.Create;
 
@@ -408,8 +408,8 @@ begin
   LoadFormSettings;
 
   // Enable owner-draw for duplicate highlighting and missing path detection
-  lstWorking.Style := lbOwnerDrawFixed;
-  lstCurrent.Style := lbOwnerDrawFixed;
+  lstWorking.Style  := lbOwnerDrawFixed;
+  lstCurrent.Style  := lbOwnerDrawFixed;
 
   // Enable multi-select on both panels
   lstCurrent.MultiSelect := True;
@@ -446,7 +446,7 @@ begin
       'For the changes to take effect, you must close and reopen Delphi.' );
 
   FormLibraryPathSorterInstance := nil;
-  Action := caFree;
+  Action            := caFree;
 end;
 
 procedure TFormLibraryPathSorter.FormDestroy( Sender: TObject );
@@ -465,7 +465,7 @@ end;
 
 procedure TFormLibraryPathSorter.LoadPathTypes;
 var
-  PathType: TLibraryPathType;
+  PathType          : TLibraryPathType;
 begin
   cboPathType.Items.Clear;
   for PathType := Low( TLibraryPathType ) to High( TLibraryPathType ) do
@@ -474,7 +474,7 @@ end;
 
 procedure TFormLibraryPathSorter.LoadPlatforms;
 var
-  Platforms: TStringList;
+  Platforms         : TStringList;
 begin
 
   cboPlatform.Items.Clear;
@@ -483,7 +483,7 @@ begin
   if LibraryPathSorterPlugin = nil then
     Exit;
 
-  Platforms := LibraryPathSorterPlugin.PathHandler.GetAvailablePlatforms;
+  Platforms         := LibraryPathSorterPlugin.PathHandler.GetAvailablePlatforms;
   try
     FAllPlatforms.Assign( Platforms );
     cboPlatform.Items.Assign( Platforms );
@@ -496,37 +496,37 @@ end;
 function TFormLibraryPathSorter.GetSelectedPathType: TLibraryPathType;
 begin
   if ( cboPathType.ItemIndex >= 0 ) and
-     ( cboPathType.ItemIndex <= Ord( High( TLibraryPathType ) ) ) then
-    Result := TLibraryPathType( cboPathType.ItemIndex )
+    ( cboPathType.ItemIndex <= Ord( High( TLibraryPathType ) ) ) then
+    Result          := TLibraryPathType( cboPathType.ItemIndex )
   else
-    Result := lptSearchPath;
+    Result          := lptSearchPath;
 end;
 
 function TFormLibraryPathSorter.GetSelectedPlatform: string;
 begin
   if cboPlatform.ItemIndex >= 0 then
-    Result := cboPlatform.Items[cboPlatform.ItemIndex]
+    Result          := cboPlatform.Items[ cboPlatform.ItemIndex ]
   else
-    Result := 'Win32';
+    Result          := 'Win32';
 end;
 
 procedure TFormLibraryPathSorter.LoadCurrentPaths;
 var
-  PathList: TStringList;
+  PathList          : TStringList;
 begin
   lstCurrent.Items.Clear;
   lstWorking.Items.Clear;
-  FOriginalPaths := '';
-  FDeletedCount := 0;
+  FOriginalPaths    := '';
+  FDeletedCount     := 0;
   InvalidatePathCache;
 
   if LibraryPathSorterPlugin = nil then
     Exit;
 
-  FOriginalPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+  FOriginalPaths    := LibraryPathSorterPlugin.PathHandler.ReadPaths(
     GetSelectedPathType, GetSelectedPlatform );
 
-  PathList := TStringList.Create;
+  PathList          := TStringList.Create;
   try
     SplitPaths( PathList, FOriginalPaths, False );
     lstCurrent.Items.Assign( PathList );
@@ -534,7 +534,7 @@ begin
     PathList.Free;
   end;
 
-  UpdateStatus( Format( '%d paths loaded', [lstCurrent.Items.Count] ) );
+  UpdateStatus( Format( '%d paths loaded', [ lstCurrent.Items.Count ] ) );
   LoadWorkingPaths;
   UpdatePanelLabels;
   UpdateButtonStates;
@@ -542,9 +542,9 @@ end;
 
 procedure TFormLibraryPathSorter.LoadWorkingPaths;
 var
-  SortedPaths: string;
-  PathList: TStringList;
-  OriginalCount: Integer;
+  SortedPaths       : string;
+  PathList          : TStringList;
+  OriginalCount     : Integer;
 begin
   lstWorking.Items.Clear;
 
@@ -562,13 +562,13 @@ begin
     Exit;
   end;
 
-  OriginalCount := lstCurrent.Items.Count;
+  OriginalCount     := lstCurrent.Items.Count;
 
   try
     // Start with alphabetically sorted paths in the working panel
-    SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths( FOriginalPaths, True );
+    SortedPaths     := LibraryPathSorterPlugin.PathHandler.SortPaths( FOriginalPaths, True );
 
-    PathList := TStringList.Create;
+    PathList        := TStringList.Create;
     try
       SplitPaths( PathList, SortedPaths, False );
 
@@ -577,7 +577,7 @@ begin
       begin
         // Sort lost paths - fall back to unsorted copy
         UpdateStatus( Format( 'WARNING: Sort lost paths (%d -> %d). Using unsorted copy.',
-          [OriginalCount, PathList.Count] ) );
+            [ OriginalCount, PathList.Count ] ) );
         lstWorking.Items.Assign( lstCurrent.Items );
       end
       else
@@ -602,14 +602,14 @@ begin
   // Final check for count mismatch (should not happen now)
   if lstWorking.Items.Count <> lstCurrent.Items.Count then
     UpdateStatus( Format( 'WARNING: Original has %d paths, Working has %d!',
-      [lstCurrent.Items.Count, lstWorking.Items.Count] ) );
+        [ lstCurrent.Items.Count, lstWorking.Items.Count ] ) );
 end;
 
 procedure TFormLibraryPathSorter.LoadBackupHistory;
 var
-  Backups: TArray<TPathBackup>;
-  Backup: TPathBackup;
-  Item: TListItem;
+  Backups           : TArray<TPathBackup>;
+  Backup            : TPathBackup;
+  Item              : TListItem;
 begin
   lvBackups.Items.Clear;
 
@@ -618,24 +618,24 @@ begin
 
   // Read fresh: the Compactor, or the other IDE, may have added backups since.
   try
-    Backups := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
+    Backups         := LibraryPathSorterPlugin.BackupManager.GetAllBackups;
   except
     on E: ELibraryPathBackupError do
     begin
-      Backups := nil;
+      Backups       := nil;
       UpdateStatus( 'Backup history unavailable: ' + E.Message );
     end;
   end;
-  FShownBackups := Backups;
+  FShownBackups     := Backups;
 
-  var Notice := LibraryPathSorterPlugin.BackupManager.TakeNotice;
+  var Notice        := LibraryPathSorterPlugin.BackupManager.TakeNotice;
   if ( Notice <> '' ) then
-    MessageDlg( Notice, mtWarning, [mbOK], 0 );
+    MessageDlg( Notice, mtWarning, [ mbOK ], 0 );
 
   for Backup in Backups do
   begin
     Item := lvBackups.Items.Add;
-    Item.Caption := Backup.DisplayTime;
+    Item.Caption    := Backup.DisplayTime;
     Item.SubItems.Add( Backup.PathType.ToDisplayName );
     Item.SubItems.Add( Backup.Platform );
     if Backup.Pinned then
@@ -656,9 +656,9 @@ end;
 
 procedure TFormLibraryPathSorter.UpdateButtonStates;
 var
-  WorkingIdx: Integer;
+  WorkingIdx        : Integer;
 begin
-  WorkingIdx := lstWorking.ItemIndex;
+  WorkingIdx        := lstWorking.ItemIndex;
 
   // Working list buttons
   btnWorkingUp.Enabled := WorkingIdx > 0;
@@ -670,18 +670,18 @@ begin
   // Copy and sort buttons
   btnCopyToWorking.Enabled := lstCurrent.Items.Count > 0;
   btnSortAlpha.Enabled := lstWorking.Items.Count > 0;
-  btnApply.Enabled := lstWorking.Items.Count > 0;
+  btnApply.Enabled  := lstWorking.Items.Count > 0;
 end;
 
 procedure TFormLibraryPathSorter.MoveListItem( AListBox: TListBox; Delta: Integer );
 var
-  Idx, NewIdx: Integer;
+  Idx, NewIdx       : Integer;
 begin
-  Idx := AListBox.ItemIndex;
+  Idx               := AListBox.ItemIndex;
   if Idx < 0 then
     Exit;
 
-  NewIdx := Idx + Delta;
+  NewIdx            := Idx + Delta;
   if ( NewIdx < 0 ) or ( NewIdx >= AListBox.Items.Count ) then
     Exit;
 
@@ -692,20 +692,20 @@ end;
 
 procedure TFormLibraryPathSorter.MoveListItemToEnd( AListBox: TListBox; ToTop: Boolean );
 var
-  Idx, NewIdx: Integer;
-  Item: string;
+  Idx, NewIdx       : Integer;
+  Item              : string;
 begin
-  Idx := AListBox.ItemIndex;
+  Idx               := AListBox.ItemIndex;
   if Idx < 0 then
     Exit;
 
-  Item := AListBox.Items[Idx];
+  Item              := AListBox.Items[ Idx ];
   AListBox.Items.Delete( Idx );
 
   if ToTop then
-    NewIdx := 0
+    NewIdx          := 0
   else
-    NewIdx := AListBox.Items.Count;
+    NewIdx          := AListBox.Items.Count;
 
   AListBox.Items.Insert( NewIdx, Item );
   AListBox.ItemIndex := NewIdx;
@@ -714,44 +714,50 @@ end;
 
 function TFormLibraryPathSorter.GetPathsFromListBox( AListBox: TListBox ): string;
 var
-  I: Integer;
+  I                 : Integer;
 begin
   // Delphi's native format does NOT use quotes - just semicolon-separated paths
-  Result := '';
+  Result            := '';
   for I := 0 to AListBox.Items.Count - 1 do
   begin
     if I = 0 then
-      Result := AListBox.Items[I]
+      Result        := AListBox.Items[ I ]
     else
-      Result := Result + ';' + AListBox.Items[I];
+      Result        := Result + ';' + AListBox.Items[ I ];
   end;
 end;
 
 function TFormLibraryPathSorter.ApplyPaths( const APaths: string ): Boolean;
 var
-  VerifyPaths: string;
+  VerifyPaths       : string;
 
   function SamePathContent( const A, B: string ): Boolean;
   var
-    LA, LB: TStringList;
-    K: Integer;
+    LA, LB          : TStringList;
+    K               : Integer;
   begin
-    LA := TStringList.Create;
-    LB := TStringList.Create;
+    LA              := TStringList.Create;
+    LB              := TStringList.Create;
     try
-      LA.Delimiter := ';';  LA.StrictDelimiter := True;  LA.DelimitedText := A;
-      LB.Delimiter := ';';  LB.StrictDelimiter := True;  LB.DelimitedText := B;
+      LA.Delimiter  := ';'; LA.StrictDelimiter := True; LA.DelimitedText := A;
+      LB.Delimiter  := ';'; LB.StrictDelimiter := True; LB.DelimitedText := B;
       // Trim each entry and drop empty (trailing-semicolon) ones before comparing.
       for K := LA.Count - 1 downto 0 do
-        if Trim( LA[K] ) = '' then LA.Delete( K ) else LA[K] := Trim( LA[K] );
+        if Trim( LA[ K ] ) = '' then
+          LA.Delete( K )
+        else
+          LA[ K ]   := Trim( LA[ K ] );
       for K := LB.Count - 1 downto 0 do
-        if Trim( LB[K] ) = '' then LB.Delete( K ) else LB[K] := Trim( LB[K] );
-      Result := LA.Count = LB.Count;
+        if Trim( LB[ K ] ) = '' then
+          LB.Delete( K )
+        else
+          LB[ K ]   := Trim( LB[ K ] );
+      Result        := LA.Count = LB.Count;
       if Result then
         for K := 0 to LA.Count - 1 do
-          if not SameText( LA[K], LB[K] ) then
+          if not SameText( LA[ K ], LB[ K ] ) then
           begin
-            Result := False;
+            Result  := False;
             Break;
           end;
     finally
@@ -761,7 +767,7 @@ var
   end;
 
 begin
-  Result := False;
+  Result            := False;
   if LibraryPathSorterPlugin = nil then
     Exit;
 
@@ -772,7 +778,7 @@ begin
   begin
     MessageDlg( 'This library path has been changed outside the Path Sorter since it was loaded.' + #13#10#13#10 +
       'Nothing was written. The current value has been reloaded; arrange it again and press Apply.',
-      mtWarning, [mbOK], 0 );
+      mtWarning, [ mbOK ], 0 );
     LoadCurrentPaths;
     LoadBackupHistory;
     Exit;
@@ -782,10 +788,10 @@ begin
   if chkAutoBackup.Checked and ( FOriginalPaths <> '' ) then
   begin
     if not LibraryPathSorterPlugin.BackupManager.CreateBackup(
-         GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, 'Before apply' ) then
+      GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, 'Before apply' ) then
     begin
       if MessageDlg( 'Failed to create backup: ' + LibraryPathSorterPlugin.BackupManager.LastError + #13#10#13#10 +
-           'Continue anyway?', mtWarning, [mbYes, mbNo], 0 ) <> mrYes then
+        'Continue anyway?', mtWarning, [ mbYes, mbNo ], 0 ) <> mrYes then
         Exit;
     end;
   end;
@@ -796,13 +802,13 @@ begin
   try
     LibraryPathSorterPlugin.PathHandler.WritePaths(
       GetSelectedPathType, GetSelectedPlatform, APaths );
-    VerifyPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+    VerifyPaths     := LibraryPathSorterPlugin.PathHandler.ReadPaths(
       GetSelectedPathType, GetSelectedPlatform );
   except
     on E: Exception do
     begin
       ShowMessage( 'Failed to write the library paths to the registry:'#13#10 + E.Message );
-      LoadCurrentPaths;   // resync the Original panel with what is really stored
+      LoadCurrentPaths; // resync the Original panel with what is really stored
       UpdateStatus( 'Save failed - paths reloaded from registry' );
       Exit;
     end;
@@ -820,9 +826,9 @@ begin
   LoadCurrentPaths;
   LoadBackupHistory;
 
-  FChangesApplied := True;
+  FChangesApplied   := True;
   UpdateStatus( 'Paths saved successfully' );
-  Result := True;
+  Result            := True;
 end;
 
 procedure TFormLibraryPathSorter.cboPathTypeChange( Sender: TObject );
@@ -839,8 +845,8 @@ end;
 
 procedure TFormLibraryPathSorter.lstWorkingClick( Sender: TObject );
 var
-  SelectedPath: string;
-  I, J: Integer;
+  SelectedPath      : string;
+  I, J              : Integer;
 begin
 
   UpdateButtonStates;
@@ -851,14 +857,14 @@ begin
   // Highlight matching entries in original panel for all selected working items
   for I := 0 to lstWorking.Items.Count - 1 do
   begin
-    if lstWorking.Selected[I] then
+    if lstWorking.Selected[ I ] then
     begin
-      SelectedPath := lstWorking.Items[I];
+      SelectedPath  := lstWorking.Items[ I ];
 
       for J := 0 to lstCurrent.Items.Count - 1 do
       begin
-        if SameText( lstCurrent.Items[J], SelectedPath ) then
-          lstCurrent.Selected[J] := True;
+        if SameText( lstCurrent.Items[ J ], SelectedPath ) then
+          lstCurrent.Selected[ J ] := True;
       end;
     end;
   end;
@@ -867,21 +873,21 @@ end;
 
 function TFormLibraryPathSorter.IsDuplicatePath( AListBox: TListBox; Index: Integer ): Boolean;
 var
-  I: Integer;
-  CurrentPath: string;
+  I                 : Integer;
+  CurrentPath       : string;
 begin
-  Result := False;
+  Result            := False;
   if ( Index < 0 ) or ( Index >= AListBox.Items.Count ) then
     Exit;
 
-  CurrentPath := Trim( AListBox.Items[Index] );
+  CurrentPath       := Trim( AListBox.Items[ Index ] );
 
   // Check if this path appears elsewhere in the list (case-insensitive, trimmed)
   for I := 0 to AListBox.Items.Count - 1 do
   begin
-    if ( I <> Index ) and SameText( Trim( AListBox.Items[I] ), CurrentPath ) then
+    if ( I <> Index ) and SameText( Trim( AListBox.Items[ I ] ), CurrentPath ) then
     begin
-      Result := True;
+      Result        := True;
       Exit;
     end;
   end;
@@ -890,14 +896,14 @@ end;
 procedure TFormLibraryPathSorter.lstWorkingDrawItem( Control: TWinControl;
   Index: Integer; Rect: TRect; State: TOwnerDrawState );
 var
-  ListBox: TListBox;
-  ItemText: string;
+  ListBox           : TListBox;
+  ItemText          : string;
   IsDuplicate, IsInvalid: Boolean;
 begin
   if not ( Control is TListBox ) then
     Exit;
 
-  ListBox := TListBox( Control );
+  ListBox           := TListBox( Control );
 
   // Safety checks
   if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
@@ -906,9 +912,9 @@ begin
     Exit;
 
   try
-    ItemText := ListBox.Items[Index];
-    IsDuplicate := IsDuplicatePath( ListBox, Index );
-    IsInvalid := not IsPathValid( ItemText );
+    ItemText        := ListBox.Items[ Index ];
+    IsDuplicate     := IsDuplicatePath( ListBox, Index );
+    IsInvalid       := not IsPathValid( ItemText );
 
     // Set background
     if odSelected in State then
@@ -930,9 +936,9 @@ begin
 
     // Make duplicates or invalid paths bold
     if IsDuplicate or IsInvalid then
-      ListBox.Canvas.Font.Style := [fsBold]
+      ListBox.Canvas.Font.Style := [ fsBold ]
     else
-      ListBox.Canvas.Font.Style := [];
+      ListBox.Canvas.Font.Style := [ ];
 
     // Draw the text
     ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
@@ -949,18 +955,18 @@ end;
 
 function TFormLibraryPathSorter.IsPathInWorkingPanel( const APath: string ): Boolean;
 var
-  I: Integer;
-  TrimmedPath: string;
+  I                 : Integer;
+  TrimmedPath       : string;
 begin
-  Result := False;
-  TrimmedPath := Trim( APath );
+  Result            := False;
+  TrimmedPath       := Trim( APath );
 
   for I := 0 to lstWorking.Items.Count - 1 do
   begin
     // Compare trimmed versions to handle any whitespace differences
-    if SameText( Trim( lstWorking.Items[I] ), TrimmedPath ) then
+    if SameText( Trim( lstWorking.Items[ I ] ), TrimmedPath ) then
     begin
-      Result := True;
+      Result        := True;
       Exit;
     end;
   end;
@@ -971,22 +977,22 @@ begin
   if FMacroTable.Count = 0 then
     BuildMacroTable( FMacroTable,
       LibraryPathSorterPlugin.PathHandler.BaseRegistryKey, '' );
-  Result := FMacroTable;
+  Result            := FMacroTable;
 end;
 
 function TFormLibraryPathSorter.ExpandPathMacros( const APath: string ): string;
 var
-  SelectedPlatform: string;
+  SelectedPlatform  : string;
 begin
-  Result := APath;
+  Result            := APath;
 
   // Expand $(PLATFORM) using the combo box selection, not the active project's
   // platform - this dialog is examining one platform's registry key, which is
   // not necessarily the one the current project targets.
   if cboPlatform.ItemIndex >= 0 then
   begin
-    SelectedPlatform := cboPlatform.Items[cboPlatform.ItemIndex];
-    Result := StringReplace( Result, '$(PLATFORM)', SelectedPlatform, [rfReplaceAll, rfIgnoreCase] );
+    SelectedPlatform := cboPlatform.Items[ cboPlatform.ItemIndex ];
+    Result          := StringReplace( Result, '$(PLATFORM)', SelectedPlatform, [ rfReplaceAll, rfIgnoreCase ] );
   end;
 
   // Deliberately NOT IDEUtils.ExpandDirMacros. That routine substitutes an
@@ -996,36 +1002,36 @@ begin
   // IDE's own Environment Variables keys, so every user-defined macro met the
   // same fate. ExpandLibraryMacros leaves an unresolvable macro intact, which
   // is what makes the "cannot verify, treat as valid" branch below reachable.
-  Result := ExpandLibraryMacros( Result, MacroTable );
+  Result            := ExpandLibraryMacros( Result, MacroTable );
 end;
 
 function TFormLibraryPathSorter.IsPathValid( const APath: string ): Boolean;
 var
   TrimmedPath, LowerPath, ExpandedPath: string;
 begin
-  TrimmedPath := Trim( APath );
+  TrimmedPath       := Trim( APath );
 
   // Empty paths are invalid
   if TrimmedPath = '' then
   begin
-    Result := False;
+    Result          := False;
     Exit;
   end;
 
   // A namespace prefix is a unit-scope name, not a directory: never flag it as missing.
   if ( GetSelectedPathType = lptNamespacePrefixes ) then
   begin
-    Result := True;
+    Result          := True;
     Exit;
   end;
 
   // Check cache (case-insensitive key)
-  LowerPath := AnsiLowerCase( TrimmedPath );
+  LowerPath         := AnsiLowerCase( TrimmedPath );
   if FPathValidityCache.TryGetValue( LowerPath, Result ) then
     Exit;
 
   // Expand macros
-  ExpandedPath := ExpandPathMacros( TrimmedPath );
+  ExpandedPath      := ExpandPathMacros( TrimmedPath );
 
   // A macro that resolves nowhere leaves "$(" in place, and the directory it
   // names cannot be checked - so the entry is reported valid rather than being
@@ -1034,13 +1040,13 @@ begin
   // defines.)
   if Pos( '$(', ExpandedPath ) > 0 then
   begin
-    Result := True;
+    Result          := True;
     FPathValidityCache.Add( LowerPath, Result );
     Exit;
   end;
 
   // Check if directory exists
-  Result := DirectoryExists( ExpandedPath );
+  Result            := DirectoryExists( ExpandedPath );
 
   // Cache the result
   FPathValidityCache.Add( LowerPath, Result );
@@ -1056,24 +1062,24 @@ end;
 
 procedure TFormLibraryPathSorter.UpdatePanelLabels;
 var
-  Difference: Integer;
+  Difference        : Integer;
 begin
   lblCurrent.Caption := Format( '  Original Paths (Pink = not in Working, Blue = invalid): %d',
-    [lstCurrent.Items.Count] );
+    [ lstCurrent.Items.Count ] );
   lblWorking.Caption := Format( '  Working Panel (Red = duplicate, Blue = invalid): %d',
-    [lstWorking.Items.Count] );
+    [ lstWorking.Items.Count ] );
 
   // Update deleted count label and compare with actual difference
-  Difference := lstCurrent.Items.Count - lstWorking.Items.Count;
+  Difference        := lstCurrent.Items.Count - lstWorking.Items.Count;
 
   if ( FDeletedCount > 0 ) or ( Difference > 0 ) then
   begin
     if FDeletedCount = Difference then
       // Counts match - normal display
-      lblDeleted.Caption := Format( 'Deleted: %d', [FDeletedCount] )
+      lblDeleted.Caption := Format( 'Deleted: %d', [ FDeletedCount ] )
     else
       // Mismatch - flag it! Paths were lost/added unexpectedly
-      lblDeleted.Caption := Format( 'Deleted: %d (Expected: %d) WARNING!', [FDeletedCount, Difference] );
+      lblDeleted.Caption := Format( 'Deleted: %d (Expected: %d) WARNING!', [ FDeletedCount, Difference ] );
   end
   else
     lblDeleted.Caption := '';
@@ -1082,14 +1088,14 @@ end;
 procedure TFormLibraryPathSorter.lstCurrentDrawItem( Control: TWinControl;
   Index: Integer; Rect: TRect; State: TOwnerDrawState );
 var
-  ListBox: TListBox;
-  ItemText: string;
+  ListBox           : TListBox;
+  ItemText          : string;
   IsMissing, IsInvalid: Boolean;
 begin
   if not ( Control is TListBox ) then
     Exit;
 
-  ListBox := TListBox( Control );
+  ListBox           := TListBox( Control );
 
   // Safety checks
   if ( Index < 0 ) or ( Index >= ListBox.Items.Count ) then
@@ -1098,15 +1104,15 @@ begin
     Exit;
 
   try
-    ItemText := ListBox.Items[Index];
-    IsMissing := not IsPathInWorkingPanel( ItemText );
-    IsInvalid := not IsPathValid( ItemText );
+    ItemText        := ListBox.Items[ Index ];
+    IsMissing       := not IsPathInWorkingPanel( ItemText );
+    IsInvalid       := not IsPathValid( ItemText );
 
     // Set background (pink preserved for missing regardless of validity)
     if odSelected in State then
       ListBox.Canvas.Brush.Color := clHighlight
     else if IsMissing then
-      ListBox.Canvas.Brush.Color := $CCCCFF  // Light red/pink background for missing
+      ListBox.Canvas.Brush.Color := $CCCCFF // Light red/pink background for missing
     else
       ListBox.Canvas.Brush.Color := clWindow;
 
@@ -1124,9 +1130,9 @@ begin
 
     // Make missing or invalid items bold
     if IsMissing or IsInvalid then
-      ListBox.Canvas.Font.Style := [fsBold]
+      ListBox.Canvas.Font.Style := [ fsBold ]
     else
-      ListBox.Canvas.Font.Style := [];
+      ListBox.Canvas.Font.Style := [ ];
 
     // Draw the text
     ListBox.Canvas.TextOut( Rect.Left + 2, Rect.Top + 1, ItemText );
@@ -1144,7 +1150,7 @@ end;
 procedure TFormLibraryPathSorter.lstWorkingMouseDown( Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer );
 var
-  Idx: Integer;
+  Idx               : Integer;
 begin
 
   if Button = mbLeft then
@@ -1152,10 +1158,10 @@ begin
     // Only start drag on plain left click; Ctrl/Shift are for multi-select
     if not ( ( ssCtrl in Shift ) or ( ssShift in Shift ) ) then
     begin
-      Idx := lstWorking.ItemAtPos( Point( X, Y ), True );
+      Idx           := lstWorking.ItemAtPos( Point( X, Y ), True );
       if Idx >= 0 then
       begin
-        FDragIndex := Idx;
+        FDragIndex  := Idx;
         lstWorking.BeginDrag( False, 5 ); // Start drag after 5 pixel movement
       end;
     end;
@@ -1166,30 +1172,30 @@ end;
 procedure TFormLibraryPathSorter.lstWorkingDragOver( Sender, Source: TObject;
   X, Y: Integer; State: TDragState; var Accept: Boolean );
 begin
-  Accept := ( Source = lstWorking ) and ( FDragIndex >= 0 );
+  Accept            := ( Source = lstWorking ) and ( FDragIndex >= 0 );
 end;
 
 procedure TFormLibraryPathSorter.lstWorkingDragDrop( Sender, Source: TObject;
   X, Y: Integer );
 var
-  DropIdx: Integer;
-  Item: string;
+  DropIdx           : Integer;
+  Item              : string;
 begin
   if Source <> lstWorking then
     Exit;
 
-  DropIdx := lstWorking.ItemAtPos( Point( X, Y ), False );
+  DropIdx           := lstWorking.ItemAtPos( Point( X, Y ), False );
 
   // If dropped below the last item, move to end
   if DropIdx < 0 then
-    DropIdx := lstWorking.Items.Count - 1;
+    DropIdx         := lstWorking.Items.Count - 1;
 
   // Don't do anything if dropping on same position
   if DropIdx = FDragIndex then
     Exit;
 
   // Move the item
-  Item := lstWorking.Items[FDragIndex];
+  Item              := lstWorking.Items[ FDragIndex ];
   lstWorking.Items.Delete( FDragIndex );
 
   // Adjust index if we deleted before the drop position
@@ -1199,8 +1205,8 @@ begin
   lstWorking.Items.Insert( DropIdx, Item );
   lstWorking.ItemIndex := DropIdx;
 
-  FDragIndex := -1;
-  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  FDragIndex        := -1;
+  lstCurrent.Invalidate; // Refresh to update missing path highlighting
   UpdateButtonStates;
 end;
 
@@ -1227,8 +1233,8 @@ end;
 procedure TFormLibraryPathSorter.btnCopyToWorkingClick( Sender: TObject );
 begin
   lstWorking.Items.Assign( lstCurrent.Items );
-  FDeletedCount := 0;  // Reset deleted count
-  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  FDeletedCount     := 0; // Reset deleted count
+  lstCurrent.Invalidate; // Refresh to update missing path highlighting
   UpdatePanelLabels;
   UpdateButtonStates;
   UpdateStatus( 'Copied original order to working panel' );
@@ -1236,26 +1242,26 @@ end;
 
 procedure TFormLibraryPathSorter.btnSortAlphaClick( Sender: TObject );
 var
-  SortedPaths: string;
-  PathList: TStringList;
-  OriginalCount: Integer;
-  BackupItems: TStringList;
+  SortedPaths       : string;
+  PathList          : TStringList;
+  OriginalCount     : Integer;
+  BackupItems       : TStringList;
 begin
   if lstWorking.Items.Count = 0 then
     Exit;
 
-  OriginalCount := lstWorking.Items.Count;
+  OriginalCount     := lstWorking.Items.Count;
 
   // Keep a backup of items in case sort fails
-  BackupItems := TStringList.Create;
+  BackupItems       := TStringList.Create;
   try
     BackupItems.Assign( lstWorking.Items );
 
     try
-      SortedPaths := LibraryPathSorterPlugin.PathHandler.SortPaths(
+      SortedPaths   := LibraryPathSorterPlugin.PathHandler.SortPaths(
         GetPathsFromListBox( lstWorking ), True );
 
-      PathList := TStringList.Create;
+      PathList      := TStringList.Create;
       try
         SplitPaths( PathList, SortedPaths, False );
 
@@ -1265,10 +1271,10 @@ begin
           // Restore from backup and show error
           lstWorking.Items.Assign( BackupItems );
           ShowMessage( Format(
-            'ERROR: Sort would have lost %d paths!' + #13#10 +
-            'Original: %d, After sort: %d' + #13#10 + #13#10 +
-            'Sort has been cancelled and working panel restored.',
-            [OriginalCount - PathList.Count, OriginalCount, PathList.Count] ) );
+              'ERROR: Sort would have lost %d paths!' + #13#10 +
+              'Original: %d, After sort: %d' + #13#10 + #13#10 +
+              'Sort has been cancelled and working panel restored.',
+              [ OriginalCount - PathList.Count, OriginalCount, PathList.Count ] ) );
           Exit;
         end;
 
@@ -1290,7 +1296,7 @@ begin
     BackupItems.Free;
   end;
 
-  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  lstCurrent.Invalidate; // Refresh to update missing path highlighting
   UpdatePanelLabels;
   UpdateButtonStates;
   UpdateStatus( 'Working panel sorted alphabetically' );
@@ -1303,26 +1309,26 @@ end;
 
 procedure TFormLibraryPathSorter.mnuDeleteEntryClick( Sender: TObject );
 var
-  I, DeleteCount: Integer;
-  Msg: string;
+  I, DeleteCount    : Integer;
+  Msg               : string;
 begin
 
   if lstWorking.SelCount = 0 then
     Exit;
 
   if lstWorking.SelCount = 1 then
-    Msg := 'Delete this path from working panel?' + #13#10 + #13#10 +
-           lstWorking.Items[lstWorking.ItemIndex]
+    Msg             := 'Delete this path from working panel?' + #13#10 + #13#10 +
+      lstWorking.Items[ lstWorking.ItemIndex ]
   else
-    Msg := Format( 'Delete %d selected paths from working panel?', [lstWorking.SelCount] );
+    Msg             := Format( 'Delete %d selected paths from working panel?', [ lstWorking.SelCount ] );
 
-  if MessageDlg( Msg, mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+  if MessageDlg( Msg, mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 
-  DeleteCount := 0;
+  DeleteCount       := 0;
   for I := lstWorking.Items.Count - 1 downto 0 do
   begin
-    if lstWorking.Selected[I] then
+    if lstWorking.Selected[ I ] then
     begin
       lstWorking.Items.Delete( I );
       Inc( DeleteCount );
@@ -1330,74 +1336,74 @@ begin
   end;
 
   Inc( FDeletedCount, DeleteCount );
-  lstCurrent.Invalidate;  // Refresh to update missing path highlighting
+  lstCurrent.Invalidate; // Refresh to update missing path highlighting
   UpdatePanelLabels;
   UpdateButtonStates;
 
   if DeleteCount = 1 then
     UpdateStatus( '1 entry deleted from working panel' )
   else
-    UpdateStatus( Format( '%d entries deleted from working panel', [DeleteCount] ) );
+    UpdateStatus( Format( '%d entries deleted from working panel', [ DeleteCount ] ) );
 
 end;
 
 procedure TFormLibraryPathSorter.mnuShowMissingClick( Sender: TObject );
 var
-  I, J: Integer;
-  MissingPaths: TStringList;
+  I, J              : Integer;
+  MissingPaths      : TStringList;
   OrigPath, WorkPath: string;
-  Msg, DetailMsg: string;
+  Msg, DetailMsg    : string;
 begin
-  MissingPaths := TStringList.Create;
+  MissingPaths      := TStringList.Create;
   try
     for I := 0 to lstCurrent.Items.Count - 1 do
     begin
-      if not IsPathInWorkingPanel( lstCurrent.Items[I] ) then
-        MissingPaths.Add( lstCurrent.Items[I] );
+      if not IsPathInWorkingPanel( lstCurrent.Items[ I ] ) then
+        MissingPaths.Add( lstCurrent.Items[ I ] );
     end;
 
     if MissingPaths.Count = 0 then
       ShowMessage( 'No paths are missing from the working panel.' )
     else
     begin
-      Msg := Format( '%d path(s) missing from working panel:'#13#10#13#10, [MissingPaths.Count] );
+      Msg           := Format( '%d path(s) missing from working panel:'#13#10#13#10, [ MissingPaths.Count ] );
       for I := 0 to MissingPaths.Count - 1 do
       begin
-        OrigPath := MissingPaths[I];
-        Msg := Msg + OrigPath + #13#10;
+        OrigPath    := MissingPaths[ I ];
+        Msg         := Msg + OrigPath + #13#10;
 
         // Try to find a close match to explain why it doesn't match
         for J := 0 to lstWorking.Items.Count - 1 do
         begin
-          WorkPath := lstWorking.Items[J];
+          WorkPath  := lstWorking.Items[ J ];
           // Check if paths differ only by whitespace
           if SameText( Trim( OrigPath ), Trim( WorkPath ) ) and
-             not SameText( OrigPath, WorkPath ) then
+            not SameText( OrigPath, WorkPath ) then
           begin
-            Msg := Msg + '  ^ Has whitespace difference with: ' + WorkPath + #13#10;
+            Msg     := Msg + '  ^ Has whitespace difference with: ' + WorkPath + #13#10;
             Break;
           end;
           // Check if paths differ only in length (possible truncation)
           if ( Length( OrigPath ) > 5 ) and ( Length( WorkPath ) > 5 ) and
-             ( Copy( OrigPath, 1, Length( WorkPath ) ) = WorkPath ) then
+            ( Copy( OrigPath, 1, Length( WorkPath ) ) = WorkPath ) then
           begin
-            Msg := Msg + '  ^ Partial match (truncated?): ' + WorkPath + #13#10;
+            Msg     := Msg + '  ^ Partial match (truncated?): ' + WorkPath + #13#10;
             Break;
           end;
         end;
 
-        if I >= 9 then  // Limit display to 10 items with details
+        if I >= 9 then // Limit display to 10 items with details
         begin
-          Msg := Msg + Format( '... and %d more', [MissingPaths.Count - 10] );
+          Msg       := Msg + Format( '... and %d more', [ MissingPaths.Count - 10 ] );
           Break;
         end;
       end;
 
       // Add summary information
-      DetailMsg := #13#10#13#10 + 'DEBUG INFO:' + #13#10 +
-        Format( 'Original panel: %d items', [lstCurrent.Items.Count] ) + #13#10 +
-        Format( 'Working panel: %d items', [lstWorking.Items.Count] ) + #13#10 +
-        Format( 'Missing count: %d', [MissingPaths.Count] );
+      DetailMsg     := #13#10#13#10 + 'DEBUG INFO:' + #13#10 +
+        Format( 'Original panel: %d items', [ lstCurrent.Items.Count ] ) + #13#10 +
+        Format( 'Working panel: %d items', [ lstWorking.Items.Count ] ) + #13#10 +
+        Format( 'Missing count: %d', [ MissingPaths.Count ] );
 
       ShowMessage( Msg + DetailMsg );
     end;
@@ -1408,63 +1414,63 @@ end;
 
 procedure TFormLibraryPathSorter.mnuShowDiagnosticClick( Sender: TObject );
 var
-  RawPaths: string;
-  ParsedList: TStringList;
+  RawPaths          : string;
+  ParsedList        : TStringList;
   SemicolonCount, I, MissingCount: Integer;
-  Msg: string;
+  Msg               : string;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
 
   // Read raw registry value
-  RawPaths := LibraryPathSorterPlugin.PathHandler.ReadPaths(
+  RawPaths          := LibraryPathSorterPlugin.PathHandler.ReadPaths(
     GetSelectedPathType, GetSelectedPlatform );
 
   // Count semicolons in raw string
-  SemicolonCount := 0;
+  SemicolonCount    := 0;
   for I := 1 to Length( RawPaths ) do
-    if RawPaths[I] = ';' then
+    if RawPaths[ I ] = ';' then
       Inc( SemicolonCount );
 
   // Count missing paths
-  MissingCount := 0;
+  MissingCount      := 0;
   for I := 0 to lstCurrent.Items.Count - 1 do
-    if not IsPathInWorkingPanel( lstCurrent.Items[I] ) then
+    if not IsPathInWorkingPanel( lstCurrent.Items[ I ] ) then
       Inc( MissingCount );
 
   // Parse paths
-  ParsedList := TStringList.Create;
+  ParsedList        := TStringList.Create;
   try
     SplitPaths( ParsedList, RawPaths, False );
 
-    Msg := 'DIAGNOSTIC INFO' + #13#10 +
-           '===============' + #13#10#13#10 +
-           Format( 'Raw registry string length: %d chars', [Length( RawPaths )] ) + #13#10 +
-           Format( 'Semicolons in raw string: %d', [SemicolonCount] ) + #13#10 +
-           Format( 'Expected path count: %d', [SemicolonCount + 1] ) + #13#10 +
-           Format( 'Parsed path count: %d', [ParsedList.Count] ) + #13#10 +
-           Format( 'Original panel count: %d', [lstCurrent.Items.Count] ) + #13#10 +
-           Format( 'Working panel count: %d', [lstWorking.Items.Count] ) + #13#10 +
-           Format( 'Paths in Original not in Working: %d', [MissingCount] ) + #13#10#13#10;
+    Msg             := 'DIAGNOSTIC INFO' + #13#10 +
+      '===============' + #13#10#13#10 +
+      Format( 'Raw registry string length: %d chars', [ Length( RawPaths ) ] ) + #13#10 +
+    Format( 'Semicolons in raw string: %d', [ SemicolonCount ] ) + #13#10 +
+      Format( 'Expected path count: %d', [ SemicolonCount + 1 ] ) + #13#10 +
+      Format( 'Parsed path count: %d', [ ParsedList.Count ] ) + #13#10 +
+      Format( 'Original panel count: %d', [ lstCurrent.Items.Count ] ) + #13#10 +
+      Format( 'Working panel count: %d', [ lstWorking.Items.Count ] ) + #13#10 +
+      Format( 'Paths in Original not in Working: %d', [ MissingCount ] ) + #13#10#13#10;
 
     if ParsedList.Count <> lstCurrent.Items.Count then
-      Msg := Msg + 'WARNING: Parsed count differs from Original panel!' + #13#10;
+      Msg           := Msg + 'WARNING: Parsed count differs from Original panel!' + #13#10;
 
     if lstWorking.Items.Count <> lstCurrent.Items.Count then
-      Msg := Msg + Format( 'WARNING: Working panel has %d fewer paths!',
-        [lstCurrent.Items.Count - lstWorking.Items.Count] ) + #13#10;
+      Msg           := Msg + Format( 'WARNING: Working panel has %d fewer paths!',
+        [ lstCurrent.Items.Count - lstWorking.Items.Count ] ) + #13#10;
 
     if MissingCount > 0 then
-      Msg := Msg + Format( 'WARNING: %d paths in Original are not matched in Working!', [MissingCount] ) + #13#10 +
-             '(Use "Show Missing Paths" for details)' + #13#10;
+      Msg           := Msg + Format( 'WARNING: %d paths in Original are not matched in Working!', [ MissingCount ] ) + #13#10 +
+        '(Use "Show Missing Paths" for details)' + #13#10;
 
     // Show first few and last few chars of raw string
-    Msg := Msg + #13#10 + 'Raw string preview:' + #13#10;
+    Msg             := Msg + #13#10 + 'Raw string preview:' + #13#10;
     if Length( RawPaths ) > 200 then
-      Msg := Msg + Copy( RawPaths, 1, 100 ) + #13#10 + '...' + #13#10 +
-             Copy( RawPaths, Length( RawPaths ) - 99, 100 )
+      Msg           := Msg + Copy( RawPaths, 1, 100 ) + #13#10 + '...' + #13#10 +
+        Copy( RawPaths, Length( RawPaths ) - 99, 100 )
     else
-      Msg := Msg + RawPaths;
+      Msg           := Msg + RawPaths;
 
     ShowMessage( Msg );
   finally
@@ -1474,7 +1480,7 @@ end;
 
 procedure TFormLibraryPathSorter.btnBackupClick( Sender: TObject );
 var
-  Description: string;
+  Description       : string;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -1487,12 +1493,12 @@ begin
 
   // InputQuery returns False on Cancel (InputBox cannot distinguish Cancel from
   // an unedited default), so a cancelled dialog no longer creates a backup.
-  Description := 'Manual backup';
+  Description       := 'Manual backup';
   if not InputQuery( 'Backup Description', 'Enter a description for this backup:', Description ) then
     Exit;
 
   if LibraryPathSorterPlugin.BackupManager.CreateBackup(
-       GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, Description ) then
+    GetSelectedPathType, GetSelectedPlatform, FOriginalPaths, Description ) then
   begin
     LoadBackupHistory;
     UpdateStatus( 'Backup created successfully' );
@@ -1503,9 +1509,9 @@ end;
 
 procedure TFormLibraryPathSorter.btnApplyClick( Sender: TObject );
 var
-  NewPaths: string;
+  NewPaths          : string;
   OriginalCount, WorkingCount, Difference: Integer;
-  WarningMsg: string;
+  WarningMsg        : string;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -1516,7 +1522,7 @@ begin
     Exit;
   end;
 
-  NewPaths := GetPathsFromListBox( lstWorking );
+  NewPaths          := GetPathsFromListBox( lstWorking );
 
   if NewPaths = FOriginalPaths then
   begin
@@ -1525,14 +1531,14 @@ begin
   end;
 
   // Safety check: verify path counts
-  OriginalCount := lstCurrent.Items.Count;
-  WorkingCount := lstWorking.Items.Count;
-  Difference := OriginalCount - WorkingCount;
+  OriginalCount     := lstCurrent.Items.Count;
+  WorkingCount      := lstWorking.Items.Count;
+  Difference        := OriginalCount - WorkingCount;
 
-  WarningMsg := 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
-       'WARNING: Path order affects unit resolution.' + #13#10 +
-       'The first matching unit found wins.' + #13#10 + #13#10 +
-       'A backup will be created first.';
+  WarningMsg        := 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
+    'WARNING: Path order affects unit resolution.' + #13#10 +
+    'The first matching unit found wins.' + #13#10 + #13#10 +
+    'A backup will be created first.';
 
   // Add extra warning if paths are being lost
   if Difference > 0 then
@@ -1541,39 +1547,39 @@ begin
     begin
       // Paths disappeared without being explicitly deleted - this is dangerous!
       if MessageDlg(
-           Format( 'CRITICAL WARNING!' + #13#10 + #13#10 +
-                   'The working panel has %d fewer paths than the original.' + #13#10 +
-                   'Only %d paths were explicitly deleted.' + #13#10 +
-                   '%d paths may have been LOST!' + #13#10 + #13#10 +
-                   'It is STRONGLY recommended to click "Copy from Original" ' +
-                   'to restore all paths before applying.' + #13#10 + #13#10 +
-                   'Do you REALLY want to continue anyway?',
-                   [Difference, FDeletedCount, Difference - FDeletedCount] ),
-           mtError, [mbYes, mbNo], 0 ) <> mrYes then
+        Format( 'CRITICAL WARNING!' + #13#10 + #13#10 +
+          'The working panel has %d fewer paths than the original.' + #13#10 +
+          'Only %d paths were explicitly deleted.' + #13#10 +
+          '%d paths may have been LOST!' + #13#10 + #13#10 +
+          'It is STRONGLY recommended to click "Copy from Original" ' +
+          'to restore all paths before applying.' + #13#10 + #13#10 +
+          'Do you REALLY want to continue anyway?',
+          [ Difference, FDeletedCount, Difference - FDeletedCount ] ),
+        mtError, [ mbYes, mbNo ], 0 ) <> mrYes then
         Exit;
     end
     else
     begin
       // User explicitly deleted these paths
-      WarningMsg := Format( 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
-           'You have deleted %d path(s).' + #13#10 +
-           'Original: %d paths, Working: %d paths' + #13#10 + #13#10 +
-           'WARNING: Path order affects unit resolution.' + #13#10 +
-           'The first matching unit found wins.' + #13#10 + #13#10 +
-           'A backup will be created first.',
-           [Difference, OriginalCount, WorkingCount] );
+      WarningMsg    := Format( 'Apply the working panel arrangement to the registry?' + #13#10 + #13#10 +
+        'You have deleted %d path(s).' + #13#10 +
+        'Original: %d paths, Working: %d paths' + #13#10 + #13#10 +
+        'WARNING: Path order affects unit resolution.' + #13#10 +
+        'The first matching unit found wins.' + #13#10 + #13#10 +
+        'A backup will be created first.',
+        [ Difference, OriginalCount, WorkingCount ] );
     end;
   end;
 
-  if MessageDlg( WarningMsg, mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+  if MessageDlg( WarningMsg, mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 
   // Show what we're about to write
   ShowMessage( Format(
-    'About to write %d paths to registry.' + #13#10 +
-    'String length: %d characters' + #13#10#13#10 +
-    'Click OK to proceed.',
-    [lstWorking.Items.Count, Length( NewPaths )] ) );
+      'About to write %d paths to registry.' + #13#10 +
+      'String length: %d characters' + #13#10#13#10 +
+      'Click OK to proceed.',
+      [ lstWorking.Items.Count, Length( NewPaths ) ] ) );
 
   if ApplyPaths( NewPaths ) then
     ShowMessage( 'Library paths have been updated.' );
@@ -1581,8 +1587,8 @@ end;
 
 procedure TFormLibraryPathSorter.btnRestoreClick( Sender: TObject );
 var
-  Backup: TPathBackup;
-  BackupIndex: Integer;
+  Backup            : TPathBackup;
+  BackupIndex       : Integer;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -1593,36 +1599,36 @@ begin
     Exit;
   end;
 
-  BackupIndex := lvBackups.Selected.Index;
+  BackupIndex       := lvBackups.Selected.Index;
   if ( BackupIndex < 0 ) or ( BackupIndex >= Length( FShownBackups ) ) then
   begin
     ShowMessage( 'Invalid backup selection.' );
     Exit;
   end;
 
-  Backup := FShownBackups[BackupIndex];
+  Backup            := FShownBackups[ BackupIndex ];
 
   if MessageDlg(
-       Format( 'Restore backup from %s?' + #13#10 +
-               'Path Type: %s' + #13#10 +
-               'Platform: %s' + #13#10 +
-               'Description: %s' + #13#10#13#10 +
-               'The value it replaces is backed up first.',
-               [Backup.DisplayTime,
-                Backup.PathType.ToDisplayName,
-                Backup.Platform,
-                Backup.Description] ),
-       mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+    Format( 'Restore backup from %s?' + #13#10 +
+      'Path Type: %s' + #13#10 +
+      'Platform: %s' + #13#10 +
+      'Description: %s' + #13#10#13#10 +
+      'The value it replaces is backed up first.',
+      [ Backup.DisplayTime,
+        Backup.PathType.ToDisplayName,
+        Backup.Platform,
+        Backup.Description ] ),
+    mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 
   // Restoring the wrong entry must itself be undoable: keep the value being replaced.
-  var Current := LibraryPathSorterPlugin.PathHandler.ReadPaths( Backup.PathType, Backup.Platform );
+  var Current       := LibraryPathSorterPlugin.PathHandler.ReadPaths( Backup.PathType, Backup.Platform );
   if ( Current <> '' ) and ( Current <> Backup.Paths ) and
-     not LibraryPathSorterPlugin.BackupManager.CreateBackup( Backup.PathType, Backup.Platform, Current,
-       'Before restore' ) then
+    not LibraryPathSorterPlugin.BackupManager.CreateBackup( Backup.PathType, Backup.Platform, Current,
+    'Before restore' ) then
   begin
     MessageDlg( 'The current value could not be backed up, so nothing was restored:' + #13#10#13#10 +
-      LibraryPathSorterPlugin.BackupManager.LastError, mtError, [mbOK], 0 );
+      LibraryPathSorterPlugin.BackupManager.LastError, mtError, [ mbOK ], 0 );
     Exit;
   end;
 
@@ -1631,14 +1637,14 @@ begin
   except
     on E: Exception do
     begin
-      MessageDlg( 'Failed to restore the backup:' + #13#10#13#10 + E.Message, mtError, [mbOK], 0 );
+      MessageDlg( 'Failed to restore the backup:' + #13#10#13#10 + E.Message, mtError, [ mbOK ], 0 );
       LoadCurrentPaths;
       LoadBackupHistory;
       Exit;
     end;
   end;
 
-  FChangesApplied := True;
+  FChangesApplied   := True;
 
   // Update UI to show the restored path type/platform
   cboPathType.ItemIndex := Ord( Backup.PathType );
@@ -1647,7 +1653,7 @@ begin
     // The restored platform isn't currently shown (filtered out or not
     // installed); warn rather than silently displaying a different platform.
     ShowMessage( Format( 'Restored the %s paths, but that platform is not currently shown, ' +
-      'so the list below may display a different platform.', [ Backup.Platform ] ) );
+        'so the list below may display a different platform.', [ Backup.Platform ] ) );
 
   LoadCurrentPaths;
   LoadBackupHistory;
@@ -1657,8 +1663,8 @@ end;
 
 procedure TFormLibraryPathSorter.btnDeleteBackupClick( Sender: TObject );
 var
-  Backup: TPathBackup;
-  BackupIndex: Integer;
+  Backup            : TPathBackup;
+  BackupIndex       : Integer;
 begin
   if LibraryPathSorterPlugin = nil then
     Exit;
@@ -1669,28 +1675,27 @@ begin
     Exit;
   end;
 
-  BackupIndex := lvBackups.Selected.Index;
+  BackupIndex       := lvBackups.Selected.Index;
   if ( BackupIndex < 0 ) or ( BackupIndex >= Length( FShownBackups ) ) then
   begin
     ShowMessage( 'Invalid backup selection.' );
     Exit;
   end;
 
-  Backup := FShownBackups[BackupIndex];
+  Backup            := FShownBackups[ BackupIndex ];
 
   if MessageDlg(
-       Format( 'Delete backup from %s?', [Backup.DisplayTime] ),
-       mtConfirmation, [mbYes, mbNo], 0 ) <> mrYes then
+    Format( 'Delete backup from %s?', [ Backup.DisplayTime ] ),
+    mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
     Exit;
 
   if LibraryPathSorterPlugin.BackupManager.DeleteBackup( Backup.Id ) then
     UpdateStatus( 'Backup deleted' )
   else
     MessageDlg( 'Failed to delete the backup: ' + LibraryPathSorterPlugin.BackupManager.LastError, mtError,
-      [mbOK], 0 );
+      [ mbOK ], 0 );
   LoadBackupHistory;
 end;
-
 
 procedure TFormLibraryPathSorter.lvBackupsSelectItem( Sender: TObject;
   Item: TListItem; Selected: Boolean );
@@ -1701,34 +1706,34 @@ end;
 
 function TFormLibraryPathSorter.CategorizePlatform( const APlatform: string ): string;
 var
-  UpperPlatform: string;
+  UpperPlatform     : string;
 begin
 
-  UpperPlatform := AnsiUpperCase( APlatform );
+  UpperPlatform     := AnsiUpperCase( APlatform );
 
   // ARM check first — catches WinArm64C, OSXARM64, etc.
   if Pos( 'ARM', UpperPlatform ) > 0 then
-    Result := 'ARM'
+    Result          := 'ARM'
   else if Copy( UpperPlatform, 1, 3 ) = 'WIN' then
-    Result := 'Windows'
+    Result          := 'Windows'
   else if Copy( UpperPlatform, 1, 7 ) = 'ANDROID' then
-    Result := 'Android'
+    Result          := 'Android'
   else if Copy( UpperPlatform, 1, 3 ) = 'IOS' then
-    Result := 'iOS'
+    Result          := 'iOS'
   else if Copy( UpperPlatform, 1, 3 ) = 'OSX' then
-    Result := 'macOS'
+    Result          := 'macOS'
   else if Copy( UpperPlatform, 1, 5 ) = 'LINUX' then
-    Result := 'Linux'
+    Result          := 'Linux'
   else
-    Result := 'Other';
+    Result          := 'Other';
 
 end;
 
 procedure TFormLibraryPathSorter.BuildPlatformCategories;
 var
-  I: Integer;
-  Category: string;
-  CatList: TStringList;
+  I                 : Integer;
+  Category          : string;
+  CatList           : TStringList;
 begin
 
   // Clear existing categories
@@ -1739,27 +1744,27 @@ begin
   // Categorise each installed platform
   for I := 0 to FAllPlatforms.Count - 1 do
   begin
-    Category := CategorizePlatform( FAllPlatforms[I] );
+    Category        := CategorizePlatform( FAllPlatforms[ I ] );
 
     if not FPlatformCategories.TryGetValue( Category, CatList ) then
     begin
-      CatList := TStringList.Create;
+      CatList       := TStringList.Create;
       FPlatformCategories.Add( Category, CatList );
     end;
 
-    CatList.Add( FAllPlatforms[I] );
+    CatList.Add( FAllPlatforms[ I ] );
   end;
 
 end;
 
 procedure TFormLibraryPathSorter.CreatePlatformCheckboxes;
 var
-  Categories: TStringList;
-  Category: string;
-  ChkBox: TCheckBox;
-  XPos: Integer;
-  Reg: TRegistry;
-  ValueName: string;
+  Categories        : TStringList;
+  Category          : string;
+  ChkBox            : TCheckBox;
+  XPos              : Integer;
+  Reg               : TRegistry;
+  ValueName         : string;
 begin
 
   // Remove any existing dynamic checkboxes
@@ -1769,7 +1774,7 @@ begin
   FPlatformCheckboxes.Clear;
 
   // Collect and sort category names, with Windows first
-  Categories := TStringList.Create;
+  Categories        := TStringList.Create;
   try
     for Category in FPlatformCategories.Keys do
     begin
@@ -1781,20 +1786,20 @@ begin
       Categories.Insert( 0, 'Windows' );
 
     // Load saved filter states from registry
-    Reg := TRegistry.Create;
+    Reg             := TRegistry.Create;
     try
-      Reg.RootKey := HKEY_CURRENT_USER;
+      Reg.RootKey   := HKEY_CURRENT_USER;
       Reg.OpenKeyReadOnly( 'Software\DDevExtensions\LibraryPathSorter' );
 
       // Create the "All" checkbox first
-      FChkAll := TCheckBox.Create( Self );
+      FChkAll       := TCheckBox.Create( Self );
       FChkAll.Parent := pnlPlatformFilter;
-      FChkAll.Left := 4;
-      FChkAll.Top := 3;
+      FChkAll.Left  := 4;
+      FChkAll.Top   := 3;
       FChkAll.Width := 50;
       FChkAll.Height := 17;
       FChkAll.Caption := 'All';
-      FChkAll.Font.Style := [fsBold];
+      FChkAll.Font.Style := [ fsBold ];
 
       // Load saved state; default to unchecked
       if ( Reg.CurrentKey <> 0 ) and Reg.ValueExists( 'PlatformFilter_All' ) then
@@ -1805,19 +1810,19 @@ begin
       FChkAll.OnClick := AllCheckboxClick;
 
       // Create category checkboxes after "All"
-      XPos := 60;
+      XPos          := 60;
       for Category in Categories do
       begin
         ChkBox := TCheckBox.Create( Self );
         ChkBox.Parent := pnlPlatformFilter;
         ChkBox.Left := XPos;
-        ChkBox.Top := 3;
+        ChkBox.Top  := 3;
         ChkBox.Width := 90;
         ChkBox.Height := 17;
         ChkBox.Caption := Category;
 
         // Load saved state; default to unchecked
-        ValueName := 'PlatformFilter_' + Category;
+        ValueName   := 'PlatformFilter_' + Category;
         if ( Reg.CurrentKey <> 0 ) and Reg.ValueExists( ValueName ) then
           ChkBox.Checked := ( Reg.ReadInteger( ValueName ) <> 0 )
         else
@@ -1825,7 +1830,7 @@ begin
 
         ChkBox.OnClick := PlatformCheckboxClick;
         FPlatformCheckboxes.Add( ChkBox );
-        XPos := XPos + 100;
+        XPos        := XPos + 100;
       end;
 
       // If "All" is checked, enable all category checkboxes visually
@@ -1859,7 +1864,7 @@ end;
 
 procedure TFormLibraryPathSorter.UpdateCategoryCheckboxes;
 var
-  ChkBox: TCheckBox;
+  ChkBox            : TCheckBox;
 begin
 
   // When "All" is checked, check and disable all individual checkboxes
@@ -1882,11 +1887,11 @@ end;
 
 procedure TFormLibraryPathSorter.FilterPlatformDropdown;
 var
-  I: Integer;
+  I                 : Integer;
   Category, PreviousSelection: string;
-  AnyChecked: Boolean;
-  ChkBox: TCheckBox;
-  CheckedCategories: TStringList;
+  AnyChecked        : Boolean;
+  ChkBox            : TCheckBox;
+  CheckedCategories : TStringList;
 begin
 
   // Remember current selection
@@ -1899,7 +1904,7 @@ begin
     try
       cboPlatform.Items.Clear;
       for I := 0 to FAllPlatforms.Count - 1 do
-        cboPlatform.Items.Add( FAllPlatforms[I] );
+        cboPlatform.Items.Add( FAllPlatforms[ I ] );
     finally
       cboPlatform.Items.EndUpdate;
     end;
@@ -1909,7 +1914,7 @@ begin
     // Determine which categories are checked
     CheckedCategories := TStringList.Create;
     try
-      AnyChecked := False;
+      AnyChecked    := False;
       for ChkBox in FPlatformCheckboxes do
       begin
         if ChkBox.Checked then
@@ -1926,11 +1931,11 @@ begin
 
         for I := 0 to FAllPlatforms.Count - 1 do
         begin
-          Category := CategorizePlatform( FAllPlatforms[I] );
+          Category  := CategorizePlatform( FAllPlatforms[ I ] );
 
           // If no checkboxes checked, show all (safety fallback)
           if ( not AnyChecked ) or ( CheckedCategories.IndexOf( Category ) >= 0 ) then
-            cboPlatform.Items.Add( FAllPlatforms[I] );
+            cboPlatform.Items.Add( FAllPlatforms[ I ] );
         end;
       finally
         cboPlatform.Items.EndUpdate;
@@ -1953,24 +1958,24 @@ end;
 
 procedure TFormLibraryPathSorter.LoadFormSettings;
 var
-  Reg: TRegistry;
+  Reg               : TRegistry;
 begin
 
-  Reg := TRegistry.Create;
+  Reg               := TRegistry.Create;
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
 
     if Reg.OpenKeyReadOnly( 'Software\DDevExtensions\LibraryPathSorter' ) then
     begin
       try
         if Reg.ValueExists( 'Left' ) then
-          Left := Reg.ReadInteger( 'Left' );
+          Left      := Reg.ReadInteger( 'Left' );
         if Reg.ValueExists( 'Top' ) then
-          Top := Reg.ReadInteger( 'Top' );
+          Top       := Reg.ReadInteger( 'Top' );
         if Reg.ValueExists( 'Width' ) then
-          Width := Reg.ReadInteger( 'Width' );
+          Width     := Reg.ReadInteger( 'Width' );
         if Reg.ValueExists( 'Height' ) then
-          Height := Reg.ReadInteger( 'Height' );
+          Height    := Reg.ReadInteger( 'Height' );
         if Reg.ValueExists( 'PanelWidth' ) then
           pnlCurrent.Width := Reg.ReadInteger( 'PanelWidth' );
         if Reg.ValueExists( 'MainHeight' ) then
@@ -1982,12 +1987,12 @@ begin
         if Left < 0 then Left := 0;
         if Top < 0 then Top := 0;
         if Left + Width > Screen.Width then
-          Left := Screen.Width - Width;
+          Left      := Screen.Width - Width;
         if Top + Height > Screen.Height then
-          Top := Screen.Height - Height;
+          Top       := Screen.Height - Height;
 
         // Set position to default if we loaded settings
-        Position := poDesigned;
+        Position    := poDesigned;
       finally
         Reg.CloseKey;
       end;
@@ -2000,13 +2005,13 @@ end;
 
 procedure TFormLibraryPathSorter.SaveFormSettings;
 var
-  Reg: TRegistry;
-  ChkBox: TCheckBox;
+  Reg               : TRegistry;
+  ChkBox            : TCheckBox;
 begin
 
-  Reg := TRegistry.Create;
+  Reg               := TRegistry.Create;
   try
-    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.RootKey     := HKEY_CURRENT_USER;
 
     if Reg.OpenKey( 'Software\DDevExtensions\LibraryPathSorter', True ) then
     begin
@@ -2035,3 +2040,4 @@ begin
 end;
 
 end.
+

@@ -149,9 +149,9 @@ uses
 function SafeGetSubItem( Item: TListItem; Index: Integer ): string;
 begin
   if ( Item <> nil ) and ( Index < Item.SubItems.Count ) then
-    Result := Item.SubItems[ Index ]
+    Result          := Item.SubItems[ Index ]
   else
-    Result := '';
+    Result          := '';
 end;
 
 var
@@ -165,7 +165,7 @@ begin
 
   FormCodeQualityAnalyzerInstance.Show;
   FormCodeQualityAnalyzerInstance.BringToFront;
-  Result := True;
+  Result            := True;
 end;
 
 class procedure TFormCodeQualityAnalyzer.CloseInstance;
@@ -176,13 +176,13 @@ end;
 
 procedure TFormCodeQualityAnalyzer.btnCancelScanClick( Sender: TObject );
 begin
-  FCancelRequested := True;
+  FCancelRequested  := True;
 end;
 
 procedure TFormCodeQualityAnalyzer.FormCreate( Sender: TObject );
 begin
-  FSortColumn := 0;
-  FSortAscending := True;
+  FSortColumn       := 0;
+  FSortAscending    := True;
 
   // Populate category filter
   cboCategory.Items.Clear;
@@ -210,7 +210,7 @@ begin
   // The scan pumps messages: closing now would clear the list under it.
   if FScanning then
   begin
-    Action := caNone;
+    Action          := caNone;
     Exit;
   end;
   // Clear results when dialog is closed
@@ -234,16 +234,16 @@ end;
 
 procedure TFormCodeQualityAnalyzer.btnScanClick( Sender: TObject );
 var
-  Project: IOTAProject;
-  ModuleInfo: IOTAModuleInfo;
-  I, J: Integer;
-  Source: UTF8String;
-  UnitResults: TArray<TCodeQualityIssue>;
-  AllResults: TList<TCodeQualityIssue>;
-  ProjectName: string;
-  SkippedCount: Integer;
+  Project           : IOTAProject;
+  ModuleInfo        : IOTAModuleInfo;
+  I, J              : Integer;
+  Source            : UTF8String;
+  UnitResults       : TArray<TCodeQualityIssue>;
+  AllResults        : TList<TCodeQualityIssue>;
+  ProjectName       : string;
+  SkippedCount      : Integer;
 begin
-  Project := GetActiveProject;
+  Project           := GetActiveProject;
   if Project = nil then
   begin
     ShowMessage( 'No active project.' );
@@ -260,57 +260,57 @@ begin
   cboCategory.ItemIndex := 0;
   cboSeverity.ItemIndex := 0;
 
-  ProjectName := ExtractFileName( Project.FileName );
+  ProjectName       := ExtractFileName( Project.FileName );
 
   { The file list and the project's identity are taken now, before the first message pump: the
     project can change or close while the scan runs. }
-  var Identity := ProjectIdentity( Project );
+  var Identity      := ProjectIdentity( Project );
   var Files: TArray<string> := nil;
   for I := 0 to Project.GetModuleCount - 1 do
   begin
-    ModuleInfo := Project.GetModule( I );
+    ModuleInfo      := Project.GetModule( I );
     if ( ModuleInfo <> nil ) and ( SameText( ExtractFileExt( ModuleInfo.FileName ), '.pas' ) or
-       SameText( ExtractFileExt( ModuleInfo.FileName ), '.pp' ) ) then
-      Files := Files + [ ModuleInfo.FileName ];
+      SameText( ExtractFileExt( ModuleInfo.FileName ), '.pp' ) ) then
+      Files         := Files + [ ModuleInfo.FileName ];
   end;
 
-  AllResults := TList<TCodeQualityIssue>.Create;
+  AllResults        := TList<TCodeQualityIssue>.Create;
   try
-    Screen.Cursor         := crHourGlass;
-    btnScan.Visible       := False;
+    Screen.Cursor   := crHourGlass;
+    btnScan.Visible := False;
     btnCancelScan.Visible := True;
-    FCancelRequested      := False;
-    FScanning             := True;
+    FCancelRequested := False;
+    FScanning       := True;
     try
       lblProgress.Caption := 'Scanning ' + ProjectName + '...';
       lblProgress.Visible := True;
       lblSummary.Visible := False;
       Application.ProcessMessages;
 
-      SkippedCount := 0;
+      SkippedCount  := 0;
       for var sFile in Files do
       begin
         // Stop on Cancel Scan, when the IDE is closing ( the pump swallowed its WM_QUIT ), and when
         // the scanned project was closed or another made active.
         if FCancelRequested or Application.Terminated or ( not IsActiveProject( Identity ) ) then
         begin
-          FResults := nil;
+          FResults  := nil;
           PopulateList;
           lblProgress.Visible := False;
-          lblSummary.Caption  := 'Scan cancelled.';
-          lblSummary.Visible  := True;
+          lblSummary.Caption := 'Scan cancelled.';
+          lblSummary.Visible := True;
           Exit;
         end;
 
         lblProgress.Caption := 'Scanning: ' + ExtractFileName( sFile );
         Application.ProcessMessages;
 
-        Source := '';
+        Source      := '';
         try
           // The editor buffer of an open unit, otherwise the file on disk ( decoded as the IDE
           // decodes it ); a scan never opens a module.
           if ( not ReadUnitSource( sFile, Source ) ) then
-            Source := '';
+            Source  := '';
 
           if Source <> '' then
           begin
@@ -329,7 +329,7 @@ begin
         end;
       end;
 
-      FResults := AllResults.ToArray;
+      FResults      := AllResults.ToArray;
       PopulateList;
 
       lblProgress.Visible := False;
@@ -341,10 +341,10 @@ begin
           [ Length( FResults ), ProjectName ] );
       lblSummary.Visible := True;
     finally
-      FScanning             := False;
+      FScanning     := False;
       btnCancelScan.Visible := False;
-      btnScan.Visible       := True;
-      Screen.Cursor         := crDefault;
+      btnScan.Visible := True;
+      Screen.Cursor := crDefault;
     end;
   finally
     AllResults.Free;
@@ -358,20 +358,20 @@ end;
 
 procedure TFormCodeQualityAnalyzer.ApplyFilters;
 var
-  Issue: TCodeQualityIssue;
-  Item: TListItem;
-  CategoryFilter: string;
-  SeverityFilter: string;
-  ShowItem: Boolean;
-  VisibleCount: Integer;
+  Issue             : TCodeQualityIssue;
+  Item              : TListItem;
+  CategoryFilter    : string;
+  SeverityFilter    : string;
+  ShowItem          : Boolean;
+  VisibleCount      : Integer;
 begin
   ListView.Items.BeginUpdate;
   try
     ListView.Items.Clear;
 
-    CategoryFilter := cboCategory.Text;
-    SeverityFilter := cboSeverity.Text;
-    VisibleCount := 0;
+    CategoryFilter  := cboCategory.Text;
+    SeverityFilter  := cboSeverity.Text;
+    VisibleCount    := 0;
 
     for Issue in FResults do
     begin
@@ -379,17 +379,17 @@ begin
 
       // Apply category filter
       if ( CategoryFilter <> '(All)' ) and
-         ( IssueCategoryToString( Issue.Category ) <> CategoryFilter ) then
-        ShowItem := False;
+        ( IssueCategoryToString( Issue.Category ) <> CategoryFilter ) then
+        ShowItem    := False;
 
       // Apply severity filter
       if ShowItem and ( SeverityFilter <> '(All)' ) and
-         ( IssueSeverityToString( Issue.Severity ) <> SeverityFilter ) then
-        ShowItem := False;
+        ( IssueSeverityToString( Issue.Severity ) <> SeverityFilter ) then
+        ShowItem    := False;
 
       if ShowItem then
       begin
-        Item := ListView.Items.Add;
+        Item        := ListView.Items.Add;
         Item.Caption := Issue.UnitName;
         Item.SubItems.Add( IntToStr( Issue.Line ) );
         Item.SubItems.Add( IssueCategoryToString( Issue.Category ) );
@@ -426,11 +426,11 @@ procedure TFormCodeQualityAnalyzer.ListViewColumnClick( Sender: TObject;
   Column: TListColumn );
 begin
   if FSortColumn = Column.Index then
-    FSortAscending := not FSortAscending
+    FSortAscending  := not FSortAscending
   else
   begin
-    FSortColumn := Column.Index;
-    FSortAscending := True;
+    FSortColumn     := Column.Index;
+    FSortAscending  := True;
   end;
   ListView.AlphaSort;
 end;
@@ -438,32 +438,32 @@ end;
 procedure TFormCodeQualityAnalyzer.ListViewCompare( Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer );
 var
-  S1, S2: string;
-  SubIdx: Integer;
-  N1, N2: Integer;
+  S1, S2            : string;
+  SubIdx            : Integer;
+  N1, N2            : Integer;
 begin
   if FSortColumn = 0 then
   begin
-    S1 := Item1.Caption;
-    S2 := Item2.Caption;
-    Compare := CompareText( S1, S2 );
+    S1              := Item1.Caption;
+    S2              := Item2.Caption;
+    Compare         := CompareText( S1, S2 );
   end
   else if FSortColumn = 1 then // Line number - numeric sort
   begin
-    N1 := StrToIntDef( SafeGetSubItem( Item1, 0 ), 0 );
-    N2 := StrToIntDef( SafeGetSubItem( Item2, 0 ), 0 );
-    Compare := N1 - N2;
+    N1              := StrToIntDef( SafeGetSubItem( Item1, 0 ), 0 );
+    N2              := StrToIntDef( SafeGetSubItem( Item2, 0 ), 0 );
+    Compare         := N1 - N2;
   end
   else
   begin
-    SubIdx := FSortColumn - 1;
-    S1 := SafeGetSubItem( Item1, SubIdx );
-    S2 := SafeGetSubItem( Item2, SubIdx );
-    Compare := CompareText( S1, S2 );
+    SubIdx          := FSortColumn - 1;
+    S1              := SafeGetSubItem( Item1, SubIdx );
+    S2              := SafeGetSubItem( Item2, SubIdx );
+    Compare         := CompareText( S1, S2 );
   end;
 
   if not FSortAscending then
-    Compare := -Compare;
+    Compare         := -Compare;
 end;
 
 procedure TFormCodeQualityAnalyzer.ListViewDblClick( Sender: TObject );
@@ -473,9 +473,9 @@ end;
 
 procedure TFormCodeQualityAnalyzer.OpenSelectedFile;
 var
-  Item: TListItem;
+  Item              : TListItem;
 begin
-  Item := ListView.Selected;
+  Item              := ListView.Selected;
   if ( Item = nil ) then
     Exit;
 
@@ -490,10 +490,10 @@ end;
 
 procedure TFormCodeQualityAnalyzer.mnuCopyToClipboardClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
-  SL := TStringList.Create;
+  SL                := TStringList.Create;
   try
     SL.Add( 'Unit'#9'Line'#9'Category'#9'Severity'#9'Description'#9'File' );
 
@@ -501,13 +501,13 @@ begin
     begin
       if Item.Selected or ( ListView.SelCount = 0 ) then
         SL.Add( Format( '%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s', [
-          Item.Caption,
-          SafeGetSubItem( Item, 0 ),
-          SafeGetSubItem( Item, 1 ),
-          SafeGetSubItem( Item, 2 ),
-          SafeGetSubItem( Item, 3 ),
-          SafeGetSubItem( Item, 4 )
-        ] ) );
+              Item.Caption,
+              SafeGetSubItem( Item, 0 ),
+              SafeGetSubItem( Item, 1 ),
+              SafeGetSubItem( Item, 2 ),
+              SafeGetSubItem( Item, 3 ),
+              SafeGetSubItem( Item, 4 )
+              ] ) );
     end;
 
     CopyTextToClipboard( SL.Text );
@@ -518,8 +518,8 @@ end;
 
 procedure TFormCodeQualityAnalyzer.btnExportClick( Sender: TObject );
 var
-  SL: TStringList;
-  Item: TListItem;
+  SL                : TStringList;
+  Item              : TListItem;
 begin
   if ListView.Items.Count = 0 then
   begin
@@ -529,7 +529,7 @@ begin
 
   if SaveDialog.Execute then
   begin
-    SL := TStringList.Create;
+    SL              := TStringList.Create;
     try
       SL.Add( 'Unit,Line,Category,Severity,Description,File' );
 
@@ -538,13 +538,13 @@ begin
         // Double embedded quotes per RFC 4180 so descriptions / previews
         // containing quotes or commas cannot break the CSV column alignment.
         SL.Add( Format( '"%s","%s","%s","%s","%s","%s"', [
-          StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 2 ), '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] ),
-          StringReplace( SafeGetSubItem( Item, 4 ), '"', '""', [ rfReplaceAll ] )
-        ] ) );
+              StringReplace( Item.Caption, '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 0 ), '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 1 ), '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 2 ), '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 3 ), '"', '""', [ rfReplaceAll ] ),
+              StringReplace( SafeGetSubItem( Item, 4 ), '"', '""', [ rfReplaceAll ] )
+              ] ) );
       end;
 
       try
@@ -562,3 +562,4 @@ begin
 end;
 
 end.
+

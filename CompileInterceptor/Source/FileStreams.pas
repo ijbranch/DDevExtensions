@@ -31,18 +31,18 @@ const
   MaxWritePoolBufferSize = 4096 * 128;
 
 type
-  {$IFNDEF UNICODE}
+{$IFNDEF UNICODE}
   /// <summary>Pre-Unicode alias for <c>AnsiString</c> with raw byte semantics.</summary>
   RawByteString = AnsiString;
   /// <summary>Pre-Unicode alias for the wide string type used for Unicode payloads.</summary>
   UnicodeString = WideString;
-  {$ENDIF UNICODE}
+{$ENDIF UNICODE}
 
   /// <summary>
   /// Pool of large fixed-size write buffers allocated with <c>VirtualAlloc</c>. Reduces
   /// the cost of repeatedly allocating buffers for buffered compiler writes.
   /// </summary>
-  TBufferPool = class(TObject)
+  TBufferPool = class( TObject )
   private
     /// <summary>List of allocated buffer pointers.</summary>
     FWriteBuffers: TList;
@@ -59,11 +59,11 @@ type
     function AllocWrite: PByteArray;
     /// <summary>Returns <paramref name="P"/> to the pool, shrinking the pool if it has grown beyond the limit.</summary>
     /// <param name="P">The buffer obtained from <see cref="AllocWrite"/>.</param>
-    procedure ReleaseWrite(P: PByteArray);
+    procedure ReleaseWrite( P: PByteArray );
   end;
 
   /// <summary>Byte-order mark classification used by <see cref="TInjectStream"/> to detect the source encoding.</summary>
-  TBOMType = (bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE);
+  TBOMType = ( bomAnsi, bomUtf8, bomUcs2BE, bomUcs2LE, bomUcs4BE, bomUcs4LE );
 
   /// <summary>Pointer to a <see cref="TOrgStreamData"/> record.</summary>
   POrgStreamData = ^TOrgStreamData;
@@ -73,15 +73,15 @@ type
   /// </summary>
   TOrgStreamData = record
     /// <summary>Original compiler file open callback.</summary>
-    Open: function(const Filename: PAnsiChar): THandle; pascal;
+    Open: function( const Filename: PAnsiChar ): THandle; pascal;
     /// <summary>Original compiler file seek callback.</summary>
-    Seek: function(hFile: THandle; Offset, Origin: Integer): Integer; pascal;
+    Seek: function( hFile: THandle; Offset, Origin: Integer ): Integer; pascal;
     /// <summary>Original compiler file read callback.</summary>
-    Read: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+    Read: function( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
     /// <summary>Original compiler file write callback.</summary>
-    Write: function(hFile: THandle; Buffer: PByte; Size: Cardinal): Integer; pascal;
+    Write: function( hFile: THandle; Buffer: PByte; Size: Cardinal ): Integer; pascal;
     /// <summary>Original compiler file status callback returning date and size.</summary>
-    FileStatus: function(hFile: THandle; out FileDate: Integer; out FileSize: Integer): Integer; pascal;
+    FileStatus: function( hFile: THandle; out FileDate: Integer; out FileSize: Integer ): Integer; pascal;
   end;
 
   /// <summary>
@@ -89,7 +89,7 @@ type
   /// operation back to the IDE's original file I/O callbacks held in
   /// <see cref="TOrgStreamData"/>.
   /// </summary>
-  TOrgStream = class(TStream)
+  TOrgStream = class( TStream )
   private
     /// <summary>Compiler-issued file handle.</summary>
     FHandle: THandle;
@@ -98,41 +98,41 @@ type
   protected
     /// <summary>32-bit <c>SetSize</c>: routes through <c>Seek</c>.</summary>
     /// <param name="NewSize">Position to seek to.</param>
-    procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
+    procedure SetSize( NewSize: Longint ); override;
+{$IFDEF COMPILER6_UP}
     /// <summary>64-bit <c>SetSize</c>: routes through <c>Seek</c>.</summary>
     /// <param name="NewSize">Position to seek to.</param>
-    procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
+    procedure SetSize( const NewSize: Int64 ); override;
+{$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates a stream over the compiler file handle <paramref name="AHandle"/> using the supplied callbacks.</summary>
     /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
     /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
-    constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
+    constructor Create( AHandle: THandle; AOrgStreamData: POrgStreamData );
 
     /// <summary>Reads up to <paramref name="Count"/> bytes via the original compiler read callback.</summary>
     /// <param name="Buffer">Receives the bytes read.</param>
     /// <param name="Count">Maximum number of bytes to read.</param>
     /// <returns>Number of bytes read, or 0 when the handle is invalid.</returns>
-    function Read(var Buffer; Count: Integer): Integer; override;
+    function Read( var Buffer; Count: Integer ): Integer; override;
     /// <summary>Writes up to <paramref name="Count"/> bytes via the original compiler write callback.</summary>
     /// <param name="Buffer">Bytes to write.</param>
     /// <param name="Count">Number of bytes to write.</param>
     /// <returns>Number of bytes written, or 0 when the handle is invalid.</returns>
-    function Write(const Buffer; Count: Integer): Integer; override;
-    {$IFDEF COMPILER6_UP}
+    function Write( const Buffer; Count: Integer ): Integer; override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Repositions via the original compiler seek callback (64-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The original seek callback's result, or 0 when the handle is invalid.</returns>
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
+    function Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64; override;
+{$ELSE}
     /// <summary>Repositions via the original compiler seek callback (32-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The original seek callback's result, or 0 when the handle is invalid.</returns>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
+    function Seek( Offset: Longint; Origin: Word ): Longint; override;
+{$ENDIF COMPILER6_UP}
 
     /// <summary>Underlying compiler file handle.</summary>
     property Handle: THandle read FHandle;
@@ -143,7 +143,7 @@ type
   /// a single pooled buffer that is flushed to the compiler on overflow or destruction.
   /// Read and Seek are not supported.
   /// </summary>
-  TBufferedWriteStream = class(TOrgStream)
+  TBufferedWriteStream = class( TOrgStream )
   private
     /// <summary>Number of valid bytes currently held in <see cref="FBuffer"/>.</summary>
     FBufSize: Integer;
@@ -153,18 +153,18 @@ type
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
+    procedure SetSize( NewSize: Longint ); override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
+    procedure SetSize( const NewSize: Int64 ); override;
+{$ENDIF COMPILER6_UP}
   public
     /// <summary>Creates a buffered writer over <paramref name="AHandle"/> and acquires a pooled buffer.</summary>
     /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
     /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
-    constructor Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
+    constructor Create( AHandle: THandle; AOrgStreamData: POrgStreamData );
     /// <summary>Flushes pending data and returns the buffer to the pool.</summary>
     destructor Destroy; override;
     /// <summary>Always raises <c>Exception</c> - read is not supported.</summary>
@@ -172,26 +172,26 @@ type
     /// <param name="Count">Not used.</param>
     /// <returns>Never returns normally.</returns>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    function Read(var Buffer; Count: Longint): Longint; override;
+    function Read( var Buffer; Count: Longint ): Longint; override;
     /// <summary>Buffers up to <paramref name="Count"/> bytes, flushing automatically when the buffer fills.</summary>
     /// <param name="Buffer">Bytes to write.</param>
     /// <param name="Count">Number of bytes to write.</param>
     /// <returns>Always <paramref name="Count"/>.</returns>
-    function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
+    function Write( const Buffer; Count: Longint ): Longint; override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - seek is not supported.</summary>
     /// <param name="Offset">Not used.</param>
     /// <param name="Origin">Not used.</param>
     /// <returns>Never returns normally.</returns>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
+    function Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64; override;
+{$ELSE}
     /// <summary>Always raises <c>Exception</c> - seek is not supported.</summary>
     /// <param name="Offset">Not used.</param>
     /// <param name="Origin">Not used.</param>
     /// <returns>Never returns normally.</returns>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
+    function Seek( Offset: Longint; Origin: Word ): Longint; override;
+{$ENDIF COMPILER6_UP}
     /// <summary>Writes the pending buffer through the underlying compiler write callback.</summary>
     procedure Flush;
   end;
@@ -201,7 +201,7 @@ type
   /// real file content. Detects UTF-8/UCS-2/UCS-4 BOMs on the source and converts the
   /// stream to UTF-8 so the Pascal compiler can consume it.
   /// </summary>
-  TInjectStream = class(TOrgStream)
+  TInjectStream = class( TOrgStream )
   private
     /// <summary>Bytes prepended in front of the real file content.</summary>
     FInjectData: RawByteString;
@@ -209,25 +209,25 @@ type
     FVirtualPosition: Int64;
     /// <summary>True while the constructor is reading the BOM, suppressing virtual offset translation.</summary>
     FLoading: Boolean;
-    {$IFDEF COMPILER10_UP}
+{$IFDEF COMPILER10_UP}
     /// <summary>Number of valid bytes detected in <see cref="FBOM"/>.</summary>
     FBOMLen: Integer;
     /// <summary>Up to four bytes captured from the start of the file for BOM sniffing.</summary>
-    FBOM: array[0..3] of Byte;
+    FBOM: array[ 0..3 ] of Byte;
     /// <summary>Detected encoding of the source file.</summary>
     FBOMType: TBOMType;
-    {$ENDIF COMPILER10_UP}
+{$ENDIF COMPILER10_UP}
   protected
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
+    procedure SetSize( NewSize: Longint ); override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
+    procedure SetSize( const NewSize: Int64 ); override;
+{$ENDIF COMPILER6_UP}
   public
     /// <summary>
     /// Creates an inject stream. <paramref name="AInjectData"/> is prepended ahead of the
@@ -237,31 +237,31 @@ type
     /// <param name="AHandle">File handle issued by the original compiler open callback.</param>
     /// <param name="AInjectData">Bytes to place ahead of the file content.</param>
     /// <param name="AOrgStreamData">Original compiler I/O callbacks used for every operation.</param>
-    constructor Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData);
+    constructor Create( AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData );
     /// <summary>Reads from the injected prefix first, then continues into the underlying file.</summary>
     /// <param name="Buffer">Receives the bytes read.</param>
     /// <param name="Count">Maximum number of bytes to read.</param>
     /// <returns>Number of bytes read.</returns>
-    function Read(var Buffer; Count: Longint): Longint; override;
+    function Read( var Buffer; Count: Longint ): Longint; override;
     /// <summary>Always raises <c>Exception</c> - write is not supported.</summary>
     /// <param name="Buffer">Not used.</param>
     /// <param name="Count">Not used.</param>
     /// <returns>Never returns normally.</returns>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
+    function Write( const Buffer; Count: Longint ): Longint; override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Repositions across the combined injected + file content (64-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The new position.</returns>
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
+    function Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64; override;
+{$ELSE}
     /// <summary>Repositions across the combined injected + file content (32-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The new position.</returns>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
+    function Seek( Offset: Longint; Origin: Word ): Longint; override;
+{$ENDIF COMPILER6_UP}
 
     /// <summary>The bytes that are prepended ahead of the file content.</summary>
     property InjectData: RawByteString read FInjectData;
@@ -274,7 +274,7 @@ type
   /// Read-only stream over a shared <see cref="TFileCache"/>. Uses a custom allocator so
   /// many readers can be created cheaply over the same cached file content.
   /// </summary>
-  TFileCacheReaderStream = class(TStream)
+  TFileCacheReaderStream = class( TStream )
   private
     /// <summary>Cache providing the file content.</summary>
     FFileCache: TFileCache;
@@ -284,13 +284,13 @@ type
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(NewSize: Longint); override;
-    {$IFDEF COMPILER6_UP}
+    procedure SetSize( NewSize: Longint ); override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Always raises <c>Exception</c> - operation not supported.</summary>
     /// <param name="NewSize">Not used.</param>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    procedure SetSize(const NewSize: Int64); override;
-    {$ENDIF COMPILER6_UP}
+    procedure SetSize( const NewSize: Int64 ); override;
+{$ENDIF COMPILER6_UP}
   public
     /// <summary>Custom allocator using <c>GetMem</c> instead of the default object manager.</summary>
     /// <returns>The new instance.  Its memory is not zero-filled (only the class pointer is written), so the
@@ -300,33 +300,33 @@ type
     procedure FreeInstance; override;
     /// <summary>Creates a reader bound to <paramref name="AFileCache"/> and registers itself with the cache.</summary>
     /// <param name="AFileCache">Cache to read from.</param>
-    constructor Create(AFileCache: TFileCache);
+    constructor Create( AFileCache: TFileCache );
     /// <summary>Removes itself from the parent cache's reader list.</summary>
     destructor Destroy; override;
     /// <summary>Reads up to <paramref name="Count"/> bytes from the shared cache.</summary>
     /// <param name="Buffer">Receives the bytes read.</param>
     /// <param name="Count">Maximum number of bytes to read.</param>
     /// <returns>Number of bytes copied; 0 at or past the end of the cache.</returns>
-    function Read(var Buffer; Count: Longint): Longint; override;
+    function Read( var Buffer; Count: Longint ): Longint; override;
     /// <summary>Always raises <c>Exception</c> - write is not supported.</summary>
     /// <param name="Buffer">Not used.</param>
     /// <param name="Count">Not used.</param>
     /// <returns>Never returns normally.</returns>
     /// <exception cref="Exception">Always: the stream does not support this operation (<c>RsNotSupported</c>).</exception>
-    function Write(const Buffer; Count: Longint): Longint; override;
-    {$IFDEF COMPILER6_UP}
+    function Write( const Buffer; Count: Longint ): Longint; override;
+{$IFDEF COMPILER6_UP}
     /// <summary>Repositions within the cached content, clamped to [0, Size] (64-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The new position, clamped to [0, <see cref="TFileCache.Size"/>].</returns>
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    {$ELSE}
+    function Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64; override;
+{$ELSE}
     /// <summary>Repositions within the cached content, clamped to [0, Size] (32-bit overload).</summary>
     /// <param name="Offset">Distance to move, relative to <paramref name="Origin"/>.</param>
     /// <param name="Origin">Reference point: beginning, current position or end.</param>
     /// <returns>The new position, clamped to [0, <see cref="TFileCache.Size"/>].</returns>
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    {$ENDIF COMPILER6_UP}
+    function Seek( Offset: Longint; Origin: Word ): Longint; override;
+{$ENDIF COMPILER6_UP}
   end;
 
   /// <summary>
@@ -335,7 +335,7 @@ type
   /// original compiler I/O callbacks (with BOM-aware <see cref="TInjectStream"/> on
   /// Compiler 10+).
   /// </summary>
-  TFileCache = class(TObject)
+  TFileCache = class( TObject )
   private
     /// <summary>Raw cached bytes.</summary>
     FBuffer: PByteArray;
@@ -346,7 +346,7 @@ type
     /// <summary>Returns the reader at <paramref name="Index"/>.</summary>
     /// <param name="Index">Zero-based reader index.</param>
     /// <returns>The reader at that index.</returns>
-    function GetReader(Index: Integer): TFileCacheReaderStream;
+    function GetReader( Index: Integer ): TFileCacheReaderStream;
     /// <summary>Returns the number of live readers.</summary>
     /// <returns>The number of readers in <see cref="FReaders"/>.</returns>
     function GetReaderCount: Integer;
@@ -358,7 +358,7 @@ type
     /// <summary>Loads the entire content of the file referred to by <paramref name="hFile"/> into the cache.</summary>
     /// <param name="hFile">File handle issued by the original compiler open callback.</param>
     /// <param name="AOrgStreamData">Original compiler I/O callbacks used to read the file.</param>
-    constructor Create(hFile: THandle; {ASize: Integer; }AOrgStreamData: POrgStreamData);
+    constructor Create( hFile: THandle; {ASize: Integer; }AOrgStreamData: POrgStreamData );
     /// <summary>Releases the cached bytes and reader list.</summary>
     destructor Destroy; override;
 
@@ -373,12 +373,12 @@ type
     /// <summary>Number of live readers attached to this cache.</summary>
     property ReaderCount: Integer read GetReaderCount;
     /// <summary>Indexed access to live readers.</summary>
-    property Readers[Index: Integer]: TFileCacheReaderStream read GetReader; default;
+    property Readers[ Index: Integer ]: TFileCacheReaderStream read GetReader; default;
   end;
 
-/// <summary>Process-wide pool of large write buffers used by <see cref="TBufferedWriteStream"/>.</summary>
+  /// <summary>Process-wide pool of large write buffers used by <see cref="TBufferedWriteStream"/>.</summary>
 var
-  BufferPool: TBufferPool;
+  BufferPool        : TBufferPool;
 
 implementation
 
@@ -386,23 +386,23 @@ uses
   System.Types;
 
 resourcestring
-  RsNotSupported = 'Operation "%s" not supported';
+  RsNotSupported    = 'Operation "%s" not supported';
 
-{ TBufferPool }
+  { TBufferPool }
 
 constructor TBufferPool.Create;
 begin
   inherited Create;
-  FWriteBuffers := TList.Create;
+  FWriteBuffers     := TList.Create;
   FWriteBufferState := TList.Create;
 end;
 
 destructor TBufferPool.Destroy;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FWriteBuffers.Count - 1 do
-    if FWriteBuffers[i] <> nil then
+    if FWriteBuffers[ i ] <> nil then
       VirtualFree( FWriteBuffers[ i ], 0, MEM_RELEASE ); // MEM_FREE is not a free-type: the call failed and leaked the block
   FWriteBuffers.Free;
   FWriteBufferState.Free;
@@ -411,40 +411,40 @@ end;
 
 function TBufferPool.AllocWrite: PByteArray;
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FWriteBufferState.Count - 1 do
   begin
-    if FWriteBufferState[i] = nil then // unlocked
+    if FWriteBufferState[ i ] = nil then // unlocked
     begin
-      FWriteBufferState[i] := Pointer(1); // locked
-      Result := FWriteBuffers[i];
+      FWriteBufferState[ i ] := Pointer( 1 ); // locked
+      Result        := FWriteBuffers[ i ];
       Exit;
     end;
   end;
-  Result := VirtualAlloc(nil, MaxWritePoolBufferSize, MEM_COMMIT, PAGE_READWRITE);
-  FWriteBufferState.Add(Pointer(1));
-  FWriteBuffers.Add(Result);
+  Result            := VirtualAlloc( nil, MaxWritePoolBufferSize, MEM_COMMIT, PAGE_READWRITE );
+  FWriteBufferState.Add( Pointer( 1 ) );
+  FWriteBuffers.Add( Result );
 end;
 
-procedure TBufferPool.ReleaseWrite(P: PByteArray);
+procedure TBufferPool.ReleaseWrite( P: PByteArray );
 var
-  i: Integer;
+  i                 : Integer;
 begin
   for i := 0 to FWriteBufferState.Count - 1 do
   begin
-    if FWriteBuffers[i] = P then
-      FWriteBufferState[i] := nil;
+    if FWriteBuffers[ i ] = P then
+      FWriteBufferState[ i ] := nil;
   end;
   if FWriteBuffers.Count > MaxWriteAvgBufferCount then
   begin
     for i := FWriteBufferState.Count - 1 downto 0 do
     begin
-      if FWriteBufferState[i] = nil then
+      if FWriteBufferState[ i ] = nil then
       begin
         VirtualFree( FWriteBuffers[ i ], 0, MEM_RELEASE ); // MEM_FREE is not a free-type: the call failed and leaked the block
-        FWriteBuffers.Delete(i);
-        FWriteBufferState.Delete(i);
+        FWriteBuffers.Delete( i );
+        FWriteBufferState.Delete( i );
         if FWriteBuffers.Count = MaxWriteAvgBufferCount then
           Break;
       end;
@@ -454,17 +454,17 @@ end;
 
 { TBufferedWriteStream }
 
-constructor TBufferedWriteStream.Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
+constructor TBufferedWriteStream.Create( AHandle: THandle; AOrgStreamData: POrgStreamData );
 begin
-  inherited Create(AHandle, AOrgStreamData);
-  FBufSize := 0;
-  FBuffer := BufferPool.AllocWrite;
+  inherited Create( AHandle, AOrgStreamData );
+  FBufSize          := 0;
+  FBuffer           := BufferPool.AllocWrite;
 end;
 
 destructor TBufferedWriteStream.Destroy;
 begin
   Flush;
-  BufferPool.ReleaseWrite(FBuffer);
+  BufferPool.ReleaseWrite( FBuffer );
   inherited Destroy;
 end;
 
@@ -472,168 +472,170 @@ procedure TBufferedWriteStream.Flush;
 begin
   if FBufSize > 0 then
   begin
-    inherited Write(FBuffer^, FBufSize); // write remaining bytes
-    FBufSize := 0;
+    inherited Write( FBuffer^, FBufSize ); // write remaining bytes
+    FBufSize        := 0;
   end;
 end;
 
-function TBufferedWriteStream.Write(const Buffer; Count: Longint): Longint;
+function TBufferedWriteStream.Write( const Buffer; Count: Longint ): Longint;
 begin
-  Result := Count;
+  Result            := Count;
   if FBufSize + Count > MaxWritePoolBufferSize then
     Flush;
   if Count > MaxWritePoolBufferSize then
   begin
     // write directly
     Flush;
-    inherited Write(Buffer, Count);
+    inherited Write( Buffer, Count );
   end
   else
   begin
-    Move(Buffer, FBuffer[FBufSize], Count);
-    Inc(FBufSize, Count);
+    Move( Buffer, FBuffer[ FBufSize ], Count );
+    Inc( FBufSize, Count );
   end;
 end;
 
-function TBufferedWriteStream.Read(var Buffer; Count: Longint): Longint;
+function TBufferedWriteStream.Read( var Buffer; Count: Longint ): Longint;
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['Read']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'Read' ] );
 end;
 
 {$IFDEF COMPILER6_UP}
-function TBufferedWriteStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+function TBufferedWriteStream.Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64;
+
 {$ELSE}
-function TBufferedWriteStream.Seek(Offset: Longint; Origin: Word): Longint;
+function TBufferedWriteStream.Seek( Offset: Longint; Origin: Word ): Longint;
 {$ENDIF COMPILER6_UP}
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['Seek']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'Seek' ] );
 end;
 
-procedure TBufferedWriteStream.SetSize(NewSize: Longint);
+procedure TBufferedWriteStream.SetSize( NewSize: Longint );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 
 {$IFDEF COMPILER6_UP}
-procedure TBufferedWriteStream.SetSize(const NewSize: Int64);
+procedure TBufferedWriteStream.SetSize( const NewSize: Int64 );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 {$ENDIF COMPILER6_UP}
 
 { TOrgStream }
 
-constructor TOrgStream.Create(AHandle: THandle; AOrgStreamData: POrgStreamData);
+constructor TOrgStream.Create( AHandle: THandle; AOrgStreamData: POrgStreamData );
 begin
   inherited Create;
-  FHandle := AHandle;
-  FOrgStreamData := AOrgStreamData;
+  FHandle           := AHandle;
+  FOrgStreamData    := AOrgStreamData;
 end;
 
-procedure TOrgStream.SetSize(NewSize: Longint);
+procedure TOrgStream.SetSize( NewSize: Longint );
 begin
-  {$IFDEF COMPILER6_UP}
-  SetSize(Int64(NewSize));
-  {$ELSE}
-  Seek(NewSize, soFromBeginning);
-  {$ENDIF COMPILER6_UP}
-end;
-
 {$IFDEF COMPILER6_UP}
-procedure TOrgStream.SetSize(const NewSize: Int64);
-begin
-  Seek(NewSize, soBeginning);
-end;
-{$ENDIF COMPILER6_UP}
-
-function TOrgStream.Read(var Buffer; Count: Integer): Integer;
-begin
-  if FHandle <> INVALID_HANDLE_VALUE then
-    Result := FOrgStreamData.Read(FHandle, PByte(@Buffer), Count)
-  else
-    Result := 0;
-end;
-
-function TOrgStream.Write(const Buffer; Count: Integer): Integer;
-begin
-  if FHandle <> INVALID_HANDLE_VALUE then
-    Result := FOrgStreamData.Write(FHandle, PByte(@Buffer), Count)
-  else
-    Result := 0;
-end;
-
-{$IFDEF COMPILER6_UP}
-function TOrgStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+  SetSize( Int64( NewSize ) );
 {$ELSE}
-function TOrgStream.Seek(Offset: Longint; Origin: Word): Longint;
+  Seek( NewSize, soFromBeginning );
+{$ENDIF COMPILER6_UP}
+end;
+
+{$IFDEF COMPILER6_UP}
+procedure TOrgStream.SetSize( const NewSize: Int64 );
+begin
+  Seek( NewSize, soBeginning );
+end;
+{$ENDIF COMPILER6_UP}
+
+function TOrgStream.Read( var Buffer; Count: Integer ): Integer;
+begin
+  if FHandle <> INVALID_HANDLE_VALUE then
+    Result          := FOrgStreamData.Read( FHandle, PByte( @Buffer ), Count )
+  else
+    Result          := 0;
+end;
+
+function TOrgStream.Write( const Buffer; Count: Integer ): Integer;
+begin
+  if FHandle <> INVALID_HANDLE_VALUE then
+    Result          := FOrgStreamData.Write( FHandle, PByte( @Buffer ), Count )
+  else
+    Result          := 0;
+end;
+
+{$IFDEF COMPILER6_UP}
+function TOrgStream.Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64;
+
+{$ELSE}
+function TOrgStream.Seek( Offset: Longint; Origin: Word ): Longint;
 {$ENDIF COMPILER6_UP}
 begin
   if FHandle <> INVALID_HANDLE_VALUE then
-    Result := FOrgStreamData.Seek(FHandle, Integer(Offset), Integer(Origin))
+    Result          := FOrgStreamData.Seek( FHandle, Integer( Offset ), Integer( Origin ) )
   else
-    Result := 0;
+    Result          := 0;
 end;
 
 {$IFDEF COMPILER10_UP}
 
-function ReadAllFileUcs2(Stream: TStream; BOMType: TBOMType; ExtraData: UnicodeString): UnicodeString;
+function ReadAllFileUcs2( Stream: TStream; BOMType: TBOMType; ExtraData: UnicodeString ): UnicodeString;
 const
-  ReadCount = 64 * 1024;
+  ReadCount         = 64 * 1024;
 var
-  Len, Size: Integer;
-  P: PWideChar;
+  Len, Size         : Integer;
+  P                 : PWideChar;
 begin
-  Len := Length(ExtraData);
-  SetLength(Result, ReadCount + Len);
+  Len               := Length( ExtraData );
+  SetLength( Result, ReadCount + Len );
   if Len > 0 then
-    Move(ExtraData[1], Result[1], Len * SizeOf(WideChar));
+    Move( ExtraData[ 1 ], Result[ 1 ], Len * SizeOf( WideChar ) );
   repeat
-    Size := Stream.Read(PWideChar(PWideChar(Result) + Len)^, ReadCount * 2) div 2;
-    Inc(Len, Size);
-    SetLength(Result, Len);
+    Size            := Stream.Read( PWideChar( PWideChar( Result ) + Len )^, ReadCount * 2 ) div 2;
+    Inc( Len, Size );
+    SetLength( Result, Len );
   until Size <> ReadCount;
 
   if BOMType = bomUcs2BE then
   begin
     // swap bytes
-    P := PWideChar(Result);
+    P               := PWideChar( Result );
     while Len > 0 do
     begin
-      P^ := WideChar((Word(P^) {and $00FF}) shl 8 or
-                     (Word(P^) {and $FF00}) shr 8);
-      Inc(P);
-      Dec(Len);
+      P^            := WideChar( ( Word( P^ ) {and $00FF} ) shl 8 or
+        ( Word( P^ ) {and $FF00} ) shr 8 );
+      Inc( P );
+      Dec( Len );
     end;
   end;
 end;
 
-function ReadAllFileUcs4(Stream: TStream; BOMType: TBOMType): Ucs4String;
+function ReadAllFileUcs4( Stream: TStream; BOMType: TBOMType ): Ucs4String;
 const
-  ReadCount = 64 * 1024;
+  ReadCount         = 64 * 1024;
 var
-  Len, Size: Integer;
-  P: PUCS4Char;
+  Len, Size         : Integer;
+  P                 : PUCS4Char;
 begin
-  SetLength(Result, ReadCount);
-  Len := 0;
+  SetLength( Result, ReadCount );
+  Len               := 0;
   repeat
-    Size := Stream.Read(PAnsiChar(PAnsiChar(Result) + (Len * 4))^, ReadCount * 4) div 4;
-    Inc(Len, Size);
-    SetLength(Result, Len);
+    Size            := Stream.Read( PAnsiChar( PAnsiChar( Result ) + ( Len * 4 ) )^, ReadCount * 4 ) div 4;
+    Inc( Len, Size );
+    SetLength( Result, Len );
   until Size <> ReadCount;
 
   if BOMType = bomUcs4BE then
   begin
     // swap bytes
-    P := PUCS4Chars(Result);
+    P               := PUCS4Chars( Result );
     while Len > 0 do
     begin
-      P^ := UCS4Char((LongWord(P^) {and $000000FF}) shl 24 or
-                     (LongWord(P^) and $0000FF00) shl 8 or
-                     (LongWord(P^) and $00FF0000) shr 8 or
-                     (LongWord(P^) {and $FF000000}) shr 24);
-      Inc(P);
-      Dec(Len);
+      P^            := UCS4Char( ( LongWord( P^ ) {and $000000FF} ) shl 24 or
+        ( LongWord( P^ ) and $0000FF00 ) shl 8 or
+        ( LongWord( P^ ) and $00FF0000 ) shr 8 or
+        ( LongWord( P^ ) {and $FF000000} ) shr 24 );
+      Inc( P );
+      Dec( Len );
     end;
   end;
 end;
@@ -642,52 +644,52 @@ end;
 
 { TInjectStream }
 
-constructor TInjectStream.Create(AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData);
+constructor TInjectStream.Create( AHandle: THandle; const AInjectData: RawByteString; AOrgStreamData: POrgStreamData );
 {$IFDEF COMPILER10_UP}
 var
-  I: Integer;
-  ExtraData: UnicodeString;
+  I                 : Integer;
+  ExtraData         : UnicodeString;
 {$ENDIF COMPILER10_UP}
 begin
-  inherited Create(AHandle, AOrgStreamData);
-  FInjectData := AInjectData;
-  FLoading := True;
+  inherited Create( AHandle, AOrgStreamData );
+  FInjectData       := AInjectData;
+  FLoading          := True;
 
-  {$IFDEF COMPILER10_UP}
+{$IFDEF COMPILER10_UP}
   // BOM detection
-  FBOM[2] := 0;
-  FBOM[3] := 0;
-  FBOMType := bomAnsi;
-  FBOMLen := inherited Read(FBOM, 2);
+  FBOM[ 2 ]         := 0;
+  FBOM[ 3 ]         := 0;
+  FBOMType          := bomAnsi;
+  FBOMLen           := inherited Read( FBOM, 2 );
   if FBOMLen = 2 then
   begin
-    if (FBOM[0] = $EF) and (FBOM[1] = $BB) then
+    if ( FBOM[ 0 ] = $EF ) and ( FBOM[ 1 ] = $BB ) then
     begin
-      Inc(FBOMLen, inherited Read(FBOM[2], 1));
-      if FBOM[2] = $BF then
-        FBOMType := bomUtf8;
+      Inc( FBOMLen, inherited Read( FBOM[ 2 ], 1 ) );
+      if FBOM[ 2 ] = $BF then
+        FBOMType    := bomUtf8;
     end
-    else if (FBOM[0] = $FF) and (FBOM[1] = $FE) then
+    else if ( FBOM[ 0 ] = $FF ) and ( FBOM[ 1 ] = $FE ) then
     begin
-      Inc(FBOMLen, inherited Read(FBOM[2], 2));
-      if (FBOM[2] = 0) and (FBOM[3] = 0) then
-        FBOMType := bomUcs4LE
+      Inc( FBOMLen, inherited Read( FBOM[ 2 ], 2 ) );
+      if ( FBOM[ 2 ] = 0 ) and ( FBOM[ 3 ] = 0 ) then
+        FBOMType    := bomUcs4LE
       else
       begin
-        Dec(FBOMLen, 2);
-        ExtraData := PWideChar(@FBOM[2])^;
-        FBOMType := bomUcs2LE;
+        Dec( FBOMLen, 2 );
+        ExtraData   := PWideChar( @FBOM[ 2 ] )^;
+        FBOMType    := bomUcs2LE;
       end;
     end
-    else if (FBOM[0] = $FE) and (FBOM[1] = $FF) then
+    else if ( FBOM[ 0 ] = $FE ) and ( FBOM[ 1 ] = $FF ) then
     begin
-      FBOMType := bomUcs2BE;
+      FBOMType      := bomUcs2BE;
     end
-    else if (FBOM[0] = 0) and (FBOM[1] = 0) then
+    else if ( FBOM[ 0 ] = 0 ) and ( FBOM[ 1 ] = 0 ) then
     begin
-      Inc(FBOMLen, inherited Read(FBOM[2], 2));
-      if (FBOM[2] = $FE) and (FBOM[3] = $FF) then
-        FBOMType := bomUcs4BE;
+      Inc( FBOMLen, inherited Read( FBOM[ 2 ], 2 ) );
+      if ( FBOM[ 2 ] = $FE ) and ( FBOM[ 3 ] = $FF ) then
+        FBOMType    := bomUcs4BE;
     end;
   end;
 
@@ -695,135 +697,136 @@ begin
   case FBOMType of
     bomAnsi:
       begin
-        {$IFDEF UNICODE}
-        SetCodePage(FInjectData, CP_ACP);
-        {$ENDIF UNICODE}
+{$IFDEF UNICODE}
+        SetCodePage( FInjectData, CP_ACP );
+{$ENDIF UNICODE}
         for I := 0 to FBOMLen - 1 do
-          FInjectData := FInjectData + AnsiChar(FBOM[I]);
+          FInjectData := FInjectData + AnsiChar( FBOM[ I ] );
       end;
     bomUtf8:
       begin
-        {$IFDEF UNICODE}
-        SetCodePage(FInjectData, CP_UTF8);
-        {$ELSE}
-        FInjectData := AnsiToUtf8(FInjectData);
-        {$ENDIF UNICODE}
-        FInjectData := AnsiChar($EF) + AnsiChar($BB) + AnsiChar($BF) +
-                       FInjectData;
+{$IFDEF UNICODE}
+        SetCodePage( FInjectData, CP_UTF8 );
+{$ELSE}
+        FInjectData := AnsiToUtf8( FInjectData );
+{$ENDIF UNICODE}
+        FInjectData := AnsiChar( $EF ) + AnsiChar( $BB ) + AnsiChar( $BF ) +
+          FInjectData;
       end;
 
     { The Compiler cannot handle these file types. So we convert them to UTF8 }
     bomUcs2BE, bomUcs2LE:
       begin
-        {$IFDEF UNICODE}
-        SetCodePage(FInjectData, CP_UTF8);
-        {$ELSE}
-        FInjectData := AnsiToUtf8(FInjectData);
-        {$ENDIF UNICODE}
-        FInjectData := AnsiChar($EF) + AnsiChar($BB) + AnsiChar($BF) +
-                       FInjectData +
-                       UTF8Encode(ReadAllFileUcs2(Self, FBOMType, ExtraData));
+{$IFDEF UNICODE}
+        SetCodePage( FInjectData, CP_UTF8 );
+{$ELSE}
+        FInjectData := AnsiToUtf8( FInjectData );
+{$ENDIF UNICODE}
+        FInjectData := AnsiChar( $EF ) + AnsiChar( $BB ) + AnsiChar( $BF ) +
+          FInjectData +
+          UTF8Encode( ReadAllFileUcs2( Self, FBOMType, ExtraData ) );
       end;
     bomUcs4BE, bomUcs4LE:
       begin
-        {$IFDEF UNICODE}
-        SetCodePage(FInjectData, CP_UTF8);
-        {$ELSE}
-        FInjectData := AnsiToUtf8(FInjectData);
-        {$ENDIF UNICODE}
-        FInjectData := AnsiChar($EF) + AnsiChar($BB) + AnsiChar($BF) +
-                       FInjectData +
-                       UTF8Encode(
-                         {$IFDEF UNICODE}
-                         UCS4StringToUnicodeString
-                         {$ELSE}
-                         UCS4StringToWideString
-                         {$ENDIF UNICODE}
-                           (ReadAllFileUcs4(Self, FBOMType))
-                       );
+{$IFDEF UNICODE}
+        SetCodePage( FInjectData, CP_UTF8 );
+{$ELSE}
+        FInjectData := AnsiToUtf8( FInjectData );
+{$ENDIF UNICODE}
+        FInjectData := AnsiChar( $EF ) + AnsiChar( $BB ) + AnsiChar( $BF ) +
+          FInjectData +
+          UTF8Encode(
+{$IFDEF UNICODE}
+          UCS4StringToUnicodeString
+{$ELSE}
+          UCS4StringToWideString
+{$ENDIF UNICODE}
+          ( ReadAllFileUcs4( Self, FBOMType ) )
+          );
       end;
   end;
-  {$ENDIF COMPLER10_UP}
-  FLoading := False;
+{$ENDIF COMPLER10_UP}
+  FLoading          := False;
 end;
 
-function TInjectStream.Read(var Buffer; Count: Longint): Longint;
+function TInjectStream.Read( var Buffer; Count: Longint ): Longint;
 var
-  P: PByte;
-  Len: Integer;
+  P                 : PByte;
+  Len               : Integer;
 begin
   if FLoading then
   begin
-    Result := inherited Read(Buffer, Count);
+    Result          := inherited Read( Buffer, Count );
     Exit;
   end;
 
-  P := @Buffer;
-  Result := 0;
-  Len := Length(InjectData);
+  P                 := @Buffer;
+  Result            := 0;
+  Len               := Length( InjectData );
 
   if FVirtualPosition < Len then
   begin
     if FVirtualPosition + Count < Len then
     begin
-      Move(InjectData[FVirtualPosition + 1], P^, Count);
-      Result := Count;
+      Move( InjectData[ FVirtualPosition + 1 ], P^, Count );
+      Result        := Count;
     end
     else
     begin
-      Move(InjectData[FVirtualPosition + 1], P^, Len - FVirtualPosition);
-      Result := Len - FVirtualPosition;
+      Move( InjectData[ FVirtualPosition + 1 ], P^, Len - FVirtualPosition );
+      Result        := Len - FVirtualPosition;
     end;
-    Inc(P, Result);
-    Dec(Count, Result);
+    Inc( P, Result );
+    Dec( Count, Result );
   end;
 
   if Count > 0 then
-    Inc(Result, inherited Read(P^, Count));
+    Inc( Result, inherited Read( P^, Count ) );
 
-  Inc(FVirtualPosition, Result);
+  Inc( FVirtualPosition, Result );
 end;
 
 {$IFDEF COMPILER6_UP}
-function TInjectStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+function TInjectStream.Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64;
+
 {$ELSE}
-function TInjectStream.Seek(Offset: Longint; Origin: Word): Longint;
+function TInjectStream.Seek( Offset: Longint; Origin: Word ): Longint;
 const
-  soEnd = soFromEnd;
-  soBeginning = soFromBeginning;
-  soCurrent = soFromCurrent;
+  soEnd             = soFromEnd;
+  soBeginning       = soFromBeginning;
+  soCurrent         = soFromCurrent;
 {$ENDIF COMPILER6_UP}
 var
-  RelPosition: Int64;
-  Len: Integer;
+  RelPosition       : Int64;
+  Len               : Integer;
 begin
   if FLoading then
   begin
-    Result := inherited Seek(Offset, Origin);
+    Result          := inherited Seek( Offset, Origin );
     Exit;
   end;
 
-  Len := Length(InjectData);
+  Len               := Length( InjectData );
 
   if Origin = soEnd then
   begin
-    RelPosition := inherited Seek(Offset, soBeginning);
+    RelPosition     := inherited Seek( Offset, soBeginning );
     FVirtualPosition := RelPosition + Len;
-    Origin := soCurrent;
+    Origin          := soCurrent;
   end;
 
-  RelPosition := Offset;
+  RelPosition       := Offset;
   case Origin of
     soBeginning:
       begin
         if RelPosition < 0 then
           RelPosition := 0
         else if RelPosition < Len then
-          inherited Seek(0, soBeginning)
+          inherited Seek( 0, soBeginning )
         else
         begin
-          RelPosition := inherited Seek(Offset - Len, soBeginning);
-          Inc(RelPosition, Len);
+          RelPosition := inherited Seek( Offset - Len, soBeginning );
+          Inc( RelPosition, Len );
         end;
         FVirtualPosition := RelPosition;
       end;
@@ -834,35 +837,35 @@ begin
           FVirtualPosition := 0
         else if FVirtualPosition + RelPosition < Len then
         begin
-          inherited Seek(0, soBeginning);
-          Inc(FVirtualPosition, RelPosition);
+          inherited Seek( 0, soBeginning );
+          Inc( FVirtualPosition, RelPosition );
         end
         else
         begin
-          RelPosition := inherited Seek(Offset, soCurrent);
-          Inc(RelPosition, Len);
+          RelPosition := inherited Seek( Offset, soCurrent );
+          Inc( RelPosition, Len );
           FVirtualPosition := RelPosition;
         end;
       end;
   end;
 
-  Result := FVirtualPosition;
+  Result            := FVirtualPosition;
 end;
 
-function TInjectStream.Write(const Buffer; Count: Longint): Longint;
+function TInjectStream.Write( const Buffer; Count: Longint ): Longint;
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['Write']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'Write' ] );
 end;
 
-procedure TInjectStream.SetSize(NewSize: Longint);
+procedure TInjectStream.SetSize( NewSize: Longint );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 
 {$IFDEF COMPILER6_UP}
-procedure TInjectStream.SetSize(const NewSize: Int64);
+procedure TInjectStream.SetSize( const NewSize: Int64 );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 {$ENDIF COMPILER6_UP}
 
@@ -874,7 +877,7 @@ begin
   // of it on Win64 and left every field uninitialised.
   var Memory: Pointer;
   GetMem( Memory, InstanceSize );
-  Result := InitInstance( Memory );
+  Result            := InitInstance( Memory );
 end;
 
 procedure TFileCacheReaderStream.FreeInstance;
@@ -883,76 +886,77 @@ begin
   FreeMem( Pointer( Self ) );
 end;
 
-constructor TFileCacheReaderStream.Create(AFileCache: TFileCache);
+constructor TFileCacheReaderStream.Create( AFileCache: TFileCache );
 begin
-  FFileCache := AFileCache;
-  FFileCache.FReaders.Add(Self);
-  FPosition := 0;
+  FFileCache        := AFileCache;
+  FFileCache.FReaders.Add( Self );
+  FPosition         := 0;
 end;
 
 destructor TFileCacheReaderStream.Destroy;
 begin
-  FFileCache.FReaders.Extract(Self);
+  FFileCache.FReaders.Extract( Self );
   inherited Destroy;
 end;
 
-function TFileCacheReaderStream.Read(var Buffer; Count: Longint): Longint;
+function TFileCacheReaderStream.Read( var Buffer; Count: Longint ): Longint;
 begin
-  if (FPosition >= 0) and (Count >= 0) then
+  if ( FPosition >= 0 ) and ( Count >= 0 ) then
   begin
-    Result := FFileCache.Size - FPosition;
+    Result          := FFileCache.Size - FPosition;
     if Result > 0 then
     begin
       if Result > Count then
-        Result := Count;
-      Move(FFileCache.FBuffer[FPosition], Buffer, Result);
-      Inc(FPosition, Result);
+        Result      := Count;
+      Move( FFileCache.FBuffer[ FPosition ], Buffer, Result );
+      Inc( FPosition, Result );
       Exit;
     end;
   end;
-  Result := 0;
+  Result            := 0;
 end;
 
-function TFileCacheReaderStream.Write(const Buffer; Count: Longint): Longint;
+function TFileCacheReaderStream.Write( const Buffer; Count: Longint ): Longint;
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['Write']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'Write' ] );
 end;
 
-procedure TFileCacheReaderStream.SetSize(NewSize: Longint);
+procedure TFileCacheReaderStream.SetSize( NewSize: Longint );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 
 {$IFDEF COMPILER6_UP}
-procedure TFileCacheReaderStream.SetSize(const NewSize: Int64);
+procedure TFileCacheReaderStream.SetSize( const NewSize: Int64 );
 begin
-  raise Exception.CreateFmt(RsNotSupported, ['SetSize']);
+  raise Exception.CreateFmt( RsNotSupported, [ 'SetSize' ] );
 end;
 {$ENDIF COMPILER6_UP}
 
 {$IFDEF COMPILER6_UP}
-function TFileCacheReaderStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+function TFileCacheReaderStream.Seek( const Offset: Int64; Origin: TSeekOrigin ): Int64;
+
 {$ELSE}
-function TFileCacheReaderStream.Seek(Offset: Longint; Origin: Word): Longint;
+function TFileCacheReaderStream.Seek( Offset: Longint; Origin: Word ): Longint;
 const
-  soEnd = soFromEnd;
-  soBeginning = soFromBeginning;
-  soCurrent = soFromCurrent;
+  soEnd             = soFromEnd;
+  soBeginning       = soFromBeginning;
+  soCurrent         = soFromCurrent;
 {$ENDIF COMPILER6_UP}
 begin
   case Origin of
     soBeginning:
-      FPosition := Offset;
+      FPosition     := Offset;
     soCurrent:
-      Inc(FPosition, Offset);
+      Inc( FPosition, Offset );
     soEnd:
-      FPosition := FFileCache.Size + Offset;
+      FPosition     := FFileCache.Size + Offset;
   end;
   if FPosition < 0 then
-    FPosition := 0;
+    FPosition       := 0;
   if FPosition > FFileCache.Size then
-    FPosition := FFileCache.Size;
-  Result := FPosition;
+    FPosition       := FFileCache.Size;
+  Result            := FPosition;
 end;
 
 { TFileCache }
@@ -963,79 +967,80 @@ begin
   // of it on Win64 and left every field uninitialised.
   var Memory: Pointer;
   GetMem( Memory, InstanceSize );
-  Result := InitInstance( Memory );
+  Result            := InitInstance( Memory );
 end;
 
-constructor TFileCache.Create(hFile: THandle; {Size: Integer; }AOrgStreamData: POrgStreamData);
+constructor TFileCache.Create( hFile: THandle; {Size: Integer; }AOrgStreamData: POrgStreamData );
 const
   // BCB 5, 6 abort with buffers larger than 16Kb if the file is opened in the editor
-  BufReadSize = 15872; // The compiler uses this number of bytes for read operations.
+  BufReadSize       = 15872; // The compiler uses this number of bytes for read operations.
 var
-  n: Integer;
-  Stream: TStream;
-  ASize: Integer;
+  n                 : Integer;
+  Stream            : TStream;
+  ASize             : Integer;
 begin
   inherited Create;
-//  FSize := ASize;
-  FReaders := TObjectList.Create;
+  //  FSize := ASize;
+  FReaders          := TObjectList.Create;
 
-//  if ASize = -1 then
+  //  if ASize = -1 then
   begin
-    FBuffer := nil;
-    {$IFDEF COMPILER10_UP}
-    Stream := TInjectStream.Create(hFile, '', AOrgStreamData); // UCS2 and UCS4 support
-    {$ELSE}
-    Stream := TOrgStream.Create(hFile, AOrgStreamData); // UCS2 and UCS4 support
-    {$ENDIF COMPILER10_UP}
+    FBuffer         := nil;
+{$IFDEF COMPILER10_UP}
+    Stream          := TInjectStream.Create( hFile, '', AOrgStreamData ); // UCS2 and UCS4 support
+{$ELSE}
+    Stream          := TOrgStream.Create( hFile, AOrgStreamData ); // UCS2 and UCS4 support
+{$ENDIF COMPILER10_UP}
     try
-      ASize := 0;
+      ASize         := 0;
       repeat
-        ReallocMem(FBuffer, ASize + BufReadSize);
-        n := Stream.Read(FBuffer[ASize], BufReadSize);
-        Inc(ASize, n);
+        ReallocMem( FBuffer, ASize + BufReadSize );
+        n           := Stream.Read( FBuffer[ ASize ], BufReadSize );
+        Inc( ASize, n );
         if ASize > 100 * 1024 * 1024 then // do not count on the IDE's FileRead implementation
         begin
-          ASize := 0;
+          ASize     := 0;
           Break;
         end;
       until n <> BufReadSize;
-      ReallocMem(FBuffer, ASize);
+      ReallocMem( FBuffer, ASize );
     finally
       Stream.Free;
     end;
-    FSize := ASize;
-{  end
-  else
-  begin
-    if FSize > 0 then
-    begin
-      GetMem(FBuffer, FSize);
-      AOrgStreamData.Read(hFile, PByte(FBuffer), FSize);
-    end;}
+    FSize           := ASize;
+    {  end
+      else
+      begin
+        if FSize > 0 then
+        begin
+          GetMem(FBuffer, FSize);
+          AOrgStreamData.Read(hFile, PByte(FBuffer), FSize);
+        end;}
   end;
 end;
 
 destructor TFileCache.Destroy;
 begin
   if FBuffer <> nil then
-    FreeMem(FBuffer);
+    FreeMem( FBuffer );
   FReaders.Free;
   inherited Destroy;
 end;
 
 function TFileCache.GetReaderCount: Integer;
 begin
-  Result := FReaders.Count;
+  Result            := FReaders.Count;
 end;
 
-function TFileCache.GetReader(Index: Integer): TFileCacheReaderStream;
+function TFileCache.GetReader( Index: Integer ): TFileCacheReaderStream;
 begin
-  Result := TFileCacheReaderStream(FReaders[Index]);
+  Result            := TFileCacheReaderStream( FReaders[ Index ] );
 end;
 
 function TFileCache.NewReader: TFileCacheReaderStream;
 begin
-  Result := TFileCacheReaderStream.Create(Self);
+  Result            := TFileCacheReaderStream.Create( Self );
 end;
 
 end.
+

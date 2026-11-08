@@ -32,7 +32,7 @@ uses
 /// shutdown.
 /// </summary>
 /// <param name="Unload">False during plug-in initialisation, True during plug-in shutdown.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 implementation
 
@@ -40,55 +40,55 @@ uses
   Winapi.Windows, IDEUtils;
 
 var
-  LoadDesktopHook: TRedirectCode;
+  LoadDesktopHook   : TRedirectCode;
 
-procedure Hook_LoadDesktop(Instance: TObject; Desktop: TObject);
+procedure Hook_LoadDesktop( Instance: TObject; Desktop: TObject );
 type
-  TLoadDesktopProc = procedure(Instance: TObject; Desktop: TObject);
+  TLoadDesktopProc = procedure( Instance: TObject; Desktop: TObject );
 var
-  I: Integer;
-  Editor: TComponent;
+  I                 : Integer;
+  Editor            : TComponent;
 begin
-  UnhookFunction(LoadDesktopHook);
+  UnhookFunction( LoadDesktopHook );
   try
     try
       // RealProc is nil when the prologue was never patched ( a failed or no-op install, e.g. on
       // Win64 ); calling through it would AV.
-      if Assigned(LoadDesktopHook.RealProc) then
-        TLoadDesktopProc(LoadDesktopHook.RealProc)(Instance, Desktop);
+      if Assigned( LoadDesktopHook.RealProc ) then
+        TLoadDesktopProc( LoadDesktopHook.RealProc )( Instance, Desktop );
     finally
       for I := 0 to Screen.FormCount - 1 do
       begin
-        if Screen.Forms[I].Visible and Screen.Forms[I].Enabled and
-           Screen.Forms[I].CanFocus and
-           Screen.Forms[I].ClassNameIs('TEditWindow') then
+        if Screen.Forms[ I ].Visible and Screen.Forms[ I ].Enabled and
+          Screen.Forms[ I ].CanFocus and
+          Screen.Forms[ I ].ClassNameIs( 'TEditWindow' ) then
         begin
-          Editor := Screen.Forms[I].FindComponent('Editor');
-          if (Editor is TWinControl) and TWinControl(Editor).CanFocus then
+          Editor    := Screen.Forms[ I ].FindComponent( 'Editor' );
+          if ( Editor is TWinControl ) and TWinControl( Editor ).CanFocus then
           begin
             // Only stop once we have actually focused an editor; if this edit
             // window has no focusable 'Editor' child (e.g. an IDE rename),
             // keep scanning the remaining edit windows rather than giving up.
-            TWinControl(Editor).SetFocus;
+            TWinControl( Editor ).SetFocus;
             Break;
           end
           else
-            OutputDebugString('FocusEditor: TEditWindow has no focusable ''Editor'' child; trying next.');
+            OutputDebugString( 'FocusEditor: TEditWindow has no focusable ''Editor'' child; trying next.' );
         end;
       end;
     end;
   finally
-    RehookFunction(@Hook_LoadDesktop, LoadDesktopHook);
+    RehookFunction( @Hook_LoadDesktop, LoadDesktopHook );
   end;
 end;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
-    HookFunction(coreide_bpl, '@Desktop@TDesktopStates@LoadDesktop$qqrp21Desktop@TDesktopState',
-      @Hook_LoadDesktop, LoadDesktopHook)
+    HookFunction( coreide_bpl, '@Desktop@TDesktopStates@LoadDesktop$qqrp21Desktop@TDesktopState',
+      @Hook_LoadDesktop, LoadDesktopHook )
   else
-    UnhookFunction(LoadDesktopHook);
+    UnhookFunction( LoadDesktopHook );
 end;
 
 end.

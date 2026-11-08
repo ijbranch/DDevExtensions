@@ -23,9 +23,9 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, ToolsAPI,
-  {$IF CompilerVersion >= 23.0}
+{$IF CompilerVersion >= 23.0}
   PlatformAPI,
-  {$IFEND}
+{$IFEND}
   DCCStrs, FrmTreePages, PluginConfig, Vcl.StdCtrls,
   ModuleData, FrmeBase, Vcl.ExtCtrls, Vcl.ActnList, Vcl.Menus, VirtTreeHandler, Vcl.ComCtrls;
 
@@ -34,13 +34,13 @@ type
   /// Action performed when the user double-clicks an editor tab: do nothing, zoom the
   /// editor or "super-zoom" (full-screen the editor pane).
   /// </summary>
-  TEditorDblClickAction = (ecaNone, ecaZoom, ecaSuperZoom);
+  TEditorDblClickAction = ( ecaNone, ecaZoom, ecaSuperZoom );
 
   /// <summary>
   /// Persisted configuration and runtime hook controller for the Extended IDE Settings.
   /// Storage backs the DSUFeatures.xml file in the Application Data directory.
   /// </summary>
-  TDSUFeaturesConfig = class(TPluginConfig)
+  TDSUFeaturesConfig = class( TPluginConfig )
   private
     /// <summary>Backing field for DisablePackageCache.</summary>
     FDisablePackageCache: Boolean;
@@ -49,21 +49,21 @@ type
     FEditorDblClickAction: TEditorDblClickAction;
     /// <summary>Cached byte offset of the IDE's tab-control zoom-mode flag, found by signature scan.</summary>
     FZoomModeOffset: Integer;
-    {$IF CompilerVersion = 21.0} // Delphi 2010
+{$IF CompilerVersion = 21.0} // Delphi 2010
     /// <summary>Backing field for IncBuildNumOnBuildOnly (Delphi 2010 only).</summary>
     FIncBuildNumOnBuildOnly: Boolean;
-    {$IFEND}
-    {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IFEND}
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
     /// <summary>Backing field for DisableSourceFormatterHotkey.</summary>
     FDisableSourceFormatterHotkey: Boolean;
     /// <summary>Original Format-Source action shortcut, captured before disabling.</summary>
     FFormatSourceOrgShortCut: TShortCut;
-    {$ELSE}
+{$ELSE}
     /// <summary>Backing field for DisableCodeFolding (Delphi 2009 and earlier).</summary>
     FDisableCodeFolding: Boolean;
     /// <summary>Backing field for ReplacePackageAddContain (Delphi 2009 and earlier).</summary>
     FReplacePackageAddContain: Boolean;
-    {$IFEND}
+{$IFEND}
     /// <summary>Backing field for ShowFileProjectInPrjMgr.</summary>
     FShowFileProjectInPrjMgr: Boolean;
     /// <summary>Backing field for StructureViewSearchHotKey.</summary>
@@ -83,49 +83,49 @@ type
 
     /// <summary>Setter for DisablePackageCache; writes the registry flag the IDE consults.</summary>
     /// <param name="Value">True to disable the IDE's package and palette caches.</param>
-    procedure SetDisablePackageCache(Value: Boolean);
+    procedure SetDisablePackageCache( Value: Boolean );
     /// <summary>Setter for EditorDblClickAction; installs/removes the desktop-load hook and patches the IDE.</summary>
     /// <param name="Value">What an editor tab double-click does: nothing, zoom or super-zoom.</param>
-    procedure SetEditorDblClickAction(Value: TEditorDblClickAction);
-    {$IF CompilerVersion = 21.0} // Delphi 2010
+    procedure SetEditorDblClickAction( Value: TEditorDblClickAction );
+{$IF CompilerVersion = 21.0} // Delphi 2010
     /// <summary>Setter for IncBuildNumOnBuildOnly; binary-patches AfterCompile to gate version increments.</summary>
     /// <param name="Value">True to increment the build number only on Build.</param>
-    procedure SetIncBuildNumOnBuildOnly(const Value: Boolean);
-    {$IFEND}
-    {$IF CompilerVersion >= 21.0} // Delphi 2010+
+    procedure SetIncBuildNumOnBuildOnly( const Value: Boolean );
+{$IFEND}
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
     /// <summary>Setter for DisableSourceFormatterHotkey; removes the Ctrl+D hotkey from the source formatter action.</summary>
     /// <param name="Value">True to remove the source formatter's keyboard shortcut.</param>
-    procedure SetDisableSourceFormatterHotkey(Value: Boolean);
-    {$ELSE}
+    procedure SetDisableSourceFormatterHotkey( Value: Boolean );
+{$ELSE}
     /// <summary>Setter for DisableCodeFolding; hooks TUnitManager.GetRegions to return nil.</summary>
     /// <param name="Value">True to disable the code-folding region calculation.</param>
-    procedure SetDisableCodeFolding(const Value: Boolean);
+    procedure SetDisableCodeFolding( const Value: Boolean );
     /// <summary>Setter for ReplacePackageAddContain; reroutes Add menu in package projects.</summary>
     /// <param name="Value">True to reroute the package "Add" command through the regular project Add.</param>
-    procedure SetReplacePackageAddContain(const Value: Boolean);
-    {$IFEND}
+    procedure SetReplacePackageAddContain( const Value: Boolean );
+{$IFEND}
     /// <summary>Setter for ShowFileProjectInPrjMgr; toggles project name suffix decoration.</summary>
     /// <param name="Value">True to append the owning project name to file nodes in the project manager.</param>
-    procedure SetShowFileProjectInPrjMgr(const Value: Boolean);
+    procedure SetShowFileProjectInPrjMgr( const Value: Boolean );
     /// <summary>Setter for StructureViewSearchHotKey; updates the StructureViewSearch hotkey.</summary>
     /// <param name="Value">The new shortcut that opens the Structure View search.</param>
-    procedure SetStructureViewSearchHotKey(const Value: TShortCut);
+    procedure SetStructureViewSearchHotKey( const Value: TShortCut );
     /// <summary>Setter for ReplaceOpenFileAtCursor; hooks the IDE's OpenModuleFile routine.</summary>
     /// <param name="Value">True to replace the IDE's Open File at Cursor with the search-path-aware version.</param>
-    procedure SetReplaceOpenFileAtCursor(const Value: Boolean);
+    procedure SetReplaceOpenFileAtCursor( const Value: Boolean );
     /// <summary>Setter for ShowAllFrames; hooks TDelphiProjectModuleHandler.GetFormList.</summary>
     /// <param name="Value">True to include frames from sibling package projects in the form list.</param>
-    procedure SetShowAllFrames(const Value: Boolean);
+    procedure SetShowAllFrames( const Value: Boolean );
     /// <summary>Setter for DontBreakOnSpawnedProcesses; redirects TProcess.stopOnFirstAddr.</summary>
     /// <param name="Value">True to suppress the debugger's stop on the first instruction of spawned processes.</param>
-    procedure SetDontBreakOnSpawnedProcesses(const Value: Boolean);
+    procedure SetDontBreakOnSpawnedProcesses( const Value: Boolean );
     /// <summary>Setter for ConfirmDlgOnDebugCtrlF1; hooks TCustomEditControl.HelpKeyword.</summary>
     /// <param name="Value">True to prompt before Ctrl+F1 context help while debugging.</param>
-    procedure SetConfirmDlgOnDebugCtrlF1(const Value: Boolean);
+    procedure SetConfirmDlgOnDebugCtrlF1( const Value: Boolean );
     //procedure SetDisableEditorClearType(Value: Boolean);
     /// <summary>Setter for DisableAlphaSortClassCompletion; installs or removes the class-completion order patches.</summary>
     /// <param name="Value">True to disable alphabetical sorting of methods generated by class completion.</param>
-    procedure SetDisableAlphaSortClassCompletion(const Value: Boolean);
+    procedure SetDisableAlphaSortClassCompletion( const Value: Boolean );
   protected
     /// <summary>Timer that polls the structure view to append parsing dots to its caption.</summary>
     FTimerStructureView: TTimer;
@@ -144,14 +144,14 @@ type
     /// <param name="Column">Column index of the cell.</param>
     /// <param name="TextType">Whether normal or static text is being requested.</param>
     /// <param name="CellText">Receives the text to display.</param>
-    procedure PMGetText(Sender: TObject; Node: PVirtualNode; Column: Integer;
-      TextType: TVSTTextType; var CellText: WideString);
+    procedure PMGetText( Sender: TObject; Node: PVirtualNode; Column: Integer;
+      TextType: TVSTTextType; var CellText: WideString );
 
     /// <summary>Helper that mirrors a boolean flag into a registry value under the IDE's Globals key.</summary>
     /// <param name="Value">Reference to the field to update.</param>
     /// <param name="NewValue">New value to assign.</param>
     /// <param name="ValueName">Registry value name under the Globals key.</param>
-    procedure SetRegValue(var Value: Boolean; NewValue: Boolean; const ValueName: string);
+    procedure SetRegValue( var Value: Boolean; NewValue: Boolean; const ValueName: string );
     /// <summary>Returns the option page tree node for "Extended IDE Settings".</summary>
     /// <returns>A TTreePage instance owned by the configuration framework.</returns>
     function GetOptionPages: TTreePage; override;
@@ -164,7 +164,7 @@ type
 
     /// <summary>Timer tick that animates parsing dots in the Structure View caption.</summary>
     /// <param name="Sender">The owning TTimer.</param>
-    procedure StructureViewTimer(Sender: TObject);
+    procedure StructureViewTimer( Sender: TObject );
     /// <summary>Returns True while the IDE's background parser thread is processing.</summary>
     /// <returns>True if parsing is in progress; False otherwise (or if the thread cannot be located).</returns>
     function IsBackgroundParsing: Boolean;
@@ -190,19 +190,19 @@ type
     property ReplaceOpenFileAtCursor: Boolean read FReplaceOpenFileAtCursor write SetReplaceOpenFileAtCursor;
     /// <summary>When True, includes frames from sibling package projects in the form list.</summary>
     property ShowAllFrames: Boolean read FShowAllFrames write SetShowAllFrames;
-    {$IF CompilerVersion = 21.0} // Delphi 2010
+{$IF CompilerVersion = 21.0} // Delphi 2010
     /// <summary>When True, only increments the build number for full builds (Delphi 2010 only).</summary>
     property IncBuildNumOnBuildOnly: Boolean read FIncBuildNumOnBuildOnly write SetIncBuildNumOnBuildOnly;
-    {$IFEND}
-    {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IFEND}
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
     /// <summary>When True, suppresses the source formatter's keyboard shortcut.</summary>
     property DisableSourceFormatterHotkey: Boolean read FDisableSourceFormatterHotkey write SetDisableSourceFormatterHotkey;
-    {$ELSE}
+{$ELSE}
     /// <summary>When True, disables the (slow) Delphi 2009 code-folding region calculation.</summary>
     property DisableCodeFolding: Boolean read FDisableCodeFolding write SetDisableCodeFolding;
     /// <summary>When True, reroutes the package "Add" command through the regular project Add (Delphi 2009 and earlier).</summary>
     property ReplacePackageAddContain: Boolean read FReplacePackageAddContain write SetReplacePackageAddContain;
-    {$IFEND}
+{$IFEND}
     /// <summary>When True, appends the owning project name in parentheses to file nodes in the project manager.</summary>
     property ShowFileProjectInPrjMgr: Boolean read FShowFileProjectInPrjMgr write SetShowFileProjectInPrjMgr;
     /// <summary>Behaviour for editor tab double-click: none, zoom or super-zoom.</summary>
@@ -224,7 +224,7 @@ type
   /// VCL frame that hosts the option-page UI for TDSUFeaturesConfig in the IDE Options
   /// dialog tree.
   /// </summary>
-  TFrameOptionPageDSUFeatures = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageDSUFeatures = class( TFrameBase, ITreePageComponent )
     /// <summary>Check box for the DisablePackageCache option.</summary>
     chkDisablePackageCache: TCheckBox;
     /// <summary>Combo box selecting the editor tab double-click action.</summary>
@@ -261,7 +261,7 @@ type
   public
     /// <summary>Stores the supplied configuration object for later Load/Save calls.</summary>
     /// <param name="UserData">Configuration object expected to be a TDSUFeaturesConfig.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Loads the configuration into the frame controls and removes controls not relevant to this IDE version.</summary>
     procedure LoadData;
     /// <summary>Reads the controls back into the configuration object and persists it.</summary>
@@ -277,11 +277,11 @@ type
 /// configuration object.
 /// </summary>
 /// <param name="Unload">True to shut down, False to start up.</param>
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 
 var
   /// <summary>Singleton configuration instance accessed by other plugin units.</summary>
-  DSUFeaturesConfig: TDSUFeaturesConfig;
+  DSUFeaturesConfig : TDSUFeaturesConfig;
 
 implementation
 
@@ -292,36 +292,36 @@ uses
 {$R *.dfm}
 
 var
-  GlobalBaseRegKey: string;
-  {$IF CompilerVersion < 21.0} // Delphi 2009-
+  GlobalBaseRegKey  : string;
+{$IF CompilerVersion < 21.0} // Delphi 2009-
   DisabledGetRegionsHook: TRedirectCode;
 
   ProcessAddCommandHook: TRedirectCode;
   Package_AddProjectModuleHook: TRedirectCode;
-  TPascalProjectUpdater_AddProjectModule: procedure(Instance: TObject);
-  TPascalPackageCodeUpdater_AddProjectModule: procedure(Instance: TObject);
-  TStdPackageProjectContainer_ProcessAddCommand: procedure(Instance: TObject; Command: Integer);
-  TStdProjectContainer_AddToProject: procedure(Instance: TObject);
-  {$IFEND}
+  TPascalProjectUpdater_AddProjectModule: procedure( Instance: TObject );
+  TPascalPackageCodeUpdater_AddProjectModule: procedure( Instance: TObject );
+  TStdPackageProjectContainer_ProcessAddCommand: procedure( Instance: TObject; Command: Integer );
+  TStdProjectContainer_AddToProject: procedure( Instance: TObject );
+{$IFEND}
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
-  DSUFeatures.InitPlugin(Unload);
+  DSUFeatures.InitPlugin( Unload );
   if not Unload then
     DSUFeaturesConfig := TDSUFeaturesConfig.Create
   else
-    FreeAndNil(DSUFeaturesConfig);
+    FreeAndNil( DSUFeaturesConfig );
 end;
 
 { TFrameOptionPageDSUFeatures }
 
-procedure TFrameOptionPageDSUFeatures.SetUserData(UserData: TObject);
+procedure TFrameOptionPageDSUFeatures.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
   if ( UserData is TDSUFeaturesConfig ) then
-    FDSUFeatures := TDSUFeaturesConfig( UserData )
+    FDSUFeatures    := TDSUFeaturesConfig( UserData )
   else
-    FDSUFeatures := nil;
+    FDSUFeatures    := nil;
 end;
 
 procedure TFrameOptionPageDSUFeatures.LoadData;
@@ -330,25 +330,25 @@ begin
     Exit;
 
   chkDisablePackageCache.Checked := FDSUFeatures.DisablePackageCache;
-  {$IF CompilerVersion = 21.0} // Delphi 2010
+{$IF CompilerVersion = 21.0} // Delphi 2010
   chkIncBuildNumOnBuildOnly.Checked := FDSUFeatures.IncBuildNumOnBuildOnly;
-  {$ELSE}
+{$ELSE}
   chkIncBuildNumOnBuildOnly.Free;
-  {$IFEND}
+{$IFEND}
 
-  {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
   chkDisableSourceFormatterHotkey.Checked := FDSUFeatures.DisableSourceFormatterHotkey;
 
   chkDisableCodeFolding.Free;
-  {$ELSE}
+{$ELSE}
   chkDisableCodeFolding.Top := chkDisableSourceFormatterHotkey.Top;
   chkDisableCodeFolding.Checked := FDSUFeatures.DisableCodeFolding;
 
   chkDisableSourceFormatterHotkey.Free;
   chkIncBuildNumOnBuildOnly.Free;
-  {$IFEND}
+{$IFEND}
   chkShowFileProjectInPrjMgr.Checked := FDSUFeatures.ShowFileProjectInPrjMgr;
-  cbxEditorTabDblClickAction.ItemIndex := Ord(FDSUFeatures.EditorDblClickAction);
+  cbxEditorTabDblClickAction.ItemIndex := Ord( FDSUFeatures.EditorDblClickAction );
   HotKeyStructureViewSearch.HotKey := FDSUFeatures.StructureViewSearchHotKey;
   chkReplaceOpenFileAtCursor.Checked := FDSUFeatures.ReplaceOpenFileAtCursor;
   chkShowAllFrames.Checked := FDSUFeatures.ShowAllFrames;
@@ -356,7 +356,7 @@ begin
   chkKillDExplore.Checked := FDSUFeatures.KillDExplore;
   chkConfirmDlgOnDebugCtrlF1.Checked := FDSUFeatures.ConfirmDlgOnDebugCtrlF1;
   chkDisableAlphaSortClassCompletion.Checked := FDSUFeatures.DisableAlphaSortClassCompletion;
-  {$IFDEF CPUX64}
+{$IFDEF CPUX64}
   // These features hook IDE internals through code redirects, x86 byte signatures or the
   // IDE virtual-tree imports, none of which work on the 64-bit IDE.  Their settings are
   // kept for the 32-bit IDE that shares the configuration, but they cannot be changed here.
@@ -366,10 +366,10 @@ begin
     chkDisableAlphaSortClassCompletion ) do
   begin
     LControl.Enabled := False;
-    LControl.Hint := 'Not available on the 64-bit IDE';
+    LControl.Hint   := 'Not available on the 64-bit IDE';
     LControl.ShowHint := True;
   end;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure TFrameOptionPageDSUFeatures.SaveData;
@@ -378,17 +378,17 @@ begin
     Exit;
 
   FDSUFeatures.DisablePackageCache := chkDisablePackageCache.Checked;
-  {$IF CompilerVersion = 21.0} // Delphi 2010
+{$IF CompilerVersion = 21.0} // Delphi 2010
   FDSUFeatures.IncBuildNumOnBuildOnly := chkIncBuildNumOnBuildOnly.Checked;
-  {$IFEND}
+{$IFEND}
 
-  {$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
   FDSUFeatures.DisableSourceFormatterHotkey := chkDisableSourceFormatterHotkey.Checked;
-  {$ELSE}
+{$ELSE}
   FDSUFeatures.DisableCodeFolding := chkDisableCodeFolding.Checked;
-  {$IFEND}
+{$IFEND}
   FDSUFeatures.ShowFileProjectInPrjMgr := chkShowFileProjectInPrjMgr.Checked;
-  FDSUFeatures.EditorDblClickAction := TEditorDblClickAction(cbxEditorTabDblClickAction.ItemIndex);
+  FDSUFeatures.EditorDblClickAction := TEditorDblClickAction( cbxEditorTabDblClickAction.ItemIndex );
   FDSUFeatures.StructureViewSearchHotKey := HotKeyStructureViewSearch.HotKey;
   FDSUFeatures.ReplaceOpenFileAtCursor := chkReplaceOpenFileAtCursor.Checked;
   FDSUFeatures.ShowAllFrames := chkShowAllFrames.Checked;
@@ -410,37 +410,37 @@ end;
 { TDSUFeaturesConfig }
 
 type
-  TOpenControl = class(TControl);
+  TOpenControl = class( TControl );
 
-procedure OrgLoadRuntimeDesktop(Instance: TObject);
-  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
+procedure OrgLoadRuntimeDesktop( Instance: TObject );
+  external coreide_bpl name '@Desktop@TDesktopStates@LoadRuntimeDesktop$qqrv'{$IFDEF WIN64} delayed{$ENDIF};
 
 var
   HookDesktopLoadRuntimeDesktop: TRedirectCode;
 
 procedure UndoEditorZoom;
 var
-  I, Index: Integer;
-  EditWindow: TCustomForm;
-  EditorDockPanel: TPanel;
-  FoundVisible: Boolean;
+  I, Index          : Integer;
+  EditWindow        : TCustomForm;
+  EditorDockPanel   : TPanel;
+  FoundVisible      : Boolean;
 begin
-  EditWindow := FindForm('EditWindow_0', 'TEditWindow');
+  EditWindow        := FindForm( 'EditWindow_0', 'TEditWindow' );
   if EditWindow <> nil then
   begin
     { When the IDE switches to the Debug Desktop and then back, the
       zoomed editor can't be restored anymore. The following code
       restores the zoomed editor before the IDE switches to the Debug
       Desktop. }
-    FoundVisible := False;
+    FoundVisible    := False;
     for I := 0 to EditWindow.ControlCount - 1 do
     begin
-      if EditWindow.Controls[I].ClassName = 'TEditorDockPanel' then
+      if EditWindow.Controls[ I ].ClassName = 'TEditorDockPanel' then
       begin
-        EditorDockPanel := TPanel(EditWindow.Controls[I]);
+        EditorDockPanel := TPanel( EditWindow.Controls[ I ] );
         for Index := 0 to EditorDockPanel.DockClientCount - 1 do
         begin
-          if EditorDockPanel.DockClients[Index].Visible then
+          if EditorDockPanel.DockClients[ Index ].Visible then
           begin
             FoundVisible := True;
             Break;
@@ -462,17 +462,16 @@ begin
   end;
 end;
 
-procedure DesktopLoadRuntimeDesktop(Instance: TObject);
+procedure DesktopLoadRuntimeDesktop( Instance: TObject );
 begin
   UndoEditorZoom;
-  CodeRestore(HookDesktopLoadRuntimeDesktop);
+  CodeRestore( HookDesktopLoadRuntimeDesktop );
   try
-    OrgLoadRuntimeDesktop(Instance);
+    OrgLoadRuntimeDesktop( Instance );
   finally
-    CodeRedirect(@OrgLoadRuntimeDesktop, @DesktopLoadRuntimeDesktop, HookDesktopLoadRuntimeDesktop);
+    CodeRedirect( @OrgLoadRuntimeDesktop, @DesktopLoadRuntimeDesktop, HookDesktopLoadRuntimeDesktop );
   end;
 end;
-
 
 {
 coreide140.@Editorform@TEditWindow@TabControlDblClick$qqrp14System@TObject:
@@ -492,64 +491,64 @@ type
   TTabControlDblClickRec = packed record
     PushEbp: Byte;
     MovEbpEsp: Word;
-    AddEsp_10: array[0..2] of Byte;
+    AddEsp_10: array[ 0..2 ] of Byte;
     PushEbx: Byte;
     PushEsi: Byte;
     PushEdi: Byte;
-    MovMemEax: array[0..2] of Byte;
-    MovEaxMem: array[0..2] of Byte;
+    MovMemEax: array[ 0..2 ] of Byte;
+    MovEaxMem: array[ 0..2 ] of Byte;
     CmpMem0: packed record
-               CmpEax: Word;
-               Offset: Integer;
-               Zero: Byte;
-             end;
+      CmpEax: Word;
+      Offset: Integer;
+      Zero: Byte;
+    end;
   end;
 
 procedure TDSUFeaturesConfig.UpdateEditorDblClickAction;
 const
-  ZoomModes: array[TEditorDblClickAction] of Byte = (0, 2, 3);
+  ZoomModes         : array[ TEditorDblClickAction ] of Byte = ( 0, 2, 3 );
 var
-  {$IFNDEF CPUX64}
-  LibHandle: THandle;
-  DblClick: PTabControlDblClickRec;
-  {$ENDIF}
-  EditWindow: TCustomForm;
+{$IFNDEF CPUX64}
+  LibHandle         : THandle;
+  DblClick          : PTabControlDblClickRec;
+{$ENDIF}
+  EditWindow        : TCustomForm;
 begin
-  {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
   // The zoom-mode field offset is discovered by matching a 32-bit x86 prologue
   // signature in coreide. On Win64 those opcodes do not exist, so the scan is
   // skipped and the feature stays inert (FZoomModeOffset remains 0).
   if FZoomModeOffset = 0 then
   begin
-    LibHandle := GetModuleHandle(coreide_bpl);
+    LibHandle       := GetModuleHandle( coreide_bpl );
     if LibHandle <> 0 then
     begin
-      DblClick := DbgStrictGetProcAddress(LibHandle, '@Editorform@TEditWindow@TabControlDblClick$qqrp14System@TObject');
+      DblClick      := DbgStrictGetProcAddress( LibHandle, '@Editorform@TEditWindow@TabControlDblClick$qqrp14System@TObject' );
       if DblClick <> nil then
       begin
-        if (DblClick.PushEbp = $55) and
-           (DblClick.MovEbpEsp = $EC8B) and
-           (DblClick.AddEsp_10[0] = $83) and (DblClick.AddEsp_10[1] = $C4) and (DblClick.AddEsp_10[2] = $F0) and
-           (DblClick.PushEbx = $53) and
-           (DblClick.PushEsi = $56) and
-           (DblClick.PushEdi = $57) and
-           (DblClick.MovMemEax[0] = $89) and (DblClick.MovMemEax[1] = $45) and (DblClick.MovMemEax[2] = $FC) and
-           (DblClick.MovEaxMem[0] = $8B) and (DblClick.MovEaxMem[1] = $45) and (DblClick.MovEaxMem[2] = $FC) and
-           (DblClick.CmpMem0.CmpEax = $B880) and (DblClick.CmpMem0.Zero = $00) then
+        if ( DblClick.PushEbp = $55 ) and
+          ( DblClick.MovEbpEsp = $EC8B ) and
+          ( DblClick.AddEsp_10[ 0 ] = $83 ) and ( DblClick.AddEsp_10[ 1 ] = $C4 ) and ( DblClick.AddEsp_10[ 2 ] = $F0 ) and
+          ( DblClick.PushEbx = $53 ) and
+          ( DblClick.PushEsi = $56 ) and
+          ( DblClick.PushEdi = $57 ) and
+          ( DblClick.MovMemEax[ 0 ] = $89 ) and ( DblClick.MovMemEax[ 1 ] = $45 ) and ( DblClick.MovMemEax[ 2 ] = $FC ) and
+          ( DblClick.MovEaxMem[ 0 ] = $8B ) and ( DblClick.MovEaxMem[ 1 ] = $45 ) and ( DblClick.MovEaxMem[ 2 ] = $FC ) and
+          ( DblClick.CmpMem0.CmpEax = $B880 ) and ( DblClick.CmpMem0.Zero = $00 ) then
         begin
           FZoomModeOffset := DblClick.CmpMem0.Offset;
         end;
       end;
     end;
   end;
-  {$ENDIF}
+{$ENDIF}
 
   { Only for the main editor window }
   if FZoomModeOffset <> 0 then
   begin
-    EditWindow := FindForm('EditWindow_0', 'TEditWindow');
+    EditWindow      := FindForm( 'EditWindow_0', 'TEditWindow' );
     if EditWindow <> nil then
-      PByte(PByte(EditWindow) + FZoomModeOffset)^ := ZoomModes[FEditorDblClickAction];
+      PByte( PByte( EditWindow ) + FZoomModeOffset )^ := ZoomModes[ FEditorDblClickAction ];
   end;
 end;
 
@@ -587,78 +586,78 @@ E8C2FBFFFF       call $05a1e078
 
 const
   PascalProjectUpdaterBytesIdx = 7;
-  PascalProjectUpdaterBytes: array[0..12] of SmallInt = (
-    $80, $3F, $00,           // cmp byte ptr [edi],$00
-    $74, $0C,                // jz +$0c
-    $80, $EB, -1,            // sub bl,$02   => sub bl,1
-    -1, $07,                 // jnb +$07     => jnz +$07
-    $8B, $C6,                // mov eax,esi
-    $E8                      // call
-  );
+  PascalProjectUpdaterBytes: array[ 0..12 ] of SmallInt = (
+    $80, $3F, $00, // cmp byte ptr [edi],$00
+    $74, $0C, // jz +$0c
+    $80, $EB, -1, // sub bl,$02   => sub bl,1
+    -1, $07, // jnb +$07     => jnz +$07
+    $8B, $C6, // mov eax,esi
+    $E8 // call
+    );
 
   PascalPackageCodeUpdaterBytesIdx = 7;
-  PascalPackageCodeUpdaterBytes: array[0..18] of SmallInt = (
-    $80, $3E, $00,           // cmp byte ptr [esi],$00
-    $74, $0C,                // jz $+0c
-    $80, $EB, -1,            // sub bl,$02   => sub bl,$01
-    -1, $07,                 // jnb +$07     => jnz $+07
-    $8B, $C7,                // mov eax,edi
-    $E8, -1, -1, -1, -1,     // call
-    $33, $C0                 // xor eax,eax
-  );
+  PascalPackageCodeUpdaterBytes: array[ 0..18 ] of SmallInt = (
+    $80, $3E, $00, // cmp byte ptr [esi],$00
+    $74, $0C, // jz $+0c
+    $80, $EB, -1, // sub bl,$02   => sub bl,$01
+    -1, $07, // jnb +$07     => jnz $+07
+    $8B, $C7, // mov eax,edi
+    $E8, -1, -1, -1, -1, // call
+    $33, $C0 // xor eax,eax
+    );
 
   CppProjectUpdaterBytesIdx = 12;
-  CppProjectUpdaterBytes: array[0..18] of SmallInt = (
-    $8B, $45, $F3,           // mov eax,[ebp-$0d]
-    $80, $38, $00,           // cmp byte ptr [eax],$00
-    $74, $0F,                // jz +$0f
-    $8A, $45, $FB,           // mov al,[ebp-$05]
-    $2C, -1,                 // sub al,$02    => sub al,$01
-    -1, $08,                 // jnb +$08      => jnz +$08
-    $8B, $45, $FC,           // mov eax,[ebp-$04]
-    $E8                      // call
-  );
+  CppProjectUpdaterBytes: array[ 0..18 ] of SmallInt = (
+    $8B, $45, $F3, // mov eax,[ebp-$0d]
+    $80, $38, $00, // cmp byte ptr [eax],$00
+    $74, $0F, // jz +$0f
+    $8A, $45, $FB, // mov al,[ebp-$05]
+    $2C, -1, // sub al,$02    => sub al,$01
+    -1, $08, // jnb +$08      => jnz +$08
+    $8B, $45, $FC, // mov eax,[ebp-$04]
+    $E8 // call
+    );
 
   CppPackageProjectUpdaterBytesIdx = 12;
-  CppPackageProjectUpdaterBytes: array[0..18] of SmallInt = (
-    $8B, $45, $F3,           // mov eax,[ebp-$0d]
-    $80, $38, $00,           // cmp byte ptr [eax],$00
-    $74, $0F,                // jz +$0f
-    $8A, $45, $FB,           // mov al,[ebp-$05]
-    $2C, -1,                 // sub al,$02    => sub al,$01
-    -1, $08,                 // jnb +$08      => jnz +$08
-    $8B, $45, $FC,           // mov eax,[ebp-$04]
-    $E8                      // call
-  );
+  CppPackageProjectUpdaterBytes: array[ 0..18 ] of SmallInt = (
+    $8B, $45, $F3, // mov eax,[ebp-$0d]
+    $80, $38, $00, // cmp byte ptr [eax],$00
+    $74, $0F, // jz +$0f
+    $8A, $45, $FB, // mov al,[ebp-$05]
+    $2C, -1, // sub al,$02    => sub al,$01
+    -1, $08, // jnb +$08      => jnz +$08
+    $8B, $45, $FC, // mov eax,[ebp-$04]
+    $E8 // call
+    );
 
-procedure TDSUFeaturesConfig.SetIncBuildNumOnBuildOnly(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetIncBuildNumOnBuildOnly( const Value: Boolean );
 
-  procedure Patch(ModuleName: PChar; ProcName: PAnsiChar; EnablePatch: Boolean;
-    const Bytes: array of SmallInt; PatchIndex: Integer);
+  procedure Patch( ModuleName: PChar; ProcName: PAnsiChar; EnablePatch: Boolean;
+    const Bytes: array of SmallInt; PatchIndex: Integer );
   type
     PPatchArray = ^TPatchArray;
-    TPatchArray = array[0..1] of Byte;
+    TPatchArray = array[ 0..1 ] of Byte;
   const
-    EnableValue: TPatchArray = ($01, $75);
-    DisableValue: TPatchArray = ($02, $73);
+    EnableValue     : TPatchArray = ( $01, $75 );
+    DisableValue    : TPatchArray = ( $02, $73 );
   var
-    Value: PPatchArray;
-    Proc: Pointer;
-    P: PByte;
-    n: SIZE_T;
+    Value           : PPatchArray;
+    Proc            : Pointer;
+    P               : PByte;
+    n               : SIZE_T;
   begin
     if EnablePatch then
-      Value := @EnableValue
+      Value         := @EnableValue
     else
-      Value := @Disablevalue;
+      Value         := @Disablevalue;
 
-    Proc := DbgStrictGetProcAddress(GetModuleHandle(ModuleName), ProcName);
+    Proc            := DbgStrictGetProcAddress( GetModuleHandle( ModuleName ), ProcName );
     if Proc <> nil then
     begin
       // Pass the pointer itself: a Cardinal cast truncates the address on Win64.
-      P := FindMethodPtr( Proc, Bytes, 256 );
+      P             := FindMethodPtr( Proc, Bytes, 256 );
       if P <> nil then
-        WriteProcessMemory(GetCurrentProcess, @P[PatchIndex], Value, SizeOf(TPatchArray), n);
+        WriteProcessMemory( GetCurrentProcess, @P[ PatchIndex ], Value, SizeOf( TPatchArray ), n );
 
       {if P = nil then
       asm
@@ -672,17 +671,17 @@ begin
   begin
     FIncBuildNumOnBuildOnly := Value;
 
-    Patch(delphicoreide_bpl, '@Pasmgr@TPascalPackageCodeUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
-      FIncBuildNumOnBuildOnly, PascalPackageCodeUpdaterBytes, PascalPackageCodeUpdaterBytesIdx);
-    Patch(delphicoreide_bpl, '@Pasmgr@TPascalProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
-      FIncBuildNumOnBuildOnly, PascalProjectUpdaterBytes, PascalProjectUpdaterBytesIdx);
+    Patch( delphicoreide_bpl, '@Pasmgr@TPascalPackageCodeUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
+      FIncBuildNumOnBuildOnly, PascalPackageCodeUpdaterBytes, PascalPackageCodeUpdaterBytesIdx );
+    Patch( delphicoreide_bpl, '@Pasmgr@TPascalProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
+      FIncBuildNumOnBuildOnly, PascalProjectUpdaterBytes, PascalProjectUpdaterBytesIdx );
 
-    if GetModuleHandle(bcbide_bpl) <> 0 then
+    if GetModuleHandle( bcbide_bpl ) <> 0 then
     begin
-      Patch(bcbide_bpl, '@Cppmgr@TCppProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
-        FIncBuildNumOnBuildOnly, CppProjectUpdaterBytes, CppProjectUpdaterBytesIdx);
-      Patch(bcbide_bpl, '@Cppmgr@TCppPackageProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
-        FIncBuildNumOnBuildOnly, CppPackageProjectUpdaterBytes, CppPackageProjectUpdaterBytesIdx);
+      Patch( bcbide_bpl, '@Cppmgr@TCppProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
+        FIncBuildNumOnBuildOnly, CppProjectUpdaterBytes, CppProjectUpdaterBytesIdx );
+      Patch( bcbide_bpl, '@Cppmgr@TCppPackageProjectUpdater@AfterCompile$qqr21Compintf@TCompileModeroo',
+        FIncBuildNumOnBuildOnly, CppPackageProjectUpdaterBytes, CppPackageProjectUpdaterBytesIdx );
     end;
   end;
 end;
@@ -692,18 +691,18 @@ constructor TDSUFeaturesConfig.Create;
 begin
   if BorlandIDEServices <> nil then
   begin
-    GlobalBaseRegKey := (BorlandIDEServices as IOTAServices).GetBaseRegistryKey + '\Globals';
-    if GlobalBaseRegKey[1] = '\' then
-      GlobalBaseRegKey := Copy(GlobalBaseRegKey, 2, MaxInt);
+    GlobalBaseRegKey := ( BorlandIDEServices as IOTAServices ).GetBaseRegistryKey + '\Globals';
+    if GlobalBaseRegKey[ 1 ] = '\' then
+      GlobalBaseRegKey := Copy( GlobalBaseRegKey, 2, MaxInt );
   end;
-  FTimerStructureView := TTimer.Create(nil);
+  FTimerStructureView := TTimer.Create( nil );
   FTimerStructureView.Interval := 800;
   FTimerStructureView.OnTimer := StructureViewTimer;
   // The background-parsing probe cannot read the parser thread on the 64-bit IDE
   // (IsBackgroundParsing is always False there), so the timer would do nothing useful.
-  FTimerStructureView.Enabled := {$IFDEF CPUX64} False {$ELSE} True {$ENDIF};
+  FTimerStructureView.Enabled := {$IFDEF CPUX64}False{$ELSE}True{$ENDIF};
 
-  inherited Create(AppDataDirectory + '\DSUFeatures.xml', 'DSUFeatures');
+  inherited Create( AppDataDirectory + '\DSUFeatures.xml', 'DSUFeatures' );
 end;
 
 procedure TDSUFeaturesConfig.RemoveIdeHooks;
@@ -711,7 +710,7 @@ begin
   // The property setters restore the redirects they installed.  The fields change, but
   // nothing is saved after this point, so the persisted settings are unaffected.
   ReplaceOpenFileAtCursor := False;
-  ShowAllFrames := False;
+  ShowAllFrames     := False;
   DontBreakOnSpawnedProcesses := False;
   ConfirmDlgOnDebugCtrlF1 := False;
   DisableAlphaSortClassCompletion := False;
@@ -721,32 +720,32 @@ begin
   if ( FEditorDblClickAction <> ecaNone ) then
     CodeRestore( HookDesktopLoadRuntimeDesktop );
 
-  {$IFNDEF CPUX64}
+{$IFNDEF CPUX64}
   // Hand the project-manager tree its own OnGetText back, but only while that same tree
   // still exists: at IDE shutdown it may already have been destroyed.
   if ( Assigned( FPrjMgrTree ) ) then
   begin
-    var LForm := FindForm( 'ProjectManagerForm', '' );
+    var LForm       := FindForm( 'ProjectManagerForm', '' );
     if ( Assigned( LForm ) ) and ( LForm.FindComponent( 'ProjectTree2' ) = FPrjMgrTree.Tree ) then
       FPrjMgrTree.OnGetText := FOrgPMGetTextEvent;
     FreeAndNil( FPrjMgrTree );
   end;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 destructor TDSUFeaturesConfig.Destroy;
 begin
   RemoveIdeHooks;
-  {$IF CompilerVersion < 21.0} // Delphi 2009
-  UnhookFunction(DisabledGetRegionsHook);
-  CodeRestore(ProcessAddCommandHook);
-  CodeRestore(Package_AddProjectModuleHook);
-  {$IFEND}
+{$IF CompilerVersion < 21.0} // Delphi 2009
+  UnhookFunction( DisabledGetRegionsHook );
+  CodeRestore( ProcessAddCommandHook );
+  CodeRestore( Package_AddProjectModuleHook );
+{$IFEND}
   FTimerStructureView.Free;
-  {$IF CompilerVersion <= 28.0} // XE7-, XE8 replaced DExplorer with *.chm files
+{$IF CompilerVersion <= 28.0} // XE7-, XE8 replaced DExplorer with *.chm files
   if KillDExplore then
     KillAllDExplore;
-  {$IFEND}
+{$IFEND}
   inherited Destroy;
 end;
 
@@ -756,17 +755,17 @@ begin
   ShowFileProjectInPrjMgr := True;
   EditorDblClickAction := ecaZoom;
 
-  {$IF CompilerVersion = 21.0} // Delphi 2010
+{$IF CompilerVersion = 21.0} // Delphi 2010
   IncBuildNumOnBuildOnly := True;
-  {$IFEND}
+{$IFEND}
 
-  {$IF CompilerVersion >= 21.0} // Delphi 2010+
-  {$ELSE}
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
+{$ELSE}
   FDisableCodeFolding := False;
   ReplacePackageAddContain := True;
-  {$IFEND}
+{$IFEND}
 
-  FKillDExplore := True;
+  FKillDExplore     := True;
   ConfirmDlgOnDebugCtrlF1 := True;
 
   LoadFromRegistry;
@@ -780,88 +779,88 @@ end;
 
 function TDSUFeaturesConfig.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Extended IDE Settings', TFrameOptionPageDSUFeatures, Self);
+  Result            := TTreePage.Create( 'Extended IDE Settings', TFrameOptionPageDSUFeatures, Self );
 end;
 
 procedure TDSUFeaturesConfig.LoadFromRegistry;
 begin
   if GlobalBaseRegKey <> '' then
   begin
-    FDisablePackageCache := RegReadBoolDef(HKEY_CURRENT_USER, GlobalBaseRegKey, 'DDevExDisablePackageCache', False);
+    FDisablePackageCache := RegReadBoolDef( HKEY_CURRENT_USER, GlobalBaseRegKey, 'DDevExDisablePackageCache', False );
     //FDisableEditorClearType := RegReadBoolDef(HKEY_CURRENT_USER, GlobalBaseRegKey, 'DDevExDisableEditorClearType', False);
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetRegValue(var Value: Boolean; NewValue: Boolean; const ValueName: string);
+procedure TDSUFeaturesConfig.SetRegValue( var Value: Boolean; NewValue: Boolean; const ValueName: string );
 begin
   if NewValue <> Value then
   begin
-    Value := NewValue;
-    if not Loading and (GlobalBaseRegKey <> '') then
+    Value           := NewValue;
+    if not Loading and ( GlobalBaseRegKey <> '' ) then
     begin
       if Value then
-        RegWriteString(HKEY_CURRENT_USER, GlobalBaseRegKey, ValueName, '1')
+        RegWriteString( HKEY_CURRENT_USER, GlobalBaseRegKey, ValueName, '1' )
       else
-        RegDeleteEntry(HKEY_CURRENT_USER, GlobalBaseRegKey, ValueName);
+        RegDeleteEntry( HKEY_CURRENT_USER, GlobalBaseRegKey, ValueName );
     end;
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetDisablePackageCache(Value: Boolean);
+procedure TDSUFeaturesConfig.SetDisablePackageCache( Value: Boolean );
 begin
-  SetRegValue(FDisablePackageCache, Value, 'DDevExDisablePackageCache');
+  SetRegValue( FDisablePackageCache, Value, 'DDevExDisablePackageCache' );
 end;
-
 
 var
   TProcess_stopOnFirstAddrHook: TRedirectCode;
 
 const
-  {$IF CompilerVersion >= 28.0} // XE7+
-  _IDbkThread_ = '41System@%DelphiInterface$14Dbk@IDbkThread%'; // XE7+
-  {$ELSE}
-  _IDbkThread_ = '42System@%DelphiInterface$t14Dbk@IDbkThread%'; // 2007-XE6
-  {$IFEND}
+{$IF CompilerVersion >= 28.0} // XE7+
+  _IDbkThread_      = '41System@%DelphiInterface$14Dbk@IDbkThread%'; // XE7+
+{$ELSE}
+  _IDbkThread_      = '42System@%DelphiInterface$t14Dbk@IDbkThread%'; // 2007-XE6
+{$IFEND}
 
-function TProcess_stopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
-  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui' {$IFDEF WIN64} delayed {$ENDIF};
+function TProcess_stopOnFirstAddr( Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord ): HRESULT; stdcall;
+  external dbkdebugide_bpl name '@Debug@TProcess@stopOnFirstAddr$qqs' + _xp_ + '17Dbk@DbkProcAddr_tx' + _IDbkThread_ + 'rui'{$IFDEF WIN64} delayed{$ENDIF};
 
-function DbgStopOnFirstAddr(Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord): HRESULT; stdcall;
+function DbgStopOnFirstAddr( Process: TObject; Addr: Pointer; const Intf: IInterface; var ShouldStop: LongWord ): HRESULT; stdcall;
 begin
-  if (BorlandIDEServices as IOTADebuggerServices).ProcessCount <= 1 then
-    ShouldStop := 1
+  if ( BorlandIDEServices as IOTADebuggerServices ).ProcessCount <= 1 then
+    ShouldStop      := 1
   else
-    ShouldStop := 0;
-  Result := S_OK;
+    ShouldStop      := 0;
+  Result            := S_OK;
 end;
 
-procedure TDSUFeaturesConfig.SetDontBreakOnSpawnedProcesses(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetDontBreakOnSpawnedProcesses( const Value: Boolean );
 begin
   if Value <> FDontBreakOnSpawnedProcesses then
   begin
     if FDontBreakOnSpawnedProcesses then
-      CodeRestore(TProcess_stopOnFirstAddrHook);
+      CodeRestore( TProcess_stopOnFirstAddrHook );
     FDontBreakOnSpawnedProcesses := Value;
     if FDontBreakOnSpawnedProcesses then
-      CodeRedirect(@TProcess_stopOnFirstAddr, @DbgStopOnFirstAddr, TProcess_stopOnFirstAddrHook);
+      CodeRedirect( @TProcess_stopOnFirstAddr, @DbgStopOnFirstAddr, TProcess_stopOnFirstAddrHook );
   end;
 end;
 
 {$IF CompilerVersion >= 21.0} // Delphi 2010+
-procedure TDSUFeaturesConfig.SetDisableSourceFormatterHotkey(Value: Boolean);
+
+procedure TDSUFeaturesConfig.SetDisableSourceFormatterHotkey( Value: Boolean );
 var
-  TogetherCommands: TComponent;
-  actnFormatSource: TAction;
-  MenuItem: TMenuItem;
+  TogetherCommands  : TComponent;
+  actnFormatSource  : TAction;
+  MenuItem          : TMenuItem;
 begin
   if Value <> FDisableSourceFormatterHotkey then
   begin
     FDisableSourceFormatterHotkey := Value;
 
-    TogetherCommands := Application.FindComponent('TogetherCommands');
+    TogetherCommands := Application.FindComponent( 'TogetherCommands' );
     if TogetherCommands <> nil then
     begin
-      actnFormatSource := TAction(TogetherCommands.FindComponent('actnFormatSource'));
+      actnFormatSource := TAction( TogetherCommands.FindComponent( 'actnFormatSource' ) );
       if actnFormatSource <> nil then
       begin
         if FFormatSourceOrgShortCut = 0 then
@@ -876,9 +875,9 @@ begin
         // form is fully created; guard the dereference.
         if Application.MainForm <> nil then
         begin
-          MenuItem := TMenuItem(Application.MainForm.FindComponent('mnuFormatSource'));
-          if (MenuItem <> nil) and (MenuItem.Action <> nil) then
-            TAction(MenuItem.Action).ShortCut := actnFormatSource.ShortCut;
+          MenuItem  := TMenuItem( Application.MainForm.FindComponent( 'mnuFormatSource' ) );
+          if ( MenuItem <> nil ) and ( MenuItem.Action <> nil ) then
+            TAction( MenuItem.Action ).ShortCut := actnFormatSource.ShortCut;
         end;
       end;
     end;
@@ -887,88 +886,89 @@ end;
 {$IFEND}
 
 {$IF CompilerVersion < 21.0} // Delphi 2009
-function DisabledGetRegions(Instance: TObject): TOTARegions;
+
+function DisabledGetRegions( Instance: TObject ): TOTARegions;
 begin
-  Result := nil;
+  Result            := nil;
 end;
 
-procedure TDSUFeaturesConfig.SetDisableCodeFolding(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetDisableCodeFolding( const Value: Boolean );
 { In Delphi 2009 Code Folding is done in the main thread and it is very
   slow (much improved in Delphi 2010). }
 const
-  SGetRegions = '@Pasmgr@TUnitManager@GetRegions$qqrv';
+  SGetRegions       = '@Pasmgr@TUnitManager@GetRegions$qqrv';
 begin
   if Value <> FDisableCodeFolding then
   begin
     FDisableCodeFolding := Value;
     if FDisableCodeFolding then
-      HookFunction(delphicoreide_bpl, SGetRegions, @DisabledGetRegions, DisabledGetRegionsHook)
+      HookFunction( delphicoreide_bpl, SGetRegions, @DisabledGetRegions, DisabledGetRegionsHook )
     else
-      UnhookFunction(DisabledGetRegionsHook);
+      UnhookFunction( DisabledGetRegionsHook );
   end;
 end;
 
-procedure HookedProcessAddCommand(Instance: TObject; Command: Integer);
+procedure HookedProcessAddCommand( Instance: TObject; Command: Integer );
 begin
-  CodeRestore(ProcessAddCommandHook);
+  CodeRestore( ProcessAddCommandHook );
   try
     if Command = 4 then
-      TStdProjectContainer_AddToProject(Instance)
+      TStdProjectContainer_AddToProject( Instance )
     else
-      TStdPackageProjectContainer_ProcessAddCommand(Instance, Command);
+      TStdPackageProjectContainer_ProcessAddCommand( Instance, Command );
   finally
-    CodeRedirect(@TStdPackageProjectContainer_ProcessAddCommand, @HookedProcessAddCommand, ProcessAddCommandHook);
+    CodeRedirect( @TStdPackageProjectContainer_ProcessAddCommand, @HookedProcessAddCommand, ProcessAddCommandHook );
   end;
 end;
 
-procedure HookedPackage_AddProjectModule(Instance: TObject);
+procedure HookedPackage_AddProjectModule( Instance: TObject );
 begin
-  TPascalProjectUpdater_AddProjectModule(Instance);
+  TPascalProjectUpdater_AddProjectModule( Instance );
 end;
 
-procedure TDSUFeaturesConfig.SetReplacePackageAddContain(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetReplacePackageAddContain( const Value: Boolean );
 const
   sAddProjectModule = '@Pasmgr@TPascalProjectUpdater@AddProjectModule$qqrv';
   sPackage_AddProjectModule = '@Pasmgr@TPascalPackageCodeUpdater@AddProjectModule$qqrv';
 
   sProcessAddCommand = '@Pkgcontainers@TStdPackageProjectContainer@ProcessAddCommand$qqrx27Containerintf@TLocalCommand';
-  sAddToProject = '@Containers@TStdProjectContainer@AddToProject$qqrv';
+  sAddToProject     = '@Containers@TStdProjectContainer@AddToProject$qqrv';
 var
-  Lib: THandle;
+  Lib               : THandle;
 begin
   if Value <> FReplacePackageAddContain then
   begin
     FReplacePackageAddContain := Value;
 
-    if not Assigned(TStdPackageProjectContainer_ProcessAddCommand) then
+    if not Assigned( TStdPackageProjectContainer_ProcessAddCommand ) then
     begin
-      Lib := GetModuleHandle(delphicoreide_bpl);
+      Lib           := GetModuleHandle( delphicoreide_bpl );
       if Lib <> 0 then
       begin
-        TStdPackageProjectContainer_ProcessAddCommand := DbgStrictGetProcAddress(Lib, PAnsiChar(sProcessAddCommand));
-        TPascalProjectUpdater_AddProjectModule := DbgStrictGetProcAddress(Lib, PAnsiChar(sAddProjectModule));
-        TPascalPackageCodeUpdater_AddProjectModule := DbgStrictGetProcAddress(Lib, PAnsiChar(sPackage_AddProjectModule));
+        TStdPackageProjectContainer_ProcessAddCommand := DbgStrictGetProcAddress( Lib, PAnsiChar( sProcessAddCommand ) );
+        TPascalProjectUpdater_AddProjectModule := DbgStrictGetProcAddress( Lib, PAnsiChar( sAddProjectModule ) );
+        TPascalPackageCodeUpdater_AddProjectModule := DbgStrictGetProcAddress( Lib, PAnsiChar( sPackage_AddProjectModule ) );
       end;
     end;
-    if not Assigned(TStdProjectContainer_AddToProject) then
+    if not Assigned( TStdProjectContainer_AddToProject ) then
     begin
-      Lib := GetModuleHandle(coreide_bpl);
+      Lib           := GetModuleHandle( coreide_bpl );
       if Lib <> 0 then
-        TStdProjectContainer_AddToProject := DbgStrictGetProcAddress(Lib, PAnsiChar(sAddToProject));
+        TStdProjectContainer_AddToProject := DbgStrictGetProcAddress( Lib, PAnsiChar( sAddToProject ) );
     end;
 
-    if Assigned(TStdPackageProjectContainer_ProcessAddCommand) and Assigned(TStdProjectContainer_AddToProject) and
-       Assigned(TPascalPackageCodeUpdater_AddProjectModule) and Assigned(TPascalProjectUpdater_AddProjectModule) then
+    if Assigned( TStdPackageProjectContainer_ProcessAddCommand ) and Assigned( TStdProjectContainer_AddToProject ) and
+      Assigned( TPascalPackageCodeUpdater_AddProjectModule ) and Assigned( TPascalProjectUpdater_AddProjectModule ) then
     begin
       if FReplacePackageAddContain then
       begin
-        CodeRedirect(@TStdPackageProjectContainer_ProcessAddCommand, @HookedProcessAddCommand, ProcessAddCommandHook);
-        CodeRedirect(@TPascalPackageCodeUpdater_AddProjectModule, @HookedPackage_AddProjectModule, Package_AddProjectModuleHook);
+        CodeRedirect( @TStdPackageProjectContainer_ProcessAddCommand, @HookedProcessAddCommand, ProcessAddCommandHook );
+        CodeRedirect( @TPascalPackageCodeUpdater_AddProjectModule, @HookedPackage_AddProjectModule, Package_AddProjectModuleHook );
       end
       else
       begin
-        CodeRestore(ProcessAddCommandHook);
-        CodeRestore(Package_AddProjectModuleHook);
+        CodeRestore( ProcessAddCommandHook );
+        CodeRestore( Package_AddProjectModuleHook );
       end;
     end;
   end;
@@ -977,89 +977,89 @@ end;
 
 type
   IBorlandIDE = interface
-    ['{94E8CFB7-D95E-11D1-AB02-00C04FB16FB3}']
-    function CreateProjectGroup(const AProjectGroup, AFileSystem: string; Existing: Boolean): Boolean;
-    function OpenFile(const AFileName: string; MustExist, Show: Boolean): TObject;
-    function Compile(CompileMode: {TCompileMode}Integer; Wait: Boolean): Boolean;
-    procedure FileOpenDialog(const AFileName: string);
+    [ '{94E8CFB7-D95E-11D1-AB02-00C04FB16FB3}' ]
+    function CreateProjectGroup( const AProjectGroup, AFileSystem: string; Existing: Boolean ): Boolean;
+    function OpenFile( const AFileName: string; MustExist, Show: Boolean ): TObject;
+    function Compile( CompileMode: {TCompileMode}Integer; Wait: Boolean ): Boolean;
+    procedure FileOpenDialog( const AFileName: string );
     function CloseProjectGroup: Boolean;
     function TerminateDebugging: Boolean;
     {...}
   end;
 
 var
-  OrgCallOpenModuleFile: procedure(const ModuleName, EditorFileName: string);
+  OrgCallOpenModuleFile: procedure( const ModuleName, EditorFileName: string );
 
-procedure OpenModuleFile(const ModuleName, EditorFileName: string);
-  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1' {$IFDEF WIN64} delayed {$ENDIF};
+procedure OpenModuleFile( const ModuleName, EditorFileName: string );
+  external delphicoreide_bpl name '@Commonpasreg@OpenModuleFile$qqrx20System@UnicodeStringt1'{$IFDEF WIN64} delayed{$ENDIF};
 
 {$IF CompilerVersion >= 22.0} // Delphi XE+
-function ExpandRootMacro(const InString: string; const AdditionalVars: TObject = nil): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash' {$IFDEF WIN64} delayed {$ENDIF};
+function ExpandRootMacro( const InString: string; const AdditionalVars: TObject = nil ): string;
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' + _xp_ + '22Codemgr@TNameValueHash'{$IFDEF WIN64} delayed{$ENDIF};
 {$ELSE}
-function ExpandRootMacro(const Name: string): string;
-  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString' {$IFDEF WIN64} delayed {$ENDIF};
+function ExpandRootMacro( const Name: string ): string;
+  external coreide_bpl name '@Uiutils@ExpandRootMacro$qqrx20System@UnicodeString'{$IFDEF WIN64} delayed{$ENDIF};
 {$IFEND}
 
 procedure VarBorlandIDE;
-  external coreide_bpl name '@Ideintf@BorlandIDE' {$IFDEF WIN64} delayed {$ENDIF};
+  external coreide_bpl name '@Ideintf@BorlandIDE'{$IFDEF WIN64} delayed{$ENDIF};
 
-procedure HookedOpenModuleFile(const ModuleName, EditorFileName: string);
+procedure HookedOpenModuleFile( const ModuleName, EditorFileName: string );
 const
-  InvalidNames: array[0..9] of string = (
+  InvalidNames      : array[ 0..9 ] of string = (
     'LPT1', 'LPT2', 'LPT3', 'COM1', 'COM2', 'COM3', 'COM4', 'CON', 'AUX', 'PRN'
-  );
+    );
 
-  cWin32Platform = 'Win32';
-  cWinNX32Platform = 'WinNX32';
-  cOSX32Platform = 'OSX32';
-  cWin64Platform = 'Win64';
-  cLinux32Platform = 'Linux32';
-  cAndroidPlatform = 'Android';
+  cWin32Platform    = 'Win32';
+  cWinNX32Platform  = 'WinNX32';
+  cOSX32Platform    = 'OSX32';
+  cWin64Platform    = 'Win64';
+  cLinux32Platform  = 'Linux32';
+  cAndroidPlatform  = 'Android';
   ciOSSimulatorPlatform = 'iOSSimulator';
   ciOSDevicePlatform = 'iOSDevice';
 
-  function FindEditorFileProject(const FileName: string): IOTAProject;
+  function FindEditorFileProject( const FileName: string ): IOTAProject;
   var
-    ProjectIndex, I: Integer;
-    Group: IOTAProjectGroup;
+    ProjectIndex, I : Integer;
+    Group           : IOTAProjectGroup;
   begin
-    Result := GetActiveProject();
+    Result          := GetActiveProject( );
     if Result <> nil then
-      if Result.FindModuleInfo(FileName) <> nil then
+      if Result.FindModuleInfo( FileName ) <> nil then
         Exit;
 
-    Group := GetActiveProjectGroup();
+    Group           := GetActiveProjectGroup( );
     if Group <> nil then
     begin
       for ProjectIndex := 0 to Group.ProjectCount - 1 do
       begin
-        Result := Group.Projects[ProjectIndex];
-        if AnsiSameText(FileName, Result.FileName) or (Result.FindModuleInfo(FileName) <> nil) then
+        Result      := Group.Projects[ ProjectIndex ];
+        if AnsiSameText( FileName, Result.FileName ) or ( Result.FindModuleInfo( FileName ) <> nil ) then
           Exit;
         for I := 0 to Result.ModuleFileCount - 1 do
-          if AnsiSameText(FileName, Result.ModuleFileEditors[I].FileName) then
+          if AnsiSameText( FileName, Result.ModuleFileEditors[ I ].FileName ) then
             Exit;
       end;
     end;
-    Result := GetActiveProject();
+    Result          := GetActiveProject( );
   end;
 
-  function FindProjectModuleInfo(const Project: IOTAProject; const ModuleFileName: string): IOTAModuleInfo;
+  function FindProjectModuleInfo( const Project: IOTAProject; const ModuleFileName: string ): IOTAModuleInfo;
   var
-    I: Integer;
-    FileName: string;
+    I               : Integer;
+    FileName        : string;
   begin
     for I := 0 to Project.GetModuleCount - 1 do
     begin
-      Result := Project.GetModule(I);
-      FileName := ExtractFileName(Result.FileName);
+      Result        := Project.GetModule( I );
+      FileName      := ExtractFileName( Result.FileName );
       if FileName <> '' then
       begin
-        if AnsiSameText(FileName, ModuleFileName) or
-           AnsiSameText(FileName, ModuleFileName + ExtractFileExt(FileName)) or
-           (AnsiSameText(ChangeFileExt(FileName, '.dfm'), ModuleFileName)
-            and FileExists(ChangeFileExt(Result.FileName, '.dfm'))) then
+        if AnsiSameText( FileName, ModuleFileName ) or
+          AnsiSameText( FileName, ModuleFileName + ExtractFileExt( FileName ) ) or
+          ( AnsiSameText( ChangeFileExt( FileName, '.dfm' ), ModuleFileName )
+          and FileExists( ChangeFileExt( Result.FileName, '.dfm' ) ) ) then
         begin
           Exit;
         end;
@@ -1067,146 +1067,146 @@ const
     end;
     for I := 0 to Project.ModuleFileCount - 1 do
     begin
-      FileName := Project.ModuleFileEditors[I].FileName;
-      if AnsiSameText(FileName, ModuleFileName) or
-         AnsiSameText(FileName, ModuleFileName + ExtractFileExt(FileName)) then
+      FileName      := Project.ModuleFileEditors[ I ].FileName;
+      if AnsiSameText( FileName, ModuleFileName ) or
+        AnsiSameText( FileName, ModuleFileName + ExtractFileExt( FileName ) ) then
         Exit;
     end;
-    Result := nil;
+    Result          := nil;
   end;
 
-  procedure AppendPath(var Path: string; const AppendPath: string);
+  procedure AppendPath( var Path: string; const AppendPath: string );
   begin
     if Path = '' then
-      Path := Trim(AppendPath)
+      Path          := Trim( AppendPath )
     else
-      Path := Path + ';' + Trim(AppendPath);
+      Path          := Path + ';' + Trim( AppendPath );
   end;
 
-  procedure AppendProjectSearchDirs(var SearchPaths: string; const Project: IOTAProject);
+  procedure AppendProjectSearchDirs( var SearchPaths: string; const Project: IOTAProject );
   var
-    OptionConfig: IOTAProjectOptionsConfigurations;
-    BuildConfig: IOTABuildConfiguration;
-    Dirs: TStrings;
-    CurDir: string;
-    I: Integer;
+    OptionConfig    : IOTAProjectOptionsConfigurations;
+    BuildConfig     : IOTABuildConfiguration;
+    Dirs            : TStrings;
+    CurDir          : string;
+    I               : Integer;
   begin
-    AppendPath(SearchPaths, ExtractFileDir(Project.FileName));
+    AppendPath( SearchPaths, ExtractFileDir( Project.FileName ) );
 
-    Dirs := TStringList.Create;
+    Dirs            := TStringList.Create;
     try
-      if Supports(Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig) then
+      if Supports( Project.ProjectOptions, IOTAProjectOptionsConfigurations, OptionConfig ) then
       begin
         BuildConfig := OptionConfig.ActiveConfiguration;
-        if (BuildConfig = nil) and (OptionConfig.ConfigurationCount > 0) then
-          BuildConfig := OptionConfig.Configurations[0];
+        if ( BuildConfig = nil ) and ( OptionConfig.ConfigurationCount > 0 ) then
+          BuildConfig := OptionConfig.Configurations[ 0 ];
 
         if BuildConfig <> nil then
-          BuildConfig.GetValues(DCCStrs.sUnitSearchPath, Dirs);
+          BuildConfig.GetValues( DCCStrs.sUnitSearchPath, Dirs );
       end
       else
-        SplitPaths(Dirs, VarToStrDef(Project.ProjectOptions.Values['UnitDir'], ''));
+        SplitPaths( Dirs, VarToStrDef( Project.ProjectOptions.Values[ 'UnitDir' ], '' ) );
 
-      CurDir := GetCurrentDir;
+      CurDir        := GetCurrentDir;
       try
-        SetCurrentDir(ExtractFileDir(Project.FileName));
+        SetCurrentDir( ExtractFileDir( Project.FileName ) );
         for I := 0 to Dirs.Count - 1 do
-          AppendPath(SearchPaths, ExpandFileName(ExpandRootMacro(Dirs[I])));
+          AppendPath( SearchPaths, ExpandFileName( ExpandRootMacro( Dirs[ I ] ) ) );
       finally
-        SetCurrentDir(CurDir);
+        SetCurrentDir( CurDir );
       end;
     finally
       Dirs.Free;
     end;
   end;
 
-  function FindInSearchPath(const FileName, SearchPath: string; Namespaces: TStrings): string;
+  function FindInSearchPath( const FileName, SearchPath: string; Namespaces: TStrings ): string;
   var
-    I, Count: Integer;
+    I, Count        : Integer;
     Name, Dir, BaseName: string;
   begin
     if Namespaces <> nil then
     begin
-      Count := Namespaces.Count;
-      Dir := ExtractFilePath(FileName);
-      BaseName := '.' + ExtractFileName(FileName);
+      Count         := Namespaces.Count;
+      Dir           := ExtractFilePath( FileName );
+      BaseName      := '.' + ExtractFileName( FileName );
     end
     else
-      Count := 1;
+      Count         := 1;
 
     for I := 0 to Count - 1 do
     begin
-      if (I = 0) and (Namespaces = nil) then
-        Name := FileName
+      if ( I = 0 ) and ( Namespaces = nil ) then
+        Name        := FileName
       else
-        Name := Dir + Namespaces[I] + BaseName;
+        Name        := Dir + Namespaces[ I ] + BaseName;
 
-      Result := FileSearch(Name, SearchPath);
+      Result        := FileSearch( Name, SearchPath );
       if Result <> '' then
         Break;
-      Result := FileSearch(Name + '.pas', SearchPath);
+      Result        := FileSearch( Name + '.pas', SearchPath );
       if Result <> '' then
         Break;
-      Result := FileSearch(Name + '.inc', SearchPath);
+      Result        := FileSearch( Name + '.inc', SearchPath );
       if Result <> '' then
         Break;
-      Result := FileSearch(Name + '.cpp', SearchPath);
+      Result        := FileSearch( Name + '.cpp', SearchPath );
       if Result <> '' then
         Break;
-      Result := FileSearch(Name + '.h', SearchPath);
+      Result        := FileSearch( Name + '.h', SearchPath );
       if Result <> '' then
         Break;
-      Result := FileSearch(Name + '.hpp', SearchPath);
+      Result        := FileSearch( Name + '.hpp', SearchPath );
       if Result <> '' then
         Break;
     end;
   end;
 
 var
-  I, ProjectIndex: Integer;
-  ModuleFileName: string;
-  EditorFileProject: IOTAProject;
-  Group: IOTAProjectGroup;
-  ModuleInfo: IOTAModuleInfo;
-  Module: IOTAModule;
-  EnvOptions: IOTAEnvironmentOptions;
+  I, ProjectIndex   : Integer;
+  ModuleFileName    : string;
+  EditorFileProject : IOTAProject;
+  Group             : IOTAProjectGroup;
+  ModuleInfo        : IOTAModuleInfo;
+  Module            : IOTAModule;
+  EnvOptions        : IOTAEnvironmentOptions;
   SearchPath, IDESearchPath: string;
   CurDir, FoundFileName: string;
-  {$IF CompilerVersion >= 23.0} // Delphi XE2+
-  Namespaces: TStrings;
-  PlatformName: string;
-  FrameworkType: string;
-  Configurations: IOTAProjectOptionsConfigurations;
-  {$ELSE}
-  BorlandIDE: IBorlandIDE;
-  {$IFEND}
-  OptionNames: TOTAOptionNameArray;
-  OptionNameList: TStringList;
+{$IF CompilerVersion >= 23.0} // Delphi XE2+
+  Namespaces        : TStrings;
+  PlatformName      : string;
+  FrameworkType     : string;
+  Configurations    : IOTAProjectOptionsConfigurations;
+{$ELSE}
+  BorlandIDE        : IBorlandIDE;
+{$IFEND}
+  OptionNames       : TOTAOptionNameArray;
+  OptionNameList    : TStringList;
 begin
-  for I := 0 to High(InvalidNames) do
-    if SameText(ChangeFileExt(ModuleName, ''), InvalidNames[I]) then
-      raise Exception.Create('Cannot open device name');
+  for I := 0 to High( InvalidNames ) do
+    if SameText( ChangeFileExt( ModuleName, '' ), InvalidNames[ I ] ) then
+      raise Exception.Create( 'Cannot open device name' );
 
-  EditorFileProject := FindEditorFileProject(EditorFileName);
+  EditorFileProject := FindEditorFileProject( EditorFileName );
 
-  ModuleFileName := ExtractFileName(ModuleName);
+  ModuleFileName    := ExtractFileName( ModuleName );
   if ModuleFileName = ModuleName then // No path in the ModuleName => check the projects
   begin
     // Find the module in the active project
-    ModuleInfo := nil;
+    ModuleInfo      := nil;
     if EditorFileProject <> nil then
-      ModuleInfo := FindProjectModuleInfo(EditorFileProject, ModuleFileName);
+      ModuleInfo    := FindProjectModuleInfo( EditorFileProject, ModuleFileName );
     if ModuleInfo = nil then
     begin
-      Group := GetActiveProjectGroup();
+      Group         := GetActiveProjectGroup( );
       if Group <> nil then
       begin
         // Find the module in the project group
         for ProjectIndex := 0 to Group.ProjectCount - 1 do
         begin
-          if Group.Projects[ProjectIndex] <> EditorFileProject then
+          if Group.Projects[ ProjectIndex ] <> EditorFileProject then
           begin
-            ModuleInfo := FindProjectModuleInfo(Group.Projects[ProjectIndex], ModuleFileName);
+            ModuleInfo := FindProjectModuleInfo( Group.Projects[ ProjectIndex ], ModuleFileName );
             if ModuleInfo <> nil then
               Break;
           end;
@@ -1216,83 +1216,83 @@ begin
 
     if ModuleInfo <> nil then
     begin
-      Module := ModuleInfo.OpenModule;
+      Module        := ModuleInfo.OpenModule;
       if Module <> nil then
       begin
-        Module.ShowFilename(ModuleInfo.FileName);
+        Module.ShowFilename( ModuleInfo.FileName );
         Exit;
       end;
     end;
   end;
 
-  SearchPath := '';
+  SearchPath        := '';
   if EditorFileName <> '' then
-    AppendPath(SearchPath, ExtractFileDir(EditorFileName));
-  AppendPath(SearchPath, GetCurrentDir);
+    AppendPath( SearchPath, ExtractFileDir( EditorFileName ) );
+  AppendPath( SearchPath, GetCurrentDir );
 
   // Try to find the file in the project's search path
   if EditorFileProject <> nil then
-    AppendProjectSearchDirs(SearchPath, EditorFileProject);
+    AppendProjectSearchDirs( SearchPath, EditorFileProject );
   if Group <> nil then
     for ProjectIndex := 0 to Group.ProjectCount - 1 do
-      if Group.Projects[ProjectIndex] <> EditorFileProject then
-        AppendProjectSearchDirs(SearchPath, Group.Projects[ProjectIndex]);
+      if Group.Projects[ ProjectIndex ] <> EditorFileProject then
+        AppendProjectSearchDirs( SearchPath, Group.Projects[ ProjectIndex ] );
 
   // Try to find the file in the global search paths
-  EnvOptions := (BorlandIDEServices as IOTAServices).GetEnvironmentOptions;
-  IDESearchPath := '';
+  EnvOptions        := ( BorlandIDEServices as IOTAServices ).GetEnvironmentOptions;
+  IDESearchPath     := '';
 
   // Don't access EnvOptions that don't exist (in the loaded personalities). The IDE will crash.
-  OptionNames := EnvOptions.GetOptionNames;
-  OptionNameList := TStringList.Create;
+  OptionNames       := EnvOptions.GetOptionNames;
+  OptionNameList    := TStringList.Create;
   try
     OptionNameList.Duplicates := dupIgnore; // OptionNames are duplicated for each Platform but there is no way to access them through EnvOptions
     OptionNameList.Sorted := True;
 
-    for I := 0 to High(OptionNames) do
-      OptionNameList.Add(OptionNames[I].Name);
-    OptionNames := nil; // release memory
+    for I := 0 to High( OptionNames ) do
+      OptionNameList.Add( OptionNames[ I ].Name );
+    OptionNames     := nil; // release memory
 
-    if OptionNameList.IndexOf('LibraryPath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'LibraryPath'));
-    if OptionNameList.IndexOf('BrowsingPath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'BrowsingPath'));
-    if OptionNameList.IndexOf('CppLibraryPath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'CppLibraryPath'));
-    if OptionNameList.IndexOf('CppIncludePath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'CppIncludePath'));
-    if OptionNameList.IndexOf('CppSearchPath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'CppSearchPath'));
-    if OptionNameList.IndexOf('CppBrowsingPath') <> -1 then
-      AppendPath(IDESearchPath, GetProjectEnvOptionPaths(EditorFileProject, 'CppBrowsingPath'));
+    if OptionNameList.IndexOf( 'LibraryPath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'LibraryPath' ) );
+    if OptionNameList.IndexOf( 'BrowsingPath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'BrowsingPath' ) );
+    if OptionNameList.IndexOf( 'CppLibraryPath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'CppLibraryPath' ) );
+    if OptionNameList.IndexOf( 'CppIncludePath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'CppIncludePath' ) );
+    if OptionNameList.IndexOf( 'CppSearchPath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'CppSearchPath' ) );
+    if OptionNameList.IndexOf( 'CppBrowsingPath' ) <> -1 then
+      AppendPath( IDESearchPath, GetProjectEnvOptionPaths( EditorFileProject, 'CppBrowsingPath' ) );
   finally
     OptionNameList.Free;
   end;
-  EnvOptions := nil;
-  IDESearchPath := ExpandRootMacro(IDESearchPath);
+  EnvOptions        := nil;
+  IDESearchPath     := ExpandRootMacro( IDESearchPath );
 
-  FoundFileName := '';
-  AppendPath(SearchPath, IDESearchPath);
-  SearchPath := SplitAndConcatList(SearchPath, ';'); // eliminates duplicates
+  FoundFileName     := '';
+  AppendPath( SearchPath, IDESearchPath );
+  SearchPath        := SplitAndConcatList( SearchPath, ';' ); // eliminates duplicates
 
-  CurDir := GetCurrentDir;
+  CurDir            := GetCurrentDir;
   try
     if EditorFileProject <> nil then
-      SetCurrentDir(ExtractFileDir(EditorFileProject.FileName));
+      SetCurrentDir( ExtractFileDir( EditorFileProject.FileName ) );
 
-    FoundFileName := FindInSearchPath(ModuleName, SearchPath, nil);
-    if (FoundFileName = '') and (ModuleName <> ModuleFileName) then
-      FoundFileName := FindInSearchPath(ModuleFileName, SearchPath, nil);
+    FoundFileName   := FindInSearchPath( ModuleName, SearchPath, nil );
+    if ( FoundFileName = '' ) and ( ModuleName <> ModuleFileName ) then
+      FoundFileName := FindInSearchPath( ModuleFileName, SearchPath, nil );
 
-    {$IF CompilerVersion >= 23.0} // Delphi XE2
+{$IF CompilerVersion >= 23.0} // Delphi XE2
     if FoundFileName = '' then
     begin
-      Namespaces := TStringList.Create;
+      Namespaces    := TStringList.Create;
       try
         if EditorFileProject <> nil then
         begin
-          if Supports(EditorFileProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations) then
-            ExtractStrings([';'], [], PChar(Configurations.ActiveConfiguration.Value[DCCStrs.sNamespace]), Namespaces);
+          if Supports( EditorFileProject.ProjectOptions, IOTAProjectOptionsConfigurations, Configurations ) then
+            ExtractStrings( [ ';' ], [ ], PChar( Configurations.ActiveConfiguration.Value[ DCCStrs.sNamespace ] ), Namespaces );
 
           PlatformName := EditorFileProject.CurrentPlatform;
           FrameworkType := EditorFileProject.FrameworkType;
@@ -1304,75 +1304,75 @@ begin
         end;
 
         // RTL
-        ExtractStrings([';'], [], 'System;Xml;Data;Datasnap;Web;Soap', Namespaces);
+        ExtractStrings( [ ';' ], [ ], 'System;Xml;Data;Datasnap;Web;Soap', Namespaces );
         // Windows
-        if (PlatformName = cWin32Platform) or (PlatformName = cWin64Platform) then
-          ExtractStrings([';'], [], 'Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win', Namespaces);
+        if ( PlatformName = cWin32Platform ) or ( PlatformName = cWin64Platform ) then
+          ExtractStrings( [ ';' ], [ ], 'Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win', Namespaces );
         // Win32
         if PlatformName = cWin32Platform then
-          ExtractStrings([';'], [], 'Bde', Namespaces);
+          ExtractStrings( [ ';' ], [ ], 'Bde', Namespaces );
         // MacOS
-        if (PlatformName = cOSX32Platform) or {(PlatformName = cOSX64Platform) or}
-           (PlatformName = ciOSSimulatorPlatform) or (PlatformName = ciOSDevicePlatform) then
-          ExtractStrings([';'], [], 'System.Mac;Macapi;Posix', Namespaces);
+        if ( PlatformName = cOSX32Platform ) or {(PlatformName = cOSX64Platform) or}
+          ( PlatformName = ciOSSimulatorPlatform ) or ( PlatformName = ciOSDevicePlatform ) then
+          ExtractStrings( [ ';' ], [ ], 'System.Mac;Macapi;Posix', Namespaces );
 
         // Framework
         if FrameworkType = sFrameworkTypeVCL then
-          ExtractStrings([';'], [], 'Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell', Namespaces)
+          ExtractStrings( [ ';' ], [ ], 'Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell', Namespaces )
         else if FrameworkType = sFrameworkTypeFMX then
-          ExtractStrings([';'], [], 'FMX', Namespaces)
+          ExtractStrings( [ ';' ], [ ], 'FMX', Namespaces )
         else if FrameworkType = sFrameworkTypeFMI then
-          ExtractStrings([';'], [], 'FMI', Namespaces); // FreePascal version used in XE2, XE3 dropped it
+          ExtractStrings( [ ';' ], [ ], 'FMI', Namespaces ); // FreePascal version used in XE2, XE3 dropped it
 
         // remove duplicates
         for I := Namespaces.Count - 1 downto 0 do
-          if Namespaces.IndexOf(Namespaces[I]) <> I then
-            Namespaces.Delete(I);
+          if Namespaces.IndexOf( Namespaces[ I ] ) <> I then
+            Namespaces.Delete( I );
 
         if Namespaces.Count > 0 then
         begin
-          FoundFileName := FindInSearchPath(ModuleName, SearchPath, Namespaces);
-          if (FoundFileName = '') and (ModuleName <> ModuleFileName) then
-            FoundFileName := FindInSearchPath(ModuleFileName, SearchPath, Namespaces);
+          FoundFileName := FindInSearchPath( ModuleName, SearchPath, Namespaces );
+          if ( FoundFileName = '' ) and ( ModuleName <> ModuleFileName ) then
+            FoundFileName := FindInSearchPath( ModuleFileName, SearchPath, Namespaces );
         end;
       finally
         Namespaces.Free;
       end;
     end;
-    {$IFEND}
+{$IFEND}
     if FoundFileName <> '' then
     begin
       // IOTAActionServices.OpenFile needs the full file name. Otherwise it would create the backup
       // file in the wrong folder as we change the current directory.
-      FoundFileName := ExpandFileName(FoundFileName);
+      FoundFileName := ExpandFileName( FoundFileName );
     end;
   finally
     if EditorFileProject <> nil then
-      SetCurrentDir(CurDir);
+      SetCurrentDir( CurDir );
   end;
 
   if FoundFileName <> '' then
-    (BorlandIDEServices as IOTAActionServices).OpenFile(FoundFileName)
+    ( BorlandIDEServices as IOTAActionServices ).OpenFile( FoundFileName )
   else
   begin
-    {$IF CompilerVersion >= 23.0} // Delphi XE2+
-    OrgCallOpenModuleFile(ModuleName, EditorFileName);
-    {$ELSE}
-    BorlandIDE := IBorlandIDE(GetActualAddr(@VarBorlandIDE)^);
-    BorlandIDE.FileOpenDialog(ModuleName);
-    {$IFEND}
+{$IF CompilerVersion >= 23.0} // Delphi XE2+
+    OrgCallOpenModuleFile( ModuleName, EditorFileName );
+{$ELSE}
+    BorlandIDE      := IBorlandIDE( GetActualAddr( @VarBorlandIDE )^ );
+    BorlandIDE.FileOpenDialog( ModuleName );
+{$IFEND}
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetReplaceOpenFileAtCursor(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetReplaceOpenFileAtCursor( const Value: Boolean );
 begin
   if Value <> FReplaceOpenFileAtCursor then
   begin
     FReplaceOpenFileAtCursor := Value;
     if FReplaceOpenFileAtCursor then
-      @OrgCallOpenModuleFile := RedirectOrgCall(@OpenModuleFile, @HookedOpenModuleFile)
+      @OrgCallOpenModuleFile := RedirectOrgCall( @OpenModuleFile, @HookedOpenModuleFile )
     else
-      RestoreOrgCall(@OpenModuleFile, @OrgCallOpenModuleFile);
+      RestoreOrgCall( @OpenModuleFile, @OrgCallOpenModuleFile );
   end;
 end;
 
@@ -1380,93 +1380,93 @@ end;
 
 var
   TDelphiProjectModuleHandler_GetFormListHook: TRedirectCode;
-  TDelphiProjectModuleHandler_GetFormList: procedure(Instance: TObject; List: TStrings);
+  TDelphiProjectModuleHandler_GetFormList: procedure( Instance: TObject; List: TStrings );
 
 procedure TPascalProjectUpdaterClass;
-  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@' {$IFDEF WIN64} delayed {$ENDIF};
-procedure TPascalProjectUpdater_GetFormList(Instance: TObject; List: TStrings);
+  external delphicoreide_bpl name '@Pasmgr@TPascalProjectUpdater@'{$IFDEF WIN64} delayed{$ENDIF};
+procedure TPascalProjectUpdater_GetFormList( Instance: TObject; List: TStrings );
   external delphicoreide_bpl name
-    '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings {$IFDEF WIN64} delayed {$ENDIF};
+  '@Pasmgr@TPascalProjectUpdater@GetFormList$qqrp' + System_Classes_TStrings{$IFDEF WIN64} delayed{$ENDIF};
 
-procedure HookedTDelphiProjectModuleHandler_GetFormList(Instance: TObject; List: TStrings);
+procedure HookedTDelphiProjectModuleHandler_GetFormList( Instance: TObject; List: TStrings );
 const
   //IID_Project: TGUID = '{0BB18D53-B8C5-4909-A98A-DFD5D3C64336}';
   IID_ProjectUpdater: TGUID = '{291DE60F-6EB6-4A03-B594-52488D52C5E5}';
 var
-  Group: IOTAProjectGroup;
-  I: Integer;
-  Prj, InstancePrj: IInterface;
-  PrjObj: TObject;
+  Group             : IOTAProjectGroup;
+  I                 : Integer;
+  Prj, InstancePrj  : IInterface;
+  PrjObj            : TObject;
   PascalProjectUpdaterClass: TClass;
 begin
-  CodeRestore(TDelphiProjectModuleHandler_GetFormListHook);
+  CodeRestore( TDelphiProjectModuleHandler_GetFormListHook );
   try
-    TDelphiProjectModuleHandler_GetFormList(Instance, List);
+    TDelphiProjectModuleHandler_GetFormList( Instance, List );
 
-    Group := GetActiveProjectGroup;
-    if (Group <> nil) and Supports(Instance, IID_ProjectUpdater, InstancePrj) then
+    Group           := GetActiveProjectGroup;
+    if ( Group <> nil ) and Supports( Instance, IID_ProjectUpdater, InstancePrj ) then
     begin
-      PascalProjectUpdaterClass := GetActualAddr(@TPascalProjectUpdaterClass);
+      PascalProjectUpdaterClass := GetActualAddr( @TPascalProjectUpdaterClass );
       for I := 0 to Group.ProjectCount - 1 do
       begin
-        if Group.Projects[I].ProjectType = sPackage then
+        if Group.Projects[ I ].ProjectType = sPackage then
         begin
-          if Supports(Group.Projects[I], IID_ProjectUpdater, Prj) and (Prj <> InstancePrj) then
+          if Supports( Group.Projects[ I ], IID_ProjectUpdater, Prj ) and ( Prj <> InstancePrj ) then
           begin
-            PrjObj := DelphiInterfaceToObject(Prj);
-            if PrjObj.InheritsFrom(PascalProjectUpdaterClass) then // protect against new IDE code
-              TPascalProjectUpdater_GetFormList(PrjObj, List);
+            PrjObj  := DelphiInterfaceToObject( Prj );
+            if PrjObj.InheritsFrom( PascalProjectUpdaterClass ) then // protect against new IDE code
+              TPascalProjectUpdater_GetFormList( PrjObj, List );
           end;
         end;
       end;
     end;
   finally
-    CodeRedirect(@TDelphiProjectModuleHandler_GetFormList, @HookedTDelphiProjectModuleHandler_GetFormList, TDelphiProjectModuleHandler_GetFormListHook);
+    CodeRedirect( @TDelphiProjectModuleHandler_GetFormList, @HookedTDelphiProjectModuleHandler_GetFormList, TDelphiProjectModuleHandler_GetFormListHook );
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetShowAllFrames(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetShowAllFrames( const Value: Boolean );
 const
-  sGetFormList = '@Basedelphiproject@TDelphiProjectModuleHandler@GetFormList$qqrp' + System_Classes_TStrings;
+  sGetFormList      = '@Basedelphiproject@TDelphiProjectModuleHandler@GetFormList$qqrp' + System_Classes_TStrings;
 begin
   if Value <> FShowAllFrames then
   begin
-    FShowAllFrames := Value;
-    if not Assigned(TDelphiProjectModuleHandler_GetFormList) then
-      TDelphiProjectModuleHandler_GetFormList := DbgStrictGetProcAddress(GetModuleHandle(delphicoreide_bpl), PAnsiChar(sGetFormList));
+    FShowAllFrames  := Value;
+    if not Assigned( TDelphiProjectModuleHandler_GetFormList ) then
+      TDelphiProjectModuleHandler_GetFormList := DbgStrictGetProcAddress( GetModuleHandle( delphicoreide_bpl ), PAnsiChar( sGetFormList ) );
 
-    if Assigned(TDelphiProjectModuleHandler_GetFormList) then
+    if Assigned( TDelphiProjectModuleHandler_GetFormList ) then
     begin
       if FShowAllFrames then
-        CodeRedirect(@TDelphiProjectModuleHandler_GetFormList, @HookedTDelphiProjectModuleHandler_GetFormList, TDelphiProjectModuleHandler_GetFormListHook)
+        CodeRedirect( @TDelphiProjectModuleHandler_GetFormList, @HookedTDelphiProjectModuleHandler_GetFormList, TDelphiProjectModuleHandler_GetFormListHook )
       else
-        CodeRestore(TDelphiProjectModuleHandler_GetFormListHook);
+        CodeRestore( TDelphiProjectModuleHandler_GetFormListHook );
     end;
   end;
 end;
 
 {----------------------------------------------------------------------------------}
 
-procedure TCustomEditControl_HelpKeyword(Editor: TControl);
-  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv' {$IFDEF WIN64} delayed {$ENDIF};
+procedure TCustomEditControl_HelpKeyword( Editor: TControl );
+  external coreide_bpl name '@Editorcontrol@TCustomEditControl@HelpKeyword$qqrv'{$IFDEF WIN64} delayed{$ENDIF};
 
 var
-  OrgEditorHelpKeyword: procedure(Editor: TControl);
+  OrgEditorHelpKeyword: procedure( Editor: TControl );
 
-procedure EditorHelpKeyword(Editor: TControl);
+procedure EditorHelpKeyword( Editor: TControl );
 var
-  DebuggerServices: IOTADebuggerServices;
+  DebuggerServices  : IOTADebuggerServices;
 begin
-  if Supports(BorlandIDEServices, IOTADebuggerServices, DebuggerServices) and
-     (DebuggerServices.ProcessCount > 0) and (GetKeyState(VK_CONTROL) and $80 <> 0) then
+  if Supports( BorlandIDEServices, IOTADebuggerServices, DebuggerServices ) and
+    ( DebuggerServices.ProcessCount > 0 ) and ( GetKeyState( VK_CONTROL ) and $80 <> 0 ) then
   begin
-    if MessageDlg(sDoYouWantToInvokeTheContextHelp, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+    if MessageDlg( sDoYouWantToInvokeTheContextHelp, mtConfirmation, [ mbYes, mbNo ], 0 ) <> mrYes then
       Exit;
   end;
-  OrgEditorHelpKeyword(Editor);
+  OrgEditorHelpKeyword( Editor );
 end;
 
-procedure TDSUFeaturesConfig.SetConfirmDlgOnDebugCtrlF1(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetConfirmDlgOnDebugCtrlF1( const Value: Boolean );
 begin
   if Value <> FConfirmDlgOnDebugCtrlF1 then
   begin
@@ -1474,24 +1474,24 @@ begin
 
     if FConfirmDlgOnDebugCtrlF1 then
     begin
-      if Assigned(OrgEditorHelpKeyword) then
-        RedirectOrg(@TCustomEditControl_HelpKeyword, @EditorHelpKeyword)
+      if Assigned( OrgEditorHelpKeyword ) then
+        RedirectOrg( @TCustomEditControl_HelpKeyword, @EditorHelpKeyword )
       else
-        @OrgEditorHelpKeyword := RedirectOrgCall(@TCustomEditControl_HelpKeyword, @EditorHelpKeyword);
+        @OrgEditorHelpKeyword := RedirectOrgCall( @TCustomEditControl_HelpKeyword, @EditorHelpKeyword );
     end
     else
-      RestoreOrgCall(@TCustomEditControl_HelpKeyword, @OrgEditorHelpKeyword);
+      RestoreOrgCall( @TCustomEditControl_HelpKeyword, @OrgEditorHelpKeyword );
   end;
 end;
 
 {----------------------------------------------------------------------------------}
 
-procedure TDSUFeaturesConfig.SetDisableAlphaSortClassCompletion(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetDisableAlphaSortClassCompletion( const Value: Boolean );
 begin
   if Value <> FDisableAlphaSortClassCompletion then
   begin
     FDisableAlphaSortClassCompletion := Value;
-    InstallDisableAlphaSortClassCompletion(FDisableAlphaSortClassCompletion);
+    InstallDisableAlphaSortClassCompletion( FDisableAlphaSortClassCompletion );
   end;
 end;
 
@@ -1502,8 +1502,8 @@ begin
   SetRegValue(FDisableEditorClearType, Value, 'DDevExDisableEditorClearType');
 end;}
 
-procedure TDSUFeaturesConfig.PMGetText(Sender: TObject; Node: PVirtualNode; Column: Integer;
-  TextType: TVSTTextType; var CellText: WideString);
+procedure TDSUFeaturesConfig.PMGetText( Sender: TObject; Node: PVirtualNode; Column: Integer;
+  TextType: TVSTTextType; var CellText: WideString );
 type
   PNodeData = ^TNodeData;
   TNodeData = record
@@ -1513,76 +1513,75 @@ type
     OpenIndex, ClosedIndex: Integer;
   end;
 var
-  P: PVirtualNode;
-  Data: PNodeData;
-  Obj: TObject;
+  P                 : PVirtualNode;
+  Data              : PNodeData;
+  Obj               : TObject;
 begin
   // The captured original handler may be nil (the IDE tree had no OnGetText);
   // calling through a nil method pointer would AV on every paint.
-  if Assigned(FOrgPMGetTextEvent) then
-    FOrgPMGetTextEvent(Sender, Node, Column, TextType, CellText);
-  if FPrjMgrTree.Selected[Node] and (FPrjMgrTree.GetNodeLevel(Node) > 1) then
+  if Assigned( FOrgPMGetTextEvent ) then
+    FOrgPMGetTextEvent( Sender, Node, Column, TextType, CellText );
+  if FPrjMgrTree.Selected[ Node ] and ( FPrjMgrTree.GetNodeLevel( Node ) > 1 ) then
   begin
-    if FPrjMgrTree.GetNextSelected(FPrjMgrTree.GetFirstSelected) = nil then // only one node is selected
+    if FPrjMgrTree.GetNextSelected( FPrjMgrTree.GetFirstSelected ) = nil then // only one node is selected
     begin
       { It must be a file node }
-      Data := FPrjMgrTree.GetNodeData(Node);
-      {$IF CompilerVersion >= 21.0} // Delphi 2010+
-      Obj := Data.Location as TObject;
-      {$ELSE}
-      Obj := DelphiInterfaceToObject(Data.Location);
-      {$IFEND}
-      if (Obj = nil) or FPrjMgrTree.IsEditing or
-         not InheritsFromClassName(Obj, 'TStdFileContainer') or
-         InheritsFromClassName(Obj, 'TStdDirectoryContainer') then
+      Data          := FPrjMgrTree.GetNodeData( Node );
+{$IF CompilerVersion >= 21.0} // Delphi 2010+
+      Obj           := Data.Location as TObject;
+{$ELSE}
+      Obj           := DelphiInterfaceToObject( Data.Location );
+{$IFEND}
+      if ( Obj = nil ) or FPrjMgrTree.IsEditing or
+        not InheritsFromClassName( Obj, 'TStdFileContainer' ) or
+        InheritsFromClassName( Obj, 'TStdDirectoryContainer' ) then
         Exit;
       { Do not show the module's project if there is only one project in the project group }
-      if ((BorlandIDEServices as IOTAModuleServices).MainProjectGroup <> nil) and
-         ((BorlandIDEServices as IOTAModuleServices).MainProjectGroup.ProjectCount <= 1) then
+      if ( ( BorlandIDEServices as IOTAModuleServices ).MainProjectGroup <> nil ) and
+        ( ( BorlandIDEServices as IOTAModuleServices ).MainProjectGroup.ProjectCount <= 1 ) then
         Exit;
 
       { Find the project node }
-      P := FPrjMgrTree.NodeParent[Node];
-      while (P <> nil) and (FPrjMgrTree.GetNodeLevel(P) > 1) do
-        P := FPrjMgrTree.NodeParent[P];
+      P             := FPrjMgrTree.NodeParent[ Node ];
+      while ( P <> nil ) and ( FPrjMgrTree.GetNodeLevel( P ) > 1 ) do
+        P           := FPrjMgrTree.NodeParent[ P ];
 
       { Append the project's name }
-      CellText := CellText + '  (' + FPrjMgrTree.Text[P, 0] + ')';
+      CellText      := CellText + '  (' + FPrjMgrTree.Text[ P, 0 ] + ')';
     end;
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetShowFileProjectInPrjMgr(const Value: Boolean);
+procedure TDSUFeaturesConfig.SetShowFileProjectInPrjMgr( const Value: Boolean );
 {$IFNDEF CPUX64}
 var
   ProjectManagerForm: TCustomForm;
-  TreeCtrl: TCustomControl;
+  TreeCtrl          : TCustomControl;
 {$ENDIF}
 begin
   if Value <> FShowFileProjectInPrjMgr then
   begin
-    {$IFDEF CPUX64}
+{$IFDEF CPUX64}
     // Win64: TIDEVirtualTreeHandler's TreeImport lookups against the 64-bit
     // Idevirtualtrees BPL fail (different C++ name mangling), so any tree-touching
     // operation raises "Not Supported" on the IDE's paint cycle. Keep the setting
     // in XML for round-trip with the 32-bit IDE, but don't install the hook here.
     FShowFileProjectInPrjMgr := Value;
-    {$ELSE}
+{$ELSE}
     { Find the tree and initialise the tree handler }
     if FPrjMgrTree = nil then
     begin
-      ProjectManagerForm := FindForm('ProjectManagerForm', '');
+      ProjectManagerForm := FindForm( 'ProjectManagerForm', '' );
       if ProjectManagerForm <> nil then
       begin
-        TreeCtrl := ProjectManagerForm.FindComponent('ProjectTree2') as TCustomControl;
+        TreeCtrl    := ProjectManagerForm.FindComponent( 'ProjectTree2' ) as TCustomControl;
         if TreeCtrl <> nil then
         begin
-          FPrjMgrTree := TIDEVirtualTreeHandler.Create(TreeCtrl);
+          FPrjMgrTree := TIDEVirtualTreeHandler.Create( TreeCtrl );
           FOrgPMGetTextEvent := FPrjMgrTree.OnGetText;
         end;
       end;
     end;
-
 
     // Install or restore the OnGetText handler explicitly based on the new Value.
     // Previously both branches keyed off the stale field, which only worked by
@@ -1599,32 +1598,32 @@ begin
 
     if FPrjMgrTree <> nil then
       FPrjMgrTree.Invalidate;
-    {$ENDIF}
+{$ENDIF}
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetStructureViewSearchHotKey(const Value: TShortCut);
+procedure TDSUFeaturesConfig.SetStructureViewSearchHotKey( const Value: TShortCut );
 begin
   if Value <> FStructureViewSearchHotKey then
   begin
     FStructureViewSearchHotKey := Value;
     if StructureViewSearch <> nil then
-      StructureViewSearch.SetHotkey(FStructureViewSearchHotKey);
+      StructureViewSearch.SetHotkey( FStructureViewSearchHotKey );
   end;
 end;
 
-procedure TDSUFeaturesConfig.SetEditorDblClickAction(Value: TEditorDblClickAction);
+procedure TDSUFeaturesConfig.SetEditorDblClickAction( Value: TEditorDblClickAction );
 begin
   if Value <> FEditorDblClickAction then
   begin
     if Value = ecaNone then
     begin
       UndoEditorZoom;
-      CodeRestore(HookDesktopLoadRuntimeDesktop);
+      CodeRestore( HookDesktopLoadRuntimeDesktop );
     end;
 
     if FEditorDblClickAction = ecaNone then
-      CodeRedirect(@OrgLoadRuntimeDesktop, @DesktopLoadRuntimeDesktop, HookDesktopLoadRuntimeDesktop);
+      CodeRedirect( @OrgLoadRuntimeDesktop, @DesktopLoadRuntimeDesktop, HookDesktopLoadRuntimeDesktop );
 
     FEditorDblClickAction := Value;
     UpdateEditorDblClickAction;
@@ -1633,7 +1632,7 @@ end;
 
 function GetStructureView: TCustomForm;
 begin
-  Result := TCustomForm(Application.FindComponent('StructureViewForm'));
+  Result            := TCustomForm( Application.FindComponent( 'StructureViewForm' ) );
 end;
 
 function TDSUFeaturesConfig.IsBackgroundParsing: Boolean;
@@ -1641,54 +1640,54 @@ begin
   try
     if FParseThread = nil then
     begin
-      FParseThread := DbgStrictGetProcAddress(GetModuleHandle(coreide_bpl), '@Parserthread@ParseThread');
+      FParseThread  := DbgStrictGetProcAddress( GetModuleHandle( coreide_bpl ), '@Parserthread@ParseThread' );
       if FParseThread <> nil then
-        FParseThread := TThread(Pointer(FParseThread)^);
+        FParseThread := TThread( Pointer( FParseThread )^ );
     end;
     if FParseThread <> nil then
     begin
-      {$IFDEF CPUX64}
+{$IFDEF CPUX64}
       // The hard-coded +$28 field offset is a 32-bit layout assumption; the
       // 64-bit parser-thread layout differs, so do not read it on Win64.
-      Result := False;
-      {$ELSE}
-      Result := PBoolean(DWORD_PTR(FParseThread) + DWORD(TThread.InstanceSize) + $28)^;
-      {$ENDIF}
+      Result        := False;
+{$ELSE}
+      Result        := PBoolean( DWORD_PTR( FParseThread ) + DWORD( TThread.InstanceSize ) + $28 )^;
+{$ENDIF}
     end
     else
-      Result := False;
+      Result        := False;
   except
     on E: Exception do
     begin
       // Disable the polling timer (a layout change can fault repeatedly) but log
       // it so a genuine IDE-layout change is diagnosable rather than silent.
       FTimerStructureView.Enabled := False;
-      OutputDebugString(PChar('DDevExtensions IsBackgroundParsing: ' + E.Message));
-      Result := False;
+      OutputDebugString( PChar( 'DDevExtensions IsBackgroundParsing: ' + E.Message ) );
+      Result        := False;
     end;
   end;
 end;
 
-procedure TDSUFeaturesConfig.StructureViewTimer(Sender: TObject);
+procedure TDSUFeaturesConfig.StructureViewTimer( Sender: TObject );
 var
-  S: string;
-  StructView: TCustomForm;
+  S                 : string;
+  StructView        : TCustomForm;
 begin
-  StructView := GetStructureView;
-  if (StructView <> nil) and StructView.Visible and
-     (StructView.HandleAllocated and IsWindowVisible(StructView.Handle)) then
+  StructView        := GetStructureView;
+  if ( StructView <> nil ) and StructView.Visible and
+    ( StructView.HandleAllocated and IsWindowVisible( StructView.Handle ) ) then
   begin
     // Strip only the dots this timer appended last time, so a caption that itself
     // contains a '.' is never truncated.
-    S := StructView.Caption;
-    var LAddedDots := DupeString( '.', FLastParsingDots );
-    var LHadDots := ( FLastParsingDots > 0 ) and S.EndsWith( LAddedDots );
+    S               := StructView.Caption;
+    var LAddedDots  := DupeString( '.', FLastParsingDots );
+    var LHadDots    := ( FLastParsingDots > 0 ) and S.EndsWith( LAddedDots );
     if ( LHadDots ) then
-      S := Copy( S, 1, Length( S ) - FLastParsingDots );
+      S             := Copy( S, 1, Length( S ) - FLastParsingDots );
     if IsBackgroundParsing then
     begin
-      FLastParsingDots := (FLastParsingDots + 1) mod 4;
-      StructView.Caption := S + DupeString('.', FLastParsingDots);
+      FLastParsingDots := ( FLastParsingDots + 1 ) mod 4;
+      StructView.Caption := S + DupeString( '.', FLastParsingDots );
     end
     else
     begin
@@ -1700,3 +1699,4 @@ begin
 end;
 
 end.
+

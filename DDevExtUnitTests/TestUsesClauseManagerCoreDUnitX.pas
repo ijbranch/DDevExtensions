@@ -21,199 +21,199 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising the unit exports database.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestUnitExportsDatabase = class
   public
     /// <summary>Constants declared in the interface are recorded as ekConst.</summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceConstIsExported;
     /// <summary>Procedures and functions are recorded with their own kinds.</summary>
-    [Test]
+    [ Test ]
     procedure TestRoutineKindsAreDistinguished;
     /// <summary>Declarations below the implementation keyword are not exported.</summary>
-    [Test]
+    [ Test ]
     procedure TestImplementationDeclarationsAreNotExported;
     /// <summary>A const or var PARAMETER must not be read as a section keyword, or the
     /// routine's return type is recorded as an export of the unit.</summary>
-    [Test]
+    [ Test ]
     procedure TestParameterModifiersDoNotLeakIntoSectionState;
     /// <summary>A unit that exports nothing is not added to the database.</summary>
-    [Test]
+    [ Test ]
     procedure TestUnitWithNoExportsIsNotStored;
     /// <summary>Unit lookup ignores the case of the supplied name.</summary>
-    [Test]
+    [ Test ]
     procedure TestGetExportsIsCaseInsensitive;
     /// <summary>The reverse lookup maps an identifier back to its declaring unit.</summary>
-    [Test]
+    [ Test ]
     procedure TestFindUnitsForIdentifier;
     /// <summary>An identifier nothing declares resolves to nil, not an empty list.</summary>
-    [Test]
+    [ Test ]
     procedure TestFindUnitsForUnknownIdentifierReturnsNil;
     /// <summary>With one candidate, that candidate is preferred.</summary>
-    [Test]
+    [ Test ]
     procedure TestGetPreferredUnitWithSingleCandidate;
     /// <summary>An RTL/VCL unit outranks a project unit declaring the same identifier.</summary>
-    [Test]
+    [ Test ]
     procedure TestGetPreferredUnitHonoursRTLPriority;
     /// <summary>An empty candidate list yields an empty result rather than raising.</summary>
-    [Test]
+    [ Test ]
     procedure TestGetPreferredUnitWithNoCandidates;
     /// <summary>Clear empties both the exports and the reverse lookup.</summary>
-    [Test]
+    [ Test ]
     procedure TestClearEmptiesDatabase;
     /// <summary>Scanning a path that does not exist is a no-op, not an exception.</summary>
-    [Test]
+    [ Test ]
     procedure TestScanUnitOfMissingFileIsSilent;
     /// <summary>A nil directory list is tolerated and simply clears the database.</summary>
-    [Test]
+    [ Test ]
     procedure TestBuildFromDirectoriesAcceptsNil;
     /// <summary>
     /// Proves a second unit of a name already scanned is skipped, not added: the first one found
     /// wins, as it does for the compiler.  It used to raise EListError out of Build Database.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestDuplicateUnitNameFirstOneWins;
     /// <summary>
     /// Proves only declared type names are exported: field types, field and member names,
     /// parameter types and generic parameters inside a type body are not, and the scan resumes
     /// correctly after a forward class, a generic record and a procedural type.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestFieldAndMemberNamesAreNotExported;
     /// <summary>Proves every name of a "A, B: Integer" var list is exported, and the type is not.</summary>
-    [Test]
+    [ Test ]
     procedure TestVarListNamesAreExported;
     /// <summary>
     /// Proves BuildFromDirectories resolves a relative entry against the base directory, scans a
     /// repeated directory once, and keeps the first unit of a name when two directories hold one.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestBuildFromDirectoriesResolvesRelativeAndSkipsRepeats;
     /// <summary>Proves ResolveDirectory makes a relative entry absolute under the base and leaves an absolute one alone.</summary>
-    [Test]
+    [ Test ]
     procedure TestResolveDirectory;
     /// <summary>Proves the values of an enumerated type are exported ( fsBold, and one with an explicit ordinal ), not only the type.</summary>
-    [Test]
+    [ Test ]
     procedure TestEnumValuesAreExported;
   end;
 
   /// <summary>DUnitX test fixture exercising the identifier usage analyser.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestIdentifierUsageAnalyzer = class
   public
     /// <summary>Units listed in the interface uses clause are captured with that section.</summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceUsesAreCaptured;
     /// <summary>Units listed in the implementation uses clause are captured separately.</summary>
-    [Test]
+    [ Test ]
     procedure TestImplementationUsesAreCaptured;
     /// <summary>An identifier appearing in the interface is recorded against the interface.</summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceIdentifierIsRecorded;
     /// <summary>An identifier appearing only below implementation is recorded there.</summary>
-    [Test]
+    [ Test ]
     procedure TestImplementationIdentifierIsRecorded;
     /// <summary>A qualified Unit.Identifier reference records its qualifying unit.</summary>
-    [Test]
+    [ Test ]
     procedure TestQualifiedReferenceIsRecorded;
     /// <summary>Clear resets every collection so the analyser can be reused.</summary>
-    [Test]
+    [ Test ]
     procedure TestClearResetsAllCollections;
   end;
 
   /// <summary>DUnitX test fixture exercising placement recommendations and the rewrite.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestUsesClauseRefactorer = class
   public
     /// <summary>A unit in the interface clause used only below implementation should move down.</summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceUnitUsedOnlyInImplementationMovesDown;
     /// <summary>A unit genuinely used in the interface stays in the interface.</summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceUnitUsedInInterfaceStays;
     /// <summary>A unit with no detected usage is left alone and flagged for review.</summary>
-    [Test]
+    [ Test ]
     procedure TestUnusedUnitIsFlaggedForReview;
     /// <summary>A unit in the implementation clause whose identifiers appear in the interface moves up.</summary>
-    [Test]
+    [ Test ]
     procedure TestImplementationUnitUsedInInterfaceMovesUp;
     /// <summary>The rewritten source really does relocate the unit between the two clauses.</summary>
-    [Test]
+    [ Test ]
     procedure TestGenerateRefactoredSourceRelocatesUnit;
     /// <summary>Analysing a source with no uses clause at all yields no placements.</summary>
-    [Test]
+    [ Test ]
     procedure TestSourceWithoutUsesClauseYieldsNoPlacements;
     /// <summary>
     /// Proves a move edits only the moved entry: a {$IFDEF} block and a comment in the same clause
     /// survive byte for byte, and a missing implementation clause is created.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestConditionalBlockAndCommentSurviveAMove;
     /// <summary>Proves a unit inside a {$IFDEF} block is refused, with the source unchanged and the reason given.</summary>
-    [Test]
+    [ Test ]
     procedure TestEntryInsideConditionalIsRefused;
     /// <summary>Proves an entry's "in '...'" path moves with it instead of being dropped.</summary>
-    [Test]
+    [ Test ]
     procedure TestInPathMovesWithItsEntry;
     /// <summary>Proves placements whose unit has since left the clause are refused, not applied blindly.</summary>
-    [Test]
+    [ Test ]
     procedure TestStalePlacementsAreRefused;
     /// <summary>Proves a unit added to the clause after the analysis survives the rewrite ( it used to be deleted ).</summary>
-    [Test]
+    [ Test ]
     procedure TestUnitAddedAfterAnalysisSurvives;
     /// <summary>
     /// Proves moving a unit up into an interface with no uses clause creates the clause, and the
     /// emptied implementation clause is removed ( the unit used to vanish from both ).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestMoveUpCreatesInterfaceClause;
     /// <summary>Proves multi-byte UTF-8 text before the clauses does not shift the edits ( byte offsets ).</summary>
-    [Test]
+    [ Test ]
     procedure TestNonAsciiBeforeClausesKeepsOffsets;
     /// <summary>Proves a dotted unit name moves intact and is found in the database by its full name.</summary>
-    [Test]
+    [ Test ]
     procedure TestDottedNameMovesIntact;
     /// <summary>Proves an entry appended to a clause whose line would pass 160 characters starts a new line.</summary>
-    [Test]
+    [ Test ]
     procedure TestLongTargetClauseWraps;
     /// <summary>Proves a program source ( no interface or implementation ) is refused with a reason.</summary>
-    [Test]
+    [ Test ]
     procedure TestProgramSourceIsRefused;
     /// <summary>
     /// Proves an implementation unit is not recommended for the interface because one of its
     /// classes has an Integer field and the interface uses Integer ( the field type was exported ).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestFieldTypeDoesNotPullUnitIntoInterface;
     /// <summary>
     /// Proves an implementation unit is not recommended for the interface when the interface
     /// reaches the identifier through another unit ( Other.TThing ).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestQualifiedReferenceToAnotherUnitDoesNotCount;
     /// <summary>
     /// Proves a unit whose only interface use is an enumeration value ( [fsBold] ) stays in the
     /// interface clause; moving it down made the interface fail to compile ( E2003 ).
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestEnumValueKeepsUnitInInterface;
     /// <summary>
     /// Proves an "IFoo = interface" type in the implementation section does not switch the analyser
     /// back to the interface section.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestInterfaceTypeInImplementationKeepsSection;
     /// <summary>Proves no uses clause is created after an include directive that may hold the section's clause.</summary>
-    [Test]
+    [ Test ]
     procedure TestIncludeBeforeSectionIsRefused;
     /// <summary>Proves text inserted into an LF-only buffer uses LF, not CRLF.</summary>
-    [Test]
+    [ Test ]
     procedure TestLineFeedBufferGetsLineFeeds;
     /// <summary>Proves a trailing "//" comment on a removed entry's own line goes with the entry.</summary>
-    [Test]
+    [ Test ]
     procedure TestTrailingLineCommentGoesWithItsEntry;
     /// <summary>Proves a trailing "//" comment that shares its line with more than the entry makes the move refuse.</summary>
-    [Test]
+    [ Test ]
     procedure TestTrailingLineCommentOnSharedLineIsRefused;
   end;
 
@@ -230,14 +230,14 @@ uses
 /// <summary>Joins the supplied lines with CRLF and returns them as UTF-8 source text.</summary>
 function Src( const ALines: array of string ): UTF8String;
 var
-  sb: TStringBuilder;
-  I: Integer;
+  sb                : TStringBuilder;
+  I                 : Integer;
 begin
-  sb := TStringBuilder.Create;
+  sb                := TStringBuilder.Create;
   try
     for I := Low( ALines ) to High( ALines ) do
       sb.Append( ALines[ I ] ).Append( sLineBreak );
-    Result := UTF8Encode( sb.ToString );
+    Result          := UTF8Encode( sb.ToString );
   finally
     sb.Free;
   end;
@@ -246,7 +246,7 @@ end;
 /// <summary>Releases the two TStringList instances each placement hands to the caller.</summary>
 procedure FreePlacements( const APlacements: TArray<TUnitPlacement> );
 var
-  P: TUnitPlacement;
+  P                 : TUnitPlacement;
 begin
   for P in APlacements do
   begin
@@ -259,24 +259,24 @@ end;
 function PlacementFor( const APlacements: TArray<TUnitPlacement>;
   const AUnitName: string ): TUnitPlacement;
 var
-  P: TUnitPlacement;
+  P                 : TUnitPlacement;
 begin
   for P in APlacements do
     if SameText( P.UnitName, AUnitName ) then
       Exit( P );
   Assert.Fail( 'No placement returned for unit ' + AUnitName );
-  Result := Default( TUnitPlacement );
+  Result            := Default( TUnitPlacement );
 end;
 
 /// <summary>True when the unit declares the identifier with the given kind.</summary>
 function HasExport( ADB: TUnitExportsDatabase; const AUnitName, AIdentifier: string;
   AKind: TExportKind ): Boolean;
 var
-  L: TList<TUnitExport>;
-  E: TUnitExport;
+  L                 : TList<TUnitExport>;
+  E                 : TUnitExport;
 begin
-  Result := False;
-  L := ADB.GetExports( AUnitName );
+  Result            := False;
+  L                 := ADB.GetExports( AUnitName );
   if L = nil then
     Exit;
   for E in L do
@@ -288,12 +288,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestInterfaceConstIsExported;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'AppConsts', 'AppConsts.pas', Src( [
-      'unit AppConsts;', 'interface', 'const', '  APP_TITLE = 1;', 'implementation', 'end.' ] ) );
+          'unit AppConsts;', 'interface', 'const', '  APP_TITLE = 1;', 'implementation', 'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'AppConsts', 'APP_TITLE', ekConst ),
       'APP_TITLE should be recorded as a const export' );
   finally
@@ -303,15 +303,15 @@ end;
 
 procedure TTestUnitExportsDatabase.TestRoutineKindsAreDistinguished;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Helpers', 'Helpers.pas', Src( [
-      'unit Helpers;', 'interface',
-      'procedure DoThing;',
-      'function GetThing: Integer;',
-      'implementation', 'end.' ] ) );
+          'unit Helpers;', 'interface',
+          'procedure DoThing;',
+          'function GetThing: Integer;',
+          'implementation', 'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'Helpers', 'DoThing', ekProcedure ),
       'DoThing should be recorded as a procedure' );
     Assert.IsTrue( HasExport( DB, 'Helpers', 'GetThing', ekFunction ),
@@ -323,16 +323,16 @@ end;
 
 procedure TTestUnitExportsDatabase.TestImplementationDeclarationsAreNotExported;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Hidden', 'Hidden.pas', Src( [
-      'unit Hidden;', 'interface',
-      'const', '  PUBLIC_VALUE = 1;',
-      'implementation',
-      'const', '  PRIVATE_VALUE = 2;',
-      'end.' ] ) );
+          'unit Hidden;', 'interface',
+          'const', '  PUBLIC_VALUE = 1;',
+          'implementation',
+          'const', '  PRIVATE_VALUE = 2;',
+          'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'Hidden', 'PUBLIC_VALUE', ekConst ),
       'the interface constant should be exported' );
     Assert.IsFalse( HasExport( DB, 'Hidden', 'PRIVATE_VALUE', ekConst ),
@@ -344,14 +344,14 @@ end;
 
 procedure TTestUnitExportsDatabase.TestParameterModifiersDoNotLeakIntoSectionState;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Parsing', 'Parsing.pas', Src( [
-      'unit Parsing;', 'interface',
-      'function ParseValue( const AName: string; var AValue: string ): Boolean;',
-      'implementation', 'end.' ] ) );
+          'unit Parsing;', 'interface',
+          'function ParseValue( const AName: string; var AValue: string ): Boolean;',
+          'implementation', 'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'Parsing', 'ParseValue', ekFunction ),
       'the function itself is exported' );
     Assert.IsFalse( HasExport( DB, 'Parsing', 'Boolean', ekVar ),
@@ -366,12 +366,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestUnitWithNoExportsIsNotStored;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Empty', 'Empty.pas', Src( [
-      'unit Empty;', 'interface', 'implementation', 'end.' ] ) );
+          'unit Empty;', 'interface', 'implementation', 'end.' ] ) );
     Assert.AreEqual( 0, DB.UnitCount, 'a unit with no exports should not be stored' );
     Assert.IsNull( DB.GetExports( 'Empty' ), 'GetExports should return nil for it' );
   finally
@@ -381,12 +381,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestGetExportsIsCaseInsensitive;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'MixedCase', 'MixedCase.pas', Src( [
-      'unit MixedCase;', 'interface', 'const', '  VALUE = 1;', 'implementation', 'end.' ] ) );
+          'unit MixedCase;', 'interface', 'const', '  VALUE = 1;', 'implementation', 'end.' ] ) );
     Assert.IsNotNull( DB.GetExports( 'MIXEDCASE' ), 'upper-case lookup should succeed' );
     Assert.IsNotNull( DB.GetExports( 'mixedcase' ), 'lower-case lookup should succeed' );
   finally
@@ -396,14 +396,14 @@ end;
 
 procedure TTestUnitExportsDatabase.TestFindUnitsForIdentifier;
 var
-  DB: TUnitExportsDatabase;
-  Units: TStringList;
+  DB                : TUnitExportsDatabase;
+  Units             : TStringList;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Provider', 'Provider.pas', Src( [
-      'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
-    Units := DB.FindUnitsForIdentifier( 'UniqueRoutine' );
+          'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
+    Units           := DB.FindUnitsForIdentifier( 'UniqueRoutine' );
     Assert.IsNotNull( Units, 'the identifier should be in the reverse lookup' );
     Assert.IsTrue( Units.IndexOf( 'Provider' ) >= 0, 'Provider should be listed as the declaring unit' );
   finally
@@ -413,9 +413,9 @@ end;
 
 procedure TTestUnitExportsDatabase.TestFindUnitsForUnknownIdentifierReturnsNil;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     Assert.IsNull( DB.FindUnitsForIdentifier( 'NothingDeclaresThis' ),
       'an unknown identifier should resolve to nil' );
@@ -426,11 +426,11 @@ end;
 
 procedure TTestUnitExportsDatabase.TestGetPreferredUnitWithSingleCandidate;
 var
-  DB: TUnitExportsDatabase;
-  Candidates: TStringList;
+  DB                : TUnitExportsDatabase;
+  Candidates        : TStringList;
 begin
-  DB := TUnitExportsDatabase.Create;
-  Candidates := TStringList.Create;
+  DB                := TUnitExportsDatabase.Create;
+  Candidates        := TStringList.Create;
   try
     Candidates.Add( 'OnlyOption' );
     Assert.AreEqual( 'OnlyOption', DB.GetPreferredUnit( 'Anything', Candidates ), False,
@@ -443,11 +443,11 @@ end;
 
 procedure TTestUnitExportsDatabase.TestGetPreferredUnitHonoursRTLPriority;
 var
-  DB: TUnitExportsDatabase;
-  Candidates: TStringList;
+  DB                : TUnitExportsDatabase;
+  Candidates        : TStringList;
 begin
-  DB := TUnitExportsDatabase.Create;
-  Candidates := TStringList.Create;
+  DB                := TUnitExportsDatabase.Create;
+  Candidates        := TStringList.Create;
   try
     Candidates.Add( 'MyOwnForms' );
     Candidates.Add( 'Forms' );
@@ -461,11 +461,11 @@ end;
 
 procedure TTestUnitExportsDatabase.TestGetPreferredUnitWithNoCandidates;
 var
-  DB: TUnitExportsDatabase;
-  Empty: TStringList;
+  DB                : TUnitExportsDatabase;
+  Empty             : TStringList;
 begin
-  DB := TUnitExportsDatabase.Create;
-  Empty := TStringList.Create;
+  DB                := TUnitExportsDatabase.Create;
+  Empty             := TStringList.Create;
   try
     Assert.AreEqual( '', DB.GetPreferredUnit( 'Anything', Empty ), False,
       'an empty candidate list should yield an empty result' );
@@ -479,12 +479,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestClearEmptiesDatabase;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Provider', 'Provider.pas', Src( [
-      'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
+          'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
     Assert.AreEqual( 1, DB.UnitCount, 'the unit should be stored before Clear' );
 
     DB.Clear;
@@ -499,12 +499,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestScanUnitOfMissingFileIsSilent;
 var
-  DB: TUnitExportsDatabase;
-  Probe: TProc;
+  DB                : TUnitExportsDatabase;
+  Probe             : TProc;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
-    Probe :=
+    Probe           :=
       procedure
       begin
         DB.ScanUnit( 'X:\no\such\directory\NoSuchUnit.pas' );
@@ -518,14 +518,14 @@ end;
 
 procedure TTestUnitExportsDatabase.TestBuildFromDirectoriesAcceptsNil;
 var
-  DB: TUnitExportsDatabase;
-  Probe: TProc;
+  DB                : TUnitExportsDatabase;
+  Probe             : TProc;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Provider', 'Provider.pas', Src( [
-      'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
-    Probe :=
+          'unit Provider;', 'interface', 'procedure UniqueRoutine;', 'implementation', 'end.' ] ) );
+    Probe           :=
       procedure
       begin
         DB.BuildFromDirectories( nil, nil );
@@ -539,18 +539,18 @@ end;
 
 procedure TTestUnitExportsDatabase.TestDuplicateUnitNameFirstOneWins;
 var
-  DB: TUnitExportsDatabase;
-  Probe: TProc;
+  DB                : TUnitExportsDatabase;
+  Probe             : TProc;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Utils', 'A\Utils.pas', Src( [
-      'unit Utils;', 'interface', 'procedure FromA;', 'implementation', 'end.' ] ) );
-    Probe :=
+          'unit Utils;', 'interface', 'procedure FromA;', 'implementation', 'end.' ] ) );
+    Probe           :=
       procedure
       begin
         DB.ScanSource( 'Utils', 'B\Utils.pas', Src( [
-          'unit Utils;', 'interface', 'procedure FromB;', 'implementation', 'end.' ] ) );
+              'unit Utils;', 'interface', 'procedure FromB;', 'implementation', 'end.' ] ) );
       end;
     Assert.WillNotRaiseAny( Probe, 'a second unit of the same name must not raise' );
     Assert.AreEqual( 1, DB.UnitCount, 'the name is stored once' );
@@ -563,25 +563,25 @@ end;
 
 procedure TTestUnitExportsDatabase.TestFieldAndMemberNamesAreNotExported;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Shapes', 'Shapes.pas', Src( [
-      'unit Shapes;', 'interface', 'uses Classes;', 'type',
-      '  TFoo = class( TObject )',
-      '    FCount: Integer;',
-      '    FList: TStringList;',
-      '    procedure Run( A: Integer );',
-      '    property Count: Integer read FCount;',
-      '  end;',
-      '  TFwd = class;',
-      '  TBar<T> = record',
-      '    Value: T;',
-      '  end;',
-      '  TProc = procedure( A: Integer ) of object;',
-      '  TAfter = Integer;',
-      'implementation', 'end.' ] ) );
+          'unit Shapes;', 'interface', 'uses Classes;', 'type',
+          '  TFoo = class( TObject )',
+          '    FCount: Integer;',
+          '    FList: TStringList;',
+          '    procedure Run( A: Integer );',
+          '    property Count: Integer read FCount;',
+          '  end;',
+          '  TFwd = class;',
+          '  TBar<T> = record',
+          '    Value: T;',
+          '  end;',
+          '  TProc = procedure( A: Integer ) of object;',
+          '  TAfter = Integer;',
+          'implementation', 'end.' ] ) );
     for var Name in [ 'TFoo', 'TFwd', 'TBar', 'TProc', 'TAfter' ] do
       Assert.IsTrue( HasExport( DB, 'Shapes', Name, ekType ), Name + ' is a declared type and must be exported' );
     for var Name in [ 'Integer', 'TStringList', 'TObject', 'FCount', 'FList', 'Run', 'Count', 'Value', 'T', 'A' ] do
@@ -593,12 +593,12 @@ end;
 
 procedure TTestUnitExportsDatabase.TestVarListNamesAreExported;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Globals', 'Globals.pas', Src( [
-      'unit Globals;', 'interface', 'var', '  First, Second: Integer;', 'implementation', 'end.' ] ) );
+          'unit Globals;', 'interface', 'var', '  First, Second: Integer;', 'implementation', 'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'Globals', 'First', ekVar ), 'the first name of the list is exported' );
     Assert.IsTrue( HasExport( DB, 'Globals', 'Second', ekVar ), 'and so is the second' );
     Assert.IsNull( DB.FindUnitsForIdentifier( 'Integer' ), 'the type of the list is not' );
@@ -609,10 +609,10 @@ end;
 
 procedure TTestUnitExportsDatabase.TestBuildFromDirectoriesResolvesRelativeAndSkipsRepeats;
 var
-  DB: TUnitExportsDatabase;
-  Base: string;
-  Dirs: TStringList;
-  Probe: TProc;
+  DB                : TUnitExportsDatabase;
+  Base              : string;
+  Dirs              : TStringList;
+  Probe             : TProc;
 
   procedure WriteUnit( const ADir, AName, ARoutine: string );
   begin
@@ -623,9 +623,9 @@ var
   end;
 
 begin
-  Base := TPath.Combine( TPath.GetTempPath, 'DDevExtUCM_' + TGUID.NewGuid.ToString.Substring( 1, 8 ) );
-  DB := TUnitExportsDatabase.Create;
-  Dirs := TStringList.Create;
+  Base              := TPath.Combine( TPath.GetTempPath, 'DDevExtUCM_' + TGUID.NewGuid.ToString.Substring( 1, 8 ) );
+  DB                := TUnitExportsDatabase.Create;
+  Dirs              := TStringList.Create;
   try
     WriteUnit( 'First', 'Utils', 'FromFirst' );
     WriteUnit( 'Second', 'Utils', 'FromSecond' );
@@ -633,7 +633,7 @@ begin
     Dirs.Add( 'First' );
     Dirs.Add( '.\First\' );
     Dirs.Add( 'Second' );
-    Probe :=
+    Probe           :=
       procedure
       begin
         DB.BuildFromDirectories( Dirs, nil, Base );
@@ -668,19 +668,19 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestInterfaceUsesAreCaptured;
 var
-  A: TIdentifierUsageAnalyzer;
-  Found: Boolean;
-  U: TUsedUnitInfo;
+  A                 : TIdentifierUsageAnalyzer;
+  Found             : Boolean;
+  U                 : TUsedUnitInfo;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses SysUtils, Classes;', 'implementation', 'end.' ] ) );
-    Found := False;
+          'unit Subject;', 'interface', 'uses SysUtils, Classes;', 'implementation', 'end.' ] ) );
+    Found           := False;
     for U in A.InterfaceUsedUnits do
       if SameText( U.UnitName, 'Classes' ) then
       begin
-        Found := True;
+        Found       := True;
         Assert.IsTrue( U.Section = usInterface, 'Classes should be marked as an interface use' );
       end;
     Assert.IsTrue( Found, 'Classes should appear in the interface uses list' );
@@ -691,19 +691,19 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestImplementationUsesAreCaptured;
 var
-  A: TIdentifierUsageAnalyzer;
-  Found: Boolean;
-  U: TUsedUnitInfo;
+  A                 : TIdentifierUsageAnalyzer;
+  Found             : Boolean;
+  U                 : TUsedUnitInfo;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation', 'uses Dialogs;', 'end.' ] ) );
-    Found := False;
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation', 'uses Dialogs;', 'end.' ] ) );
+    Found           := False;
     for U in A.ImplementationUsedUnits do
       if SameText( U.UnitName, 'Dialogs' ) then
-        Found := True;
+        Found       := True;
     Assert.IsTrue( Found, 'Dialogs should appear in the implementation uses list' );
 
     for U in A.InterfaceUsedUnits do
@@ -716,14 +716,14 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestInterfaceIdentifierIsRecorded;
 var
-  A: TIdentifierUsageAnalyzer;
+  A                 : TIdentifierUsageAnalyzer;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'type', '  TThing = class( TComponent )', '  end;',
-      'implementation', 'end.' ] ) );
+          'unit Subject;', 'interface', 'uses Classes;',
+          'type', '  TThing = class( TComponent )', '  end;',
+          'implementation', 'end.' ] ) );
     Assert.IsTrue( A.InterfaceIdentifiers.IndexOf( 'TComponent' ) >= 0,
       'TComponent is referenced in the interface and should be recorded there' );
   finally
@@ -733,15 +733,15 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestImplementationIdentifierIsRecorded;
 var
-  A: TIdentifierUsageAnalyzer;
+  A                 : TIdentifierUsageAnalyzer;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation',
-      'procedure Local;', 'var', '  L: TStringList;', 'begin', '  L := nil;', 'end;',
-      'end.' ] ) );
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation',
+          'procedure Local;', 'var', '  L: TStringList;', 'begin', '  L := nil;', 'end;',
+          'end.' ] ) );
     Assert.IsTrue( A.ImplementationIdentifiers.IndexOf( 'TStringList' ) >= 0,
       'TStringList appears only below implementation and should be recorded there' );
     Assert.IsTrue( A.InterfaceIdentifiers.IndexOf( 'TStringList' ) < 0,
@@ -753,15 +753,15 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestQualifiedReferenceIsRecorded;
 var
-  A: TIdentifierUsageAnalyzer;
-  Qualifier: string;
+  A                 : TIdentifierUsageAnalyzer;
+  Qualifier         : string;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'implementation',
-      'procedure Local;', 'begin', '  SysUtils.FreeAndNil( Obj );', 'end;',
-      'end.' ] ) );
+          'unit Subject;', 'interface', 'implementation',
+          'procedure Local;', 'begin', '  SysUtils.FreeAndNil( Obj );', 'end;',
+          'end.' ] ) );
     Assert.IsTrue( A.QualifiedReferences.TryGetValue( 'freeandnil', Qualifier ),
       'the qualified reference should be recorded' );
     Assert.AreEqual( 'SysUtils', Qualifier, False, 'and should name its qualifying unit' );
@@ -772,12 +772,12 @@ end;
 
 procedure TTestIdentifierUsageAnalyzer.TestClearResetsAllCollections;
 var
-  A: TIdentifierUsageAnalyzer;
+  A                 : TIdentifierUsageAnalyzer;
 begin
-  A := TIdentifierUsageAnalyzer.Create;
+  A                 := TIdentifierUsageAnalyzer.Create;
   try
     A.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Classes;', 'implementation', 'end.' ] ) );
+          'unit Subject;', 'interface', 'uses Classes;', 'implementation', 'end.' ] ) );
     Assert.IsTrue( A.InterfaceUsedUnits.Count > 0, 'there should be something to clear' );
 
     A.Clear;
@@ -797,28 +797,28 @@ end;
 /// <summary>Builds a database holding one provider unit that exports a single routine.</summary>
 function ProviderDB: TUnitExportsDatabase;
 begin
-  Result := TUnitExportsDatabase.Create;
+  Result            := TUnitExportsDatabase.Create;
   Result.ScanSource( 'Provider', 'Provider.pas', Src( [
-    'unit Provider;', 'interface', 'procedure ProviderRoutine;', 'implementation', 'end.' ] ) );
+        'unit Provider;', 'interface', 'procedure ProviderRoutine;', 'implementation', 'end.' ] ) );
 end;
 
 procedure TTestUsesClauseRefactorer.TestInterfaceUnitUsedOnlyInImplementationMovesDown;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  P: TUnitPlacement;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  P                 : TUnitPlacement;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
-      'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;',
+          'implementation',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
+          'end.' ] ) );
     try
-      P := PlacementFor( Placements, 'Provider' );
+      P             := PlacementFor( Placements, 'Provider' );
       Assert.IsTrue( P.CurrentSection = usInterface, 'it is currently in the interface clause' );
       Assert.IsTrue( P.RecommendedSection = usImplementation,
         'used only below implementation, so it should be recommended for the implementation clause' );
@@ -835,20 +835,20 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestInterfaceUnitUsedInInterfaceStays;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  P: TUnitPlacement;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  P                 : TUnitPlacement;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;',
-      'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
-      'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;',
+          'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
+          'implementation', 'end.' ] ) );
     try
-      P := PlacementFor( Placements, 'Provider' );
+      P             := PlacementFor( Placements, 'Provider' );
       Assert.IsTrue( P.RecommendedSection = usInterface,
         'its identifier is referenced in the interface, so it should stay there' );
       Assert.IsTrue( P.IdentifiersUsedInInterface.IndexOf( 'ProviderRoutine' ) >= 0,
@@ -864,18 +864,18 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestUnusedUnitIsFlaggedForReview;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  P: TUnitPlacement;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  P                 : TUnitPlacement;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;', 'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;', 'implementation', 'end.' ] ) );
     try
-      P := PlacementFor( Placements, 'Provider' );
+      P             := PlacementFor( Placements, 'Provider' );
       Assert.IsTrue( P.RecommendedSection = usInterface,
         'an apparently unused unit should be left where it is' );
       Assert.AreEqual( 'No direct usage detected - review manually', P.Reason, False,
@@ -891,20 +891,20 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestImplementationUnitUsedInInterfaceMovesUp;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  P: TUnitPlacement;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  P                 : TUnitPlacement;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface',
-      'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
-      'implementation', 'uses Provider;', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface',
+          'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
+          'implementation', 'uses Provider;', 'end.' ] ) );
     try
-      P := PlacementFor( Placements, 'Provider' );
+      P             := PlacementFor( Placements, 'Provider' );
       Assert.IsTrue( P.CurrentSection = usImplementation, 'it is currently in the implementation clause' );
       Assert.IsTrue( P.RecommendedSection = usInterface,
         'its identifier is used in the interface, so it should be recommended for the interface clause' );
@@ -921,29 +921,29 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestGenerateRefactoredSourceRelocatesUnit;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  Rewritten: UTF8String;
-  Check: TIdentifierUsageAnalyzer;
-  U: TUsedUnitInfo;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  Rewritten         : UTF8String;
+  Check             : TIdentifierUsageAnalyzer;
+  U                 : TUsedUnitInfo;
   InInterface, InImplementation: Boolean;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Rewritten := '';
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
-      'end.' ] ) );
+    Rewritten       := '';
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;',
+          'implementation',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
+          'end.' ] ) );
     try
-      Rewritten := R.GenerateRefactoredSource( Src( [
-        'unit Subject;', 'interface', 'uses Provider;',
-        'implementation',
-        'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
-        'end.' ] ), Placements );
+      Rewritten     := R.GenerateRefactoredSource( Src( [
+            'unit Subject;', 'interface', 'uses Provider;',
+            'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;',
+            'end.' ] ), Placements );
     finally
       FreePlacements( Placements );
     end;
@@ -952,10 +952,10 @@ begin
 
     { Verify the outcome by re-reading the generated source rather than by matching text,
       so the test survives any change to layout or formatting. }
-    Check := TIdentifierUsageAnalyzer.Create;
+    Check           := TIdentifierUsageAnalyzer.Create;
     try
       Check.Analyze( Rewritten );
-      InInterface := False;
+      InInterface   := False;
       InImplementation := False;
       for U in Check.InterfaceUsedUnits do
         if SameText( U.UnitName, 'Provider' ) then
@@ -977,15 +977,15 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestSourceWithoutUsesClauseYieldsNoPlacements;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'implementation', 'end.' ] ) );
     try
       Assert.AreEqual<Integer>( 0, Length( Placements ),
         'a unit with no uses clause has nothing to place' );
@@ -1001,14 +1001,14 @@ end;
 /// <summary>Analyses ASource against ADB and returns the rewrite; AError receives any refusal reason.</summary>
 function Rewrite( ADB: TUnitExportsDatabase; const ASource: UTF8String; out AError: string ): UTF8String;
 var
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  R := TUsesClauseRefactorer.Create( ADB );
+  R                 := TUsesClauseRefactorer.Create( ADB );
   try
-    Placements := R.Analyze( ASource );
+    Placements      := R.Analyze( ASource );
     try
-      Result := R.GenerateRefactoredSource( ASource, Placements, AError );
+      Result        := R.GenerateRefactoredSource( ASource, Placements, AError );
     finally
       FreePlacements( Placements );
     end;
@@ -1026,21 +1026,21 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestConditionalBlockAndCommentSurviveAMove;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses',
-      '  {$IFDEF DEBUG} Cond, {$ENDIF} { keep } Classes;',
-      'implementation', '', 'uses', '  Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses',
+          '  {$IFDEF DEBUG} Cond, {$ENDIF} { keep } Classes;',
+          'implementation', '', 'uses', '  Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface', 'uses',
-      '  Provider, {$IFDEF DEBUG} Cond, {$ENDIF} { keep } Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses',
+            '  Provider, {$IFDEF DEBUG} Cond, {$ENDIF} { keep } Classes;',
+            'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'only "Provider, " leaves the interface clause, and a new implementation clause receives it' );
     Assert.AreEqual( '', Error, 'and nothing was refused' );
   finally
@@ -1050,16 +1050,16 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestEntryInsideConditionalIsRefused;
 var
-  DB: TUnitExportsDatabase;
-  Source: UTF8String;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Source            : UTF8String;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
-    Source := Src( [
-      'unit Subject;', 'interface', 'uses {$IFDEF DEBUG} Provider, {$ENDIF} Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] );
+    Source          := Src( [
+        'unit Subject;', 'interface', 'uses {$IFDEF DEBUG} Provider, {$ENDIF} Classes;',
+        'implementation',
+        'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] );
     AssertSource( Source, Rewrite( DB, Source, Error ), 'a conditional entry must not be moved' );
     Assert.Contains( Error, 'conditional', 'and the refusal says why' );
   finally
@@ -1069,19 +1069,19 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestInPathMovesWithItsEntry;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation', '', 'uses', '  Provider in ''..\Provider.pas'';',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation', '', 'uses', '  Provider in ''..\Provider.pas'';',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface', 'uses Provider in ''..\Provider.pas'', Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses Provider in ''..\Provider.pas'', Classes;',
+            'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'the entry moves with its in-path' );
   finally
     DB.Free;
@@ -1090,23 +1090,23 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestStalePlacementsAreRefused;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  Edits: TArray<TUsesEdit>;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  Edits             : TArray<TUsesEdit>;
+  Error             : string;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider, Classes;', 'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider, Classes;', 'implementation',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
     try
       // The user has since removed Provider from the clause.
       Assert.IsFalse( R.PlanMoves( Src( [
-        'unit Subject;', 'interface', 'uses Classes;', 'implementation',
-        'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Placements, Edits, Error ),
+              'unit Subject;', 'interface', 'uses Classes;', 'implementation',
+              'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Placements, Edits, Error ),
         'placements older than the source must be refused' );
       Assert.Contains( Error, 'not in the interface uses clause any more', 'with a reason' );
       Assert.AreEqual<Integer>( 0, Length( Edits ), 'and no edits' );
@@ -1121,29 +1121,29 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestUnitAddedAfterAnalysisSurvives;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  Rewritten: UTF8String;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  Rewritten         : UTF8String;
+  Error             : string;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;', 'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;', 'implementation',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
     try
       // The user has since added Extra to the clause.
-      Rewritten := R.GenerateRefactoredSource( Src( [
-        'unit Subject;', 'interface', 'uses Provider, Extra;', 'implementation',
-        'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Placements, Error );
+      Rewritten     := R.GenerateRefactoredSource( Src( [
+            'unit Subject;', 'interface', 'uses Provider, Extra;', 'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Placements, Error );
     finally
       FreePlacements( Placements );
     end;
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses Extra;', 'implementation', '', 'uses', '  Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Rewritten,
+          'unit Subject;', 'interface', 'uses Extra;', 'implementation', '', 'uses', '  Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Rewritten,
       'Extra, added after the analysis, stays where the user put it' );
   finally
     R.Free;
@@ -1153,19 +1153,19 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestMoveUpCreatesInterfaceClause;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( Src( [
-      'unit Subject;', 'interface', '', 'uses', '  Provider;',
-      'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
-      'implementation', 'end.' ] ),
+          'unit Subject;', 'interface', '', 'uses', '  Provider;',
+          'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
+          'implementation', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface',
-      'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
-      'implementation', 'uses Provider;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface',
+            'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
+            'implementation', 'uses Provider;', 'end.' ] ), Error ),
       'an interface clause is created for Provider and the emptied implementation clause goes' );
   finally
     DB.Free;
@@ -1174,21 +1174,21 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestNonAsciiBeforeClausesKeepsOffsets;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( Src( [
-      'unit Subject; // Grüße – ½ €',
-      'interface', 'uses Classes;',
-      'implementation', 'uses SysUtils, Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject; // Grüße – ½ €',
+          'interface', 'uses Classes;',
+          'implementation', 'uses SysUtils, Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject; // Grüße – ½ €',
-      'interface', 'uses Provider, Classes;',
-      'implementation', 'uses SysUtils;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject; // Grüße – ½ €',
+            'interface', 'uses Provider, Classes;',
+            'implementation', 'uses SysUtils;',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'multi-byte characters before the clauses must not shift the edits' );
   finally
     DB.Free;
@@ -1197,21 +1197,21 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestDottedNameMovesIntact;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Acme.Provider', 'Acme.Provider.pas', Src( [
-      'unit Acme.Provider;', 'interface', 'procedure ProviderRoutine;', 'implementation', 'end.' ] ) );
+          'unit Acme.Provider;', 'interface', 'procedure ProviderRoutine;', 'implementation', 'end.' ] ) );
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation', 'uses SysUtils, Acme.Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation', 'uses SysUtils, Acme.Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface', 'uses Acme.Provider, Classes;',
-      'implementation', 'uses SysUtils;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses Acme.Provider, Classes;',
+            'implementation', 'uses SysUtils;',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'the dotted name is found by its full name and moves intact' );
   finally
     DB.Free;
@@ -1220,21 +1220,21 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestLongTargetClauseWraps;
 var
-  DB: TUnitExportsDatabase;
-  Long: string;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Long              : string;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
-    Long := StringOfChar( 'L', 150 );
+    Long            := StringOfChar( 'L', 150 );
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation', 'uses', '  ' + Long + ',', '  Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation', 'uses', '  ' + Long + ',', '  Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface', 'uses Provider, Classes;',
-      'implementation', 'uses', '  ' + Long + ';',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses Provider, Classes;',
+            'implementation', 'uses', '  ' + Long + ';',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'the appended entry starts a new line rather than pass 160 characters' );
   finally
     DB.Free;
@@ -1243,14 +1243,14 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestProgramSourceIsRefused;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
-  Edits: TArray<TUsesEdit>;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
+  Edits             : TArray<TUsesEdit>;
+  Error             : string;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
     SetLength( Placements, 1 );
     Placements[ 0 ].UnitName := 'Provider';
@@ -1267,19 +1267,19 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestFieldTypeDoesNotPullUnitIntoInterface;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  DB := TUnitExportsDatabase.Create;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := TUnitExportsDatabase.Create;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
     DB.ScanSource( 'Bar', 'Bar.pas', Src( [
-      'unit Bar;', 'interface', 'type', '  TBar = class', '    FCount: Integer;', '  end;', 'implementation', 'end.' ] ) );
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'function Get: Integer;',
-      'implementation', 'uses Bar;',
-      'function Get: Integer;', 'begin', '  Result := TBar.InstanceSize;', 'end;', 'end.' ] ) );
+          'unit Bar;', 'interface', 'type', '  TBar = class', '    FCount: Integer;', '  end;', 'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'function Get: Integer;',
+          'implementation', 'uses Bar;',
+          'function Get: Integer;', 'begin', '  Result := TBar.InstanceSize;', 'end;', 'end.' ] ) );
     try
       Assert.IsTrue( PlacementFor( Placements, 'Bar' ).RecommendedSection = usImplementation,
         'Bar does not declare Integer, so the interface''s Integer must not pull it up' );
@@ -1294,19 +1294,19 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestQualifiedReferenceToAnotherUnitDoesNotCount;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  DB := TUnitExportsDatabase.Create;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := TUnitExportsDatabase.Create;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
     DB.ScanSource( 'Bar', 'Bar.pas', Src( [
-      'unit Bar;', 'interface', 'type', '  TThing = class', '  end;', 'implementation', 'end.' ] ) );
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Other;', 'var', '  X: Other.TThing;',
-      'implementation', 'uses Bar;',
-      'procedure Local;', 'begin', '  TThing.Create;', 'end;', 'end.' ] ) );
+          'unit Bar;', 'interface', 'type', '  TThing = class', '  end;', 'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Other;', 'var', '  X: Other.TThing;',
+          'implementation', 'uses Bar;',
+          'procedure Local;', 'begin', '  TThing.Create;', 'end;', 'end.' ] ) );
     try
       Assert.IsTrue( PlacementFor( Placements, 'Bar' ).RecommendedSection = usImplementation,
         'the interface''s TThing is Other.TThing, so Bar must stay in the implementation clause' );
@@ -1321,13 +1321,13 @@ end;
 
 procedure TTestUnitExportsDatabase.TestEnumValuesAreExported;
 var
-  DB: TUnitExportsDatabase;
+  DB                : TUnitExportsDatabase;
 begin
-  DB := TUnitExportsDatabase.Create;
+  DB                := TUnitExportsDatabase.Create;
   try
     DB.ScanSource( 'Gfx', 'Gfx.pas', Src( [
-      'unit Gfx;', 'interface', 'type', '  TFontStyle = ( fsBold, fsItalic = 4 );', '  TAfter = Integer;',
-      'implementation', 'end.' ] ) );
+          'unit Gfx;', 'interface', 'type', '  TFontStyle = ( fsBold, fsItalic = 4 );', '  TAfter = Integer;',
+          'implementation', 'end.' ] ) );
     Assert.IsTrue( HasExport( DB, 'Gfx', 'TFontStyle', ekType ), 'the enumerated type is exported' );
     Assert.IsTrue( HasExport( DB, 'Gfx', 'fsBold', ekConst ), 'and so is its first value' );
     Assert.IsTrue( HasExport( DB, 'Gfx', 'fsItalic', ekConst ), 'and a value with an explicit ordinal' );
@@ -1339,19 +1339,19 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestEnumValueKeepsUnitInInterface;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  DB := TUnitExportsDatabase.Create;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := TUnitExportsDatabase.Create;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
     DB.ScanSource( 'Gfx', 'Gfx.pas', Src( [
-      'unit Gfx;', 'interface', 'type', '  TFontStyle = ( fsBold, fsItalic );', 'implementation', 'end.' ] ) );
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Gfx;', 'const', '  DefaultStyle = [ fsBold ];',
-      'implementation',
-      'procedure Local;', 'var', '  S: TFontStyle;', 'begin', 'end;', 'end.' ] ) );
+          'unit Gfx;', 'interface', 'type', '  TFontStyle = ( fsBold, fsItalic );', 'implementation', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Gfx;', 'const', '  DefaultStyle = [ fsBold ];',
+          'implementation',
+          'procedure Local;', 'var', '  S: TFontStyle;', 'begin', 'end;', 'end.' ] ) );
     try
       Assert.IsTrue( PlacementFor( Placements, 'Gfx' ).RecommendedSection = usInterface,
         'fsBold is used in the interface, so Gfx must stay in the interface clause' );
@@ -1366,18 +1366,18 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestInterfaceTypeInImplementationKeepsSection;
 var
-  DB: TUnitExportsDatabase;
-  R: TUsesClauseRefactorer;
-  Placements: TArray<TUnitPlacement>;
+  DB                : TUnitExportsDatabase;
+  R                 : TUsesClauseRefactorer;
+  Placements        : TArray<TUnitPlacement>;
 begin
-  DB := ProviderDB;
-  R := TUsesClauseRefactorer.Create( DB );
+  DB                := ProviderDB;
+  R                 := TUsesClauseRefactorer.Create( DB );
   try
-    Placements := R.Analyze( Src( [
-      'unit Subject;', 'interface', 'uses Provider;',
-      'implementation',
-      'type', '  IFoo = interface', '  end;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
+    Placements      := R.Analyze( Src( [
+          'unit Subject;', 'interface', 'uses Provider;',
+          'implementation',
+          'type', '  IFoo = interface', '  end;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ) );
     try
       Assert.IsTrue( PlacementFor( Placements, 'Provider' ).RecommendedSection = usImplementation,
         'ProviderRoutine is used below "IFoo = interface", which is still the implementation section' );
@@ -1392,16 +1392,16 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestIncludeBeforeSectionIsRefused;
 var
-  DB: TUnitExportsDatabase;
-  Source: UTF8String;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Source            : UTF8String;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
-    Source := Src( [
-      'unit Subject;', 'interface', '{$I SubjectUses.inc}',
-      'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
-      'implementation', 'uses Provider;', 'end.' ] );
+    Source          := Src( [
+        'unit Subject;', 'interface', '{$I SubjectUses.inc}',
+        'procedure Exposed;', 'begin', '  ProviderRoutine;', 'end;',
+        'implementation', 'uses Provider;', 'end.' ] );
     AssertSource( Source, Rewrite( DB, Source, Error ), 'no second interface clause may be created' );
     Assert.Contains( Error, 'include', 'and the refusal says why' );
   finally
@@ -1411,25 +1411,25 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestLineFeedBufferGetsLineFeeds;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 
   function LfSrc( const ALines: array of string ): UTF8String;
   begin
-    Result := UTF8String( string.Join( #10, ALines ) + #10 );
+    Result          := UTF8String( string.Join( #10, ALines ) + #10 );
   end;
 
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( LfSrc( [
-      'unit Subject;', 'interface', 'uses Classes;',
-      'implementation', '', 'uses', '  Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses Classes;',
+          'implementation', '', 'uses', '  Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, LfSrc( [
-      'unit Subject;', 'interface', 'uses Provider, Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses Provider, Classes;',
+            'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'the created clause uses the buffer''s LF line breaks' );
   finally
     DB.Free;
@@ -1438,22 +1438,22 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestTrailingLineCommentGoesWithItsEntry;
 var
-  DB: TUnitExportsDatabase;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
     AssertSource( Src( [
-      'unit Subject;', 'interface', 'uses',
-      '  Classes;',
-      'implementation', '', 'uses', '  Provider;',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
+          'unit Subject;', 'interface', 'uses',
+          '  Classes;',
+          'implementation', '', 'uses', '  Provider;',
+          'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ),
       Rewrite( DB, Src( [
-      'unit Subject;', 'interface', 'uses',
-      '  Provider, // the provider of ProviderRoutine',
-      '  Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
+            'unit Subject;', 'interface', 'uses',
+            '  Provider, // the provider of ProviderRoutine',
+            '  Classes;',
+            'implementation',
+            'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] ), Error ),
       'the entry''s line goes, comment and all' );
   finally
     DB.Free;
@@ -1462,17 +1462,17 @@ end;
 
 procedure TTestUsesClauseRefactorer.TestTrailingLineCommentOnSharedLineIsRefused;
 var
-  DB: TUnitExportsDatabase;
-  Source: UTF8String;
-  Error: string;
+  DB                : TUnitExportsDatabase;
+  Source            : UTF8String;
+  Error             : string;
 begin
-  DB := ProviderDB;
+  DB                := ProviderDB;
   try
-    Source := Src( [
-      'unit Subject;', 'interface', 'uses Provider, // the provider of ProviderRoutine',
-      '  Classes;',
-      'implementation',
-      'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] );
+    Source          := Src( [
+        'unit Subject;', 'interface', 'uses Provider, // the provider of ProviderRoutine',
+        '  Classes;',
+        'implementation',
+        'procedure Local;', 'begin', '  ProviderRoutine;', 'end;', 'end.' ] );
     AssertSource( Source, Rewrite( DB, Source, Error ), 'the comment cannot go with the entry, so nothing changes' );
     Assert.Contains( Error, '// comment', 'and the refusal says why' );
   finally
@@ -1486,3 +1486,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestUsesClauseRefactorer );
 
 end.
+

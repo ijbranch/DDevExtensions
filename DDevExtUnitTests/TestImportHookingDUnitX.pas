@@ -14,7 +14,7 @@ uses
 
 type
   /// <summary>DUnitX test fixture exercising <c>TJclPeMapImgHooks</c> against this executable's import table.</summary>
-  [TestFixture]
+  [ TestFixture ]
   TTestImportHooking = class
   public
     /// <summary>
@@ -22,13 +22,13 @@ type
     /// On Win64 the import table was walked as 32-bit entries and VirtualProtectEx was given a
     /// truncated process handle, so nothing was hooked and the failure was silent.
     /// </summary>
-    [Test]
+    [ Test ]
     procedure TestHookAndUnhookOwnImport;
     /// <summary>Proves freeing the hook list restores every import it still holds hooked.</summary>
-    [Test]
+    [ Test ]
     procedure TestFreeingListRestoresImport;
     /// <summary>Proves ReplaceImport reports failure ( False ) when the function is not imported from the named module.</summary>
-    [Test]
+    [ Test ]
     procedure TestReplaceImportReportsMissingImport;
   end;
 
@@ -39,32 +39,32 @@ uses
 
 const
   /// <summary>Value the replacement returns, so a redirected call is unmistakable.</summary>
-  cFakeTicks = 424242;
+  cFakeTicks        = 424242;
 
 /// <summary>Replacement for GetTickCount: returns cFakeTicks.</summary>
 /// <returns>cFakeTicks.</returns>
 function FakeGetTickCount: DWORD; stdcall;
 begin
-  Result := cFakeTicks;
+  Result            := cFakeTicks;
 end;
 
 /// <summary>Calls GetTickCount through this executable's import table.</summary>
 /// <returns>What the ( possibly redirected ) import returns.</returns>
 function CallGetTickCount: DWORD;
 begin
-  Result := GetTickCount;
+  Result            := GetTickCount;
 end;
 
 procedure TTestImportHooking.TestHookAndUnhookOwnImport;
 begin
   Assert.AreNotEqual( DWORD( cFakeTicks ), CallGetTickCount, 'Before the hook' );
 
-  var oHooks := TJclPeMapImgHooks.Create;
+  var oHooks        := TJclPeMapImgHooks.Create;
   try
     Assert.IsTrue( oHooks.HookImport( Pointer( HInstance ), kernel32, 'GetTickCount', @FakeGetTickCount ), 'HookImport failed' );
     Assert.AreEqual( DWORD( cFakeTicks ), CallGetTickCount, 'While hooked' );
 
-    Assert.IsTrue( oHooks[0].Unhook, 'Unhook failed' );
+    Assert.IsTrue( oHooks[ 0 ].Unhook, 'Unhook failed' );
     Assert.AreNotEqual( DWORD( cFakeTicks ), CallGetTickCount, 'After Unhook' );
     Assert.AreEqual( 0, oHooks.Count );
   finally
@@ -74,7 +74,7 @@ end;
 
 procedure TTestImportHooking.TestFreeingListRestoresImport;
 begin
-  var oHooks := TJclPeMapImgHooks.Create;
+  var oHooks        := TJclPeMapImgHooks.Create;
   try
     Assert.IsTrue( oHooks.HookImport( Pointer( HInstance ), kernel32, 'GetTickCount', @FakeGetTickCount ), 'HookImport failed' );
     Assert.AreEqual( DWORD( cFakeTicks ), CallGetTickCount, 'While hooked' );
@@ -87,7 +87,7 @@ end;
 procedure TTestImportHooking.TestReplaceImportReportsMissingImport;
 begin
   // GetTickCount is imported from kernel32, never from user32.
-  var pOriginal := GetProcAddress( GetModuleHandle( kernel32 ), 'GetTickCount' );
+  var pOriginal     := GetProcAddress( GetModuleHandle( kernel32 ), 'GetTickCount' );
   Assert.IsFalse( TJclPeMapImgHooks.ReplaceImport( Pointer( HInstance ), user32, pOriginal, @FakeGetTickCount ) );
   Assert.AreNotEqual( DWORD( cFakeTicks ), CallGetTickCount );
 end;
@@ -96,3 +96,4 @@ initialization
   TDUnitX.RegisterTestFixture( TTestImportHooking );
 
 end.
+

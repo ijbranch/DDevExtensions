@@ -31,7 +31,7 @@ type
   /// Plug-in configuration object that owns the Compile Backup feature and its IDE
   /// notifiers.
   /// </summary>
-  TCompileBackupConfig = class(TPluginConfig)
+  TCompileBackupConfig = class( TPluginConfig )
   private
     /// <summary>IDE notifier delivering BeforeCompile callbacks.</summary>
     FIDENofifier: TIDENotifier;
@@ -47,7 +47,7 @@ type
 
     /// <summary>Deletes all backup files associated with the supplied module data.</summary>
     /// <param name="Data">Module data whose backup file list should be removed.</param>
-    procedure DeleteBackupFiles(Data: TModuleData);
+    procedure DeleteBackupFiles( Data: TModuleData );
     /// <summary>Iterates over all open modules and writes a ".cbk" backup for each modified file.</summary>
     procedure BackupModifiedFiles;
 
@@ -55,14 +55,14 @@ type
     /// <param name="Project">Project being compiled.</param>
     /// <param name="IsCodeInsight">True for Code Insight background compiles ( ignored ).</param>
     /// <param name="Cancel">May be set to True to cancel the compile.</param>
-    procedure BeforeCompile(const Project: IOTAProject; IsCodeInsight: Boolean;
-      var Cancel: Boolean);
+    procedure BeforeCompile( const Project: IOTAProject; IsCodeInsight: Boolean;
+      var Cancel: Boolean );
     /// <summary>Module-data callback: deletes backup files after a module has been saved.</summary>
     /// <param name="Data">Module data describing the module that was just saved.</param>
-    procedure ModuleAfterSave(Data: TModuleData);
+    procedure ModuleAfterSave( Data: TModuleData );
     /// <summary>Module-data callback: optionally deletes backups when the module is being destroyed.</summary>
     /// <param name="Data">Module data describing the module being destroyed.</param>
-    procedure ModuleDestroying(Data: TModuleData);
+    procedure ModuleDestroying( Data: TModuleData );
 
     /// <summary>Returns the options-tree page used to edit this plug-in's settings.</summary>
     /// <returns>The options page node for this feature.</returns>
@@ -70,7 +70,7 @@ type
     /// <summary>Builds the backup file name for the supplied source file ( appends ".cbk" ).</summary>
     /// <param name="Filename">Source file name.</param>
     /// <returns>Filename with the ".cbk" extension appended.</returns>
-    function GetCompileBackupFilename(const Filename: string): string;
+    function GetCompileBackupFilename( const Filename: string ): string;
   public
     /// <summary>Constructs the configuration and registers the IDE notifiers.</summary>
     constructor Create;
@@ -86,21 +86,21 @@ type
   /// <summary>
   /// Frame implementing ITreePageComponent for the Compile Backup options page.
   /// </summary>
-  TFrameOptionPageCompileBackup = class(TFrameBase, ITreePageComponent)
+  TFrameOptionPageCompileBackup = class( TFrameBase, ITreePageComponent )
     /// <summary>Master enable check box, bound to TCompileBackupConfig.Active.</summary>
     cbxActive: TCheckBox;
     /// <summary>Bound to TCompileBackupConfig.DeleteBackupAfterClose.</summary>
     cbxDeleteBackupAfterClose: TCheckBox;
     /// <summary>Enables or disables dependent controls when the master switch changes.</summary>
     /// <param name="Sender">The "Active" check box.</param>
-    procedure cbxActiveClick(Sender: TObject);
+    procedure cbxActiveClick( Sender: TObject );
   private
     /// <summary>Configuration instance bound to this frame.</summary>
     FCompileBackupConfig: TCompileBackupConfig;
   public
     /// <summary>Receives the TCompileBackupConfig instance to edit.</summary>
     /// <param name="UserData">A TCompileBackupConfig instance.</param>
-    procedure SetUserData(UserData: TObject);
+    procedure SetUserData( UserData: TObject );
     /// <summary>Loads the configuration values into the visual controls.</summary>
     procedure LoadData;
     /// <summary>Persists values from the visual controls back into the configuration.</summary>
@@ -116,8 +116,8 @@ type
 /// global TCompileBackupConfig instance.
 /// </summary>
 /// <param name="Unload">False to load the plug-in, True to unload it.</param>
-procedure InitPlugin(Unload: Boolean);
-  
+procedure InitPlugin( Unload: Boolean );
+
 implementation
 
 uses
@@ -128,47 +128,47 @@ uses
 var
   CompileBackupConfig: TCompileBackupConfig;
 
-procedure InitPlugin(Unload: Boolean);
+procedure InitPlugin( Unload: Boolean );
 begin
   if not Unload then
     CompileBackupConfig := TCompileBackupConfig.Create
   else
-    FreeAndNil(CompileBackupConfig);
+    FreeAndNil( CompileBackupConfig );
 end;
 
 { TFrameOptionPageCompileBackup }
 
-procedure TFrameOptionPageCompileBackup.SetUserData(UserData: TObject);
+procedure TFrameOptionPageCompileBackup.SetUserData( UserData: TObject );
 begin
   // Validate the cast rather than letting a wrong/nil UserData AV inside LoadData.
-  if not (UserData is TCompileBackupConfig) then
+  if not ( UserData is TCompileBackupConfig ) then
     FCompileBackupConfig := nil
   else
-    FCompileBackupConfig := TCompileBackupConfig(UserData);
+    FCompileBackupConfig := TCompileBackupConfig( UserData );
 end;
 
 procedure TFrameOptionPageCompileBackup.LoadData;
 begin
-  if not Assigned(FCompileBackupConfig) then
+  if not Assigned( FCompileBackupConfig ) then
     Exit;
 
   cbxActive.Checked := FCompileBackupConfig.Active;
   cbxDeleteBackupAfterClose.Checked := FCompileBackupConfig.DeleteBackupAfterClose;
-  cbxActiveClick(cbxActive);
-  {$IFDEF CPUX64}
+  cbxActiveClick( cbxActive );
+{$IFDEF CPUX64}
   // The compile-backup notifier is not registered on the 64-bit IDE (TIDENotifier
   // registration is gated off to avoid an AV), so backups would never be written.
   // Make that explicit rather than letting the user rely on a backup that never runs.
   cbxActive.Enabled := False;
-  cbxActive.Hint := 'Not available on the 64-bit IDE';
+  cbxActive.Hint    := 'Not available on the 64-bit IDE';
   cbxActive.ShowHint := True;
   cbxDeleteBackupAfterClose.Enabled := False;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure TFrameOptionPageCompileBackup.SaveData;
 begin
-  if not Assigned(FCompileBackupConfig) then
+  if not Assigned( FCompileBackupConfig ) then
     Exit;
 
   FCompileBackupConfig.Active := cbxActive.Checked;
@@ -189,7 +189,7 @@ procedure TFrameOptionPageCompileBackup.Unselected;
 begin
 end;
 
-procedure TFrameOptionPageCompileBackup.cbxActiveClick(Sender: TObject);
+procedure TFrameOptionPageCompileBackup.cbxActiveClick( Sender: TObject );
 begin
   cbxDeleteBackupAfterClose.Enabled := cbxActive.Checked;
 end;
@@ -198,8 +198,8 @@ end;
 
 constructor TCompileBackupConfig.Create;
 begin
-  inherited Create(AppDataDirectory + '\CompileBackup.xml', 'CompileBackup');
-  FIDENofifier := TIDENotifier.Create;
+  inherited Create( AppDataDirectory + '\CompileBackup.xml', 'CompileBackup' );
+  FIDENofifier      := TIDENotifier.Create;
   FIDENofifier.OnBeforeCompile := BeforeCompile;
   FModuleDataNotifier := TModuleDataNotifier.Create;
   FModuleDataNotifier.AfterSave := ModuleAfterSave;
@@ -216,52 +216,52 @@ end;
 procedure TCompileBackupConfig.Init;
 begin
   inherited Init;
-  Active := True;
+  Active            := True;
   DeleteBackupAfterClose := True;
 end;
 
-procedure TCompileBackupConfig.BeforeCompile(const Project: IOTAProject;
-  IsCodeInsight: Boolean; var Cancel: Boolean);
+procedure TCompileBackupConfig.BeforeCompile( const Project: IOTAProject;
+  IsCodeInsight: Boolean; var Cancel: Boolean );
 begin
   if not IsCodeInsight and Active then
     BackupModifiedFiles;
 end;
 
-procedure TCompileBackupConfig.ModuleDestroying(Data: TModuleData);
+procedure TCompileBackupConfig.ModuleDestroying( Data: TModuleData );
 begin
   if Active and DeleteBackupAfterClose then
-    DeleteBackupFiles(Data);
+    DeleteBackupFiles( Data );
   { Destroy the associated BackupFiles-TStringList }
-  Data.Bucket[Self].Free;
+  Data.Bucket[ Self ].Free;
 end;
 
-procedure TCompileBackupConfig.ModuleAfterSave(Data: TModuleData);
+procedure TCompileBackupConfig.ModuleAfterSave( Data: TModuleData );
 begin
   if Active then
-    DeleteBackupFiles(Data);
+    DeleteBackupFiles( Data );
 end;
 
-procedure TCompileBackupConfig.DeleteBackupFiles(Data: TModuleData);
+procedure TCompileBackupConfig.DeleteBackupFiles( Data: TModuleData );
 var
-  List: TStrings;
-  i: Integer;
+  List              : TStrings;
+  i                 : Integer;
 begin
-  List := TStrings(Data.Bucket[Self]);
+  List              := TStrings( Data.Bucket[ Self ] );
   if List <> nil then
   begin
     for i := 0 to List.Count - 1 do
-      DeleteFile(List[i]);
+      DeleteFile( List[ i ] );
     List.Free;
-    Data.Bucket[Self] := nil;
+    Data.Bucket[ Self ] := nil;
   end;
 end;
 
 procedure TCompileBackupConfig.BackupModifiedFiles;
 const
-  Utf8BOM: array[0..2] of Byte = ($EF, $BB, $BF);
+  Utf8BOM           : array[ 0..2 ] of Byte = ( $EF, $BB, $BF );
   // Each backup is written beside its target first, so a failed write (disk full,
   // locked file) never truncates the previous good backup.
-  sTempSuffix = '.tmp';
+  sTempSuffix       = '.tmp';
 
   procedure WriteBackup( const ABackupFilename: string; const AWrite: TProc<string> );
   begin
@@ -277,55 +277,54 @@ const
   end;
 
 var
-  Modules: IOTAModuleServices;
-  Module: IOTAModule;
-  FileEditor: IOTAEditor;
-  SourceEditor: IOTAEditBuffer;
-  FormEditor: IOTAFormEditor;
-  i, k: Integer;
-  BackupFilename: string;
-  BackupedFiles: TStrings;
+  Modules           : IOTAModuleServices;
+  Module            : IOTAModule;
+  FileEditor        : IOTAEditor;
+  SourceEditor      : IOTAEditBuffer;
+  FormEditor        : IOTAFormEditor;
+  i, k              : Integer;
+  BackupFilename    : string;
+  BackupedFiles     : TStrings;
 begin
-  if Supports(BorlandIDEServices, IOTAModuleServices, Modules) then
+  if Supports( BorlandIDEServices, IOTAModuleServices, Modules ) then
   begin
-    BackupedFiles := TStringList.Create;
+    BackupedFiles   := TStringList.Create;
     try
       for i := 0 to Modules.ModuleCount - 1 do
       begin
-        Module := Modules.Modules[i];
+        Module      := Modules.Modules[ i ];
         try
           for k := 0 to Module.GetModuleFileCount - 1 do
           begin
-            FileEditor := Module.GetModuleFileEditor(k);
-            if Supports(FileEditor, IOTAEditBuffer, SourceEditor) then
+            FileEditor := Module.GetModuleFileEditor( k );
+            if Supports( FileEditor, IOTAEditBuffer, SourceEditor ) then
             begin
               // Only modified buffers that already have an on-disk file are backed
               // up; never-saved new buffers (no file yet) are intentionally skipped.
-              if SourceEditor.Modified and FastFileExists(SourceEditor.FileName) then
+              if SourceEditor.Modified and FastFileExists( SourceEditor.FileName ) then
               begin
-                BackupFilename := GetCompileBackupFilename(SourceEditor.FileName);
+                BackupFilename := GetCompileBackupFilename( SourceEditor.FileName );
                 var LSourceEditor := SourceEditor;
                 WriteBackup( BackupFilename,
                   procedure( ATempFilename: string )
                   begin
                     SaveEditorSourceTo( LSourceEditor, ATempFilename );
                   end );
-                BackupedFiles.Add(BackupFilename);
+                BackupedFiles.Add( BackupFilename );
               end;
             end
-            else
-            if Supports(FileEditor, IOTAFormEditor, FormEditor) then
+            else if Supports( FileEditor, IOTAFormEditor, FormEditor ) then
             begin
-              if FormEditor.Modified and FastFileExists(FormEditor.FileName) then
+              if FormEditor.Modified and FastFileExists( FormEditor.FileName ) then
               begin
-                BackupFilename := GetCompileBackupFilename(FormEditor.FileName);
+                BackupFilename := GetCompileBackupFilename( FormEditor.FileName );
                 var LFormEditor := FormEditor;
                 WriteBackup( BackupFilename,
                   procedure( ATempFilename: string )
                   begin
                     SaveFormResourceTo( LFormEditor, ATempFilename );
                   end );
-                BackupedFiles.Add(BackupFilename);
+                BackupedFiles.Add( BackupFilename );
               end;
             end;
           end;
@@ -342,8 +341,8 @@ begin
         try
           if BackupedFiles.Count > 0 then
           begin
-            ModuleDataList[Module].Bucket[Self].Free;
-            ModuleDataList[Module].Bucket[Self] := BackupedFiles;
+            ModuleDataList[ Module ].Bucket[ Self ].Free;
+            ModuleDataList[ Module ].Bucket[ Self ] := BackupedFiles;
             BackupedFiles := TStringList.Create;
           end;
         except
@@ -363,12 +362,13 @@ end;
 
 function TCompileBackupConfig.GetOptionPages: TTreePage;
 begin
-  Result := TTreePage.Create('Compile Backup', TFrameOptionPageCompileBackup, Self);
+  Result            := TTreePage.Create( 'Compile Backup', TFrameOptionPageCompileBackup, Self );
 end;
 
-function TCompileBackupConfig.GetCompileBackupFilename(const Filename: string): string;
+function TCompileBackupConfig.GetCompileBackupFilename( const Filename: string ): string;
 begin
-  Result := Filename + '.cbk';
+  Result            := Filename + '.cbk';
 end;
 
 end.
+

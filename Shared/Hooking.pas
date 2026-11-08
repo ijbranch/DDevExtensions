@@ -27,10 +27,10 @@ uses
 {$IFEND}
 
 type
-  {$IF not declared(SIZE_T)}
+{$IF not declared(SIZE_T)}
   /// <summary>Fallback declaration of SIZE_T for older Delphi versions where Windows.pas omits it.</summary>
   SIZE_T = DWORD;
-  {$IFEND}
+{$IFEND}
 
   /// <summary>Five-byte "JMP rel32" instruction layout used to redirect a function entry point.</summary>
   TXRedirCode = packed record
@@ -52,9 +52,9 @@ type
     Count: Integer;
     case Byte of
       /// <summary>The original five bytes captured as a TXRedirCode record.</summary>
-      0: (Code: TXRedirCode);
+      0: ( Code: TXRedirCode );
       /// <summary>Convenience 8-byte view used to copy Code as a single Int64.</summary>
-      1: (Code2: Int64);
+      1: ( Code2: Int64 );
   end;
 
   /// <summary>
@@ -65,15 +65,15 @@ type
   /// restriction makes this safe on x64 where the general CodeRedirect is not.
   /// </summary>
   TFullReplaceHook = record
-    {$IFDEF CPUX64}
+{$IFDEF CPUX64}
     /// <summary>Address whose entry bytes were overwritten (nil when not installed).</summary>
     RealProc: Pointer;
     /// <summary>The 14 original bytes, restored verbatim by RemoveFullReplaceHook.</summary>
-    OrgBytes: array[0..13] of Byte;
-    {$ELSE}
+    OrgBytes: array[ 0..13 ] of Byte;
+{$ELSE}
     /// <summary>Underlying Win32 redirection state (delegates to CodeRedirect/UnhookFunction).</summary>
     Redir: TRedirectCode;
-    {$ENDIF CPUX64}
+{$ENDIF CPUX64}
   end;
 
 /// <summary>Patches the first five bytes of Proc to JMP NewProc and stores the original bytes in Data.</summary>
@@ -88,38 +88,38 @@ type
 /// <param name="Data">Saved prologue and ref-count.  Must be zero-initialised before the first
 /// call (a global or a field is; a local record must be cleared): a non-zero Count means "already
 /// redirected" and only increments it.</param>
-procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode); overload;
+procedure CodeRedirect( Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode ); overload;
 /// <summary>Convenience overload of CodeRedirect that returns the redirection record by value.</summary>
 /// <param name="Proc">Function to redirect.</param>
 /// <param name="NewProc">Replacement function.</param>
 /// <returns>Redirection record holding the saved prologue.</returns>
-function CodeRedirect(Proc: Pointer; NewProc: Pointer): TRedirectCode; overload;
+function CodeRedirect( Proc: Pointer; NewProc: Pointer ): TRedirectCode; overload;
 /// <summary>
 /// Restores the original prologue captured in Data, decrementing the redirection ref-count.  A
 /// call with Count already 0 (never redirected, or restored already) does nothing.
 /// </summary>
 /// <param name="Data">State previously populated by CodeRedirect.</param>
-procedure CodeRestore(var Data: TRedirectCode);
+procedure CodeRestore( var Data: TRedirectCode );
 
 /// <summary>Re-applies an existing redirection with a different replacement function, reusing Data.</summary>
 /// <param name="NewProc">New replacement function.</param>
 /// <param name="Data">Existing redirection state for the original function.</param>
-procedure RehookFunction(NewProc: Pointer; var Data: TRedirectCode);
+procedure RehookFunction( NewProc: Pointer; var Data: TRedirectCode );
 /// <summary>Looks up SymbolName via GetProcAddress on ModuleHandle and redirects it to NewProc.</summary>
 /// <param name="ModuleHandle">Loaded module handle.</param>
 /// <param name="SymbolName">Exported symbol name.</param>
 /// <param name="NewProc">Replacement function.</param>
 /// <param name="Data">Redirection state; must be zero-initialised before the first call.</param>
-procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode); overload;
+procedure HookFunction( ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode ); overload;
 /// <summary>Looks up SymbolName in ModuleName via GetProcAddress and redirects it to NewProc.</summary>
 /// <param name="ModuleName">DLL/module name.</param>
 /// <param name="SymbolName">Exported symbol name.</param>
 /// <param name="NewProc">Replacement function.</param>
 /// <param name="Data">Redirection state; must be zero-initialised before the first call.</param>
-procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode); overload;
+procedure HookFunction( const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode ); overload;
 /// <summary>Restores the prologue captured by HookFunction.</summary>
 /// <param name="Data">Existing redirection state.</param>
-procedure UnhookFunction(var Data: TRedirectCode);
+procedure UnhookFunction( var Data: TRedirectCode );
 
 /// <summary>
 /// Installs an entry-point redirect from Proc to NewProc for a full-replacement hook (NewProc must
@@ -135,60 +135,60 @@ procedure UnhookFunction(var Data: TRedirectCode);
 /// <param name="Hook">Receives the saved state needed to revert the redirect.  A second install on
 /// a Hook that is still installed does nothing, so it can never capture the already-patched bytes
 /// as the "original" ones.</param>
-procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceHook);
+procedure InstallFullReplaceHook( Proc, NewProc: Pointer; var Hook: TFullReplaceHook );
 /// <summary>Reverts a redirect installed by InstallFullReplaceHook, restoring the original entry bytes.</summary>
 /// <param name="Hook">State previously populated by InstallFullReplaceHook.</param>
-procedure RemoveFullReplaceHook(var Hook: TFullReplaceHook);
+procedure RemoveFullReplaceHook( var Hook: TFullReplaceHook );
 /// <summary>Overwrites Size bytes at DestProc with the bytes from SourceProc, bypassing memory protection.</summary>
 /// <param name="DestProc">Destination address (machine code).</param>
 /// <param name="SourceProc">Source bytes.</param>
 /// <param name="Size">Number of bytes to copy.</param>
 /// <returns>True when all bytes were written successfully.</returns>
-function InjectCode(DestProc, SourceProc: Pointer; Size: Cardinal): Boolean;
+function InjectCode( DestProc, SourceProc: Pointer; Size: Cardinal ): Boolean;
 
 /// <summary>Resolves an indirect "JMP [rel]" thunk (such as an import-table stub) to the underlying function.</summary>
 /// <param name="Proc">Possibly thunked address.</param>
 /// <returns>The resolved function address, or Proc if it is not a thunk.</returns>
-function GetActualAddr(Proc: Pointer): Pointer; //inline;
+function GetActualAddr( Proc: Pointer ): Pointer; //inline;
 /// <summary>Patches the import address table of the module at Base so calls to FromProc go to ToProc.</summary>
 /// <param name="Base">Module base address.</param>
 /// <param name="ModuleName">Imported DLL name to match.</param>
 /// <param name="FromProc">Original imported function pointer.</param>
 /// <param name="ToProc">Replacement function pointer.</param>
 /// <returns>True when at least one IAT entry was patched.</returns>
-function ReplaceDllImport(Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer): Boolean;
+function ReplaceDllImport( Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer ): Boolean;
 /// <summary>Replaces every VMT slot of AClass that points at OldProc (or a thunk to it) with NewProc.</summary>
 /// <param name="AClass">Class whose VMT is patched.</param>
 /// <param name="OldProc">Original method address.</param>
 /// <param name="NewProc">Replacement method address.</param>
 /// <returns>True when a slot was patched.</returns>
-function ReplaceVmtField(AClass: TClass; OldProc, NewProc: Pointer): Boolean;
+function ReplaceVmtField( AClass: TClass; OldProc, NewProc: Pointer ): Boolean;
 /// <summary>Replaces a dynamic-method-table entry with NewProc and returns the previous handler.</summary>
 /// <param name="AClass">Owning class.</param>
 /// <param name="Index">Dynamic method index.</param>
 /// <param name="NewProc">Replacement handler.</param>
 /// <returns>Previous handler, or nil if not found.</returns>
-function ReplaceDmtField(AClass: TClass; Index: Integer; NewProc: Pointer): Pointer;
+function ReplaceDmtField( AClass: TClass; Index: Integer; NewProc: Pointer ): Pointer;
 /// <summary>Returns the implementation of the dynamic method with the given index for AClass.</summary>
 /// <param name="AClass">Class to query.</param>
 /// <param name="Index">Dynamic method index.</param>
 /// <returns>Method address, or nil when not found.</returns>
-function GetDynamicMethod(AClass: TClass; Index: Integer): Pointer;
+function GetDynamicMethod( AClass: TClass; Index: Integer ): Pointer;
 
 /// <summary>Returns the number of virtual method slots in the VMT of AClass.</summary>
 /// <param name="AClass">Class to inspect.</param>
 /// <returns>Slot count.</returns>
-function GetVirtualMethodCount(AClass: TClass): Integer;
+function GetVirtualMethodCount( AClass: TClass ): Integer;
 /// <summary>Reads the virtual method address at the given VMT byte offset.</summary>
 /// <param name="AClass">Owning class.</param>
 /// <param name="Index">Byte offset within the VMT.</param>
 /// <returns>Method address.</returns>
-function GetVirtualMethod(AClass: TClass; const Index: Integer): Pointer;
+function GetVirtualMethod( AClass: TClass; const Index: Integer ): Pointer;
 /// <summary>Writes Method into the VMT slot at the given byte offset, bypassing memory protection.</summary>
 /// <param name="AClass">Owning class.</param>
 /// <param name="Index">Byte offset within the VMT.</param>
 /// <param name="Method">New method address.</param>
-procedure SetVirtualMethod(AClass: TClass; const Index: Integer; const Method: Pointer);
+procedure SetVirtualMethod( AClass: TClass; const Index: Integer; const Method: Pointer );
 
 /// <summary>
 /// Scans executable memory starting at Start for a byte pattern and returns the matching address.
@@ -198,20 +198,20 @@ procedure SetVirtualMethod(AClass: TClass; const Index: Integer; const Method: P
 /// <param name="Bytes">Pattern (entries set to -1 match any byte).</param>
 /// <param name="MaxOffset">Optional limit on scan distance from Start (0 means unlimited within the region).</param>
 /// <returns>Matching address, or nil when no match is found.</returns>
-function FindMethodPtr(Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer; overload;
+function FindMethodPtr( Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0 ): Pointer; overload;
 /// <summary>Convenience overload that accepts a module handle as the start address.</summary>
 /// <param name="Start">Module handle treated as the start address.</param>
 /// <param name="Bytes">Pattern (entries set to -1 match any byte).</param>
 /// <param name="MaxOffset">Optional limit on scan distance from Start.</param>
 /// <returns>Matching address, or nil when no match is found.</returns>
-function FindMethodPtr(Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer; overload;
+function FindMethodPtr( Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer = 0 ): Pointer; overload;
 /// <summary>
 /// Formerly enabled a VirtualQuery cache inside FindMethodPtr.  The cache never worked (its hit
 /// test was inverted and its base address never recorded) and nothing enabled it, so it was
 /// removed; this routine is kept for source compatibility and does nothing.
 /// </summary>
 /// <param name="Enable">Ignored.</param>
-procedure EnableFindMethodPtrDllVirtualQueryCache(Enable: Boolean);
+procedure EnableFindMethodPtrDllVirtualQueryCache( Enable: Boolean );
 
 type
   /// <summary>Pointer to a TOffsetTable.</summary>
@@ -223,7 +223,7 @@ type
     Offsets: array of PInteger;
     /// <summary>Appends a captured offset pointer to the table.</summary>
     /// <param name="P">Pointer to the rel32 field within the relocated code.</param>
-    procedure Add(P: PInteger);
+    procedure Add( P: PInteger );
   end;
 
 /// <summary>
@@ -236,12 +236,12 @@ type
 /// <param name="OffsetTable">Optional collector for rel32 offset pointers.</param>
 /// <returns>Number of bytes covered by full instructions.</returns>
 /// <exception cref="Exception">Raised when an unsupported instruction or a debug breakpoint is encountered.</exception>
-function GetStartCodeSize(CodePtr: Pointer; RequiredSize: Integer; OffsetTable: POffsetTable = nil): Integer;
+function GetStartCodeSize( CodePtr: Pointer; RequiredSize: Integer; OffsetTable: POffsetTable = nil ): Integer;
 /// <summary>Allocates an executable trampoline that calls the original prologue of Proc followed by a JMP back into Proc.</summary>
 /// <param name="Proc">Function whose original behaviour must remain callable.</param>
 /// <returns>Address of the generated trampoline.</returns>
 /// <exception cref="Exception">Raised when Proc is nil or its prologue cannot be relocated.</exception>
-function CreateOrgCallMethodPtr(Proc: Pointer): Pointer;
+function CreateOrgCallMethodPtr( Proc: Pointer ): Pointer;
 /// <summary>Redirects OrgProc to NewProc and returns a trampoline that still invokes the original implementation.</summary>
 /// <remarks>
 /// On Win64 this is a no-op: the x86 5-byte JMP rel32 rewrite is not portable to x64
@@ -253,46 +253,46 @@ function CreateOrgCallMethodPtr(Proc: Pointer): Pointer;
 /// <param name="NewProc">Replacement function.</param>
 /// <returns>Trampoline that calls the original OrgProc, or <c>nil</c> on Win64.</returns>
 /// <exception cref="Exception">Raised on Win32 if the memory write fails.</exception>
-function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
+function RedirectOrgCall( OrgProc, NewProc: Pointer ): Pointer;
 /// <summary>Restores the prologue of OrgProc using the bytes captured in OrgCall, undoing RedirectOrgCall.</summary>
 /// <param name="OrgProc">Function whose prologue was patched.</param>
 /// <param name="OrgCall">Trampoline returned by RedirectOrgCall.</param>
-procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
+procedure RestoreOrgCall( OrgProc, OrgCall: Pointer );
 /// <summary>Re-redirects OrgProc to a different replacement while preserving the existing trampoline.</summary>
 /// <param name="OrgProc">Function whose redirection should be updated.</param>
 /// <param name="NewProc">New replacement function.</param>
 /// <param name="ExistingOrgCall">Existing trampoline (preserved for callers).</param>
-procedure ReRedirectOrgCall(OrgProc, NewProc, ExistingOrgCall: Pointer);
+procedure ReRedirectOrgCall( OrgProc, NewProc, ExistingOrgCall: Pointer );
 /// <summary>Patches the prologue of OrgProc with a JMP to NewProc without producing a trampoline.</summary>
 /// <param name="OrgProc">Function to patch.</param>
 /// <param name="NewProc">Replacement function.</param>
-procedure RedirectOrg(OrgProc, NewProc: Pointer);
+procedure RedirectOrg( OrgProc, NewProc: Pointer );
 
 /// <summary>Replaces the offset of an existing call/jmp rel32 instruction at CallJmpPtr to point at NewFunction.</summary>
 /// <param name="CallJmpPtr">Pointer to the $E8 (call) or $E9 (jmp) opcode.</param>
 /// <param name="NewFunction">New target address.</param>
 /// <returns>The absolute address that the call/jmp originally targeted, or nil on failure.</returns>
-function ReplaceRelCallOffset(CallJmpPtr: PByte; NewFunction: Pointer): Pointer;
+function ReplaceRelCallOffset( CallJmpPtr: PByte; NewFunction: Pointer ): Pointer;
 /// <summary>Returns the absolute target address of a call/jmp rel32 instruction at CallJmpPtr.</summary>
 /// <param name="CallJmpPtr">Pointer to the $E8 or $E9 opcode.</param>
 /// <returns>Absolute target address, or nil when CallJmpPtr is not a recognised opcode.</returns>
-function GetCallTargetAddress(CallJmpPtr: PByte): Pointer;
+function GetCallTargetAddress( CallJmpPtr: PByte ): Pointer;
 /// <summary>Overwrites the five bytes at FiveByteStart with "CALL CallFunction" (rel32).</summary>
 /// <param name="FiveByteStart">Address of the five-byte slot to patch.</param>
 /// <param name="CallFunction">Target function.</param>
 /// <returns>True on success.</returns>
-function ReplaceOpCodeByRelCall(FiveByteStart: PByte; CallFunction: Pointer): Boolean;
+function ReplaceOpCodeByRelCall( FiveByteStart: PByte; CallFunction: Pointer ): Boolean;
 /// <summary>Overwrites the five bytes at FiveByteStart with "JMP JumpTarget" (rel32), optionally padding with NOPs.</summary>
 /// <param name="FiveByteStart">Address of the five-byte slot to patch.</param>
 /// <param name="JumpTarget">Target address.</param>
 /// <param name="FillWithNop">When True, pad the remainder of the original instruction with $90.</param>
 /// <returns>True on success.</returns>
-function ReplaceOpCodeByRelJump(FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean = False): Boolean;
+function ReplaceOpCodeByRelJump( FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean = False ): Boolean;
 /// <summary>Replaces a complete instruction at IntructionStart with a "CALL CallFunction" rel32 and pads remaining bytes with NOPs.</summary>
 /// <param name="IntructionStart">Address of the instruction to replace.</param>
 /// <param name="CallFunction">Target function.</param>
 /// <returns>True on success.</returns>
-function ReplaceInstructionByRelCall(IntructionStart: PByte; CallFunction: Pointer): Boolean;
+function ReplaceInstructionByRelCall( IntructionStart: PByte; CallFunction: Pointer ): Boolean;
 
 type
   /// <summary>
@@ -304,9 +304,9 @@ type
     WinApiProc: PByte;
     case Mode: Byte of
       /// <summary>Modes 1 and 2: original five-byte hot-patch prologue and short jump.</summary>
-      1, 2: (Data: array[0..4+2] of Byte);
+      1, 2: ( Data: array[ 0..4 + 2 ] of Byte );
       /// <summary>Modes 3 and 100: pointer to the trampoline returned by RedirectOrgCall or the saved IAT entry.</summary>
-      3, 100: (OrgCall: Pointer);
+      3, 100: ( OrgCall: Pointer );
   end;
 
 /// <summary>Hooks AWinApiProc so that calls go to ANewProc, returning a callable pointer to the original implementation.</summary>
@@ -316,7 +316,7 @@ type
 /// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
 /// <returns>Trampoline pointer for invoking the original function, or nil on failure (including
 /// a target that cannot be patched on Win64).</returns>
-function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Pointer; overload;
+function HookWinApiProc( AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True ): Pointer; overload;
 /// <summary>Hooks AWinApiProc and writes the original-call pointer into the supplied untyped variable.</summary>
 /// <param name="AWinApiProc">WinAPI function to hook.</param>
 /// <param name="ANewProc">Replacement function.</param>
@@ -325,26 +325,27 @@ function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHo
 /// <param name="AResolveImportAddr">When True, resolve indirect import thunks before patching.</param>
 /// <returns>True when the hook was installed; False when it could not be (on Win64 only an
 /// import-thunk target can be hooked).</returns>
-function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True): Boolean; overload;
+function HookWinApiProc( AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean = True ): Boolean;
+  overload;
 /// <summary>Reverses a hook installed by HookWinApiProc using the captured AHookInfo.</summary>
 /// <param name="AHookInfo">State produced by HookWinApiProc.</param>
 /// <returns>True when the original code was restored.</returns>
-function UnhookWinApiProc(const AHookInfo: TWinApiHookInfo): Boolean;
+function UnhookWinApiProc( const AHookInfo: TWinApiHookInfo ): Boolean;
 
 implementation
 
 // ------- BEGIN Memory manipulation functions ----------
 
-function WriteProtectedMemory(BaseAddress, Buffer: Pointer; Size: SIZE_T;
-  var WrittenBytes: SIZE_T): Boolean;
+function WriteProtectedMemory( BaseAddress, Buffer: Pointer; Size: SIZE_T;
+  var WrittenBytes: SIZE_T ): Boolean;
 begin
-  Result := WriteProcessMemory(GetCurrentProcess, BaseAddress, Buffer, Size, WrittenBytes);
+  Result            := WriteProcessMemory( GetCurrentProcess, BaseAddress, Buffer, Size, WrittenBytes );
 end;
 
-function ReadProtectedMemory(BaseAddress, Buffer: Pointer; Size: SIZE_T;
-  var ReadBytes: SIZE_T): Boolean;
+function ReadProtectedMemory( BaseAddress, Buffer: Pointer; Size: SIZE_T;
+  var ReadBytes: SIZE_T ): Boolean;
 begin
-  Result := ReadProcessMemory(GetCurrentProcess, BaseAddress, Buffer, Size, ReadBytes);
+  Result            := ReadProcessMemory( GetCurrentProcess, BaseAddress, Buffer, Size, ReadBytes );
 end;
 
 /// <summary>
@@ -357,8 +358,10 @@ end;
 procedure ExchangeHead( Dest: Pointer; const ANew; AHeadSize: Integer );
 begin
   repeat
-    var iOld: Int64 := PInt64( Dest )^;
-    var iNew: Int64 := iOld;
+  var
+    iOld            : Int64 := PInt64( Dest )^;
+  var
+    iNew            : Int64 := iOld;
     Move( ANew, iNew, AHeadSize );
     if ( AtomicCmpExchange( PInt64( Dest )^, iNew, iOld ) = iOld ) then
       Break;
@@ -387,22 +390,22 @@ end;
 /// <returns>True when the bytes were written.</returns>
 function PatchCodeAtomic( Dest: Pointer; const Source; Size: Integer ): Boolean;
 const
-  cHead = SizeOf( Int64 );
-  cSelfLoop: array[0..1] of Byte = ( $EB, $FE ); // jmp $-0
+  cHead             = SizeOf( Int64 );
+  cSelfLoop         : array[ 0..1 ] of Byte = ( $EB, $FE ); // jmp $-0
 begin
-  Result := False;
+  Result            := False;
   if ( Dest = nil ) or ( Size <= 0 ) then
     Exit;
 
   var iSpan: Integer := Size;
   if ( iSpan < cHead ) then
-    iSpan := cHead;
+    iSpan           := cHead;
   var iOldProtect: DWORD;
   if not VirtualProtect( Dest, iSpan, PAGE_EXECUTE_READWRITE, iOldProtect ) then
   begin
     // The 8-byte window reaches memory that cannot be made writable: fall back to the old write.
     var iWritten: SIZE_T := 0;
-    Result := WriteProcessMemory( GetCurrentProcess, Dest, @Source, Size, iWritten ) and ( iWritten = SIZE_T( Size ) );
+    Result          := WriteProcessMemory( GetCurrentProcess, Dest, @Source, Size, iWritten ) and ( iWritten = SIZE_T( Size ) );
     FlushInstructionCache( GetCurrentProcess, Dest, Size );
     Exit;
   end;
@@ -411,13 +414,13 @@ begin
       ExchangeHead( Dest, Source, Size )
     else
     begin
-      ExchangeHead( Dest, cSelfLoop, SizeOf( cSelfLoop ) );                         // (a)
+      ExchangeHead( Dest, cSelfLoop, SizeOf( cSelfLoop ) ); // (a)
       FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
-      Move( PByte( @Source )[2], PByte( Dest )[2], Size - 2 );                      // (b)
+      Move( PByte( @Source )[ 2 ], PByte( Dest )[ 2 ], Size - 2 ); // (b)
       FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
-      ExchangeHead( Dest, Source, cHead );                                          // (c)
+      ExchangeHead( Dest, Source, cHead ); // (c)
     end;
-    Result := True;
+    Result          := True;
   finally
     VirtualProtect( Dest, iSpan, iOldProtect, iOldProtect );
     FlushInstructionCache( GetCurrentProcess, Dest, iSpan );
@@ -425,13 +428,13 @@ begin
 end;
 
 type
-  {$IFDEF CPUX64}
+{$IFDEF CPUX64}
   PAbsoluteIndirectJmp64 = ^TAbsoluteIndirectJmp64;
   TAbsoluteIndirectJmp64 = packed record
-    OpCode: Word;   //$FF25(Jmp, FF /4)
+    OpCode: Word; //$FF25(Jmp, FF /4)
     Rel: Integer;
   end;
-  {$ELSE}
+{$ELSE}
   {PWin9xDebugThunk = ^TWin9xDebugThunk;
   TWin9xDebugThunk = packed record
     PUSH: Byte;    // PUSH instruction opcode ($68)
@@ -442,49 +445,49 @@ type
 
   PAbsoluteIndirectJmp32 = ^TAbsoluteIndirectJmp32;
   TAbsoluteIndirectJmp32 = packed record
-    OpCode: Word;   //$FF25(Jmp, FF /4)
+    OpCode: Word; //$FF25(Jmp, FF /4)
     Addr: ^Pointer;
   end;
-  {$ENDIF CPUX64}
+{$ENDIF CPUX64}
 
-function GetActualAddr(Proc: Pointer): Pointer;
+function GetActualAddr( Proc: Pointer ): Pointer;
 begin
-  Result := Proc;
+  Result            := Proc;
   if Result <> nil then
   begin
-    {$IFDEF CPUX64}
-    if (PAbsoluteIndirectJmp64(Result).OpCode = $25FF) then
-      Result := PPointer(PByte(@PAbsoluteIndirectJmp64(Result).OpCode) + SizeOf(TAbsoluteIndirectJmp64) + PAbsoluteIndirectJmp64(Result).Rel)^;
-    {$ELSE}
+{$IFDEF CPUX64}
+    if ( PAbsoluteIndirectJmp64( Result ).OpCode = $25FF ) then
+      Result        := PPointer( PByte( @PAbsoluteIndirectJmp64( Result ).OpCode ) + SizeOf( TAbsoluteIndirectJmp64 ) + PAbsoluteIndirectJmp64( Result ).Rel )^;
+{$ELSE}
     {if (Win32Platform <> VER_PLATFORM_WIN32_NT) and
        (PWin9xDebugThunk(Result).PUSH = $68) and
        (PWin9xDebugThunk(Result).JMP = $E9) then
       Result := PWin9xDebugThunk(Result).Addr;}
-    if (PAbsoluteIndirectJmp32(Result).OpCode = $25FF) then
-      Result := PAbsoluteIndirectJmp32(Result).Addr^;
-    {$ENDIF CPUX64}
+    if ( PAbsoluteIndirectJmp32( Result ).OpCode = $25FF ) then
+      Result        := PAbsoluteIndirectJmp32( Result ).Addr^;
+{$ENDIF CPUX64}
   end;
 end;
 
-function PeMapImgNtHeaders(const BaseAddress: Pointer): PImageNtHeaders;
+function PeMapImgNtHeaders( const BaseAddress: Pointer ): PImageNtHeaders;
 begin
-  Result := nil;
-  if IsBadReadPtr(BaseAddress, SizeOf(TImageDosHeader)) then
+  Result            := nil;
+  if IsBadReadPtr( BaseAddress, SizeOf( TImageDosHeader ) ) then
     Exit;
-  if (PImageDosHeader(BaseAddress)^.e_magic <> IMAGE_DOS_SIGNATURE) or
-    (PImageDosHeader(BaseAddress)^._lfanew = 0) then
+  if ( PImageDosHeader( BaseAddress )^.e_magic <> IMAGE_DOS_SIGNATURE ) or
+    ( PImageDosHeader( BaseAddress )^._lfanew = 0 ) then
     Exit;
-  Result := PImageNtHeaders(DWORD(BaseAddress) + DWORD(PImageDosHeader(BaseAddress)^._lfanew));
-  if IsBadReadPtr(Result, SizeOf(TImageNtHeaders)) or
-    (Result^.Signature <> IMAGE_NT_SIGNATURE) then
-      Result := nil
+  Result            := PImageNtHeaders( DWORD( BaseAddress ) + DWORD( PImageDosHeader( BaseAddress )^._lfanew ) );
+  if IsBadReadPtr( Result, SizeOf( TImageNtHeaders ) ) or
+    ( Result^.Signature <> IMAGE_NT_SIGNATURE ) then
+    Result          := nil
 end;
 
 type
   TIIDUnion = record
     case Integer of
-      0: (Characteristics: DWORD);
-      1: (OriginalFirstThunk: DWORD);
+      0: ( Characteristics: DWORD );
+      1: ( OriginalFirstThunk: DWORD );
   end;
 
   PImageImportDescriptor = ^TImageImportDescriptor;
@@ -499,71 +502,71 @@ type
   PImageThunkData32 = ^TImageThunkData32;
   TImageThunkData32 = record
     case Integer of
-      0: (ForwarderString: DWORD);
-      1: (Function_: DWORD);
-      2: (Ordinal: DWORD);
-      3: (AddressOfData: DWORD);
+      0: ( ForwarderString: DWORD );
+      1: ( Function_: DWORD );
+      2: ( Ordinal: DWORD );
+      3: ( AddressOfData: DWORD );
   end;
 
-function ReplaceDllImport(Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer): Boolean;
+function ReplaceDllImport( Base: Pointer; const ModuleName: string; FromProc, ToProc: Pointer ): Boolean;
 var
-  NtHeader: PImageNtHeaders;
-  ImportDir: TImageDataDirectory;
-  ImportDesc: PImageImportDescriptor;
-  CurrName, RefName: PAnsiChar;
-  ImportEntry: PImageThunkData32;
+  NtHeader          : PImageNtHeaders;
+  ImportDir         : TImageDataDirectory;
+  ImportDesc        : PImageImportDescriptor;
+  CurrName, RefName : PAnsiChar;
+  ImportEntry       : PImageThunkData32;
   LastProtect, Dummy: Cardinal;
-  CurProcess: DWORD;
+  CurProcess        : DWORD;
 begin
-  Result := False;
-  NtHeader := PeMapImgNtHeaders(Base);
-  if (NtHeader = nil) or (FromProc = nil) then
+  Result            := False;
+  NtHeader          := PeMapImgNtHeaders( Base );
+  if ( NtHeader = nil ) or ( FromProc = nil ) then
     Exit;
-  ImportDir := NtHeader.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+  ImportDir         := NtHeader.OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_IMPORT ];
   if ImportDir.VirtualAddress = 0 then
     Exit;
-  CurProcess := GetCurrentProcess;
-  ImportDesc := PImageImportDescriptor(DWORD(Base) + ImportDir.VirtualAddress);
-  RefName := PAnsiChar({$IFDEF UNICODE}UTF8Encode{$ENDIF}(ModuleName));
+  CurProcess        := GetCurrentProcess;
+  ImportDesc        := PImageImportDescriptor( DWORD( Base ) + ImportDir.VirtualAddress );
+  RefName           := PAnsiChar( {$IFDEF UNICODE}UTF8Encode{$ENDIF}( ModuleName ) );
   while ImportDesc^.Name <> 0 do
   begin
-    CurrName := PAnsiChar(Base) + ImportDesc^.Name;
+    CurrName        := PAnsiChar( Base ) + ImportDesc^.Name;
 
     // if lstrcmpiA(CurrName, RefName) = 0 then
-    {$WARNINGS OFF}
-    if StrIComp(CurrName, RefName) = 0 then
-    {$WARNINGS ON}
+{$WARNINGS OFF}
+    if StrIComp( CurrName, RefName ) = 0 then
+{$WARNINGS ON}
     begin
-      ImportEntry := PImageThunkData32(PAnsiChar(Base) + ImportDesc^.FirstThunk);
+      ImportEntry   := PImageThunkData32( PAnsiChar( Base ) + ImportDesc^.FirstThunk );
       while ImportEntry^.Function_ <> 0 do
       begin
-        if Pointer(ImportEntry^.Function_) = FromProc then
+        if Pointer( ImportEntry^.Function_ ) = FromProc then
         begin
-          if VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc), PAGE_READWRITE, @LastProtect) then
+          if VirtualProtectEx( CurProcess, @ImportEntry^.Function_, SizeOf( ToProc ), PAGE_READWRITE, @LastProtect ) then
           begin
-            ImportEntry^.Function_ := Cardinal(ToProc);
+            ImportEntry^.Function_ := Cardinal( ToProc );
 
             // According to Platform SDK documentation, the last parameter
             // has to be (point to) a valid variable
-            VirtualProtectEx(CurProcess, @ImportEntry^.Function_, SizeOf(ToProc), LastProtect, Dummy);
-            Result := True;
+            VirtualProtectEx( CurProcess, @ImportEntry^.Function_, SizeOf( ToProc ), LastProtect, Dummy );
+            Result  := True;
           end;
         end;
-        Inc(ImportEntry);
+        Inc( ImportEntry );
       end;
     end;
-    Inc(ImportDesc);
+    Inc( ImportDesc );
   end;
 end;
 
-procedure CodeRedirect(Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode);
+procedure CodeRedirect( Proc: Pointer; NewProc: Pointer; var Data: TRedirectCode );
 begin
   if Proc = nil then
   begin
-    Data.RealProc := nil;
+    Data.RealProc   := nil;
     Exit;
   end;
-  {$IFDEF CPUX64}
+{$IFDEF CPUX64}
   // Win64: TXRedirCode is a 5-byte JMP rel32. Three problems on x64:
   //   1) The rel32 displacement is only ±2 GB, but our plugin DLL can easily be
   //      farther than that from the IDE BPL we're hooking, so the JMP truncates
@@ -575,72 +578,72 @@ begin
   //      original prologue was longer than what we saved, restore is wrong too.
   // Silently no-op so plugin startup completes; the feature that wanted the
   // hook is simply inactive on Win64.
-  Data.RealProc := nil;
-  Data.Count := 0;
+  Data.RealProc     := nil;
+  Data.Count        := 0;
   Exit;
-  {$ENDIF}
+{$ENDIF}
   if Data.Count = 0 then // do not overwrite already backed-up code
   begin
-    Proc := GetActualAddr(Proc);
+    Proc            := GetActualAddr( Proc );
     var rJump: TXRedirCode;
-    rJump.Jump := $E9;
-    rJump.Offset := PAnsiChar(NewProc) - PAnsiChar(Proc) - (SizeOf(Data.Code));
-    var iOriginal: Int64 := PInt64(Proc)^;
+    rJump.Jump      := $E9;
+    rJump.Offset    := PAnsiChar( NewProc ) - PAnsiChar( Proc ) - ( SizeOf( Data.Code ) );
+    var iOriginal: Int64 := PInt64( Proc )^;
     // One locked write, so a thread entering Proc never sees a half-written jump.
     if not PatchCodeAtomic( Proc, rJump, SizeOf( rJump ) ) then
       Exit; // nothing patched: leave Count at 0 so a paired CodeRestore stays harmless
-    Data.RealProc := Proc;
-    Data.Code2 := iOriginal;
+    Data.RealProc   := Proc;
+    Data.Code2      := iOriginal;
   end;
-  Inc(Data.Count);
+  Inc( Data.Count );
 end;
 
-function CodeRedirect(Proc: Pointer; NewProc: Pointer): TRedirectCode;
+function CodeRedirect( Proc: Pointer; NewProc: Pointer ): TRedirectCode;
 begin
-  Result.Count := 0;
-  Result.RealProc := nil;
-  CodeRedirect(Proc, NewProc, Result);
+  Result.Count      := 0;
+  Result.RealProc   := nil;
+  CodeRedirect( Proc, NewProc, Result );
 end;
 
-procedure CodeRestore(var Data: TRedirectCode);
+procedure CodeRestore( var Data: TRedirectCode );
 begin
   // A restore without a matching redirect used to drive Count negative, after which the next
   // CodeRedirect only incremented it and silently installed nothing.
   if ( Data.Count <= 0 ) then
     Exit;
-  if (Data.RealProc <> nil) and (Data.Count = 1) then
+  if ( Data.RealProc <> nil ) and ( Data.Count = 1 ) then
     PatchCodeAtomic( Data.RealProc, Data.Code, SizeOf( Data.Code ) );
-  Dec(Data.Count);
+  Dec( Data.Count );
 end;
 
-procedure RehookFunction(NewProc: Pointer; var Data: TRedirectCode);
+procedure RehookFunction( NewProc: Pointer; var Data: TRedirectCode );
 begin
-  CodeRedirect(Data.RealProc, NewProc, Data);
+  CodeRedirect( Data.RealProc, NewProc, Data );
 end;
 
-procedure HookFunction(ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode);
+procedure HookFunction( ModuleHandle: THandle; const SymbolName: string; NewProc: Pointer; var Data: TRedirectCode );
 begin
-  CodeRedirect(GetProcAddress(ModuleHandle, PAnsiChar(AnsiString(SymbolName))), NewProc, Data);
+  CodeRedirect( GetProcAddress( ModuleHandle, PAnsiChar( AnsiString( SymbolName ) ) ), NewProc, Data );
 end;
 
-procedure HookFunction(const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode);
+procedure HookFunction( const ModuleName, SymbolName: string; NewProc: Pointer; var Data: TRedirectCode );
 begin
-  CodeRedirect(GetProcAddress(GetModuleHandle(PChar(ModuleName)), PAnsiChar(AnsiString(SymbolName))), NewProc, Data);
+  CodeRedirect( GetProcAddress( GetModuleHandle( PChar( ModuleName ) ), PAnsiChar( AnsiString( SymbolName ) ) ), NewProc, Data );
 end;
 
-procedure UnhookFunction(var Data: TRedirectCode);
+procedure UnhookFunction( var Data: TRedirectCode );
 begin
-  CodeRestore(Data);
+  CodeRestore( Data );
 end;
 
-procedure InstallFullReplaceHook(Proc, NewProc: Pointer; var Hook: TFullReplaceHook);
+procedure InstallFullReplaceHook( Proc, NewProc: Pointer; var Hook: TFullReplaceHook );
 {$IFDEF CPUX64}
 const
-  JmpSize = 14; // FF 25 <rel32=0> <abs64 target>
+  JmpSize           = 14; // FF 25 <rel32=0> <abs64 target>
 var
-  Patch: packed record
-    OpCode: Word;    // byte stream FF 25  (JMP qword ptr [rip+rel32])
-    Rel: Integer;    // 0 -> operand follows the instruction immediately
+  Patch             : packed record
+    OpCode: Word; // byte stream FF 25  (JMP qword ptr [rip+rel32])
+    Rel: Integer; // 0 -> operand follows the instruction immediately
     Target: Pointer; // absolute 64-bit destination
   end;
 begin
@@ -648,166 +651,166 @@ begin
   // RemoveFullReplaceHook would then leave the jump in place, pointing into this DLL.
   if ( Hook.RealProc <> nil ) then
     Exit;
-  FillChar(Hook.OrgBytes, SizeOf(Hook.OrgBytes), 0);
-  if (Proc = nil) or (NewProc = nil) then
+  FillChar( Hook.OrgBytes, SizeOf( Hook.OrgBytes ), 0 );
+  if ( Proc = nil ) or ( NewProc = nil ) then
     Exit;
 
-  Proc := GetActualAddr(Proc);
+  Proc              := GetActualAddr( Proc );
 
   // Capture the bytes we are about to overwrite so the patch can be reverted verbatim. We never
   // re-run them, so they need not fall on an instruction boundary.
-  Move(Proc^, Hook.OrgBytes[0], JmpSize);
+  Move( Proc^, Hook.OrgBytes[ 0 ], JmpSize );
 
-  Patch.OpCode := $25FF;
-  Patch.Rel := 0;
-  Patch.Target := NewProc;
+  Patch.OpCode      := $25FF;
+  Patch.Rel         := 0;
+  Patch.Target      := NewProc;
 
   // PatchCodeAtomic parks entering threads on a self-loop while bytes 2..13 ( including the whole
   // 8-byte target ) are written, so no thread can jump through a half-written target.
   if PatchCodeAtomic( Proc, Patch, JmpSize ) then
-    Hook.RealProc := Proc;
+    Hook.RealProc   := Proc;
 end;
 {$ELSE}
 begin
   if ( Hook.Redir.Count > 0 ) then
     Exit; // already installed: see the Win64 branch
-  CodeRedirect(Proc, NewProc, Hook.Redir);
+  CodeRedirect( Proc, NewProc, Hook.Redir );
 end;
 {$ENDIF CPUX64}
 
-procedure RemoveFullReplaceHook(var Hook: TFullReplaceHook);
+procedure RemoveFullReplaceHook( var Hook: TFullReplaceHook );
 {$IFDEF CPUX64}
 const
-  JmpSize = 14;
+  JmpSize           = 14;
 begin
   if Hook.RealProc = nil then
     Exit;
 
-  PatchCodeAtomic( Hook.RealProc, Hook.OrgBytes[0], JmpSize );
-  Hook.RealProc := nil;
+  PatchCodeAtomic( Hook.RealProc, Hook.OrgBytes[ 0 ], JmpSize );
+  Hook.RealProc     := nil;
 end;
 {$ELSE}
 begin
-  UnhookFunction(Hook.Redir);
+  UnhookFunction( Hook.Redir );
 end;
 {$ENDIF CPUX64}
 
-function GetVirtualMethodCount(AClass: TClass): Integer;
+function GetVirtualMethodCount( AClass: TClass ): Integer;
 type
   PPAnsiChar = ^PAnsiChar;
 var
-  BeginVMT: PAnsiChar;
-  EndVMT: PAnsiChar;
-  TablePointer: PAnsiChar;
-  I: Integer;
+  BeginVMT          : PAnsiChar;
+  EndVMT            : PAnsiChar;
+  TablePointer      : PAnsiChar;
+  I                 : Integer;
 begin
-  BeginVMT := PAnsiChar(AClass);
+  BeginVMT          := PAnsiChar( AClass );
 
   // Scan the offset entries in the class table for the various fields,
   // namely vmtIntfTable, vmtAutoTable, ..., vmtDynamicTable
   // The last entry is always the vmtClassName, so stop once we got there
   // After the last virtual method there is one of these entries.
 
-  EndVMT := PPAnsiChar(PAnsiChar(AClass) + vmtClassName)^;
+  EndVMT            := PPAnsiChar( PAnsiChar( AClass ) + vmtClassName )^;
   // Set iterator to first item behind VMT table pointer
-  I := vmtSelfPtr + SizeOf(Pointer);
+  I                 := vmtSelfPtr + SizeOf( Pointer );
   repeat
-    TablePointer := PPAnsiChar(PAnsiChar(AClass) + I)^;
-    if (TablePointer <> nil) and (TablePointer >= BeginVMT) and
-       (TablePointer < EndVMT) then
-      EndVMT := PAnsiChar(TablePointer);
-    Inc(I, SizeOf(Pointer));
+    TablePointer    := PPAnsiChar( PAnsiChar( AClass ) + I )^;
+    if ( TablePointer <> nil ) and ( TablePointer >= BeginVMT ) and
+      ( TablePointer < EndVMT ) then
+      EndVMT        := PAnsiChar( TablePointer );
+    Inc( I, SizeOf( Pointer ) );
   until I >= vmtClassName;
 
-  Result := (EndVMT - BeginVMT) div SizeOf(Pointer);
+  Result            := ( EndVMT - BeginVMT ) div SizeOf( Pointer );
 end;
 
-function GetVirtualMethod(AClass: TClass; const Index: Integer): Pointer;
+function GetVirtualMethod( AClass: TClass; const Index: Integer ): Pointer;
 begin
-  Result := PPointer(PAnsiChar(AClass) + Index * SizeOf(Pointer))^;
+  Result            := PPointer( PAnsiChar( AClass ) + Index * SizeOf( Pointer ) )^;
 end;
 
-procedure SetVirtualMethod(AClass: TClass; const Index: Integer; const Method: Pointer);
+procedure SetVirtualMethod( AClass: TClass; const Index: Integer; const Method: Pointer );
 var
-  WrittenBytes: SIZE_T;
-  PatchAddress: PPointer;
+  WrittenBytes      : SIZE_T;
+  PatchAddress      : PPointer;
 begin
-  PatchAddress := Pointer(PAnsiChar(AClass) + Index * SizeOf(Pointer));
-  WriteProtectedMemory(PatchAddress, @Method, SizeOf(Method), WrittenBytes);
+  PatchAddress      := Pointer( PAnsiChar( AClass ) + Index * SizeOf( Pointer ) );
+  WriteProtectedMemory( PatchAddress, @Method, SizeOf( Method ), WrittenBytes );
 end;
 
-function ReplaceVmtField(AClass: TClass; OldProc, NewProc: Pointer): Boolean;
+function ReplaceVmtField( AClass: TClass; OldProc, NewProc: Pointer ): Boolean;
 type
   PVmt = ^TVmt;
-  TVmt = array[0..MaxInt div SizeOf(Pointer) - 1] of Pointer;
+  TVmt = array[ 0..MaxInt div SizeOf( Pointer ) - 1 ] of Pointer;
 var
-  I: Integer;
-  Vmt: PVmt;
-  n: SIZE_T;
-  P: Pointer;
+  I                 : Integer;
+  Vmt               : PVmt;
+  n                 : SIZE_T;
+  P                 : Pointer;
 begin
-  OldProc := GetActualAddr(OldProc);
-  NewProc := GetActualAddr(NewProc);
+  OldProc           := GetActualAddr( OldProc );
+  NewProc           := GetActualAddr( NewProc );
 
-  I := vmtSelfPtr div SizeOf(Pointer);
-  Vmt := Pointer(AClass);
-  while (I < 0) or (Vmt[I] <> nil) do
+  I                 := vmtSelfPtr div SizeOf( Pointer );
+  Vmt               := Pointer( AClass );
+  while ( I < 0 ) or ( Vmt[ I ] <> nil ) do
   begin
-    P := Vmt[I];
-    if (P <> OldProc) and (DWORD_PTR(P) > $10000) and not IsBadReadPtr(P, 6) then
-      P := GetActualAddr(P);
+    P               := Vmt[ I ];
+    if ( P <> OldProc ) and ( DWORD_PTR( P ) > $10000 ) and not IsBadReadPtr( P, 6 ) then
+      P             := GetActualAddr( P );
     if P = OldProc then
     begin
-      Result := WriteProtectedMemory(@Vmt[I], @NewProc, SizeOf(NewProc), n);
+      Result        := WriteProtectedMemory( @Vmt[ I ], @NewProc, SizeOf( NewProc ), n );
       Exit;
     end;
-    Inc(I);
+    Inc( I );
   end;
-  Result := False;
+  Result            := False;
 end;
 
-function InjectCode(DestProc, SourceProc: Pointer; Size: Cardinal): Boolean;
+function InjectCode( DestProc, SourceProc: Pointer; Size: Cardinal ): Boolean;
 var
-  n: SIZE_T;
+  n                 : SIZE_T;
 begin
-  DestProc := GetActualAddr(DestProc);
-  Result := (DestProc <> nil) and (SourceProc <> nil) and
-            WriteProtectedMemory(DestProc, SourceProc, Size, n) and (n = Size);
+  DestProc          := GetActualAddr( DestProc );
+  Result            := ( DestProc <> nil ) and ( SourceProc <> nil ) and
+    WriteProtectedMemory( DestProc, SourceProc, Size, n ) and ( n = Size );
 end;
 
-function GetDmtEntryAddress(AClass: TClass; Index: Integer): Pointer;
+function GetDmtEntryAddress( AClass: TClass; Index: Integer ): Pointer;
 {$IFDEF CPUX64}
 type
   TDynaMethodTable = record
     Count: Word;
-    Selectors: array[0..9999999] of SmallInt;
+    Selectors: array[ 0..9999999 ] of SmallInt;
     {Addrs: array[0..0] of Pointer;}
   end;
   PDynaMethodTable = ^TDynaMethodTable;
 var
-  DynaTab: PDynaMethodTable;
-  Parent: Pointer;
-  Addrs: PPointer;
-  I: Cardinal;
+  DynaTab           : PDynaMethodTable;
+  Parent            : Pointer;
+  Addrs             : PPointer;
+  I                 : Cardinal;
 begin
   while True do
   begin
-    DynaTab := PPointer(PByte(AClass) + vmtDynamicTable)^;
+    DynaTab := PPointer( PByte( AClass ) + vmtDynamicTable )^;
     if DynaTab <> nil then
     begin
       for I := 0 to DynaTab.Count - 1 do
-        if DynaTab.Selectors[I] = Index then
+        if DynaTab.Selectors[ I ] = Index then
         begin
-          Addrs := PPointer(PByte(@DynaTab.Selectors) + DynaTab.Count * SizeOf(DynaTab.Selectors[0]));
-          Result := PPointer(PByte(Addrs) + I * SizeOf(Pointer))^;
+          Addrs     := PPointer( PByte( @DynaTab.Selectors ) + DynaTab.Count * SizeOf( DynaTab.Selectors[ 0 ] ) );
+          Result    := PPointer( PByte( Addrs ) + I * SizeOf( Pointer ) )^;
           Exit;
         end;
     end;
-    Parent := PPointer(PByte(AClass) + vmtParent)^;
+    Parent          := PPointer( PByte( AClass ) + vmtParent )^;
     if Parent = nil then Break;
-    AClass := PPointer(Parent)^;
+    AClass          := PPointer( Parent )^;
   end;
-  Result := nil;
+  Result            := nil;
 end;
 {$ELSE}
 asm
@@ -845,134 +848,134 @@ asm
 end;
 {$ENDIF CPUX64}
 
-function GetDynamicMethod(AClass: TClass; Index: Integer): Pointer;
+function GetDynamicMethod( AClass: TClass; Index: Integer ): Pointer;
 var
-  P: ^Pointer;
+  P                 : ^Pointer;
 begin
-  P := GetDmtEntryAddress(AClass, Index);
-  Result := nil;
+  P                 := GetDmtEntryAddress( AClass, Index );
+  Result            := nil;
   if P <> nil then
-    Result := P^;
+    Result          := P^;
 end;
 
-function ReplaceDmtField(AClass: TClass; Index: Integer; NewProc: Pointer): Pointer;
+function ReplaceDmtField( AClass: TClass; Index: Integer; NewProc: Pointer ): Pointer;
 var
-  P: ^Pointer;
-  n: SIZE_T;
+  P                 : ^Pointer;
+  n                 : SIZE_T;
 begin
-  P := GetDmtEntryAddress(AClass, Index);
+  P                 := GetDmtEntryAddress( AClass, Index );
   if P <> nil then
   begin
-    Result := P^;
-    if not WriteProtectedMemory(P, @NewProc, SizeOf(Pointer), n) then
-      Result := nil;
+    Result          := P^;
+    if not WriteProtectedMemory( P, @NewProc, SizeOf( Pointer ), n ) then
+      Result        := nil;
   end
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-function FindOtherBytesPtr(P: PByte; Bytes: PSmallInt; BytesLen: Integer): Boolean;
+function FindOtherBytesPtr( P: PByte; Bytes: PSmallInt; BytesLen: Integer ): Boolean;
 var
-  Index: Integer;
-  C: SmallInt;
+  Index             : Integer;
+  C                 : SmallInt;
 begin
-  Result := False;
+  Result            := False;
   for Index := 1 to BytesLen - 1 do
   begin
-    C := Bytes^;
-    if (C <> -1) and (Byte(C) <> P^) then
+    C               := Bytes^;
+    if ( C <> -1 ) and ( Byte( C ) <> P^ ) then
       Exit;
-    Inc(P);
-    Inc(Bytes);
+    Inc( P );
+    Inc( Bytes );
   end;
-  Result := True;
+  Result            := True;
 end;
 
-function FindPtr(P: PByte; RegionSize: Integer; Bytes: PSmallInt; BytesLen: Integer): Pointer;
+function FindPtr( P: PByte; RegionSize: Integer; Bytes: PSmallInt; BytesLen: Integer ): Pointer;
 var
-  FirstByte: Byte;
+  FirstByte         : Byte;
 begin
-  FirstByte := Byte(Bytes^);
-  Inc(Bytes);
+  FirstByte         := Byte( Bytes^ );
+  Inc( Bytes );
   while True do
   begin
     // fast forward
-    while (RegionSize > 0) and (P^ <> FirstByte) do
+    while ( RegionSize > 0 ) and ( P^ <> FirstByte ) do
     begin
-      Dec(RegionSize);
-      Inc(P);
+      Dec( RegionSize );
+      Inc( P );
     end;
     if RegionSize = 0 then
       Break;
 
-    if FindOtherBytesPtr(P + 1, Bytes, BytesLen) then
+    if FindOtherBytesPtr( P + 1, Bytes, BytesLen ) then
     begin
-      Result := P;
+      Result        := P;
       Exit;
     end;
-    Inc(P);
-    Dec(RegionSize);
+    Inc( P );
+    Dec( RegionSize );
   end;
-  Result := nil;
+  Result            := nil;
 end;
 
-procedure EnableFindMethodPtrDllVirtualQueryCache(Enable: Boolean);
+procedure EnableFindMethodPtrDllVirtualQueryCache( Enable: Boolean );
 begin
   // No-op: see the declaration.
 end;
 
-function FindMethodPtr(Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0): Pointer;
+function FindMethodPtr( Start: Pointer; const Bytes: array of SmallInt; MaxOffset: Integer = 0 ): Pointer;
 var
-  P, Address: PAnsiChar;
-  MemInfo: TMemoryBasicInformation;
-  StartOffset: Integer;
-  BytesLen: Integer;
-  AllocBase: Pointer;
+  P, Address        : PAnsiChar;
+  MemInfo           : TMemoryBasicInformation;
+  StartOffset       : Integer;
+  BytesLen          : Integer;
+  AllocBase         : Pointer;
 begin
   // Old code uses $10000 as "very far into the code segment" what it isn't. It is only 64K.
   // Because I don't know in which projects that is used, it will be extended to 16M.
   if MaxOffset = $10000 then
-    MaxOffset := $1000000;
+    MaxOffset       := $1000000;
 
-  Result := nil;
-  BytesLen := Length(Bytes);
-  if (Start <> nil) and (BytesLen >= 4) then
+  Result            := nil;
+  BytesLen          := Length( Bytes );
+  if ( Start <> nil ) and ( BytesLen >= 4 ) then
   begin
-    StartOffset := 0;
-    while (StartOffset < BytesLen) and (Bytes[StartOffset] = -1) do
-      Inc(StartOffset);
+    StartOffset     := 0;
+    while ( StartOffset < BytesLen ) and ( Bytes[ StartOffset ] = -1 ) do
+      Inc( StartOffset );
     if StartOffset = BytesLen then
       Exit;
 
     try
-      Address := PAnsiChar(Start);
+      Address       := PAnsiChar( Start );
 
       // "not VirtualQuery(...) = SizeOf(...)" parsed as "(not VirtualQuery(...)) = ...", so a
       // failed query went on with an uninitialised MemInfo.
       if ( VirtualQuery( Address, MemInfo, SizeOf( MemInfo ) ) <> SizeOf( MemInfo ) ) then
         Exit;
 
-      AllocBase := MemInfo.AllocationBase;
+      AllocBase     := MemInfo.AllocationBase;
       repeat
-        P := Address;
+        P           := Address;
         if MemInfo.Protect and $000000F0 <> 0 then // PAGE_EXECUTE | ...
         begin
-          if (MaxOffset > 0) and (PAnsiChar(Start) + MaxOffset < P + MemInfo.RegionSize) then
-            MemInfo.RegionSize := PAnsiChar(Start) + MaxOffset - P;
+          if ( MaxOffset > 0 ) and ( PAnsiChar( Start ) + MaxOffset < P + MemInfo.RegionSize ) then
+            MemInfo.RegionSize := PAnsiChar( Start ) + MaxOffset - P;
 
-          Result := FindPtr(PByte(P), MemInfo.RegionSize, @Bytes[StartOffset], BytesLen - StartOffset);
+          Result    := FindPtr( PByte( P ), MemInfo.RegionSize, @Bytes[ StartOffset ], BytesLen - StartOffset );
           if Result <> nil then
           begin
-            Result := PAnsiChar(Result) - StartOffset;
+            Result  := PAnsiChar( Result ) - StartOffset;
             Exit;
           end;
         end;
-        Inc(Address, MemInfo.RegionSize);
+        Inc( Address, MemInfo.RegionSize );
         { Cancel if we exceed the allowed offset }
-        if (MaxOffset > 0) and (PAnsiChar(Address) >= PAnsiChar(Start) + MaxOffset) then
+        if ( MaxOffset > 0 ) and ( PAnsiChar( Address ) >= PAnsiChar( Start ) + MaxOffset ) then
           Exit;
-      until (VirtualQuery(Address, MemInfo, SizeOf(MemInfo)) <> SizeOf(MemInfo)) or
-            (MemInfo.AllocationBase <> AllocBase);
+      until ( VirtualQuery( Address, MemInfo, SizeOf( MemInfo ) ) <> SizeOf( MemInfo ) ) or
+        ( MemInfo.AllocationBase <> AllocBase );
     except
       on E: EAccessViolation do
         ;
@@ -989,36 +992,36 @@ begin
     Write;
 end;}
 
-function FindMethodPtr(Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer): Pointer;
+function FindMethodPtr( Start: THandle; const Bytes: array of SmallInt; MaxOffset: Integer ): Pointer;
 begin
-  Result := FindMethodPtr(Pointer(Start), Bytes, MaxOffset);
+  Result            := FindMethodPtr( Pointer( Start ), Bytes, MaxOffset );
 end;
 
 { TOffsetTable }
 
-procedure TOffsetTable.Add(P: PInteger);
+procedure TOffsetTable.Add( P: PInteger );
 var
-  Len: Integer;
+  Len               : Integer;
 begin
-  Len := Length(Offsets);
-  SetLength(Offsets, Len + 1);
-  Offsets[Len] := P;
+  Len               := Length( Offsets );
+  SetLength( Offsets, Len + 1 );
+  Offsets[ Len ]    := P;
 end;
 
 {$IFDEF DEBUG}
-  {$IF not declared(IsDebuggerPresent)}
+{$IF not declared(IsDebuggerPresent)}
 function IsDebuggerPresent: BOOL; stdcall;
   external kernel32 name 'IsDebuggerPresent';
-  {$IFEND}
+{$IFEND}
 {$ENDIF DEBUG}
 
-function ModRmSize(P: PByte): Integer;
+function ModRmSize( P: PByte ): Integer;
 var
-  ModRm: Byte;
+  ModRm             : Byte;
 begin
-  ModRm := P[0];
+  ModRm             := P[ 0 ];
   if ModRm >= $C0 then
-    Result := 1 // ModRm
+    Result          := 1 // ModRm
   else if ModRm and $07 = $04 then
   begin
     // A SIB byte follows.  The displacement depends on Mod, and for Mod 00 on the SIB base:
@@ -1026,14 +1029,14 @@ begin
     // base was not 101, so "movzx eax, byte ptr [esp+4]" measured 3 bytes instead of 5. )
     case ModRm and $C0 of
       $40:
-        Result := 3; // ModRm + SIB + Byte displacement
+        Result      := 3; // ModRm + SIB + Byte displacement
       $80:
-        Result := 6; // ModRm + SIB + DWord displacement
+        Result      := 6; // ModRm + SIB + DWord displacement
     else
-      if P[1] and $07 = $05 then
-        Result := 6 // ModRm + SIB + DWord displacement (no base)
+      if P[ 1 ] and $07 = $05 then
+        Result      := 6 // ModRm + SIB + DWord displacement (no base)
       else
-        Result := 2; // ModRm + SIB
+        Result      := 2; // ModRm + SIB
     end;
   end
   else
@@ -1041,112 +1044,113 @@ begin
     case ModRm and $C0 of
       $00:
         if ModRm and $07 = $05 then
-          Result := 5 // 1 + 4;  // ModRm + DWord displacement
+          Result    := 5 // 1 + 4;  // ModRm + DWord displacement
         else
-          Result := 1; // ModRM
+          Result    := 1; // ModRM
       $80:
-        Result := 5; // 1 + 4; // ModRm + DWord offset
+        Result      := 5; // 1 + 4; // ModRm + DWord offset
     else
-      Result := 2; // 1 + 1; // ModRm + Byte offset
+      Result        := 2; // 1 + 1; // ModRm + Byte offset
     end;
   end;
 end;
 
-function GetStartCodeSize(CodePtr: Pointer; RequiredSize: Integer; OffsetTable: POffsetTable): Integer;
+function GetStartCodeSize( CodePtr: Pointer; RequiredSize: Integer; OffsetTable: POffsetTable ): Integer;
 // TODO: "Jcc rel": convert to Jcc dword-rel and adjust offsets
 var
-  RetFound: Boolean;
-  {$IF CompilerVersion >= 20.0}
-  Code: PByte;
-  {$ELSE}
-  Code: PByteArray;
-  {$IFEND}
+  RetFound          : Boolean;
+{$IF CompilerVersion >= 20.0}
+  Code              : PByte;
+{$ELSE}
+  Code              : PByteArray;
+{$IFEND}
 
   procedure Failed;
   var
-    {$IF CompilerVersion >= 20.0}
-    P: PByte;
-    {$ELSE}
-    P: PByteArray;
-    {$IFEND}
+  {$IF CompilerVersion >= 20.0}
+    P               : PByte;
+  {$ELSE}
+    P               : PByteArray;
+  {$IFEND}
   begin
     if RetFound then
-      raise Exception.Create('Function is too small')
+      raise Exception.Create( 'Function is too small' )
     else
     begin
-      P := Code;
-      {$IFDEF DEBUG}
+      P             := Code;
+{$IFDEF DEBUG}
       if IsDebuggerPresent then
       begin
-        {$IFDEF CPUX64}
+{$IFDEF CPUX64}
         DebugBreak;
-        TProcedure(P)();
-        {$ELSE}
+        TProcedure( P )( );
+{$ELSE}
         asm
           int 3
           call [P]
         end;
-        {$ENDIF CPUX64}
+{$ENDIF CPUX64}
       end;
-      {$ENDIF DEBUG}
-      {$IF CompilerVersion >= 20.0}
-      raise Exception.CreateFmt('Cannot handle opcode %.2x %.2x %.2x %.2x', [P[0], P[1], P[2], P[3]]);
-      {$ELSE}
-      raise Exception.CreateFmt('Cannot handle opcode %.2x %.2x %.2x %.2x', [Byte(PAnsiChar(P)[0]), Byte(PAnsiChar(P)[1]), Byte(PAnsiChar(P)[2]), Byte(PAnsiChar(P)[3])]);
-      {$IFEND}
+{$ENDIF DEBUG}
+{$IF CompilerVersion >= 20.0}
+      raise Exception.CreateFmt( 'Cannot handle opcode %.2x %.2x %.2x %.2x', [ P[ 0 ], P[ 1 ], P[ 2 ], P[ 3 ] ] );
+{$ELSE}
+      raise Exception.CreateFmt( 'Cannot handle opcode %.2x %.2x %.2x %.2x', [ Byte( PAnsiChar( P )[ 0 ] ), Byte( PAnsiChar( P )[ 1 ] ), Byte( PAnsiChar( P )[ 2 ]
+        ), Byte( PAnsiChar( P )[ 3 ] ) ] );
+{$IFEND}
     end;
   end;
 
   procedure Int3Found;
   begin
-    raise Exception.Create('Breakpoint found. Remove the breakpoint before hooking the function');
+    raise Exception.Create( 'Breakpoint found. Remove the breakpoint before hooking the function' );
   end;
 
 var
-  Size: Integer;
+  Size              : Integer;
 begin
-  Code := CodePtr;
-  Result := 0;
-  RetFound := False;
+  Code              := CodePtr;
+  Result            := 0;
+  RetFound          := False;
 
   while Result < RequiredSize do
   begin
     if RetFound then
       Failed;
-    Size := 0;
-    case Code[0] of
+    Size            := 0;
+    case Code[ 0 ] of
       $03:
-        case Code[1] of
+        case Code[ 1 ] of
           $FF: Size := 2; // add edi,edi
         end;
 
       $0F:
-        case Code[1] of
-          $B6: Size := 2 + ModRmSize(@Code[2]); // movzx r32, r/m8
-          $B7: Size := 2 + ModRmSize(@Code[2]); // movzx r32, r/m16
+        case Code[ 1 ] of
+          $B6: Size := 2 + ModRmSize( @Code[ 2 ] ); // movzx r32, r/m8
+          $B7: Size := 2 + ModRmSize( @Code[ 2 ] ); // movzx r32, r/m16
         end;
 
       $04:
-        case Code[1] of
+        case Code[ 1 ] of
           $FD: Size := 1 + 1; // add al, ByteConst
         end;
 
-      $24: Size := 1 + 1; // and al, ByteCOnst
+      $24: Size     := 1 + 1; // and al, ByteCOnst
 
       $29:
-        case Code[1] of
+        case Code[ 1 ] of
           $C2: Size := 2; // sub edx,eax
         end;
 
-      $2C: Size := 1 + 1; // sub al, ByteConst
+      $2C: Size     := 1 + 1; // sub al, ByteConst
 
       $31:
-        case Code[1] of
+        case Code[ 1 ] of
           $C0: Size := 2; // xor eax, eax
         end;
 
       $33:
-        case Code[1] of
+        case Code[ 1 ] of
           $C0: Size := 2; // xor eax, eax
           $C9: Size := 2; // xor ecx, ecx
           $D2: Size := 2; // xor edx, edx
@@ -1154,48 +1158,48 @@ begin
         end;
 
       $3B:
-        case Code[1] of
+        case Code[ 1 ] of
           $05: Size := 2 + 4; // cmp eax, [DwordConst]
         end;
 
-      $50: Size := 1; // push eax
-      $51: Size := 1; // push ecx
-      $52: Size := 1; // push edx
-      $53: Size := 1; // push ebx
-      $54: Size := 1; // push esp
-      $55: Size := 1; // push ebp
-      $56: Size := 1; // push esi
-      $57: Size := 1; // push edi
+      $50: Size     := 1; // push eax
+      $51: Size     := 1; // push ecx
+      $52: Size     := 1; // push edx
+      $53: Size     := 1; // push ebx
+      $54: Size     := 1; // push esp
+      $55: Size     := 1; // push ebp
+      $56: Size     := 1; // push esi
+      $57: Size     := 1; // push edi
 
-      $5D: Size := 1; // pop ebp
+      $5D: Size     := 1; // pop ebp
       $64:
-        case Code[1] of
+        case Code[ 1 ] of
           $FF:
-            case Code[2] of
+            case Code[ 2 ] of
               $15: Size := 2 + 4; // call dword ptr fs:[DwordConst]
             end;
         end;
-      $68: Size := 1 + 4; // push DwordConst
-      $6A: Size := 1 + 1; // push ByteConst
+      $68: Size     := 1 + 4; // push DwordConst
+      $6A: Size     := 1 + 1; // push ByteConst
 
       $74: if OffsetTable = nil then Size := 1 + 1; // jz ByteConst  // fail if we want that code as OrgCall code
       $75: if OffsetTable = nil then Size := 1 + 1; // jnz ByteConst  // fail if we want that code as OrgCall code
 
       $80:
-        case Code[1] of
-          $38: Size := 2 + 1;     // cmp byte ptr [eax], ByteConst
+        case Code[ 1 ] of
+          $38: Size := 2 + 1; // cmp byte ptr [eax], ByteConst
           $3D: Size := 2 + 4 + 1; // cmp byte ptr [DWordConst], ByteConst
           $4B: Size := 2 + 1 + 1; // or byte ptr [ebx+ByteConst], ByteConst
           $7B: Size := 2 + 1 + 1; // cmp byte ptr [ebx+ByteConst], ByteConst
           $B8: Size := 2 + 4 + 1; // cmp byte ptr [eax+DWordConst], ByteConst
-          $E1: Size := 2 + 1;     // and cl, ByteConst
-          $E2: Size := 2 + 1;     // and dl, ByteConst
-          $E9: Size := 2 + 1;     // sub cl, ByteConst
-          $EA: Size := 2 + 1;     // sub dl, ByteConst
+          $E1: Size := 2 + 1; // and cl, ByteConst
+          $E2: Size := 2 + 1; // and dl, ByteConst
+          $E9: Size := 2 + 1; // sub cl, ByteConst
+          $EA: Size := 2 + 1; // sub dl, ByteConst
         end;
 
       $81:
-        case Code[1] of
+        case Code[ 1 ] of
           $C4: Size := 2 + 4; // add esp, DWordConst
           $C6: Size := 2 + 4; // add esi, DWordConst
           $C7: Size := 2 + 4; // add edi, DWordConst
@@ -1203,30 +1207,30 @@ begin
         end;
 
       $83:
-        case Code[1] of
+        case Code[ 1 ] of
           $04:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // add dword ptr [esp], ByteConst
             end;
           $3C:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // cmp dword ptr [esp], ByteConst
             end;
           $3D: Size := 2 + 4 + 1; // cmp dword ptr [DWordConst], ByteConst
           $7C:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1 + 1; // cmp dword ptr [esp+ByteConst], ByteConst
             end;
           $7D: Size := 2 + 1 + 1; // cmp dword ptr [ebp+ByteConst], ByteConst
           $BB: Size := 2 + 4 + 1; // cmp dword ptr [ebx+DWordConst], ByteConst
-          $C4: Size := 2 + 1;     // add esp, ByteConst
-          $CF: Size := 2 + 1;     // or edi, ByteConst
-          $E4: Size := 2 + 1;     // and esp, ByteConst
-          $EC: Size := 2 + 1;     // sub esp, ByteConst
+          $C4: Size := 2 + 1; // add esp, ByteConst
+          $CF: Size := 2 + 1; // or edi, ByteConst
+          $E4: Size := 2 + 1; // and esp, ByteConst
+          $EC: Size := 2 + 1; // sub esp, ByteConst
         end;
 
       $85:
-        case Code[1] of
+        case Code[ 1 ] of
           $35: Size := 2 + 4; // test [DWordConst], esi
           $3D: Size := 2 + 4; // test [DWordConst], edi
           $D2: Size := 2; // test edx, edx
@@ -1236,31 +1240,30 @@ begin
         end;
 
       $87:
-        case Code[1] of
+        case Code[ 1 ] of
           $CA: Size := 2; // xchg edx, ecx
         end;
 
       $88:
-        case Code[1] of
+        case Code[ 1 ] of
           $04:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: // mov [esp], al
             end;
           $0C:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: // mov [esp], cl
             end;
         end;
 
-
       $89:
-        case Code[1] of
+        case Code[ 1 ] of
           $04:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3; // mov [esp], eax
             end;
           $0C:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3; // mov [esp], ecx
             end;
           $50: Size := 2 + 1; // mov [eax+ByteConst], edx
@@ -1272,7 +1275,7 @@ begin
         end;
 
       $8A:
-        case Code[1] of
+        case Code[ 1 ] of
           $46: Size := 2 + 1; // mov al, [esi+ByteConst]
           $47: Size := 2 + 1; // mov al, [edi+ByteConst]
           $4A: Size := 2 + 1; // mov cl, [edx+ByteConst]
@@ -1288,19 +1291,19 @@ begin
         end;
 
       $8B:
-        case Code[1] of
+        case Code[ 1 ] of
           $00: Size := 2; // mov eax, [eax]
           $08: Size := 2; // mov ecx, [eax]
           $0A: Size := 2; // mov ecx, [edx]
           $0D: Size := 2 + 4; // mov ecx, [DwordConst]
-          $10: Size := 2;     // mov edx, [eax]
+          $10: Size := 2; // mov edx, [eax]
           $15: Size := 2 + 4; // mov edx, [DwordConst]
           $1D: Size := 2 + 4; // mov ebx, [DwordConst]
 
           $40: Size := 2 + 1; // mov eax, [eax+ByteConst]
           $43: Size := 2 + 1; // mov eax, [ebx+ByteConst]
           $44:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // mov eax,[esp+ByteConst]
             end;
           $45: Size := 2 + 1; // mov eax, [ebp+ByteConst]
@@ -1353,17 +1356,17 @@ begin
         end;
 
       $8D:
-        case Code[1] of
+        case Code[ 1 ] of
           $44:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // lea eax, [esp+ByteConst]
             end;
           $4C:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // lea ecx, [esp+ByteConst]
             end;
           $54:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1 // lea edx, [esp+ByteConst]
             end;
           $7D: Size := 2 + 1; // lea edi, [ebp+ByteConst]
@@ -1371,31 +1374,37 @@ begin
           $46: Size := 2 + 1; // lea eax, [esi+ByteConst]
         end;
 
-      $90: Size := 1; // nop
-      $91: Size := 1; // xchg eax, ecx
+      $90: Size     := 1; // nop
+      $91: Size     := 1; // xchg eax, ecx
 
-      $A1: Size := 1 + 4; // mov eax, [DwordConst]
-      $A3: Size := 1 + 4; // mov [DwordConst], eax
+      $A1: Size     := 1 + 4; // mov eax, [DwordConst]
+      $A3: Size     := 1 + 4; // mov [DwordConst], eax
 
-      $B0: Size := 1 + 1; // mov al, ByteConst
-      $B1: Size := 1 + 1; // mov cl, ByteConst
+      $B0: Size     := 1 + 1; // mov al, ByteConst
+      $B1: Size     := 1 + 1; // mov cl, ByteConst
 
-      $B8: Size := 1 + 4; // mov eax, DwordConst
-      $B9: Size := 1 + 4; // mov ecx, DwordConst
-      $BA: Size := 1 + 4; // mov edx, DwordConst
-      $BB: Size := 1 + 4; // mov ebx, DwordConst
-      $BE: Size := 1 + 4; // mov esi, DwordConst
-      $BF: Size := 1 + 4; // mov edi, DwordConst
+      $B8: Size     := 1 + 4; // mov eax, DwordConst
+      $B9: Size     := 1 + 4; // mov ecx, DwordConst
+      $BA: Size     := 1 + 4; // mov edx, DwordConst
+      $BB: Size     := 1 + 4; // mov ebx, DwordConst
+      $BE: Size     := 1 + 4; // mov esi, DwordConst
+      $BF: Size     := 1 + 4; // mov edi, DwordConst
 
-      $C2: begin Size := 1 + 2; RetFound := True; end; // retn WordConst
-      $C3: begin Size := 1; RetFound := True; end; // ret
+      $C2:
+        begin
+          Size      := 1 + 2; RetFound := True;
+        end; // retn WordConst
+      $C3:
+        begin
+          Size      := 1; RetFound := True;
+        end; // ret
 
       $C6:
-        case Code[1] of
+        case Code[ 1 ] of
           $02: Size := 2 + 1; // mov byte ptr [edx], ByteConst
           $06: Size := 2 + 1; // mov byte ptr [esi], ByteConst
           $04:
-            case Code[2] of
+            case Code[ 2 ] of
               $24: Size := 3 + 1; // mov byte ptr [esp], ByteConst
             end;
           $80: Size := 2 + 4 + 1; // mov byte ptr [eax+DwordConst], ByteConst
@@ -1407,19 +1416,19 @@ begin
 
       $E8, $E9: // call/jmp DwordConst
         begin
-          Size := 1 + 4;
+          Size      := 1 + 4;
           if OffsetTable <> nil then
-            OffsetTable.Add(PInteger(Code + 1));
+            OffsetTable.Add( PInteger( Code + 1 ) );
         end;
 
       $F6:
-        case Code[1] of
+        case Code[ 1 ] of
           $40: Size := 2 + 1 + 1; // test byte ptr [eax+ByteConst], ByteConst
           $46: Size := 2 + 1 + 1; // test byte ptr [esi+ByteConst], ByteConst
         end;
 
       $FF:
-        case Code[1] of
+        case Code[ 1 ] of
           $25: Size := 2 + 4; // call dword ptr [DwordConst]
           $51: Size := 2 + 1; // call dword ptr [ecx+ByteConst]
           $52: Size := 2 + 1; // call dword ptr [edx+ByteConst]
@@ -1433,279 +1442,280 @@ begin
     if Size = 0 then
       Failed;
 
-    Inc(Result, Size);
-    {$IF CompilerVersion >= 20.0}
-    Inc(Code, Size);
-    {$ELSE}
-    Inc(PByte(Code), Size);
-    {$IFEND}
+    Inc( Result, Size );
+{$IF CompilerVersion >= 20.0}
+    Inc( Code, Size );
+{$ELSE}
+    Inc( PByte( Code ), Size );
+{$IFEND}
   end;
 end;
 
 var
-  OrgCallBlock: PByte;
+  OrgCallBlock      : PByte;
   OrgCallBlockOffset: Integer;
   //OrgCallBlockCritSect: TRTLCriticalSection;
 
-function CreateOrgCallMethodPtr(Proc: Pointer): Pointer;
+function CreateOrgCallMethodPtr( Proc: Pointer ): Pointer;
 const
-  BlockSize = 4096;
+  BlockSize         = 4096;
 var
-  P: PByte;
+  P                 : PByte;
   StartCodeSize, CodeSize, FullCodeSize: Integer;
-  I: Integer;
-  JmpRelOffset: Integer;
-  OffsetTable: TOffsetTable;
-  RelPos: Integer;
+  I                 : Integer;
+  JmpRelOffset      : Integer;
+  OffsetTable       : TOffsetTable;
+  RelPos            : Integer;
 begin
   if Proc = nil then
-    raise Exception.Create('CreateOrgCallMethodPtr called with nil');
+    raise Exception.Create( 'CreateOrgCallMethodPtr called with nil' );
 
-  StartCodeSize := GetStartCodeSize(Proc, 5, @OffsetTable);
+  StartCodeSize     := GetStartCodeSize( Proc, 5, @OffsetTable );
   if StartCodeSize = 0 then
-    raise Exception.Create('Cannot create OrgCallMethod for the specified function');
+    raise Exception.Create( 'Cannot create OrgCallMethod for the specified function' );
 
   // space for "jmp rel"
-  CodeSize := StartCodeSize;
-  JmpRelOffset := StartCodeSize;
-  Inc(CodeSize, 5);
+  CodeSize          := StartCodeSize;
+  JmpRelOffset      := StartCodeSize;
+  Inc( CodeSize, 5 );
 
   // alignment for the next OrgCallMethodPtr (filled with "INT 3")
-  FullCodeSize := ((CodeSize + 1) + 3) and not $3;
+  FullCodeSize      := ( ( CodeSize + 1 ) + 3 ) and not $3;
 
   //EnterCriticalSection(OrgCallBlockCritSect);
-  if (OrgCallBlock = nil) or (OrgCallBlockOffset + FullCodeSize > BlockSize) then
+  if ( OrgCallBlock = nil ) or ( OrgCallBlockOffset + FullCodeSize > BlockSize ) then
   begin
     // Append the next block, if possible.
-    P := OrgCallBlock;
+    P               := OrgCallBlock;
     if P <> nil then
     begin
       //VirtualProtect(P, BlockSize, PAGE_EXECUTE_READ, @Dummy);
-      Inc(P, BlockSize);
+      Inc( P, BlockSize );
     end;
-    OrgCallBlock := VirtualAlloc(P, BlockSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    OrgCallBlock    := VirtualAlloc( P, BlockSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
     if OrgCallBlock = nil then
-      OrgCallBlock := VirtualAlloc(nil, BlockSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+      OrgCallBlock  := VirtualAlloc( nil, BlockSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE );
     if OrgCallBlock = nil then
-      System.Error(reOutOfMemory);
+      System.Error( reOutOfMemory );
     OrgCallBlockOffset := 0;
   end;
 
-  {$IF CompilerVersion >= 20.0}
-  P := OrgCallBlock + OrgCallBlockOffset;
-  {$ELSE}
-  P := PByte(PAnsiChar(OrgCallBlock) + OrgCallBlockOffset);
-  {$IFEND}
-  Inc(OrgCallBlockOffset, FullCodeSize);
+{$IF CompilerVersion >= 20.0}
+  P                 := OrgCallBlock + OrgCallBlockOffset;
+{$ELSE}
+  P                 := PByte( PAnsiChar( OrgCallBlock ) + OrgCallBlockOffset );
+{$IFEND}
+  Inc( OrgCallBlockOffset, FullCodeSize );
   //LeaveCriticalSection(OrgCallBlockCritSect);
 
   // Adjust the relative address to the new code position
-  Move(Proc^, P^, StartCodeSize);
+  Move( Proc^, P^, StartCodeSize );
   if OffsetTable.Offsets <> nil then // in 5 bytes only 1 call/jmp can be in it
   begin
-    RelPos := PByte(OffsetTable.Offsets[0]) - PByte(Proc);
-    PInteger(P + RelPos)^ := (PByte(Proc) - P) + OffsetTable.Offsets[0]^;
+    RelPos          := PByte( OffsetTable.Offsets[ 0 ] ) - PByte( Proc );
+    PInteger( P + RelPos )^ := ( PByte( Proc ) - P ) + OffsetTable.Offsets[ 0 ]^;
   end;
 
-  P[JmpRelOffset] := $E9;
-  PInteger(@P[JmpRelOffset + 1])^ := (PByte(Proc) + StartCodeSize) - (P + JmpRelOffset + 5);
+  P[ JmpRelOffset ] := $E9;
+  PInteger( @P[ JmpRelOffset + 1 ] )^ := ( PByte( Proc ) + StartCodeSize ) - ( P + JmpRelOffset + 5 );
   // Fill gap
   for I := CodeSize to FullCodeSize - 1 do
-    Byte(PAnsiChar(P)[I]) := $CC; // int 3
+    Byte( PAnsiChar( P )[ I ] ) := $CC; // int 3
 
-  Result := P;
+  Result            := P;
 end;
 
-procedure ReRedirectOrgCall(OrgProc, NewProc, ExistingOrgCall: Pointer);
+procedure ReRedirectOrgCall( OrgProc, NewProc, ExistingOrgCall: Pointer );
 begin
-  RedirectOrg(OrgProc, NewProc);
+  RedirectOrg( OrgProc, NewProc );
 end;
 
 {$IFDEF CPUX64}
-function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
+function RedirectOrgCall( OrgProc, NewProc: Pointer ): Pointer;
 begin
   // Win64: x86 5-byte JMP rewrite is not portable to x64 (rel32 can be out of range
   // and the prologue layout differs). Silently return nil so plugin startup completes
   // when a feature tries to install a hook the x64 redirector cannot do; the feature
   // is simply inactive on Win64.
-  Result := nil;
+  Result            := nil;
 end;
-{$ELSE}
-function RedirectOrgCall(OrgProc, NewProc: Pointer): Pointer;
-var
-  StartCodeSize: Integer;
-  Buffer: array[0..63] of Byte;
-  I: Integer;
-begin
-  OrgProc := GetActualAddr(OrgProc);
-  NewProc := GetActualAddr(NewProc);
-  Result := CreateOrgCallMethodPtr(OrgProc);
 
-  StartCodeSize := GetStartCodeSize(OrgProc, 5);
-  Buffer[0] := $E9;
-  {$IF CompilerVersion >= 20.0}
-  PInteger(@Buffer[1])^ := PByte(NewProc) - (PByte(OrgProc) + 5);
-  {$ELSE}
-  PInteger(@Buffer[1])^ := PAnsiChar(NewProc) - (PAnsiChar(OrgProc) + 5);
-  {$IFEND}
+{$ELSE}
+function RedirectOrgCall( OrgProc, NewProc: Pointer ): Pointer;
+var
+  StartCodeSize     : Integer;
+  Buffer            : array[ 0..63 ] of Byte;
+  I                 : Integer;
+begin
+  OrgProc           := GetActualAddr( OrgProc );
+  NewProc           := GetActualAddr( NewProc );
+  Result            := CreateOrgCallMethodPtr( OrgProc );
+
+  StartCodeSize     := GetStartCodeSize( OrgProc, 5 );
+  Buffer[ 0 ]       := $E9;
+{$IF CompilerVersion >= 20.0}
+  PInteger( @Buffer[ 1 ] )^ := PByte( NewProc ) - ( PByte( OrgProc ) + 5 );
+{$ELSE}
+  PInteger( @Buffer[ 1 ] )^ := PAnsiChar( NewProc ) - ( PAnsiChar( OrgProc ) + 5 );
+{$IFEND}
   for I := 5 to StartCodeSize - 1 do
-    Buffer[I] := $90;
+    Buffer[ I ]     := $90;
   // Only the jump and the padding inside the first eight bytes are written, in one locked
   // write: padding beyond that is unreachable after the jump, and leaving it untouched means no
   // thread still executing the old instructions there sees them change.
   if StartCodeSize > SizeOf( Int64 ) then
-    StartCodeSize := SizeOf( Int64 );
-  if not PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize ) then
+    StartCodeSize   := SizeOf( Int64 );
+  if not PatchCodeAtomic( OrgProc, Buffer[ 0 ], StartCodeSize ) then
     RaiseLastOSError;
 end;
 {$ENDIF}
 
-procedure RestoreOrgCall(OrgProc, OrgCall: Pointer);
+procedure RestoreOrgCall( OrgProc, OrgCall: Pointer );
 var
-  StartCodeSize: Integer;
-  Buffer: array[0..63] of Byte;
-  RelPos: Integer;
-  OffsetTable: TOffsetTable;
+  StartCodeSize     : Integer;
+  Buffer            : array[ 0..63 ] of Byte;
+  RelPos            : Integer;
+  OffsetTable       : TOffsetTable;
 begin
   if OrgCall = nil then
     Exit;
 
-  OrgProc := GetActualAddr(OrgProc);
+  OrgProc           := GetActualAddr( OrgProc );
 
-  StartCodeSize := GetStartCodeSize(OrgCall, 5, @OffsetTable);
-  Move(OrgCall^, Buffer[0], StartCodeSize);
+  StartCodeSize     := GetStartCodeSize( OrgCall, 5, @OffsetTable );
+  Move( OrgCall^, Buffer[ 0 ], StartCodeSize );
   if OffsetTable.Offsets <> nil then // in 5 bytes only 1 call/jmp can be in it
   begin
     // Adjust the relative address to the original code position
-    RelPos := PByte(OffsetTable.Offsets[0]) - PByte(OrgCall);
-    PInteger(@Buffer[RelPos])^ := OffsetTable.Offsets[0]^ - (PByte(OrgProc) - PByte(OrgCall));
+    RelPos          := PByte( OffsetTable.Offsets[ 0 ] ) - PByte( OrgCall );
+    PInteger( @Buffer[ RelPos ] )^ := OffsetTable.Offsets[ 0 ]^ - ( PByte( OrgProc ) - PByte( OrgCall ) );
   end;
-  PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize );
+  PatchCodeAtomic( OrgProc, Buffer[ 0 ], StartCodeSize );
 end;
 
-procedure RedirectOrg(OrgProc, NewProc: Pointer);
+procedure RedirectOrg( OrgProc, NewProc: Pointer );
 var
-  StartCodeSize: Integer;
-  Buffer: array[0..63] of Byte;
-  I: Integer;
+  StartCodeSize     : Integer;
+  Buffer            : array[ 0..63 ] of Byte;
+  I                 : Integer;
 begin
-  OrgProc := GetActualAddr(OrgProc);
-  NewProc := GetActualAddr(NewProc);
+  OrgProc           := GetActualAddr( OrgProc );
+  NewProc           := GetActualAddr( NewProc );
 
-  StartCodeSize := GetStartCodeSize(OrgProc, 5);
-  Buffer[0] := $E9;
-  {$IF CompilerVersion >= 20.0}
-  PInteger(@Buffer[1])^ := PByte(NewProc) - (PByte(OrgProc) + 5);
-  {$ELSE}
-  PInteger(@Buffer[1])^ := PAnsiChar(NewProc) - (PAnsiChar(OrgProc) + 5);
-  {$IFEND}
+  StartCodeSize     := GetStartCodeSize( OrgProc, 5 );
+  Buffer[ 0 ]       := $E9;
+{$IF CompilerVersion >= 20.0}
+  PInteger( @Buffer[ 1 ] )^ := PByte( NewProc ) - ( PByte( OrgProc ) + 5 );
+{$ELSE}
+  PInteger( @Buffer[ 1 ] )^ := PAnsiChar( NewProc ) - ( PAnsiChar( OrgProc ) + 5 );
+{$IFEND}
   for I := 5 to StartCodeSize - 1 do
-    Buffer[I] := $90;
+    Buffer[ I ]     := $90;
   // Only the jump and the padding inside the first eight bytes are written, in one locked
   // write: padding beyond that is unreachable after the jump, and leaving it untouched means no
   // thread still executing the old instructions there sees them change.
   if StartCodeSize > SizeOf( Int64 ) then
-    StartCodeSize := SizeOf( Int64 );
-  if not PatchCodeAtomic( OrgProc, Buffer[0], StartCodeSize ) then
+    StartCodeSize   := SizeOf( Int64 );
+  if not PatchCodeAtomic( OrgProc, Buffer[ 0 ], StartCodeSize ) then
     RaiseLastOSError;
 end;
 
-function ReplaceRelCallOffset(CallJmpPtr: PByte; NewFunction: Pointer): Pointer;
+function ReplaceRelCallOffset( CallJmpPtr: PByte; NewFunction: Pointer ): Pointer;
 begin
-  Result := GetCallTargetAddress(CallJmpPtr);
+  Result            := GetCallTargetAddress( CallJmpPtr );
   if Result <> nil then
   begin
     if Result <> NewFunction then
     begin
       // Rewrite opcode and offset together in one locked write, so a thread executing the
       // call never sees half an offset.
-      var aInstruction: array[0..4] of Byte;
-      aInstruction[0] := CallJmpPtr^;
-      PInteger( @aInstruction[1] )^ := PByte(NewFunction) - (CallJmpPtr + 5);
-      if not PatchCodeAtomic( CallJmpPtr, aInstruction[0], SizeOf( aInstruction ) ) then
-        Result := nil;
+      var aInstruction: array[ 0..4 ] of Byte;
+      aInstruction[ 0 ] := CallJmpPtr^;
+      PInteger( @aInstruction[ 1 ] )^ := PByte( NewFunction ) - ( CallJmpPtr + 5 );
+      if not PatchCodeAtomic( CallJmpPtr, aInstruction[ 0 ], SizeOf( aInstruction ) ) then
+        Result      := nil;
     end;
   end
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-function GetCallTargetAddress(CallJmpPtr: PByte): Pointer;
+function GetCallTargetAddress( CallJmpPtr: PByte ): Pointer;
 begin
-  if (CallJmpPtr <> nil) and (CallJmpPtr^ in [$E8, $E9]) then
-    Result := Pointer(PByte(CallJmpPtr + 5) + PInteger(@CallJmpPtr[1])^)
+  if ( CallJmpPtr <> nil ) and ( CallJmpPtr^ in [ $E8, $E9 ] ) then
+    Result          := Pointer( PByte( CallJmpPtr + 5 ) + PInteger( @CallJmpPtr[ 1 ] )^ )
   else
-    Result := nil;
+    Result          := nil;
 end;
 
-function ReplaceOpCodeByRelCall(FiveByteStart: PByte; CallFunction: Pointer): Boolean;
+function ReplaceOpCodeByRelCall( FiveByteStart: PByte; CallFunction: Pointer ): Boolean;
 var
-  Buffer: array[0..4] of Byte;
+  Buffer            : array[ 0..4 ] of Byte;
 begin
   if FiveByteStart <> nil then
   begin
-    Buffer[0] := $E8;
-    PInteger(@Buffer[1])^ := PByte(CallFunction) - (FiveByteStart + 5);
-    Result := PatchCodeAtomic( FiveByteStart, Buffer[0], SizeOf( Buffer ) );
+    Buffer[ 0 ]     := $E8;
+    PInteger( @Buffer[ 1 ] )^ := PByte( CallFunction ) - ( FiveByteStart + 5 );
+    Result          := PatchCodeAtomic( FiveByteStart, Buffer[ 0 ], SizeOf( Buffer ) );
   end
   else
-    Result := False;
+    Result          := False;
 end;
 
-function ReplaceOpCodeByRelJump(FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean): Boolean;
+function ReplaceOpCodeByRelJump( FiveByteStart: PByte; JumpTarget: Pointer; FillWithNop: Boolean ): Boolean;
 var
-  Buffer: array[0..63] of Byte;
-  StartCodeSize, I: Integer;
+  Buffer            : array[ 0..63 ] of Byte;
+  StartCodeSize, I  : Integer;
 begin
   if FiveByteStart <> nil then
   begin
-    StartCodeSize := 5;
-    Buffer[0] := $E9;
-    PInteger(@Buffer[1])^ := PByte(JumpTarget) - (FiveByteStart + 5);
+    StartCodeSize   := 5;
+    Buffer[ 0 ]     := $E9;
+    PInteger( @Buffer[ 1 ] )^ := PByte( JumpTarget ) - ( FiveByteStart + 5 );
     if FillWithNop then
     begin
-      StartCodeSize := GetStartCodeSize(FiveByteStart, 5);
+      StartCodeSize := GetStartCodeSize( FiveByteStart, 5 );
       for I := 5 to StartCodeSize - 1 do
-        Buffer[I] := $90;
+        Buffer[ I ] := $90;
     end;
-    Result := PatchCodeAtomic( FiveByteStart, Buffer[0], StartCodeSize );
+    Result          := PatchCodeAtomic( FiveByteStart, Buffer[ 0 ], StartCodeSize );
   end
   else
-    Result := False;
+    Result          := False;
 end;
 
-function ReplaceInstructionByRelCall(IntructionStart: PByte; CallFunction: Pointer): Boolean;
+function ReplaceInstructionByRelCall( IntructionStart: PByte; CallFunction: Pointer ): Boolean;
 var
-  StartCodeSize: Integer;
-  Buffer: array[0..63] of Byte;
-  I: Integer;
+  StartCodeSize     : Integer;
+  Buffer            : array[ 0..63 ] of Byte;
+  I                 : Integer;
 begin
   if IntructionStart <> nil then
   begin
-    StartCodeSize := GetStartCodeSize(IntructionStart, 5);
-    Buffer[0] := $E8; // rel call
-    {$IF CompilerVersion >= 20.0}
-    PInteger(@Buffer[1])^ := PByte(CallFunction) - (IntructionStart + 5);
-    {$ELSE}
-    PInteger(@Buffer[1])^ := PAnsiChar(CallFunction) - (PAnsiChar(IntructionStart) + 5);
-    {$IFEND}
+    StartCodeSize   := GetStartCodeSize( IntructionStart, 5 );
+    Buffer[ 0 ]     := $E8; // rel call
+{$IF CompilerVersion >= 20.0}
+    PInteger( @Buffer[ 1 ] )^ := PByte( CallFunction ) - ( IntructionStart + 5 );
+{$ELSE}
+    PInteger( @Buffer[ 1 ] )^ := PAnsiChar( CallFunction ) - ( PAnsiChar( IntructionStart ) + 5 );
+{$IFEND}
     for I := 5 to StartCodeSize - 1 do
-      Buffer[I] := $90;
-    if not PatchCodeAtomic( IntructionStart, Buffer[0], StartCodeSize ) then
+      Buffer[ I ]   := $90;
+    if not PatchCodeAtomic( IntructionStart, Buffer[ 0 ], StartCodeSize ) then
       RaiseLastOSError;
-    Result := True;
+    Result          := True;
   end
   else
-    Result := False;
+    Result          := False;
 end;
 
-function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean): Pointer;
+function HookWinApiProc( AWinApiProc, ANewProc: Pointer; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean ): Pointer;
 begin
-  if not HookWinApiProc(AWinApiProc, ANewProc, Result, AHookInfo, AResolveImportAddr) then
-    Result := nil;
+  if not HookWinApiProc( AWinApiProc, ANewProc, Result, AHookInfo, AResolveImportAddr ) then
+    Result          := nil;
 end;
 
-function HookWinApiProc(AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean): Boolean;
+function HookWinApiProc( AWinApiProc, ANewProc: Pointer; var AOrgCallProc; var AHookInfo: TWinApiHookInfo; AResolveImportAddr: Boolean ): Boolean;
 type
   PWinApiJmpCode = ^TWinApiJmpCode;
   TWinApiJmpCode = packed record
@@ -1717,140 +1727,141 @@ type
   end;
 
 var
-  P: Pointer;
-  {$IFDEF CPUX64}
-  PP: PPointer;
-  OldProtect: DWORD;
-  {$ELSE}
-  n: SIZE_T;
-  JmpCode: TWinApiJmpCode;
-  {$ENDIF CPUX64}
+  P                 : Pointer;
+{$IFDEF CPUX64}
+  PP                : PPointer;
+  OldProtect        : DWORD;
+{$ELSE}
+  n                 : SIZE_T;
+  JmpCode           : TWinApiJmpCode;
+{$ENDIF CPUX64}
 begin
-  Pointer(AOrgCallProc) := nil;
-  FillChar(AHookInfo, SizeOf(AHookInfo), 0);
-  Result := False;
-  if (AWinApiProc = nil) or (ANewProc = nil) then
+  Pointer( AOrgCallProc ) := nil;
+  FillChar( AHookInfo, SizeOf( AHookInfo ), 0 );
+  Result            := False;
+  if ( AWinApiProc = nil ) or ( ANewProc = nil ) then
     Exit;
   if AResolveImportAddr then
-    AWinApiProc := GetActualAddr(AWinApiProc);
+    AWinApiProc     := GetActualAddr( AWinApiProc );
 
   AHookInfo.WinApiProc := AWinApiProc;
 
-  {$IFDEF CPUX64}
-  if (Word(AWinApiProc^) = $25FF) then // "FF 25 jmp [rel dword]"
+{$IFDEF CPUX64}
+  if ( Word( AWinApiProc^ ) = $25FF ) then // "FF 25 jmp [rel dword]"
   begin
     //PP^ <= GetActualAddr(AWinApiProc);
-    PP := PPointer(PByte(@PAbsoluteIndirectJmp64(AWinApiProc).OpCode) + SizeOf(TAbsoluteIndirectJmp64) + PAbsoluteIndirectJmp64(AWinApiProc).Rel);
+    PP                  := PPointer( PByte( @PAbsoluteIndirectJmp64( AWinApiProc ).OpCode ) + SizeOf( TAbsoluteIndirectJmp64 ) + PAbsoluteIndirectJmp64( AWinApiProc
+      ).Rel );
     // Set OrgCallProc before changing the code so that concurrent threads can call the hook that can call the org function
-    Pointer(AOrgCallProc) := PP^;
+    Pointer( AOrgCallProc ) := PP^;
 
     // Replace the target address by ANewProc.
     // WriteProcessMemory somehow fails: WriteProcessMemory(GetCurrentProcess, PP, @ANewProc, SizeOf(Pointer), n)
-    if not VirtualProtect(PP, SizeOf(Pointer), PAGE_READWRITE, @OldProtect) then
+    if not VirtualProtect( PP, SizeOf( Pointer ), PAGE_READWRITE, @OldProtect ) then
       RaiseLastOSError;
     try
-      PP^ := ANewProc;
+      PP^           := ANewProc;
     finally
-      VirtualProtect(PP, SizeOf(Pointer), OldProtect, @OldProtect);
+      VirtualProtect( PP, SizeOf( Pointer ), OldProtect, @OldProtect );
     end;
-    AHookInfo.Mode := 100;
-    AHookInfo.OrgCall := Pointer(AOrgCallProc);
+    AHookInfo.Mode  := 100;
+    AHookInfo.OrgCall := Pointer( AOrgCallProc );
     // Use the WinApiProc field for the import table address that we patch
-    AHookInfo.WinApiProc := PByte(PP);
+    AHookInfo.WinApiProc := PByte( PP );
   end
-  {$ELSE}
-  if Word(AWinApiProc^) = $FF8B then // "8B FF  mov edi,edi"
+{$ELSE}
+  if Word( AWinApiProc^ ) = $FF8B then // "8B FF  mov edi,edi"
   begin
-    AHookInfo.Mode := 1;
-    Move(Pointer(PByte(AWinApiProc) - 5)^, AHookInfo.Data[0], SizeOf(JmpCode));
+    AHookInfo.Mode  := 1;
+    Move( Pointer( PByte( AWinApiProc ) - 5 )^, AHookInfo.Data[ 0 ], SizeOf( JmpCode ) );
 
     JmpCode.Jump.Jmp := $E9; // jmp dword-const
-    JmpCode.Jump.Offset := PByte(ANewProc) - ((PByte(AWinApiProc) - 5) + 5);
-    JmpCode.JmpM5 := $F9EB; // jmp $-5
+    JmpCode.Jump.Offset := PByte( ANewProc ) - ( ( PByte( AWinApiProc ) - 5 ) + 5 );
+    JmpCode.JmpM5   := $F9EB; // jmp $-5
 
     // Set OrgCallProc before changing the code so that concurrent threads can call the hook that can call the org function
-    Pointer(AOrgCallProc) := PByte(AWinApiProc) + 2;
-    if not WriteProcessMemory(GetCurrentProcess, PByte(AWinApiProc) - 5, @JmpCode, SizeOf(JmpCode), n) then
+    Pointer( AOrgCallProc ) := PByte( AWinApiProc ) + 2;
+    if not WriteProcessMemory( GetCurrentProcess, PByte( AWinApiProc ) - 5, @JmpCode, SizeOf( JmpCode ), n ) then
     begin
-      Pointer(AOrgCallProc) := nil;
+      Pointer( AOrgCallProc ) := nil;
       RaiseLastOSError;
     end;
   end
-  else if (Word(AWinApiProc^) = $F9EB) and // "EB F9  jmp $-5"
-          (PByte(PByte(AWinApiProc) - 5)^ = $E9) then // "jmp dword-const"
+  else if ( Word( AWinApiProc^ ) = $F9EB ) and // "EB F9  jmp $-5"
+    ( PByte( PByte( AWinApiProc ) - 5 )^ = $E9 ) then // "jmp dword-const"
   begin
     // already patched
-    P := GetCallTargetAddress(PByte(AWinApiProc) - 5);
-    Pointer(AOrgCallProc) := P;
+    P               := GetCallTargetAddress( PByte( AWinApiProc ) - 5 );
+    Pointer( AOrgCallProc ) := P;
 
-    AHookInfo.Mode := 2;
-    Move(Pointer(PByte(AWinApiProc) - 5)^, AHookInfo.Data[0], SizeOf(JmpCode.Jump));
+    AHookInfo.Mode  := 2;
+    Move( Pointer( PByte( AWinApiProc ) - 5 )^, AHookInfo.Data[ 0 ], SizeOf( JmpCode.Jump ) );
 
-    {Pointer(AOrgCallProc) :=} ReplaceRelCallOffset(PByte(AWinApiProc) - 5, ANewProc);
+    {Pointer(AOrgCallProc) :=} ReplaceRelCallOffset( PByte( AWinApiProc ) - 5, ANewProc );
   end
-  {$ENDIF CPUX64}
+{$ENDIF CPUX64}
   else
   begin
     // unknown patch type
-    P := RedirectOrgCall(AWinApiProc, ANewProc);
+    P               := RedirectOrgCall( AWinApiProc, ANewProc );
     if ( P = nil ) then
     begin
       // RedirectOrgCall cannot patch on Win64: report failure instead of a hook that is not there.
-      FillChar(AHookInfo, SizeOf(AHookInfo), 0);
+      FillChar( AHookInfo, SizeOf( AHookInfo ), 0 );
       Exit;
     end;
-    Pointer(AOrgCallProc) := P;
+    Pointer( AOrgCallProc ) := P;
 
-    AHookInfo.Mode := 3;
+    AHookInfo.Mode  := 3;
     AHookInfo.OrgCall := P;
 
-  {
-    14 bytes x64 jump trampoline: must also detect such code to not destroy the QWORD after the jump if hooking a hooked function
-      jmp [rel 0]
-      dd 0, 0
+    {
+      14 bytes x64 jump trampoline: must also detect such code to not destroy the QWORD after the jump if hooking a hooked function
+        jmp [rel 0]
+        dd 0, 0
 
-    16 bytes x64 jump trampoline: better for other detour software, no defect disassembling but we still need to detect the "dd 0, 0" version
-      jmp [rel 2]
-      mov rax, qword-const
-  }
+      16 bytes x64 jump trampoline: better for other detour software, no defect disassembling but we still need to detect the "dd 0, 0" version
+        jmp [rel 2]
+        mov rax, qword-const
+    }
 
   end;
-  Result := True;
+  Result            := True;
 end;
 
-function UnhookWinApiProc(const AHookInfo: TWinApiHookInfo): Boolean;
+function UnhookWinApiProc( const AHookInfo: TWinApiHookInfo ): Boolean;
 var
-  {$IFDEF CPUX64}
-  OldProtect: DWORD;
-  {$ELSE}
-  n: SIZE_T;
-  {$ENDIF CPUX64}
+{$IFDEF CPUX64}
+  OldProtect        : DWORD;
+{$ELSE}
+  n                 : SIZE_T;
+{$ENDIF CPUX64}
 begin
-  Result := False;
-  if (AHookInfo.WinApiProc <> nil) and (AHookInfo.Mode in [1..3, 100]) then
+  Result            := False;
+  if ( AHookInfo.WinApiProc <> nil ) and ( AHookInfo.Mode in [ 1..3, 100 ] ) then
   begin
     case AHookInfo.Mode of
-      {$IFDEF CPUX64}
+{$IFDEF CPUX64}
       100:
         begin
-          Result := VirtualProtect(AHookInfo.WinApiProc, SizeOf(Pointer), PAGE_READWRITE, @OldProtect);
+          Result    := VirtualProtect( AHookInfo.WinApiProc, SizeOf( Pointer ), PAGE_READWRITE, @OldProtect );
           if Result then
           begin
             try
-              PPointer(AHookInfo.WinApiProc)^ := AHookInfo.OrgCall;
+              PPointer( AHookInfo.WinApiProc )^ := AHookInfo.OrgCall;
             finally
-              VirtualProtect(AHookInfo.WinApiProc, SizeOf(Pointer), OldProtect, @OldProtect);
+              VirtualProtect( AHookInfo.WinApiProc, SizeOf( Pointer ), OldProtect, @OldProtect );
             end;
           end;
         end;
-      {$ELSE}
-      1: Result := WriteProcessMemory(GetCurrentProcess, AHookInfo.WinApiProc - 5, @AHookInfo.Data[0], 5 + 2, n);
-      2: Result := WriteProcessMemory(GetCurrentProcess, AHookInfo.WinApiProc - 5, @AHookInfo.Data[0], 5, n);
-      {$ENDIF CPUX64}
+{$ELSE}
+      1: Result     := WriteProcessMemory( GetCurrentProcess, AHookInfo.WinApiProc - 5, @AHookInfo.Data[ 0 ], 5 + 2, n );
+      2: Result     := WriteProcessMemory( GetCurrentProcess, AHookInfo.WinApiProc - 5, @AHookInfo.Data[ 0 ], 5, n );
+{$ENDIF CPUX64}
       3:
         begin
-          RestoreOrgCall(AHookInfo.WinApiProc, AHookInfo.OrgCall);
-          Result := True;
+          RestoreOrgCall( AHookInfo.WinApiProc, AHookInfo.OrgCall );
+          Result    := True;
         end;
     end;
   end;

@@ -23,16 +23,16 @@ unit AppConsts;
 interface
 
 const
-  {$I Version.inc}
+{$I Version.inc}
 
   /// <summary>Plug-in version number sourced from <c>Version.inc</c>.</summary>
-  sPluginVersion = VersionNumber;
+  sPluginVersion    = VersionNumber;
   /// <summary>Full plug-in name (name + version) shown in About dialogs and the splash screen.</summary>
-  sPluginName = 'DDevExtensions ' + sPluginVersion;
+  sPluginName       = 'DDevExtensions ' + sPluginVersion;
   /// <summary>Short copyright line displayed on the About dialog.</summary>
   sPluginSmallCopyright = '(C) 2006-2020 Andreas Hausladen';
   /// <summary>Full copyright string ("Copyright " + small copyright).</summary>
-  sPluginCopyright = 'Copyright ' + sPluginSmallCopyright;
+  sPluginCopyright  = 'Copyright ' + sPluginSmallCopyright;
 
 resourcestring
   /// <summary>"All columns" filter caption used by the column filter combo.</summary>
@@ -44,7 +44,7 @@ resourcestring
 
   /// <summary>Caption for the "Active Build Configuration" project menu entry.</summary>
   RsSetActiveBuildConfiguration = 'Active Build Configuration';
-  
+
 const
   /// <summary>English text returned by <see cref="sSearchComponent"/> when <see cref="GetLang"/> selects English.</summary>
   sSearchComponent_Eng = '(search component)';
@@ -262,7 +262,6 @@ const
   /// No French translation exists, so it reuses the English text.</summary>
   sReloadShowInExplorer_Fra = sReloadShowInExplorer_Eng;
 
-
 /// <summary>Returns the localised "(search component)" placeholder caption.</summary>
 /// <returns>The text in the UI language chosen by <see cref="GetLang"/>.</returns>
 function sSearchComponent: string;
@@ -362,8 +361,6 @@ function sReloadInvertSelection: string;
 /// <returns>The text in the UI language chosen by <see cref="GetLang"/>.</returns>
 function sReloadShowInExplorer: string;
 
-
-
 /// <summary>
 /// Returns the active UI language constant (<c>LANG_ENGLISH</c>, <c>LANG_GERMAN</c> or <c>LANG_FRENCH</c>).
 /// </summary>
@@ -378,7 +375,7 @@ function GetLang: Cardinal;
 /// </summary>
 /// <param name="S">Source string to be translated.</param>
 /// <returns>The unaltered <paramref name="S"/> value.</returns>
-function _(const S: WideString): string;
+function _( const S: WideString ): string;
 
 implementation
 
@@ -386,28 +383,28 @@ uses
   Winapi.Windows, System.SysUtils;
 
 var
-  Lang: Cardinal = Cardinal(-1);
+  Lang              : Cardinal = Cardinal( -1 );
 
-function _(const S: WideString): string;
+function _( const S: WideString ): string;
 begin
   // placeholder for dxgettext
-  Result := S;
+  Result            := S;
 end;
 
 /// <returns><c>LANG_GERMAN</c>, <c>LANG_FRENCH</c> or <c>LANG_ENGLISH</c>.</returns>
 function GetLang: Cardinal;
 var
-  App: string;
+  App               : string;
 begin
-  if Lang = Cardinal(-1) then
+  if Lang = Cardinal( -1 ) then
   begin
-    App := GetEnvironmentVariable('LANGDIR');
-    if SameText(App, 'de') then
-      Lang := LANG_GERMAN
-    else if SameText(App, 'fr') or SameText(App, 'fra') then
-      Lang := LANG_FRENCH
+    App             := GetEnvironmentVariable( 'LANGDIR' );
+    if SameText( App, 'de' ) then
+      Lang          := LANG_GERMAN
+    else if SameText( App, 'fr' ) or SameText( App, 'fra' ) then
+      Lang          := LANG_FRENCH
     else
-      Lang := LANG_ENGLISH;
+      Lang          := LANG_ENGLISH;
     {App := ChangeFileExt(ParamStr(0), '');
     case SysLocale.PriLangID of
       LANG_GERMAN:
@@ -421,236 +418,235 @@ begin
           Lang := LANG_FRENCH;
     end;}
   end;
-  Result := Lang;
+  Result            := Lang;
 end;
 
-function FromLang(const Eng, Ger, Fra: string): string;
+function FromLang( const Eng, Ger, Fra: string ): string;
 begin
   case GetLang of
     LANG_GERMAN: Result := Ger;
     LANG_FRENCH: Result := Fra;
   else
-    Result := Eng;
+    Result          := Eng;
   end;
 end;
 
-
 function sSearchComponent: string;
 begin
-  Result := FromLang(sSearchComponent_Eng,
-                     sSearchComponent_Ger,
-                     sSearchComponent_Fra);
+  Result            := FromLang( sSearchComponent_Eng,
+    sSearchComponent_Ger,
+    sSearchComponent_Fra );
 end;
 
 function sFilesCompiled: string;
 begin
-  Result := FromLang(sFilesCompiled_Eng,
-                     sFilesCompiled_Ger,
-                     sFilesCompiled_Fra);
+  Result            := FromLang( sFilesCompiled_Eng,
+    sFilesCompiled_Ger,
+    sFilesCompiled_Fra );
 end;
 
 function sAutoCloseCaption: string;
 begin
-  Result := FromLang(sAutoCloseCaption_Eng,
-                     sAutoCloseCaption_Ger,
-                     sAutoCloseCaption_Fra);
+  Result            := FromLang( sAutoCloseCaption_Eng,
+    sAutoCloseCaption_Ger,
+    sAutoCloseCaption_Fra );
 end;
 
 function sMenuItemManageProjectSettings: string;
 begin
-  Result := FromLang(sMenuItemManageProjectSettings_Eng,
-                     sMenuItemManageProjectSettings_Ger,
-                     sMenuItemManageProjectSettings_Fra);
+  Result            := FromLang( sMenuItemManageProjectSettings_Eng,
+    sMenuItemManageProjectSettings_Ger,
+    sMenuItemManageProjectSettings_Fra );
 end;
 
 function sMenuItemProjectSettings: string;
 begin
-  Result := FromLang(sMenuItemProjectSettings_Eng,
-                     sMenuItemProjectSettings_Ger,
-                     sMenuItemProjectSettings_Fra);
+  Result            := FromLang( sMenuItemProjectSettings_Eng,
+    sMenuItemProjectSettings_Ger,
+    sMenuItemProjectSettings_Fra );
 end;
 
 function sMenuItemSetVersionInfo: string;
 begin
-  Result := FromLang(sMenuItemSetVersionInfo_Eng,
-                     sMenuItemSetVersionInfo_Ger,
-                     sMenuItemSetVersionInfo_Fra);
+  Result            := FromLang( sMenuItemSetVersionInfo_Eng,
+    sMenuItemSetVersionInfo_Ger,
+    sMenuItemSetVersionInfo_Fra );
 end;
 
 function sMenuItemDDevExtensionsOptions: string;
 begin
-  Result := FromLang(sMenuItemDDevExtensionsOptions_Eng,
-                     sMenuItemDDevExtensionsOptions_Ger,
-                     sMenuItemDDevExtensionsOptions_Fra);
+  Result            := FromLang( sMenuItemDDevExtensionsOptions_Eng,
+    sMenuItemDDevExtensionsOptions_Ger,
+    sMenuItemDDevExtensionsOptions_Fra );
 end;
 
 function sMenuItemDDevExtensionsFileSelector: string;
 begin
-  Result := FromLang(sMenuItemDDevExtensionsFileSelector_Eng,
-                     sMenuItemDDevExtensionsFileSelector_Ger,
-                     sMenuItemDDevExtensionsFileSelector_Fra);
+  Result            := FromLang( sMenuItemDDevExtensionsFileSelector_Eng,
+    sMenuItemDDevExtensionsFileSelector_Ger,
+    sMenuItemDDevExtensionsFileSelector_Fra );
 end;
 
 function sParseErrorUsesLocationNotFound: string;
 begin
-  Result := FromLang(sParseErrorUsesLocationNotFound_Eng,
-                     sParseErrorUsesLocationNotFound_Ger,
-                     sParseErrorUsesLocationNotFound_Fra);
+  Result            := FromLang( sParseErrorUsesLocationNotFound_Eng,
+    sParseErrorUsesLocationNotFound_Ger,
+    sParseErrorUsesLocationNotFound_Fra );
 end;
 
 function sCapSwitchToModuleProject: string;
 begin
-  Result := FromLang(sCapSwitchToModuleProject_Eng,
-                     sCapSwitchToModuleProject_Ger,
-                     sCapSwitchToModuleProject_Fra);
+  Result            := FromLang( sCapSwitchToModuleProject_Eng,
+    sCapSwitchToModuleProject_Ger,
+    sCapSwitchToModuleProject_Fra );
 end;
 
 function sLblSwitchCurrentModuleProject: string;
 begin
-  Result := FromLang(sLblSwitchCurrentModuleProject_Eng,
-                     sLblSwitchCurrentModuleProject_Ger,
-                     sLblSwitchCurrentModuleProject_Fra);
+  Result            := FromLang( sLblSwitchCurrentModuleProject_Eng,
+    sLblSwitchCurrentModuleProject_Ger,
+    sLblSwitchCurrentModuleProject_Fra );
 end;
 
 function sLblSwitchToModuleProjectQuestion: string;
 begin
-  Result := FromLang(sLblSwitchToModuleProjectQuestion_Eng,
-                     sLblSwitchToModuleProjectQuestion_Ger,
-                     sLblSwitchToModuleProjectQuestion_Fra);
+  Result            := FromLang( sLblSwitchToModuleProjectQuestion_Eng,
+    sLblSwitchToModuleProjectQuestion_Ger,
+    sLblSwitchToModuleProjectQuestion_Fra );
 end;
 
 function sLblDontShowAgain: string;
 begin
-  Result := FromLang(sLblDontShowAgain_Eng,
-                     sLblDontShowAgain_Ger,
-                     sLblDontShowAgain_Fra);
+  Result            := FromLang( sLblDontShowAgain_Eng,
+    sLblDontShowAgain_Ger,
+    sLblDontShowAgain_Fra );
 end;
 
 function sLblActiveProject: string;
 begin
-  Result := FromLang(sLblActiveProject_Eng,
-                     sLblActiveProject_Ger,
-                     sLblActiveProject_Fra);
+  Result            := FromLang( sLblActiveProject_Eng,
+    sLblActiveProject_Ger,
+    sLblActiveProject_Fra );
 end;
 
 function sLblActiveModule: string;
 begin
-  Result := FromLang(sLblActiveModule_Eng,
-                     sLblActiveModule_Ger,
-                     sLblActiveModule_Fra);
+  Result            := FromLang( sLblActiveModule_Eng,
+    sLblActiveModule_Ger,
+    sLblActiveModule_Fra );
 end;
 
 function sLblTemporarySwitch: string;
 begin
-  Result := FromLang(sLblTemporarySwitch_Eng,
-                     sLblTemporarySwitch_Ger,
-                     sLblTemporarySwitch_Fra);
+  Result            := FromLang( sLblTemporarySwitch_Eng,
+    sLblTemporarySwitch_Ger,
+    sLblTemporarySwitch_Fra );
 end;
 
 function sDoYouWantToInvokeTheContextHelp: string;
 begin
-  Result := FromLang(sDoYouWantToInvokeTheContextHelp_Eng,
-                     sDoYouWantToInvokeTheContextHelp_Ger,
-                     sDoYouWantToInvokeTheContextHelp_Fra);
+  Result            := FromLang( sDoYouWantToInvokeTheContextHelp_Eng,
+    sDoYouWantToInvokeTheContextHelp_Ger,
+    sDoYouWantToInvokeTheContextHelp_Fra );
 end;
 
 function sCannotUnloadModuleForm: string;
 begin
-  Result := FromLang(sCannotUnloadModuleForm_Eng,
-                     sCannotUnloadModuleForm_Ger,
-                     sCannotUnloadModuleForm_Fra);
+  Result            := FromLang( sCannotUnloadModuleForm_Eng,
+    sCannotUnloadModuleForm_Ger,
+    sCannotUnloadModuleForm_Fra );
 end;
 
 function sLVGroup_ProjectFiles: string;
 begin
-  Result := FromLang(sLVGroup_ProjectFiles_Eng,
-                     sLVGroup_ProjectFiles_Ger,
-                     sLVGroup_ProjectFiles_Fra);
+  Result            := FromLang( sLVGroup_ProjectFiles_Eng,
+    sLVGroup_ProjectFiles_Ger,
+    sLVGroup_ProjectFiles_Fra );
 end;
 
 function sLVGroup_UnitFiles: string;
 begin
-  Result := FromLang(sLVGroup_UnitFiles_Eng,
-                     sLVGroup_UnitFiles_Ger,
-                     sLVGroup_UnitFiles_Fra);
+  Result            := FromLang( sLVGroup_UnitFiles_Eng,
+    sLVGroup_UnitFiles_Ger,
+    sLVGroup_UnitFiles_Fra );
 end;
 
 function sLVGroup_Forms: string;
 begin
-  Result := FromLang(sLVGroup_Forms_Eng,
-                     sLVGroup_Forms_Ger,
-                     sLVGroup_Forms_Fra);
+  Result            := FromLang( sLVGroup_Forms_Eng,
+    sLVGroup_Forms_Ger,
+    sLVGroup_Forms_Fra );
 end;
 
 function sReloadButton: string;
 begin
-  Result := FromLang(sReloadButton_Eng,
-                     sReloadButton_Ger,
-                     sReloadButton_Fra);
+  Result            := FromLang( sReloadButton_Eng,
+    sReloadButton_Ger,
+    sReloadButton_Fra );
 end;
 
 function sReloadChangedFilesCaption: string;
 begin
-  Result := FromLang(sReloadChangedFilesCaption_Eng,
-                     sReloadChangedFilesCaption_Ger,
-                     sReloadChangedFilesCaption_Fra);
+  Result            := FromLang( sReloadChangedFilesCaption_Eng,
+    sReloadChangedFilesCaption_Ger,
+    sReloadChangedFilesCaption_Fra );
 end;
 
 function sLVColumn_File: string;
 begin
-  Result := FromLang(sLVColumn_File_Eng,
-                     sLVColumn_File_Ger,
-                     sLVColumn_File_Fra);
+  Result            := FromLang( sLVColumn_File_Eng,
+    sLVColumn_File_Ger,
+    sLVColumn_File_Fra );
 end;
 
 function sLVColumn_Path: string;
 begin
-  Result := FromLang(sLVColumn_Path_Eng,
-                     sLVColumn_Path_Ger,
-                     sLVColumn_Path_Fra);
+  Result            := FromLang( sLVColumn_Path_Eng,
+    sLVColumn_Path_Ger,
+    sLVColumn_Path_Fra );
 end;
 
 function sReloadSelectOnlyUnmodifiedField: string;
 begin
-  Result := FromLang(sReloadSelectOnlyUnmodifiedField_Eng,
-                     sReloadSelectOnlyUnmodifiedField_Ger,
-                     sReloadSelectOnlyUnmodifiedField_Fra);
+  Result            := FromLang( sReloadSelectOnlyUnmodifiedField_Eng,
+    sReloadSelectOnlyUnmodifiedField_Ger,
+    sReloadSelectOnlyUnmodifiedField_Fra );
 end;
 
 function sReloadSelectOnlyModifiedFiles: string;
 begin
-  Result := FromLang(sReloadSelectOnlyModifiedFiles_Eng,
-                     sReloadSelectOnlyModifiedFiles_Ger,
-                     sReloadSelectOnlyModifiedFiles_Fra);
+  Result            := FromLang( sReloadSelectOnlyModifiedFiles_Eng,
+    sReloadSelectOnlyModifiedFiles_Ger,
+    sReloadSelectOnlyModifiedFiles_Fra );
 end;
 
 function sReloadSelectAll: string;
 begin
-  Result := FromLang(sReloadSelectAll_Eng,
-                     sReloadSelectAll_Ger,
-                     sReloadSelectAll_Fra);
+  Result            := FromLang( sReloadSelectAll_Eng,
+    sReloadSelectAll_Ger,
+    sReloadSelectAll_Fra );
 end;
 
 function sReloadDeselectAll: string;
 begin
-  Result := FromLang(sReloadDeselectAll_Eng,
-                     sReloadDeselectAll_Ger,
-                     sReloadDeselectAll_Fra);
+  Result            := FromLang( sReloadDeselectAll_Eng,
+    sReloadDeselectAll_Ger,
+    sReloadDeselectAll_Fra );
 end;
 
 function sReloadInvertSelection: string;
 begin
-  Result := FromLang(sReloadInvertSelection_Eng,
-                     sReloadInvertSelection_Ger,
-                     sReloadInvertSelection_Fra);
+  Result            := FromLang( sReloadInvertSelection_Eng,
+    sReloadInvertSelection_Ger,
+    sReloadInvertSelection_Fra );
 end;
 
 function sReloadShowInExplorer: string;
 begin
-  Result := FromLang(sReloadShowInExplorer_Eng,
-                     sReloadShowInExplorer_Ger,
-                     sReloadShowInExplorer_Fra);
+  Result            := FromLang( sReloadShowInExplorer_Eng,
+    sReloadShowInExplorer_Ger,
+    sReloadShowInExplorer_Fra );
 end;
 
-
 end.
+

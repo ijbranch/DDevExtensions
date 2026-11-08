@@ -287,9 +287,9 @@ uses
 constructor TUnitExportsDatabase.Create;
 begin
   inherited Create;
-  FExports := TDictionary<string, TList<TUnitExport>>.Create;
+  FExports          := TDictionary<string, TList<TUnitExport>>.Create;
   FIdentifierToUnits := TDictionary<string, TStringList>.Create;
-  FRTLVCLPriority := TStringList.Create;
+  FRTLVCLPriority   := TStringList.Create;
   FRTLVCLPriority.CaseSensitive := False;
   BuildRTLVCLPriority;
 end;
@@ -343,8 +343,8 @@ end;
 
 procedure TUnitExportsDatabase.Clear;
 var
-  Pair: TPair<string, TList<TUnitExport>>;
-  Pair2: TPair<string, TStringList>;
+  Pair              : TPair<string, TList<TUnitExport>>;
+  Pair2             : TPair<string, TStringList>;
 begin
   for Pair in FExports do
     Pair.Value.Free;
@@ -357,7 +357,7 @@ end;
 
 procedure TUnitExportsDatabase.ScanUnit( const UnitPath: string );
 var
-  Source: UTF8String;
+  Source            : UTF8String;
 begin
   if not FileExists( UnitPath ) then
     Exit;
@@ -367,19 +367,19 @@ begin
   if FExports.ContainsKey( LowerCase( ChangeFileExt( ExtractFileName( UnitPath ), '' ) ) ) then
   begin
     OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - a unit of that name was found earlier on the path',
-      [ UnitPath ] ) ) );
+          [ UnitPath ] ) ) );
     Exit;
   end;
 
   try
-    Source := LoadTextFileToUtf8String( UnitPath, 0 );
+    Source          := LoadTextFileToUtf8String( UnitPath, 0 );
   except
     on E: Exception do
     begin
       // Do not swallow silently: a file that fails to load is dropped from the
       // export database and degrades later placement analysis, so log it.
       OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - %s: %s',
-        [ UnitPath, E.ClassName, E.Message ] ) ) );
+            [ UnitPath, E.ClassName, E.Message ] ) ) );
       Exit;
     end;
   end;
@@ -392,41 +392,41 @@ procedure TUnitExportsDatabase.ScanSource( const UnitName, UnitPath: string;
 type
   TScanSection = ( ssNone, ssType, ssConst, ssVar );
 var
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  Sig: TList<TToken>;
-  InInterface: Boolean;
-  Section: TScanSection;
-  P: Integer;
-  ExportList: TList<TUnitExport>;
-  UnitList: TStringList;
-  LowerIdent: string;
-  Stored: Boolean;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
+  Sig               : TList<TToken>;
+  InInterface       : Boolean;
+  Section           : TScanSection;
+  P                 : Integer;
+  ExportList        : TList<TUnitExport>;
+  UnitList          : TStringList;
+  LowerIdent        : string;
+  Stored            : Boolean;
 
   function Kind( AIndex: Integer ): TTokenKind;
   begin
     if ( AIndex >= 0 ) and ( AIndex < Sig.Count ) then
-      Result := Sig[ AIndex ].Kind
+      Result        := Sig[ AIndex ].Kind
     else
-      Result := tkNone;
+      Result        := tkNone;
   end;
 
   procedure AddExport( const AIdentifier: string; AKind: TExportKind );
   var
-    Item: TUnitExport;
+    Item            : TUnitExport;
   begin
     Item.Identifier := AIdentifier;
-    Item.Kind := AKind;
+    Item.Kind       := AKind;
     ExportList.Add( Item );
   end;
 
   // AIndex is on AOpen; returns the index after the matching AClose.
   function SkipPair( AIndex: Integer; AOpen, AClose: TTokenKind ): Integer;
   var
-    Depth: Integer;
+    Depth           : Integer;
   begin
-    Depth := 0;
-    Result := AIndex;
+    Depth           := 0;
+    Result          := AIndex;
     while Result < Sig.Count do
     begin
       if Kind( Result ) = AOpen then
@@ -444,10 +444,10 @@ var
   // AIndex is just after a routine keyword; returns the index of the ";" ending the header.
   function SkipHeader( AIndex: Integer ): Integer;
   begin
-    Result := AIndex;
+    Result          := AIndex;
     while ( Result < Sig.Count ) and ( Kind( Result ) <> tkSemicolon ) do
       if Kind( Result ) = tkLParan then
-        Result := SkipPair( Result, tkLParan, tkRParan )
+        Result      := SkipPair( Result, tkLParan, tkRParan )
       else
         Inc( Result );
   end;
@@ -455,22 +455,22 @@ var
   // True when "record" at AIndex opens a body ( not the generic constraint "<T: record>" ).
   function IsRecordBody( AIndex: Integer ): Boolean;
   begin
-    Result := ( Kind( AIndex ) = tkI_record ) and not ( Kind( AIndex + 1 ) in [ tkGreaterThan, tkComma, tkSemicolon ] );
+    Result          := ( Kind( AIndex ) = tkI_record ) and not ( Kind( AIndex + 1 ) in [ tkGreaterThan, tkComma, tkSemicolon ] );
   end;
 
   // True when the structured-type keyword at AIndex follows "=" or "= packed".
   function FollowsEqual( AIndex: Integer ): Boolean;
   begin
-    Result := ( Kind( AIndex - 1 ) = tkEqual ) or ( ( Kind( AIndex - 1 ) = tkI_packed ) and ( Kind( AIndex - 2 ) = tkEqual ) );
+    Result          := ( Kind( AIndex - 1 ) = tkEqual ) or ( ( Kind( AIndex - 1 ) = tkI_packed ) and ( Kind( AIndex - 2 ) = tkEqual ) );
   end;
 
   // AIndex is on class / object / interface / dispinterface / record after "=".  Returns the
   // index after the body's "end", or of the token ending a body-less declaration.
   function SkipTypeBody( AIndex: Integer ): Integer;
   var
-    Depth: Integer;
+    Depth           : Integer;
   begin
-    Result := AIndex + 1;
+    Result          := AIndex + 1;
     if Kind( AIndex ) <> tkI_record then
     begin
       if ( Kind( AIndex ) = tkI_class ) and ( Kind( Result ) = tkI_of ) then
@@ -483,23 +483,23 @@ var
         Inc( Result );
       end;
       if Kind( Result ) = tkLParan then
-        Result := SkipPair( Result, tkLParan, tkRParan );
+        Result      := SkipPair( Result, tkLParan, tkRParan );
       if Kind( Result ) = tkSemicolon then
         Exit; // Forward declaration or "TFoo = class( TBar );"
     end;
 
-    Depth := 1;
+    Depth           := 1;
     while Result < Sig.Count do
     begin
       case Kind( Result ) of
         tkLParan:
           begin
-            Result := SkipPair( Result, tkLParan, tkRParan );
+            Result  := SkipPair( Result, tkLParan, tkRParan );
             Continue;
           end;
         tkLBracket:
           begin
-            Result := SkipPair( Result, tkLBracket, tkRBracket );
+            Result  := SkipPair( Result, tkLBracket, tkRBracket );
             Continue;
           end;
         tkI_end:
@@ -515,7 +515,7 @@ var
       if ( Kind( Result ) in [ tkI_class, tkI_object, tkI_interface, tkI_dispinterface, tkI_record ] ) and FollowsEqual( Result ) then
       begin
         // A nested type declaration with a body of its own.
-        Result := SkipTypeBody( Result );
+        Result      := SkipTypeBody( Result );
         Continue;
       end;
       Inc( Result );
@@ -527,11 +527,11 @@ var
   begin
     case Kind( AIndex - 1 ) of
       tkNone, tkSemicolon, tkRBracket, tkI_type, tkI_const, tkI_resourcestring, tkI_var, tkI_threadvar:
-        Result := True;
+        Result      := True;
       tkComma:
-        Result := Section = ssVar; // "A, B: Integer;"
+        Result      := Section = ssVar; // "A, B: Integer;"
     else
-      Result := False;
+      Result        := False;
     end;
   end;
 
@@ -540,10 +540,10 @@ var
   // only [fsBold] needs Vcl.Graphics.
   function ExportEnumValues( AIndex: Integer ): Integer;
   var
-    Depth: Integer;
+    Depth           : Integer;
   begin
-    Depth := 0;
-    Result := AIndex;
+    Depth           := 0;
+    Result          := AIndex;
     while Result < Sig.Count do
     begin
       case Kind( Result ) of
@@ -567,18 +567,18 @@ var
   // AIndex is on a declared type name; returns the index to resume scanning at.
   function SkipTypeDeclaration( AIndex: Integer ): Integer;
   begin
-    Result := AIndex + 1;
+    Result          := AIndex + 1;
     if Kind( Result ) = tkLessThan then
-      Result := SkipPair( Result, tkLessThan, tkGreaterThan );
+      Result        := SkipPair( Result, tkLessThan, tkGreaterThan );
     if Kind( Result ) <> tkEqual then
       Exit;
     Inc( Result );
     if Kind( Result ) = tkI_packed then
       Inc( Result );
     if Kind( Result ) = tkLParan then
-      Result := ExportEnumValues( Result )
+      Result        := ExportEnumValues( Result )
     else if Kind( Result ) in [ tkI_class, tkI_object, tkI_interface, tkI_dispinterface, tkI_record ] then
-      Result := SkipTypeBody( Result );
+      Result        := SkipTypeBody( Result );
   end;
 
 begin
@@ -587,19 +587,19 @@ begin
   if FExports.ContainsKey( LowerCase( UnitName ) ) then
   begin
     OutputDebugString( PChar( Format( 'UsesClauseManager: skipped %s - a unit named %s was already scanned',
-      [ UnitPath, UnitName ] ) ) );
+          [ UnitPath, UnitName ] ) ) );
     Exit;
   end;
 
-  Stored := False;
-  ExportList := TList<TUnitExport>.Create;
-  Sig := TList<TToken>.Create;
+  Stored            := False;
+  ExportList        := TList<TUnitExport>.Create;
+  Sig               := TList<TToken>.Create;
   try
-    Lexer := TDelphiLexer.Create( UnitPath, Source );
+    Lexer           := TDelphiLexer.Create( UnitPath, Source );
     try
       // The interface section's significant tokens.  The lexer owns them, so they are used
       // before it is freed.
-      InInterface := False;
+      InInterface   := False;
       while Lexer.NextToken( Token ) do
       begin
         if Token.Kind in [ tkComment, tkDirective ] then
@@ -619,19 +619,19 @@ begin
         bodies is skipped, so a parameter type, a return type, a field type or a member name is
         never recorded.  "FCount: Integer" inside a class used to export Integer, which made the
         placement analysis believe any unit with an Integer field provided Integer. }
-      Section := ssNone;
-      P := 0;
+      Section       := ssNone;
+      P             := 0;
       while P < Sig.Count do
       begin
         case Kind( P ) of
           tkLParan:
             begin
-              P := SkipPair( P, tkLParan, tkRParan );
+              P     := SkipPair( P, tkLParan, tkRParan );
               Continue;
             end;
           tkLBracket:
             begin
-              P := SkipPair( P, tkLBracket, tkRBracket );
+              P     := SkipPair( P, tkLBracket, tkRBracket );
               Continue;
             end;
           tkI_type:
@@ -650,7 +650,7 @@ begin
             if IsRecordBody( P ) then
             begin
               // An anonymous record type of a var or typed constant.
-              P := SkipTypeBody( P );
+              P     := SkipTypeBody( P );
               Continue;
             end;
           tkI_procedure, tkI_function:
@@ -658,7 +658,7 @@ begin
               if Kind( P - 1 ) in [ tkEqual, tkColon, tkI_to, tkI_of ] then
               begin
                 // A procedural type ( "= procedure", "reference to function", ": procedure" ).
-                P := SkipHeader( P + 1 );
+                P   := SkipHeader( P + 1 );
                 Continue;
               end;
               Section := ssNone;
@@ -667,7 +667,7 @@ begin
                   AddExport( Sig[ P + 1 ].Value, ekProcedure )
                 else
                   AddExport( Sig[ P + 1 ].Value, ekFunction );
-              P := SkipHeader( P + 1 );
+              P     := SkipHeader( P + 1 );
               Continue;
             end;
           tkIdent:
@@ -695,7 +695,7 @@ begin
     if ExportList.Count > 0 then
     begin
       FExports.Add( LowerCase( UnitName ), ExportList );
-      Stored := True;
+      Stored        := True;
 
       // Build reverse lookup
       for var Item in ExportList do
@@ -703,7 +703,7 @@ begin
         LowerIdent := LowerCase( Item.Identifier );
         if not FIdentifierToUnits.TryGetValue( LowerIdent, UnitList ) then
         begin
-          UnitList := TStringList.Create;
+          UnitList  := TStringList.Create;
           UnitList.CaseSensitive := False;
           UnitList.Duplicates := dupIgnore;
           FIdentifierToUnits.Add( LowerIdent, UnitList );
@@ -721,25 +721,25 @@ end;
 procedure TUnitExportsDatabase.BuildFromDirectories( ADirectories: TStrings;
   AOnProgress: TNotifyEvent; const ABaseDirectory: string );
 var
-  I: Integer;
-  SR: TSearchRec;
-  Path: string;
-  Seen: TStringList;
+  I                 : Integer;
+  SR                : TSearchRec;
+  Path              : string;
+  Seen              : TStringList;
 begin
   Clear;
 
   if ADirectories = nil then
     Exit;
 
-  Seen := TStringList.Create;
+  Seen              := TStringList.Create;
   try
     Seen.CaseSensitive := False;
-    Seen.Sorted := True;
+    Seen.Sorted     := True;
 
     // Scan all .pas files in the supplied directories, in order: the first unit of a name wins.
     for I := 0 to ADirectories.Count - 1 do
     begin
-      Path := ResolveDirectory( ADirectories[ I ], ABaseDirectory );
+      Path          := ResolveDirectory( ADirectories[ I ], ABaseDirectory );
       if ( Path = '' ) or not DirectoryExists( Path ) then
         Continue;
       // A directory listed twice ( Base and configuration search paths concatenated ) is scanned once.
@@ -748,20 +748,20 @@ begin
       Seen.Add( Path );
 
       if FindFirst( IncludeTrailingPathDelimiter( Path ) + '*.pas', faAnyFile, SR ) = 0 then
-      try
-        repeat
-          FProgressFileName := SR.Name;
-          if Assigned( AOnProgress ) then
-            AOnProgress( Self );
+        try
+          repeat
+            FProgressFileName := SR.Name;
+            if Assigned( AOnProgress ) then
+              AOnProgress( Self );
 
-          ScanUnit( IncludeTrailingPathDelimiter( Path ) + SR.Name );
-        until FindNext( SR ) <> 0;
-      finally
-        // Qualified: Winapi.Windows also exports FindClose, taking a THandle, and it is in
-        // this unit's implementation uses clause - so an unqualified call resolves to the
-        // wrong overload. The original unit was shielded by its uses-clause order.
-        System.SysUtils.FindClose( SR );
-      end;
+            ScanUnit( IncludeTrailingPathDelimiter( Path ) + SR.Name );
+          until FindNext( SR ) <> 0;
+        finally
+          // Qualified: Winapi.Windows also exports FindClose, taking a THandle, and it is in
+          // this unit's implementation uses clause - so an unqualified call resolves to the
+          // wrong overload. The original unit was shielded by its uses-clause order.
+          System.SysUtils.FindClose( SR );
+        end;
     end;
   finally
     Seen.Free;
@@ -770,41 +770,41 @@ end;
 
 class function TUnitExportsDatabase.ResolveDirectory( const ADirectory, ABaseDirectory: string ): string;
 begin
-  Result := Trim( ADirectory );
+  Result            := Trim( ADirectory );
   if Result = '' then
     Exit;
   // A relative search-path entry is relative to the project, not to the IDE's current directory.
   if ( ABaseDirectory <> '' ) and ( ExtractFileDrive( Result ) = '' ) and not Result.StartsWith( PathDelim ) then
-    Result := IncludeTrailingPathDelimiter( ABaseDirectory ) + Result;
-  Result := ExcludeTrailingPathDelimiter( ExpandFileName( Result ) );
+    Result          := IncludeTrailingPathDelimiter( ABaseDirectory ) + Result;
+  Result            := ExcludeTrailingPathDelimiter( ExpandFileName( Result ) );
 end;
 
 function TUnitExportsDatabase.GetExports( const UnitName: string ): TList<TUnitExport>;
 begin
   if not FExports.TryGetValue( LowerCase( UnitName ), Result ) then
-    Result := nil;
+    Result          := nil;
 end;
 
 function TUnitExportsDatabase.FindUnitsForIdentifier( const Identifier: string ): TStringList;
 begin
   if not FIdentifierToUnits.TryGetValue( LowerCase( Identifier ), Result ) then
-    Result := nil;
+    Result          := nil;
 end;
 
 function TUnitExportsDatabase.GetPreferredUnit( const Identifier: string;
   const CandidateUnits: TStringList ): string;
 var
-  I, J: Integer;
-  LowerUnit: string;
-  CandLeaf: string;
+  I, J              : Integer;
+  LowerUnit         : string;
+  CandLeaf          : string;
 begin
-  Result := '';
+  Result            := '';
   if ( CandidateUnits = nil ) or ( CandidateUnits.Count = 0 ) then
     Exit;
 
   if CandidateUnits.Count = 1 then
   begin
-    Result := CandidateUnits[ 0 ];
+    Result          := CandidateUnits[ 0 ];
     Exit;
   end;
 
@@ -813,31 +813,31 @@ begin
   // (e.g. 'Forms'), so compare on the unqualified leaf name on both sides.
   for I := 0 to FRTLVCLPriority.Count - 1 do
   begin
-    LowerUnit := LowerCase( FRTLVCLPriority[ I ] );
+    LowerUnit       := LowerCase( FRTLVCLPriority[ I ] );
     if Pos( '.', LowerUnit ) > 0 then
-      LowerUnit := Copy( LowerUnit, LastDelimiter( '.', LowerUnit ) + 1, MaxInt );
+      LowerUnit     := Copy( LowerUnit, LastDelimiter( '.', LowerUnit ) + 1, MaxInt );
 
     for J := 0 to CandidateUnits.Count - 1 do
     begin
-      CandLeaf := LowerCase( CandidateUnits[ J ] );
+      CandLeaf      := LowerCase( CandidateUnits[ J ] );
       if Pos( '.', CandLeaf ) > 0 then
-        CandLeaf := Copy( CandLeaf, LastDelimiter( '.', CandLeaf ) + 1, MaxInt );
+        CandLeaf    := Copy( CandLeaf, LastDelimiter( '.', CandLeaf ) + 1, MaxInt );
 
       if CandLeaf = LowerUnit then
       begin
-        Result := CandidateUnits[ J ];
+        Result      := CandidateUnits[ J ];
         Exit;
       end;
     end;
   end;
 
   // Default to first candidate
-  Result := CandidateUnits[ 0 ];
+  Result            := CandidateUnits[ 0 ];
 end;
 
 function TUnitExportsDatabase.GetUnitCount: Integer;
 begin
-  Result := FExports.Count;
+  Result            := FExports.Count;
 end;
 
 { TIdentifierUsageAnalyzer }
@@ -881,23 +881,23 @@ end;
 
 procedure TIdentifierUsageAnalyzer.Analyze( const Source: UTF8String );
 var
-  Lexer: TDelphiLexer;
-  Token, NextToken: TToken;
+  Lexer             : TDelphiLexer;
+  Token, NextToken  : TToken;
   InInterface, InImplementation: Boolean;
-  InUses: Boolean;
-  CurrentIdentList: TStringList;
-  CurrentUnitList: TList<TUsedUnitInfo>;
-  UsedUnit: TUsedUnitInfo;
-  PrevIdentifier: string;
-  TokenList: TList<TToken>;
-  I: Integer;
+  InUses            : Boolean;
+  CurrentIdentList  : TStringList;
+  CurrentUnitList   : TList<TUsedUnitInfo>;
+  UsedUnit          : TUsedUnitInfo;
+  PrevIdentifier    : string;
+  TokenList         : TList<TToken>;
+  I                 : Integer;
 begin
   Clear;
 
   // First pass: collect all tokens
   // IMPORTANT: TToken is a class owned by the lexer - don't free lexer until done!
-  TokenList := TList<TToken>.Create;
-  Lexer := TDelphiLexer.Create( '', Source );
+  TokenList         := TList<TToken>.Create;
+  Lexer             := TDelphiLexer.Create( '', Source );
   try
     while Lexer.NextToken( Token ) do
     begin
@@ -908,17 +908,17 @@ begin
     end;
 
     // Second pass: analyse tokens (must be inside lexer's try block)
-    InInterface := False;
+    InInterface     := False;
     InImplementation := False;
-    InUses := False;
+    InUses          := False;
     CurrentIdentList := nil;
     CurrentUnitList := nil;
-    PrevIdentifier := '';
-    I := 0;
+    PrevIdentifier  := '';
+    I               := 0;
 
     while I < TokenList.Count do
     begin
-      Token := TokenList[ I ];
+      Token         := TokenList[ I ];
 
       // Skip directives
       if Token.Kind = tkDirective then
@@ -931,7 +931,7 @@ begin
       // Only the first "interface" is the section keyword: a later one is a type ( IFoo = interface ),
       // and one in the implementation section used to switch the analyser back to the interface.
       if ( Token.Kind = tkI_interface ) and not InInterface and not InImplementation and
-         not ( ( I > 0 ) and ( TokenList[ I - 1 ].Kind in [ tkEqual, tkI_packed ] ) ) then
+        not ( ( I > 0 ) and ( TokenList[ I - 1 ].Kind in [ tkEqual, tkI_packed ] ) ) then
       begin
         InInterface := True;
         InImplementation := False;
@@ -954,7 +954,7 @@ begin
       // Track uses clauses - extract unit names
       if Token.Kind = tkI_uses then
       begin
-        InUses := True;
+        InUses      := True;
         Inc( I );
         Continue;
       end;
@@ -963,7 +963,7 @@ begin
       begin
         if Token.Kind = tkSemicolon then
         begin
-          InUses := False;
+          InUses    := False;
           Inc( I );
           Continue;
         end;
@@ -1025,7 +1025,7 @@ begin
     end;
   finally
     TokenList.Free;
-    Lexer.Free;  // Free lexer AFTER processing all tokens
+    Lexer.Free; // Free lexer AFTER processing all tokens
   end;
 end;
 
@@ -1034,8 +1034,8 @@ end;
 constructor TUsesClauseRefactorer.Create( AExportsDB: TUnitExportsDatabase );
 begin
   inherited Create;
-  FExportsDB := AExportsDB;
-  FUsageAnalyzer := TIdentifierUsageAnalyzer.Create;
+  FExportsDB        := AExportsDB;
+  FUsageAnalyzer    := TIdentifierUsageAnalyzer.Create;
 end;
 
 destructor TUsesClauseRefactorer.Destroy;
@@ -1046,29 +1046,29 @@ end;
 
 function TUsesClauseRefactorer.ExportsOfUsedUnit( const AUnitName, ALeafName: string ): TList<TUnitExport>;
 begin
-  Result := FExportsDB.GetExports( AUnitName );
+  Result            := FExportsDB.GetExports( AUnitName );
   if ( Result = nil ) and not SameText( AUnitName, ALeafName ) then
-    Result := FExportsDB.GetExports( ALeafName );
+    Result          := FExportsDB.GetExports( ALeafName );
 end;
 
 function TUsesClauseRefactorer.IdentifierComesFrom( const AIdentifier, AUnitName, ALeafName: string ): Boolean;
 var
-  Qualifier: string;
+  Qualifier         : string;
 begin
   // The caller has established that the unit declares AIdentifier; only a qualified reference to
   // another unit ( Other.AIdentifier ) says the source means someone else's.
   if FUsageAnalyzer.QualifiedReferences.TryGetValue( LowerCase( AIdentifier ), Qualifier ) then
-    Result := SameText( Qualifier, AUnitName ) or SameText( Qualifier, ALeafName )
+    Result          := SameText( Qualifier, AUnitName ) or SameText( Qualifier, ALeafName )
   else
-    Result := True;
+    Result          := True;
 end;
 
 function TUsesClauseRefactorer.Analyze( const Source: UTF8String ): TArray<TUnitPlacement>;
 var
-  ResultList: TList<TUnitPlacement>;
-  UsedUnit: TUsedUnitInfo;
-  Placement: TUnitPlacement;
-  LeafName: string;
+  ResultList        : TList<TUnitPlacement>;
+  UsedUnit          : TUsedUnitInfo;
+  Placement         : TUnitPlacement;
+  LeafName          : string;
   UsedInInterface, UsedInImplementation: Boolean;
 
   // Records in Placement which identifiers of the unit each section uses.  The same rule serves
@@ -1076,38 +1076,38 @@ var
   // match that ignored qualified references.
   procedure CollectUsage( const AUnitName: string );
   var
-    I: Integer;
-    UnitExports: TList<TUnitExport>;
+    I               : Integer;
+    UnitExports     : TList<TUnitExport>;
   begin
     // Qualified references to the unit itself ( SysUtils.Format ).
     for I := 0 to FUsageAnalyzer.InterfaceIdentifiers.Count - 1 do
       if SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], AUnitName ) or
-         SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], LeafName ) then
+        SameText( FUsageAnalyzer.InterfaceIdentifiers[ I ], LeafName ) then
       begin
         UsedInInterface := True;
         Placement.IdentifiersUsedInInterface.Add( '(qualified reference)' );
       end;
     for I := 0 to FUsageAnalyzer.ImplementationIdentifiers.Count - 1 do
       if SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], AUnitName ) or
-         SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], LeafName ) then
+        SameText( FUsageAnalyzer.ImplementationIdentifiers[ I ], LeafName ) then
       begin
         UsedInImplementation := True;
         Placement.IdentifiersUsedInImplementation.Add( '(qualified reference)' );
       end;
 
-    UnitExports := ExportsOfUsedUnit( AUnitName, LeafName );
+    UnitExports     := ExportsOfUsedUnit( AUnitName, LeafName );
     if UnitExports = nil then
       Exit;
     for var Item in UnitExports do
     begin
       if ( FUsageAnalyzer.InterfaceIdentifiers.IndexOf( Item.Identifier ) >= 0 ) and
-         IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
+        IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
       begin
         UsedInInterface := True;
         Placement.IdentifiersUsedInInterface.Add( Item.Identifier );
       end;
       if ( FUsageAnalyzer.ImplementationIdentifiers.IndexOf( Item.Identifier ) >= 0 ) and
-         IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
+        IdentifierComesFrom( Item.Identifier, AUnitName, LeafName ) then
       begin
         UsedInImplementation := True;
         Placement.IdentifiersUsedInImplementation.Add( Item.Identifier );
@@ -1119,7 +1119,7 @@ begin
   // Step 1: Analyse the source to extract uses clauses and identifier usage
   FUsageAnalyzer.Analyze( Source );
 
-  ResultList := TList<TUnitPlacement>.Create;
+  ResultList        := TList<TUnitPlacement>.Create;
   try
     // Step 2: For each unit in the interface uses clause, determine optimal placement
     for UsedUnit in FUsageAnalyzer.InterfaceUsedUnits do
@@ -1128,7 +1128,7 @@ begin
       Placement.CurrentSection := usInterface;
       Placement.IdentifiersUsedInInterface := TStringList.Create;
       Placement.IdentifiersUsedInImplementation := TStringList.Create;
-      LeafName := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
+      LeafName      := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
       UsedInInterface := False;
       UsedInImplementation := False;
 
@@ -1164,7 +1164,7 @@ begin
       Placement.CurrentSection := usImplementation;
       Placement.IdentifiersUsedInInterface := TStringList.Create;
       Placement.IdentifiersUsedInImplementation := TStringList.Create;
-      LeafName := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
+      LeafName      := Copy( UsedUnit.UnitName, LastDelimiter( '.', UsedUnit.UnitName ) + 1, MaxInt );
       UsedInInterface := False;
       UsedInImplementation := False;
 
@@ -1184,7 +1184,7 @@ begin
       ResultList.Add( Placement );
     end;
 
-    Result := ResultList.ToArray;
+    Result          := ResultList.ToArray;
   finally
     ResultList.Free;
   end;
@@ -1250,17 +1250,17 @@ type
 /// <returns>+1 for a directive opening a conditional block, -1 for one closing it, 0 otherwise.</returns>
 function DirectiveNesting( const AValue: string; out IsElse: Boolean ): Integer;
 var
-  S: string;
+  S                 : string;
 begin
-  S := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$', ' ' ] );
-  IsElse := S.StartsWith( 'ELSE' );
+  S                 := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$', ' ' ] );
+  IsElse            := S.StartsWith( 'ELSE' );
   if S.StartsWith( 'ENDIF' ) or S.StartsWith( 'IFEND' ) then
-    Result := -1
+    Result          := -1
   else if S.StartsWith( 'IFDEF' ) or S.StartsWith( 'IFNDEF' ) or S.StartsWith( 'IFOPT' ) or
-          ( S.StartsWith( 'IF' ) and ( Length( S ) > 2 ) and CharInSet( S[ 3 ], [ ' ', '(', #9 ] ) ) then
-    Result := 1
+    ( S.StartsWith( 'IF' ) and ( Length( S ) > 2 ) and CharInSet( S[ 3 ], [ ' ', '(', #9 ] ) ) then
+    Result          := 1
   else
-    Result := 0;
+    Result          := 0;
 end;
 
 /// <summary>True for an include directive ( {$I file}, {$INCLUDE file} ), not the {$I+} / {$I-} switch.</summary>
@@ -1268,10 +1268,10 @@ end;
 /// <returns>True when the directive includes a file.</returns>
 function IsIncludeDirective( const AValue: string ): Boolean;
 var
-  S: string;
+  S                 : string;
 begin
-  S := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$' ] );
-  Result := S.StartsWith( 'INCLUDE' ) or ( ( Length( S ) > 1 ) and ( S[ 1 ] = 'I' ) and CharInSet( S[ 2 ], [ ' ', #9 ] ) );
+  S                 := UpperCase( AValue ).TrimLeft( [ '{', '(', '*', '$' ] );
+  Result            := S.StartsWith( 'INCLUDE' ) or ( ( Length( S ) > 1 ) and ( S[ 1 ] = 'I' ) and CharInSet( S[ 2 ], [ ' ', #9 ] ) );
 end;
 
 /// <summary>True when a token kind can be part of a unit name.</summary>
@@ -1279,7 +1279,7 @@ end;
 /// <returns>True for an identifier, including the directive words ( name, index, ... ).</returns>
 function IsNameKind( AKind: TTokenKind ): Boolean;
 begin
-  Result := ( AKind >= tkIdent ) and ( AKind < tkIdentStrictReserved );
+  Result            := ( AKind >= tkIdent ) and ( AKind < tkIdentStrictReserved );
 end;
 
 /// <summary>Reads the uses clause that starts a section.</summary>
@@ -1290,27 +1290,27 @@ function ReadClause( Tokens: TList<TToken>; ASection: TTokenKind ): TClauseInfo;
 type
   TEntryState = ( esExpectName, esInName, esExpectPart, esExpectPath, esAfterEntry );
 var
-  I, K: Integer;
+  I, K              : Integer;
   OuterDepth, Depth, Delta: Integer;
-  IsElse: Boolean;
-  Token: TToken;
-  State: TEntryState;
-  Entry: TClauseEntry;
-  Entries: TList<TClauseEntry>;
-  Noise: TList<TByteRange>;
-  Range: TByteRange;
+  IsElse            : Boolean;
+  Token             : TToken;
+  State             : TEntryState;
+  Entry             : TClauseEntry;
+  Entries           : TList<TClauseEntry>;
+  Noise             : TList<TByteRange>;
+  Range             : TByteRange;
 begin
-  Result := Default( TClauseInfo );
+  Result            := Default( TClauseInfo );
 
   // Only a unit has sections.
-  I := 0;
+  I                 := 0;
   while ( I < Tokens.Count ) and ( Tokens[ I ].Kind in [ tkComment, tkDirective ] ) do
     Inc( I );
   if ( I >= Tokens.Count ) or ( Tokens[ I ].Kind <> tkI_unit ) then
     Exit;
 
   // The section keyword, tracking the conditional depth around it.
-  OuterDepth := 0;
+  OuterDepth        := 0;
   while ( I < Tokens.Count ) and ( Tokens[ I ].Kind <> ASection ) do
   begin
     if Tokens[ I ].Kind = tkDirective then
@@ -1336,19 +1336,19 @@ begin
   end;
   if ( I >= Tokens.Count ) or ( Tokens[ I ].Kind <> tkI_uses ) then
     Exit;
-  Result.Present := True;
-  Result.UsesIdx := Tokens[ I ].Index;
-  Result.Editable := OuterDepth = 0;
+  Result.Present    := True;
+  Result.UsesIdx    := Tokens[ I ].Index;
+  Result.Editable   := OuterDepth = 0;
 
-  Entries := TList<TClauseEntry>.Create;
-  Noise := TList<TByteRange>.Create;
+  Entries           := TList<TClauseEntry>.Create;
+  Noise             := TList<TByteRange>.Create;
   try
-    Depth := 0;
-    State := esExpectName;
-    Entry := Default( TClauseEntry );
+    Depth           := 0;
+    State           := esExpectName;
+    Entry           := Default( TClauseEntry );
     for K := I + 1 to Tokens.Count - 1 do
     begin
-      Token := Tokens[ K ];
+      Token         := Tokens[ K ];
       case Token.Kind of
         tkComment, tkDirective:
           begin
@@ -1378,7 +1378,7 @@ begin
             end
             else
               Result.Editable := False; // ",," or a dangling "in".
-            State := esExpectName;
+            State   := esExpectName;
             if Token.Kind = tkSemicolon then
             begin
               Result.SemicolonIdx := Token.Index;
@@ -1388,19 +1388,19 @@ begin
           end;
         tkQualifier:
           if State = esInName then
-            State := esExpectPart
+            State   := esExpectPart
           else
             Result.Editable := False;
         tkI_in:
           if State = esInName then
-            State := esExpectPath
+            State   := esExpectPath
           else
             Result.Editable := False;
         tkString:
           if State = esExpectPath then
           begin
             Entry.EndIdx := Token.EndIndex;
-            State := esAfterEntry;
+            State   := esAfterEntry;
           end
           else
             Result.Editable := False;
@@ -1411,13 +1411,13 @@ begin
           Entry.StartIdx := Token.Index;
           Entry.EndIdx := Token.EndIndex;
           Entry.Depth := Depth;
-          State := esInName;
+          State     := esInName;
         end
         else if IsNameKind( Token.Kind ) and ( State = esExpectPart ) then
         begin
           Entry.Name := Entry.Name + '.' + Token.Value;
           Entry.EndIdx := Token.EndIndex;
-          State := esInName;
+          State     := esInName;
         end
         else
           Result.Editable := False; // Not a shape this editor understands.
@@ -1425,8 +1425,8 @@ begin
     end;
     if Result.SemicolonIdx = 0 then
       Result.Editable := False;
-    Result.Entries := Entries.ToArray;
-    Result.Noise := Noise.ToArray;
+    Result.Entries  := Entries.ToArray;
+    Result.Noise    := Noise.ToArray;
   finally
     Noise.Free;
     Entries.Free;
@@ -1443,7 +1443,7 @@ begin
   for var Range in AInfo.Noise do
     if ( Range.First <= ALast ) and ( Range.Last >= AFirst ) then
       Exit( False );
-  Result := True;
+  Result            := True;
 end;
 
 /// <summary>Returns an edit replacing the 1-based inclusive byte range with a text.</summary>
@@ -1453,9 +1453,9 @@ end;
 /// <returns>The edit, in 0-based offsets.</returns>
 function MakeEdit( AFirst, ALast: Integer; const AText: UTF8String ): TUsesEdit;
 begin
-  Result.Offset := AFirst - 1;
+  Result.Offset     := AFirst - 1;
   Result.DeleteCount := ALast - AFirst + 1;
-  Result.Text := AText;
+  Result.Text       := AText;
 end;
 
 /// <summary>Joins unit entry texts with ", ".</summary>
@@ -1463,53 +1463,53 @@ end;
 /// <returns>The joined text.</returns>
 function JoinEntries( ATexts: TList<UTF8String> ): UTF8String;
 begin
-  Result := '';
+  Result            := '';
   for var I := 0 to ATexts.Count - 1 do
   begin
     if I > 0 then
-      Result := Result + UTF8String( ', ' );
-    Result := Result + ATexts[ I ];
+      Result        := Result + UTF8String( ', ' );
+    Result          := Result + ATexts[ I ];
   end;
 end;
 
 function TUsesClauseRefactorer.PlanMoves( const Source: UTF8String; const Placements: TArray<TUnitPlacement>;
   out Edits: TArray<TUsesEdit>; out ErrorMessage: string ): Boolean;
 const
-  SectionNames: array[ TUsesSection ] of string = ( 'interface', 'implementation' );
+  SectionNames      : array[ TUsesSection ] of string = ( 'interface', 'implementation' );
 var
-  Tokens: TList<TToken>;
-  Lexer: TDelphiLexer;
-  Token: TToken;
-  Clauses: array[ TUsesSection ] of TClauseInfo;
-  Removed: array[ TUsesSection ] of TArray<Boolean>;
-  Incoming: array[ TUsesSection ] of TList<UTF8String>;
-  EditList: TList<TUsesEdit>;
-  Section, Target: TUsesSection;
-  Placement: TUnitPlacement;
+  Tokens            : TList<TToken>;
+  Lexer             : TDelphiLexer;
+  Token             : TToken;
+  Clauses           : array[ TUsesSection ] of TClauseInfo;
+  Removed           : array[ TUsesSection ] of TArray<Boolean>;
+  Incoming          : array[ TUsesSection ] of TList<UTF8String>;
+  EditList          : TList<TUsesEdit>;
+  Section, Target   : TUsesSection;
+  Placement         : TUnitPlacement;
   Index, Found, I, J, K, Last: Integer;
-  AnyMove: Boolean;
-  LineBreak: UTF8String;
+  AnyMove           : Boolean;
+  LineBreak         : UTF8String;
 
   function Fail( const AMessage: string ): Boolean;
   begin
-    ErrorMessage := AMessage;
-    Edits := nil;
-    Result := False;
+    ErrorMessage    := AMessage;
+    Edits           := nil;
+    Result          := False;
   end;
 
   function EntryText( const AEntry: TClauseEntry ): UTF8String;
   begin
-    Result := Copy( Source, AEntry.StartIdx, AEntry.EndIdx - AEntry.StartIdx + 1 );
+    Result          := Copy( Source, AEntry.StartIdx, AEntry.EndIdx - AEntry.StartIdx + 1 );
   end;
 
   function FindEntry( const AInfo: TClauseInfo; const AName: string; out AIndex: Integer ): Integer;
   begin
-    AIndex := -1;
-    Result := 0;
+    AIndex          := -1;
+    Result          := 0;
     for var N := 0 to High( AInfo.Entries ) do
       if SameText( AInfo.Entries[ N ].Name, AName ) then
       begin
-        AIndex := N;
+        AIndex      := N;
         Inc( Result );
       end;
   end;
@@ -1517,18 +1517,18 @@ var
   // Column ( in bytes ) of a 1-based byte index on its line.
   function ColumnOf( AIdx: Integer ): Integer;
   var
-    P: Integer;
+    P               : Integer;
   begin
-    P := AIdx - 1;
+    P               := AIdx - 1;
     while ( P >= 1 ) and not ( Source[ P ] in [ #10, #13 ] ) do
       Dec( P );
-    Result := AIdx - P;
+    Result          := AIdx - P;
   end;
 
   // 1-based index of the first byte of the line holding AIdx.
   function LineStartOf( AIdx: Integer ): Integer;
   begin
-    Result := AIdx;
+    Result          := AIdx;
     while ( Result > 1 ) and not ( Source[ Result - 1 ] in [ #10, #13 ] ) do
       Dec( Result );
   end;
@@ -1536,7 +1536,7 @@ var
   // 1-based index of the last byte of the line holding AIdx, its line break included.
   function LineEndOf( AIdx: Integer ): Integer;
   begin
-    Result := AIdx;
+    Result          := AIdx;
     while ( Result < Length( Source ) ) and not ( Source[ Result + 1 ] in [ #10, #13 ] ) do
       Inc( Result );
     if ( Result < Length( Source ) ) and ( Source[ Result + 1 ] = #13 ) then
@@ -1551,7 +1551,7 @@ var
     for var P := AFirst to ALast do
       if not ( Source[ P ] in [ #9, ' ' ] ) then
         Exit( False );
-    Result := True;
+    Result          := True;
   end;
 
   // True when a "//" comment follows one of the entries AFirst..ALast on that entry's own line.
@@ -1559,12 +1559,12 @@ var
   begin
     for var N := AFirst to ALast do
     begin
-      var LineEnd := LineEndOf( AInfo.Entries[ N ].EndIdx );
+      var LineEnd   := LineEndOf( AInfo.Entries[ N ].EndIdx );
       for var Range in AInfo.Noise do
         if Range.LineComment and ( Range.First > AInfo.Entries[ N ].EndIdx ) and ( Range.First <= LineEnd ) then
           Exit( True );
     end;
-    Result := False;
+    Result          := False;
   end;
 
   // True when every comment or directive overlapping AFirst..ALast is a "//" comment.
@@ -1573,34 +1573,34 @@ var
     for var Range in AInfo.Noise do
       if ( Range.First <= ALast ) and ( Range.Last >= AFirst ) and not Range.LineComment then
         Exit( False );
-    Result := True;
+    Result          := True;
   end;
 
 begin
-  Edits := nil;
-  ErrorMessage := '';
+  Edits             := nil;
+  ErrorMessage      := '';
 
   // Inserted text uses the buffer's own line break, so an LF buffer does not get mixed endings.
-  LineBreak := #13#10;
+  LineBreak         := #13#10;
   for var P := 1 to Length( Source ) do
     if Source[ P ] = #10 then
     begin
       if ( P = 1 ) or ( Source[ P - 1 ] <> #13 ) then
-        LineBreak := #10;
+        LineBreak   := #10;
       Break;
     end;
 
-  AnyMove := False;
+  AnyMove           := False;
   for Placement in Placements do
     if Placement.CurrentSection <> Placement.RecommendedSection then
-      AnyMove := True;
+      AnyMove       := True;
   if not AnyMove then
     Exit( True );
 
   Incoming[ usInterface ] := nil;
   Incoming[ usImplementation ] := nil;
-  Tokens := TList<TToken>.Create;
-  Lexer := TDelphiLexer.Create( '', Source );
+  Tokens            := TList<TToken>.Create;
+  Lexer             := TDelphiLexer.Create( '', Source );
   try
     while Lexer.NextToken( Token ) do
       Tokens.Add( Token );
@@ -1617,7 +1617,7 @@ begin
 
   Incoming[ usInterface ] := TList<UTF8String>.Create;
   Incoming[ usImplementation ] := TList<UTF8String>.Create;
-  EditList := TList<TUsesEdit>.Create;
+  EditList          := TList<TUsesEdit>.Create;
   try
     for Section := Low( TUsesSection ) to High( TUsesSection ) do
       SetLength( Removed[ Section ], Length( Clauses[ Section ].Entries ) );
@@ -1627,24 +1627,24 @@ begin
     begin
       if Placement.CurrentSection = Placement.RecommendedSection then
         Continue;
-      Section := Placement.CurrentSection;
-      Target := Placement.RecommendedSection;
+      Section       := Placement.CurrentSection;
+      Target        := Placement.RecommendedSection;
       if not Clauses[ Section ].Present then
         Exit( Fail( Format( '%s is not in the %s uses clause any more; analyse the unit again.',
-          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
-      Found := FindEntry( Clauses[ Section ], Placement.UnitName, Index );
+              [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+      Found         := FindEntry( Clauses[ Section ], Placement.UnitName, Index );
       if Found = 0 then
         Exit( Fail( Format( '%s is not in the %s uses clause any more; analyse the unit again.',
-          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+              [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
       if Found > 1 then
         Exit( Fail( Format( '%s is listed more than once in the %s uses clause; tidy the clause first.',
-          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+              [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
       if not Clauses[ Section ].Editable then
         Exit( Fail( Format( 'The %s uses clause has conditional blocks ( {$IFDEF} ... ) or a layout that '
-          + 'cannot be edited safely; move %s by hand.', [ SectionNames[ Section ], Placement.UnitName ] ) ) );
+              + 'cannot be edited safely; move %s by hand.', [ SectionNames[ Section ], Placement.UnitName ] ) ) );
       if Clauses[ Section ].Entries[ Index ].Depth <> 0 then
         Exit( Fail( Format( '%s sits inside a conditional block ( {$IFDEF} ... ) of the %s uses clause; move it by hand.',
-          [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
+              [ Placement.UnitName, SectionNames[ Section ] ] ) ) );
       Removed[ Section ][ Index ] := True;
       // A unit already listed in the target clause is only removed from the source clause.
       if FindEntry( Clauses[ Target ], Placement.UnitName, J ) = 0 then
@@ -1653,8 +1653,8 @@ begin
 
     for Section := Low( TUsesSection ) to High( TUsesSection ) do
     begin
-      var Info := Clauses[ Section ];
-      Last := High( Info.Entries );
+      var Info      := Clauses[ Section ];
+      Last          := High( Info.Entries );
 
       var AllRemoved := Info.Present;
       for I := 0 to Last do
@@ -1663,7 +1663,7 @@ begin
 
       if Info.Present and ( Incoming[ Section ].Count > 0 ) and not Info.Editable then
         Exit( Fail( Format( 'The %s uses clause has conditional blocks ( {$IFDEF} ... ) or a layout that '
-          + 'cannot be edited safely; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+              + 'cannot be edited safely; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
 
       if AllRemoved and ( Last >= 0 ) then
       begin
@@ -1672,7 +1672,7 @@ begin
           // Every entry leaves and others arrive: replace the entries, keeping "uses" and ";".
           if not RangeIsPlain( Info, Info.Entries[ 0 ].StartIdx, Info.Entries[ Last ].EndIdx ) then
             Exit( Fail( Format( 'Moving the units of the %s uses clause would delete a comment or compiler '
-              + 'directive inside it; move them by hand.', [ SectionNames[ Section ] ] ) ) );
+                  + 'directive inside it; move them by hand.', [ SectionNames[ Section ] ] ) ) );
           EditList.Add( MakeEdit( Info.Entries[ 0 ].StartIdx, Info.Entries[ Last ].EndIdx, JoinEntries( Incoming[ Section ] ) ) );
         end
         else
@@ -1680,8 +1680,8 @@ begin
           // The clause empties: delete it, with the white space that follows it.
           if not RangeIsPlain( Info, Info.UsesIdx, Info.SemicolonIdx ) then
             Exit( Fail( Format( 'Emptying the %s uses clause would delete a comment or compiler directive '
-              + 'inside it; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
-          K := Info.SemicolonIdx;
+                  + 'inside it; move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+          K         := Info.SemicolonIdx;
           while ( K < Length( Source ) ) and ( Source[ K + 1 ] in [ #9, #10, #13, ' ' ] ) do
             Inc( K );
           EditList.Add( MakeEdit( Info.UsesIdx, K, '' ) );
@@ -1690,7 +1690,7 @@ begin
       end;
 
       // Remove each run of consecutive leaving entries with one separating comma.
-      I := 0;
+      I             := 0;
       while I <= Last do
       begin
         if not Removed[ Section ][ I ] then
@@ -1698,7 +1698,7 @@ begin
           Inc( I );
           Continue;
         end;
-        J := I;
+        J           := I;
         while ( J < Last ) and Removed[ Section ][ J + 1 ] do
           Inc( J );
 
@@ -1710,31 +1710,31 @@ begin
           var LineFirst := LineStartOf( Info.Entries[ I ].StartIdx );
           var LineLast := LineEndOf( Info.Entries[ J ].EndIdx );
           if ( J < Last ) and ( Info.Entries[ J ].CommaIdx > 0 ) and ( Info.Entries[ J ].CommaIdx <= LineLast ) and
-             ( Info.Entries[ J + 1 ].StartIdx > LineLast ) and IsBlank( LineFirst, Info.Entries[ I ].StartIdx - 1 ) and
-             OnlyLineComments( Info, LineFirst, LineLast ) then
+            ( Info.Entries[ J + 1 ].StartIdx > LineLast ) and IsBlank( LineFirst, Info.Entries[ I ].StartIdx - 1 ) and
+            OnlyLineComments( Info, LineFirst, LineLast ) then
             EditList.Add( MakeEdit( LineFirst, LineLast, '' ) )
           else
             Exit( Fail( Format( 'Removing %s from the %s uses clause would leave its trailing // comment behind; '
-              + 'move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
+                  + 'move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
         end
-        // Forward: the run, the "," after it and the white space after that ( "B, " of "A, B, C" ),
-        // so a comment or directive before the next entry stays.  Backward: the "," after the kept
-        // entry before the run, and the run ( ", B" ); the only choice for a run ending the clause.
+          // Forward: the run, the "," after it and the white space after that ( "B, " of "A, B, C" ),
+          // so a comment or directive before the next entry stays.  Backward: the "," after the kept
+          // entry before the run, and the run ( ", B" ); the only choice for a run ending the clause.
         else if ( J < Last ) and ( Info.Entries[ J ].CommaIdx > 0 ) and
-           RangeIsPlain( Info, Info.Entries[ I ].StartIdx, Info.Entries[ J ].CommaIdx ) then
+          RangeIsPlain( Info, Info.Entries[ I ].StartIdx, Info.Entries[ J ].CommaIdx ) then
         begin
-          K := Info.Entries[ J ].CommaIdx;
+          K         := Info.Entries[ J ].CommaIdx;
           while ( K < Length( Source ) ) and ( Source[ K + 1 ] in [ #9, #10, #13, ' ' ] ) do
             Inc( K );
           EditList.Add( MakeEdit( Info.Entries[ I ].StartIdx, K, '' ) );
         end
         else if ( I > 0 ) and ( Info.Entries[ I - 1 ].CommaIdx > 0 ) and
-                RangeIsPlain( Info, Info.Entries[ I - 1 ].CommaIdx, Info.Entries[ J ].EndIdx ) then
+          RangeIsPlain( Info, Info.Entries[ I - 1 ].CommaIdx, Info.Entries[ J ].EndIdx ) then
           EditList.Add( MakeEdit( Info.Entries[ I - 1 ].CommaIdx, Info.Entries[ J ].EndIdx, '' ) )
         else
           Exit( Fail( Format( 'Removing %s from the %s uses clause would delete a comment or compiler directive '
-            + 'next to it; move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
-        I := J + 1;
+                + 'next to it; move it by hand.', [ Info.Entries[ I ].Name, SectionNames[ Section ] ] ) ) );
+        I           := J + 1;
       end;
 
       if Incoming[ Section ].Count = 0 then
@@ -1745,12 +1745,12 @@ begin
         // Append before the ";", which must not sit inside a conditional block.
         if Info.SemicolonDepth <> 0 then
           Exit( Fail( Format( 'The %s uses clause ends inside a conditional block ( {$IFDEF} ... ); move the units by hand.',
-            [ SectionNames[ Section ] ] ) ) );
-        var Added := JoinEntries( Incoming[ Section ] );
+                [ SectionNames[ Section ] ] ) ) );
+        var Added   := JoinEntries( Incoming[ Section ] );
         if ColumnOf( Info.SemicolonIdx ) + Length( Added ) + 2 > 160 then
-          Added := UTF8String( ',' ) + LineBreak + UTF8String( '  ' ) + Added
+          Added     := UTF8String( ',' ) + LineBreak + UTF8String( '  ' ) + Added
         else
-          Added := UTF8String( ', ' ) + Added;
+          Added     := UTF8String( ', ' ) + Added;
         EditList.Add( MakeEdit( Info.SemicolonIdx, Info.SemicolonIdx - 1, Added ) );
       end
       else
@@ -1759,26 +1759,26 @@ begin
         // there may hold the section's clause, which a second clause would duplicate.
         if Info.IncludeBeforeClause then
           Exit( Fail( Format( 'An include file ( {$I ...} ) starts the %s section and may hold its uses clause; '
-            + 'move the units by hand.', [ SectionNames[ Section ] ] ) ) );
+                + 'move the units by hand.', [ SectionNames[ Section ] ] ) ) );
         EditList.Add( MakeEdit( Info.SectionEnd + 1, Info.SectionEnd,
-          LineBreak + LineBreak + UTF8String( 'uses' ) + LineBreak + UTF8String( '  ' ) + JoinEntries( Incoming[ Section ] ) + UTF8String( ';' ) ) );
+            LineBreak + LineBreak + UTF8String( 'uses' ) + LineBreak + UTF8String( '  ' ) + JoinEntries( Incoming[ Section ] ) + UTF8String( ';' ) ) );
       end;
     end;
 
     // Sorted by offset, an insertion before a deletion at the same offset.
     EditList.Sort( TComparer<TUsesEdit>.Construct(
-      function( const ALeft, ARight: TUsesEdit ): Integer
-      begin
-        Result := ALeft.Offset - ARight.Offset;
-        if Result = 0 then
-          Result := ALeft.DeleteCount - ARight.DeleteCount;
-      end ) );
+        function( const ALeft, ARight: TUsesEdit ): Integer
+        begin
+          Result    := ALeft.Offset - ARight.Offset;
+          if Result = 0 then
+            Result  := ALeft.DeleteCount - ARight.DeleteCount;
+        end ) );
     for I := 1 to EditList.Count - 1 do
       if EditList[ I - 1 ].Offset + EditList[ I - 1 ].DeleteCount > EditList[ I ].Offset then
         Exit( Fail( 'The planned uses-clause edits overlap; nothing was changed.' ) );
 
-    Edits := EditList.ToArray;
-    Result := True;
+    Edits           := EditList.ToArray;
+    Result          := True;
   finally
     EditList.Free;
     Incoming[ usInterface ].Free;
@@ -1790,13 +1790,13 @@ class function TUsesClauseRefactorer.ApplyEdits( const Source: UTF8String; const
 var
   Size, Done, Written: Integer;
 begin
-  Size := Length( Source );
+  Size              := Length( Source );
   for var Edit in Edits do
     Inc( Size, Length( Edit.Text ) - Edit.DeleteCount );
   SetLength( Result, Size );
 
-  Done := 0; // Bytes of Source consumed.
-  Written := 0; // Bytes of Result written.
+  Done              := 0; // Bytes of Source consumed.
+  Written           := 0; // Bytes of Result written.
   for var Edit in Edits do
   begin
     if Edit.Offset > Done then
@@ -1809,7 +1809,7 @@ begin
       Move( Edit.Text[ 1 ], Result[ Written + 1 ], Length( Edit.Text ) );
       Inc( Written, Length( Edit.Text ) );
     end;
-    Done := Edit.Offset + Edit.DeleteCount;
+    Done            := Edit.Offset + Edit.DeleteCount;
   end;
   if Done < Length( Source ) then
     Move( Source[ Done + 1 ], Result[ Written + 1 ], Length( Source ) - Done );
@@ -1818,20 +1818,21 @@ end;
 function TUsesClauseRefactorer.GenerateRefactoredSource( const Source: UTF8String;
   const Placements: TArray<TUnitPlacement>; out ErrorMessage: string ): UTF8String;
 var
-  Edits: TArray<TUsesEdit>;
+  Edits             : TArray<TUsesEdit>;
 begin
   if PlanMoves( Source, Placements, Edits, ErrorMessage ) and ( Length( Edits ) > 0 ) then
-    Result := ApplyEdits( Source, Edits )
+    Result          := ApplyEdits( Source, Edits )
   else
-    Result := Source;
+    Result          := Source;
 end;
 
 function TUsesClauseRefactorer.GenerateRefactoredSource( const Source: UTF8String;
   const Placements: TArray<TUnitPlacement> ): UTF8String;
 var
-  Ignored: string;
+  Ignored           : string;
 begin
-  Result := GenerateRefactoredSource( Source, Placements, Ignored );
+  Result            := GenerateRefactoredSource( Source, Placements, Ignored );
 end;
 
 end.
+
