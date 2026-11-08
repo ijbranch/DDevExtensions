@@ -33,9 +33,9 @@ type
     /// <summary>Bottom grid panel hosting Close and Export buttons.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Scans the active project for TODO comments.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>Stops a running scan; shown only while one runs.</summary>
     btnCancelScan: TBitBtn;
     /// <summary>List view that presents matched TODO items.</summary>
@@ -51,7 +51,7 @@ type
     /// <summary>Menu item that opens the selected source file at the TODO location.</summary>
     mnuOpenFile: TMenuItem;
     /// <summary>Exports the visible rows to a CSV file.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>Save dialog used by the export action.</summary>
     SaveDialog: TSaveDialog;
     /// <summary>Summary label showing the total number of matches.</summary>

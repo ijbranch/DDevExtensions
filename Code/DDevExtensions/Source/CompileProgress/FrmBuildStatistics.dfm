@@ -50,7 +50,7 @@ inherited FormBuildStatistics: TFormBuildStatistics
         'Project'
         'External')
     end
-    object btnCopyToClipboard: TButton
+    object btnCopyToClipboard: TBitBtn
       Left = 560
       Top = 33
       Width = 105
@@ -60,7 +60,7 @@ inherited FormBuildStatistics: TFormBuildStatistics
       TabOrder = 1
       OnClick = btnCopyToClipboardClick
     end
-    object btnExportCSV: TButton
+    object btnExportCSV: TBitBtn
       Left = 671
       Top = 33
       Width = 90
@@ -70,7 +70,7 @@ inherited FormBuildStatistics: TFormBuildStatistics
       TabOrder = 2
       OnClick = btnExportCSVClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       Left = 767
       Top = 33
       Width = 75

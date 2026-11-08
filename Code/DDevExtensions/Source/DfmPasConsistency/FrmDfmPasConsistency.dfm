@@ -39,7 +39,7 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
       Height = 13
       Caption = 'Filter:'
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 89
@@ -57,7 +57,7 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
       Visible = False
       OnClick = btnCancelScanClick
     end
-    object btnExport: TButton
+    object btnExport: TBitBtn
       Left = 103
       Top = 8
       Width = 75
@@ -107,7 +107,7 @@ inherited FormDfmPasConsistency: TFormDfmPasConsistency
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 717
       Top = 8

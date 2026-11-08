@@ -32,7 +32,7 @@ uses
   System.Generics.Collections,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
   Vcl.CheckLst, Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Grids,
-  FrmBase, PathCompactorCore, LibraryPathSorter;
+  FrmBase, PathCompactorCore, LibraryPathSorter, Vcl.Buttons;
 
 type
   /// <summary>
@@ -71,7 +71,7 @@ type
     /// <summary>Also define accepted variables in the Windows user environment. Off by default.</summary>
     chkWriteUserEnv: TCheckBox;
     /// <summary>Runs the (read-only) analysis over the selected scope.</summary>
-    btnAnalyse: TButton;
+    btnAnalyse: TBitBtn;
     /// <summary>Tab container for the four result views.</summary>
     pgcResults: TPageControl;
     /// <summary>Tab hosting the per-path-set length summary.</summary>
@@ -101,11 +101,11 @@ type
     /// <summary>Static hint pointing at the shared backup history for rollback.</summary>
     lblHint: TLabel;
     /// <summary>Writes the analysed changes, behind a backup and a confirmation.</summary>
-    btnApply: TButton;
+    btnApply: TBitBtn;
     /// <summary>Closes the dialog without writing anything.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Removes variables this tool created that no library path or IDE variable refers to any more.</summary>
-    btnRemoveCreated: TButton;
+    btnRemoveCreated: TBitBtn;
     /// <summary>Counts line: sets, characters saved, and each hygiene category.</summary>
     lblStatus: TLabel;
     /// <summary>Creates the registry handler and backup manager, and fills the scope lists.</summary>

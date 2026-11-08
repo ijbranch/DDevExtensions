@@ -17,7 +17,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.Contnrs, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, FrmBase;
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, FrmBase, Vcl.Buttons;
 
 type
   /// <summary>Implemented by every options page so the environment-options dialog can load/save the corresponding personality option.</summary>
@@ -108,9 +108,9 @@ type
     /// <summary>Bottom button panel.</summary>
     PanelButtons: TPanel;
     /// <summary>OK button.</summary>
-    btnOk: TButton;
+    btnOk: TBitBtn;
     /// <summary>Cancel button.</summary>
-    btnCancel: TButton;
+    btnCancel: TBitBtn;
     /// <summary>Visual separator between the buttons and the working area.</summary>
     bvlDivider: TBevel;
     /// <summary>Container for the tree view, splitter and page client area.</summary>

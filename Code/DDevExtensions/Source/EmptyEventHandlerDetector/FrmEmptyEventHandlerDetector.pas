@@ -22,7 +22,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  FrmBase, EmptyEventHandlerDetector, ToolsAPI;
+  FrmBase, EmptyEventHandlerDetector, ToolsAPI, Vcl.Buttons;
 
 type
   /// <summary>Singleton results form for the Empty Event Handler Detector.</summary>
@@ -32,9 +32,9 @@ type
     /// <summary>Bottom action-button panel.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Initiates a project-wide scan.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>List view displaying the empty handlers.</summary>
     ListView: TListView;
     /// <summary>Status text shown while scanning.</summary>
@@ -48,7 +48,7 @@ type
     /// <summary>Opens the source file at the selected handler's line.</summary>
     mnuOpenFile: TMenuItem;
     /// <summary>Exports the visible results to CSV.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>File-save dialog used by <see cref="btnExport"/>.</summary>
     SaveDialog: TSaveDialog;
     /// <summary>Result summary text.</summary>

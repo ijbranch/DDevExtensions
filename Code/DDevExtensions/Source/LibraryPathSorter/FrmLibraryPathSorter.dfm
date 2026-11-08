@@ -128,7 +128,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       State = cbChecked
       TabOrder = 0
     end
-    object btnBackup: TButton
+    object btnBackup: TBitBtn
       Left = 180
       Top = 8
       Width = 90
@@ -137,7 +137,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       TabOrder = 1
       OnClick = btnBackupClick
     end
-    object btnRestore: TButton
+    object btnRestore: TBitBtn
       Left = 550
       Top = 8
       Width = 100
@@ -147,7 +147,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       TabOrder = 2
       OnClick = btnRestoreClick
     end
-    object btnDeleteBackup: TButton
+    object btnDeleteBackup: TBitBtn
       Left = 660
       Top = 8
       Width = 100
@@ -157,7 +157,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
       TabOrder = 3
       OnClick = btnDeleteBackupClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       Left = 862
       Top = 8
       Width = 80
@@ -319,7 +319,7 @@ inherited FormLibraryPathSorter: TFormLibraryPathSorter
           OnClick = btnSortAlphaClick
         end
       end
-      object btnApply: TButton
+      object btnApply: TBitBtn
         Left = 0
         Top = 255
         Width = 474

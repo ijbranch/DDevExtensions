@@ -94,7 +94,7 @@ inherited FrameOptionPageCodeStyle: TFrameOptionPageCodeStyle
         Height = 13
         Caption = '9 rules configured (String=s, Integer=i, ...)'
       end
-      object btnEditRules: TButton
+      object btnEditRules: TBitBtn
         Left = 16
         Top = 66
         Width = 100

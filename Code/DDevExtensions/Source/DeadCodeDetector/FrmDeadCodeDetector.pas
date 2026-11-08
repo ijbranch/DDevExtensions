@@ -22,7 +22,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, DeadCodeDetector, DeadCodeCore, ToolsAPI;
+  System.Generics.Defaults, FrmBase, DeadCodeDetector, DeadCodeCore, ToolsAPI, Vcl.Buttons;
 
 type
   /// <summary>Main detector form for the Dead Code Detector plugin.</summary>
@@ -32,9 +32,9 @@ type
     /// <summary>Bottom grid panel hosting buttons and labels.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Scans the active project and populates the list.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>Lists detected dead-code items, filtered by <see cref="cboType"/> and <see cref="cboScope"/>.</summary>
     ListView: TListView;
     /// <summary>Progress / status label.</summary>
@@ -48,7 +48,7 @@ type
     /// <summary>Menu item: open the source file at the declaration line.</summary>
     mnuOpenFile: TMenuItem;
     /// <summary>Exports the result list to a CSV file.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>Save dialog used by the export button.</summary>
     SaveDialog: TSaveDialog;
     /// <summary>Summary line shown after a scan completes.</summary>

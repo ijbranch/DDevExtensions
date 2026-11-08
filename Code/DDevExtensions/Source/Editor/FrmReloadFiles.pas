@@ -28,7 +28,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, FrmBase,
   Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ImgList, Vcl.Menus, ToolsAPI,
-  DocModuleHandler;
+  DocModuleHandler, Vcl.Buttons;
 
 const
   /// <summary>Posted to the form whenever the list-view selection changes; updates Diff controls.</summary>
@@ -45,9 +45,9 @@ type
     /// <summary>Divider bevel between the list and the button panel.</summary>
     bvlDivider: TBevel;
     /// <summary>OK / Reload button.</summary>
-    btnOk: TButton;
+    btnOk: TBitBtn;
     /// <summary>Cancel button.</summary>
-    btnCancel: TButton;
+    btnCancel: TBitBtn;
     /// <summary>Inner button panel.</summary>
     pnlButtons: TPanel;
     /// <summary>List of changed modules grouped by Project / Unit / Form.</summary>
@@ -69,7 +69,7 @@ type
     /// <summary>Combo box listing the editors of the selected module that can be diffed.</summary>
     ComboBoxDiff: TComboBox;
     /// <summary>Launches the diff tool for the editor selected in ComboBoxDiff.</summary>
-    btnDiff: TButton;
+    btnDiff: TBitBtn;
     /// <summary>Separator menu item.</summary>
     N1: TMenuItem;
     /// <summary>"Show in Explorer" menu item.</summary>

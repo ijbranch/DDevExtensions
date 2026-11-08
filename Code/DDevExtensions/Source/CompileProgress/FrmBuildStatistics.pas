@@ -24,7 +24,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Clipbrd, Vcl.Menus, System.Math,
-  ToolsAPI, FrmBase, CompileProgress, UnitMetrics;
+  ToolsAPI, FrmBase, CompileProgress, UnitMetrics, Vcl.Buttons;
 
 type
   /// <summary>
@@ -40,11 +40,11 @@ type
     /// <summary>Bottom panel hosting the action buttons and summary labels.</summary>
     pnlBottom: TPanel;
     /// <summary>Closes the dialog.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Copies the visible build-statistics rows to the clipboard as tab-separated text.</summary>
-    btnCopyToClipboard: TButton;
+    btnCopyToClipboard: TBitBtn;
     /// <summary>Exports the visible build-statistics rows to a CSV file.</summary>
-    btnExportCSV: TButton;
+    btnExportCSV: TBitBtn;
     /// <summary>List view showing per-unit timings and metrics.</summary>
     ListView: TListView;
     /// <summary>Displays the total build time ( or style-issue count when the style tab is active ).</summary>

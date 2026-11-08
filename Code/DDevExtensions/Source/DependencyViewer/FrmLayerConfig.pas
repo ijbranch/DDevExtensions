@@ -22,7 +22,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Grids, FrmBase, DependencyViewerCore;
+  Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Grids, FrmBase, DependencyViewerCore, Vcl.Buttons;
 
 type
   /// <summary>Two-dimensional boolean matrix used to represent the allowed-dependency rules.</summary>
@@ -47,9 +47,9 @@ type
     /// <summary>Multi-line editor for the selected layer's patterns (one per line).</summary>
     MemoPatterns: TMemo;
     /// <summary>Adds a new layer to the list.</summary>
-    btnAddLayer: TButton;
+    btnAddLayer: TBitBtn;
     /// <summary>Deletes the selected layer (after confirmation).</summary>
-    btnDeleteLayer: TButton;
+    btnDeleteLayer: TBitBtn;
     /// <summary>Label for the rules grid.</summary>
     lblRules: TLabel;
     /// <summary>Help text describing how to read the rules matrix.</summary>
@@ -57,11 +57,11 @@ type
     /// <summary>Custom-drawn checkbox grid showing which "from -&gt; to" dependencies are allowed.</summary>
     StringGridRules: TStringGrid;
     /// <summary>Confirms changes and closes the dialog.</summary>
-    btnOK: TButton;
+    btnOK: TBitBtn;
     /// <summary>Discards changes and closes the dialog.</summary>
-    btnCancel: TButton;
+    btnCancel: TBitBtn;
     /// <summary>Resets layers and rules to the built-in defaults.</summary>
-    btnDefaults: TButton;
+    btnDefaults: TBitBtn;
     /// <summary>Form OnCreate handler: initialises internal state.</summary>
     /// <param name="Sender">The control that raised the event.</param>
     procedure FormCreate( Sender: TObject );

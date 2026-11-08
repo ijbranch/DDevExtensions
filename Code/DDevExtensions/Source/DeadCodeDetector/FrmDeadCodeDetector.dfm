@@ -44,7 +44,7 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
       Height = 13
       Caption = 'Scope:'
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 90
@@ -102,7 +102,7 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnExport: TButton
+    object btnExport: TBitBtn
       AlignWithMargins = True
       Left = 4
       Top = 8
@@ -112,7 +112,7 @@ inherited FormDeadCodeDetector: TFormDeadCodeDetector
       TabOrder = 0
       OnClick = btnExportClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 712
       Top = 8

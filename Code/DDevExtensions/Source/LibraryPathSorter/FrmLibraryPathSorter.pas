@@ -66,13 +66,13 @@ type
     /// <summary>Editable working list of paths (drag-and-drop reorderable).</summary>
     lstWorking: TListBox;
     /// <summary>Closes the dialog (warning the user when changes were applied).</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Writes the working list back to the registry (with verification and backup).</summary>
-    btnApply: TButton;
+    btnApply: TBitBtn;
     /// <summary>Restores the selected backup snapshot into the registry.</summary>
-    btnRestore: TButton;
+    btnRestore: TBitBtn;
     /// <summary>Manually creates a backup snapshot of the current registry value.</summary>
-    btnBackup: TButton;
+    btnBackup: TBitBtn;
     /// <summary>Container panel for the backups history list.</summary>
     pnlBackups: TPanel;
     /// <summary>Caption label for lvBackups.</summary>
@@ -82,7 +82,7 @@ type
     /// <summary>Splitter between the backups list and the panels above.</summary>
     SplitterBackups: TSplitter;
     /// <summary>Deletes the selected backup snapshot.</summary>
-    btnDeleteBackup: TButton;
+    btnDeleteBackup: TBitBtn;
     /// <summary>Status label updated with operation outcomes.</summary>
     lblStatus: TLabel;
     /// <summary>Label that surfaces the count of paths deleted from the working list.</summary>

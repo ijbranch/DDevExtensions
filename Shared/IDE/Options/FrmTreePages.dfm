@@ -26,7 +26,7 @@ inherited FormTreePages: TFormTreePages
       Height = 2
       Align = alTop
     end
-    object btnOk: TButton
+    object btnOk: TBitBtn
       Left = 539
       Top = 6
       Width = 75
@@ -36,7 +36,7 @@ inherited FormTreePages: TFormTreePages
       ModalResult = 1
       TabOrder = 0
     end
-    object btnCancel: TButton
+    object btnCancel: TBitBtn
       Left = 620
       Top = 6
       Width = 75

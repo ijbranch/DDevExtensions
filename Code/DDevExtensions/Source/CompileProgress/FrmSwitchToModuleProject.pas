@@ -10,7 +10,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, FrmBase, Vcl.StdCtrls, Vcl.ExtCtrls, ToolsAPI;
+  Vcl.Dialogs, FrmBase, Vcl.StdCtrls, Vcl.ExtCtrls, ToolsAPI, Vcl.Buttons;
 
 type
   /// <summary>
@@ -21,11 +21,11 @@ type
     /// <summary>Bottom panel containing the action buttons.</summary>
     PanelBottom: TPanel;
     /// <summary>Confirms the project switch ( returns mrYes ).</summary>
-    ButtonYes: TButton;
+    ButtonYes: TBitBtn;
     /// <summary>Continues without switching the project ( returns mrNo ).</summary>
-    ButtonNo: TButton;
+    ButtonNo: TBitBtn;
     /// <summary>Cancels the compile ( returns mrCancel ).</summary>
-    ButtonCancel: TButton;
+    ButtonCancel: TBitBtn;
     /// <summary>When checked the dialog will not be shown again for the same situation.</summary>
     CheckBoxDontShowAgain: TCheckBox;
     /// <summary>Visual separator above the bottom panel.</summary>

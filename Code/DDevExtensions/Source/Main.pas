@@ -35,7 +35,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Hooking, IDEUtils, Splash, System.Win.Registry, Vcl.Forms, Vcl.Menus,
   Vcl.Graphics, Vcl.Controls, Vcl.ExtCtrls, Vcl.ActnList, AppConsts, ToolsAPI, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ComCtrls, Winapi.ActiveX, Winapi.ShlObj;
+  Vcl.StdCtrls, Vcl.ComCtrls, Winapi.ActiveX, Winapi.ShlObj, Vcl.Buttons;
 
 type
   /// <summary>
@@ -129,7 +129,7 @@ procedure ShowAboutDialog( Data: TObject; Sender: TObject );
 var
   Frm: TForm;
   Lbl: TLabel;
-  Btn: TButton;
+  Btn: TBitBtn;
   iY: Integer;
 begin
 
@@ -186,7 +186,7 @@ begin
     Lbl.Top := iY;
     Lbl.Caption := 'Extensions for the Delphi IDE';
 
-    Btn := TButton.Create( Frm );
+    Btn := TBitBtn.Create( Frm );
     Btn.Parent := Frm;
     Btn.Caption := 'OK';
     Btn.ModalResult := mrOk;

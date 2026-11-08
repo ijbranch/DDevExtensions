@@ -25,7 +25,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
-    object btnScanProject: TButton
+    object btnScanProject: TBitBtn
       Left = 8
       Top = 4
       Width = 113
@@ -81,7 +81,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       TabOrder = 3
       OnClick = ViewModeChanged
     end
-    object btnLayers: TButton
+    object btnLayers: TBitBtn
       Left = 424
       Top = 4
       Width = 75
@@ -90,7 +90,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       TabOrder = 4
       OnClick = btnLayersClick
     end
-    object btnCheckLayers: TButton
+    object btnCheckLayers: TBitBtn
       Left = 504
       Top = 4
       Width = 100
@@ -125,7 +125,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 717
       Top = 8
@@ -223,7 +223,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object btnExportCircular: TButton
+    object btnExportCircular: TBitBtn
       Left = 464
       Top = 76
       Width = 75
@@ -253,7 +253,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object btnExportViolations: TButton
+    object btnExportViolations: TBitBtn
       Left = 464
       Top = 263
       Width = 75
@@ -274,7 +274,7 @@ inherited FormDependencyViewer: TFormDependencyViewer
       TabOrder = 4
       OnDblClick = ListBoxViolationsDblClick
     end
-    object btnExportGraph: TButton
+    object btnExportGraph: TBitBtn
       Left = 8
       Top = 400
       Width = 120

@@ -52,7 +52,7 @@ inherited FormLayerConfig: TFormLayerConfig
       TabOrder = 1
       OnChange = MemoPatternsChange
     end
-    object btnAddLayer: TButton
+    object btnAddLayer: TBitBtn
       Left = 8
       Top = 166
       Width = 75
@@ -61,7 +61,7 @@ inherited FormLayerConfig: TFormLayerConfig
       TabOrder = 2
       OnClick = btnAddLayerClick
     end
-    object btnDeleteLayer: TButton
+    object btnDeleteLayer: TBitBtn
       Left = 89
       Top = 166
       Width = 75
@@ -123,7 +123,7 @@ inherited FormLayerConfig: TFormLayerConfig
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 2
-    object btnOK: TButton
+    object btnOK: TBitBtn
       Left = 432
       Top = 12
       Width = 75
@@ -135,7 +135,7 @@ inherited FormLayerConfig: TFormLayerConfig
       TabOrder = 0
       OnClick = btnOKClick
     end
-    object btnCancel: TButton
+    object btnCancel: TBitBtn
       Left = 516
       Top = 12
       Width = 75
@@ -146,7 +146,7 @@ inherited FormLayerConfig: TFormLayerConfig
       ModalResult = 2
       TabOrder = 1
     end
-    object btnDefaults: TButton
+    object btnDefaults: TBitBtn
       Left = 8
       Top = 12
       Width = 100

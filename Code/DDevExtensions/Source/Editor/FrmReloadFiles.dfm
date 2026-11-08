@@ -36,7 +36,7 @@ inherited FormReloadFiles: TFormReloadFiles
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 2
-      object btnCancel: TButton
+      object btnCancel: TBitBtn
         Left = 91
         Top = 5
         Width = 75
@@ -46,7 +46,7 @@ inherited FormReloadFiles: TFormReloadFiles
         ModalResult = 2
         TabOrder = 0
       end
-      object btnOk: TButton
+      object btnOk: TBitBtn
         Left = 10
         Top = 5
         Width = 75
@@ -66,7 +66,7 @@ inherited FormReloadFiles: TFormReloadFiles
       TabOrder = 0
       Visible = False
     end
-    object btnDiff: TButton
+    object btnDiff: TBitBtn
       Left = 279
       Top = 6
       Width = 75

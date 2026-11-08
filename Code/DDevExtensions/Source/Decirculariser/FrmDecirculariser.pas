@@ -37,7 +37,7 @@ type
     /// <summary>Top toolbar panel.</summary>
     pnlTop: TPanel;
     /// <summary>Scans the active project.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>Stops a running scan; shown only while one runs.</summary>
     btnCancelScan: TBitBtn;
     /// <summary>Progress during a scan, then the summary of its result.</summary>
@@ -53,11 +53,11 @@ type
     /// <summary>Bottom button panel.</summary>
     pnlBottom: TPanel;
     /// <summary>Deletes the selected dead entries.</summary>
-    btnRemove: TButton;
+    btnRemove: TBitBtn;
     /// <summary>Copies the plain-text report to the clipboard.</summary>
-    btnCopyReport: TButton;
+    btnCopyReport: TBitBtn;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Context menu for the edge list.</summary>
     PopupMenu: TPopupMenu;
     /// <summary>Menu item: open the source file at the uses entry.</summary>

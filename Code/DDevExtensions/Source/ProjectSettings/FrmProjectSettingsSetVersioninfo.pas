@@ -64,15 +64,15 @@ type
     /// <summary>List view of projects; checkbox column drives apply-to-selected behaviour.</summary>
     lvwProjects: TListView;
     /// <summary>Applies the Product Version string to the eligible projects.</summary>
-    btnApplyProductVersion: TButton;
+    btnApplyProductVersion: TBitBtn;
     /// <summary>Applies the Major/Minor/Release file version to the eligible projects.</summary>
-    btnApplyFileVersion: TButton;
+    btnApplyFileVersion: TBitBtn;
     /// <summary>Caption label for the Product Name field.</summary>
     lblProductName: TLabel;
     /// <summary>Edit box for the free-text Product Name string.</summary>
     edtProductName: TEdit;
     /// <summary>Applies the Product Name string to the eligible projects.</summary>
-    btnApplyProductName: TButton;
+    btnApplyProductName: TBitBtn;
     /// <summary>Caption label for the Build file version field.</summary>
     lblFileVersionBuild: TLabel;
     /// <summary>Edit box bound to udBuild for the file version build component.</summary>
@@ -80,11 +80,11 @@ type
     /// <summary>Up/down spinner for the file version build component.</summary>
     udBuild: TUpDown;
     /// <summary>Applies the Build file version to the eligible projects.</summary>
-    btnApplyBuild: TButton;
+    btnApplyBuild: TBitBtn;
     /// <summary>Date picker for the project's build start date (used by btnDaysbetween).</summary>
     dtpStartDay: TDateTimePicker;
     /// <summary>Computes the number of days between dtpStartDay and today.</summary>
-    btnDaysbetween: TButton;
+    btnDaysbetween: TBitBtn;
     /// <summary>Read-only edit displaying the days-between result.</summary>
     edtDaysBetween: TEdit;
     /// <summary>Timer that hides the "applied" notification label after a short delay.</summary>
@@ -104,7 +104,7 @@ type
     /// <summary>Transient label that confirms an Apply has just succeeded.</summary>
     lblApplied: TLabel;
     /// <summary>Close button for the dialog.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Tab page for the "Increment Version Info" UI.</summary>
     tsIncrementVersionInfo: TTabSheet;
     /// <summary>Main client panel for the Increment tab.</summary>
@@ -124,7 +124,7 @@ type
     /// <summary>Reset Release to zero when Minor is incremented.</summary>
     cbxZeroRelease2: TCheckBox;
     /// <summary>Performs the configured version increment on the eligible projects.</summary>
-    btnExecuteIncrement: TButton;
+    btnExecuteIncrement: TBitBtn;
     /// <summary>If checked, Apply only affects projects whose row is checked.</summary>
     cbxApplyToSelectedOnly: TCheckBox;
     /// <summary>Edit box bound to udIncMajor (increment-by amount for Major).</summary>
@@ -148,19 +148,19 @@ type
     /// <summary>Edit box for the free-text Company Name string.</summary>
     edtCompanyName: TEdit;
     /// <summary>Applies the Company Name string to the eligible projects.</summary>
-    btnApplyCompanyName: TButton;
+    btnApplyCompanyName: TBitBtn;
     /// <summary>Caption label for the Legal Copyright field.</summary>
     lblLegalCopyright: TLabel;
     /// <summary>Edit box for the free-text Legal Copyright string.</summary>
     edtLegalCopyright: TEdit;
     /// <summary>Applies the Legal Copyright string to the eligible projects.</summary>
-    btnApplyLegalCopyright: TButton;
+    btnApplyLegalCopyright: TBitBtn;
     /// <summary>Tab page for the "Main Icon" UI.</summary>
     tsMainIcon: TTabSheet;
     /// <summary>Caption label for the icon images list.</summary>
     lblMainIcons: TLabel;
     /// <summary>Saves the loaded icon to the eligible projects' main icon resource.</summary>
-    btnApplyMainIcon: TButton;
+    btnApplyMainIcon: TBitBtn;
     /// <summary>Loads a new icon from a file into FIcon.</summary>
     btnLoadMainIcon: TBitBtn;
     /// <summary>Common Open dialog used to pick an icon file.</summary>
@@ -180,33 +180,33 @@ type
     /// <summary>Edit box for the free-text Legal Trademarks string.</summary>
     edtLegalTrademarks: TEdit;
     /// <summary>Applies the Legal Trademarks string to the eligible projects.</summary>
-    btnApplyLegalTrademarks: TButton;
+    btnApplyLegalTrademarks: TBitBtn;
     /// <summary>Caption label for the File Description field.</summary>
     LblFileDescription: TLabel;
     /// <summary>Edit box for the free-text File Description string.</summary>
     edtFileDescription: TEdit;
     /// <summary>Applies the File Description string to the eligible projects.</summary>
-    btnApplyFileDescription: TButton;
+    btnApplyFileDescription: TBitBtn;
     /// <summary>Caption label for the Internal Name field.</summary>
     LblInternalName: TLabel;
     /// <summary>Edit box for the free-text Internal Name string.</summary>
     edtInternalName: TEdit;
     /// <summary>Applies the Internal Name string to the eligible projects.</summary>
-    btnApplyInternalName: TButton;
+    btnApplyInternalName: TBitBtn;
     /// <summary>Caption label for the Original Filename field.</summary>
     LblOriginalFilename: TLabel;
     /// <summary>Edit box for the free-text Original Filename string.</summary>
     edtOriginalFilename: TEdit;
     /// <summary>Applies the Original Filename string to the eligible projects.</summary>
-    btnApplyOriginalFilename: TButton;
+    btnApplyOriginalFilename: TBitBtn;
     /// <summary>Caption label for the Comments field.</summary>
     LblComment: TLabel;
     /// <summary>Edit box for the free-text Comments string.</summary>
     edtComments: TEdit;
     /// <summary>Applies the Comments string to the eligible projects.</summary>
-    btnApplyComments: TButton;
+    btnApplyComments: TBitBtn;
     /// <summary>Sets each project's Original Filename to its target output file name.</summary>
-    btnApplyAutoSetOriginalFilename: TButton;
+    btnApplyAutoSetOriginalFilename: TBitBtn;
     /// <summary>Reflects the OnExit of an edit field into its corresponding TUpDown spinner.</summary>
     /// <param name="Sender">The version edit box being left.</param>
     procedure edtFileVersionExit(Sender: TObject);

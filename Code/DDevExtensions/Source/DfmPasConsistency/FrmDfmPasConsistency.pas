@@ -42,9 +42,9 @@ type
     /// <summary>Bottom action-button panel.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Initiates a project-wide scan.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>Stops a running scan; shown only while one runs.</summary>
     btnCancelScan: TBitBtn;
     /// <summary>List view displaying inconsistencies.</summary>
@@ -60,7 +60,7 @@ type
     /// <summary>Navigates the IDE to the selected inconsistency.</summary>
     mnuOpenFile: TMenuItem;
     /// <summary>Exports the visible results to CSV.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>File-save dialog used by <see cref="btnExport"/>.</summary>
     SaveDialog: TSaveDialog;
     /// <summary>Result summary text.</summary>

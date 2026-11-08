@@ -20,7 +20,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, CodeStyleChecker;
+  Vcl.Dialogs, Vcl.StdCtrls, CodeStyleChecker, Vcl.Buttons;
 
 type
   /// <summary>Editor dialog for the type/prefix rule list.</summary>
@@ -32,12 +32,12 @@ type
     /// <summary>Memo holding one <c>TypePattern=Prefix</c> rule per line.</summary>
     memRules: TMemo;
     /// <summary>OK button — saves the edited rules.</summary>
-    btnOK: TButton;
+    btnOK: TBitBtn;
     /// <summary>Cancel button — discards changes.</summary>
-    btnCancel: TButton;
+    btnCancel: TBitBtn;
     /// <summary>Shows the built-in rules ( <see cref="TCodeStyleCheckerPlugin.DefaultTypePrefixRules"/> );
     /// they are stored only on OK.</summary>
-    btnResetDefaults: TButton;
+    btnResetDefaults: TBitBtn;
     /// <summary>OnClick handler for <see cref="btnResetDefaults"/>.</summary>
     /// <param name="Sender">The control that raised the event.</param>
     procedure btnResetDefaultsClick( Sender: TObject );

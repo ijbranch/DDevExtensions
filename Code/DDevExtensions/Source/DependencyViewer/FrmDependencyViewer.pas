@@ -39,9 +39,9 @@ type
     /// <summary>Bottom grid panel hosting the buttons and progress label.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Scans the active IDE project.</summary>
-    btnScanProject: TButton;
+    btnScanProject: TBitBtn;
     /// <summary>Stops a running scan or Graphviz render; shown only while one runs.</summary>
     btnCancelScan: TBitBtn;
     /// <summary>Tree of units and their dependencies (or dependents) for the chosen view mode.</summary>
@@ -67,7 +67,7 @@ type
     /// <summary>Header label for the circular-references list.</summary>
     lblCircularRefs: TLabel;
     /// <summary>Exports the circular references to CSV or TXT.</summary>
-    btnExportCircular: TButton;
+    btnExportCircular: TBitBtn;
     /// <summary>Lists detected circular reference chains.</summary>
     ListBoxCircular: TListBox;
     /// <summary>Save dialog used by the export buttons.</summary>
@@ -81,17 +81,17 @@ type
     /// <summary>Toggles inclusion of the depth indicator in node captions.</summary>
     chkShowDepth: TCheckBox;
     /// <summary>Opens the layer configuration dialog.</summary>
-    btnLayers: TButton;
+    btnLayers: TBitBtn;
     /// <summary>Re-runs the layer-violation check using the current rules.</summary>
-    btnCheckLayers: TButton;
+    btnCheckLayers: TBitBtn;
     /// <summary>Header label for the layer violations list.</summary>
     lblLayerViolations: TLabel;
     /// <summary>Exports the layer violations to CSV or TXT.</summary>
-    btnExportViolations: TButton;
+    btnExportViolations: TBitBtn;
     /// <summary>Lists detected layer-rule violations.</summary>
     ListBoxViolations: TListBox;
     /// <summary>Exports the dependency graph as a Graphviz DOT file (and renders to PNG when possible).</summary>
-    btnExportGraph: TButton;
+    btnExportGraph: TBitBtn;
     /// <summary>Save dialog used by the DOT/Graphviz export.</summary>
     SaveDialogGraph: TSaveDialog;
     /// <summary>Closes the form.</summary>

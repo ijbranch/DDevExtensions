@@ -32,7 +32,7 @@ inherited FormEmptyEventHandlerDetector: TFormEmptyEventHandlerDetector
       Caption = 'lblSummary'
       Visible = False
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 89
@@ -41,7 +41,7 @@ inherited FormEmptyEventHandlerDetector: TFormEmptyEventHandlerDetector
       TabOrder = 0
       OnClick = btnScanClick
     end
-    object btnExport: TButton
+    object btnExport: TBitBtn
       Left = 103
       Top = 8
       Width = 75
@@ -76,7 +76,7 @@ inherited FormEmptyEventHandlerDetector: TFormEmptyEventHandlerDetector
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 617
       Top = 8

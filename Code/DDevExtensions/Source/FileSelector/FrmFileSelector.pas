@@ -25,7 +25,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, System.Contnrs, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.ComCtrls, Vcl.Menus, Vcl.ExtCtrls, Vcl.ActnList, Vcl.ImgList, Vcl.StdCtrls, Vcl.ToolWin,
   CtrlUtils, Winapi.CommCtrl, ToolsAPI, IDEUtils, SimpleXmlImport, SimpleXmlIntf,
-  ToolsAPIHelpers, FrmBase, DelphiDesignerParser;
+  ToolsAPIHelpers, FrmBase, DelphiDesignerParser, Vcl.Buttons;
 
 type
   /// <summary>
@@ -134,9 +134,9 @@ type
     /// <summary>Footer panel hosting OK/Cancel/Options buttons.</summary>
     PanelButtons: TPanel;
     /// <summary>Button that adds the selected unit(s) to the active editor's uses clause.</summary>
-    btnUseUnit: TButton;
+    btnUseUnit: TBitBtn;
     /// <summary>Cancel button.</summary>
-    btnCancel: TButton;
+    btnCancel: TBitBtn;
     /// <summary>Separator preceding the directory filter.</summary>
     tsepDir: TToolButton;
     /// <summary>Drop-down filter restricting results to a sub-directory.</summary>
@@ -144,7 +144,7 @@ type
     /// <summary>When checked, units are added to the implementation uses clause instead of interface.</summary>
     chkUseUnitsImplementation: TCheckBox;
     /// <summary>Button that opens the highlighted file(s) in the IDE.</summary>
-    btnOpen: TButton;
+    btnOpen: TBitBtn;
     /// <summary>Context menu for the main list view.</summary>
     popListView: TPopupMenu;
     /// <summary>Context-menu item that opens the selected file(s), as the Open button does.</summary>
@@ -172,7 +172,7 @@ type
     /// <summary>Menu item bound to <see cref="ActionClearInsertList"/>.</summary>
     ClearInsertList1: TMenuItem;
     /// <summary>Drop-down launcher for the options menu.</summary>
-    btnOptions: TButton;
+    btnOptions: TBitBtn;
     /// <summary>Popup containing toggleable behavioural options.</summary>
     popOptions: TPopupMenu;
     /// <summary>Toggles whether moves from interface to implementation uses are allowed.</summary>

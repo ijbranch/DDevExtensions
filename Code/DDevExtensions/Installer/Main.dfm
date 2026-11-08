@@ -31,7 +31,7 @@ object FormMain: TFormMain
     Font.Style = []
     ParentFont = False
   end
-  object btnInstall: TButton
+  object btnInstall: TBitBtn
     Left = 8
     Top = 157
     Width = 75
@@ -41,7 +41,7 @@ object FormMain: TFormMain
     TabOrder = 0
     OnClick = btnInstallClick
   end
-  object btnQuit: TButton
+  object btnQuit: TBitBtn
     Left = 294
     Top = 157
     Width = 75
@@ -51,7 +51,7 @@ object FormMain: TFormMain
     TabOrder = 2
     OnClick = btnQuitClick
   end
-  object btnUninstall: TButton
+  object btnUninstall: TBitBtn
     Left = 89
     Top = 157
     Width = 75

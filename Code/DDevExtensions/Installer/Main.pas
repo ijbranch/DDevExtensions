@@ -24,7 +24,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.CheckLst, System.Win.Registry, Winapi.ShlObj, Winapi.ActiveX, AppConsts,
-  Vcl.ExtCtrls, Vcl.ComCtrls;
+  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Buttons;
 
 type
   /// <summary>
@@ -120,11 +120,11 @@ type
   /// </summary>
   TFormMain = class(TForm)
     /// <summary>Install-selected-IDEs button.</summary>
-    btnInstall: TButton;
+    btnInstall: TBitBtn;
     /// <summary>Close-the-installer button.</summary>
-    btnQuit: TButton;
+    btnQuit: TBitBtn;
     /// <summary>Uninstall-selected-IDEs button.</summary>
-    btnUninstall: TButton;
+    btnUninstall: TBitBtn;
     /// <summary>Static label introducing the IDE check-list.</summary>
     Label1: TLabel;
     /// <summary>Check-list of detected IDE installations the user can tick to (un)install.</summary>

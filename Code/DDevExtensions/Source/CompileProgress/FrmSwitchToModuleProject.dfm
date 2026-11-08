@@ -105,7 +105,7 @@ inherited FormSwitchToModuleProject: TFormSwitchToModuleProject
       Shape = bsTopLine
       ExplicitWidth = 414
     end
-    object ButtonYes: TButton
+    object ButtonYes: TBitBtn
       Left = 183
       Top = 6
       Width = 75
@@ -116,7 +116,7 @@ inherited FormSwitchToModuleProject: TFormSwitchToModuleProject
       TabOrder = 0
       ExplicitLeft = 170
     end
-    object ButtonNo: TButton
+    object ButtonNo: TBitBtn
       Left = 264
       Top = 6
       Width = 75
@@ -128,7 +128,7 @@ inherited FormSwitchToModuleProject: TFormSwitchToModuleProject
       TabOrder = 1
       ExplicitLeft = 251
     end
-    object ButtonCancel: TButton
+    object ButtonCancel: TBitBtn
       Left = 357
       Top = 6
       Width = 75

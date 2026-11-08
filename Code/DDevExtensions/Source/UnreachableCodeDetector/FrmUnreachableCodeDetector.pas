@@ -21,7 +21,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, System.Generics.Collections,
-  FrmBase, UnreachableCodeDetector, UnreachableCodeCore, ToolsAPI;
+  FrmBase, UnreachableCodeDetector, UnreachableCodeCore, ToolsAPI, Vcl.Buttons;
 
 type
   /// <summary>Main detector form for the Unreachable Code Detector plugin.</summary>
@@ -31,9 +31,9 @@ type
     /// <summary>Bottom grid panel hosting buttons and labels.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Scans the active project and populates the list.</summary>
-    btnScan: TButton;
+    btnScan: TBitBtn;
     /// <summary>Lists detected unreachable code blocks (filtered by <see cref="cmbFilter"/>).</summary>
     ListView: TListView;
     /// <summary>Progress / status label.</summary>
@@ -43,7 +43,7 @@ type
     /// <summary>Label for the filter combo.</summary>
     lblFilter: TLabel;
     /// <summary>Exports all detected items to a CSV file.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>Shows "Showing X of Y items".</summary>
     lblCount: TLabel;
     /// <summary>Shows the project name being analysed.</summary>

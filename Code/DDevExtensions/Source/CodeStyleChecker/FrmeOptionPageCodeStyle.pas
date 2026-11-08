@@ -19,7 +19,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
-  Vcl.Dialogs, Vcl.StdCtrls, System.Math, FrmeBase, FrmTreePages, CodeStyleChecker;
+  Vcl.Dialogs, Vcl.StdCtrls, System.Math, FrmeBase, FrmTreePages, CodeStyleChecker, Vcl.Buttons;
 
 type
   /// <summary>Tree-page frame surfacing all Code Style Checker options to the user.</summary>
@@ -47,7 +47,7 @@ type
     /// <summary>Summary label showing how many type-prefix rules are configured.</summary>
     lblRulesSummary: TLabel;
     /// <summary>Opens the <see cref="TFormTypePrefixEditor"/> dialog.</summary>
-    btnEditRules: TButton;
+    btnEditRules: TBitBtn;
     /// <summary>Group hosting the uses-clause options.</summary>
     grpUsesClause: TGroupBox;
     /// <summary>Toggles the unit-scope prefix check on uses clauses.</summary>

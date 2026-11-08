@@ -32,7 +32,7 @@ inherited FormUnusedUnitDetector: TFormUnusedUnitDetector
       Height = 13
       Visible = False
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 90
@@ -72,7 +72,7 @@ inherited FormUnusedUnitDetector: TFormUnusedUnitDetector
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnExport: TButton
+    object btnExport: TBitBtn
       AlignWithMargins = True
       Left = 4
       Top = 8
@@ -82,7 +82,7 @@ inherited FormUnusedUnitDetector: TFormUnusedUnitDetector
       TabOrder = 0
       OnClick = btnExportClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 612
       Top = 8

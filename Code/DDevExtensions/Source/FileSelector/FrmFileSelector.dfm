@@ -165,7 +165,7 @@ inherited FormFileSelector: TFormFileSelector
     DesignSize = (
       770
       31)
-    object btnUseUnit: TButton
+    object btnUseUnit: TBitBtn
       Left = 609
       Top = 3
       Width = 75
@@ -176,7 +176,7 @@ inherited FormFileSelector: TFormFileSelector
       ModalResult = 6
       TabOrder = 3
     end
-    object btnCancel: TButton
+    object btnCancel: TBitBtn
       Left = 690
       Top = 3
       Width = 75
@@ -199,7 +199,7 @@ inherited FormFileSelector: TFormFileSelector
       State = cbChecked
       TabOrder = 0
     end
-    object btnOpen: TButton
+    object btnOpen: TBitBtn
       Left = 480
       Top = 3
       Width = 108
@@ -211,7 +211,7 @@ inherited FormFileSelector: TFormFileSelector
       ShowHint = False
       TabOrder = 2
     end
-    object btnOptions: TButton
+    object btnOptions: TBitBtn
       Left = 232
       Top = 3
       Width = 108

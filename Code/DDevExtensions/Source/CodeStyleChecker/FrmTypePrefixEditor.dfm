@@ -52,7 +52,7 @@ object FormTypePrefixEditor: TFormTypePrefixEditor
     TabOrder = 0
     OnChange = memRulesChange
   end
-  object btnOK: TButton
+  object btnOK: TBitBtn
     Left = 178
     Top = 336
     Width = 75
@@ -62,7 +62,7 @@ object FormTypePrefixEditor: TFormTypePrefixEditor
     ModalResult = 1
     TabOrder = 1
   end
-  object btnCancel: TButton
+  object btnCancel: TBitBtn
     Left = 259
     Top = 336
     Width = 75
@@ -72,7 +72,7 @@ object FormTypePrefixEditor: TFormTypePrefixEditor
     ModalResult = 2
     TabOrder = 2
   end
-  object btnResetDefaults: TButton
+  object btnResetDefaults: TBitBtn
     Left = 16
     Top = 336
     Width = 110

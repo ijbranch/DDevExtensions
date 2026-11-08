@@ -106,7 +106,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
       ParentFont = False
       Visible = False
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       Left = 624
       Top = 14
       Width = 75
@@ -396,7 +396,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 2
         end
-        object btnApplyProductVersion: TButton
+        object btnApplyProductVersion: TBitBtn
           Left = 367
           Top = 65
           Width = 75
@@ -406,7 +406,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           TabOrder = 3
           OnClick = btnApplyStringClick
         end
-        object btnApplyFileVersion: TButton
+        object btnApplyFileVersion: TBitBtn
           Left = 215
           Top = 434
           Width = 75
@@ -423,7 +423,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 0
         end
-        object btnApplyProductName: TButton
+        object btnApplyProductName: TBitBtn
           Left = 367
           Top = 22
           Width = 75
@@ -453,7 +453,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           TabOrder = 26
           Thousands = False
         end
-        object btnApplyBuild: TButton
+        object btnApplyBuild: TBitBtn
           Left = 365
           Top = 434
           Width = 75
@@ -471,7 +471,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Time = 38918.802541412000000000
           TabOrder = 28
         end
-        object btnDaysbetween: TButton
+        object btnDaysbetween: TBitBtn
           Left = 97
           Top = 477
           Width = 79
@@ -495,7 +495,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 4
         end
-        object btnApplyCompanyName: TButton
+        object btnApplyCompanyName: TBitBtn
           Left = 367
           Top = 108
           Width = 75
@@ -515,7 +515,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 6
         end
-        object btnApplyLegalCopyright: TButton
+        object btnApplyLegalCopyright: TBitBtn
           Left = 367
           Top = 151
           Width = 75
@@ -535,7 +535,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 8
         end
-        object btnApplyLegalTrademarks: TButton
+        object btnApplyLegalTrademarks: TBitBtn
           Left = 367
           Top = 194
           Width = 75
@@ -555,7 +555,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 10
         end
-        object btnApplyFileDescription: TButton
+        object btnApplyFileDescription: TBitBtn
           Left = 366
           Top = 237
           Width = 75
@@ -575,7 +575,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 12
         end
-        object btnApplyInternalName: TButton
+        object btnApplyInternalName: TBitBtn
           Left = 366
           Top = 280
           Width = 75
@@ -595,7 +595,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 16
         end
-        object btnApplyOriginalFilename: TButton
+        object btnApplyOriginalFilename: TBitBtn
           Left = 285
           Top = 366
           Width = 75
@@ -615,7 +615,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           ShowHint = False
           TabOrder = 14
         end
-        object btnApplyComments: TButton
+        object btnApplyComments: TBitBtn
           Left = 366
           Top = 323
           Width = 75
@@ -625,7 +625,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           TabOrder = 15
           OnClick = btnApplyStringClick
         end
-        object btnApplyAutoSetOriginalFilename: TButton
+        object btnApplyAutoSetOriginalFilename: TBitBtn
           Left = 366
           Top = 366
           Width = 75
@@ -730,7 +730,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           State = cbChecked
           TabOrder = 8
         end
-        object btnExecuteIncrement: TButton
+        object btnExecuteIncrement: TBitBtn
           Left = 109
           Top = 211
           Width = 75
@@ -862,7 +862,7 @@ inherited FormProjectSettingsSetVersioninfo: TFormProjectSettingsSetVersioninfo
           Font.Style = [fsBold]
           ParentFont = False
         end
-        object btnApplyMainIcon: TButton
+        object btnApplyMainIcon: TBitBtn
           Left = 366
           Top = 22
           Width = 75

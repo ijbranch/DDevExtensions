@@ -38,7 +38,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
       Height = 13
       Visible = False
     end
-    object btnBuildDB: TButton
+    object btnBuildDB: TBitBtn
       Left = 8
       Top = 8
       Width = 100
@@ -47,7 +47,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
       TabOrder = 0
       OnClick = btnBuildDBClick
     end
-    object btnAnalyze: TButton
+    object btnAnalyze: TBitBtn
       Left = 114
       Top = 8
       Width = 100
@@ -56,7 +56,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
       TabOrder = 1
       OnClick = btnAnalyzeClick
     end
-    object btnApply: TButton
+    object btnApply: TBitBtn
       Left = 220
       Top = 8
       Width = 90
@@ -96,7 +96,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
         Value = 100.000000000000000000
       end>
     TabOrder = 1
-    object btnExport: TButton
+    object btnExport: TBitBtn
       AlignWithMargins = True
       Left = 4
       Top = 8
@@ -106,7 +106,7 @@ inherited FormUsesClauseManager: TFormUsesClauseManager
       TabOrder = 0
       OnClick = btnExportClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 712
       Top = 8

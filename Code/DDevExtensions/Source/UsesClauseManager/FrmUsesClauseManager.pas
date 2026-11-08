@@ -23,7 +23,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms,
   Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.Menus, Vcl.Clipbrd, System.Generics.Collections,
-  System.Generics.Defaults, FrmBase, UsesClauseManager, ToolsAPI;
+  System.Generics.Defaults, FrmBase, UsesClauseManager, ToolsAPI, Vcl.Buttons;
 
 type
   /// <summary>Main viewer form for the Uses Clause Manager plugin.</summary>
@@ -33,11 +33,11 @@ type
     /// <summary>Bottom grid panel hosting buttons and progress label.</summary>
     pnlBottom: TGridPanel;
     /// <summary>Closes the form.</summary>
-    btnClose: TButton;
+    btnClose: TBitBtn;
     /// <summary>Analyses the unit currently open in the editor.</summary>
-    btnAnalyze: TButton;
+    btnAnalyze: TBitBtn;
     /// <summary>Applies all recommended moves to the open editor.</summary>
-    btnApply: TButton;
+    btnApply: TBitBtn;
     /// <summary>List of per-unit placement results.</summary>
     ListView: TListView;
     /// <summary>Progress / status label.</summary>
@@ -55,7 +55,7 @@ type
     /// <summary>Menu item: re-open the analysed source file in the editor.</summary>
     mnuOpenFile: TMenuItem;
     /// <summary>Exports the analysis result as CSV.</summary>
-    btnExport: TButton;
+    btnExport: TBitBtn;
     /// <summary>Save dialog used by the export button.</summary>
     SaveDialog: TSaveDialog;
     /// <summary>Summary line shown above or below the list.</summary>
@@ -69,7 +69,7 @@ type
     /// <summary>Label for the details memo.</summary>
     lblDetails: TLabel;
     /// <summary>Builds (or rebuilds) the project-wide exports database.</summary>
-    btnBuildDB: TButton;
+    btnBuildDB: TBitBtn;
     /// <summary>Closes the form, unless an exports-database build is running.</summary>
     /// <param name="Sender">The Close button.</param>
     procedure btnCloseClick( Sender: TObject );

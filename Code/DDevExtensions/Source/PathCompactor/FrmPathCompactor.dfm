@@ -89,7 +89,7 @@ inherited FormPathCompactor: TFormPathCompactor
         WordWrap = True
       end
     end
-    object btnAnalyse: TButton
+    object btnAnalyse: TBitBtn
       Left = 820
       Top = 22
       Width = 110
@@ -123,7 +123,7 @@ inherited FormPathCompactor: TFormPathCompactor
         'Rollback lives in the IDE Path Sorter'#39's backup history '#8212' this too' +
         'l shares the same history file.'
     end
-    object btnApply: TButton
+    object btnApply: TBitBtn
       Left = 780
       Top = 14
       Width = 90
@@ -133,7 +133,7 @@ inherited FormPathCompactor: TFormPathCompactor
       TabOrder = 0
       OnClick = btnApplyClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       Left = 880
       Top = 14
       Width = 90
@@ -143,7 +143,7 @@ inherited FormPathCompactor: TFormPathCompactor
       TabOrder = 1
       OnClick = btnCloseClick
     end
-    object btnRemoveCreated: TButton
+    object btnRemoveCreated: TBitBtn
       Left = 630
       Top = 14
       Width = 140

@@ -35,7 +35,7 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 113
@@ -111,7 +111,7 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
       Width = 3
       Height = 13
     end
-    object btnExport: TButton
+    object btnExport: TBitBtn
       AlignWithMargins = True
       Left = 4
       Top = 8
@@ -121,7 +121,7 @@ inherited FormUnreachableCodeDetector: TFormUnreachableCodeDetector
       TabOrder = 0
       OnClick = btnExportClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       AlignWithMargins = True
       Left = 667
       Top = 8

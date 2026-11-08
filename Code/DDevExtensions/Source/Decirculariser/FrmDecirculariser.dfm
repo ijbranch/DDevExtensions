@@ -24,7 +24,7 @@ inherited FormDecirculariser: TFormDecirculariser
       Width = 3
       Height = 13
     end
-    object btnScan: TButton
+    object btnScan: TBitBtn
       Left = 8
       Top = 8
       Width = 90
@@ -144,7 +144,7 @@ inherited FormDecirculariser: TFormDecirculariser
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 4
-    object btnRemove: TButton
+    object btnRemove: TBitBtn
       Left = 8
       Top = 8
       Width = 150
@@ -153,7 +153,7 @@ inherited FormDecirculariser: TFormDecirculariser
       TabOrder = 0
       OnClick = btnRemoveClick
     end
-    object btnCopyReport: TButton
+    object btnCopyReport: TBitBtn
       Left = 166
       Top = 8
       Width = 110
@@ -162,7 +162,7 @@ inherited FormDecirculariser: TFormDecirculariser
       TabOrder = 1
       OnClick = btnCopyReportClick
     end
-    object btnClose: TButton
+    object btnClose: TBitBtn
       Left = 732
       Top = 8
       Width = 80
