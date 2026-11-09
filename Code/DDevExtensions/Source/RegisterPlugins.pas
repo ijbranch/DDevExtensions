@@ -91,6 +91,9 @@ uses
 {$IFDEF INCLUDE_PROJECTGROUPSORTER}
   ProjectGroupSorter,
 {$ENDIF INCLUDE_PROJECTGROUPSORTER}
+{$IFDEF INCLUDE_PARALLELBUILD}
+  ParallelBuild,
+{$ENDIF INCLUDE_PARALLELBUILD}
 {$IFDEF INCLUDE_EXTERNALMODMONITOR}
   ExternalModMonitor,
 {$ENDIF INCLUDE_EXTERNALMODMONITOR}
@@ -285,6 +288,11 @@ begin
 {$IFDEF INCLUDE_PROJECTGROUPSORTER}
     if not DisabledPlugins.IsDisabled( 'ProjectGroupSorter' ) then
       RegisterLateLoader( ProjectGroupSorter.InitPlugin );
+{$ENDIF}
+
+{$IFDEF INCLUDE_PARALLELBUILD}
+    if not DisabledPlugins.IsDisabled( 'ParallelBuild' ) then
+      RegisterLateLoader( ParallelBuild.InitPlugin );
 {$ENDIF}
 
 {$IFDEF INCLUDE_EXTERNALMODMONITOR}

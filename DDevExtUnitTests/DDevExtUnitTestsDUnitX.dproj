@@ -129,6 +129,10 @@
         <DCCReference Include="..\Shared\PascalParser\gllDelphiDFMParser.pas"/>
         <DCCReference Include="TestDfmParserDUnitX.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildCore.pas"/>
+        <DCCReference Include="..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildRunner.pas"/>
+        <DCCReference Include="TestParallelBuildCoreDUnitX.pas"/>
+        <DCCReference Include="TestParallelBuildRunnerDUnitX.pas"/>
         <DCCReference Include="TestProjectGroupSorterDUnitX.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\PathCompactor\PathCompactorCore.pas"/>
         <DCCReference Include="TestPathCompactorDUnitX.pas"/>

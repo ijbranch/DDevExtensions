@@ -24,12 +24,12 @@ const
   /// variable is shared by every installed IDE, so a name that this build's <c>{$IFDEF}</c>s exclude (Old Palette
   /// on Delphi 13, say) is still a real feature and must not be reported as a typo.
   /// </summary>
-  AllFeatureNames   : array[ 0..35 ] of string = (
+  AllFeatureNames   : array[ 0..36 ] of string = (
     'CodeInsightHandling', 'CodeQualityAnalyzer', 'CodeStyleChecker', 'CompileBackup', 'CompileProgress',
     'ComponentSelector', 'DSUFeatures', 'DeadCodeDetector', 'Decirculariser', 'DependencyViewer',
     'DfmPasConsistency', 'Editor', 'EmptyEventHandlerDetector', 'ExternalModMonitor', 'FileCleaner',
     'FocusEditor', 'FormDesigner', 'IDEMenuHandler', 'Keybindings', 'LibraryPathSorter', 'MethodSeparators',
-    'OldPalette', 'PathCompactor', 'ProjectDesktopState', 'ProjectGroupSorter', 'ProjectMgrShortCuts',
+    'OldPalette', 'ParallelBuild', 'PathCompactor', 'ProjectDesktopState', 'ProjectGroupSorter', 'ProjectMgrShortCuts',
     'ProjectSettingsSetVersioninfo', 'ReloadFiles', 'StartParameter', 'StartParameterTeam', 'StrucViewSearch',
     'TodoAggregator', 'UnitSelector', 'UnreachableCodeDetector', 'UnusedUnitDetector', 'UsesClauseManager' );
 

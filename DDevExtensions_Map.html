@@ -490,7 +490,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
 </head>
 <body>
     <h1>DDevExtensions - Project Dependency Map</h1>
-    <p class="subtitle">Delphi IDE Extension - Version 3.24.16 | Projects for Delphi 10.2 through 13.0 (D_D102 can no longer compile the shared code, which needs 10.3+)</p>
+    <p class="subtitle">Delphi IDE Extension - Version 3.25.16 | Projects for Delphi 10.2 through 13.0 (D_D102 can no longer compile the shared code, which needs 10.3+)</p>
 
     <div class="legend">
         <div class="legend-item">
@@ -854,6 +854,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
         <tr><td><strong>General Utilities</strong></td><td>Hooking and streams</td><td>Shared Library</td><td>4,712</td></tr>
         <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>585</td></tr>
         <tr><td><strong>Sort Projects in Group</strong></td><td>Alphabetise .groupproj member projects</td><td>Project</td><td>762</td></tr>
+        <tr><td><strong>Parallel Build All</strong></td><td>Build All Projects builds a project group several projects at a time</td><td>Project</td><td>2,712</td></tr>
     </table>
 
     <h2>Technical Specifications</h2>
@@ -1000,6 +1001,13 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
                 features: ['.groupproj rewrite', 'Reload and reselect', 'Backup file', 'No-op when sorted'],
                 dependencies: ['IDE Utilities'],
                 linesOfCode: 762
+            },
+            'ParallelBuild': {
+                category: 'Project Management',
+                description: 'New in 3.25.16.  Takes over the IDE\'s Build All Projects action, and replaces Build All on a project group\'s Project Manager context menu, and builds the open project group several projects at a time, each in its own MSBuild process, then runs EurekaLog ecc32 where a project has a .eof.  ParallelBuildCore (plan, schedule, command lines, output parsing) and ParallelBuildRunner (process capture, co-ordinator thread) are RTL-only and unit tested.',
+                features: ['Dependency-ordered plan', 'Shared DCU folder exclusion', 'Cancel', 'EurekaLog post-processing', 'Falls back to the IDE build'],
+                dependencies: ['IDE Utilities'],
+                linesOfCode: 2712
             },
             'ExternalModMonitor': {
                 category: 'Editor',

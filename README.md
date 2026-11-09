@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.25.16 adds **Parallel Build All**: with a project group open, the IDE's **Build All Projects** (and **Build All** on the group's right-click menu in the Project Manager) builds the group's projects several at a time, each in its own MSBuild process, instead of one after another.  Packages are built first and in dependency order, projects that share a DCU folder never build together, and a project that fails stops only the projects that depend on it.  On our 24-application group a Release Build All went from 145 seconds to 38 with eight at a time (209 to 53 with EurekaLog post-processing, which the feature runs itself on a Release build of a project that has a `.eof`, where EurekaLog is installed).  It is on by default and switched off in Options > DDevExtensions > Parallel Build All, which gives the IDE's own one-at-a-time build back.  **Version caveat:** tested in the Delphi 13 64-bit IDE only; in the 10.3 to 12 projects it has never been compiled or run.
+
 Version 3.24.16 is the **2026-11-09 audit release**.  It adds **Remove Unused...** to the IDE Path Compactor, which deletes the variables the Compactor created that nothing refers to any more (it searches every IDE registry setting, the Windows user environment and every open project, and says plainly that closed projects were not searched).  It removes dead code no project compiled: the Project Settings manager, Compiler Enhancements, Step Into Skip, an orphan copy of FocusEditor, and the Project > "Set active build configuration" item, which had no action.  Options that cannot work on the 64-bit IDE are now disabled there with a hint (the Compilation page, the DSU hooks, Local Start Parameters), the Old Palette is not offered there, and the Build Statistics menu item is hidden there.  The analysis tools have Cancel Scan, read open units from the editor buffer (unsaved edits included) and never open a module; the Unused Unit Detector, which never reported anything, now reports and errs on "used"; the Dead Code Detector reports unused methods; and the Uses Clause Manager edits uses clauses entry by entry and refuses shapes it cannot edit safely.  Settings files are saved atomically, an unreadable one is moved to `.corrupt-<date-time>` with one warning, and a file that cannot be opened blocks saving for the session.  The library-path backup history moves to `LibraryPathBackups<ver>.v2.xml`, with a one-time read-only import of the old file.  See `CHANGELOG.md` for the full list of fixes.
 
 Version 3.23.15 adds **Method Separators**: a faint dotted, dashed or solid line in the code editor above each top-level routine, type declaration and unit section, with a colour that follows the editor theme.  The idea comes from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil; this is an independent implementation built on DDevExtensions' own Pascal lexer, with its analysis in an RTL-only `MethodSeparatorsCore` covered by 24 unit tests.  Options > DDevExtensions > Method Separators turns it on or off.  Tested on Delphi 13; built into the Delphi 11 and 12 projects too, untested there.
@@ -441,6 +443,12 @@ DDevExtensions/
 │       │   ├── PathCompactor.pas
 │       │   └── FrmPathCompactor.pas/.dfm
 │       │
+│       ├── ParallelBuild/         # Parallel Build All
+│       │   ├── ParallelBuildCore.pas    # RTL-only plan, schedule, command lines, output parsing (tested)
+│       │   ├── ParallelBuildRunner.pas  # Process capture, co-ordinator thread, MSBuild + ecc32 action (tested)
+│       │   ├── ParallelBuild.pas        # Build All hook, progress window, Messages view
+│       │   └── FrmeOptionPageParallelBuild.pas/.dfm
+│       │
 │       ├── ProjectGroupSorter/    # Sort Projects in Group
 │       │   ├── ProjectGroupSorterCore.pas  # RTL-only .groupproj sort (tested)
 │       │   └── ProjectGroupSorter.pas
@@ -622,6 +630,9 @@ Prevents the IDE's source formatter from being triggered accidentally. Useful if
 
 **Editor tab double click action** (default: zoom)
 Configures what happens when you double-click an editor tab. Options include zooming the editor to full screen or super-zoom mode for distraction-free coding.
+
+**Parallel Build All** (default: on; **tested on Delphi 13 only**) - **New in 3.25.16**
+Makes the IDE's Build All Projects, and Build All on the group's right-click menu in the Project Manager, build a project group's projects several at a time (eight by default), each in its own MSBuild process.  A progress window lists each project's state and time and stays open at the end.  Packages go first and in dependency order; a failed project stops only its dependents.  Runs EurekaLog (`ecc32`) on a Release build of a project with a `.eof`.  Switch it off in Options > DDevExtensions > Parallel Build All to get the IDE's own build.  **Version caveat:** proven in the Delphi 13 64-bit IDE; the 13 32-bit IDE builds but has not been run; in Delphi 10.3 to 12 it has never been compiled or run; 10.2 and earlier are not supported.  See "Delphi Version Support" under Parallel Build All in `Help.md`.
 
 **Method Separators** (default: on, Delphi 11+; tested on 13) - **New in 3.23.15**
 Draws a faint line above each top-level routine, class / record / interface declaration and `initialization` / `finalization` section, so long units are easier to scan.  Documentation comments directly above a routine stay below its line.  Line style, a custom colour and the kinds of block separated are set in Options > DDevExtensions > Method Separators.  Idea from [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) by Samer Assil.
@@ -970,4 +981,4 @@ Shows a confirmation prompt before opening context-sensitive help (Ctrl+F1) duri
 
 ---
 
-*Version: 3.24.16 – 9 November 2026*
+*Version: 3.25.16 – 10 November 2026*

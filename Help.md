@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.24.16 | Comprehensive Feature Reference
+Version 3.25.16 | Comprehensive Feature Reference
 
 ---
 
@@ -45,6 +45,7 @@ Version 3.24.16 | Comprehensive Feature Reference
 | Sort Projects in Group | ON | Tools menu (below IDE Path Sorter) |
 | IDE Path Compactor | ON | Tools menu (below IDE Path Sorter) |
 | Method Separators | ON | Automatic (Options to configure) |
+| Parallel Build All | ON | Project > Build All Projects (Options to configure).  **Tested on Delphi 13 only** |
 | Release Compiler Cache | OFF | Options |
 | Remove Explicit* Properties | OFF | Options |
 | Remove PixelsPerInch Property | OFF | Options |
@@ -1883,6 +1884,69 @@ The IDE has no API for reordering a project group's members and only reads the o
 A confirmation prompt warns that the group will be reloaded and that the build order changes.  The command no-ops (with a message) when the projects are already sorted or the group has fewer than two members. Disable via `DDevExtensions.DisabledFeatures=ProjectGroupSorter`.
 
 ---
+
+### Parallel Build All (New in 3.25.16)
+
+**Purpose:** Builds the projects of a project group several at a time when the IDE's **Build All Projects** is used, instead of one after another.
+
+**Location:** Project > Build All Projects, and Build All on a project group's right-click menu in the Project Manager (the IDE's own commands; nothing new in the menus).  Settings: Options > DDevExtensions > Parallel Build All.
+
+**IDE versions:** tested on Delphi 13 only; see **Delphi Version Support** below before using it on another version.
+
+**Measured** (Release, Win64, a group of 24 independent applications, 12 logical CPUs): the one-at-a-time build took 145 seconds; 4, 8 and 12 at a time took 52, 38 and 35.  With EurekaLog post-processing: 209 seconds against 73, 53 and 48.  Eight is the default because more gains little.  A group of three small projects gained under a second.
+
+#### Delphi Version Support
+
+> **Only Delphi 13 has been tested.**  On every other version this feature has never been compiled or run.  If it misbehaves there, switch it off (Options > DDevExtensions > Parallel Build All > Active, or `DDevExtensions.DisabledFeatures=ParallelBuild`) and Build All is the IDE's own again.
+
+| IDE | Status |
+|-----|--------|
+| Delphi 13, 64-bit IDE | **Tested** live on 2026-11-10: main menu and Project Manager, a 24-project and a 3-project group |
+| Delphi 13, 32-bit IDE | Builds without hints or warnings; **not yet run** |
+| Delphi 10.3, 10.4, 11, 12 | The units are in those projects; **never compiled or run** (only Delphi 13 is installed where this was written).  The code needs 10.3 or later and is not known to use anything newer |
+| Delphi 10.2 and earlier | **Not supported**: the 10.2 project can no longer compile the shared code |
+
+**EurekaLog below Delphi 13:** the default `ecc32.exe` folder for each IDE (`Studio29` for Delphi 12, `Studio28` for 11, `Studio27` for 10.4, `Studio26` for 10.3) is an assumption, not a checked fact.  If it is wrong the EurekaLog step is skipped with a note in the Messages view; set the path on the options page.
+
+#### How It Works
+
+1. All files are saved, as the IDE does before a build.
+2. Each project is built with MSBuild in its own process, with the project's active configuration and platform and the environment of the IDE's `bin\rsvars.bat`.  This is a command-line build of each project, so build events run and the build number auto-increments as they do under MSBuild.
+3. Order: a project waits for the projects the group says it depends on; a package waits for the packages of the group that it requires; an application or DLL waits for every package in the group.  Everything else builds as soon as a slot is free.
+4. Two projects that write their DCUs to the same folder are never built at the same time.
+5. A progress window lists every project with its state and time.  **Cancel** stops the running builds (their MSBuild processes are ended) and starts no more.  The window stays open when the build ends, so the times and the total can be read; **Close** ( or Enter ) dismisses it.
+6. Errors, warnings and hints are written to the Messages view in a **Parallel Build** group; double-click one to open the source line.
+
+**A failed project does not stop the build.**  Unlike the IDE, which stops at the first failure, the projects that do not depend on the failed one are still built; those that do are listed as "not built" with the reason.
+
+**Group order is not a dependency.**  The IDE builds a group top to bottom, so an application that needs a file another application or DLL of the group produces (an embedded DLL, a generated resource) works there by position alone.  Here only the rules in step 3 make a project wait: declare such a dependency in the group (Project Manager > right-click the project > Dependencies...).
+
+#### EurekaLog
+
+MSBuild does not run EurekaLog's post-processing, so Parallel Build All runs `ecc32` itself after a project builds, when all of these hold: the option is on, the configuration is `Release`, the project is an application or DLL (not a package), it has a `<Project>.eof` beside its `.dproj`, and it is not a DUnitX test runner.  A stub `.eof` that only names an `ExternalConfig` is followed to the real profile.
+
+- `ecc32.exe` not found (EurekaLog not installed): the project still succeeds, with a note in the Messages view.
+- `ecc32` fails: the project is reported **failed** with "do not deploy", because the file was built without EurekaLog.
+- `ecc32` succeeds: the `.eldbg` file it leaves beside the output or the project is deleted.
+- The built file is not where it was expected: the project is reported **failed**, because it was not post-processed.  The file is looked for as `<project name>.exe` or `.dll` in the project's `DCC_ExeOutput` folder, with `$(Platform)` and `$(Config)` replaced; an output folder that uses another macro, or an output named differently from the project, is not found.  Switch "Run EurekaLog" off for such a group.
+- **Cancel** does not interrupt a running `ecc32`, which rewrites the built file in place; it is left to finish.  A cancel that arrives after MSBuild and before `ecc32` leaves the file built but not post-processed, and the project is reported as cancelled.
+
+#### When the IDE's Own Build Runs Instead
+
+Build All Projects falls back to the IDE's one-at-a-time build when: the feature is switched off; fewer than two projects are open; a project is not a Delphi `.dproj` or has never been saved; a program is being debugged (the IDE asks to end it first); a package of the group is loaded in the IDE as a design-time package (its `.bpl` is locked, so the IDE must build it); or the build environment cannot be read (a message says why first).  Nothing is saved before these checks.  Build All used again while a parallel build is running does nothing.
+
+#### Options
+
+| Option | Default | Meaning |
+|--------|---------|---------|
+| Active | On | Off gives the IDE's own Build All back |
+| Projects built at the same time | 0 | 0 = automatic: one per logical CPU, up to 8.  1 to 32 sets it |
+| Run EurekaLog ( ecc32 ) | On | The post-processing step described above |
+| ecc32.exe | empty | Empty = EurekaLog's own folder for this IDE; the page shows the path in use and whether it exists |
+
+Settings are stored in `%APPDATA%\DDevExtensions\ParallelBuild.xml` and apply to the next Build All.
+
+- Environment variable: `DDevExtensions.DisabledFeatures=ParallelBuild` (the feature is then not loaded at all)
 
 ### IDE Path Sorter (New in 3.8.0, Enhanced in 3.9.0/3.9.1/3.13.4, Renamed in 3.11.3)
 
