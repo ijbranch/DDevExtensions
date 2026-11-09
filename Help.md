@@ -1902,7 +1902,7 @@ A confirmation prompt warns that the group will be reloaded and that the build o
 | IDE | Status |
 |-----|--------|
 | Delphi 13, 64-bit IDE | **Tested** live on 2026-11-10: main menu and Project Manager, a 24-project and a 3-project group |
-| Delphi 13, 32-bit IDE | Builds without hints or warnings; **not yet run** |
+| Delphi 13, 32-bit IDE | **Tested** live on 2026-11-10 |
 | Delphi 10.3, 10.4, 11, 12 | The units are in those projects; **never compiled or run** (only Delphi 13 is installed where this was written).  The code needs 10.3 or later and is not known to use anything newer |
 | Delphi 10.2 and earlier | **Not supported**: the 10.2 project can no longer compile the shared code |
 
