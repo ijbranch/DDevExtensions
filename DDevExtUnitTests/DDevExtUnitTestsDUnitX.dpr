@@ -141,7 +141,7 @@ begin
 
 {$IFDEF GUI_TEST_RUNNER}
   Application.Initialize;
-  TStyleManager.TrySetStyle( 'Aqua Light Slate' );
+  TStyleManager.TrySetStyle( 'Windows Modern MountainMist' );
   Application.Title := 'DDevExtensions Unit Tests';
   Application.CreateForm( TGUIVCLTestRunner, GUIVCLTestRunner );
 

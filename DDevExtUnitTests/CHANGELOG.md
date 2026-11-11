@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- (2026-11-11) **Appearance: the Windows Modern MountainMist style** — `DDevExtUnitTestsDUnitX.dproj`, `DDevExtUnitTestsDUnitX.dpr`.  The runner `DDevExtUnitTestsDUnitX` embeds and activates the `Windows Modern MountainMist` VCL style in place of `Aqua Light Slate` ( Ian, 2026-11-11: every `.exe` project uses it ).
 - (2026-11-09) **The suite's copy of EurekaLog's `EExtraExceptionInfo.pas` names its units in full** (kept in the suite so it needs no EurekaLog source path), and the suite's DCUs now go to `lib\$(Platform)\$(Config)` instead of next to the sources, where 67 stray DCUs had collected - `EExtraExceptionInfo.pas`, `DDevExtUnitTestsDUnitX.dproj`
 - (2026-11-09) **Suite documentation updated**: 30 fixtures, 389 tests on Win64 (388 on Win32, one test is Win64-only), corrected paths, the GUI runner is opt-in (`GUI_TEST_RUNNER`), and the characterisation test is now `TestDuplicateUnitNameFirstOneWins` - `README.md`, `STATUS.md`, `TESTS-SUMMARY.md`, `DUNITX-SETUP.md`
 - (2026-11-09) **A doc line over 162 characters wrapped** - `TestPluginConfigCoreDUnitX.pas`
