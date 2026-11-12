@@ -64,12 +64,12 @@
         <VerInfo_Build>601</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.16.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.25.16.601;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.17.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.25.17.601;Comments=</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>16</VerInfo_Release>
+        <VerInfo_Release>17</VerInfo_Release>
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DCC_DependencyCheckOutputName>..\bin\InstallDDevExtensions.exe</DCC_DependencyCheckOutputName>
         <DCC_MapFile>3</DCC_MapFile>
@@ -103,8 +103,8 @@
         <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.25.16.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.25.16.0;Comments=</VerInfo_Keys>
+        <VerInfo_Release>17</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=3.25.17.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=3.25.17.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -115,18 +115,18 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_Build>605</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.16.605;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.25.16.605;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.17.605;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=;ProductName=DDevExtensions;ProductVersion=3.25.17.605;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Build>613</VerInfo_Build>
+        <VerInfo_Build>614</VerInfo_Build>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>16</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensionsReg;FileVersion=3.25.16.613;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensionsReg;ProductName=DDevExtensionsReg;ProductVersion=3.25.16.613;Comments=</VerInfo_Keys>
+        <VerInfo_Release>17</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=;FileDescription=DDevExtensionsReg;FileVersion=3.25.17.614;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.DDevExtensionsReg;ProductName=DDevExtensionsReg;ProductVersion=3.25.17.614;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>16</VerInfo_Release>
+        <VerInfo_Release>17</VerInfo_Release>
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">

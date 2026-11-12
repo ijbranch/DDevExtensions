@@ -265,7 +265,10 @@ begin
   inherited CreateNew( Application );
 
   FPlan        := APlan;
-  Caption      := Format( 'Parallel Build All - %d projects, %d at a time', [ Length( FPlan ), AMaxWorkers ] );
+  if Length( FPlan ) <= AMaxWorkers then
+    Caption    := Format( 'Parallel Build All - all %d projects being processed', [ Length( FPlan ) ] )
+  else
+    Caption    := Format( 'Parallel Build All - %d projects, up to %d at a time', [ Length( FPlan ), AMaxWorkers ] );
   BorderIcons  := [ biSystemMenu ];
   BorderStyle  := bsSizeable;
   Position     := poMainFormCenter;

@@ -1,6 +1,6 @@
 # DDevExtensions Help Guide
 
-Version 3.25.16 | Comprehensive Feature Reference
+Version 3.25.17 | Comprehensive Feature Reference
 
 ---
 
@@ -1914,7 +1914,7 @@ A confirmation prompt warns that the group will be reloaded and that the build o
 2. Each project is built with MSBuild in its own process, with the project's active configuration and platform and the environment of the IDE's `bin\rsvars.bat`.  This is a command-line build of each project, so build events run and the build number auto-increments as they do under MSBuild.
 3. Order: a project waits for the projects the group says it depends on; a package waits for the packages of the group that it requires; an application or DLL waits for every package in the group.  Everything else builds as soon as a slot is free.
 4. Two projects that write their DCUs to the same folder are never built at the same time.
-5. A progress window lists every project with its state and time.  **Cancel** stops the running builds (their MSBuild processes are ended) and starts no more.  The window stays open when the build ends, so the times and the total can be read; **Close** ( or Enter ) dismisses it.
+5. A progress window lists every project with its state and time.  Its title gives the number of projects and the most that build at once ( "24 projects, up to 8 at a time" ), or "all 3 projects being processed" when the group is no larger than that limit.  **Cancel** stops the running builds (their MSBuild processes are ended) and starts no more.  The window stays open when the build ends, so the times and the total can be read; **Close** ( or Enter ) dismisses it.
 6. Errors, warnings and hints are written to the Messages view in a **Parallel Build** group; double-click one to open the source line.
 
 **A failed project does not stop the build.**  Unlike the IDE, which stops at the first failure, the projects that do not depend on the failed one are still built; those that do are listed as "not built" with the reason.
