@@ -94,6 +94,8 @@ procedure TTestPluginConfigCore.TearDown;
 begin
   if DirectoryExists( FFolder ) then
     TDirectory.Delete( FFolder, True );
+  // the fixture outlives the test: a string kept here counts as memory the test leaked
+  FFolder           := '';
 end;
 
 procedure TTestPluginConfigCore.WriteText( const FileName, Text: string );

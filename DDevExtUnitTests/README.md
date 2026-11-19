@@ -51,9 +51,14 @@ The rest of this document describes the DFM parser suite specifically.
 **Headless (Release):** `DDevExtUnitTestsDUnitX.exe` - console output, an NUnit XML report
 (`bin\DDevExtUnitTestsDUnitX-results.xml`, or the file `--xmlfile:` names) and the estate exit code:
 0 green, failures + errors capped at 249, 250 when no test ran, 251 when the runner itself failed
-(an unknown option included).  This is what CI should call, and what `test_run` runs as target
-`DDevExtUnitTestsDUnitX`.  `--run:Unit.TFixture[.Test]` runs one fixture or test.
-**TestInsight (Debug):** the Debug configuration defines `TESTINSIGHT` and runs under the IDE.
+(an unknown option included); confirmed leaks count as failures.  This is what CI should call, and what `test_run`
+runs as target `DDevExtUnitTestsDUnitX`.  `--run:Unit.TFixture[.Test]` runs one fixture or test.  Debug and Release
+both build it.
+**Leak checks (2026-11-19):** FastMM5 is the first unit and `GllDUnitX.SuiteRunner` runs the suite twice, a warm-up
+pass and a measured pass that checks every test for leaked memory; a flagged test is re-run, and only a leak that
+repeats counts.  A fixture must clear in `TearDown` what its `Setup` sets.  No EurekaLog in the runner (its dialog
+would block an unattended run): the `.dpr` undoes the `.dproj`'s `EUREKALOG` define.  The TestInsight runner is gone:
+TestInsight is no longer in the IDE, and its host exits 0 when no server listens.
 **VCL GUI:** build with `GUI_TEST_RUNNER` defined for the DUnitX GUI runner.
 **Project:** `DDevExtUnitTestsDUnitX.dpr`
 **Test Units:** every `Test*DUnitX.pas` in the table above

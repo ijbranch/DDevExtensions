@@ -103,6 +103,6 @@ Also extracted and tested on 2026-11-09, outside this list: `DeadCodeCore` (11),
 
 1. Create `TestXxxDUnitX.pas` in `DDevExtUnitTests/` with a `[TestFixture]` class, one `[Test]` per behaviour with a `<summary>` saying what it proves, and `TDUnitX.RegisterTestFixture` in `initialization` - mirror `TestDelphiLexerDUnitX.pas`.
 2. Add the unit under test (if not already listed) and the test unit to `DDevExtUnitTestsDUnitX.dpr`'s `uses` with the `in '<path>'` form.
-3. Build `DDevExtUnitTestsDUnitX.dproj` Release Win64 (Debug defines `TESTINSIGHT`) and run `bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue`.  The runner sets `Assert.IgnoreCaseDefault := False`, so string comparisons are case-sensitive.
+3. Build `DDevExtUnitTestsDUnitX.dproj` Win64 (Debug or Release; both build the console runner, with a per-test FastMM5 leak check) and run `bin/DDevExtUnitTestsDUnitX.exe --exitbehavior:Continue`.  The runner sets `Assert.IgnoreCaseDefault := False`, so string comparisons are case-sensitive.
 
 > Note: `TestDfmParserDUnitX` resolves `TestData` from the working directory or, failing that, `../DDevExtUnitTests/TestData` relative to the exe, so the file fixtures run from `bin` too (before 2026-10-21 they passed there by skipping).

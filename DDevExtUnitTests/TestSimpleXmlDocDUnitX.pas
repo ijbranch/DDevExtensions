@@ -67,6 +67,8 @@ begin
   end;
   TDirectory.Delete( FDir );
   CoUninitialize;
+  // the fixture outlives the test: a string kept here counts as memory the test leaked
+  FDir              := '';
 end;
 
 procedure TTestSimpleXmlDoc.TestMalformedFileIsNotRewritten;

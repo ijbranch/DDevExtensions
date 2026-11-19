@@ -217,8 +217,8 @@ The project group includes:
 `ToolsAPI`, `PlatformAPI`, `PaletteAPI`, `StructureViewAPI`, `DesignIntf`, `DesignEditors` - which
 ships with Delphi. There is no third-party library to install.
 
-**To build the tests:** DUnitX, FastMM5, and optionally TestInsight (Debug configuration) and
-EurekaLog. None of these reach the product DLL.
+**To build the tests:** DUnitX (with `gllDUnitX\Source\Gll` for the leak-checking runner) and FastMM5.
+None of these reach the product DLL.
 
 **To package a release:** `build.bat` uses `brcc32` (ships with Delphi) and 7-Zip. 7-Zip is optional -
 its absence skips packaging with a notice rather than failing the build.

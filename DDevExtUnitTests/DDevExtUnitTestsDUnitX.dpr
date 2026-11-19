@@ -1,26 +1,29 @@
 ﻿program DDevExtUnitTestsDUnitX;
 
-{ Three runners, chosen by conditional define:
+{ Two runners, chosen by conditional define:
 
-    TESTINSIGHT       - the IDE's TestInsight host. Defined per-configuration in the
-                        .dproj Debug config, never here, so that the Release build can
-                        run headless. This is the one to use while writing tests.
-    GUI_TEST_RUNNER   - the DUnitX VCL GUI runner. Opt-in.
-    (neither)         - console runner with an NUnit XML report and a meaningful exit
-                        code. This is what Release builds and what CI should call. }
+    GUI_TEST_RUNNER   - the DUnitX VCL GUI runner, for interactive use.  Opt-in.
+    (not defined)     - the console runner: GllDUnitX.SuiteRunner with a per-test FastMM5 leak check, an NUnit XML
+                        report and the estate exit code.  Every configuration builds it; it is what test_run and CI
+                        call.
 
-{$IF DEFINED( TESTINSIGHT ) AND DEFINED( GUI_TEST_RUNNER )}
-  {$MESSAGE FATAL 'Define TESTINSIGHT or GUI_TEST_RUNNER, not both.'}
-{$IFEND}
+  The TestInsight runner is gone ( 2026-11-19 ): TestInsight was removed from the IDE deliberately, and its host exits
+  SILENTLY with code 0 when no TestInsight server is listening, a fake green the Debug configuration produced. }
 
-{$IF DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER )}
+{$IFDEF GUI_TEST_RUNNER}
   {$APPTYPE GUI}
 {$ELSE}
   {$APPTYPE CONSOLE}
-{$IFEND}
+{$ENDIF}
 {$STRONGLINKTYPES ON}
+// No EurekaLog in this test runner ( Ian, 2026-11-19, as in GITLAKLibTests ): it raises a modal dialog for every
+// exception, even the ones DUnitX handles, which blocks an unattended run.  The .dproj defines EUREKALOG; these undo it.
+{$UNDEF EurekaLog}
+{$UNDEF EUREKALOG}
+{$UNDEF EUREKALOG_VER7}
 
 uses
+  // FastMM5 FIRST, as the memory manager the per-test leak check measures ( GllDUnitX.SuiteRunner )
   FastMM5,
   {$IFDEF EurekaLog}
   EMemLeaks,
@@ -44,17 +47,12 @@ uses
   Vcl.Controls,
   Vcl.Themes,
   Vcl.Styles,
-  {$IFDEF TESTINSIGHT}
-  TestInsight.DUnitX,
-  {$ENDIF}
   {$IFDEF GUI_TEST_RUNNER}
   DUnitX.Loggers.GUI.VCL,
   {$ENDIF}
-  {$IF NOT ( DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER ) )}
-  DUnitX.Loggers.Console,
-  DUnitX.Loggers.Xml.NUnit,
-  DUnitX.Exceptions,
-  {$IFEND}
+  {$IFNDEF GUI_TEST_RUNNER}
+  GllDUnitX.SuiteRunner,
+  {$ENDIF}
   DUnitX.TestFramework,
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
   TestDfmParserDUnitX in 'TestDfmParserDUnitX.pas',
@@ -127,18 +125,20 @@ uses
 
 {$R *.res}
 
-{$IF NOT ( DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER ) )}
-var
-  Runner: ITestRunner;
-  Results: IRunResults;
-  XmlFile: string;
-{$IFEND}
-
+{$IFNDEF GUI_TEST_RUNNER}
+/// <summary>
+///   Switches RTTI discovery off: every fixture registers itself in its unit's initialization section, and leaving it
+///   on collects each fixture a second time, so every test runs twice.  Passed as <c>TGllSuiteOptions.ConfigureRunner</c>,
+///   which <c>RunGllSuite</c> calls for every runner it creates ( warm-up, measured pass, leak re-runs ).
+/// </summary>
+/// <param name="ARunner">The runner just created.</param>
+procedure RegisteredFixturesOnly( ARunner: ITestRunner );
 begin
-{$IFDEF TESTINSIGHT}
-  TestInsight.DUnitX.RunRegisteredTests;
+  ARunner.UseRTTI := False;
+end;
 {$ENDIF}
 
+begin
 {$IFDEF GUI_TEST_RUNNER}
   Application.Initialize;
   TStyleManager.TrySetStyle( 'Windows Modern MountainMist' );
@@ -149,23 +149,12 @@ begin
   GUIVCLTestRunner.Font.Size := 10;
 
   Application.Run;
-{$ENDIF}
-
-{$IF NOT ( DEFINED( TESTINSIGHT ) OR DEFINED( GUI_TEST_RUNNER ) )}
-  { Honour DUnitX's own command line: the result-XML path test_run passes, and --run:<names>
-    to run one fixture.  An unknown option exits 251 rather than silently running the whole
-    suite. }
-  try
-    TDUnitX.CheckCommandLine;
-  except
-    on E: ECommandLineError do
-    begin
-      Writeln( 'Command-line error: ' + E.Message );
-      ExitCode := 251;
-      Exit;
-    end;
-  end;
-
+{$ELSE}
+  { Every test is checked for memory leaks by GllDUnitX.SuiteRunner ( 2026-11-19 ): a warm-up pass, the measured pass
+    under FastMM5, then a re-run of each flagged test; only a leak that repeats counts.  It also honours DUnitX's
+    command line ( the result-XML path test_run passes, --run:<names> ), and sets the estate exit code: 0 green;
+    failures + errors ( warm-up failures and confirmed leaks included ) clamped at 249; 250 when no test ran; 251 when
+    the runner itself raised or an option is unknown. }
   try
     { Our gllDUnitX fork defaults Assert.AreEqual( string, string ) to IGNORE CASE, and
       nothing at the call site reveals it - a test whose subject is the casing cannot
@@ -173,35 +162,9 @@ begin
       case must now pass True explicitly. }
     Assert.IgnoreCaseDefault := False;
 
-    { Every fixture registers itself in its unit's initialization section, so RTTI
-      discovery is switched off - leaving it on collects each fixture a second time
-      and every test runs twice. }
-    Runner := TDUnitX.CreateRunner;
-    Runner.UseRTTI := False;
-    Runner.AddLogger( TDUnitXConsoleLogger.Create( True ) );
-    { The estate runner reads <exeDir>\<exeBaseName>-results.xml when it names no file. }
-    XmlFile := TDUnitX.Options.XMLOutputFile;
-    if ( XmlFile = '' ) or SameText( ExtractFileName( XmlFile ), 'dunitx-results.xml' ) then
-      XmlFile := ChangeFileExt( ParamStr( 0 ), '' ) + '-results.xml';
-    Runner.AddLogger( TDUnitXXMLNUnitFileLogger.Create( XmlFile ) );
-
-    Results := Runner.Execute;
-
-    Writeln( '' );
-    Writeln( Format( 'TOTAL %d   PASSED %d   FAILED %d   ERRORS %d',
-      [ Results.TestCount, Results.PassCount, Results.FailureCount, Results.ErrorCount ] ) );
-
-    { The estate exit-code contract: 0 green, failures + errors clamped at 249, 250 when no
-      test ran ( a filter matching nothing must never read as green ), 251 when the runner
-      itself raised. }
-    if Results.TestCount = 0 then
-      ExitCode := 250
-    else if Results.AllPassed then
-      ExitCode := 0
-    else if Results.FailureCount + Results.ErrorCount > 249 then
-      ExitCode := 249
-    else
-      ExitCode := Results.FailureCount + Results.ErrorCount;
+    var lOptions := TGllSuiteOptions.Defaults;
+    lOptions.ConfigureRunner := RegisteredFixturesOnly;
+    RunGllSuite( lOptions );
   except
     on E: Exception do
     begin
@@ -209,5 +172,5 @@ begin
       ExitCode := 251;
     end;
   end;
-{$IFEND}
+{$ENDIF}
 end.

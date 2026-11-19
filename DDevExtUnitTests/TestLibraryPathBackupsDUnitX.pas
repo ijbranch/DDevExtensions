@@ -88,6 +88,9 @@ begin
   if TDirectory.Exists( FFolder ) then
     TDirectory.Delete( FFolder, True );
   CoUninitialize;
+  // the fixture outlives the test: a string kept here counts as memory the test leaked
+  FFolder           := '';
+  FFileName         := '';
 end;
 
 procedure TTestLibraryPathBackups.TestTwoManagersKeepEachOthersBackups;

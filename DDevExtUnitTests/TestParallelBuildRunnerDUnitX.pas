@@ -237,6 +237,10 @@ begin
 
   if TDirectory.Exists( FDir ) then TDirectory.Delete( FDir, True );
 
+  // the fixture outlives the test: a string kept here counts as memory the test leaked
+  FDir     := '';
+  FComSpec := '';
+
 end;
 
 procedure TTestParallelBuildRunner.NoteCall( const AProject: TParallelProject );

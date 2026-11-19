@@ -79,6 +79,10 @@ end;
 procedure TTestFileWatcher.TearDown;
 begin
   TDirectory.Delete( FRoot, True );
+  // the fixture outlives the test: a string kept here counts as memory the test leaked
+  FRoot             := '';
+  FChanged          := '';
+  FExpected         := '';
 end;
 
 procedure TTestFileWatcher.HandleChange( const FileName: string );
