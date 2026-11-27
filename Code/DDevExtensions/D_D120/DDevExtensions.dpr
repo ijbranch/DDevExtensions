@@ -87,7 +87,6 @@ uses
   HtHint in '..\..\..\Shared\IDE\HtHint.pas',
   ToolsAPIHelpers in '..\..\..\Shared\IDE\ToolsAPIHelpers.pas',
   FrmDDevExtOptions in '..\Source\FrmDDevExtOptions.pas' {FormDDevExtOptions},
-  FileStreams in '..\..\..\Shared\FileStreams.pas',
   FrmSwitchToModuleProject in '..\Source\CompileProgress\FrmSwitchToModuleProject.pas' {FormSwitchToModuleProject},
   FocusEditor in '..\Source\Editor\FocusEditor.pas',
   StrucViewSearch in '..\Source\DSUFeatures\StrucViewSearch.pas',

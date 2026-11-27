@@ -276,7 +276,6 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\FrmDDevExtOptions.pas">
             <Form>FormDDevExtOptions</Form>
         </DCCReference>
-        <DCCReference Include="..\..\..\Shared\FileStreams.pas"/>
         <DCCReference Include="..\Source\CompileProgress\FrmSwitchToModuleProject.pas">
             <Form>FormSwitchToModuleProject</Form>
         </DCCReference>
