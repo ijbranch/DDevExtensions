@@ -76,10 +76,10 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>3081</VerInfo_Locale>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>0</VerInfo_Build>
-        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.0.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.0.0.0</VerInfo_Keys>
+        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.1.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.1.0.0</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
@@ -98,18 +98,18 @@
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>0</VerInfo_Build>
-        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.0.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.0.0.0</VerInfo_Keys>
+        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.1.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.1.0.0</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>2</VerInfo_Build>
-        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.0.0.2;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.0.0.2</VerInfo_Keys>
+        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.1.0.2;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.1.0.2</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_DebugInformation>0</DCC_DebugInformation>
@@ -120,18 +120,18 @@
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
         <VerInfo_Build>0</VerInfo_Build>
-        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.0.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.0.0.0</VerInfo_Keys>
+        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.1.0.0;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.1.0.0</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
         <VerInfo_Release>0</VerInfo_Release>
-        <VerInfo_Build>6</VerInfo_Build>
-        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.0.0.6;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.0.0.6</VerInfo_Keys>
+        <VerInfo_Build>11</VerInfo_Build>
+        <VerInfo_Keys>FileDescription=DFM noise measurement;FileVersion=1.1.0.11;ProgramID=com.gitlak.DfmNoiseMeasure;ProductName=DfmNoiseMeasure;ProductVersion=1.1.0.11</VerInfo_Keys>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -139,6 +139,8 @@
         </DelphiCompile>
         <DCCReference Include="..\..\Shared\PascalParser\gllDelphiDFMParser.pas"/>
         <DCCReference Include="..\..\Shared\PascalParser\gllDfmCompare.pas"/>
+        <DCCReference Include="..\..\Code\DDevExtensions\Source\DfmLinkGuard\DfmLinkGuardCore.pas"/>
+        <DCCReference Include="DfmLinkCheck.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

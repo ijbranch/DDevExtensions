@@ -60,6 +60,8 @@ uses
   TestDfmCompareDUnitX in 'TestDfmCompareDUnitX.pas',
   DfmLinkGuardCore in '..\Code\DDevExtensions\Source\DfmLinkGuard\DfmLinkGuardCore.pas',
   TestDfmLinkGuardCoreDUnitX in 'TestDfmLinkGuardCoreDUnitX.pas',
+  DfmLinkCheck in '..\Tools\DfmNoiseMeasure\DfmLinkCheck.pas',
+  TestDfmLinkCheckDUnitX in 'TestDfmLinkCheckDUnitX.pas',
   ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas',
   ParallelBuildCore in '..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildCore.pas',

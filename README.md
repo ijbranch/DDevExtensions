@@ -574,7 +574,7 @@ DDevExtensions/
 │       └── SimpleXmlIntf.pas
 │
 └── Tools/                         # Additional tools
-    ├── DfmNoiseMeasure/           # Console tool, run by hand: measures the IDE noise in saved .dfm files (Help.md, Findings-*.md)
+    ├── DfmNoiseMeasure/           # Console tool, run by hand: measures the IDE noise in saved .dfm files and checks the links between modules (Check-DfmLinks.ps1; Help.md, Findings-*.md)
     └── LinkMapFile/
         └── ReadMe.md
 ```

@@ -1,7 +1,8 @@
 # DfmNoiseMeasure
 
 A console tool that measures the noise the IDE leaves in saved `.dfm` files: what changes between two versions of
-a form, sorted into categories.  Run by hand; nothing calls it.  Built 2026-11-28 to measure before deciding whether DDevExtensions needs more than
+a form, sorted into categories.  Since 1.1.0 it also checks the links between modules ( `links`, below ).  Run by
+hand; nothing calls it.  Built 2026-11-28 to measure before deciding whether DDevExtensions needs more than
 its three DFM cleaners ( after a review of Cesar Romero's
 [delphi-dfm-noise-filter](https://github.com/cesarliws/delphi-dfm-noise-filter) ).  Results: `Findings-2026-11-28.md`.
 
@@ -9,13 +10,17 @@ its three DFM cleaners ( after a review of Cesar Romero's
 
 `DfmNoiseMeasure.dproj`, a console application ( Win64 Release; Win32 declared ).  It uses
 `..\..\Shared\PascalParser\gllDelphiDFMParser.pas` and `gllDfmCompare.pas` ( the comparison, shared with the
-DFM Link Guard in the DDevExtensions DLL ) and links GITLAKRTL first.  Output: `bin\$(Platform)\$(Config)`.
+DFM Link Guard in the DDevExtensions DLL ), the guard's own rule in
+`..\..\Code\DDevExtensions\Source\DfmLinkGuard\DfmLinkGuardCore.pas`, and `DfmLinkCheck.pas` ( the `links`
+decisions, tested by `TestDfmLinkCheckDUnitX` in the DDevExtensions suite ).  It links GITLAKRTL first.  Output:
+`bin\$(Platform)\$(Config)`.
 
 ## Commands
 
 ```
 DfmNoiseMeasure identity <folder> [<folder>...]
 DfmNoiseMeasure compare <pairs.tsv> [<detail.csv>]
+DfmNoiseMeasure links <root> [<pairs.tsv>] [--out <folder>] [--files <list.txt>]
 ```
 
 - **identity** parses and re-serialises every text `.dfm` under the folders ( recursively ) and lists any that do not
@@ -25,8 +30,39 @@ DfmNoiseMeasure compare <pairs.tsv> [<detail.csv>]
   `new`; the file paths relative to the list ), compares each pair component by component and prints a table of
   changes by category and kind, the number of pairs whose ONLY changes are known IDE noise, and the 30 most frequent
   "Other" changes.  The optional CSV gets one row per change.
+- **links** checks the links between modules ( a value `Module.Component`, such as `DataSource = dmMain.dsCustomers` ).
+  `<root>` is one repository, or a folder whose first-level folders are repositories.  Normally run through
+  `Check-DfmLinks.ps1` ( next section ).
+  - **Today:** every link in every text `.dfm` must name a component that a `.dfm` with that root declares.  The
+    module is looked for in the link's own repository first ( several applications each have a `MainForm` ), then in
+    every repository ( a shared data module ).  Each failure is printed as `COMPONENT MISSING` or `MODULE NOT FOUND`.
+    A dotted value naming the form's own root is checked within the form; one naming another of its components
+    ( an embedded frame ) is not a link.
+  - **History**, with `<pairs.tsv>`: the DFM Link Guard's own rule ( `FindLostModuleLinks` ) on every past save,
+    with the target looked up in today's files, and each loss classified by today's file: restored, value elsewhere in
+    file ( exactly that value on another property ), component gone, file gone, or `STILL LOST` ( printed ).
+  - `--out` writes `links-today.csv` and `links-history.csv`; `--files` checks only the listed `.dfm` files ( one full
+    path per line ) instead of every one under the root.
 
-Exit code: 0 done, 1 bad command line, 2 a file failed to round-trip or to parse.
+Exit code: 0 done, 1 bad command line or nothing to check, 2 a file failed to round-trip or to parse, 3 ( `links` ) a link without a target
+or a loss still lost.  A past save that cannot be read is listed but does not set the exit code: history cannot change.
+
+## Checking links: `Check-DfmLinks.ps1`
+
+One command for the whole check ( PowerShell 7; read-only on the repositories ):
+
+```
+pwsh -File Check-DfmLinks.ps1                                  # the DBiWorkflow repositories
+pwsh -File Check-DfmLinks.ps1 -Root D:\GITLAKLib               # one repository
+pwsh -File Check-DfmLinks.ps1 -Since 2026-01-01 -Out D:\Temp\Links
+```
+
+It exports the history with `Export-DfmHistory.py`, lists the `.dfm` files git knows ( tracked, or new and not
+ignored ), and runs `links`.  Only files git knows are checked: GITLAKLib's build leaves copies of its forms beside its
+DCUs ( `37.0\<platform>\<config>` ), and a stale copy could still declare a component deleted from the real form, which
+would hide a broken link.  Build `DfmNoiseMeasure.dproj` ( Win64 Release ) first.  Results on 2026-11-28: DBiWorkflow
+788 links in 235 forms, all resolve; 13 past losses, none still lost ( one deliberate removal among them ); GITLAKLib 8
+forms, no links between modules.
 
 ## Pairs from git history
 

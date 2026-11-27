@@ -26,11 +26,12 @@
 - **TestDfmParserDUnitX.pas** - 41 test cases (see `README.md` for the breakdown)
 - **TestDfmCompareDUnitX.pas** - 6 cases (`gllDfmCompare`, added 2026-11-28)
 - **TestDfmLinkGuardCoreDUnitX.pas** - 11 cases (`DfmLinkGuardCore`, added 2026-11-28)
+- **TestDfmLinkCheckDUnitX.pas** - 9 cases (`DfmLinkCheck`, the `DfmNoiseMeasure links` decisions, added 2026-11-28)
 - **TestPathCompactorDUnitX.pas** - 30 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 17 cases (`ProjectGroupSorterCore`)
 - **TestUsesClauseManagerCoreDUnitX.pas** - 50 cases (`UsesClauseManagerCore`)
 - **TestDecirculariserCoreDUnitX.pas** - 43 cases (`DecirculariserCore`)
-- 27 further fixtures, 484 tests in all on Win64 as of 2026-11-28: the full list is in `README.md`
+- 27 further fixtures, 493 tests in all on Win64 as of 2026-11-28: the full list is in `README.md`
 
 **Original Console Tests:** retired 2026-10-21.  `DDevExtUnitTests.dpr` and its six `Test*.pas`
 units were ported into the DUnitX fixtures `TestDelphiLexerDUnitX`, `TestDelphiParserContainersDUnitX`,
@@ -122,7 +123,7 @@ DDevExtUnitTestsDUnitX.exe
 ```
 
 Opens VCL GUI (only when built with `GUI_TEST_RUNNER` defined; otherwise the exe is the console runner) showing:
-- 484 tests (2026-11-28; 29 when this was first written) organized by category
+- 493 tests (2026-11-28; 29 when this was first written) organized by category
 - Real-time pass/fail status
 - Detailed failure messages
 - Execution time per test
@@ -134,7 +135,7 @@ None open.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` was re
 until the same day's fix: the Shared units tested `COMPILER6_UP` and friends, which nothing defined
 for them (`DelphiParser.inc` was empty), so they compiled their Delphi 5 branches.  The conditionals
 are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.  (2026-11-28: the suite
-is 484 tests on Win64, all passing.)
+is 493 tests on Win64, all passing.)
 
 `UsesClauseManagerCore` carried one deliberate characterisation test,
 `TestDuplicateUnitNameCurrentlyRaises`, which pinned a known defect: two search-path directories holding

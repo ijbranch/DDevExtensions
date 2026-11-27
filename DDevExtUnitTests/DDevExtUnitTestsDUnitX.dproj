@@ -133,6 +133,8 @@
         <DCCReference Include="TestDfmCompareDUnitX.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\DfmLinkGuard\DfmLinkGuardCore.pas"/>
         <DCCReference Include="TestDfmLinkGuardCoreDUnitX.pas"/>
+        <DCCReference Include="..\Tools\DfmNoiseMeasure\DfmLinkCheck.pas"/>
+        <DCCReference Include="TestDfmLinkCheckDUnitX.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildCore.pas"/>
         <DCCReference Include="..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildRunner.pas"/>
