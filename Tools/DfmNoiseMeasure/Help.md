@@ -62,7 +62,9 @@ ignored ), and runs `links`.  Only files git knows are checked: GITLAKLib's buil
 DCUs ( `37.0\<platform>\<config>` ), and a stale copy could still declare a component deleted from the real form, which
 would hide a broken link.  Build `DfmNoiseMeasure.dproj` ( Win64 Release ) first.  Results on 2026-11-28: DBiWorkflow
 788 links in 235 forms, all resolve; 13 past losses, none still lost ( one deliberate removal among them ); GITLAKLib 8
-forms, no links between modules.
+forms, no links between modules; GITLAKDB 57 forms, 18 links, all resolve; gllSpell 8 and WinTrak 4 forms, no links
+between modules.  None of the last three lost a link in its history.  WinTrak is at
+`-Root 'E:\Amateur Radio Projects\WinTrak Development'`.
 
 ## Pairs from git history
 
