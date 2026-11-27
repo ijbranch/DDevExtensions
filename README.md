@@ -536,7 +536,7 @@ DDevExtensions/
 │       └── ToolsAPIIntf.pas
 │
 ├── Shared/                        # Shared utilities
-│   ├── FileStreams.pas            # Not linked into the D13 DLL since 3.24.16; older IDE projects keep it
+│   ├── FileStreams.pas            # Linked into no DLL ( dropped from D13 in 3.24.16, from the older projects 2026-11-28 )
 │   ├── FileWatcher.pas            # ReadDirectoryChangesW wrapper for file monitoring
 │   ├── Hooking.pas
 │   ├── ImportHooking.pas

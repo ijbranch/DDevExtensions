@@ -1221,7 +1221,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
             },
             'GeneralUtilities': {
                 category: 'Shared Library',
-                description: 'Low-level utilities including code hooking, import hooking and folder watching (Hooking, ImportHooking, FileWatcher).  Shared\\FileStreams is no longer linked into the D13 DLL (3.24.16); the older IDE projects keep it.',
+                description: 'Low-level utilities including code hooking, import hooking and folder watching (Hooking, ImportHooking, FileWatcher).  Shared\\FileStreams is linked into no DLL: dropped from D13 in 3.24.16 and from the older IDE projects on 2026-11-28.',
                 features: ['Code hooking', 'Import hooking', 'Folder watching (I/O completion port)', 'File streams (older IDE projects only)'],
                 dependencies: ['Windows API'],
                 linesOfCode: 4712
