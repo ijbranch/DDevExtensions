@@ -12,6 +12,11 @@ for %%V in (37.0 23.0 22.0 21.0 20.0 19.0) do (
 )
 
 SET curdir=%CD%
+:: PATH as it was before any rsvars.bat ran.  rsvars puts its own folders on the FRONT of PATH,
+:: so calling it once per row made PATH ~200 characters longer every time: with a long PATH the
+:: 6th call ( the Delphi 12 row ) passed cmd's 8,191-character line limit and stopped the script
+:: with "The input line is too long" ( issue #1 ).  :UseDelphi puts this back before each call.
+SET "CleanPath=%PATH%"
 SET ScriptDir=%~dp0
 cd /d "%ScriptDir%."
 
@@ -113,7 +118,7 @@ if not defined NewestRsvars (
   echo   SKIPPED - no Delphi installation found to build the installer with.
   set /A SKIPPED+=1
 ) else (
-  call %NewestRsvars%
+  call :UseDelphi %NewestRsvars%
   cd Installer
   msbuild /nologo /t:Build /p:Config=Release /p:Platform=Win32 DDevExtensionsReg.dproj
   if ERRORLEVEL 1 (
@@ -188,7 +193,17 @@ echo.
 goto Leave
 
 :: ----------------------------------------------------------------------------------------
-:: :BuildInterceptor  %1 platform  %2 output DLL name (without extension)
+:: :UseDelphi  %1 rsvars.bat (quoted)
+:: Sets up one Delphi's command-line environment on the ORIGINAL PATH, so PATH does not grow
+:: with every row and no earlier Delphi's bin folder is left on it.
+:: ----------------------------------------------------------------------------------------
+:UseDelphi
+SET "PATH=%CleanPath%"
+call %1
+goto :EOF
+
+:: ----------------------------------------------------------------------------------------
+:: :BuildInterceptor %1 platform  %2 output DLL name (without extension)
 :: Builds the helper DLL that DDevExtensions injects into the IDE. One build serves every
 :: Delphi version - it resolves the IDE DLLs by name at run time - but it does need one
 :: build per BITNESS, because it is loaded into the IDE's own process.
@@ -206,7 +221,7 @@ if not exist "%InterceptorDir%\Source\CompileInterceptorW.dproj" (
   set /A SKIPPED+=1
   goto :EOF
 )
-call %NewestRsvars%
+call :UseDelphi %NewestRsvars%
 cd /d "%InterceptorDir%\Source"
 msbuild /nologo /t:Build /p:Config=Release /p:Platform=%~1 CompileInterceptorW.dproj
 if ERRORLEVEL 1 (
@@ -246,7 +261,7 @@ if not exist "%~3\DDevExtensions.dproj" (
   set /A SKIPPED+=1
   goto :EOF
 )
-call %2
+call :UseDelphi %2
 cd %~3
 msbuild /nologo /t:Build /p:Config=Release /p:Platform=%~4 DDevExtensions.dproj
 if ERRORLEVEL 1 (
@@ -266,6 +281,7 @@ SET FILENAME=
 SET LINKMAPFILE=
 SET InterceptorDir=
 SET ScriptDir=
+SET CleanPath=
 cd /d "%curdir%"
 
 ENDLOCAL

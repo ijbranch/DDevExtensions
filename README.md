@@ -182,7 +182,9 @@ Or run `Code\DDevExtensions\build.bat`, which builds CompileInterceptor, the ins
 supported Delphi version present on the machine. A version whose IDE is not installed is **skipped
 with a notice** rather than failing the run, so the script works on a machine carrying a single
 Delphi; the run ends with a count of what was built and what was skipped. Packaging needs 7-Zip and
-is skipped if it is absent.
+is skipped if it is absent. Each version is built on the PATH the script started with ( its
+`rsvars.bat` is applied fresh each time ), so several Delphi versions and a long PATH no longer stop
+the run with "The input line is too long" ( fixed 2026-11-28, issue #1 ).
 
 Every project is built for an explicitly named platform, so a `.dproj` left saved on the wrong one
 cannot change what the script produces. Delphi 12 and 13 are built twice, because both ship a
