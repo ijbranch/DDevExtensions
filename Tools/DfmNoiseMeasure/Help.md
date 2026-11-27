@@ -60,7 +60,16 @@ pwsh -File Check-DfmLinks.ps1 -Since 2026-01-01 -Out D:\Temp\Links
 It exports the history with `Export-DfmHistory.py`, lists the `.dfm` files git knows ( tracked, or new and not
 ignored ), and runs `links`.  Only files git knows are checked: GITLAKLib's build leaves copies of its forms beside its
 DCUs ( `37.0\<platform>\<config>` ), and a stale copy could still declare a component deleted from the real form, which
-would hide a broken link.  Build `DfmNoiseMeasure.dproj` ( Win64 Release ) first.  Results on 2026-11-28: DBiWorkflow
+would hide a broken link.  Build `DfmNoiseMeasure.dproj` ( Win64 Release ) first.
+
+Two limits, both seen in the 2026-11-28 scan of every repository on D: and E::
+
+- **Check together what is used together.**  A DBiWorkflow application checked on its own reports every link to a
+  data module in `DBiCommonFiles` as `MODULE NOT FOUND`: that module is in another repository.  Point `-Root` at the
+  folder holding all of them ( the default does ).
+- **Any `Name.Name` value counts as a link.**  A value that only looks like one, such as gllIndy10's
+  `CategoryComponent = NoCategoryComponent.Owner` in its Bubbles tests, is reported as `MODULE NOT FOUND`.  Read the
+  value before acting on it.  Results on 2026-11-28: DBiWorkflow
 788 links in 235 forms, all resolve; 13 past losses, none still lost ( one deliberate removal among them ); GITLAKLib 8
 forms, no links between modules; GITLAKDB 57 forms, 18 links, all resolve; gllSpell 8 and WinTrak 4 forms, no links
 between modules.  None of the last three lost a link in its history.  WinTrak is at

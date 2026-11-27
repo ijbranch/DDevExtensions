@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- (2026-11-28) **`Help.md` names two limits of `links`, from the scan of all 132 git repositories with forms on D: and E:** — `Help.md`.  A DBiWorkflow application checked on its own reports its links to `DBiCommonFiles` as `MODULE NOT FOUND` ( check the repositories used together, as the default does ), and a value that only looks like `Module.Component` ( gllIndy10's `NoCategoryComponent.Owner` ) is reported too.  The scan's one real find: upstream SynEdit's EditApp demo had lost seven popup-menu actions, fixed in gllSynEdit and sent upstream.
 - (2026-11-28) **The comparison core is shared with the DDevExtensions DLL**: `DfmNoiseMeasure.Core.pas` moved to `..\..\Shared\PascalParser\gllDfmCompare.pas` ( unit renamed; a text with no object header now raises `EDfmCompareError`, which `compare` reports as a failed pair ), which the DFM Link Guard uses too; its tests are now `TestDfmCompareDUnitX` — `DfmNoiseMeasure.dpr`, `DfmNoiseMeasure.dproj`, `Help.md`
 
 ### Added
