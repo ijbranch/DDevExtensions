@@ -63,6 +63,13 @@ Pure record types, no dependencies. Define:
 **Tests:** `D:\DDevExtensions\DfmParserTests\DfmParserTestsDUnitX.exe` (32/32 passing)
 **Status:** Production-ready, validated against 11 test files including 5 real-world production DFMs
 
+> **Update 2026-11-28:** the round-trip tests below could not see a wrong TREE.  Fixed then: brackets inside
+> strings opened a list ( `Caption = 'Save (F2)'` swallowed the next properties ), a bare `Name =` was written back
+> with a trailing space, and `[n]` is now `TDfmComponent.OrderIndex`, no longer part of `TypeName`.  The tests live in
+> `DDevExtUnitTests\TestDfmParserDUnitX.pas` ( 41 ), and 324 of 324 real DFMs round-trip byte-exact
+> ( `Tools\DfmNoiseMeasure` ).  The paths below ( `D:\DDevExtensions\Shared`, `DfmParserTests` ) are historical: the
+> unit is `D:\DDevExtensions\DDevExtensions\Shared\PascalParser\gllDelphiDFMParser.pas`.
+
 Standalone, reusable DFM parser. **Lossless** — `Serialize(Parse(text)) = text` ✅ verified.
 
 **Implemented Classes:**

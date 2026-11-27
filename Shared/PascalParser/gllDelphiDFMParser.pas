@@ -16,7 +16,9 @@ unit gllDelphiDFMParser;
 /// Lossless DFM (Delphi Form Module) text parser and serialiser. The contract is that
 /// Serialize(Parse(Text)) produces the original text byte-for-byte: indentation, line endings
 /// and the exact value strings are preserved so the parser can be used by tooling that round-
-/// trips DFM files without disturbing unrelated formatting.
+/// trips DFM files without disturbing unrelated formatting.  The contract holds for text as the
+/// IDE writes it ( 324 of 324 real files, 2026-11-28 ); hand-made spacing around "=" or before
+/// an inherited component's "[n]", blank lines, and a missing final line break are normalised.
 /// </summary>
 
 interface
@@ -47,7 +49,11 @@ type
     FRawValue: string;
     /// <summary>Leading whitespace before the property name.</summary>
     FIndent: string;
+    /// <summary>Whether a space follows the "=" ( False for a bare <c>Name =</c> whose value starts on the next line ).</summary>
+    FSpaceAfterEquals: Boolean;
   public
+    /// <summary>Creates a property written as <c>Name = Value</c> ( a space after the "=" ).</summary>
+    constructor Create;
     /// <summary>Property name</summary>
     property Name: string read FName write FName;
     /// <summary>Type of property value</summary>
@@ -56,6 +62,11 @@ type
     property RawValue: string read FRawValue write FRawValue;
     /// <summary>Leading whitespace before the property name</summary>
     property Indent: string read FIndent write FIndent;
+    /// <summary>
+    /// Whether a space follows the "=".  The IDE writes a bare <c>Name =</c> when a long value
+    /// starts on the next line; serialising keeps that line byte-exact.  True by default.
+    /// </summary>
+    property SpaceAfterEquals: Boolean read FSpaceAfterEquals write FSpaceAfterEquals;
   end;
 
   /// <summary>DFM object declaration types</summary>
@@ -70,6 +81,8 @@ type
     FTypeName: string;
     /// <summary>Which keyword introduced this component (object/inherited/inline).</summary>
     FObjectKind: TDfmObjectKind;
+    /// <summary>Creation-order index of an inherited component ( the <c>[n]</c> after the class name ), without brackets.</summary>
+    FOrderIndex: string;
     /// <summary>Owned list of properties belonging to this component.</summary>
     FProperties: TObjectList<TDfmProperty>;
     /// <summary>Owned list of child components.</summary>
@@ -106,6 +119,11 @@ type
     property TypeName: string read FTypeName write FTypeName;
     /// <summary>Object declaration keyword used</summary>
     property ObjectKind: TDfmObjectKind read FObjectKind write FObjectKind;
+    /// <summary>
+    /// Creation-order index written after the class name of an inherited component ( <c>3</c> for
+    /// <c>inherited Panel1: TPanel [3]</c> ), without brackets; empty when the header has none.
+    /// </summary>
+    property OrderIndex: string read FOrderIndex write FOrderIndex;
     /// <summary>Properties of this component</summary>
     property Properties: TObjectList<TDfmProperty> read FProperties;
     /// <summary>Child components (nested objects)</summary>
@@ -157,6 +175,96 @@ type
   end;
 
 implementation
+
+type
+  /// <summary>
+  /// Decides where a property value ends: counts brackets ( <c>( [ &lt; {</c> and their partners )
+  /// only OUTSIDE string literals, so a bracket inside a caption or SQL text cannot open or close
+  /// a list.  A DFM string never spans lines, and a doubled quote inside one simply toggles twice.
+  /// </summary>
+  /// <remarks>The idea is that of <c>TValueScanner</c> in Cesar Romero's MIT-licensed delphi-dfm-noise-filter ( <c>DfmText.pas</c> ).</remarks>
+  TDfmValueScanner = record
+    /// <summary>Open brackets not yet closed.</summary>
+    Depth: Integer;
+    /// <summary>True between an opening quote and its closing quote; always False after <c>Scan</c> returns.</summary>
+    InString: Boolean;
+    /// <summary>True once any value text other than spaces and <c>+</c> has been seen.</summary>
+    HasValue: Boolean;
+    /// <summary>True when the last non-blank character scanned was a <c>+</c> outside a string.</summary>
+    EndsWithPlus: Boolean;
+    /// <summary>Clears the scanner for a new property.</summary>
+    procedure Init;
+    /// <summary>Scans one line, or the value part of the property's first line.</summary>
+    /// <param name="S">The line text.</param>
+    /// <param name="StartIndex">1-based index of the first character to scan.</param>
+    procedure Scan( const S: string; StartIndex: Integer );
+    /// <summary>Whether the value scanned so far is complete.</summary>
+    /// <returns>True when a value was seen, every bracket is closed and the last line did not end with <c>+</c>.</returns>
+    function Complete: Boolean;
+  end;
+
+procedure TDfmValueScanner.Init;
+begin
+  Depth             := 0;
+  InString          := False;
+  HasValue          := False;
+  EndsWithPlus      := False;
+end;
+
+procedure TDfmValueScanner.Scan( const S: string; StartIndex: Integer );
+begin
+  EndsWithPlus      := False;
+  for var I := StartIndex to Length( S ) do
+  begin
+    var C           := S[ I ];
+    if InString then
+    begin
+      if C = '''' then InString := False;
+      Continue;
+    end;
+    case C of
+      '''':
+        begin
+          InString  := True;
+          HasValue  := True;
+          EndsWithPlus := False;
+        end;
+      '(', '[', '<', '{':
+        begin
+          Inc( Depth );
+          HasValue  := True;
+          EndsWithPlus := False;
+        end;
+      ')', ']', '>', '}':
+        begin
+          Dec( Depth );
+          HasValue  := True; // a stray closer on a malformed line still ends the value
+          EndsWithPlus := False;
+        end;
+      '+': EndsWithPlus := True;
+      ' ', #9: ;
+    else
+      HasValue      := True;
+      EndsWithPlus  := False;
+    end;
+  end;
+  // A DFM string never spans lines: an unterminated quote is malformed text, and closing it here
+  // keeps one bad line from swallowing the rest of the file.
+  InString          := False;
+end;
+
+function TDfmValueScanner.Complete: Boolean;
+begin
+  Result            := HasValue and ( Depth <= 0 ) and ( not EndsWithPlus );
+end;
+
+{ TDfmProperty }
+
+constructor TDfmProperty.Create;
+begin
+  inherited Create;
+  FSpaceAfterEquals := True;
+end;
 
 { TDfmComponent }
 
@@ -245,12 +353,7 @@ var
   Stack             : TStack<TDfmComponent>;
   CurrentComponent  : TDfmComponent;
   CurrentProperty   : TDfmProperty;
-  InBinary          : Boolean;
-  InCollection      : Boolean;
-  InParenList       : Boolean;
-  AngleDepth        : Integer;
-  BraceDepth        : Integer;
-  ParenDepth        : Integer;
+  Scanner           : TDfmValueScanner;
 
   function DetectLineEnding: string;
   begin
@@ -277,14 +380,6 @@ var
   function StartsWithText( const S, Prefix: string ): Boolean;
   begin
     Result          := Copy( S, 1, Length( Prefix ) ) = Prefix;
-  end;
-
-  function EndsWithPlus( const S: string ): Boolean;
-  var
-    Trimmed         : string;
-  begin
-    Trimmed         := TrimRight( S );
-    Result          := ( Length( Trimmed ) > 0 ) and ( Trimmed[ Length( Trimmed ) ] = '+' );
   end;
 
   function ParseObjectDeclaration( const S: string; const AIndent: string ): TDfmComponent;
@@ -314,15 +409,31 @@ var
     else
       Rest          := S;
 
-    // Parse "Name: Type"
+    // Parse "Name: Type [n]", or "Type" for an unnamed object
     ColonPos        := Pos( ':', Rest );
     if ColonPos > 0 then
     begin
       ObjName       := Trim( Copy( Rest, 1, ColonPos - 1 ) );
       ObjType       := Trim( Copy( Rest, ColonPos + 1, MaxInt ) );
-      Result.Name   := ObjName;
-      Result.TypeName := ObjType;
+    end
+    else
+    begin
+      ObjName       := '';
+      ObjType       := Trim( Rest );
     end;
+
+    // Split the creation-order index of an inherited component from the class name
+    var BracketPos  := Pos( '[', ObjType );
+    if BracketPos > 0 then
+    begin
+      var CloseBracketPos := Pos( ']', ObjType, BracketPos );
+      if CloseBracketPos = 0 then CloseBracketPos := Length( ObjType ) + 1;
+      Result.OrderIndex := Trim( Copy( ObjType, BracketPos + 1, CloseBracketPos - BracketPos - 1 ) );
+      ObjType       := Trim( Copy( ObjType, 1, BracketPos - 1 ) );
+    end;
+
+    Result.Name     := ObjName;
+    Result.TypeName := ObjType;
   end;
 
 begin
@@ -335,12 +446,7 @@ begin
     Lines.Text      := DfmText;
 
     CurrentProperty := nil;
-    InBinary        := False;
-    InCollection    := False;
-    InParenList     := False;
-    AngleDepth      := 0;
-    BraceDepth      := 0;
-    ParenDepth      := 0;
+    Scanner.Init;
 
     for LineIndex := 0 to Lines.Count - 1 do
     begin
@@ -358,45 +464,9 @@ begin
         // Append line to current property
         CurrentProperty.RawValue := CurrentProperty.RawValue + Result.LineEnding + Line;
 
-        // Track brace/angle depth
-        if Pos( '{', Line ) > 0 then
-        begin
-          InBinary  := True;
-          Inc( BraceDepth );
-        end;
-        if Pos( '}', Line ) > 0 then
-        begin
-          Dec( BraceDepth );
-          if BraceDepth <= 0 then
-            InBinary := False;
-        end;
-        if Pos( '<', TrimmedLine ) > 0 then
-        begin
-          InCollection := True;
-          Inc( AngleDepth );
-        end;
-        if Pos( '>', TrimmedLine ) > 0 then
-        begin
-          Dec( AngleDepth );
-          if AngleDepth <= 0 then
-            InCollection := False;
-        end;
-        if Pos( '(', Line ) > 0 then
-        begin
-          InParenList := True;
-          Inc( ParenDepth );
-        end;
-        if Pos( ')', Line ) > 0 then
-        begin
-          Dec( ParenDepth );
-          if ParenDepth <= 0 then
-            InParenList := False;
-        end;
-
-        // Check if property is complete
-        // Continue if: binary data, collection, paren list, or line ends with +
-        if not InBinary and not InCollection and not InParenList and not EndsWithPlus( Line ) then
-          CurrentProperty := nil;
+        // The value continues while a bracket is open ( outside strings ) or the line ends with +
+        Scanner.Scan( Line, 1 );
+        if Scanner.Complete then CurrentProperty := nil;
 
         Continue;
       end;
@@ -445,42 +515,37 @@ begin
         var EqPos: Integer;
         EqPos       := Pos( '=', Line );
         CurrentProperty.Name := Trim( Copy( Line, 1, EqPos - 1 ) );
-        CurrentProperty.RawValue := Copy( Line, EqPos + 2, MaxInt ); // Skip '= '
+        CurrentProperty.SpaceAfterEquals := ( EqPos < Length( Line ) ) and ( Line[ EqPos + 1 ] = ' ' );
+        if CurrentProperty.SpaceAfterEquals then
+          CurrentProperty.RawValue := Copy( Line, EqPos + 2, MaxInt ) // Skip '= '
+        else
+          CurrentProperty.RawValue := Copy( Line, EqPos + 1, MaxInt ); // Skip '='
 
-        // Detect value kind
-        if StartsWithText( TrimmedLine, '{' ) or ( Pos( '{', CurrentProperty.RawValue ) > 0 ) then
-        begin
-          CurrentProperty.ValueKind := dvkBinary;
-          InBinary  := True;
-          BraceDepth := 1;
-        end
-        else if StartsWithText( TrimmedLine, '<' ) or ( Pos( '<', CurrentProperty.RawValue ) > 0 ) then
-        begin
-          CurrentProperty.ValueKind := dvkCollection;
-          InCollection := True;
-          AngleDepth := 1;
-        end
-        else if StartsWithText( TrimmedLine, '(' ) or ( Pos( '(', CurrentProperty.RawValue ) > 0 ) then
-        begin
-          CurrentProperty.ValueKind := dvkParenList;
-          InParenList := True;
-          ParenDepth := 1;
-        end
-        else if StartsWithText( Trim( CurrentProperty.RawValue ), '[' ) then
+        // Detect value kind from the value's first character: a bracket inside a string is text
+        var FirstValue := Trim( CurrentProperty.RawValue );
+        if StartsWithText( FirstValue, '{' ) then
+          CurrentProperty.ValueKind := dvkBinary
+        else if StartsWithText( FirstValue, '<' ) then
+          CurrentProperty.ValueKind := dvkCollection
+        else if StartsWithText( FirstValue, '(' ) then
+          CurrentProperty.ValueKind := dvkParenList
+        else if StartsWithText( FirstValue, '[' ) then
           CurrentProperty.ValueKind := dvkSet
-        else if StartsWithText( Trim( CurrentProperty.RawValue ), '''' ) then
+        else if StartsWithText( FirstValue, '''' ) or StartsWithText( FirstValue, '#' ) then
           CurrentProperty.ValueKind := dvkString
         else
           CurrentProperty.ValueKind := dvkSimple;
 
         if Stack.Count > 0 then
-          Stack.Peek.Properties.Add( CurrentProperty );
+          Stack.Peek.Properties.Add( CurrentProperty )
+        else
+          FreeAndNil( CurrentProperty ); // a property outside any object: malformed text, not kept
 
-        // Check if property ends on same line
-        // Continue if: binary data, collection, paren list, line ends with +, or value is empty/whitespace
-        if not InBinary and not InCollection and not InParenList and
-          not EndsWithPlus( Line ) and ( Trim( CurrentProperty.RawValue ) <> '' ) then
-          CurrentProperty := nil;
+        // The value continues on the next lines while a bracket is open ( outside strings ), the
+        // line ends with +, or no value has been seen yet
+        Scanner.Init;
+        Scanner.Scan( Line, EqPos + 1 );
+        if Scanner.Complete then CurrentProperty := nil;
       end;
     end;
 
@@ -507,11 +572,18 @@ var
       dokInline: Keyword := 'inline';
     end;
 
-    Lines.Add( Component.Indent + Keyword + ' ' + Component.Name + ': ' + Component.TypeName );
+    var Header      := Component.Indent + Keyword + ' ';
+    if Component.Name <> '' then Header := Header + Component.Name + ': ';
+    Header          := Header + Component.TypeName;
+    if Component.OrderIndex <> '' then Header := Header + ' [' + Component.OrderIndex + ']';
+    Lines.Add( Header );
 
     // Properties
     for Prop in Component.Properties do
-      Lines.Add( Prop.Indent + Prop.Name + ' = ' + Prop.RawValue );
+      if Prop.SpaceAfterEquals then
+        Lines.Add( Prop.Indent + Prop.Name + ' = ' + Prop.RawValue )
+      else
+        Lines.Add( Prop.Indent + Prop.Name + ' =' + Prop.RawValue );
 
     // Children (recursive)
     for Child in Component.Children do

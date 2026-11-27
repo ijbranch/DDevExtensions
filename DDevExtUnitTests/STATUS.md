@@ -13,21 +13,23 @@
   - Nested component support
   - `object`, `inherited`, `inline` keywords
   - Find/modify/delete properties
-- **Known Limitations:**
-  - Multi-line properties (binary, collections) need more testing
-  - String concatenation (`'Line1' + #13#10 + 'Line2'`) may need refinement
+- **Known Limitations:** none open.  2026-11-28: brackets inside strings no longer open a list, a bare `Name =`
+  round-trips, and `[n]` is split into `OrderIndex`; 324 of 324 real DFMs round-trip byte-exact
+  ( `../Tools/DfmNoiseMeasure` ).  Byte-exactness is for IDE-written text: hand-made spacing around `=`, blank
+  lines and a missing final line break are normalised.
 
 ### 2. Test Project
 **Location:** `D:\DDevExtensions\DDevExtensions\DDevExtUnitTests\`
 
 **DUnitX VCL GUI Tests (Recommended):**
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX test runner with VCL GUI
-- **TestDfmParserDUnitX.pas** - 34 test cases (see `README.md` for the breakdown)
+- **TestDfmParserDUnitX.pas** - 41 test cases (see `README.md` for the breakdown)
+- **TestDfmNoiseMeasureCoreDUnitX.pas** - 6 cases (`DfmNoiseMeasure.Core`, added 2026-11-28)
 - **TestPathCompactorDUnitX.pas** - 30 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 17 cases (`ProjectGroupSorterCore`)
 - **TestUsesClauseManagerCoreDUnitX.pas** - 50 cases (`UsesClauseManagerCore`)
 - **TestDecirculariserCoreDUnitX.pas** - 43 cases (`DecirculariserCore`)
-- 25 further fixtures, 389 tests in all on Win64 (388 on Win32) as of 2026-11-09: the full list is in `README.md`
+- 26 further fixtures, 473 tests in all on Win64 as of 2026-11-28: the full list is in `README.md`
 
 **Original Console Tests:** retired 2026-10-21.  `DDevExtUnitTests.dpr` and its six `Test*.pas`
 units were ported into the DUnitX fixtures `TestDelphiLexerDUnitX`, `TestDelphiParserContainersDUnitX`,
@@ -119,7 +121,7 @@ DDevExtUnitTestsDUnitX.exe
 ```
 
 Opens VCL GUI (only when built with `GUI_TEST_RUNNER` defined; otherwise the exe is the console runner) showing:
-- 389 tests (2026-11-09; 29 when this was first written) organized by category
+- 473 tests (2026-11-28; 29 when this was first written) organized by category
 - Real-time pass/fail status
 - Detailed failure messages
 - Execution time per test
@@ -130,8 +132,8 @@ Opens VCL GUI (only when built with `GUI_TEST_RUNNER` defined; otherwise the exe
 None open.  `TestDelphiParserContainersDUnitX.TestHashtableCaseSensitive` was red from 2026-10-21
 until the same day's fix: the Shared units tested `COMPILER6_UP` and friends, which nothing defined
 for them (`DelphiParser.inc` was empty), so they compiled their Delphi 5 branches.  The conditionals
-are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.  (2026-11-09: the suite
-is 389 tests on Win64, all passing.)
+are now resolved away and all 191 tests pass.  See `../UnitTestCoverage-Plan.md`.  (2026-11-28: the suite
+is 473 tests on Win64, all passing.)
 
 `UsesClauseManagerCore` carried one deliberate characterisation test,
 `TestDuplicateUnitNameCurrentlyRaises`, which pinned a known defect: two search-path directories holding

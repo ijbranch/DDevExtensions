@@ -251,6 +251,7 @@ projects is included; the credit is for the idea.
 |---|---|---|---|
 | Method Separators | [Tulip Method Separators](https://github.com/SamerAssil/Tulip_Method_Separators) | Samer Assil | MIT |
 | External Mod Monitor | [VSoft.ExternalModDetector](https://github.com/VSoftTechnologies/VSoft.ExternalModDetector) | VSoft Technologies | Apache 2.0 |
+| DFM parser's value scanner ( `gllDelphiDFMParser` ), `Tools/DfmNoiseMeasure` | [delphi-dfm-noise-filter](https://github.com/cesarliws/delphi-dfm-noise-filter) | Cesar Romero | MIT |
 
 
 ## How to install
@@ -555,7 +556,7 @@ DDevExtensions/
 │   │   ├── DelphiParserContainers.pas
 │   │   ├── DelphiPreproc.pas
 │   │   ├── ProjectSources.pas     # A project's units from editor buffers or disk, for the detectors
-│   │   └── gllDelphiDFMParser.pas # Lossless DFM parser (tested; not used by the product yet)
+│   │   └── gllDelphiDFMParser.pas # Lossless DFM parser (tested; used by Tools/DfmNoiseMeasure, not by the product yet)
 │   │
 │   └── Xml/                       # XML utilities
 │       ├── SimpleXmlDoc.pas
@@ -563,6 +564,7 @@ DDevExtensions/
 │       └── SimpleXmlIntf.pas
 │
 └── Tools/                         # Additional tools
+    ├── DfmNoiseMeasure/           # Console tool: measures the IDE noise in saved .dfm files (Help.md, Findings-*.md)
     └── LinkMapFile/
         └── ReadMe.md
 ```

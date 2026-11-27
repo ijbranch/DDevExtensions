@@ -4,7 +4,7 @@
 
 ### New DUnitX Test Infrastructure
 - **DDevExtUnitTestsDUnitX.dpr** - DUnitX VCL GUI test runner
-- **TestDfmParserDUnitX.pas** - 34 comprehensive test cases
+- **TestDfmParserDUnitX.pas** - 41 comprehensive test cases
 - **TestPathCompactorDUnitX.pas** - 30 cases (`PathCompactorCore`)
 - **TestProjectGroupSorterDUnitX.pas** - 17 cases (`ProjectGroupSorterCore`)
 - **TestUsesClauseManagerCoreDUnitX.pas** - 50 cases (`UsesClauseManagerCore`)
@@ -18,7 +18,9 @@
   **TestVirtTreeHandlerDUnitX** - 5 (4 on Win32), **TestInterceptDispatchDUnitX** - 14, **TestPluginConfigCoreDUnitX** - 11,
   **TestFeatureSwitchesDUnitX** - 5, **TestIDEHashListsDUnitX** - 5, **TestVersionInfoKeysDUnitX** - 5, **TestSimpleXmlDocDUnitX** - 4,
   **TestFileWatcherDUnitX** - 3, **TestHookingDUnitX** - 6, **TestImportHookingDUnitX** - 3
-- **389 tests in total on Win64 (388 on Win32)**, all passing on 2026-11-09 (191 on 2026-10-21; `TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
+- Added 2026-11-10: **TestParallelBuildCoreDUnitX** - 42, **TestParallelBuildRunnerDUnitX** - 29
+- Added 2026-11-28: **TestDfmNoiseMeasureCoreDUnitX** - 6, and 7 more in **TestDfmParserDUnitX**
+- **473 tests in total on Win64**, all passing on 2026-11-28 (389 on 2026-11-09, 191 on 2026-10-21; `TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)
@@ -26,7 +28,9 @@
 - **MultiLineStrings.dfm** - TMemo.Lines, TComboBox.Items, TListBox.Items (parenthesized lists `(...)`)
 - **Complex.dfm** - Production-quality form with PageControl, tabs, GroupBox, StringGrid, nested panels
 
-## DFM Parser Test Coverage (32 Tests)
+## DFM Parser Test Coverage (41 Tests)
+
+The ⚠️ marks below are from when the suite was first written; every test passes today.
 
 ### 1. Basic Parsing Tests (4)
 - ✅ `TestSimpleProperties` - Parse form with Caption, Width, Visible
@@ -65,6 +69,17 @@
 - ⚠️ `TestFileRoundTrip_Binary` - Binary.dfm (will test multi-line binary)
 - ⚠️ `TestFileRoundTrip_Collections` - Collections.dfm (will test collections)
 - ⚠️ `TestFileRoundTrip_MultiLineStrings` - MultiLineStrings.dfm (will test paren lists)
+
+### 7. Brackets, continuation and headers (7, added 2026-11-28)
+- ✅ `TestBracketInStringDoesNotSwallowNextProperty` - `Caption = 'Save (F2)'` is one property
+- ✅ `TestCloseParenInStringKeepsListOpen` - a `)` inside a quoted list item
+- ✅ `TestAngleInCollectionItemString` - an unbalanced `<` in a collection item's string
+- ✅ `TestPlusContinuationOnlyOutsideString` - `+` continues a value only outside quotes
+- ✅ `TestInheritedOrderIndex` - `[n]` split into `OrderIndex`
+- ✅ `TestValueOnNextLineRoundTrips` - a bare `Name =` with the value on the next line
+- ✅ `TestStrayClosingBracketDoesNotSwallowFile` - a malformed `Foo = )` ends on its own line
+
+Plus the real-world and folder-sweep round trips ( 7 ).
 
 **Legend:**
 - ✅ Should pass with current parser implementation

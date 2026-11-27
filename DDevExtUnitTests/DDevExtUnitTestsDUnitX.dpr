@@ -56,6 +56,8 @@ uses
   DUnitX.TestFramework,
   gllDelphiDFMParser in '..\Shared\PascalParser\gllDelphiDFMParser.pas',
   TestDfmParserDUnitX in 'TestDfmParserDUnitX.pas',
+  DfmNoiseMeasure.Core in '..\Tools\DfmNoiseMeasure\DfmNoiseMeasure.Core.pas',
+  TestDfmNoiseMeasureCoreDUnitX in 'TestDfmNoiseMeasureCoreDUnitX.pas',
   ProjectGroupSorterCore in '..\Code\DDevExtensions\Source\ProjectGroupSorter\ProjectGroupSorterCore.pas',
   TestProjectGroupSorterDUnitX in 'TestProjectGroupSorterDUnitX.pas',
   ParallelBuildCore in '..\Code\DDevExtensions\Source\ParallelBuild\ParallelBuildCore.pas',

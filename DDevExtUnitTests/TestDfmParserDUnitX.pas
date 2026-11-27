@@ -108,6 +108,55 @@ type
     [ Test ]
     procedure TestNegativeNumbers;
 
+    // Brackets inside string literals ( 2026-11-28 )
+    /// <summary>
+    /// Proves a <c>(</c>, <c>{</c> or <c>&lt;</c> inside a quoted value ends the property on its
+    /// own line: the parser used to take it as the start of a list, binary block or collection
+    /// and swallowed the following properties into the value, which round-trip tests cannot see.
+    /// </summary>
+    [ Test ]
+    procedure TestBracketInStringDoesNotSwallowNextProperty;
+    /// <summary>
+    /// Proves a <c>)</c> inside a quoted list item does not end the list early: the parser used
+    /// to close the list there, so the next item line became an orphan and was dropped from the
+    /// serialised text.
+    /// </summary>
+    [ Test ]
+    procedure TestCloseParenInStringKeepsListOpen;
+    /// <summary>
+    /// Proves an unbalanced <c>&lt;</c> inside a quoted collection item neither ends nor extends the
+    /// collection: the property after the collection is still found, with the exact value.
+    /// </summary>
+    [ Test ]
+    procedure TestAngleInCollectionItemString;
+    /// <summary>
+    /// Proves a value written as a string, a <c>+</c> at the end of the line and the rest on the
+    /// next line is one property, while a <c>+</c> INSIDE the quotes at the end of a line is not a
+    /// continuation.
+    /// </summary>
+    [ Test ]
+    procedure TestPlusContinuationOnlyOutsideString;
+    /// <summary>
+    /// Proves an inherited header's <c>[n]</c> creation-order index is split from the class name
+    /// into <c>OrderIndex</c>, and that the header still serialises byte-exact.
+    /// </summary>
+    [ Test ]
+    procedure TestInheritedOrderIndex;
+    /// <summary>
+    /// Proves a value that starts on the line after a bare <c>Name =</c> ( how the IDE wraps a long
+    /// string ) round-trips byte-exact: the parser used to write <c>Name = </c> back with a trailing
+    /// space, found in 18 of 246 DBiWorkflow forms by <c>DfmNoiseMeasure identity</c>.
+    /// </summary>
+    [ Test ]
+    procedure TestValueOnNextLineRoundTrips;
+    /// <summary>
+    /// Proves a malformed value made only of a closing bracket ( <c>Foo = )</c> ) ends on its own line:
+    /// it used to count as "no value yet", so the property swallowed every following line, the
+    /// <c>end</c> lines included, and the rest of the tree was lost.
+    /// </summary>
+    [ Test ]
+    procedure TestStrayClosingBracketDoesNotSwallowFile;
+
     // File round-trip tests
     /// <summary>Round-trips <c>TestData\Simple.dfm</c> and asserts the serialised output matches the original byte-for-byte.</summary>
     [ Test ]
@@ -935,6 +984,155 @@ begin
     Assert.AreEqual( Original, Serialized, 'Real-world StatusViewer round-trip must be lossless' );
   finally
     Doc.Free;
+  end;
+end;
+
+{ Brackets inside string literals }
+
+procedure TTestDelphiDfmParser.TestBracketInStringDoesNotSwallowNextProperty;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Caption = ''Save (F2)''' + #13#10 +
+    '  Hint = ''a {b'' + ''<c''' + #13#10 +
+    '  Width = 80' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual<Integer>( 3, oDoc.Root.Properties.Count, 'Caption, Hint and Width are three properties' );
+    Assert.AreEqual( '''Save (F2)''', oDoc.Root.FindProperty( 'Caption' ).RawValue, False );
+    Assert.AreEqual( '''a {b'' + ''<c''', oDoc.Root.FindProperty( 'Hint' ).RawValue, False );
+    Assert.IsTrue( oDoc.Root.FindProperty( 'Caption' ).ValueKind = dvkString, 'Caption is a string value' );
+    Assert.IsNotNull( oDoc.Root.FindProperty( 'Width' ), 'Width is its own property' );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestCloseParenInStringKeepsListOpen;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Items.Strings = (' + #13#10 +
+    '    ''a)''' + #13#10 +
+    '    ''b'')' + #13#10 +
+    '  Tag = 1' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual<Integer>( 2, oDoc.Root.Properties.Count, 'Items.Strings and Tag' );
+    Assert.AreEqual( '(' + #13#10 + '    ''a)''' + #13#10 + '    ''b'')', oDoc.Root.FindProperty( 'Items.Strings' ).RawValue, False );
+    Assert.AreEqual( '1', oDoc.Root.FindProperty( 'Tag' ).RawValue, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestAngleInCollectionItemString;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Columns = <' + #13#10 +
+    '    item' + #13#10 +
+    '      Caption = ''x < 5''' + #13#10 +
+    '    end>' + #13#10 +
+    '  Left = 7' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual<Integer>( 2, oDoc.Root.Properties.Count, 'Columns and Left' );
+    Assert.IsTrue( oDoc.Root.FindProperty( 'Columns' ).ValueKind = dvkCollection, 'Columns is a collection' );
+    Assert.AreEqual( '7', oDoc.Root.FindProperty( 'Left' ).RawValue, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestPlusContinuationOnlyOutsideString;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Caption = ''one'' +' + #13#10 +
+    '    ''two''' + #13#10 +
+    '  Hint = ''ends with +''' + #13#10 +
+    '  Tag = 3' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual<Integer>( 3, oDoc.Root.Properties.Count, 'Caption, Hint and Tag' );
+    Assert.AreEqual( '''one'' +' + #13#10 + '    ''two''', oDoc.Root.FindProperty( 'Caption' ).RawValue, False );
+    Assert.AreEqual( '''ends with +''', oDoc.Root.FindProperty( 'Hint' ).RawValue, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestInheritedOrderIndex;
+begin
+  var sDfm          :=
+    'inherited Form2: TForm2' + #13#10 +
+    '  inherited Panel1: TPanel [3]' + #13#10 +
+    '  end' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    var oPanel      := oDoc.Root.Children[ 0 ];
+    Assert.AreEqual( 'TPanel', oPanel.TypeName, False );
+    Assert.AreEqual( '3', oPanel.OrderIndex, False );
+    Assert.AreEqual( '', oDoc.Root.OrderIndex, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestValueOnNextLineRoundTrips;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Caption =' + #13#10 +
+    '    ''A long caption that the IDE wrapped'' +' + #13#10 +
+    '    '' onto two lines''' + #13#10 +
+    '  Tag = 2' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual<Integer>( 2, oDoc.Root.Properties.Count, 'Caption and Tag' );
+    Assert.AreEqual( '2', oDoc.Root.FindProperty( 'Tag' ).RawValue, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
+  end;
+end;
+
+procedure TTestDelphiDfmParser.TestStrayClosingBracketDoesNotSwallowFile;
+begin
+  var sDfm          :=
+    'object Form1: TForm1' + #13#10 +
+    '  Foo = )' + #13#10 +
+    '  object Panel1: TPanel' + #13#10 +
+    '    Tag = 4' + #13#10 +
+    '  end' + #13#10 +
+    'end' + #13#10;
+
+  var oDoc          := TDelphiDfmParser.Parse( sDfm );
+  try
+    Assert.AreEqual( ')', oDoc.Root.FindProperty( 'Foo' ).RawValue, False );
+    Assert.AreEqual<Integer>( 1, oDoc.Root.Children.Count, 'Panel1 is still a child' );
+    Assert.AreEqual( '4', oDoc.Root.Children[ 0 ].FindProperty( 'Tag' ).RawValue, False );
+    Assert.AreEqual( sDfm, TDelphiDfmParser.Serialize( oDoc ), False );
+  finally
+    oDoc.Free;
   end;
 end;
 
