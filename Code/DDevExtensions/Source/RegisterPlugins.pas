@@ -79,6 +79,9 @@ uses
 {$IFDEF INCLUDE_DFMPASCONSISTENCY}
   DfmPasConsistency,
 {$ENDIF INCLUDE_DFMPASCONSISTENCY}
+{$IFDEF INCLUDE_DFMLINKGUARD}
+  DfmLinkGuard,
+{$ENDIF INCLUDE_DFMLINKGUARD}
 {$IFDEF INCLUDE_CODEQUALITYANALYZER}
   CodeQualityAnalyzer,
 {$ENDIF INCLUDE_CODEQUALITYANALYZER}
@@ -263,6 +266,11 @@ begin
 {$IFDEF INCLUDE_DFMPASCONSISTENCY}
     if not DisabledPlugins.IsDisabled( 'DfmPasConsistency' ) then
       RegisterLateLoader( DfmPasConsistency.InitPlugin );
+{$ENDIF}
+
+{$IFDEF INCLUDE_DFMLINKGUARD}
+    if not DisabledPlugins.IsDisabled( 'DfmLinkGuard' ) then
+      RegisterLateLoader( DfmLinkGuard.InitPlugin );
 {$ENDIF}
 
 {$IFDEF INCLUDE_CODESTYLECHECKER}

@@ -19,8 +19,8 @@
   **TestFeatureSwitchesDUnitX** - 5, **TestIDEHashListsDUnitX** - 5, **TestVersionInfoKeysDUnitX** - 5, **TestSimpleXmlDocDUnitX** - 4,
   **TestFileWatcherDUnitX** - 3, **TestHookingDUnitX** - 6, **TestImportHookingDUnitX** - 3
 - Added 2026-11-10: **TestParallelBuildCoreDUnitX** - 42, **TestParallelBuildRunnerDUnitX** - 29
-- Added 2026-11-28: **TestDfmNoiseMeasureCoreDUnitX** - 6, and 7 more in **TestDfmParserDUnitX**
-- **473 tests in total on Win64**, all passing on 2026-11-28 (389 on 2026-11-09, 191 on 2026-10-21; `TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
+- Added 2026-11-28: **TestDfmCompareDUnitX** - 6, **TestDfmLinkGuardCoreDUnitX** - 11, and 7 more in **TestDfmParserDUnitX**
+- **484 tests in total on Win64**, all passing on 2026-11-28 (389 on 2026-11-09, 191 on 2026-10-21; `TestHashtableCaseSensitive` was red until the `COMPILERx_UP` defines were resolved, see `STATUS.md`)
 
 ### New Test Data Files
 - **Binary.dfm** - TImage with PNG binary data (hex bytes in `{...}`)

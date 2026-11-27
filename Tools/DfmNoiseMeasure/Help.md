@@ -1,14 +1,15 @@
 # DfmNoiseMeasure
 
 A console tool that measures the noise the IDE leaves in saved `.dfm` files: what changes between two versions of
-a form, sorted into categories.  Built 2026-11-28 to measure before deciding whether DDevExtensions needs more than
+a form, sorted into categories.  Run by hand; nothing calls it.  Built 2026-11-28 to measure before deciding whether DDevExtensions needs more than
 its three DFM cleaners ( after a review of Cesar Romero's
 [delphi-dfm-noise-filter](https://github.com/cesarliws/delphi-dfm-noise-filter) ).  Results: `Findings-2026-11-28.md`.
 
 ## Build
 
 `DfmNoiseMeasure.dproj`, a console application ( Win64 Release; Win32 declared ).  It uses
-`..\..\Shared\PascalParser\gllDelphiDFMParser.pas` and links GITLAKRTL first.  Output: `bin\$(Platform)\$(Config)`.
+`..\..\Shared\PascalParser\gllDelphiDFMParser.pas` and `gllDfmCompare.pas` ( the comparison, shared with the
+DFM Link Guard in the DDevExtensions DLL ) and links GITLAKRTL first.  Output: `bin\$(Platform)\$(Config)`.
 
 ## Commands
 
@@ -40,7 +41,7 @@ DfmNoiseMeasure compare <out-folder>\pairs.tsv <out-folder>\detail.csv
 ## Categories
 
 Components are matched by name under their parent ( an unnamed one by class and position ); the root is matched
-whatever its name.  `DfmNoiseMeasure.Core.ClassifyChange` decides, in this order:
+whatever its name.  `gllDfmCompare.ClassifyChange` decides, in this order:
 
 | Category | What | Known IDE noise |
 |---|---|---|

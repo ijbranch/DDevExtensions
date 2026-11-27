@@ -22,7 +22,7 @@ COMPONENTS INCLUDED:
     Core Framework, Dependency Viewer, Code Quality Analyzer, Code Style Checker,
     Dead Code Detector, Unused Unit Detector, Unreachable Code Detector,
     Uses Clause Manager, TODO Aggregator, Empty Event Handler Detector,
-    DFM/PAS Consistency, Compile Progress, Editor Enhancements, Form Designer,
+    DFM/PAS Consistency, DFM Link Guard, Compile Progress, Editor Enhancements, Form Designer,
     Project Settings, Start Parameter Manager, Component Selector, DSU Features,
     Keybindings, File Selector, Decirculariser, Method Separators, Installer
 
@@ -490,7 +490,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
 </head>
 <body>
     <h1>DDevExtensions - Project Dependency Map</h1>
-    <p class="subtitle">Delphi IDE Extension - Version 3.25.17 | Projects for Delphi 10.2 through 13.0 (D_D102 can no longer compile the shared code, which needs 10.3+)</p>
+    <p class="subtitle">Delphi IDE Extension - Version 3.26.18 | Projects for Delphi 10.2 through 13.0 (D_D102 can no longer compile the shared code, which needs 10.3+)</p>
 
     <div class="legend">
         <div class="legend-item">
@@ -621,6 +621,12 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
                         <div>
                             <div class="project-name">DFM/PAS Consistency</div>
                             <div class="project-desc">Form sync checker</div>
+                        </div>
+                    </div>
+                    <div class="project-item" onclick="showModal('DfmLinkGuard')">
+                        <div>
+                            <div class="project-name">DFM Link Guard</div>
+                            <div class="project-desc">Warns when a save drops a link to another module</div>
                         </div>
                     </div>
                 </div>
@@ -821,7 +827,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
             <th>Category</th>
             <th>LOC</th>
         </tr>
-        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing</td><td>Shared Library</td><td>8,719</td></tr>
+        <tr><td><strong>Pascal Parser</strong></td><td>Code tokenization and parsing, DFM parsing and comparison</td><td>Shared Library</td><td>9,283</td></tr>
         <tr><td><strong>IDE Utilities</strong></td><td>Tools API helpers and IDE integration</td><td>Shared Library</td><td>7,895</td></tr>
         <tr><td><strong>Core Framework</strong></td><td>Plugin initialization and management</td><td>Core</td><td>5,087</td></tr>
         <tr><td><strong>Dependency Viewer</strong></td><td>Unit dependency analysis</td><td>Analysis</td><td>4,668</td></tr>
@@ -855,6 +861,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
         <tr><td><strong>Installer (DDevExtensionsReg.exe)</strong></td><td>Multi-version IDE registration utility with auto-detection</td><td>Utility</td><td>585</td></tr>
         <tr><td><strong>Sort Projects in Group</strong></td><td>Alphabetise .groupproj member projects</td><td>Project</td><td>762</td></tr>
         <tr><td><strong>Parallel Build All</strong></td><td>Build All Projects builds a project group several projects at a time</td><td>Project</td><td>2,712</td></tr>
+        <tr><td><strong>DFM Link Guard</strong></td><td>Warns when a save drops a link to another module</td><td>Analysis</td><td>629</td></tr>
     </table>
 
     <h2>Technical Specifications</h2>
@@ -862,8 +869,8 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
         <tr><th>Specification</th><th>Value</th></tr>
         <tr><td>Type</td><td>IDE Expert (DLL Plugin)</td></tr>
         <tr><td>Supported IDEs</td><td>Delphi 10.2 Tokyo through 13.0 Florence (2026-11-09: D_D102 can no longer compile the shared code, which uses inline variables, Delphi 10.3+; only Delphi 13 is built and tested)</td></tr>
-        <tr><td>Total Lines of Code</td><td>91,376 (tracked .pas files outside the DDevExtUnitTests suite)</td></tr>
-        <tr><td>Total Pascal Files</td><td>149 (same scope)</td></tr>
+        <tr><td>Total Lines of Code</td><td>95,507 (tracked .pas files outside the DDevExtUnitTests suite)</td></tr>
+        <tr><td>Total Pascal Files</td><td>157 (same scope)</td></tr>
         <tr><td>Output Files</td><td>DDevExtensionsD130.dll / DDevExtensionsD130x64.dll (32-bit / 64-bit IDE), CompileInterceptorW.dll / CompileInterceptorWx64.dll, DDevExtensionsReg.exe</td></tr>
         <tr><td>Configuration</td><td>One XML file per IDE version in %APPDATA%\DDevExtensions\ (DDevExtensions&lt;n&gt;.xml, saved atomically; an unreadable file is moved to .corrupt-&lt;date-time&gt;), plus LibraryPathBackups&lt;n&gt;.v2.xml and LayerConfig.txt</td></tr>
     </table>
@@ -1051,6 +1058,13 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
                 dependencies: ['Pascal Parser', 'IDE Utilities'],
                 linesOfCode: 1015
             },
+            'DfmLinkGuard': {
+                category: 'Code Analysis',
+                description: 'New in 3.26.18.  After every save of a module with a .dfm, compares the file with its state before the save and warns on a "DFM Link Guard" tab of the Messages pane when the save removed a link to another module\'s component ( DataSource = dmMain.dsCustomers ) while that module was not loaded and the component still exists.  The decision is DfmLinkGuardCore (RTL-only, tested), on gllDfmCompare and gllDelphiDFMParser.',
+                features: ['Before/after comparison of each save', 'Deliberate removals and moved links not reported', 'Target checked on disk', 'Warns only, never edits'],
+                dependencies: ['Pascal Parser', 'IDE Utilities'],
+                linesOfCode: 629
+            },
             'DfmPasConsistency': {
                 category: 'Code Analysis',
                 description: 'Verifies synchronization between DFM files and Pascal source. Finds missing components and type mismatches.  Since 3.24.16 the comparison is in DfmPasConsistencyCore (tested) and covers only the class named by the DFM root object.',
@@ -1189,7 +1203,7 @@ TOTAL LINES OF CODE: 91,376 (2026-11-09)
                 description: 'Pascal source code tokenizer and parser used by all code analysis tools. Handles lexing, expression parsing, and preprocessor directives.  ProjectSources (3.24.16) gives the detectors the units of a project from editor buffers or disk without opening modules; gllDelphiDFMParser is tested but not yet used by the product.',
                 features: ['Tokenization', 'Expression parsing', 'Preprocessor handling', 'DFM parsing'],
                 dependencies: [],
-                linesOfCode: 8719
+                linesOfCode: 9283
             },
             'IDEUtilities': {
                 category: 'Shared Library',

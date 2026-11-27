@@ -1,12 +1,12 @@
 ﻿{******************************************************************************}
 {*                                                                            *}
-{* DfmNoiseMeasure - measures the IDE noise left in saved .dfm files          *}
+{* gllDfmCompare - compares two texts of one .dfm, component by component    *}
 {*                                                                            *}
 {* (C) 2026 Ian Branch, Claude code                                           *}
 {*                                                                            *}
 {******************************************************************************}
 
-unit DfmNoiseMeasure.Core;
+unit gllDfmCompare;
 
 /// <summary>
 /// Compares two texts of one <c>.dfm</c> ( before and after a save ) component by component and
@@ -18,7 +18,8 @@ unit DfmNoiseMeasure.Core;
 /// </summary>
 /// <remarks>
 /// Built to measure, before any design work, how much DFM noise our cleaners still leave behind
-/// ( recommendation of 2026-11-28, after reviewing Cesar Romero's delphi-dfm-noise-filter ).
+/// ( recommendation of 2026-11-28, after reviewing Cesar Romero's delphi-dfm-noise-filter ).  Used by
+/// <c>Tools\DfmNoiseMeasure</c> and by the DFM Link Guard in the DDevExtensions DLL.
 /// </remarks>
 
 interface
@@ -27,6 +28,9 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections, gllDelphiDFMParser;
 
 type
+  /// <summary>Raised when a text cannot be compared because it has no root object.</summary>
+  EDfmCompareError = class( Exception );
+
   /// <summary>What kind of difference one change is.</summary>
   TDfmChangeKind = (
     dckPropertyAdded, //< The property is only in the new text.
@@ -77,6 +81,7 @@ type
 /// <param name="OldText">The text before the save.</param>
 /// <param name="NewText">The text after the save.</param>
 /// <returns>Every difference, classified; empty when the two parse to the same tree.</returns>
+/// <exception cref="EDfmCompareError">Either text has no root object ( empty, or not a text DFM ).</exception>
 function CompareDfmText( const OldText, NewText: string ): TArray<TDfmChange>;
 
 /// <summary>Classifies one change by its kind, property name and values.</summary>
@@ -408,6 +413,9 @@ begin
   try
     var oNewDoc     := TDelphiDfmParser.Parse( NewText );
     try
+      // The document always holds a root; it is an empty placeholder until an object header is read.
+      if ( oOldDoc.Root.TypeName = '' ) or ( oNewDoc.Root.TypeName = '' ) then
+        raise EDfmCompareError.Create( 'Cannot compare a DFM text that has no root object' );
       var oComparer := TDfmComparer.Create;
       try
         oComparer.CompareComponents( oNewDoc.Root.Name, oOldDoc.Root, oNewDoc.Root );

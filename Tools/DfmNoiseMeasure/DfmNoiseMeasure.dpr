@@ -28,7 +28,7 @@ uses
   System.Generics.Collections,
   System.Generics.Defaults,
   gllDelphiDFMParser in '..\..\Shared\PascalParser\gllDelphiDFMParser.pas',
-  DfmNoiseMeasure.Core in 'DfmNoiseMeasure.Core.pas';
+  gllDfmCompare in '..\..\Shared\PascalParser\gllDfmCompare.pas';
 
 /// <summary>Prints the command line forms.</summary>
 procedure ShowUsage;

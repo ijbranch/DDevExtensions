@@ -44,12 +44,12 @@
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_DLL>true</VerInfo_DLL>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.17.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.25.17.601;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.26.18.601;InternalName=;LegalCopyright=(C) 2006-2013 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.26.18.601;Comments=;Last Compile=2012-08-05 18:22</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>17</VerInfo_Release>
+        <VerInfo_MinorVer>26</VerInfo_MinorVer>
+        <VerInfo_Release>18</VerInfo_Release>
         <Manifest_File>None</Manifest_File>
         <DllSuffix>D110</DllSuffix>
         <DCC_StringChecks>off</DCC_StringChecks>
@@ -101,9 +101,9 @@ $(PreBuildEvent)]]></PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_MajorVer>3</VerInfo_MajorVer>
-        <VerInfo_MinorVer>25</VerInfo_MinorVer>
-        <VerInfo_Release>17</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.25.17.601;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.25.17.601;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_MinorVer>26</VerInfo_MinorVer>
+        <VerInfo_Release>18</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=Andreas Hausladen;FileVersion=3.26.18.601;InternalName=;LegalCopyright=(C) 2006-2014 Andreas Hausladen;LegalTrademarks=;OriginalFilename=DDevExtensions.dll;ProductName=DDevExtensions;ProductVersion=3.26.18.601;Comments=;Last Compile=2012-08-05 18:22;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName)</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
     </PropertyGroup>
     <ProjectExtensions>
@@ -392,6 +392,14 @@ $(PreBuildEvent)]]></PreBuildEvent>
         <DCCReference Include="..\Source\MethodSeparators\MethodSeparators.pas"/>
         <DCCReference Include="..\Source\MethodSeparators\FrmeOptionPageMethodSeparators.pas">
             <Form>FrameOptionPageMethodSeparators</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\..\..\Shared\PascalParser\gllDelphiDFMParser.pas"/>
+        <DCCReference Include="..\..\..\Shared\PascalParser\gllDfmCompare.pas"/>
+        <DCCReference Include="..\Source\DfmLinkGuard\DfmLinkGuardCore.pas"/>
+        <DCCReference Include="..\Source\DfmLinkGuard\DfmLinkGuard.pas"/>
+        <DCCReference Include="..\Source\DfmLinkGuard\FrmeOptionPageDfmLinkGuard.pas">
+            <Form>FrameOptionPageDfmLinkGuard</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="..\Source\PluginConfigCore.pas"/>

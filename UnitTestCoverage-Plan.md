@@ -37,7 +37,7 @@ Living plan for extending automated, IDE-free unit tests across DDevExtensions. 
 | `TestHooking` (DUnitX) | `Hooking` (ModRM/SIB lengths, `CodeRestore` guard, full-replace install/remove, patch bytes) | 6 cases | green |
 | `TestImportHooking` (DUnitX) | `ImportHooking` (redirect, restore by `Unhook` and by freeing the list, failure reporting) | 3 cases | green |
 
-**Suite total (2026-11-09): 389 tests on Win64, 388 on Win32**, all passing (`bin\DDevExtUnitTestsDUnitX-results.xml`, 389 run, 0 failed).
+**Suite total (2026-11-28): 484 tests on Win64**, all passing ( 389 on 2026-11-09; since then Parallel Build All, the DFM parser fixes, `gllDfmCompare` and `DfmLinkGuardCore` ).
 
 **Tier 1 complete; Tier 2 = `UnitMetrics` only** (Tier 3 partly done on 2026-11-09, see below).  **Defect found and fixed (2026-10-21):** the Shared parser units tested `COMPILER6_UP` / `COMPILER10_UP` / `COMPILER12_UP`, but `Shared/PascalParser/DelphiParser.inc` is empty and neither the product `.dproj` nor `DDevExtUnitTestsDUnitX.dproj` defines them (the `.dpr`'s `{$I DelphiExtension.inc}` does not reach separately compiled units).  The retired console project defined them at Base level, which hid this: its claim to match the main projects was wrong.  So `THashtable.Create( True, ... )` raises its Delphi-5 assertion and ignores `CaseSensitive`, and `DelphiLexer`'s UTF-8/UTF-16/UCS-4 BOM decoding is compiled out.  Fixed the same day by resolving the conditionals to their modern branches ( see `CHANGELOG.md` ); the test is green. The other Tier 2 candidates turned out to be IDE/VCL-entangled and were moved to Tier 3 (see below).
 

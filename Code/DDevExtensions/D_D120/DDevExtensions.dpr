@@ -168,7 +168,12 @@ uses
   FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame},
   MethodSeparatorsCore in '..\Source\MethodSeparators\MethodSeparatorsCore.pas',
   MethodSeparators in '..\Source\MethodSeparators\MethodSeparators.pas',
-  FrmeOptionPageMethodSeparators in '..\Source\MethodSeparators\FrmeOptionPageMethodSeparators.pas' {FrameOptionPageMethodSeparators: TFrame};
+  FrmeOptionPageMethodSeparators in '..\Source\MethodSeparators\FrmeOptionPageMethodSeparators.pas' {FrameOptionPageMethodSeparators: TFrame},
+  gllDelphiDFMParser in '..\..\..\Shared\PascalParser\gllDelphiDFMParser.pas',
+  gllDfmCompare in '..\..\..\Shared\PascalParser\gllDfmCompare.pas',
+  DfmLinkGuardCore in '..\Source\DfmLinkGuard\DfmLinkGuardCore.pas',
+  DfmLinkGuard in '..\Source\DfmLinkGuard\DfmLinkGuard.pas',
+  FrmeOptionPageDfmLinkGuard in '..\Source\DfmLinkGuard\FrmeOptionPageDfmLinkGuard.pas' {FrameOptionPageDfmLinkGuard: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

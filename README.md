@@ -14,6 +14,8 @@ This version has been extensively re-worked for Delphi 10.2 and up.  Any identif
 
 **Version history, newest first.** The authoritative per-release detail is in `CHANGELOG.md`; this is the narrative summary.
 
+Version 3.26.18 adds the **DFM Link Guard**.  After every save of a form or data module it compares the `.dfm` with the file before the save, and when the save removed a link to a component of another module ( `DataSource = dmMain.dsCustomers` ) while that module was not loaded and the component still exists, it writes a warning on a "DFM Link Guard" tab of the Messages pane.  The IDE drops such links silently when it saves a form while the other module is not loaded; measured over 3,179 DBiWorkflow DFM commits, 19 links were lost that way and restored by hand later, one form's 11 bindings after a year ( `Tools/DfmNoiseMeasure/Findings-2026-11-28.md` ).  It only warns: it never changes a file.  On by default; Options > DDevExtensions > DFM Link Guard.
+
 Version 3.25.17 rewords the Parallel Build All progress window's title: "up to 8 at a time", since dependencies can hold the number below the limit, and "all 3 projects being processed" for a group no larger than the limit.
 
 Version 3.25.16 adds **Parallel Build All**: with a project group open, the IDE's **Build All Projects** (and **Build All** on the group's right-click menu in the Project Manager) builds the group's projects several at a time, each in its own MSBuild process, instead of one after another.  Packages are built first and in dependency order, projects that share a DCU folder never build together, and a project that fails stops only the projects that depend on it.  On our 24-application group a Release Build All went from 145 seconds to 38 with eight at a time (209 to 53 with EurekaLog post-processing, which the feature runs itself on a Release build of a project that has a `.eof`, where EurekaLog is installed).  It is on by default and switched off in Options > DDevExtensions > Parallel Build All, which gives the IDE's own one-at-a-time build back.  **Version caveat:** tested in the Delphi 13 IDE only (64-bit and 32-bit); in the 10.3 to 12 projects it has never been compiled or run.
@@ -493,6 +495,11 @@ DDevExtensions/
 │       │   ├── FrmEmptyEventHandlerDetector.pas/.dfm
 │       │   └── FrmeOptionPageEmptyHandler.pas/.dfm
 │       │
+│       ├── DfmLinkGuard/          # Warns when a save drops a link to another module
+│       │   ├── DfmLinkGuardCore.pas  # RTL-only decision (tested)
+│       │   ├── DfmLinkGuard.pas
+│       │   └── FrmeOptionPageDfmLinkGuard.pas/.dfm
+│       │
 │       ├── DfmPasConsistency/     # DFM/PAS consistency checking
 │       │   ├── DfmPasConsistencyCore.pas  # RTL-only comparison (tested)
 │       │   ├── DfmPasConsistency.pas
@@ -556,7 +563,8 @@ DDevExtensions/
 │   │   ├── DelphiParserContainers.pas
 │   │   ├── DelphiPreproc.pas
 │   │   ├── ProjectSources.pas     # A project's units from editor buffers or disk, for the detectors
-│   │   └── gllDelphiDFMParser.pas # Lossless DFM parser (tested; used by Tools/DfmNoiseMeasure, not by the product yet)
+│   │   ├── gllDelphiDFMParser.pas # Lossless DFM parser (tested; used by the DFM Link Guard and Tools/DfmNoiseMeasure)
+│   │   └── gllDfmCompare.pas      # Compares two DFM texts component by component (tested; same users)
 │   │
 │   └── Xml/                       # XML utilities
 │       ├── SimpleXmlDoc.pas
@@ -564,7 +572,7 @@ DDevExtensions/
 │       └── SimpleXmlIntf.pas
 │
 └── Tools/                         # Additional tools
-    ├── DfmNoiseMeasure/           # Console tool: measures the IDE noise in saved .dfm files (Help.md, Findings-*.md)
+    ├── DfmNoiseMeasure/           # Console tool, run by hand: measures the IDE noise in saved .dfm files (Help.md, Findings-*.md)
     └── LinkMapFile/
         └── ReadMe.md
 ```
@@ -660,6 +668,9 @@ Replaces the default "Open File At Cursor" behavior with an enhanced version tha
 
 **Set TLabel.Margins.Bottom to zero** (default: on)
 Automatically sets the bottom margin of TLabel components to zero when created in the form designer. Prevents unwanted spacing issues in form layouts.
+
+**New in 3.26.18 - DFM Link Guard** (default: on)
+Compares a form's `.dfm` before and after every save and warns, on the "DFM Link Guard" tab of the Messages pane, when the save removed a link to another module's component ( `DataSource = dmMain.dsCustomers` ) that still exists.  The IDE drops such links when the other module is not loaded at the save.  A link removed while its module is open ( a deliberate edit ), whose component was deleted, or that moved to another property, is not reported.  Warns only; it never changes a file.
 
 **Remove Explicit\* properties** (default: off)
 Prevents ExplicitLeft, ExplicitTop, ExplicitWidth, and ExplicitHeight properties from being saved to DFM files. Reduces form file clutter and avoids merge conflicts in version control.

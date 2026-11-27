@@ -6,7 +6,8 @@ VCL and the IDE so they can be tested outside it.
 | Test unit | Unit under test | Tests |
 |-----------|-----------------|-------|
 | `TestDfmParserDUnitX.pas` | `gllDelphiDFMParser` - lossless DFM parse/serialise | 41 |
-| `TestDfmNoiseMeasureCoreDUnitX.pas` | `DfmNoiseMeasure.Core` ( `Tools/DfmNoiseMeasure` ) - DFM change classification, byte round trip | 6 |
+| `TestDfmCompareDUnitX.pas` | `gllDfmCompare` - DFM change classification, byte round trip | 6 |
+| `TestDfmLinkGuardCoreDUnitX.pas` | `DfmLinkGuardCore` - which links to another module a save lost | 11 |
 | `TestPathCompactorDUnitX.pas` | `PathCompactorCore` - library-path macro compaction | 30 |
 | `TestProjectGroupSorterDUnitX.pas` | `ProjectGroupSorterCore` - `.groupproj` sorting | 17 |
 | `TestLibraryPathBackupsDUnitX.pas` | `LibraryPathBackups` - shared backup history, legacy import, quarantine | 6 |
@@ -38,7 +39,7 @@ VCL and the IDE so they can be tested outside it.
 | `TestImportHookingDUnitX.pas` | `ImportHooking` - import redirection and restoration | 3 |
 | `TestParallelBuildCoreDUnitX.pas` | `ParallelBuildCore` - `.dproj` resolution, build plan and schedule, command lines, EurekaLog rules | 42 |
 | `TestParallelBuildRunnerDUnitX.pas` | `ParallelBuildRunner` - real processes, co-ordinator, cancel | 29 |
-| | **Total** | **473 on Win64 ( 2026-11-28 )** |
+| | **Total** | **484 on Win64 ( 2026-11-28 )** |
 
 Some of these units are not RTL-only cores (`VirtTreeHandler`, `FrmExcelExport`, `Hooking`, `ImportHooking`, `FileWatcher`):
 the fixtures test them in-process without the IDE.
@@ -186,14 +187,14 @@ This copies 5 production DFM files from `E:\DBiWorkflow Development` to `TestDat
 
 ## Test Results
 
-**✅ All 41 DFM-parser tests passing** (473 tests across the whole suite on Win64, all passing, 2026-11-28):
+**✅ All 41 DFM-parser tests passing** (484 tests across the whole suite on Win64, all passing, 2026-11-28):
 - Synthetic test cases covering all DFM features
 - Real-world production DFM files from DBiWorkflow (5 files, 67 KB total)
 
 ## Next Steps
 
-This parser is production-ready for integration into the **Component Replacer** feature, and is the base of the
-proposed DFM link-loss guard ( `Tools/DfmNoiseMeasure/Findings-2026-11-28.md` ).
+This parser is production-ready for integration into the **Component Replacer** feature, and is used by the
+**DFM Link Guard** ( 3.26.18 ) through `gllDfmCompare`.
 
 ---
 

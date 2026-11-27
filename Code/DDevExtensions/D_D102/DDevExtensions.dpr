@@ -160,7 +160,12 @@ uses
   ProjectGroupSorter in '..\Source\ProjectGroupSorter\ProjectGroupSorter.pas',
   FileWatcher in '..\..\..\Shared\FileWatcher.pas',
   ExternalModMonitor in '..\Source\ExternalModMonitor\ExternalModMonitor.pas',
-  FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame};
+  FrmeOptionPageExternalModMonitor in '..\Source\ExternalModMonitor\FrmeOptionPageExternalModMonitor.pas' {FrameOptionPageExternalModMonitor: TFrame},
+  gllDelphiDFMParser in '..\..\..\Shared\PascalParser\gllDelphiDFMParser.pas',
+  gllDfmCompare in '..\..\..\Shared\PascalParser\gllDfmCompare.pas',
+  DfmLinkGuardCore in '..\Source\DfmLinkGuard\DfmLinkGuardCore.pas',
+  DfmLinkGuard in '..\Source\DfmLinkGuard\DfmLinkGuard.pas',
+  FrmeOptionPageDfmLinkGuard in '..\Source\DfmLinkGuard\FrmeOptionPageDfmLinkGuard.pas' {FrameOptionPageDfmLinkGuard: TFrame};
 
 var
   AboutBoxServices: IOTAAboutBoxServices = nil;

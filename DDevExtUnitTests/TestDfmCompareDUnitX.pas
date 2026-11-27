@@ -1,7 +1,7 @@
-﻿unit TestDfmNoiseMeasureCoreDUnitX;
+﻿unit TestDfmCompareDUnitX;
 
 /// <summary>
-/// DUnitX fixture for <c>DfmNoiseMeasure.Core</c>, the comparison behind the DFM noise
+/// DUnitX fixture for <c>gllDfmCompare</c>, the comparison behind the DFM noise
 /// measurement: each test feeds two hand-written DFM texts and asserts the exact changes and the
 /// category each is counted under, so the tool's report is proved, not assumed.
 /// </summary>
@@ -9,12 +9,12 @@
 interface
 
 uses
-  DUnitX.TestFramework, System.SysUtils, DfmNoiseMeasure.Core;
+  DUnitX.TestFramework, System.SysUtils, gllDfmCompare;
 
 type
   /// <summary>Tests of <c>CompareDfmText</c>, <c>ClassifyChange</c> and <c>RoundTripsExactly</c>.</summary>
   [ TestFixture ]
-  TTestDfmNoiseMeasureCore = class
+  TTestDfmCompare = class
   public
     /// <summary>Proves two identical texts give no change at all, so an unchanged save is not counted.</summary>
     [ Test ]
@@ -71,12 +71,12 @@ const
     '  end' + #13#10 +
     'end' + #13#10;
 
-procedure TTestDfmNoiseMeasureCore.TestIdenticalTextsGiveNoChanges;
+procedure TTestDfmCompare.TestIdenticalTextsGiveNoChanges;
 begin
   Assert.AreEqual<Integer>( 0, Length( CompareDfmText( CBase, CBase ) ) );
 end;
 
-procedure TTestDfmNoiseMeasureCore.TestKnownNoiseIsFoundAndClassified;
+procedure TTestDfmCompare.TestKnownNoiseIsFoundAndClassified;
 begin
   var sNew          := StringReplace( CBase, '      Left = 4' + #13#10, '      Left = 4' + #13#10 + '      ExplicitWidth = 75' + #13#10, [] );
   sNew              := StringReplace( sNew, '  Caption = ''Main''' + #13#10,
@@ -103,7 +103,7 @@ begin
   end;
 end;
 
-procedure TTestDfmNoiseMeasureCore.TestOtherModuleLinkRemoved;
+procedure TTestDfmCompare.TestOtherModuleLinkRemoved;
 begin
   var sNew          := StringReplace( CBase, '      DataSource = dmX.dsY' + #13#10, '', [] );
   sNew              := StringReplace( sNew, '      PopupMenu = PopupMenu1' + #13#10, '', [] );
@@ -121,7 +121,7 @@ begin
   Assert.IsFalse( IsKnownIdeNoise( ncModuleLinkLost ), 'a lost link is not counted as harmless noise' );
 end;
 
-procedure TTestDfmNoiseMeasureCore.TestReorderingIsOneChangeEach;
+procedure TTestDfmCompare.TestReorderingIsOneChangeEach;
 begin
   var sButton1      :=
     '    object Button1: TButton' + #13#10 +
@@ -149,7 +149,7 @@ begin
   Assert.IsTrue( aChanges[ 1 ].Category = ncChildOrder, 'child order category' );
 end;
 
-procedure TTestDfmNoiseMeasureCore.TestOrderIndexAndComponentChanges;
+procedure TTestDfmCompare.TestOrderIndexAndComponentChanges;
 begin
   var sOld          :=
     'inherited Form2: TForm2' + #13#10 +
@@ -179,7 +179,7 @@ begin
   Assert.IsFalse( IsKnownIdeNoise( aChanges[ 2 ].Category ), 'an added component is an edit' );
 end;
 
-procedure TTestDfmNoiseMeasureCore.TestRoundTripIsByteExact;
+procedure TTestDfmCompare.TestRoundTripIsByteExact;
 var
   sDifference       : string;
 begin
@@ -196,6 +196,6 @@ begin
 end;
 
 initialization
-  TDUnitX.RegisterTestFixture( TTestDfmNoiseMeasureCore );
+  TDUnitX.RegisterTestFixture( TTestDfmCompare );
 
 end.

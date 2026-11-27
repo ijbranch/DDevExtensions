@@ -29,6 +29,7 @@ Version 3.25.17 | Comprehensive Feature Reference
 | Confirm Ctrl+F1 While Debugging | ON | Automatic |
 | Dead Code Detector | ON | DDevExtensions submenu |
 | Decirculariser | ON | DDevExtensions submenu |
+| DFM Link Guard | ON | Automatic (Messages pane, on each form save) |
 | DFM/PAS Consistency Checker | ON | DDevExtensions submenu |
 | Dependency Viewer | OFF | DDevExtensions submenu |
 | Disable Package Cache | OFF | Options |
@@ -160,6 +161,15 @@ The three Tools-menu commands are placed by caption, in registration order: IDE 
 - Click any component for detailed description
 
 Open `DDevExtensions_Map.html` in a browser to explore the project structure.
+
+### Developer Tools ( not part of the DLL )
+
+The `Tools` folder holds programs that are run by hand; the IDE and the DLL never call them.
+
+| Tool | What it is for | When to run it |
+|------|----------------|----------------|
+| `Tools\DfmNoiseMeasure` | Console tool: `identity` proves the DFM parser gives back every `.dfm` under a folder byte for byte; `compare` sorts the changes between saved versions of forms ( from git history, with `Export-DfmHistory.py` ) into IDE noise, lost links and real edits | After changing `gllDelphiDFMParser` or `gllDfmCompare` ( run `identity` over a few real projects ), or to re-measure before changing the DFM cleaners or the DFM Link Guard.  Usage: its `Help.md`; the 2026-11-28 results: `Findings-2026-11-28.md` |
+| `Tools\LinkMapFile` | JVCL's `linkmapfile.exe` ( not in the repository ), which embeds the map file in the DLL for upstream's debug info | Run by `Code\DDevExtensions\build.bat` when the exe is present; `build_project` and the IDE do not use it |
 
 ### Configuration Files
 
@@ -869,6 +879,49 @@ Set*
 | Name | The unused element |
 | Scope | private, protected, public, published, unit or interface |
 | Line | Line number |
+
+---
+
+### DFM Link Guard (New in 3.26.18)
+
+**Purpose:** Catches the moment the IDE silently drops a link from a form to a component of another module.
+
+**Default:** ON.  **Options:** Tools > DDevExtensions > Options > DFM Link Guard ( one switch ).
+
+#### What it catches
+
+When the IDE saves a form while a data module it links to is not loaded, it writes the form without those links: `DataSource = dmMain.dsCustomers` simply disappears from the `.dfm`.  Nothing is shown, the form still compiles, and the binding is gone the next time the program runs.  On 2025-10-16 DBiPV's main form lost 11 such bindings that way; they were found and put back a year later.
+
+#### How it works
+
+1. Before each save of a module with a `.dfm`, the guard reads the `.dfm` from disk.
+2. After the save it reads it again and compares the two, component by component ( `gllDfmCompare` ).
+3. A removed property whose value is `Module.Component` is a candidate.  It is reported only when:
+   - the component that held it is still in the form ( deleting a grid takes its links with it ),
+   - the value appears fewer times in the new file than in the old ( a link moved to another property or component is not lost, but
+     a grid that lost it is still reported while another grid keeps the same link ),
+   - the linked module is not open in the IDE: the IDE drops a link only to a module that is not loaded, so a link removed while
+     its module is open was removed on purpose ( cleared in the Object Inspector, say ), and
+   - the linked component still exists: a `.dfm` on disk whose root is that module, among the modules of the open projects, declares it.
+4. Each lost link is one line on the **DFM Link Guard** tab of the Messages pane, naming the component, the property and the removed value.  Double-click opens the unit.
+
+#### What to do with a warning
+
+Open the linked module ( or add it to the project ), put the link back in the Object Inspector, and save again; or close the form without saving if the save was accidental.
+
+#### Limits
+
+- It warns; it never changes a file.
+- Binary `.dfm` files are skipped.
+- A linked module that is in no open project cannot be found, so its lost links are not reported.
+- Two projects of the group with a module of the same name: the component is looked for in both.
+- Links inside collection items ( an `ActionClients` item's `Action = dmActions.actSave` ) are not seen: a collection is
+  compared as one value.
+- A `.dfm` that cannot be read ( locked by a scanner or a sync tool ) is skipped; a failure of the check itself is a line on the
+  tab, never an error in the IDE's save.
+- On the 64-bit IDE, a module opened less than about three seconds before its first save is not yet watched.
+
+The decision is `Code\DDevExtensions\Source\DfmLinkGuard\DfmLinkGuardCore.pas`, tested in `DDevExtUnitTests\TestDfmLinkGuardCoreDUnitX.pas`.  The measurement it rests on: `Tools\DfmNoiseMeasure\Findings-2026-11-28.md`.
 
 ---
 
